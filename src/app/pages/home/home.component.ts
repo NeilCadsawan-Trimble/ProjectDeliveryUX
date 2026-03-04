@@ -802,15 +802,17 @@ export class HomeComponent implements AfterViewInit {
 
   private generateAiResponse(input: string): string {
     const q = input.toLowerCase();
+    const projects = this.projects();
+    const estimates = this.estimates();
     if (q.includes('at risk') || q.includes('risk')) {
-      const atRisk = this.projects.filter(p => p.status === 'At Risk').map(p => p.name);
+      const atRisk = projects.filter((p: Project) => p.status === 'At Risk').map((p: Project) => p.name);
       return atRisk.length
         ? `${atRisk.length} project(s) are currently at risk: ${atRisk.join(', ')}. I recommend reviewing their timelines and resource allocations.`
         : 'Great news — no projects are currently marked as at risk.';
     }
     if (q.includes('overdue')) {
-      const overdue = this.projects.filter(p => p.status === 'Overdue').map(p => p.name);
-      const overdueEst = this.estimates.filter(e => e.daysLeft < 0).map(e => e.id);
+      const overdue = projects.filter((p: Project) => p.status === 'Overdue').map((p: Project) => p.name);
+      const overdueEst = estimates.filter((e: Estimate) => e.daysLeft < 0).map((e: Estimate) => e.id);
       const parts: string[] = [];
       if (overdue.length) parts.push(`${overdue.length} overdue project(s): ${overdue.join(', ')}`);
       if (overdueEst.length) parts.push(`${overdueEst.length} overdue estimate(s): ${overdueEst.join(', ')}`);
@@ -818,16 +820,16 @@ export class HomeComponent implements AfterViewInit {
     }
     if (q.includes('project') && (q.includes('status') || q.includes('summar'))) {
       const counts: Record<string, number> = {};
-      this.projects.forEach(p => { counts[p.status] = (counts[p.status] ?? 0) + 1; });
-      return 'Project summary: ' + Object.entries(counts).map(([s, c]) => `${c} ${s}`).join(', ') + `. Total: ${this.projects.length} projects.`;
+      projects.forEach((p: Project) => { counts[p.status] = (counts[p.status] ?? 0) + 1; });
+      return 'Project summary: ' + Object.entries(counts).map(([s, c]) => `${c} ${s}`).join(', ') + `. Total: ${projects.length} projects.`;
     }
     if (q.includes('estimate')) {
-      const pending = this.estimates.filter(e => e.status !== 'Approved').length;
-      const total = this.estimates.reduce((sum, e) => sum + e.valueRaw, 0);
-      return `There are ${this.estimates.length} open estimates with a combined value of $${(total / 1000).toFixed(0)}K. ${pending} estimate(s) are pending approval.`;
+      const pending = estimates.filter((e: Estimate) => e.status !== 'Approved').length;
+      const total = estimates.reduce((sum: number, e: Estimate) => sum + e.valueRaw, 0);
+      return `There are ${estimates.length} open estimates with a combined value of $${(total / 1000).toFixed(0)}K. ${pending} estimate(s) are pending approval.`;
     }
     if (q.includes('budget')) {
-      const over = this.projects.filter(p => p.budgetPct >= 90).map(p => p.name);
+      const over = projects.filter((p: Project) => p.budgetPct >= 90).map((p: Project) => p.name);
       return over.length
         ? `${over.length} project(s) are near or over budget: ${over.join(', ')}. Consider reviewing scope or requesting budget adjustments.`
         : 'All projects are within healthy budget ranges.';
