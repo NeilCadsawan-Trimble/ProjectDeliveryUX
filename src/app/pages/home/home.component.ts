@@ -12,6 +12,7 @@ import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modu
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
+import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { ThemeService } from '../../services/theme.service';
 
 type NavSection = 'dashboard' | 'projects' | 'estimates' | 'team' | 'calendar' | 'reports' | 'settings';
@@ -71,9 +72,15 @@ interface ActivityItem {
   iconColor: string;
 }
 
+interface AiMessage {
+  id: number;
+  role: 'user' | 'assistant';
+  text: string;
+}
+
 @Component({
   selector: 'app-home',
-  imports: [ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusButtonComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusButtonComponent, ModusUtilityPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onMouseMove($event)',
@@ -90,7 +97,22 @@ interface ActivityItem {
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
       >
-        <div slot="end" class="flex items-center pr-1">
+        <div slot="end" class="flex items-center pr-1 gap-0.5">
+          <!-- AI Assistant toggle -->
+          <div
+            class="{{ aiNavButtonClass() }}"
+            (click)="toggleAiPanel()"
+            [title]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
+            role="button"
+            [attr.aria-label]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
+            [attr.aria-expanded]="aiPanelOpen()"
+          >
+            <i class="modus-icons text-xl">chat</i>
+            @if (aiMessages().length > 0 && !aiPanelOpen()) {
+              <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary border-2 border-background"></div>
+            }
+          </div>
+          <!-- Dark mode toggle -->
           <div
             class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
             (click)="toggleDarkMode()"
@@ -559,7 +581,160 @@ interface ActivityItem {
           </div>
         </div>
       </div>
+
+      <!-- ─── AI Assistant Floating Button ─── -->
+      <div class="fixed bottom-6 right-6 z-[1001]">
+        <div
+          class="w-13 h-13 rounded-full bg-primary flex items-center justify-center cursor-pointer shadow-lg transition-all duration-200 hover:shadow-xl"
+          [class.rotate-45]="aiPanelOpen()"
+          (click)="toggleAiPanel()"
+          [title]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
+          role="button"
+          [attr.aria-label]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
+          [attr.aria-expanded]="aiPanelOpen()"
+        >
+          <i class="modus-icons text-xl text-primary-foreground">{{ aiPanelOpen() ? 'close' : 'chat' }}</i>
+        </div>
+      </div>
+
     </div>
+
+    <!-- ─── AI Assistant Panel (sibling to main container, fixed overlay) ─── -->
+    <modus-utility-panel
+      [expanded]="aiPanelOpen()"
+      className="fixed-utility-panel"
+      position="right"
+      panelWidth="380px"
+      ariaLabel="Trimble AI Assistant"
+    >
+      <!-- Header -->
+      <div slot="header" class="flex items-center justify-between w-full">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+            <i class="modus-icons text-sm text-primary-foreground">chat</i>
+          </div>
+          <div>
+            <div class="text-base font-semibold text-foreground">Trimble AI</div>
+            <div class="text-xs text-foreground-60">Project Assistant</div>
+          </div>
+        </div>
+        <div
+          class="w-7 h-7 flex items-center justify-center rounded cursor-pointer hover:bg-muted transition-colors duration-150"
+          (click)="toggleAiPanel()"
+          role="button"
+          aria-label="Close AI Assistant"
+        >
+          <i class="modus-icons text-base text-foreground-60">close</i>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div slot="body" class="flex flex-col h-full min-h-0">
+
+        <!-- Welcome / empty state -->
+        @if (aiMessages().length === 0 && !aiThinking()) {
+          <div class="flex flex-col items-center gap-4 px-4 pt-6 pb-2">
+            <div class="w-14 h-14 rounded-full bg-primary-20 flex items-center justify-center">
+              <i class="modus-icons text-3xl text-primary">chat</i>
+            </div>
+            <div class="text-center">
+              <div class="text-base font-semibold text-foreground">How can I help?</div>
+              <div class="text-sm text-foreground-60 mt-1">Ask me about projects, estimates, budgets, or team status.</div>
+            </div>
+            <!-- Suggestion chips -->
+            <div class="flex flex-col gap-2 w-full mt-2">
+              @for (suggestion of aiSuggestions; track suggestion) {
+                <div
+                  class="px-4 py-2.5 rounded-lg border-default bg-card text-sm text-foreground cursor-pointer hover:bg-muted transition-colors duration-150 text-left"
+                  (click)="selectAiSuggestion(suggestion)"
+                  role="button"
+                  [attr.aria-label]="'Ask: ' + suggestion"
+                >
+                  <div class="flex items-center gap-2">
+                    <i class="modus-icons text-sm text-primary flex-shrink-0">chevron_right</i>
+                    <div>{{ suggestion }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Message list -->
+        @if (aiMessages().length > 0) {
+          <div class="flex flex-col gap-3 px-4 py-4 overflow-y-auto flex-1">
+            @for (msg of aiMessages(); track msg.id) {
+              @if (msg.role === 'user') {
+                <div class="flex justify-end">
+                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-sm bg-primary text-primary-foreground text-sm leading-relaxed">
+                    {{ msg.text }}
+                  </div>
+                </div>
+              } @else {
+                <div class="flex items-start gap-2">
+                  <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <i class="modus-icons text-xs text-primary">chat</i>
+                  </div>
+                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed">
+                    {{ msg.text }}
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- Thinking indicator -->
+            @if (aiThinking()) {
+              <div class="flex items-start gap-2">
+                <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <i class="modus-icons text-xs text-primary">chat</i>
+                </div>
+                <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-card border-default">
+                  <div class="flex items-center gap-1">
+                    <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 0ms"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 150ms"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 300ms"></div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+      </div>
+
+      <!-- Footer -->
+      <div slot="footer" class="w-full">
+        <div class="flex items-end gap-2 p-2">
+          <textarea
+            class="flex-1 min-h-[40px] max-h-[120px] px-3 py-2 text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40"
+            placeholder="Ask about your projects..."
+            rows="1"
+            [value]="aiInputText()"
+            (input)="aiInputText.set($any($event.target).value)"
+            (keydown)="handleAiKeydown($event)"
+            aria-label="Message input"
+          ></textarea>
+          <div
+            class="w-9 h-9 flex-shrink-0 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-150"
+            [class.bg-primary]="aiInputText().trim().length > 0 && !aiThinking()"
+            [class.bg-muted]="!aiInputText().trim().length || aiThinking()"
+            (click)="sendAiMessage()"
+            role="button"
+            aria-label="Send message"
+          >
+            <i
+              class="modus-icons text-base"
+              [class.text-primary-foreground]="aiInputText().trim().length > 0 && !aiThinking()"
+              [class.text-foreground-40]="!aiInputText().trim().length || aiThinking()"
+            >send</i>
+          </div>
+        </div>
+        <div class="text-center pb-2">
+          <div class="text-xs text-foreground-40">Trimble AI may make mistakes. Verify important info.</div>
+        </div>
+      </div>
+
+    </modus-utility-panel>
   `,
 })
 export class HomeComponent implements AfterViewInit {
@@ -573,6 +748,105 @@ export class HomeComponent implements AfterViewInit {
   readonly searchInputOpen = signal(false);
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
   readonly sidebarCollapsed = signal(false);
+
+  // ── AI Assistant ──
+  readonly aiPanelOpen = signal(false);
+  readonly aiMessages = signal<AiMessage[]>([]);
+  readonly aiInputText = signal('');
+  readonly aiThinking = signal(false);
+  private aiMessageCounter = 0;
+
+  readonly aiSuggestions: string[] = [
+    'Summarize project status',
+    'Which projects are at risk?',
+    'Show overdue estimates',
+    'What needs attention today?',
+  ];
+
+  toggleAiPanel(): void {
+    this.aiPanelOpen.update(v => !v);
+  }
+
+  selectAiSuggestion(suggestion: string): void {
+    this.aiInputText.set(suggestion);
+    this.sendAiMessage();
+  }
+
+  handleAiKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendAiMessage();
+    }
+  }
+
+  sendAiMessage(): void {
+    const text = this.aiInputText().trim();
+    if (!text || this.aiThinking()) return;
+
+    this.aiMessages.update(msgs => [
+      ...msgs,
+      { id: ++this.aiMessageCounter, role: 'user', text },
+    ]);
+    this.aiInputText.set('');
+    this.aiThinking.set(true);
+
+    setTimeout(() => {
+      const response = this.generateAiResponse(text);
+      this.aiMessages.update(msgs => [
+        ...msgs,
+        { id: ++this.aiMessageCounter, role: 'assistant', text: response },
+      ]);
+      this.aiThinking.set(false);
+    }, 900);
+  }
+
+  private generateAiResponse(input: string): string {
+    const q = input.toLowerCase();
+    if (q.includes('at risk') || q.includes('risk')) {
+      const atRisk = this.projects.filter(p => p.status === 'At Risk').map(p => p.name);
+      return atRisk.length
+        ? `${atRisk.length} project(s) are currently at risk: ${atRisk.join(', ')}. I recommend reviewing their timelines and resource allocations.`
+        : 'Great news — no projects are currently marked as at risk.';
+    }
+    if (q.includes('overdue')) {
+      const overdue = this.projects.filter(p => p.status === 'Overdue').map(p => p.name);
+      const overdueEst = this.estimates.filter(e => e.daysLeft < 0).map(e => e.id);
+      const parts: string[] = [];
+      if (overdue.length) parts.push(`${overdue.length} overdue project(s): ${overdue.join(', ')}`);
+      if (overdueEst.length) parts.push(`${overdueEst.length} overdue estimate(s): ${overdueEst.join(', ')}`);
+      return parts.length ? parts.join('. ') + '.' : 'Nothing is overdue right now.';
+    }
+    if (q.includes('project') && (q.includes('status') || q.includes('summar'))) {
+      const counts: Record<string, number> = {};
+      this.projects.forEach(p => { counts[p.status] = (counts[p.status] ?? 0) + 1; });
+      return 'Project summary: ' + Object.entries(counts).map(([s, c]) => `${c} ${s}`).join(', ') + `. Total: ${this.projects.length} projects.`;
+    }
+    if (q.includes('estimate')) {
+      const pending = this.estimates.filter(e => e.status !== 'Approved').length;
+      const total = this.estimates.reduce((sum, e) => sum + e.valueRaw, 0);
+      return `There are ${this.estimates.length} open estimates with a combined value of $${(total / 1000).toFixed(0)}K. ${pending} estimate(s) are pending approval.`;
+    }
+    if (q.includes('budget')) {
+      const over = this.projects.filter(p => p.budgetPct >= 90).map(p => p.name);
+      return over.length
+        ? `${over.length} project(s) are near or over budget: ${over.join(', ')}. Consider reviewing scope or requesting budget adjustments.`
+        : 'All projects are within healthy budget ranges.';
+    }
+    if (q.includes('attention') || q.includes('today')) {
+      return `You have ${this.attentionItems.length} items that need attention, including overdue approvals and pending estimates. Check the "Needs Attention" widget for details.`;
+    }
+    if (q.includes('hello') || q.includes('hi') || q.includes('hey')) {
+      return 'Hello! I\'m your Trimble AI Assistant. I can help you understand your project status, estimates, budgets, and more. What would you like to know?';
+    }
+    return `I can help with project status, estimates, budgets, and team insights. Try asking "Which projects are at risk?" or "Summarize project status".`;
+  }
+
+  aiNavButtonClass(): string {
+    const base = 'relative flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer transition-colors duration-150';
+    return this.aiPanelOpen()
+      ? `${base} bg-primary text-primary-foreground`
+      : `${base} text-foreground hover:bg-muted`;
+  }
 
   toggleDarkMode(): void {
     this.themeService.toggleMode();
