@@ -13,19 +13,16 @@ import { ModusProgressComponent } from '../../components/modus-progress.componen
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
+import { ModusSideNavigationComponent } from '../../components/modus-side-navigation.component';
+import { ModusMenuComponent } from '../../components/modus-menu.component';
+import { ModusMenuItemComponent } from '../../components/modus-menu-item.component';
+import { ModusIconComponent } from '../../components/modus-icon.component';
 import { ThemeService } from '../../services/theme.service';
 
 type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-type WidgetId = 'projectStatus' | 'projectCards' | 'openEstimates' | 'recentActivity' | 'needsAttention';
-
-const PROJECTS_WIDGETS: readonly WidgetId[] = ['projectCards', 'openEstimates', 'recentActivity', 'needsAttention'];
-type ResizeHandle = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
-
-interface WidgetState { top: number; left: number; width: number; height: number; }
-type DragState = { widgetId: WidgetId; startX: number; startY: number; startLeft: number; startTop: number } | null;
-type ResizeState = { widgetId: WidgetId; handle: ResizeHandle; startX: number; startY: number; startLeft: number; startTop: number; startWidth: number; startHeight: number } | null;
+type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention';
 
 interface Project {
   id: number;
@@ -73,11 +70,11 @@ interface AiMessage {
 
 @Component({
   selector: 'app-home',
-  imports: [ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusButtonComponent, ModusUtilityPanelComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusButtonComponent, ModusUtilityPanelComponent, ModusSideNavigationComponent, ModusMenuComponent, ModusMenuItemComponent, ModusIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    '(document:mousemove)': 'onMouseMove($event)',
-    '(document:mouseup)': 'onMouseUp()',
+    '(document:mousemove)': 'onDocumentMouseMove($event)',
+    '(document:mouseup)': 'onDocumentMouseUp()',
   },
   template: `
     <div class="h-screen flex flex-col bg-background text-foreground overflow-hidden">
@@ -85,7 +82,7 @@ interface AiMessage {
       <!-- Navbar -->
       <modus-navbar
         [userCard]="userCard"
-        [visibility]="{ user: true, notifications: true, apps: false, help: true, search: true, searchInput: true, mainMenu: false }"
+        [visibility]="{ user: true, notifications: true, apps: false, help: true, search: true, searchInput: true, mainMenu: true }"
         [searchInputOpen]="searchInputOpen()"
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
@@ -117,10 +114,121 @@ interface AiMessage {
       </modus-navbar>
 
       <!-- Body -->
-      <div class="flex flex-1 overflow-hidden">
+      <div #navBody class="flex flex-1 overflow-hidden">
+
+        <!-- Side Navigation -->
+        <modus-side-navigation
+          [expanded]="navExpanded()"
+          [collapseOnClickOutside]="true"
+          maxWidth="256px"
+          mode="push"
+          targetContent="#main-content"
+          class="h-full"
+          (expandedChange)="navExpanded.set($event)"
+        >
+          <modus-menu size="lg">
+            <modus-menu-item label="Home" value="home" [selected]="activeNav() === 'home'" (itemSelect)="setActiveNav('home')">
+              <modus-icon slot="start-icon" name="home" [decorative]="true"></modus-icon>
+            </modus-menu-item>
+            <modus-menu-item label="Projects" value="projects" [selected]="activeNav() === 'projects'" (itemSelect)="setActiveNav('projects')">
+              <modus-icon slot="start-icon" name="briefcase" [decorative]="true"></modus-icon>
+            </modus-menu-item>
+            <modus-menu-item label="Financials" value="financials" [selected]="activeNav() === 'financials'" (itemSelect)="setActiveNav('financials')">
+              <modus-icon slot="start-icon" name="bar_graph" [decorative]="true"></modus-icon>
+            </modus-menu-item>
+          </modus-menu>
+        </modus-side-navigation>
 
         <!-- Main content -->
-        <div class="flex-1 overflow-auto bg-background">
+        <div id="main-content" class="flex-1 overflow-auto bg-background">
+
+          @switch (activeNav()) {
+            @case ('home') {
+              <div class="p-6 max-w-screen-xl mx-auto">
+                <div class="mb-8">
+                  <div class="text-3xl font-bold text-foreground">Welcome back, Alex</div>
+                  <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" (click)="setActiveNav('projects')">
+                    <div class="w-12 h-12 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
+                      <i class="modus-icons text-2xl text-primary">briefcase</i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-2xl font-bold text-foreground">{{ totalProjects() }}</div>
+                      <div class="text-sm text-foreground-60">Active Projects</div>
+                    </div>
+                    <i class="modus-icons text-lg text-foreground-40">chevron_right</i>
+                  </div>
+                  <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" (click)="setActiveNav('projects')">
+                    <div class="w-12 h-12 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
+                      <i class="modus-icons text-2xl text-warning">description</i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-2xl font-bold text-foreground">{{ openEstimatesCount() }}</div>
+                      <div class="text-sm text-foreground-60">Open Estimates</div>
+                    </div>
+                    <i class="modus-icons text-lg text-foreground-40">chevron_right</i>
+                  </div>
+                  <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" (click)="setActiveNav('financials')">
+                    <div class="w-12 h-12 rounded-xl bg-success-20 flex items-center justify-center flex-shrink-0">
+                      <i class="modus-icons text-2xl text-success">bar_graph</i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-2xl font-bold text-foreground">{{ totalEstimateValue() }}</div>
+                      <div class="text-sm text-foreground-60">Estimate Pipeline</div>
+                    </div>
+                    <i class="modus-icons text-lg text-foreground-40">chevron_right</i>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div class="bg-card border-default rounded-lg overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-bottom-default">
+                      <div class="flex items-center gap-2">
+                        <i class="modus-icons text-lg text-foreground-60">warning</i>
+                        <div class="text-base font-semibold text-foreground">Needs Attention</div>
+                      </div>
+                      <div class="text-xs text-foreground-40">{{ attentionItems.length }} items</div>
+                    </div>
+                    @for (item of attentionItems; track item.id) {
+                      <div class="flex items-start gap-3 px-5 py-3 border-bottom-default last:border-b-0">
+                        <div class="w-2 h-2 rounded-full flex-shrink-0 mt-2 {{ item.dotClass }}"></div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm font-medium text-foreground">{{ item.title }}</div>
+                          <div class="text-xs text-foreground-60 mt-0.5">{{ item.subtitle }}</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                  <div class="bg-card border-default rounded-lg overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-bottom-default">
+                      <div class="flex items-center gap-2">
+                        <i class="modus-icons text-lg text-foreground-60">history</i>
+                        <div class="text-base font-semibold text-foreground">Recent Activity</div>
+                      </div>
+                    </div>
+                    @for (activity of activities.slice(0, 5); track activity.id) {
+                      <div class="flex items-start gap-3 px-5 py-3 border-bottom-default last:border-b-0">
+                        <div class="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <i class="modus-icons text-sm {{ activity.iconColor }}">{{ activity.icon }}</i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm text-foreground">
+                            <div class="w-6 h-6 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
+                              {{ activity.actorInitials }}
+                            </div>
+                            {{ activity.text }}
+                          </div>
+                        </div>
+                        <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }<!-- end @case('home') -->
+
+            @case ('projects') {
 
           <!-- ─── Projects dashboard ─── -->
           <div class="p-6 max-w-screen-xl mx-auto">
@@ -193,314 +301,374 @@ interface AiMessage {
 
             </div>
 
-            <!-- Widget Canvas: Project Cards + Open Estimates + Recent Activity + Needs Attention (draggable) -->
-            <div #widgetCanvas class="relative mb-6" [style.height.px]="canvasHeight()">
+            <!-- Widget area: 16-column grid layout -->
+            <div
+              class="grid gap-4 mb-6"
+              style="grid-template-columns: repeat(16, minmax(0, 1fr))"
+              #widgetGrid
+            >
 
-              <!-- ─── Project Cards Widget ─── -->
+              @for (widgetId of widgetOrder(); track widgetId) {
+
+              <!-- Widget wrapper — column explicit, row from auto-flow (no overlaps) -->
               <div
-                #projectCardsEl
-                class="{{ widgetWrapperClass('projectCards') }}"
-                [style.top.px]="projectCardsWidget().top"
-                [style.left.px]="displayLeft('projectCards')"
-                [style.width.px]="displayWidth('projectCards')"
+                class="relative"
+                [attr.data-widget-id]="widgetId"
+                [style.grid-column]="widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
               >
-                <!-- Widget card -->
-                <div class="bg-card border-default rounded-lg overflow-hidden">
+                <!-- Widget card (dims while being moved) -->
+                <div class="relative" [class.opacity-30]="moveTargetId() === widgetId">
 
-                  <!-- Draggable header -->
-                  <div class="{{ headerDragClass('projectCards') }}" (mousedown)="startDrag('projectCards', $event)">
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-sm text-foreground-40">drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60">apps</i>
-                      <div class="text-lg font-semibold text-foreground">Projects</div>
-                      <div class="text-xs text-foreground-40">{{ totalProjects() }} projects</div>
+                @if (widgetId === 'projects') {
+              <!-- ─── Projects Widget ─── -->
+              <div class="bg-card border-default rounded-lg overflow-hidden">
+                <!-- Draggable header -->
+                <div
+                  class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
+                  (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                >
+                  <div class="flex items-center gap-2">
+                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                    <i class="modus-icons text-lg text-foreground-60">apps</i>
+                    <div class="text-lg font-semibold text-foreground">Projects</div>
+                    <div class="text-xs text-foreground-40">{{ totalProjects() }} projects</div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-20">
+                      <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+                      <div class="text-xs font-medium text-success">{{ onTrackCount() }} On Track</div>
                     </div>
-                    <!-- Status summary chips -->
-                    <div class="flex items-center gap-2">
-                      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-20">
-                        <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
-                        <div class="text-xs font-medium text-success">{{ onTrackCount() }} On Track</div>
-                      </div>
-                      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-20">
-                        <div class="w-1.5 h-1.5 rounded-full bg-warning"></div>
-                        <div class="text-xs font-medium text-warning">{{ atRiskCount() }} At Risk</div>
-                      </div>
-                      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive-20">
-                        <div class="w-1.5 h-1.5 rounded-full bg-destructive"></div>
-                        <div class="text-xs font-medium text-destructive">{{ overdueCount() }} Overdue</div>
-                      </div>
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-20">
+                      <div class="w-1.5 h-1.5 rounded-full bg-warning"></div>
+                      <div class="text-xs font-medium text-warning">{{ atRiskCount() }} At Risk</div>
+                    </div>
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive-20">
+                      <div class="w-1.5 h-1.5 rounded-full bg-destructive"></div>
+                      <div class="text-xs font-medium text-destructive">{{ overdueCount() }} Overdue</div>
                     </div>
                   </div>
-
-                  <!-- Card grid -->
-                  <div class="p-4">
-                    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
-                      @for (project of projects(); track project.id) {
-                        <div class="bg-background border-default rounded-lg overflow-hidden flex flex-col">
-                          <!-- Status bar at top -->
-                          <div class="h-1 w-full flex-shrink-0"
-                            [class.bg-success]="project.status === 'On Track'"
-                            [class.bg-warning]="project.status === 'At Risk'"
-                            [class.bg-destructive]="project.status === 'Overdue'"
-                            [class.bg-muted]="project.status === 'Planning'"
-                          ></div>
-                          <div class="p-4 flex flex-col gap-3 flex-1">
-                            <!-- Name + status badge -->
-                            <div class="flex items-start justify-between gap-2">
-                              <div class="text-sm font-semibold text-foreground leading-tight">{{ project.name }}</div>
-                              <modus-badge [color]="statusBadgeColor(project.status)" variant="filled" size="sm">
-                                {{ project.status }}
-                              </modus-badge>
+                </div>
+                <!-- Card grid -->
+                <div class="p-4">
+                  <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+                    @for (project of projects(); track project.id) {
+                      <div class="bg-background border-default rounded-lg overflow-hidden flex flex-col">
+                        <div class="h-1 w-full flex-shrink-0"
+                          [class.bg-success]="project.status === 'On Track'"
+                          [class.bg-warning]="project.status === 'At Risk'"
+                          [class.bg-destructive]="project.status === 'Overdue'"
+                          [class.bg-muted]="project.status === 'Planning'"
+                        ></div>
+                        <div class="p-4 flex flex-col gap-3 flex-1">
+                          <div class="flex items-start justify-between gap-2">
+                            <div class="text-sm font-semibold text-foreground leading-tight">{{ project.name }}</div>
+                            <modus-badge [color]="statusBadgeColor(project.status)" variant="filled" size="sm">
+                              {{ project.status }}
+                            </modus-badge>
+                          </div>
+                          <div class="text-xs text-foreground-60">{{ project.client }}</div>
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                              <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
+                                {{ project.ownerInitials }}
+                              </div>
+                              <div class="text-xs text-foreground-60 truncate max-w-[80px]">{{ project.owner }}</div>
                             </div>
-                            <!-- Client -->
-                            <div class="text-xs text-foreground-60">{{ project.client }}</div>
-                            <!-- Owner + due date row -->
-                            <div class="flex items-center justify-between">
-                              <div class="flex items-center gap-1.5">
-                                <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
-                                  {{ project.ownerInitials }}
-                                </div>
-                                <div class="text-xs text-foreground-60 truncate max-w-[80px]">{{ project.owner }}</div>
-                              </div>
-                              <div class="flex items-center gap-1 text-xs text-foreground-60">
-                                <i class="modus-icons text-sm">calendar</i>
-                                <div>{{ project.dueDate }}</div>
-                              </div>
-                            </div>
-                            <!-- Schedule progress -->
-                            <div class="flex flex-col gap-1">
-                              <div class="flex items-center justify-between">
-                                <div class="text-2xs text-foreground-40 uppercase tracking-wide">Schedule</div>
-                                <div class="text-2xs text-foreground-60 font-medium">{{ project.progress }}%</div>
-                              </div>
-                              <modus-progress [value]="project.progress" [max]="100" [className]="progressClass(project.status)" />
-                            </div>
-                            <!-- Budget -->
-                            <div class="flex flex-col gap-1">
-                              <div class="flex items-center justify-between">
-                                <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget</div>
-                                <div class="text-2xs flex-shrink-0">
-                                  <div [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</div>
-                                </div>
-                              </div>
-                              <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
-                              <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
+                            <div class="flex items-center gap-1 text-xs text-foreground-60">
+                              <i class="modus-icons text-sm">calendar</i>
+                              <div>{{ project.dueDate }}</div>
                             </div>
                           </div>
+                          <div class="flex flex-col gap-1">
+                            <div class="flex items-center justify-between">
+                              <div class="text-2xs text-foreground-40 uppercase tracking-wide">Schedule</div>
+                              <div class="text-2xs text-foreground-60 font-medium">{{ project.progress }}%</div>
+                            </div>
+                            <modus-progress [value]="project.progress" [max]="100" [className]="progressClass(project.status)" />
+                          </div>
+                          <div class="flex flex-col gap-1">
+                            <div class="flex items-center justify-between">
+                              <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget</div>
+                              <div class="text-2xs flex-shrink-0">
+                                <div [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</div>
+                              </div>
+                            </div>
+                            <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
+                            <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
+                          </div>
                         </div>
-                      }
-                    </div>
+                      </div>
+                    }
                   </div>
-
                 </div>
               </div>
 
+              } @else if (widgetId === 'openEstimates') {
               <!-- ─── Open Estimates Widget ─── -->
-              <div
-                class="{{ widgetWrapperClass('openEstimates') }}"
-                [style.top.px]="openEstimatesWidget().top"
-                [style.left.px]="displayLeft('openEstimates')"
-                [style.width.px]="displayWidth('openEstimates')"
-                [style.height.px]="openEstimatesWidget().height"
-              >
-                <!-- Resize handles: edges -->
-                <div class="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-10" (mousedown)="startResize('openEstimates', 'n', $event)"></div>
-                <div class="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize z-10" (mousedown)="startResize('openEstimates', 's', $event)"></div>
-                <div class="absolute top-3 bottom-3 right-0 w-1.5 cursor-ew-resize z-10" (mousedown)="startResize('openEstimates', 'e', $event)"></div>
-                <div class="absolute top-3 bottom-3 left-0 w-1.5 cursor-ew-resize z-10" (mousedown)="startResize('openEstimates', 'w', $event)"></div>
-                <!-- Resize handles: corners -->
-                <div class="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-20" (mousedown)="startResize('openEstimates', 'nw', $event)"></div>
-                <div class="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-20" (mousedown)="startResize('openEstimates', 'ne', $event)"></div>
-                <div class="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-20" (mousedown)="startResize('openEstimates', 'sw', $event)"></div>
-                <!-- SE corner: visible resize indicator -->
-                <div class="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-20" (mousedown)="startResize('openEstimates', 'se', $event)">
-                  <div class="pointer-events-none absolute bottom-1 right-1">
-                    <div class="absolute bottom-0 right-0 w-2.5 h-0.5 rounded-full bg-foreground-40"></div>
-                    <div class="absolute bottom-0 right-0 w-0.5 h-2.5 rounded-full bg-foreground-40"></div>
+              <div class="relative bg-card border-default rounded-lg overflow-hidden" #estimatesContainer>
+                <!-- Draggable header -->
+                <div
+                  class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
+                  (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                >
+                  <div class="flex items-center gap-2">
+                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                    <i class="modus-icons text-lg text-foreground-60">description</i>
+                    <div class="text-lg font-semibold text-foreground">Open Estimates</div>
+                    <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
                   </div>
+                  <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">
+                    New Estimate
+                  </modus-button>
                 </div>
-
-                <!-- Widget card -->
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
-
-                  <!-- Draggable header -->
-                  <div class="{{ headerDragClass('openEstimates') }}" (mousedown)="startDrag('openEstimates', $event)">
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-sm text-foreground-40">drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60">description</i>
-                      <div class="text-lg font-semibold text-foreground">Open Estimates</div>
-                      <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
-                    </div>
-                    <div (mousedown)="$event.stopPropagation()">
-                      <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">
-                        New Estimate
-                      </modus-button>
-                    </div>
-                  </div>
-
-                  <!-- Scrollable table content -->
-                  <div class="overflow-y-auto flex-1">
-                    <!-- Estimates table header -->
-                    <div class="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr] gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-                      <div>ID</div>
-                      <div>Project / Client</div>
-                      <div>Type</div>
-                      <div>Value</div>
-                      <div>Status</div>
-                      <div>Requested By</div>
-                      <div>Due Date</div>
-                    </div>
-
-                    @for (estimate of estimates(); track estimate.id) {
-                      <div class="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr] gap-3 px-6 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150">
-                        <div class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
-                        <div>
-                          <div class="text-sm font-medium text-foreground">{{ estimate.project }}</div>
-                          <div class="text-xs text-foreground-60 mt-0.5">{{ estimate.client }}</div>
-                        </div>
-                        <div>
-                          <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</div>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
-                        <div>
-                          <modus-badge [color]="estimateBadgeColor(estimate.status)" variant="outlined" size="sm">
-                            {{ estimate.status }}
-                          </modus-badge>
-                        </div>
+                <!-- Table header -->
+                <div
+                  class="grid gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide"
+                  [class]="estimatesNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr]' : 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr]'"
+                >
+                  <div>ID</div>
+                  <div>Project / Client</div>
+                  <div>Type</div>
+                  <div>Value</div>
+                  <div>Status</div>
+                  @if (!estimatesNarrow()) {
+                    <div>Requested By</div>
+                  }
+                  <div>Due Date</div>
+                </div>
+                <!-- Table rows -->
+                <div class="overflow-y-auto" [style.max-height.px]="estimatesHeight()">
+                  @for (estimate of estimates(); track estimate.id) {
+                    <div
+                      class="grid gap-3 px-6 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150"
+                      [class]="estimatesNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr]' : 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr]'"
+                    >
+                      <div class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
+                      <div>
+                        <div class="text-sm font-medium text-foreground">{{ estimate.project }}</div>
+                        <div class="text-xs text-foreground-60 mt-0.5">{{ estimate.client }}</div>
+                      </div>
+                      <div>
+                        <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</div>
+                      </div>
+                      <div class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
+                      <div>
+                        <modus-badge [color]="estimateBadgeColor(estimate.status)" variant="outlined" size="sm">
+                          {{ estimate.status }}
+                        </modus-badge>
+                      </div>
+                      @if (!estimatesNarrow()) {
                         <div class="flex items-center gap-2">
                           <div class="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-xs font-semibold flex-shrink-0">
                             {{ estimate.requestedByInitials }}
                           </div>
                           <div class="text-xs text-foreground-80 truncate">{{ estimate.requestedBy }}</div>
                         </div>
-                        <div>
-                          <div class="text-sm text-foreground-80">{{ estimate.dueDate }}</div>
-                          <div class="text-xs mt-0.5" [class]="dueDateClass(estimate.daysLeft)">
-                            @if (estimate.daysLeft < 0) {
-                              {{ -estimate.daysLeft }}d overdue
-                            } @else if (estimate.daysLeft === 0) {
-                              Due today
-                            } @else {
-                              {{ estimate.daysLeft }}d left
-                            }
-                          </div>
+                      }
+                      <div>
+                        <div class="text-sm text-foreground-80">{{ estimate.dueDate }}</div>
+                        <div class="text-xs mt-0.5" [class]="dueDateClass(estimate.daysLeft)">
+                          @if (estimate.daysLeft < 0) {
+                            {{ -estimate.daysLeft }}d overdue
+                          } @else if (estimate.daysLeft === 0) {
+                            Due today
+                          } @else {
+                            {{ estimate.daysLeft }}d left
+                          }
                         </div>
                       </div>
-                    }
-
+                    </div>
+                  }
+                </div>
+                <!-- Corner resize handle (width + height) -->
+                <div
+                  class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                  (mousedown)="startWidgetResize('openEstimates', 'both', $event)"
+                  title="Drag to resize"
+                >
+                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
                   </div>
-
                 </div>
               </div>
 
+              } @else if (widgetId === 'recentActivity') {
               <!-- ─── Recent Activity Widget ─── -->
-              <div
-                class="{{ widgetWrapperClass('recentActivity') }}"
-                [style.top.px]="recentActivityWidget().top"
-                [style.left.px]="displayLeft('recentActivity')"
-                [style.width.px]="displayWidth('recentActivity')"
-                [style.height.px]="recentActivityWidget().height"
-              >
-                <!-- Resize handles: edges -->
-                <div class="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-10" (mousedown)="startResize('recentActivity', 'n', $event)"></div>
-                <div class="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize z-10" (mousedown)="startResize('recentActivity', 's', $event)"></div>
-                <div class="absolute top-3 bottom-3 right-0 w-1.5 cursor-ew-resize z-10" (mousedown)="startResize('recentActivity', 'e', $event)"></div>
-                <div class="absolute top-3 bottom-3 left-0 w-1.5 cursor-ew-resize z-10" (mousedown)="startResize('recentActivity', 'w', $event)"></div>
-                <!-- Resize handles: corners -->
-                <div class="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-20" (mousedown)="startResize('recentActivity', 'nw', $event)"></div>
-                <div class="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-20" (mousedown)="startResize('recentActivity', 'ne', $event)"></div>
-                <div class="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-20" (mousedown)="startResize('recentActivity', 'sw', $event)"></div>
-                <!-- SE corner: visible resize indicator -->
-                <div class="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-20" (mousedown)="startResize('recentActivity', 'se', $event)">
-                  <div class="pointer-events-none absolute bottom-1 right-1">
-                    <div class="absolute bottom-0 right-0 w-2.5 h-0.5 rounded-full bg-foreground-40"></div>
-                    <div class="absolute bottom-0 right-0 w-0.5 h-2.5 rounded-full bg-foreground-40"></div>
-                  </div>
+              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col">
+                <div
+                  class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
+                  (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                >
+                  <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                  <i class="modus-icons text-lg text-foreground-60">history</i>
+                  <div class="text-lg font-semibold text-foreground">Recent Activity</div>
                 </div>
-                <!-- Widget card -->
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
-                  <!-- Draggable header -->
-                  <div class="{{ headerDragClass('recentActivity') }}" (mousedown)="startDrag('recentActivity', $event)">
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-sm text-foreground-40">drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60">history</i>
-                      <div class="text-lg font-semibold text-foreground">Recent Activity</div>
-                    </div>
-                  </div>
-                  <!-- Scrollable content -->
-                  <div class="overflow-y-auto flex-1">
-                    @for (activity of activities; track activity.id) {
-                      <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
-                        <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <i class="modus-icons text-sm {{ activity.iconColor }}">{{ activity.icon }}</i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-sm text-foreground">
-                            <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
-                              {{ activity.actorInitials }}
-                            </div>
-                            {{ activity.text }}
-                          </div>
-                        </div>
-                        <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
+                <div class="overflow-y-auto" [style.max-height.px]="activityHeight()">
+                  @for (activity of activities; track activity.id) {
+                    <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
+                      <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i class="modus-icons text-sm {{ activity.iconColor }}">{{ activity.icon }}</i>
                       </div>
-                    }
+                      <div class="flex-1 min-w-0">
+                        <div class="text-sm text-foreground">
+                          <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
+                            {{ activity.actorInitials }}
+                          </div>
+                          {{ activity.text }}
+                        </div>
+                      </div>
+                      <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
+                    </div>
+                  }
+                </div>
+                <!-- Corner resize handle (width + height) -->
+                <div
+                  class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                  (mousedown)="startWidgetResize('recentActivity', 'both', $event)"
+                  title="Drag to resize"
+                >
+                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
                   </div>
                 </div>
               </div>
 
+              } @else if (widgetId === 'needsAttention') {
               <!-- ─── Needs Attention Widget ─── -->
-              <div
-                class="{{ widgetWrapperClass('needsAttention') }}"
-                [style.top.px]="needsAttentionWidget().top"
-                [style.left.px]="displayLeft('needsAttention')"
-                [style.width.px]="displayWidth('needsAttention')"
-                [style.height.px]="needsAttentionWidget().height"
-              >
-                <!-- Resize handles: edges -->
-                <div class="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-10" (mousedown)="startResize('needsAttention', 'n', $event)"></div>
-                <div class="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize z-10" (mousedown)="startResize('needsAttention', 's', $event)"></div>
-                <div class="absolute top-3 bottom-3 right-0 w-1.5 cursor-ew-resize z-10" (mousedown)="startResize('needsAttention', 'e', $event)"></div>
-                <div class="absolute top-3 bottom-3 left-0 w-1.5 cursor-ew-resize z-10" (mousedown)="startResize('needsAttention', 'w', $event)"></div>
-                <!-- Resize handles: corners -->
-                <div class="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-20" (mousedown)="startResize('needsAttention', 'nw', $event)"></div>
-                <div class="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-20" (mousedown)="startResize('needsAttention', 'ne', $event)"></div>
-                <div class="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-20" (mousedown)="startResize('needsAttention', 'sw', $event)"></div>
-                <!-- SE corner: visible resize indicator -->
-                <div class="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-20" (mousedown)="startResize('needsAttention', 'se', $event)">
-                  <div class="pointer-events-none absolute bottom-1 right-1">
-                    <div class="absolute bottom-0 right-0 w-2.5 h-0.5 rounded-full bg-foreground-40"></div>
-                    <div class="absolute bottom-0 right-0 w-0.5 h-2.5 rounded-full bg-foreground-40"></div>
-                  </div>
+              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col">
+                <div
+                  class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
+                  (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                >
+                  <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                  <i class="modus-icons text-lg text-warning">warning</i>
+                  <div class="text-lg font-semibold text-foreground">Needs Attention</div>
                 </div>
-                <!-- Widget card -->
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
-                  <!-- Draggable header -->
-                  <div class="{{ headerDragClass('needsAttention') }}" (mousedown)="startDrag('needsAttention', $event)">
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-sm text-foreground-40">drag_indicator</i>
-                      <i class="modus-icons text-lg text-warning">warning</i>
-                      <div class="text-lg font-semibold text-foreground">Needs Attention</div>
-                    </div>
-                  </div>
-                  <!-- Scrollable content -->
-                  <div class="overflow-y-auto flex-1">
-                    @for (item of attentionItems; track item.id) {
-                      <div class="flex items-start gap-3 px-6 py-4 border-bottom-default last:border-b-0">
-                        <div class="w-2 h-2 rounded-full flex-shrink-0 mt-2 {{ item.dotClass }}"></div>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-sm font-medium text-foreground">{{ item.title }}</div>
-                          <div class="text-xs text-foreground-60 mt-0.5">{{ item.subtitle }}</div>
-                        </div>
+                <div class="overflow-y-auto" [style.max-height.px]="attentionHeight()">
+                  @for (item of attentionItems; track item.id) {
+                    <div class="flex items-start gap-3 px-6 py-4 border-bottom-default last:border-b-0">
+                      <div class="w-2 h-2 rounded-full flex-shrink-0 mt-2 {{ item.dotClass }}"></div>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-sm font-medium text-foreground">{{ item.title }}</div>
+                        <div class="text-xs text-foreground-60 mt-0.5">{{ item.subtitle }}</div>
                       </div>
-                    }
+                    </div>
+                  }
+                </div>
+                <!-- Corner resize handle (width + height) -->
+                <div
+                  class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                  (mousedown)="startWidgetResize('needsAttention', 'both', $event)"
+                  title="Drag to resize"
+                >
+                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              } <!-- end @if widgetId -->
+
+                </div><!-- end widget-card opacity wrapper -->
+              </div><!-- end widget wrapper -->
+
+              }<!-- end @for widgetOrder -->
 
             </div>
 
           </div>
+
+            }<!-- end @case('projects') -->
+
+            @case ('financials') {
+              <div class="p-6 max-w-screen-xl mx-auto">
+                <div class="flex items-start justify-between mb-6">
+                  <div>
+                    <div class="text-3xl font-bold text-foreground">Financials</div>
+                    <div class="text-sm text-foreground-60 mt-1">Budget overview and cost tracking</div>
+                  </div>
+                  <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                  <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                      <div class="text-sm font-medium text-foreground-60">Total Budget</div>
+                      <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center">
+                        <i class="modus-icons text-lg text-primary">payment_instant</i>
+                      </div>
+                    </div>
+                    <div class="text-4xl font-bold text-foreground">$3.7M</div>
+                    <div class="text-xs text-foreground-60">Across {{ totalProjects() }} active projects</div>
+                  </div>
+                  <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                      <div class="text-sm font-medium text-foreground-60">Total Spent</div>
+                      <div class="w-9 h-9 rounded-lg bg-warning-20 flex items-center justify-center">
+                        <i class="modus-icons text-lg text-warning">bar_graph_line</i>
+                      </div>
+                    </div>
+                    <div class="text-4xl font-bold text-foreground">$2.1M</div>
+                    <div class="text-xs text-warning font-medium">57% of total budget consumed</div>
+                  </div>
+                  <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                      <div class="text-sm font-medium text-foreground-60">Remaining</div>
+                      <div class="w-9 h-9 rounded-lg bg-success-20 flex items-center justify-center">
+                        <i class="modus-icons text-lg text-success">bar_graph</i>
+                      </div>
+                    </div>
+                    <div class="text-4xl font-bold text-success">$1.6M</div>
+                    <div class="text-xs text-success font-medium">43% remaining budget</div>
+                  </div>
+                </div>
+                <div class="bg-card border-default rounded-lg overflow-hidden">
+                  <div class="px-5 py-4 border-bottom-default">
+                    <div class="text-base font-semibold text-foreground">Budget by Project</div>
+                  </div>
+                  <div class="divide-y divide-[var(--border)]">
+                    @for (p of projects(); track p.id) {
+                      <div class="px-5 py-4 flex items-center gap-4">
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm font-medium text-foreground truncate">{{ p.name }}</div>
+                          <div class="text-xs text-foreground-60 mt-0.5">{{ p.client }}</div>
+                        </div>
+                        <div class="text-sm text-foreground-60 w-28 text-right shrink-0">{{ p.budgetUsed }} / {{ p.budgetTotal }}</div>
+                        <div class="w-32 shrink-0">
+                          <modus-progress [value]="p.budgetPct" [max]="100" size="compact" />
+                        </div>
+                        <div class="text-xs font-medium w-10 text-right shrink-0
+                          {{ p.budgetPct >= 90 ? 'text-destructive' : p.budgetPct >= 75 ? 'text-warning' : 'text-success' }}">
+                          {{ p.budgetPct }}%
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }<!-- end @case('financials') -->
+
+          }<!-- end @switch -->
 
         </div>
       </div>
@@ -657,6 +825,12 @@ export class HomeComponent implements AfterViewInit {
   readonly searchInputOpen = signal(false);
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
+  // ── Side Navigation ──
+  readonly navExpanded = signal(false);
+  readonly activeNav = signal<'home' | 'projects' | 'financials'>('home');
+
+  private readonly navBodyRef = viewChild<ElementRef>('navBody');
+
   // ── AI Assistant ──
   readonly aiPanelOpen = signal(false);
   readonly aiMessages = signal<AiMessage[]>([]);
@@ -767,338 +941,34 @@ export class HomeComponent implements AfterViewInit {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  // ── Widget state (draggable & resizable) ──
-  readonly canvasRef = viewChild<ElementRef>('widgetCanvas');
-  readonly projectCardsRef = viewChild<ElementRef>('projectCardsEl');
-  private readonly canvasWidth = signal(0);
-  private readonly CANVAS_PAD = 16;
-  private readonly GUTTER = 16;
-  private readonly GRID_COLS = 16;
+  // ── Estimates table responsive column ──
+  private readonly estimatesContainerRef = viewChild<ElementRef>('estimatesContainer');
+  readonly estimatesNarrow = signal(false);
 
-  // ── Projects canvas widgets ──
-  readonly projectStatusWidget  = signal<WidgetState>({ top: 16,  left: 16, width: 900, height: 390 });
-  readonly projectCardsWidget   = signal<WidgetState>({ top: 16,  left: 16, width: 900, height: 340 });
-  readonly openEstimatesWidget  = signal<WidgetState>({ top: 16,  left: 16, width: 900, height: 450 });
-  readonly recentActivityWidget = signal<WidgetState>({ top: 482, left: 16, width: 600, height: 300 });
-  readonly needsAttentionWidget = signal<WidgetState>({ top: 482, left: 632, width: 284, height: 300 });
-
-  private readonly dragState = signal<DragState>(null);
-  private readonly resizeState = signal<ResizeState>(null);
-
-  readonly canvasHeight = computed(() => {
-    const all = [
-      this.projectCardsWidget(),
-      this.openEstimatesWidget(),
-      this.recentActivityWidget(),
-      this.needsAttentionWidget(),
-    ];
-    return Math.max(...all.map(w => w.top + w.height)) + this.CANVAS_PAD;
-  });
+  setActiveNav(page: 'home' | 'projects' | 'financials'): void {
+    this.activeNav.set(page);
+    this.navExpanded.set(false);
+  }
 
   ngAfterViewInit(): void {
-    const canvas = this.canvasRef()?.nativeElement as HTMLElement | undefined;
-    if (!canvas) return;
-
-    const w = canvas.offsetWidth;
-    this.canvasWidth.set(w);
-    const pad = this.CANVAS_PAD;
-    const innerW = w - pad * 2;
-    const colW   = innerW / this.GRID_COLS;
-
-    // Set widths for all widgets
-    this.projectCardsWidget.update(s => ({ ...s, width: innerW }));
-    this.openEstimatesWidget.update(s => ({ ...s, width: innerW }));
-    const raWidth = Math.round(10 * colW);
-    const naLeft  = pad + raWidth + this.GUTTER;
-    const naWidth = w - naLeft - pad;
-    this.recentActivityWidget.update(s => ({ ...s, width: raWidth }));
-    this.needsAttentionWidget.update(s => ({ ...s, left: naLeft, width: naWidth }));
-
-    // Measure projectCards immediately, then compact. ResizeObserver keeps it
-    // in sync whenever the grid reflows (window resize, etc.).
-    const pcEl = this.projectCardsRef()?.nativeElement as HTMLElement | undefined;
-    if (pcEl) {
-      const h0 = pcEl.offsetHeight;
-      if (h0 > 0) this.projectCardsWidget.update(s => ({ ...s, height: h0 }));
-      this.compactWidgets();
-
-      const ro = new ResizeObserver(entries => {
-        const h = Math.round(entries[0].contentRect.height);
-        this.projectCardsWidget.update(s => ({ ...s, height: h }));
-        this.compactWidgets();
+    // Wire navbar hamburger → side nav expanded
+    const body = this.navBodyRef()?.nativeElement as HTMLElement | undefined;
+    if (body) {
+      body.addEventListener('mainMenuOpenChange', (event: Event) => {
+        const detail = (event as CustomEvent<boolean>).detail;
+        this.navExpanded.set(detail);
+        const sideNav = body.querySelector('modus-wc-side-navigation') as (HTMLElement & { expanded: boolean }) | null;
+        if (sideNav) sideNav.expanded = detail;
       });
-      ro.observe(pcEl);
-    } else {
-      this.compactWidgets();
     }
-  }
 
-  /**
-   * Gravity pass: sort canvas widgets by their current top, then float each
-   * one up to the highest available Y where it does not overlap any already-
-   * placed widget (checked via X-range intersection).
-   *
-   * Pass `lockedId` to keep one widget pinned at its current position (used
-   * while actively dragging/resizing so only the other widgets react).
-   */
-  private compactWidgetSet(ids: readonly WidgetId[], lockedId?: WidgetId): void {
-    const pad = this.CANVAS_PAD;
-    const gap = this.GUTTER;
-    type Rect = { id: WidgetId; left: number; top: number; width: number; height: number };
-
-    const rects: Rect[] = ids
-      .map(id => ({ id, ...this.getWidgetSignal(id)() }))
-      .sort((a, b) => a.top - b.top || a.left - b.left);
-
-    const placed: Rect[] = [];
-    for (const rect of rects) {
-      if (rect.id === lockedId) {
-        placed.push(rect);
-        continue;
-      }
-      let bestTop = pad;
-      for (const other of placed) {
-        const xOverlap = rect.left < other.left + other.width &&
-                         rect.left + rect.width > other.left;
-        if (xOverlap) bestTop = Math.max(bestTop, other.top + other.height + gap);
-      }
-      rect.top = bestTop;
-      placed.push(rect);
-      this.getWidgetSignal(rect.id).update(s => ({ ...s, top: rect.top }));
-    }
-  }
-
-  private compactWidgets(lockedId?: WidgetId): void {
-    this.compactWidgetSet(PROJECTS_WIDGETS, lockedId);
-  }
-
-  private getWidgetSignal(id: WidgetId) {
-    switch (id) {
-      case 'projectStatus':  return this.projectStatusWidget;
-      case 'projectCards':   return this.projectCardsWidget;
-      case 'openEstimates':  return this.openEstimatesWidget;
-      case 'recentActivity': return this.recentActivityWidget;
-      case 'needsAttention': return this.needsAttentionWidget;
-    }
-  }
-
-  /** Snaps a canvas x-coordinate to the nearest column boundary of the 16-column grid. */
-
-  private snapColX(x: number): number {
-    const cw = this.canvasWidth();
-    if (cw <= 0) return x;
-    const innerW = cw - this.CANVAS_PAD * 2;
-    const colW = innerW / this.GRID_COLS;
-    const rel = x - this.CANVAS_PAD;
-    const snapped = Math.round(rel / colW) * colW;
-    return this.CANVAS_PAD + Math.max(0, Math.min(innerW, snapped));
-  }
-
-  private getOtherWidgets(id: WidgetId): WidgetState[] {
-    return (PROJECTS_WIDGETS as WidgetId[])
-      .filter(wid => wid !== id)
-      .map(wid => this.getWidgetSignal(wid)());
-  }
-
-  private resolveDragOverlap(
-    left: number, top: number,
-    width: number, height: number,
-    other: WidgetState
-  ): { left: number; top: number } {
-    const gap = this.GUTTER;
-    const oL = other.left - gap;
-    const oR = other.left + other.width + gap;
-    const oT = other.top - gap;
-    const oB = other.top + other.height + gap;
-    const pR = left + width;
-    const pB = top + height;
-
-    if (pR <= oL || left >= oR || pB <= oT || top >= oB) return { left, top };
-
-    const dRight  = pR  - oL;
-    const dLeft   = oR  - left;
-    const dBottom = pB  - oT;
-    const dTop    = oB  - top;
-    const minD = Math.min(dRight, dLeft, dBottom, dTop);
-
-    if (minD === dRight)  return { left: oL - width, top };
-    if (minD === dLeft)   return { left: oR,          top };
-    if (minD === dBottom) return { left, top: oT - height };
-                          return { left, top: oB };
-  }
-
-  private resolveResizeOverlap(proposed: WidgetState, other: WidgetState): WidgetState {
-    const gap = this.GUTTER;
-    const oL = other.left - gap;
-    const oR = other.left + other.width + gap;
-    const oT = other.top - gap;
-    const oB = other.top + other.height + gap;
-    const pL = proposed.left;
-    const pR = pL + proposed.width;
-    const pT = proposed.top;
-    const pB = pT + proposed.height;
-
-    if (pR <= oL || pL >= oR || pB <= oT || pT >= oB) return proposed;
-
-    const dRight  = pR - oL;
-    const dLeft   = oR - pL;
-    const dBottom = pB - oT;
-    const dTop    = oB - pT;
-    const minD = Math.min(dRight, dLeft, dBottom, dTop);
-
-    if (minD === dRight)  return { ...proposed, width:  Math.max(1, oL - pL) };
-    if (minD === dLeft)   return { ...proposed, left: oR, width:  Math.max(1, pR - oR) };
-    if (minD === dBottom) return { ...proposed, height: Math.max(1, oT - pT) };
-                          return { ...proposed, top: oB, height: Math.max(1, pB - oB) };
-  }
-
-  startDrag(widgetId: WidgetId, event: MouseEvent): void {
-    const widget = this.getWidgetSignal(widgetId)();
-    this.dragState.set({
-      widgetId,
-      startX: event.clientX,
-      startY: event.clientY,
-      startLeft: widget.left,
-      startTop: widget.top,
+    // Estimates table responsive column
+    const el = this.estimatesContainerRef()?.nativeElement as HTMLElement | undefined;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      this.estimatesNarrow.set(entries[0].contentRect.width < 1000);
     });
-    event.preventDefault();
-  }
-
-  startResize(widgetId: WidgetId, handle: ResizeHandle, event: MouseEvent): void {
-    const widget = this.getWidgetSignal(widgetId)();
-    this.resizeState.set({
-      widgetId,
-      handle,
-      startX: event.clientX,
-      startY: event.clientY,
-      startLeft: widget.left,
-      startTop: widget.top,
-      startWidth: widget.width,
-      startHeight: widget.height,
-    });
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  onMouseMove(event: MouseEvent): void {
-    const drag = this.dragState();
-    const resize = this.resizeState();
-
-    if (drag) {
-      const dx = event.clientX - drag.startX;
-      const dy = event.clientY - drag.startY;
-      const pad = this.CANVAS_PAD;
-      const cw = this.canvasWidth();
-      const current = this.getWidgetSignal(drag.widgetId)();
-      const widgetW = current.width;
-      const widgetH = current.height;
-      const rawLeft = drag.startLeft + dx;
-      const rawTop = drag.startTop + dy;
-      const maxLeft = cw > 0 ? cw - widgetW - pad : rawLeft;
-      const clampedLeft = Math.min(Math.max(pad, rawLeft), maxLeft);
-      const clampedTop  = Math.max(pad, rawTop);
-      let resolvedLeft = clampedLeft;
-      let resolvedTop  = clampedTop;
-      for (const other of this.getOtherWidgets(drag.widgetId)) {
-        const r = this.resolveDragOverlap(resolvedLeft, resolvedTop, widgetW, widgetH, other);
-        resolvedLeft = r.left;
-        resolvedTop  = r.top;
-      }
-      this.getWidgetSignal(drag.widgetId).update(s => ({
-        ...s,
-        left: resolvedLeft,
-        top: resolvedTop,
-      }));
-    }
-
-    if (resize) {
-      const dx = event.clientX - resize.startX;
-      const dy = event.clientY - resize.startY;
-      const MIN_W = 320;
-      const MIN_H = 200;
-      const pad = this.CANVAS_PAD;
-      const cw = this.canvasWidth();
-      let top = resize.startTop;
-      let left = resize.startLeft;
-      let width = resize.startWidth;
-      let height = resize.startHeight;
-      const h = resize.handle;
-
-      if (h.includes('e')) {
-        const maxW = cw > 0 ? cw - resize.startLeft - pad : Infinity;
-        width = Math.min(Math.max(MIN_W, resize.startWidth + dx), maxW);
-      }
-      if (h.includes('w')) {
-        const rawWidth = resize.startWidth - dx;
-        width = Math.max(MIN_W, rawWidth);
-        const rawLeft = rawWidth >= MIN_W
-          ? resize.startLeft + dx
-          : resize.startLeft + resize.startWidth - MIN_W;
-        left = Math.max(pad, rawLeft);
-        if (left !== rawLeft) width = resize.startLeft + resize.startWidth - left;
-      }
-      if (h.includes('s')) {
-        height = Math.max(MIN_H, resize.startHeight + dy);
-      }
-      if (h.includes('n')) {
-        const rawHeight = resize.startHeight - dy;
-        height = Math.max(MIN_H, rawHeight);
-        const rawTop = rawHeight >= MIN_H
-          ? resize.startTop + dy
-          : resize.startTop + resize.startHeight - MIN_H;
-        top = Math.max(pad, rawTop);
-        if (top !== rawTop) height = resize.startTop + resize.startHeight - top;
-      }
-
-      // Snap horizontal edges to the 16-column grid
-      if (h.includes('e')) {
-        const snappedRight = this.snapColX(left + width);
-        width = Math.max(MIN_W, snappedRight - left);
-      }
-      if (h.includes('w')) {
-        const snappedLeft = this.snapColX(left);
-        const delta = left - snappedLeft;
-        left = snappedLeft;
-        width = Math.max(MIN_W, width + delta);
-      }
-
-      this.getWidgetSignal(resize.widgetId).update(s => ({ ...s, top, left, width, height }));
-      this.compactWidgets(resize.widgetId);
-    }
-  }
-
-  onMouseUp(): void {
-    const activeId = this.dragState()?.widgetId ?? this.resizeState()?.widgetId;
-    this.dragState.set(null);
-    this.resizeState.set(null);
-    this.compactWidgets();
-  }
-
-  widgetWrapperClass(id: WidgetId): string {
-    const isActive = this.dragState()?.widgetId === id || this.resizeState()?.widgetId === id;
-    return isActive ? 'absolute z-20 select-none' : 'absolute z-10';
-  }
-
-  /** Returns 0 (flush with canvas edge) when a widget sits on column 1, otherwise its real left. */
-  displayLeft(id: WidgetId): number {
-    const left = this.getWidgetSignal(id)().left;
-    return left === this.CANVAS_PAD ? 0 : left;
-  }
-
-  /** Extends width to the canvas edge when a widget's right edge sits on column 16. */
-  displayWidth(id: WidgetId): number {
-    const { left, width } = this.getWidgetSignal(id)();
-    const cw = this.canvasWidth();
-    if (cw <= 0) return width;
-    const isRightFlush = left + width === cw - this.CANVAS_PAD;
-    return isRightFlush ? cw - this.displayLeft(id) : width;
-  }
-
-  headerDragClass(id: WidgetId): string {
-    const base = 'flex items-center justify-between px-6 py-4 border-bottom-default select-none';
-    return this.dragState()?.widgetId === id
-      ? `${base} cursor-grabbing`
-      : `${base} cursor-grab`;
+    ro.observe(el);
   }
 
   // ── Projects data ──
@@ -1219,5 +1089,157 @@ export class HomeComponent implements AfterViewInit {
     if (daysLeft < 0) return 'text-destructive font-medium';
     if (daysLeft <= 3) return 'text-warning font-medium';
     return 'text-foreground-40';
+  }
+
+  // ── Widget layout ──
+  // Row order is determined by DOM sequence (CSS auto-flow — zero overlaps by design).
+  // Column start + span per widget control horizontal placement.
+
+  readonly estimatesHeight = signal(420);
+  readonly activityHeight = signal(360);
+  readonly attentionHeight = signal(360);
+
+  /** Render order — determines auto-flow row stacking. */
+  readonly widgetOrder = signal<DashboardWidgetId[]>(['projects', 'openEstimates', 'recentActivity', 'needsAttention']);
+
+  /** Column start (1-16) per widget. */
+  readonly widgetColStarts = signal<Record<DashboardWidgetId, number>>({
+    projects: 1, openEstimates: 1, recentActivity: 1, needsAttention: 13,
+  });
+
+  /** Column span (1-16) per widget. */
+  readonly widgetColSpans = signal<Record<DashboardWidgetId, number>>({
+    projects: 16, openEstimates: 16, recentActivity: 12, needsAttention: 4,
+  });
+
+  private readonly gridContainerRef = viewChild<ElementRef>('widgetGrid');
+
+  // ── Drag-to-move ──
+
+  readonly moveTargetId = signal<DashboardWidgetId | null>(null);
+
+  private _moveTarget: DashboardWidgetId | null = null;
+  private _dragAxis: 'h' | 'v' | null = null;
+  private _dragStartX = 0;
+  private _dragStartY = 0;
+
+  onWidgetHeaderMouseDown(id: DashboardWidgetId, event: MouseEvent): void {
+    event.preventDefault();
+    this._moveTarget = id;
+    this._dragAxis = null;
+    this._dragStartX = event.clientX;
+    this._dragStartY = event.clientY;
+    this.moveTargetId.set(id);
+  }
+
+  private handleWidgetMove(event: MouseEvent): void {
+    const grid = this.gridContainerRef()?.nativeElement as HTMLElement | undefined;
+    if (!grid || !this._moveTarget) return;
+
+    // Determine axis lock once the threshold is crossed.
+    if (!this._dragAxis) {
+      const dx = Math.abs(event.clientX - this._dragStartX);
+      const dy = Math.abs(event.clientY - this._dragStartY);
+      if (dx < 8 && dy < 8) return; // below threshold — wait
+      this._dragAxis = dx >= dy ? 'h' : 'v';
+    }
+
+    const rect = grid.getBoundingClientRect();
+
+    if (this._dragAxis === 'h') {
+      // Horizontal only — change colStart, leave order alone.
+      const colW = rect.width / 16;
+      const span = this.widgetColSpans()[this._moveTarget];
+      const rawStart = Math.floor((event.clientX - rect.left) / colW) + 1;
+      const newColStart = Math.max(1, Math.min(17 - span, rawStart));
+      if (newColStart !== this.widgetColStarts()[this._moveTarget]) {
+        this.widgetColStarts.update(s => ({ ...s, [this._moveTarget!]: newColStart }));
+      }
+    } else {
+      // Vertical only — change order, leave colStart alone.
+      const order = this.widgetOrder();
+      const others = order.filter(id => id !== this._moveTarget);
+      let insertBeforeId: DashboardWidgetId | null = null;
+      for (const otherId of others) {
+        const el = grid.querySelector(`[data-widget-id="${otherId}"]`) as HTMLElement | null;
+        if (!el) continue;
+        const er = el.getBoundingClientRect();
+        if (event.clientY < (er.top + er.bottom) / 2) {
+          insertBeforeId = otherId;
+          break;
+        }
+      }
+      const currentIdx = order.indexOf(this._moveTarget);
+      const targetIdx = insertBeforeId === null
+        ? others.length
+        : others.indexOf(insertBeforeId);
+      if (currentIdx !== targetIdx) {
+        this.widgetOrder.update(ord => {
+          const next = ord.filter(id => id !== this._moveTarget!);
+          next.splice(targetIdx, 0, this._moveTarget!);
+          return next;
+        });
+      }
+    }
+  }
+
+  // ── Resize ──
+
+  private _resizeTarget: string | null = null;
+  private _resizeDir: 'h' | 'v' | 'both' = 'v';
+  private _resizeStartX = 0;
+  private _resizeStartY = 0;
+  private _resizeStartH = 0;
+  private _resizeStartColSpan = 0;
+  private _gridContainerWidth = 1200;
+
+  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this._resizeTarget = target;
+    this._resizeDir = dir;
+    this._resizeStartY = event.clientY;
+    this._resizeStartX = event.clientX;
+    if (dir === 'v' || dir === 'both') {
+      this._resizeStartH = target === 'openEstimates'
+        ? this.estimatesHeight()
+        : target === 'recentActivity'
+          ? this.activityHeight()
+          : this.attentionHeight();
+    }
+    if (dir === 'h' || dir === 'both') {
+      this._resizeStartColSpan = this.widgetColSpans()[target as DashboardWidgetId] ?? 8;
+      this._gridContainerWidth = this.gridContainerRef()?.nativeElement?.offsetWidth ?? 1200;
+    }
+  }
+
+  // ── Unified document mouse handlers ──
+
+  onDocumentMouseMove(event: MouseEvent): void {
+    if (this._moveTarget) {
+      this.handleWidgetMove(event);
+    } else if (this._resizeTarget) {
+      if (this._resizeDir === 'v' || this._resizeDir === 'both') {
+        const newH = Math.max(120, this._resizeStartH + (event.clientY - this._resizeStartY));
+        if (this._resizeTarget === 'openEstimates') this.estimatesHeight.set(newH);
+        else if (this._resizeTarget === 'recentActivity') this.activityHeight.set(newH);
+        else this.attentionHeight.set(newH);
+      }
+      if (this._resizeDir === 'h' || this._resizeDir === 'both') {
+        const colW = this._gridContainerWidth / 16;
+        const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
+        const newSpan = this._resizeStartColSpan + deltaSpan;
+        const id = this._resizeTarget as DashboardWidgetId;
+        const clampedSpan = Math.max(id === 'needsAttention' ? 3 : 4, Math.min(16, newSpan));
+        this.widgetColSpans.update(s => ({ ...s, [id]: clampedSpan }));
+      }
+    }
+  }
+
+  onDocumentMouseUp(): void {
+    this._moveTarget = null;
+    this._dragAxis = null;
+    this.moveTargetId.set(null);
+    this._resizeTarget = null;
   }
 }
