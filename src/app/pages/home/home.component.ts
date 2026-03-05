@@ -943,7 +943,7 @@ export class HomeComponent implements AfterViewInit {
 
   // ── Estimates table responsive column ──
   private readonly estimatesContainerRef = viewChild<ElementRef>('estimatesContainer');
-  readonly estimatesNarrow = signal(false);
+  readonly estimatesNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 13);
 
   setActiveNav(page: 'home' | 'projects' | 'financials'): void {
     this.activeNav.set(page);
@@ -963,12 +963,6 @@ export class HomeComponent implements AfterViewInit {
     }
 
     // Estimates table responsive column
-    const el = this.estimatesContainerRef()?.nativeElement as HTMLElement | undefined;
-    if (!el) return;
-    const ro = new ResizeObserver(entries => {
-      this.estimatesNarrow.set(entries[0].contentRect.width < 1000);
-    });
-    ro.observe(el);
   }
 
   // ── Projects data ──
