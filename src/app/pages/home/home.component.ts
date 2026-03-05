@@ -15,25 +15,17 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { ThemeService } from '../../services/theme.service';
 
-type NavSection = 'dashboard' | 'projects' | 'estimates' | 'team' | 'calendar' | 'reports' | 'settings';
 type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
-type ProjectFilter = 'All' | ProjectStatus;
 type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
-type EstimateFilter = 'All' | EstimateStatus;
 type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-type WidgetId = 'projectStatus' | 'openEstimates' | 'recentActivity' | 'needsAttention';
+type WidgetId = 'projectStatus' | 'projectCards' | 'openEstimates' | 'recentActivity' | 'needsAttention';
+
+const PROJECTS_WIDGETS: readonly WidgetId[] = ['projectCards', 'openEstimates', 'recentActivity', 'needsAttention'];
 type ResizeHandle = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 
 interface WidgetState { top: number; left: number; width: number; height: number; }
 type DragState = { widgetId: WidgetId; startX: number; startY: number; startLeft: number; startTop: number } | null;
 type ResizeState = { widgetId: WidgetId; handle: ResizeHandle; startX: number; startY: number; startLeft: number; startTop: number; startWidth: number; startHeight: number } | null;
-
-interface NavItem {
-  id: NavSection;
-  label: string;
-  icon: string;
-  badge?: number;
-}
 
 interface Project {
   id: number;
@@ -77,6 +69,7 @@ interface AiMessage {
   role: 'user' | 'assistant';
   text: string;
 }
+
 
 @Component({
   selector: 'app-home',
@@ -126,66 +119,19 @@ interface AiMessage {
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
 
-        <!-- Sidebar -->
-        <div
-          class="flex-shrink-0 bg-card border-right-default flex flex-col overflow-y-auto overflow-x-hidden transition-all duration-200"
-          [class]="sidebarCollapsed() ? 'w-14' : 'w-56'"
-        >
-          <!-- Header: profile + collapse toggle -->
-          <div class="border-bottom-default flex items-center justify-between px-3 py-3 gap-2 min-h-[56px]">
-            @if (!sidebarCollapsed()) {
-              <div class="flex-1 min-w-0 px-1">
-                <div class="text-base font-semibold text-foreground truncate">Alex Morgan</div>
-                <div class="text-xs text-foreground-60 mt-0.5 truncate">Project Manager</div>
-              </div>
-            }
-            <div
-              class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer text-foreground-60 hover:bg-muted transition-colors duration-150 flex-shrink-0"
-              (click)="sidebarCollapsed.set(!sidebarCollapsed())"
-              [title]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-            >
-              <i class="modus-icons text-lg">{{ sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</i>
-            </div>
-          </div>
-
-          <div class="flex-1 px-2 py-3">
-            @for (item of navItems; track item.id) {
-              <div
-                class="{{ navItemClass(item.id) }}"
-                (click)="activeNav.set(item.id)"
-                [title]="sidebarCollapsed() ? item.label : ''"
-              >
-                <i class="modus-icons text-lg flex-shrink-0">{{ item.icon }}</i>
-                @if (!sidebarCollapsed()) {
-                  <div class="text-sm font-medium flex-1">{{ item.label }}</div>
-                  @if (item.badge) {
-                    <div class="text-xs font-semibold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 leading-none min-w-[20px] text-center">
-                      {{ item.badge }}
-                    </div>
-                  }
-                } @else if (item.badge) {
-                  <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary"></div>
-                }
-              </div>
-            }
-          </div>
-
-        </div>
-
         <!-- Main content -->
         <div class="flex-1 overflow-auto bg-background">
+
+          <!-- ─── Projects dashboard ─── -->
           <div class="p-6 max-w-screen-xl mx-auto">
 
             <!-- Page header -->
             <div class="flex items-start justify-between mb-6">
               <div>
-                <div class="text-3xl font-bold text-foreground">Project Manager Dashboard</div>
+                <div class="text-3xl font-bold text-foreground">Projects Dashboard</div>
                 <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0 mt-1">
-                <modus-button variant="outlined" color="secondary" size="sm" icon="filter_list" iconPosition="left">
-                  Filter
-                </modus-button>
                 <modus-button color="primary" size="sm" icon="add" iconPosition="left">
                   New Project
                 </modus-button>
@@ -247,111 +193,103 @@ interface AiMessage {
 
             </div>
 
-            <!-- Widget Canvas: Project Status + Open Estimates (draggable & resizable) -->
+            <!-- Widget Canvas: Project Cards + Open Estimates + Recent Activity + Needs Attention (draggable) -->
             <div #widgetCanvas class="relative mb-6" [style.height.px]="canvasHeight()">
 
-              <!-- ─── Project Status Widget ─── -->
+              <!-- ─── Project Cards Widget ─── -->
               <div
-                class="{{ widgetWrapperClass('projectStatus') }}"
-                [style.top.px]="projectStatusWidget().top"
-                [style.left.px]="displayLeft('projectStatus')"
-                [style.width.px]="displayWidth('projectStatus')"
-                [style.height.px]="projectStatusWidget().height"
+                #projectCardsEl
+                class="{{ widgetWrapperClass('projectCards') }}"
+                [style.top.px]="projectCardsWidget().top"
+                [style.left.px]="displayLeft('projectCards')"
+                [style.width.px]="displayWidth('projectCards')"
               >
-                <!-- Resize handles: edges -->
-                <div class="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize z-10" (mousedown)="startResize('projectStatus', 'n', $event)"></div>
-                <div class="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize z-10" (mousedown)="startResize('projectStatus', 's', $event)"></div>
-                <div class="absolute top-3 bottom-3 right-0 w-1.5 cursor-ew-resize z-10" (mousedown)="startResize('projectStatus', 'e', $event)"></div>
-                <div class="absolute top-3 bottom-3 left-0 w-1.5 cursor-ew-resize z-10" (mousedown)="startResize('projectStatus', 'w', $event)"></div>
-                <!-- Resize handles: corners -->
-                <div class="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-20" (mousedown)="startResize('projectStatus', 'nw', $event)"></div>
-                <div class="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize z-20" (mousedown)="startResize('projectStatus', 'ne', $event)"></div>
-                <div class="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize z-20" (mousedown)="startResize('projectStatus', 'sw', $event)"></div>
-                <!-- SE corner: visible resize indicator -->
-                <div class="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-20" (mousedown)="startResize('projectStatus', 'se', $event)">
-                  <div class="pointer-events-none absolute bottom-1 right-1">
-                    <div class="absolute bottom-0 right-0 w-2.5 h-0.5 rounded-full bg-foreground-40"></div>
-                    <div class="absolute bottom-0 right-0 w-0.5 h-2.5 rounded-full bg-foreground-40"></div>
-                  </div>
-                </div>
-
                 <!-- Widget card -->
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+                <div class="bg-card border-default rounded-lg overflow-hidden">
 
                   <!-- Draggable header -->
-                  <div class="{{ headerDragClass('projectStatus') }}" (mousedown)="startDrag('projectStatus', $event)">
+                  <div class="{{ headerDragClass('projectCards') }}" (mousedown)="startDrag('projectCards', $event)">
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-sm text-foreground-40">drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60">briefcase</i>
-                      <div class="text-lg font-semibold text-foreground">Project Status</div>
-                      <div class="text-xs text-foreground-40">{{ filteredProjects().length }} of {{ totalProjects() }} shown</div>
+                      <i class="modus-icons text-lg text-foreground-60">apps</i>
+                      <div class="text-lg font-semibold text-foreground">Projects</div>
+                      <div class="text-xs text-foreground-40">{{ totalProjects() }} projects</div>
                     </div>
-                    <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()">
-                      @for (f of projectFilters; track f) {
-                        <div
-                          class="{{ projectFilterClass(f) }}"
-                          (click)="projectFilter.set(f)"
-                        >
-                          {{ f }}
+                    <!-- Status summary chips -->
+                    <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-20">
+                        <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+                        <div class="text-xs font-medium text-success">{{ onTrackCount() }} On Track</div>
+                      </div>
+                      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-20">
+                        <div class="w-1.5 h-1.5 rounded-full bg-warning"></div>
+                        <div class="text-xs font-medium text-warning">{{ atRiskCount() }} At Risk</div>
+                      </div>
+                      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive-20">
+                        <div class="w-1.5 h-1.5 rounded-full bg-destructive"></div>
+                        <div class="text-xs font-medium text-destructive">{{ overdueCount() }} Overdue</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card grid -->
+                  <div class="p-4">
+                    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+                      @for (project of projects(); track project.id) {
+                        <div class="bg-background border-default rounded-lg overflow-hidden flex flex-col">
+                          <!-- Status bar at top -->
+                          <div class="h-1 w-full flex-shrink-0"
+                            [class.bg-success]="project.status === 'On Track'"
+                            [class.bg-warning]="project.status === 'At Risk'"
+                            [class.bg-destructive]="project.status === 'Overdue'"
+                            [class.bg-muted]="project.status === 'Planning'"
+                          ></div>
+                          <div class="p-4 flex flex-col gap-3 flex-1">
+                            <!-- Name + status badge -->
+                            <div class="flex items-start justify-between gap-2">
+                              <div class="text-sm font-semibold text-foreground leading-tight">{{ project.name }}</div>
+                              <modus-badge [color]="statusBadgeColor(project.status)" variant="filled" size="sm">
+                                {{ project.status }}
+                              </modus-badge>
+                            </div>
+                            <!-- Client -->
+                            <div class="text-xs text-foreground-60">{{ project.client }}</div>
+                            <!-- Owner + due date row -->
+                            <div class="flex items-center justify-between">
+                              <div class="flex items-center gap-1.5">
+                                <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
+                                  {{ project.ownerInitials }}
+                                </div>
+                                <div class="text-xs text-foreground-60 truncate max-w-[80px]">{{ project.owner }}</div>
+                              </div>
+                              <div class="flex items-center gap-1 text-xs text-foreground-60">
+                                <i class="modus-icons text-sm">calendar</i>
+                                <div>{{ project.dueDate }}</div>
+                              </div>
+                            </div>
+                            <!-- Schedule progress -->
+                            <div class="flex flex-col gap-1">
+                              <div class="flex items-center justify-between">
+                                <div class="text-2xs text-foreground-40 uppercase tracking-wide">Schedule</div>
+                                <div class="text-2xs text-foreground-60 font-medium">{{ project.progress }}%</div>
+                              </div>
+                              <modus-progress [value]="project.progress" [max]="100" [className]="progressClass(project.status)" />
+                            </div>
+                            <!-- Budget -->
+                            <div class="flex flex-col gap-1">
+                              <div class="flex items-center justify-between">
+                                <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget</div>
+                                <div class="text-2xs flex-shrink-0">
+                                  <div [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</div>
+                                </div>
+                              </div>
+                              <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
+                              <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
+                            </div>
+                          </div>
                         </div>
                       }
                     </div>
-                  </div>
-
-                  <!-- Scrollable table content -->
-                  <div class="overflow-y-auto flex-1">
-                    <!-- Table header -->
-                    <div class="grid grid-cols-[2.5fr_1fr_1fr_1fr_1.5fr_1.5fr] gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-                      <div>Project / Client</div>
-                      <div>Owner</div>
-                      <div>Due Date</div>
-                      <div>Status</div>
-                      <div>Schedule</div>
-                      <div>Budget</div>
-                    </div>
-
-                    @for (project of filteredProjects(); track project.id) {
-                      <div class="grid grid-cols-[2.5fr_1fr_1fr_1fr_1.5fr_1.5fr] gap-3 px-6 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150">
-                        <div>
-                          <div class="text-sm font-medium text-foreground">{{ project.name }}</div>
-                          <div class="text-xs text-foreground-60 mt-0.5">{{ project.client }}</div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                          <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-semibold flex-shrink-0">
-                            {{ project.ownerInitials }}
-                          </div>
-                          <div class="text-xs text-foreground-80 truncate hidden lg:block">{{ project.owner }}</div>
-                        </div>
-                        <div class="text-sm text-foreground-60">{{ project.dueDate }}</div>
-                        <div>
-                          <modus-badge [color]="statusBadgeColor(project.status)" variant="filled" size="sm">
-                            {{ project.status }}
-                          </modus-badge>
-                        </div>
-                        <div class="flex items-center gap-2">
-                          <div class="flex-1">
-                            <modus-progress [value]="project.progress" [max]="100" [className]="progressClass(project.status)" />
-                          </div>
-                          <div class="text-xs text-foreground-60 w-8 text-right flex-shrink-0">{{ project.progress }}%</div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                          <div class="flex-1">
-                            <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
-                          </div>
-                          <div class="text-xs flex-shrink-0 w-[70px] text-right">
-                            <div [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</div>
-                            <div class="text-foreground-40 text-2xs">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
-                          </div>
-                        </div>
-                      </div>
-                    }
-
-                    @if (filteredProjects().length === 0) {
-                      <div class="flex flex-col items-center justify-center py-12 gap-3">
-                        <i class="modus-icons text-4xl text-foreground-40">briefcase</i>
-                        <div class="text-sm text-foreground-60">No projects match this filter</div>
-                      </div>
-                    }
                   </div>
 
                 </div>
@@ -391,19 +329,9 @@ interface AiMessage {
                       <i class="modus-icons text-sm text-foreground-40">drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60">description</i>
                       <div class="text-lg font-semibold text-foreground">Open Estimates</div>
-                      <div class="text-xs text-foreground-40">{{ filteredEstimates().length }} of {{ estimates().length }} shown</div>
+                      <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
                     </div>
-                    <div class="flex items-center gap-2" (mousedown)="$event.stopPropagation()">
-                      <div class="flex items-center gap-1">
-                        @for (f of estimateFilters; track f) {
-                          <div
-                            class="{{ estimateFilterClass(f) }}"
-                            (click)="estimateFilter.set(f)"
-                          >
-                            {{ f }}
-                          </div>
-                        }
-                      </div>
+                    <div (mousedown)="$event.stopPropagation()">
                       <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">
                         New Estimate
                       </modus-button>
@@ -423,7 +351,7 @@ interface AiMessage {
                       <div>Due Date</div>
                     </div>
 
-                    @for (estimate of filteredEstimates(); track estimate.id) {
+                    @for (estimate of estimates(); track estimate.id) {
                       <div class="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr] gap-3 px-6 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150">
                         <div class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
                         <div>
@@ -447,7 +375,7 @@ interface AiMessage {
                         </div>
                         <div>
                           <div class="text-sm text-foreground-80">{{ estimate.dueDate }}</div>
-                          <div [class]="dueDateClass(estimate.daysLeft)" class="text-xs mt-0.5">
+                          <div class="text-xs mt-0.5" [class]="dueDateClass(estimate.daysLeft)">
                             @if (estimate.daysLeft < 0) {
                               {{ -estimate.daysLeft }}d overdue
                             } @else if (estimate.daysLeft === 0) {
@@ -460,12 +388,6 @@ interface AiMessage {
                       </div>
                     }
 
-                    @if (filteredEstimates().length === 0) {
-                      <div class="flex flex-col items-center justify-center py-12 gap-3">
-                        <i class="modus-icons text-4xl text-foreground-40">description</i>
-                        <div class="text-sm text-foreground-60">No estimates match this filter</div>
-                      </div>
-                    }
                   </div>
 
                 </div>
@@ -579,23 +501,10 @@ interface AiMessage {
             </div>
 
           </div>
+
         </div>
       </div>
 
-      <!-- ─── AI Assistant Floating Button ─── -->
-      <div class="fixed bottom-6 right-6 z-[1001]">
-        <div
-          class="w-13 h-13 rounded-full bg-primary flex items-center justify-center cursor-pointer shadow-lg transition-all duration-200 hover:shadow-xl"
-          [class.rotate-45]="aiPanelOpen()"
-          (click)="toggleAiPanel()"
-          [title]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
-          role="button"
-          [attr.aria-label]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
-          [attr.aria-expanded]="aiPanelOpen()"
-        >
-          <i class="modus-icons text-xl text-primary-foreground">{{ aiPanelOpen() ? 'close' : 'chat' }}</i>
-        </div>
-      </div>
 
     </div>
 
@@ -747,7 +656,6 @@ export class HomeComponent implements AfterViewInit {
 
   readonly searchInputOpen = signal(false);
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
-  readonly sidebarCollapsed = signal(false);
 
   // ── AI Assistant ──
   readonly aiPanelOpen = signal(false);
@@ -854,28 +762,6 @@ export class HomeComponent implements AfterViewInit {
     this.themeService.toggleMode();
   }
 
-  // ── Sidebar navigation ──
-  readonly activeNav = signal<NavSection>('dashboard');
-
-  readonly navItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
-    { id: 'projects', label: 'Projects', icon: 'briefcase', badge: 8 },
-    { id: 'estimates', label: 'Estimates', icon: 'description', badge: 12 },
-    { id: 'team', label: 'Team', icon: 'group' },
-    { id: 'calendar', label: 'Calendar', icon: 'calendar' },
-    { id: 'reports', label: 'Reports', icon: 'bar_chart' },
-    { id: 'settings', label: 'Settings', icon: 'settings' },
-  ];
-
-  navItemClass(id: NavSection): string {
-    const base = 'relative flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 cursor-pointer transition-colors duration-150';
-    const collapsed = this.sidebarCollapsed() ? 'justify-center' : '';
-    const active = this.activeNav() === id
-      ? 'bg-primary-20 text-primary'
-      : 'text-foreground-80 hover:bg-muted';
-    return `${base} ${collapsed} ${active}`.trim();
-  }
-
   // ── Date ──
   readonly today = new Date().toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -883,22 +769,25 @@ export class HomeComponent implements AfterViewInit {
 
   // ── Widget state (draggable & resizable) ──
   readonly canvasRef = viewChild<ElementRef>('widgetCanvas');
+  readonly projectCardsRef = viewChild<ElementRef>('projectCardsEl');
   private readonly canvasWidth = signal(0);
   private readonly CANVAS_PAD = 16;
   private readonly GUTTER = 16;
   private readonly GRID_COLS = 16;
 
+  // ── Projects canvas widgets ──
   readonly projectStatusWidget  = signal<WidgetState>({ top: 16,  left: 16, width: 900, height: 390 });
-  readonly openEstimatesWidget  = signal<WidgetState>({ top: 422, left: 16, width: 900, height: 450 });
-  readonly recentActivityWidget = signal<WidgetState>({ top: 888, left: 16, width: 600, height: 300 });
-  readonly needsAttentionWidget = signal<WidgetState>({ top: 888, left: 632, width: 284, height: 300 });
+  readonly projectCardsWidget   = signal<WidgetState>({ top: 16,  left: 16, width: 900, height: 340 });
+  readonly openEstimatesWidget  = signal<WidgetState>({ top: 16,  left: 16, width: 900, height: 450 });
+  readonly recentActivityWidget = signal<WidgetState>({ top: 482, left: 16, width: 600, height: 300 });
+  readonly needsAttentionWidget = signal<WidgetState>({ top: 482, left: 632, width: 284, height: 300 });
 
   private readonly dragState = signal<DragState>(null);
   private readonly resizeState = signal<ResizeState>(null);
 
   readonly canvasHeight = computed(() => {
     const all = [
-      this.projectStatusWidget(),
+      this.projectCardsWidget(),
       this.openEstimatesWidget(),
       this.recentActivityWidget(),
       this.needsAttentionWidget(),
@@ -908,30 +797,85 @@ export class HomeComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     const canvas = this.canvasRef()?.nativeElement as HTMLElement | undefined;
-    if (canvas) {
-      const w = canvas.offsetWidth;
-      this.canvasWidth.set(w);
-      const pad = this.CANVAS_PAD;
-      const innerW = w - pad * 2;
-      const colW = innerW / this.GRID_COLS;
+    if (!canvas) return;
 
-      // Top two widgets: full width
-      this.projectStatusWidget.update(s => ({ ...s, width: innerW }));
-      this.openEstimatesWidget.update(s => ({ ...s, width: innerW }));
+    const w = canvas.offsetWidth;
+    this.canvasWidth.set(w);
+    const pad = this.CANVAS_PAD;
+    const innerW = w - pad * 2;
+    const colW   = innerW / this.GRID_COLS;
 
-      // Bottom row: recentActivity = 10 cols, needsAttention = 6 cols (8px gutter between)
-      const raWidth = Math.round(10 * colW);
-      const naLeft  = pad + raWidth + this.GUTTER;
-      const naWidth = w - naLeft - pad;
-      const bottomTop = this.openEstimatesWidget().top + this.openEstimatesWidget().height + pad;
-      this.recentActivityWidget.update(s => ({ ...s, top: bottomTop, width: raWidth }));
-      this.needsAttentionWidget.update(s => ({ ...s, top: bottomTop, left: naLeft, width: naWidth }));
+    // Set widths for all widgets
+    this.projectCardsWidget.update(s => ({ ...s, width: innerW }));
+    this.openEstimatesWidget.update(s => ({ ...s, width: innerW }));
+    const raWidth = Math.round(10 * colW);
+    const naLeft  = pad + raWidth + this.GUTTER;
+    const naWidth = w - naLeft - pad;
+    this.recentActivityWidget.update(s => ({ ...s, width: raWidth }));
+    this.needsAttentionWidget.update(s => ({ ...s, left: naLeft, width: naWidth }));
+
+    // Measure projectCards immediately, then compact. ResizeObserver keeps it
+    // in sync whenever the grid reflows (window resize, etc.).
+    const pcEl = this.projectCardsRef()?.nativeElement as HTMLElement | undefined;
+    if (pcEl) {
+      const h0 = pcEl.offsetHeight;
+      if (h0 > 0) this.projectCardsWidget.update(s => ({ ...s, height: h0 }));
+      this.compactWidgets();
+
+      const ro = new ResizeObserver(entries => {
+        const h = Math.round(entries[0].contentRect.height);
+        this.projectCardsWidget.update(s => ({ ...s, height: h }));
+        this.compactWidgets();
+      });
+      ro.observe(pcEl);
+    } else {
+      this.compactWidgets();
     }
+  }
+
+  /**
+   * Gravity pass: sort canvas widgets by their current top, then float each
+   * one up to the highest available Y where it does not overlap any already-
+   * placed widget (checked via X-range intersection).
+   *
+   * Pass `lockedId` to keep one widget pinned at its current position (used
+   * while actively dragging/resizing so only the other widgets react).
+   */
+  private compactWidgetSet(ids: readonly WidgetId[], lockedId?: WidgetId): void {
+    const pad = this.CANVAS_PAD;
+    const gap = this.GUTTER;
+    type Rect = { id: WidgetId; left: number; top: number; width: number; height: number };
+
+    const rects: Rect[] = ids
+      .map(id => ({ id, ...this.getWidgetSignal(id)() }))
+      .sort((a, b) => a.top - b.top || a.left - b.left);
+
+    const placed: Rect[] = [];
+    for (const rect of rects) {
+      if (rect.id === lockedId) {
+        placed.push(rect);
+        continue;
+      }
+      let bestTop = pad;
+      for (const other of placed) {
+        const xOverlap = rect.left < other.left + other.width &&
+                         rect.left + rect.width > other.left;
+        if (xOverlap) bestTop = Math.max(bestTop, other.top + other.height + gap);
+      }
+      rect.top = bestTop;
+      placed.push(rect);
+      this.getWidgetSignal(rect.id).update(s => ({ ...s, top: rect.top }));
+    }
+  }
+
+  private compactWidgets(lockedId?: WidgetId): void {
+    this.compactWidgetSet(PROJECTS_WIDGETS, lockedId);
   }
 
   private getWidgetSignal(id: WidgetId) {
     switch (id) {
       case 'projectStatus':  return this.projectStatusWidget;
+      case 'projectCards':   return this.projectCardsWidget;
       case 'openEstimates':  return this.openEstimatesWidget;
       case 'recentActivity': return this.recentActivityWidget;
       case 'needsAttention': return this.needsAttentionWidget;
@@ -939,6 +883,7 @@ export class HomeComponent implements AfterViewInit {
   }
 
   /** Snaps a canvas x-coordinate to the nearest column boundary of the 16-column grid. */
+
   private snapColX(x: number): number {
     const cw = this.canvasWidth();
     if (cw <= 0) return x;
@@ -950,9 +895,7 @@ export class HomeComponent implements AfterViewInit {
   }
 
   private getOtherWidgets(id: WidgetId): WidgetState[] {
-    return (
-      ['projectStatus', 'openEstimates', 'recentActivity', 'needsAttention'] as WidgetId[]
-    )
+    return (PROJECTS_WIDGETS as WidgetId[])
       .filter(wid => wid !== id)
       .map(wid => this.getWidgetSignal(wid)());
   }
@@ -1119,23 +1062,16 @@ export class HomeComponent implements AfterViewInit {
         width = Math.max(MIN_W, width + delta);
       }
 
-      let resolvedState: WidgetState = { top, left, width, height };
-      for (const other of this.getOtherWidgets(resize.widgetId)) {
-        resolvedState = this.resolveResizeOverlap(resolvedState, other);
-      }
-      this.getWidgetSignal(resize.widgetId).update(s => ({
-        ...s,
-        top: resolvedState.top,
-        left: resolvedState.left,
-        width: resolvedState.width,
-        height: resolvedState.height,
-      }));
+      this.getWidgetSignal(resize.widgetId).update(s => ({ ...s, top, left, width, height }));
+      this.compactWidgets(resize.widgetId);
     }
   }
 
   onMouseUp(): void {
+    const activeId = this.dragState()?.widgetId ?? this.resizeState()?.widgetId;
     this.dragState.set(null);
     this.resizeState.set(null);
+    this.compactWidgets();
   }
 
   widgetWrapperClass(id: WidgetId): string {
@@ -1177,14 +1113,6 @@ export class HomeComponent implements AfterViewInit {
     { id: 8, name: 'ML Model Deployment Pipeline', client: 'DataDrive AI', ownerInitials: 'PN', owner: 'Priya Nair', status: 'On Track', dueDate: 'May 20, 2026', progress: 20, budgetPct: 18, budgetUsed: '$90K', budgetTotal: '$500K' },
   ]);
 
-  readonly projectFilters: ProjectFilter[] = ['All', 'On Track', 'At Risk', 'Overdue', 'Planning'];
-  readonly projectFilter = signal<ProjectFilter>('All');
-
-  readonly filteredProjects = computed(() => {
-    const f = this.projectFilter();
-    return f === 'All' ? this.projects() : this.projects().filter(p => p.status === f);
-  });
-
   readonly totalProjects = computed(() => this.projects().length);
   readonly onTrackCount = computed(() => this.projects().filter(p => p.status === 'On Track').length);
   readonly atRiskCount = computed(() => this.projects().filter(p => p.status === 'At Risk').length);
@@ -1206,14 +1134,6 @@ export class HomeComponent implements AfterViewInit {
     { id: 'EST-2026-051', project: 'Reporting Module Rebuild', client: 'NexGen Analytics', type: 'Fixed Price', value: '$95,500', valueRaw: 95500, status: 'Under Review', requestedBy: 'James Carter', requestedByInitials: 'JC', dueDate: 'Mar 12, 2026', daysLeft: 13 },
     { id: 'EST-2026-052', project: 'Security Training Program', client: 'GlobalTech Ltd', type: 'Retainer', value: '$18,000/mo', valueRaw: 18000, status: 'Draft', requestedBy: 'Mike Osei', requestedByInitials: 'MO', dueDate: 'Apr 5, 2026', daysLeft: 37 },
   ]);
-
-  readonly estimateFilters: EstimateFilter[] = ['All', 'Draft', 'Under Review', 'Awaiting Approval'];
-  readonly estimateFilter = signal<EstimateFilter>('All');
-
-  readonly filteredEstimates = computed(() => {
-    const f = this.estimateFilter();
-    return f === 'All' ? this.estimates() : this.estimates().filter(e => e.status === f);
-  });
 
   readonly openEstimatesCount = computed(() =>
     this.estimates().filter(e => e.status !== 'Approved').length
@@ -1253,20 +1173,6 @@ export class HomeComponent implements AfterViewInit {
   ];
 
   // ── Helper methods ──
-  projectFilterClass(f: ProjectFilter): string {
-    const base = 'px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors duration-150';
-    return this.projectFilter() === f
-      ? `${base} bg-primary text-primary-foreground`
-      : `${base} text-foreground-60 hover:bg-muted`;
-  }
-
-  estimateFilterClass(f: EstimateFilter): string {
-    const base = 'px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors duration-150';
-    return this.estimateFilter() === f
-      ? `${base} bg-primary text-primary-foreground`
-      : `${base} text-foreground-60 hover:bg-muted`;
-  }
-
   statusBadgeColor(status: ProjectStatus): ModusBadgeColor {
     const map: Record<ProjectStatus, ModusBadgeColor> = {
       'On Track': 'success',
