@@ -140,7 +140,6 @@ interface AiMessage {
           [mode]="isMobile() ? 'overlay' : 'push'"
           targetContent="#main-content"
           class="h-full"
-          [class.hidden]="isMobile() && !navExpanded()"
           (expandedChange)="navExpanded.set($event)"
         >
           <modus-menu size="lg">
