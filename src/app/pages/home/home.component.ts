@@ -22,7 +22,19 @@ import { ThemeService } from '../../services/theme.service';
 type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeAttention' | 'homeActivity' | 'homeTimeOff';
+type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeTimeOff' | 'homeCalendar';
+
+type ApptType = 'meeting' | 'review' | 'call' | 'deadline' | 'focus';
+interface CalendarAppointment {
+  id: number;
+  title: string;
+  date: Date;
+  startHour: number;
+  startMin: number;
+  endHour: number;
+  endMin: number;
+  type: ApptType;
+}
 
 interface Project {
   id: number;
@@ -201,102 +213,7 @@ interface AiMessage {
                     >
                       <div class="relative" [class.opacity-30]="moveTargetId() === widgetId">
 
-                        @if (widgetId === 'homeAttention') {
-                          <!-- ─── Needs Attention Widget ─── -->
-                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col">
-                            <div
-                              class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                              (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                            >
-                              <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                                <i class="modus-icons text-lg text-foreground-60">warning</i>
-                                <div class="text-base font-semibold text-foreground">Needs Attention</div>
-                              </div>
-                              <div class="text-xs text-foreground-40">{{ attentionItems.length }} items</div>
-                            </div>
-                            <div class="overflow-y-auto" [style.height.px]="homeAttentionHeight()">
-                              @for (item of attentionItems; track item.id) {
-                                <div class="flex items-start gap-3 px-5 py-3 border-bottom-default last:border-b-0">
-                                  <div class="w-2 h-2 rounded-full flex-shrink-0 mt-2 {{ item.dotClass }}"></div>
-                                  <div class="flex-1 min-w-0">
-                                    <div class="text-sm font-medium text-foreground">{{ item.title }}</div>
-                                    <div class="text-xs text-foreground-60 mt-0.5">{{ item.subtitle }}</div>
-                                  </div>
-                                </div>
-                              }
-                            </div>
-                            <!-- Corner resize handle -->
-                            <div
-                              class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
-                              (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                            >
-                              <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
-                                <div class="flex gap-0.5">
-                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
-                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
-                                </div>
-                                <div class="flex gap-0.5">
-                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
-                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        }
-
-                        @else if (widgetId === 'homeActivity') {
-                          <!-- ─── Recent Activity Widget ─── -->
-                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col">
-                            <div
-                              class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                              (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                            >
-                              <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                                <i class="modus-icons text-lg text-foreground-60">history</i>
-                                <div class="text-base font-semibold text-foreground">Recent Activity</div>
-                              </div>
-                              <div class="text-xs text-foreground-40">{{ activities.length }} events</div>
-                            </div>
-                            <div class="overflow-y-auto" [style.height.px]="homeActivityHeight()">
-                              @for (activity of activities; track activity.id) {
-                                <div class="flex items-start gap-3 px-5 py-3 border-bottom-default last:border-b-0">
-                                  <div class="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <i class="modus-icons text-sm {{ activity.iconColor }}">{{ activity.icon }}</i>
-                                  </div>
-                                  <div class="flex-1 min-w-0">
-                                    <div class="text-sm text-foreground">
-                                      <div class="w-6 h-6 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
-                                        {{ activity.actorInitials }}
-                                      </div>
-                                      {{ activity.text }}
-                                    </div>
-                                  </div>
-                                  <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
-                                </div>
-                              }
-                            </div>
-                            <!-- Corner resize handle -->
-                            <div
-                              class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
-                              (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                            >
-                              <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
-                                <div class="flex gap-0.5">
-                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
-                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
-                                </div>
-                                <div class="flex gap-0.5">
-                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
-                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        }
-
-                        @else if (widgetId === 'homeTimeOff') {
+                        @if (widgetId === 'homeTimeOff') {
                           <!-- ─── Time Off Requests Widget ─── -->
                           <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col">
                             <!-- Draggable header -->
@@ -458,6 +375,171 @@ interface AiMessage {
                             </div>
                           </div>
                         }
+                        @else if (widgetId === 'homeCalendar') {
+                          <!-- ─── Two-Day Calendar Widget ─── -->
+                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col">
+                            <!-- Draggable header -->
+                            <div
+                              class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                              (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                            >
+                              <div class="flex items-center gap-2">
+                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60">calendar</i>
+                                <div class="text-base font-semibold text-foreground">Calendar</div>
+                                <div class="text-xs text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</div>
+                              </div>
+                              <!-- Navigation — stop drag propagation -->
+                              <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()">
+                                <div
+                                  class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                                  (click)="prevCalendarDay()"
+                                >
+                                  <i class="modus-icons text-sm text-foreground-60">chevron_left</i>
+                                </div>
+                                <div
+                                  class="px-2 py-1 text-xs font-medium text-primary cursor-pointer hover:bg-primary-20 rounded transition-colors duration-150 select-none"
+                                  (click)="resetCalendarToToday()"
+                                >Today</div>
+                                <div
+                                  class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                                  (click)="nextCalendarDay()"
+                                >
+                                  <i class="modus-icons text-sm text-foreground-60">chevron_right</i>
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- Day column headers -->
+                            <div class="flex flex-shrink-0 border-bottom-default" (mousedown)="$event.stopPropagation()">
+                              <div class="w-12 flex-shrink-0"></div>
+                              <!-- Day 1 header -->
+                              <div class="flex-1 py-2 px-3 text-center border-right-default">
+                                <div class="text-xs font-semibold uppercase tracking-wide {{ calendarDay1Meta().isToday ? 'text-primary' : 'text-foreground-60' }}">
+                                  {{ calendarDay1Meta().label }}
+                                </div>
+                                <div class="text-2xl font-bold leading-tight {{ calendarDay1Meta().isToday ? 'text-primary' : 'text-foreground' }}">
+                                  {{ calendarDay1Meta().dayNum }}
+                                </div>
+                              </div>
+                              <!-- Day 2 header -->
+                              <div class="flex-1 py-2 px-3 text-center">
+                                <div class="text-xs font-semibold uppercase tracking-wide {{ calendarDay2Meta().isToday ? 'text-primary' : 'text-foreground-60' }}">
+                                  {{ calendarDay2Meta().label }}
+                                </div>
+                                <div class="text-2xl font-bold leading-tight {{ calendarDay2Meta().isToday ? 'text-primary' : 'text-foreground' }}">
+                                  {{ calendarDay2Meta().dayNum }}
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- Time grid -->
+                            <div class="flex overflow-y-auto" [style.height.px]="homeCalendarHeight()">
+
+                              <!-- Time gutter -->
+                              <div class="w-12 flex-shrink-0">
+                                @for (hour of calendarHours; track hour) {
+                                  <div class="h-[60px] flex items-start justify-end pr-2 -mt-0">
+                                    <div class="text-2xs text-foreground-40 mt-1">{{ formatCalHour(hour) }}</div>
+                                  </div>
+                                }
+                              </div>
+
+                              <!-- Day 1 column -->
+                              <div class="flex-1 relative border-right-default">
+                                @for (hour of calendarHours; track hour) {
+                                  <div class="h-[60px] border-bottom-default"></div>
+                                }
+                                <!-- Appointments -->
+                                @for (appt of calendarDay1Appts(); track appt.id) {
+                                  <div
+                                    class="absolute inset-x-1 rounded px-1.5 py-0.5 text-xs overflow-hidden border-l-2 cursor-default {{ apptColor(appt.type) }}"
+                                    [style.top.px]="apptTop(appt)"
+                                    [style.height.px]="apptHeight(appt)"
+                                  >
+                                    <div class="font-medium leading-tight truncate">{{ appt.title }}</div>
+                                    @if (apptHeight(appt) >= 36) {
+                                      <div class="text-2xs opacity-70 mt-0.5">{{ formatApptTime(appt.startHour, appt.startMin) }} – {{ formatApptTime(appt.endHour, appt.endMin) }}</div>
+                                    }
+                                  </div>
+                                }
+                                <!-- Current time indicator — day 1 -->
+                                @if (calendarDay1Meta().isToday) {
+                                  <div class="absolute left-0 right-0 h-px bg-destructive z-10 pointer-events-none" [style.top.px]="currentTimeTop()">
+                                    <div class="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-destructive"></div>
+                                  </div>
+                                }
+                              </div>
+
+                              <!-- Day 2 column -->
+                              <div class="flex-1 relative">
+                                @for (hour of calendarHours; track hour) {
+                                  <div class="h-[60px] border-bottom-default"></div>
+                                }
+                                <!-- Appointments -->
+                                @for (appt of calendarDay2Appts(); track appt.id) {
+                                  <div
+                                    class="absolute inset-x-1 rounded px-1.5 py-0.5 text-xs overflow-hidden border-l-2 cursor-default {{ apptColor(appt.type) }}"
+                                    [style.top.px]="apptTop(appt)"
+                                    [style.height.px]="apptHeight(appt)"
+                                  >
+                                    <div class="font-medium leading-tight truncate">{{ appt.title }}</div>
+                                    @if (apptHeight(appt) >= 36) {
+                                      <div class="text-2xs opacity-70 mt-0.5">{{ formatApptTime(appt.startHour, appt.startMin) }} – {{ formatApptTime(appt.endHour, appt.endMin) }}</div>
+                                    }
+                                  </div>
+                                }
+                                <!-- Current time indicator — day 2 -->
+                                @if (calendarDay2Meta().isToday) {
+                                  <div class="absolute left-0 right-0 h-px bg-destructive z-10 pointer-events-none" [style.top.px]="currentTimeTop()">
+                                    <div class="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-destructive"></div>
+                                  </div>
+                                }
+                              </div>
+
+                            </div>
+
+                            <!-- Legend -->
+                            <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
+                              <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-sm bg-primary"></div>
+                                <div class="text-xs text-foreground-60">Meeting</div>
+                              </div>
+                              <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-sm bg-warning"></div>
+                                <div class="text-xs text-foreground-60">Review</div>
+                              </div>
+                              <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-sm bg-success"></div>
+                                <div class="text-xs text-foreground-60">Call</div>
+                              </div>
+                              <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-sm bg-destructive"></div>
+                                <div class="text-xs text-foreground-60">Deadline</div>
+                              </div>
+                              <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-sm bg-secondary"></div>
+                                <div class="text-xs text-foreground-60">Focus</div>
+                              </div>
+                            </div>
+                          </div>
+                          <!-- Corner resize handle -->
+                          <div
+                            class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                            (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                          >
+                            <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                            </div>
+                          </div>
+                        }
 
                       </div>
                     </div>
@@ -478,9 +560,7 @@ interface AiMessage {
                 <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0 mt-1">
-                <modus-button color="primary" size="sm" icon="add" iconPosition="left">
-                  New Project
-                </modus-button>
+                <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
               </div>
             </div>
 
@@ -655,14 +735,14 @@ interface AiMessage {
                     <div class="text-lg font-semibold text-foreground">Open Estimates</div>
                     <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
                   </div>
-                  <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">
-                    New Estimate
-                  </modus-button>
+                  <div class="flex-shrink-0">
+                    <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">New Estimate</modus-button>
+                  </div>
                 </div>
                 <!-- Table header -->
                 <div
                   class="grid gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide"
-                  [class]="estimatesXXNarrow() ? 'grid-cols-[2fr_1fr_1fr_1fr]' : estimatesXNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr]' : estimatesNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr]' : 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr]'"
+                  [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
                 >
                   @if (!estimatesXXNarrow()) {
                     <div>ID</div>
@@ -671,7 +751,9 @@ interface AiMessage {
                   @if (!estimatesXNarrow()) {
                     <div>Type</div>
                   }
-                  <div>Value</div>
+                  @if (!estimatesUltraNarrow()) {
+                    <div>Value</div>
+                  }
                   <div>Status</div>
                   @if (!estimatesNarrow()) {
                     <div>Requested By</div>
@@ -683,28 +765,30 @@ interface AiMessage {
                   @for (estimate of estimates(); track estimate.id) {
                     <div
                       class="grid gap-3 px-6 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150"
-                      [class]="estimatesXXNarrow() ? 'grid-cols-[2fr_1fr_1fr_1fr]' : estimatesXNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr]' : estimatesNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr]' : 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr]'"
+                      [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
                     >
                       @if (!estimatesXXNarrow()) {
                         <div class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
                       }
                       <div>
-                        <div class="text-sm font-medium text-foreground">{{ estimate.project }}</div>
-                        <div class="text-xs text-foreground-60 mt-0.5">{{ estimate.client }}</div>
+                        <div class="text-sm font-medium text-foreground truncate">{{ estimate.project }}</div>
+                        <div class="text-xs text-foreground-60 mt-0.5 truncate">{{ estimate.client }}</div>
                       </div>
                       @if (!estimatesXNarrow()) {
                         <div>
                           <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</div>
                         </div>
                       }
-                      <div class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
+                      @if (!estimatesUltraNarrow()) {
+                        <div class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
+                      }
                       <div>
                         <modus-badge [color]="estimateBadgeColor(estimate.status)" variant="outlined" size="sm">
                           {{ estimate.status }}
                         </modus-badge>
                       </div>
                       @if (!estimatesNarrow()) {
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                           <div class="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-xs font-semibold flex-shrink-0">
                             {{ estimate.requestedByInitials }}
                           </div>
@@ -851,9 +935,9 @@ interface AiMessage {
                       </div>
                     }
                   </div>
-                  <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">
-                    New Request
-                  </modus-button>
+                  <div class="flex-shrink-0">
+                    <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">New Request</modus-button>
+                  </div>
                 </div>
                 <div class="overflow-y-auto">
                   <!-- Header row -->
@@ -925,7 +1009,9 @@ interface AiMessage {
                     <div class="text-3xl font-bold text-foreground">Financials</div>
                     <div class="text-sm text-foreground-60 mt-1">Budget overview and cost tracking</div>
                   </div>
-                  <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
+                  <div class="flex-shrink-0">
+                    <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
+                  </div>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
                   <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
@@ -1263,6 +1349,7 @@ export class HomeComponent implements AfterViewInit {
   readonly estimatesNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 13);
   readonly estimatesXNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 10);
   readonly estimatesXXNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 9);
+  readonly estimatesUltraNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 6);
 
   setActiveNav(page: 'home' | 'projects' | 'financials'): void {
     this.activeNav.set(page);
@@ -1342,6 +1429,134 @@ export class HomeComponent implements AfterViewInit {
     if (status === 'Approved') return 'bg-success text-success-foreground';
     if (status === 'Pending') return 'bg-warning text-warning-foreground';
     return 'bg-destructive text-destructive-foreground';
+  }
+
+  // ── Calendar Widget ──
+
+  private readonly _apptTypeColor: Record<ApptType, string> = {
+    meeting:  'bg-primary-20 text-primary border-primary',
+    review:   'bg-warning-20 text-warning border-warning',
+    call:     'bg-success-20 text-success border-success',
+    deadline: 'bg-destructive-20 text-destructive border-destructive',
+    focus:    'bg-secondary text-foreground-60 border-muted',
+  };
+
+  readonly calendarAppointments: CalendarAppointment[] = [
+    // Mar 5
+    { id: 1,  title: 'Daily Standup',          date: new Date(2026, 2, 5),  startHour: 9,  startMin: 0,  endHour: 9,  endMin: 30, type: 'meeting'  },
+    { id: 2,  title: 'ERP Budget Review',       date: new Date(2026, 2, 5),  startHour: 10, startMin: 0,  endHour: 11, endMin: 0,  type: 'review'   },
+    { id: 3,  title: 'Client Call — Acme Corp', date: new Date(2026, 2, 5),  startHour: 14, startMin: 0,  endHour: 14, endMin: 30, type: 'call'     },
+    { id: 4,  title: 'Focus: Sprint Reports',   date: new Date(2026, 2, 5),  startHour: 15, startMin: 0,  endHour: 17, endMin: 0,  type: 'focus'    },
+    // Mar 6
+    { id: 5,  title: 'Sprint Planning',         date: new Date(2026, 2, 6),  startHour: 9,  startMin: 0,  endHour: 10, endMin: 30, type: 'meeting'  },
+    { id: 6,  title: 'Design Review',           date: new Date(2026, 2, 6),  startHour: 11, startMin: 0,  endHour: 11, endMin: 30, type: 'review'   },
+    { id: 7,  title: 'EST-2026-044 Deadline',   date: new Date(2026, 2, 6),  startHour: 17, startMin: 0,  endHour: 17, endMin: 30, type: 'deadline' },
+    // Mar 9
+    { id: 8,  title: 'Planning Session',        date: new Date(2026, 2, 9),  startHour: 9,  startMin: 0,  endHour: 10, endMin: 0,  type: 'meeting'  },
+    { id: 9,  title: 'Project Kickoff',         date: new Date(2026, 2, 9),  startHour: 13, startMin: 0,  endHour: 14, endMin: 0,  type: 'meeting'  },
+    { id: 10, title: 'Architecture Review',     date: new Date(2026, 2, 9),  startHour: 15, startMin: 0,  endHour: 16, endMin: 0,  type: 'review'   },
+    // Mar 10
+    { id: 11, title: 'All Hands Meeting',       date: new Date(2026, 2, 10), startHour: 10, startMin: 0,  endHour: 11, endMin: 0,  type: 'meeting'  },
+    { id: 12, title: 'Mobile App Check-in',     date: new Date(2026, 2, 10), startHour: 14, startMin: 0,  endHour: 14, endMin: 30, type: 'call'     },
+  ];
+
+  private readonly CAL_FIRST_HOUR = 8;
+  private readonly CAL_LAST_HOUR  = 18; // exclusive
+  readonly calendarHours = Array.from({ length: this.CAL_LAST_HOUR - this.CAL_FIRST_HOUR }, (_, i) => i + this.CAL_FIRST_HOUR);
+
+  readonly calendarBaseDate = signal(new Date());
+
+  readonly calendarDay1 = computed(() => {
+    const d = new Date(this.calendarBaseDate());
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  readonly calendarDay2 = computed(() => {
+    const d = new Date(this.calendarBaseDate());
+    d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  private readonly _DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  private readonly _MON_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  private calDayMeta(d: Date): { label: string; dateStr: string; dayNum: number; isToday: boolean } {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    const isToday = d.getTime() === today.getTime();
+    const isTomorrow = d.getTime() === tomorrow.getTime();
+    const label = isToday ? 'Today' : isTomorrow ? 'Tomorrow' : this._DAY_NAMES[d.getDay()];
+    return { label, dateStr: `${this._MON_NAMES[d.getMonth()]} ${d.getDate()}`, dayNum: d.getDate(), isToday };
+  }
+
+  readonly calendarDay1Meta = computed(() => this.calDayMeta(this.calendarDay1()));
+  readonly calendarDay2Meta = computed(() => this.calDayMeta(this.calendarDay2()));
+
+  private isSameCalDay(a: Date, b: Date): boolean {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  readonly calendarDay1Appts = computed(() =>
+    this.calendarAppointments
+      .filter(a => this.isSameCalDay(a.date, this.calendarDay1()))
+      .sort((a, b) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin))
+  );
+
+  readonly calendarDay2Appts = computed(() =>
+    this.calendarAppointments
+      .filter(a => this.isSameCalDay(a.date, this.calendarDay2()))
+      .sort((a, b) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin))
+  );
+
+  readonly currentTimeTop = computed(() => {
+    const now = new Date();
+    const top = (now.getHours() - this.CAL_FIRST_HOUR) * 60 + now.getMinutes();
+    return Math.max(0, Math.min(this.calendarHours.length * 60, top));
+  });
+
+  readonly showCurrentTimeLine = computed(() => {
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    return this.isSameCalDay(this.calendarDay1(), now) || this.isSameCalDay(this.calendarDay2(), now);
+  });
+
+  apptColor(type: ApptType): string {
+    return this._apptTypeColor[type];
+  }
+
+  apptTop(appt: CalendarAppointment): number {
+    return (appt.startHour - this.CAL_FIRST_HOUR) * 60 + appt.startMin;
+  }
+
+  apptHeight(appt: CalendarAppointment): number {
+    const mins = (appt.endHour - appt.startHour) * 60 + (appt.endMin - appt.startMin);
+    return Math.max(24, mins);
+  }
+
+  formatCalHour(h: number): string {
+    if (h === 12) return '12p';
+    if (h === 0)  return '12a';
+    return h > 12 ? `${h - 12}p` : `${h}a`;
+  }
+
+  formatApptTime(hour: number, min: number): string {
+    const ampm = hour >= 12 ? 'p' : 'a';
+    const h = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+    const m = min > 0 ? `:${min.toString().padStart(2, '0')}` : '';
+    return `${h}${m}${ampm}`;
+  }
+
+  prevCalendarDay(): void {
+    this.calendarBaseDate.update(d => { const n = new Date(d); n.setDate(n.getDate() - 1); return n; });
+  }
+
+  nextCalendarDay(): void {
+    this.calendarBaseDate.update(d => { const n = new Date(d); n.setDate(n.getDate() + 1); return n; });
+  }
+
+  resetCalendarToToday(): void {
+    this.calendarBaseDate.set(new Date());
   }
 
   ngAfterViewInit(): void {
@@ -1500,26 +1715,25 @@ export class HomeComponent implements AfterViewInit {
   readonly attentionHeight = signal(360);
 
   // Home widget heights
-  readonly homeAttentionHeight = signal(320);
-  readonly homeActivityHeight = signal(320);
   readonly homeTimeOffHeight = signal(380);
+  readonly homeCalendarHeight = signal(460);
 
   /** Render order — determines auto-flow row stacking (Projects page). */
   readonly widgetOrder = signal<DashboardWidgetId[]>(['projects', 'openEstimates', 'recentActivity', 'needsAttention']);
 
   /** Render order — determines auto-flow row stacking (Home page). */
-  readonly homeWidgetOrder = signal<DashboardWidgetId[]>(['homeAttention', 'homeActivity', 'homeTimeOff']);
+  readonly homeWidgetOrder = signal<DashboardWidgetId[]>(['homeTimeOff', 'homeCalendar']);
 
   /** Column start (1-16) per widget. */
   readonly widgetColStarts = signal<Record<DashboardWidgetId, number>>({
     projects: 1, openEstimates: 1, recentActivity: 1, needsAttention: 13, timeOff: 1,
-    homeAttention: 1, homeActivity: 9, homeTimeOff: 1,
+    homeTimeOff: 1, homeCalendar: 9,
   });
 
   /** Column span (1-16) per widget. */
   readonly widgetColSpans = signal<Record<DashboardWidgetId, number>>({
     projects: 16, openEstimates: 16, recentActivity: 12, needsAttention: 4, timeOff: 8,
-    homeAttention: 8, homeActivity: 8, homeTimeOff: 16,
+    homeTimeOff: 8, homeCalendar: 8,
   });
 
   private readonly gridContainerRef = viewChild<ElementRef>('widgetGrid');
@@ -1620,18 +1834,16 @@ export class HomeComponent implements AfterViewInit {
     openEstimates: () => this.estimatesHeight(),
     recentActivity: () => this.activityHeight(),
     needsAttention: () => this.attentionHeight(),
-    homeAttention: () => this.homeAttentionHeight(),
-    homeActivity: () => this.homeActivityHeight(),
     homeTimeOff: () => this.homeTimeOffHeight(),
+    homeCalendar: () => this.homeCalendarHeight(),
   };
 
   private readonly _heightSetMap: Partial<Record<DashboardWidgetId, (h: number) => void>> = {
     openEstimates: h => this.estimatesHeight.set(h),
     recentActivity: h => this.activityHeight.set(h),
     needsAttention: h => this.attentionHeight.set(h),
-    homeAttention: h => this.homeAttentionHeight.set(h),
-    homeActivity: h => this.homeActivityHeight.set(h),
     homeTimeOff: h => this.homeTimeOffHeight.set(h),
+    homeCalendar: h => this.homeCalendarHeight.set(h),
   };
 
   startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, grid: 'home' | 'projects' = 'projects'): void {
