@@ -99,7 +99,6 @@ interface AiMessage {
         [searchInputOpen]="searchInputOpen()"
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
-        (mainMenuOpenChange)="navExpanded.set(!navExpanded())"
       >
         <div slot="end" class="flex items-center pr-1 gap-0.5">
           <!-- AI Assistant toggle -->
@@ -141,7 +140,6 @@ interface AiMessage {
           [mode]="isMobile() ? 'overlay' : 'push'"
           targetContent="#main-content"
           class="h-full"
-          [class.hidden]="isMobile() && !navExpanded()"
           (expandedChange)="navExpanded.set($event)"
         >
           <modus-menu size="lg">
@@ -1237,6 +1235,7 @@ interface AiMessage {
 })
 export class HomeComponent implements AfterViewInit {
   private readonly themeService = inject(ThemeService);
+  private readonly elementRef = inject(ElementRef);
 
   readonly userCard: INavbarUserCard = {
     name: 'Alex Morgan',
@@ -1385,6 +1384,24 @@ export class HomeComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    // Wire the navbar hamburger → side navigation using the official native-event
+    // pattern (same as the Modus side-navigation demo).  Angular output bindings
+    // on <modus-navbar> are unreliable for this because the WC fires the event
+    // before Angular's change-detection has a chance to run; the native listener
+    // here catches the bubbling CustomEvent directly and sets the WC property
+    // immediately, with a parallel signal update for any Angular-driven logic.
+    this.elementRef.nativeElement.addEventListener(
+      'mainMenuOpenChange',
+      (event: Event) => {
+        const expanded = (event as CustomEvent<boolean>).detail;
+        this.navExpanded.set(expanded);
+        const sideNav = this.elementRef.nativeElement.querySelector(
+          'modus-wc-side-navigation'
+        ) as (HTMLElement & { expanded: boolean }) | null;
+        if (sideNav) sideNav.expanded = expanded;
+      }
+    );
+
     // Re-attach ResizeObserver whenever the estimates container enters/leaves
     // the DOM (e.g. switching between Home and Projects tabs).
     effect(() => {
