@@ -90,7 +90,7 @@ interface AiMessage {
     '(document:mouseup)': 'onDocumentMouseUp()',
   },
   template: `
-    <div #appRoot class="h-screen flex flex-col bg-background text-foreground overflow-hidden">
+    <div class="h-screen flex flex-col bg-background text-foreground overflow-hidden">
 
       <!-- Navbar -->
       <modus-navbar
@@ -99,6 +99,7 @@ interface AiMessage {
         [searchInputOpen]="searchInputOpen()"
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
+        (mainMenuOpenChange)="navExpanded.set($event)"
       >
         <div slot="end" class="flex items-center pr-1 gap-0.5">
           <!-- AI Assistant toggle -->
@@ -1245,7 +1246,6 @@ export class HomeComponent implements AfterViewInit {
   readonly searchInputOpen = signal(false);
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
-  private readonly appRootRef = viewChild<ElementRef>('appRoot');
 
   // ── Side Navigation ──
   readonly navExpanded = signal(false);
@@ -1382,16 +1382,9 @@ export class HomeComponent implements AfterViewInit {
   setActiveNav(page: 'home' | 'projects' | 'financials'): void {
     this.activeNav.set(page);
     this.navExpanded.set(false);
-    // Keep the web component in sync when nav item is clicked
-    const root = this.appRootRef()?.nativeElement as HTMLElement | undefined;
-    const sideNav = root?.querySelector('modus-wc-side-navigation') as (HTMLElement & { expanded: boolean }) | null;
-    if (sideNav) sideNav.expanded = false;
   }
 
   ngAfterViewInit(): void {
-    const root = this.appRootRef()?.nativeElement as HTMLElement | undefined;
-    if (!root) return;
-
     // Re-attach ResizeObserver whenever the estimates container enters/leaves
     // the DOM (e.g. switching between Home and Projects tabs).
     effect(() => {
@@ -1411,14 +1404,6 @@ export class HomeComponent implements AfterViewInit {
       this._estimatesResizeObserver = ro;
     });
 
-    // Catch the navbar's hamburger event on the common ancestor container and
-    // set the side-nav expanded property directly — this is the pattern used
-    // by the official Modus side-navigation demo.
-    root.addEventListener('mainMenuOpenChange', (event: Event) => {
-      const expanded = (event as CustomEvent<boolean>).detail;
-      this.navExpanded.set(expanded);
-    });
-
     // Track mobile breakpoint so the side nav switches between overlay (mobile)
     // and push (desktop) modes.  When switching to desktop, collapse any open
     // overlay nav; when switching to mobile, collapse any pushed nav.
@@ -1428,8 +1413,6 @@ export class HomeComponent implements AfterViewInit {
       if (!e.matches) {
         // Switched to desktop — close overlay nav if open
         this.navExpanded.set(false);
-        const sideNav = root.querySelector('modus-wc-side-navigation') as (HTMLElement & { expanded: boolean }) | null;
-        if (sideNav) sideNav.expanded = false;
       }
     };
     mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
