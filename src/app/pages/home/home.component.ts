@@ -96,11 +96,10 @@ interface AiMessage {
       <modus-navbar
         [userCard]="userCard"
         [visibility]="{ user: true, notifications: true, apps: false, help: true, search: true, searchInput: true, mainMenu: true }"
-        [mainMenuOpen]="navExpanded()"
         [searchInputOpen]="searchInputOpen()"
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
-        (mainMenuOpenChange)="navExpanded.set($event)"
+        (mainMenuOpenChange)="navExpanded.set(!navExpanded())"
       >
         <div slot="end" class="flex items-center pr-1 gap-0.5">
           <!-- AI Assistant toggle -->
