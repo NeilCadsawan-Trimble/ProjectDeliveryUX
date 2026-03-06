@@ -129,9 +129,9 @@ interface AiMessage {
       <div class="flex flex-1 overflow-hidden">
 
         <!-- Side Navigation -->
-        <!-- Desktop: push mode (icon strip visible when collapsed)          -->
-        <!-- Mobile:  overlay mode (hidden off-screen when collapsed,        -->
-        <!--          slides in over content when hamburger is tapped)       -->
+        <!-- Desktop: push mode — icon strip visible when collapsed           -->
+        <!-- Mobile:  overlay mode — hidden entirely when collapsed,          -->
+        <!--          slides over content when hamburger is tapped            -->
         <modus-side-navigation
           [expanded]="navExpanded()"
           [collapseOnClickOutside]="true"
@@ -139,6 +139,7 @@ interface AiMessage {
           [mode]="isMobile() ? 'overlay' : 'push'"
           targetContent="#main-content"
           class="h-full"
+          [class.hidden]="isMobile() && !navExpanded()"
           (expandedChange)="navExpanded.set($event)"
         >
           <modus-menu size="lg">
@@ -205,14 +206,14 @@ interface AiMessage {
                 <!-- Home widget grid -->
                 <div
                   class="grid gap-4"
-                  style="grid-template-columns: repeat(16, minmax(0, 1fr))"
+                  [style.grid-template-columns]="isMobile() ? '1fr' : 'repeat(16, minmax(0, 1fr))'"
                   #homeWidgetGrid
                 >
                   @for (widgetId of homeWidgetOrder(); track widgetId) {
                     <div
                       class="relative"
                       [attr.data-widget-id]="widgetId"
-                      [style.grid-column]="widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
+                      [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
                     >
                       <div class="relative" [class.opacity-30]="moveTargetId() === widgetId">
 
@@ -225,7 +226,7 @@ interface AiMessage {
                               (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                                <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
                                 <i class="modus-icons text-lg text-foreground-60">calendar</i>
                                 <div class="text-base font-semibold text-foreground">Time Off Requests</div>
                                 @if (pendingTimeOffCount() > 0) {
@@ -362,6 +363,7 @@ interface AiMessage {
                             }
                           </div>
                           <!-- Corner resize handle -->
+                          @if (!isMobile()) {
                           <div
                             class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
                             (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -377,6 +379,7 @@ interface AiMessage {
                               </div>
                             </div>
                           </div>
+                          }
                         }
                         @else if (widgetId === 'homeCalendar') {
                           <!-- ─── Two-Day Calendar Widget ─── -->
@@ -387,7 +390,7 @@ interface AiMessage {
                               (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                                <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
                                 <i class="modus-icons text-lg text-foreground-60">calendar</i>
                                 <div class="text-base font-semibold text-foreground">Calendar</div>
                                 <div class="text-xs text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</div>
@@ -527,6 +530,7 @@ interface AiMessage {
                             </div>
                           </div>
                           <!-- Corner resize handle -->
+                          @if (!isMobile()) {
                           <div
                             class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
                             (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -542,6 +546,7 @@ interface AiMessage {
                               </div>
                             </div>
                           </div>
+                          }
                         }
 
                       </div>
@@ -625,7 +630,7 @@ interface AiMessage {
             <!-- Widget area: 16-column grid layout -->
             <div
               class="grid gap-4 mb-6"
-              style="grid-template-columns: repeat(16, minmax(0, 1fr))"
+              [style.grid-template-columns]="isMobile() ? '1fr' : 'repeat(16, minmax(0, 1fr))'"
               #widgetGrid
             >
 
@@ -635,7 +640,7 @@ interface AiMessage {
               <div
                 class="relative"
                 [attr.data-widget-id]="widgetId"
-                [style.grid-column]="widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
+                [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
               >
                 <!-- Widget card (dims while being moved) -->
                 <div class="relative" [class.opacity-30]="moveTargetId() === widgetId">
@@ -649,7 +654,7 @@ interface AiMessage {
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
                     <i class="modus-icons text-lg text-foreground-60">apps</i>
                     <div class="text-lg font-semibold text-foreground">Projects</div>
                     <div class="text-xs text-foreground-40">{{ totalProjects() }} projects</div>
@@ -733,7 +738,7 @@ interface AiMessage {
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
                     <i class="modus-icons text-lg text-foreground-60">description</i>
                     <div class="text-lg font-semibold text-foreground">Open Estimates</div>
                     <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
@@ -814,6 +819,7 @@ interface AiMessage {
                   }
                 </div>
                 <!-- Corner resize handle (width + height) -->
+                @if (!isMobile()) {
                 <div
                   class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
                   (mousedown)="startWidgetResize('openEstimates', 'both', $event)"
@@ -830,6 +836,7 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
+                }
               </div>
 
               } @else if (widgetId === 'recentActivity') {
@@ -839,7 +846,7 @@ interface AiMessage {
                   class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                 >
-                  <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                  <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
                   <i class="modus-icons text-lg text-foreground-60">history</i>
                   <div class="text-lg font-semibold text-foreground">Recent Activity</div>
                 </div>
@@ -862,6 +869,7 @@ interface AiMessage {
                   }
                 </div>
                 <!-- Corner resize handle (width + height) -->
+                @if (!isMobile()) {
                 <div
                   class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
                   (mousedown)="startWidgetResize('recentActivity', 'both', $event)"
@@ -878,6 +886,7 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
+                }
               </div>
 
               } @else if (widgetId === 'needsAttention') {
@@ -887,7 +896,7 @@ interface AiMessage {
                   class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                 >
-                  <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                  <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
                   <i class="modus-icons text-lg text-warning">warning</i>
                   <div class="text-lg font-semibold text-foreground">Needs Attention</div>
                 </div>
@@ -903,6 +912,7 @@ interface AiMessage {
                   }
                 </div>
                 <!-- Corner resize handle (width + height) -->
+                @if (!isMobile()) {
                 <div
                   class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
                   (mousedown)="startWidgetResize('needsAttention', 'both', $event)"
@@ -919,6 +929,7 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
+                }
               </div>
 
               } @else if (widgetId === 'timeOff') {
@@ -929,7 +940,7 @@ interface AiMessage {
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
                     <i class="modus-icons text-lg text-foreground-60">calendar</i>
                     <div class="text-lg font-semibold text-foreground">Time Off Requests</div>
                     @if (pendingTimeOffCount() > 0) {
@@ -974,6 +985,7 @@ interface AiMessage {
                   }
                 </div>
                 <!-- Corner resize handle -->
+                @if (!isMobile()) {
                 <div
                   class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
                   (mousedown)="startWidgetResize('timeOff', 'both', $event)"
@@ -990,6 +1002,7 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
+                }
               </div>
 
               } <!-- end @if widgetId -->
