@@ -573,7 +573,7 @@ interface AiMessage {
             </div>
 
             <!-- KPI cards -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
 
               <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
                 <div class="flex items-center justify-between">
@@ -676,7 +676,7 @@ interface AiMessage {
                 </div>
                 <!-- Card grid -->
                 <div class="p-4">
-                  <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+                  <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
                     @for (project of projects(); track project.id) {
                       <div class="bg-background border-default rounded-lg overflow-hidden flex flex-col">
                         <div class="h-1 w-full flex-shrink-0"
