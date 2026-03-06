@@ -89,7 +89,7 @@ interface AiMessage {
     '(document:mouseup)': 'onDocumentMouseUp()',
   },
   template: `
-    <div class="h-screen flex flex-col bg-background text-foreground overflow-hidden">
+    <div #appRoot class="h-screen flex flex-col bg-background text-foreground overflow-hidden">
 
       <!-- Navbar -->
       <modus-navbar
@@ -126,14 +126,17 @@ interface AiMessage {
       </modus-navbar>
 
       <!-- Body -->
-      <div #navBody class="flex flex-1 overflow-hidden">
+      <div class="flex flex-1 overflow-hidden">
 
         <!-- Side Navigation -->
+        <!-- Desktop: push mode (icon strip visible when collapsed)          -->
+        <!-- Mobile:  overlay mode (hidden off-screen when collapsed,        -->
+        <!--          slides in over content when hamburger is tapped)       -->
         <modus-side-navigation
           [expanded]="navExpanded()"
           [collapseOnClickOutside]="true"
           maxWidth="256px"
-          mode="push"
+          [mode]="isMobile() ? 'overlay' : 'push'"
           targetContent="#main-content"
           class="h-full"
           (expandedChange)="navExpanded.set($event)"
@@ -1228,11 +1231,13 @@ export class HomeComponent implements AfterViewInit {
   readonly searchInputOpen = signal(false);
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
+  private readonly appRootRef = viewChild<ElementRef>('appRoot');
+
   // ── Side Navigation ──
   readonly navExpanded = signal(false);
   readonly activeNav = signal<'home' | 'projects' | 'financials'>('home');
+  readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
-  private readonly navBodyRef = viewChild<ElementRef>('navBody');
 
   // ── AI Assistant ──
   readonly aiPanelOpen = signal(false);
@@ -1354,6 +1359,42 @@ export class HomeComponent implements AfterViewInit {
   setActiveNav(page: 'home' | 'projects' | 'financials'): void {
     this.activeNav.set(page);
     this.navExpanded.set(false);
+    // Keep the web component in sync when nav item is clicked
+    const root = this.appRootRef()?.nativeElement as HTMLElement | undefined;
+    const sideNav = root?.querySelector('modus-wc-side-navigation') as (HTMLElement & { expanded: boolean }) | null;
+    if (sideNav) sideNav.expanded = false;
+  }
+
+  ngAfterViewInit(): void {
+    const root = this.appRootRef()?.nativeElement as HTMLElement | undefined;
+    if (!root) return;
+
+    // Catch the navbar's hamburger event on the common ancestor container and
+    // set the side-nav expanded property directly — this is the pattern used
+    // by the official Modus side-navigation demo.
+    root.addEventListener('mainMenuOpenChange', (event: Event) => {
+      const expanded = (event as CustomEvent<boolean>).detail;
+      const sideNav = root.querySelector('modus-wc-side-navigation') as (HTMLElement & { expanded: boolean }) | null;
+      if (sideNav) sideNav.expanded = expanded;
+      this.navExpanded.set(expanded);
+    });
+
+    // Track mobile breakpoint so the side nav switches between overlay (mobile)
+    // and push (desktop) modes.  When switching to desktop, collapse any open
+    // overlay nav; when switching to mobile, collapse any pushed nav.
+    const mq = window.matchMedia('(max-width: 767px)');
+    const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      this.isMobile.set(e.matches);
+      if (!e.matches) {
+        // Switched to desktop — close overlay nav if open
+        this.navExpanded.set(false);
+        const sideNav = root.querySelector('modus-wc-side-navigation') as (HTMLElement & { expanded: boolean }) | null;
+        if (sideNav) sideNav.expanded = false;
+      }
+    };
+    mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
+    // Sync initial state
+    onBreakpointChange(mq);
   }
 
   // ── Time Off widget view toggle ──
@@ -1559,20 +1600,6 @@ export class HomeComponent implements AfterViewInit {
     this.calendarBaseDate.set(new Date());
   }
 
-  ngAfterViewInit(): void {
-    // Wire navbar hamburger → side nav expanded
-    const body = this.navBodyRef()?.nativeElement as HTMLElement | undefined;
-    if (body) {
-      body.addEventListener('mainMenuOpenChange', (event: Event) => {
-        const detail = (event as CustomEvent<boolean>).detail;
-        this.navExpanded.set(detail);
-        const sideNav = body.querySelector('modus-wc-side-navigation') as (HTMLElement & { expanded: boolean }) | null;
-        if (sideNav) sideNav.expanded = detail;
-      });
-    }
-
-    // Estimates table responsive column
-  }
 
   // ── Projects data ──
   readonly projects = signal<Project[]>([
