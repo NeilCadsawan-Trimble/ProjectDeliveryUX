@@ -22,7 +22,7 @@ import { ThemeService } from '../../services/theme.service';
 type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention';
+type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeAttention' | 'homeActivity' | 'homeTimeOff';
 
 interface Project {
   id: number;
@@ -145,11 +145,16 @@ interface AiMessage {
           @switch (activeNav()) {
             @case ('home') {
               <div class="p-6 max-w-screen-xl mx-auto">
-                <div class="mb-8">
-                  <div class="text-3xl font-bold text-foreground">Welcome back, Alex</div>
-                  <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+                <!-- Page header -->
+                <div class="flex items-start justify-between mb-6">
+                  <div>
+                    <div class="text-3xl font-bold text-foreground">Welcome back, Alex</div>
+                    <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+                  </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+
+                <!-- KPI summary cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" (click)="setActiveNav('projects')">
                     <div class="w-12 h-12 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
                       <i class="modus-icons text-2xl text-primary">briefcase</i>
@@ -181,49 +186,282 @@ interface AiMessage {
                     <i class="modus-icons text-lg text-foreground-40">chevron_right</i>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div class="bg-card border-default rounded-lg overflow-hidden">
-                    <div class="flex items-center justify-between px-5 py-4 border-bottom-default">
-                      <div class="flex items-center gap-2">
-                        <i class="modus-icons text-lg text-foreground-60">warning</i>
-                        <div class="text-base font-semibold text-foreground">Needs Attention</div>
-                      </div>
-                      <div class="text-xs text-foreground-40">{{ attentionItems.length }} items</div>
-                    </div>
-                    @for (item of attentionItems; track item.id) {
-                      <div class="flex items-start gap-3 px-5 py-3 border-bottom-default last:border-b-0">
-                        <div class="w-2 h-2 rounded-full flex-shrink-0 mt-2 {{ item.dotClass }}"></div>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-sm font-medium text-foreground">{{ item.title }}</div>
-                          <div class="text-xs text-foreground-60 mt-0.5">{{ item.subtitle }}</div>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                  <div class="bg-card border-default rounded-lg overflow-hidden">
-                    <div class="flex items-center justify-between px-5 py-4 border-bottom-default">
-                      <div class="flex items-center gap-2">
-                        <i class="modus-icons text-lg text-foreground-60">history</i>
-                        <div class="text-base font-semibold text-foreground">Recent Activity</div>
-                      </div>
-                    </div>
-                    @for (activity of activities.slice(0, 5); track activity.id) {
-                      <div class="flex items-start gap-3 px-5 py-3 border-bottom-default last:border-b-0">
-                        <div class="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <i class="modus-icons text-sm {{ activity.iconColor }}">{{ activity.icon }}</i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-sm text-foreground">
-                            <div class="w-6 h-6 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
-                              {{ activity.actorInitials }}
+
+                <!-- Home widget grid -->
+                <div
+                  class="grid gap-4"
+                  style="grid-template-columns: repeat(16, minmax(0, 1fr))"
+                  #homeWidgetGrid
+                >
+                  @for (widgetId of homeWidgetOrder(); track widgetId) {
+                    <div
+                      class="relative"
+                      [attr.data-widget-id]="widgetId"
+                      [style.grid-column]="widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
+                    >
+                      <div class="relative" [class.opacity-30]="moveTargetId() === widgetId">
+
+                        @if (widgetId === 'homeAttention') {
+                          <!-- ─── Needs Attention Widget ─── -->
+                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col">
+                            <div
+                              class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                              (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                            >
+                              <div class="flex items-center gap-2">
+                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60">warning</i>
+                                <div class="text-base font-semibold text-foreground">Needs Attention</div>
+                              </div>
+                              <div class="text-xs text-foreground-40">{{ attentionItems.length }} items</div>
                             </div>
-                            {{ activity.text }}
+                            <div class="overflow-y-auto" [style.height.px]="homeAttentionHeight()">
+                              @for (item of attentionItems; track item.id) {
+                                <div class="flex items-start gap-3 px-5 py-3 border-bottom-default last:border-b-0">
+                                  <div class="w-2 h-2 rounded-full flex-shrink-0 mt-2 {{ item.dotClass }}"></div>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-sm font-medium text-foreground">{{ item.title }}</div>
+                                    <div class="text-xs text-foreground-60 mt-0.5">{{ item.subtitle }}</div>
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                            <!-- Corner resize handle -->
+                            <div
+                              class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                              (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                            >
+                              <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                                <div class="flex gap-0.5">
+                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                </div>
+                                <div class="flex gap-0.5">
+                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
+                        }
+
+                        @else if (widgetId === 'homeActivity') {
+                          <!-- ─── Recent Activity Widget ─── -->
+                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col">
+                            <div
+                              class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                              (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                            >
+                              <div class="flex items-center gap-2">
+                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60">history</i>
+                                <div class="text-base font-semibold text-foreground">Recent Activity</div>
+                              </div>
+                              <div class="text-xs text-foreground-40">{{ activities.length }} events</div>
+                            </div>
+                            <div class="overflow-y-auto" [style.height.px]="homeActivityHeight()">
+                              @for (activity of activities; track activity.id) {
+                                <div class="flex items-start gap-3 px-5 py-3 border-bottom-default last:border-b-0">
+                                  <div class="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i class="modus-icons text-sm {{ activity.iconColor }}">{{ activity.icon }}</i>
+                                  </div>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-sm text-foreground">
+                                      <div class="w-6 h-6 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
+                                        {{ activity.actorInitials }}
+                                      </div>
+                                      {{ activity.text }}
+                                    </div>
+                                  </div>
+                                  <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
+                                </div>
+                              }
+                            </div>
+                            <!-- Corner resize handle -->
+                            <div
+                              class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                              (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                            >
+                              <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                                <div class="flex gap-0.5">
+                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                </div>
+                                <div class="flex gap-0.5">
+                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                  <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        }
+
+                        @else if (widgetId === 'homeTimeOff') {
+                          <!-- ─── Time Off Requests Widget ─── -->
+                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col">
+                            <!-- Draggable header -->
+                            <div
+                              class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                              (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                            >
+                              <div class="flex items-center gap-2">
+                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60">calendar</i>
+                                <div class="text-base font-semibold text-foreground">Time Off Requests</div>
+                                @if (pendingTimeOffCount() > 0) {
+                                  <div class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
+                                    <div class="text-xs font-medium text-warning">{{ pendingTimeOffCount() }} pending</div>
+                                  </div>
+                                }
+                              </div>
+                              <!-- View toggle — stop drag propagation -->
+                              <div
+                                class="flex items-center rounded-lg border-default overflow-hidden flex-shrink-0"
+                                (mousedown)="$event.stopPropagation()"
+                              >
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-primary]="timeOffView() === 'list'"
+                                  [class.text-primary-foreground]="timeOffView() === 'list'"
+                                  [class.text-foreground-60]="timeOffView() !== 'list'"
+                                  (click)="timeOffView.set('list')"
+                                >
+                                  <i class="modus-icons text-sm">list_bulleted</i>
+                                  <div>List</div>
+                                </div>
+                                <div class="w-px h-5 bg-muted flex-shrink-0"></div>
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-primary]="timeOffView() === 'calendar'"
+                                  [class.text-primary-foreground]="timeOffView() === 'calendar'"
+                                  [class.text-foreground-60]="timeOffView() !== 'calendar'"
+                                  (click)="timeOffView.set('calendar')"
+                                >
+                                  <i class="modus-icons text-sm">calendar</i>
+                                  <div>Calendar</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- List view -->
+                            @if (timeOffView() === 'list') {
+                              <div class="overflow-y-auto flex-1" [style.height.px]="homeTimeOffHeight()">
+                                <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+                                  <div>Employee</div>
+                                  <div>Type</div>
+                                  <div>Dates</div>
+                                  <div>Days</div>
+                                  <div>Status</div>
+                                </div>
+                                @for (req of timeOffRequests; track req.id) {
+                                  <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+                                    <div class="flex items-center gap-2">
+                                      <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                                        {{ req.initials }}
+                                      </div>
+                                      <div class="text-sm font-medium text-foreground truncate">{{ req.name }}</div>
+                                    </div>
+                                    <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit">{{ req.type }}</div>
+                                    <div class="text-sm text-foreground-80">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
+                                    <div class="text-sm text-foreground-60">{{ req.days }}d</div>
+                                    <div>
+                                      <div class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full
+                                        {{ req.status === 'Approved' ? 'bg-success-20 text-success' :
+                                           req.status === 'Pending'  ? 'bg-warning-20 text-warning' :
+                                           'bg-destructive-20 text-destructive' }}">
+                                        {{ req.status }}
+                                      </div>
+                                    </div>
+                                  </div>
+                                }
+                              </div>
+                            }
+
+                            <!-- Calendar view -->
+                            @if (timeOffView() === 'calendar') {
+                              <div class="flex flex-col" [style.height.px]="homeTimeOffHeight()">
+                                <!-- Month navigation -->
+                                <div class="flex items-center justify-between px-5 py-3 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
+                                  <div
+                                    class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                                    (click)="prevCalendarMonth()"
+                                  >
+                                    <i class="modus-icons text-sm text-foreground-60">chevron_left</i>
+                                  </div>
+                                  <div class="text-sm font-semibold text-foreground">{{ calendarMonthLabel() }}</div>
+                                  <div
+                                    class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                                    (click)="nextCalendarMonth()"
+                                  >
+                                    <i class="modus-icons text-sm text-foreground-60">chevron_right</i>
+                                  </div>
+                                </div>
+                                <!-- Day-of-week headers -->
+                                <div class="grid grid-cols-7 px-3 pt-2 pb-1 flex-shrink-0">
+                                  @for (d of ['Su','Mo','Tu','We','Th','Fr','Sa']; track d) {
+                                    <div class="text-center text-2xs font-semibold text-foreground-40 uppercase py-1">{{ d }}</div>
+                                  }
+                                </div>
+                                <!-- Calendar cells -->
+                                <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1">
+                                  @for (cell of calendarDays(); track $index) {
+                                    <div class="min-h-[52px] rounded-lg p-1 flex flex-col gap-0.5"
+                                      [class.bg-muted]="cell.day !== null && cell.requests.length === 0"
+                                      [class.bg-primary-20]="cell.requests.length > 0"
+                                    >
+                                      @if (cell.day !== null) {
+                                        <div class="text-xs font-medium text-foreground-60 text-center leading-4">{{ cell.day }}</div>
+                                        @for (req of cell.requests.slice(0, 2); track req.id) {
+                                          <div class="flex items-center gap-1 rounded px-1 py-0.5 {{ timeOffStatusColor(req.status) }}">
+                                            <div class="text-2xs font-semibold leading-none truncate">{{ req.initials }}</div>
+                                          </div>
+                                        }
+                                        @if (cell.requests.length > 2) {
+                                          <div class="text-2xs text-foreground-60 text-center">+{{ cell.requests.length - 2 }}</div>
+                                        }
+                                      }
+                                    </div>
+                                  }
+                                </div>
+                                <!-- Legend -->
+                                <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
+                                  <div class="flex items-center gap-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-sm bg-success"></div>
+                                    <div class="text-xs text-foreground-60">Approved</div>
+                                  </div>
+                                  <div class="flex items-center gap-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-sm bg-warning"></div>
+                                    <div class="text-xs text-foreground-60">Pending</div>
+                                  </div>
+                                  <div class="flex items-center gap-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-sm bg-destructive"></div>
+                                    <div class="text-xs text-foreground-60">Denied</div>
+                                  </div>
+                                </div>
+                              </div>
+                            }
+                          </div>
+                          <!-- Corner resize handle -->
+                          <div
+                            class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                            (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                          >
+                            <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                            </div>
+                          </div>
+                        }
+
                       </div>
-                    }
-                  </div>
+                    </div>
+                  }
                 </div>
               </div>
             }<!-- end @case('home') -->
@@ -424,11 +662,15 @@ interface AiMessage {
                 <!-- Table header -->
                 <div
                   class="grid gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide"
-                  [class]="estimatesNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr]' : 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr]'"
+                  [class]="estimatesXXNarrow() ? 'grid-cols-[2fr_1fr_1fr_1fr]' : estimatesXNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr]' : estimatesNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr]' : 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr]'"
                 >
-                  <div>ID</div>
+                  @if (!estimatesXXNarrow()) {
+                    <div>ID</div>
+                  }
                   <div>Project / Client</div>
-                  <div>Type</div>
+                  @if (!estimatesXNarrow()) {
+                    <div>Type</div>
+                  }
                   <div>Value</div>
                   <div>Status</div>
                   @if (!estimatesNarrow()) {
@@ -441,16 +683,20 @@ interface AiMessage {
                   @for (estimate of estimates(); track estimate.id) {
                     <div
                       class="grid gap-3 px-6 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150"
-                      [class]="estimatesNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr]' : 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr]'"
+                      [class]="estimatesXXNarrow() ? 'grid-cols-[2fr_1fr_1fr_1fr]' : estimatesXNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr]' : estimatesNarrow() ? 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr]' : 'grid-cols-[1fr_2fr_1fr_1fr_1fr_1.5fr_1fr]'"
                     >
-                      <div class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
+                      @if (!estimatesXXNarrow()) {
+                        <div class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
+                      }
                       <div>
                         <div class="text-sm font-medium text-foreground">{{ estimate.project }}</div>
                         <div class="text-xs text-foreground-60 mt-0.5">{{ estimate.client }}</div>
                       </div>
-                      <div>
-                        <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</div>
-                      </div>
+                      @if (!estimatesXNarrow()) {
+                        <div>
+                          <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</div>
+                        </div>
+                      }
                       <div class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
                       <div>
                         <modus-badge [color]="estimateBadgeColor(estimate.status)" variant="outlined" size="sm">
@@ -573,6 +819,77 @@ interface AiMessage {
                 <div
                   class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
                   (mousedown)="startWidgetResize('needsAttention', 'both', $event)"
+                  title="Drag to resize"
+                >
+                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              } @else if (widgetId === 'timeOff') {
+              <!-- ─── Time Off Requests Widget ─── -->
+              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col">
+                <div
+                  class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
+                  (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                >
+                  <div class="flex items-center gap-2">
+                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                    <i class="modus-icons text-lg text-foreground-60">calendar</i>
+                    <div class="text-lg font-semibold text-foreground">Time Off Requests</div>
+                    @if (pendingTimeOffCount() > 0) {
+                      <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-20">
+                        <div class="text-xs font-medium text-warning">{{ pendingTimeOffCount() }} pending</div>
+                      </div>
+                    }
+                  </div>
+                  <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">
+                    New Request
+                  </modus-button>
+                </div>
+                <div class="overflow-y-auto">
+                  <!-- Header row -->
+                  <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+                    <div>Employee</div>
+                    <div>Type</div>
+                    <div>Dates</div>
+                    <div>Days</div>
+                    <div>Status</div>
+                  </div>
+                  @for (req of timeOffRequests; track req.id) {
+                    <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-6 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+                      <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                          {{ req.initials }}
+                        </div>
+                        <div class="text-sm font-medium text-foreground truncate">{{ req.name }}</div>
+                      </div>
+                      <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit">{{ req.type }}</div>
+                      <div class="text-sm text-foreground-80">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
+                      <div class="text-sm text-foreground-60">{{ req.days }}d</div>
+                      <div>
+                        <div class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full
+                          {{ req.status === 'Approved' ? 'bg-success-20 text-success' :
+                             req.status === 'Pending'  ? 'bg-warning-20 text-warning' :
+                             'bg-destructive-20 text-destructive' }}">
+                          {{ req.status }}
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+                <!-- Corner resize handle -->
+                <div
+                  class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                  (mousedown)="startWidgetResize('timeOff', 'both', $event)"
                   title="Drag to resize"
                 >
                   <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
@@ -944,10 +1261,87 @@ export class HomeComponent implements AfterViewInit {
   // ── Estimates table responsive column ──
   private readonly estimatesContainerRef = viewChild<ElementRef>('estimatesContainer');
   readonly estimatesNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 13);
+  readonly estimatesXNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 10);
+  readonly estimatesXXNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 9);
 
   setActiveNav(page: 'home' | 'projects' | 'financials'): void {
     this.activeNav.set(page);
     this.navExpanded.set(false);
+  }
+
+  // ── Time Off widget view toggle ──
+
+  readonly timeOffView = signal<'list' | 'calendar'>('list');
+  readonly calendarYear = signal(2026);
+  readonly calendarMonth = signal(2); // 0-indexed; 2 = March
+
+  private readonly _monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  private readonly _monthAbbr: Record<string, number> = {
+    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+  };
+
+  readonly calendarMonthLabel = computed(() =>
+    `${this._monthNames[this.calendarMonth()]} ${this.calendarYear()}`
+  );
+
+  readonly calendarDays = computed(() => {
+    const year = this.calendarYear();
+    const month = this.calendarMonth();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Map each day-of-month to all requests that overlap it.
+    interface TimeOffEntry {
+      id: number; name: string; initials: string; type: string;
+      startDate: string; endDate: string; days: number;
+      status: 'Pending' | 'Approved' | 'Denied';
+    }
+    const dayMap = new Map<number, TimeOffEntry[]>();
+    for (const req of this.timeOffRequests) {
+      const [startMon, startDayStr] = req.startDate.split(' ');
+      const [endMon, endDayStr] = req.endDate.split(' ');
+      const start = new Date(year, this._monthAbbr[startMon], parseInt(startDayStr));
+      const end = new Date(year, this._monthAbbr[endMon], parseInt(endDayStr));
+      const cur = new Date(start);
+      while (cur <= end) {
+        if (cur.getFullYear() === year && cur.getMonth() === month) {
+          const d = cur.getDate();
+          if (!dayMap.has(d)) dayMap.set(d, []);
+          dayMap.get(d)!.push(req);
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+
+    interface CalCell { day: number | null; requests: TimeOffEntry[] }
+    const cells: CalCell[] = [];
+    for (let i = 0; i < firstWeekday; i++) cells.push({ day: null, requests: [] });
+    for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, requests: dayMap.get(d) ?? [] });
+    while (cells.length % 7 !== 0) cells.push({ day: null, requests: [] });
+    return cells;
+  });
+
+  prevCalendarMonth(): void {
+    const m = this.calendarMonth();
+    if (m === 0) { this.calendarMonth.set(11); this.calendarYear.update(y => y - 1); }
+    else { this.calendarMonth.update(v => v - 1); }
+  }
+
+  nextCalendarMonth(): void {
+    const m = this.calendarMonth();
+    if (m === 11) { this.calendarMonth.set(0); this.calendarYear.update(y => y + 1); }
+    else { this.calendarMonth.update(v => v + 1); }
+  }
+
+  timeOffStatusColor(status: string): string {
+    if (status === 'Approved') return 'bg-success text-success-foreground';
+    if (status === 'Pending') return 'bg-warning text-warning-foreground';
+    return 'bg-destructive text-destructive-foreground';
   }
 
   ngAfterViewInit(): void {
@@ -1036,6 +1430,18 @@ export class HomeComponent implements AfterViewInit {
     { id: 6, title: 'ERP UAT sign-off overdue', subtitle: 'Milestone was due Feb 20', dotClass: 'bg-warning' },
   ];
 
+  // ── Time Off Requests ──
+  readonly timeOffRequests = [
+    { id: 1, name: 'Sarah Chen', initials: 'SC', type: 'Vacation', startDate: 'Mar 10', endDate: 'Mar 14', days: 5, status: 'Pending' as const },
+    { id: 2, name: 'James Carter', initials: 'JC', type: 'Sick Leave', startDate: 'Mar 6', endDate: 'Mar 6', days: 1, status: 'Approved' as const },
+    { id: 3, name: 'Priya Nair', initials: 'PN', type: 'Vacation', startDate: 'Mar 17', endDate: 'Mar 21', days: 5, status: 'Pending' as const },
+    { id: 4, name: 'Tom Evans', initials: 'TE', type: 'Personal', startDate: 'Mar 8', endDate: 'Mar 8', days: 1, status: 'Approved' as const },
+    { id: 5, name: 'Lena Brooks', initials: 'LB', type: 'Vacation', startDate: 'Apr 1', endDate: 'Apr 4', days: 4, status: 'Pending' as const },
+    { id: 6, name: 'Mike Osei', initials: 'MO', type: 'Sick Leave', startDate: 'Mar 5', endDate: 'Mar 5', days: 1, status: 'Denied' as const },
+  ];
+
+  readonly pendingTimeOffCount = computed(() => this.timeOffRequests.filter(r => r.status === 'Pending').length);
+
   // ── Helper methods ──
   statusBadgeColor(status: ProjectStatus): ModusBadgeColor {
     const map: Record<ProjectStatus, ModusBadgeColor> = {
@@ -1093,33 +1499,55 @@ export class HomeComponent implements AfterViewInit {
   readonly activityHeight = signal(360);
   readonly attentionHeight = signal(360);
 
-  /** Render order — determines auto-flow row stacking. */
+  // Home widget heights
+  readonly homeAttentionHeight = signal(320);
+  readonly homeActivityHeight = signal(320);
+  readonly homeTimeOffHeight = signal(380);
+
+  /** Render order — determines auto-flow row stacking (Projects page). */
   readonly widgetOrder = signal<DashboardWidgetId[]>(['projects', 'openEstimates', 'recentActivity', 'needsAttention']);
+
+  /** Render order — determines auto-flow row stacking (Home page). */
+  readonly homeWidgetOrder = signal<DashboardWidgetId[]>(['homeAttention', 'homeActivity', 'homeTimeOff']);
 
   /** Column start (1-16) per widget. */
   readonly widgetColStarts = signal<Record<DashboardWidgetId, number>>({
-    projects: 1, openEstimates: 1, recentActivity: 1, needsAttention: 13,
+    projects: 1, openEstimates: 1, recentActivity: 1, needsAttention: 13, timeOff: 1,
+    homeAttention: 1, homeActivity: 9, homeTimeOff: 1,
   });
 
   /** Column span (1-16) per widget. */
   readonly widgetColSpans = signal<Record<DashboardWidgetId, number>>({
-    projects: 16, openEstimates: 16, recentActivity: 12, needsAttention: 4,
+    projects: 16, openEstimates: 16, recentActivity: 12, needsAttention: 4, timeOff: 8,
+    homeAttention: 8, homeActivity: 8, homeTimeOff: 16,
   });
 
   private readonly gridContainerRef = viewChild<ElementRef>('widgetGrid');
+  private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');
 
   // ── Drag-to-move ──
 
   readonly moveTargetId = signal<DashboardWidgetId | null>(null);
 
   private _moveTarget: DashboardWidgetId | null = null;
+  private _activeGrid: 'home' | 'projects' = 'projects';
   private _dragAxis: 'h' | 'v' | null = null;
   private _dragStartX = 0;
   private _dragStartY = 0;
 
-  onWidgetHeaderMouseDown(id: DashboardWidgetId, event: MouseEvent): void {
+  private get activeGridEl(): HTMLElement | undefined {
+    const ref = this._activeGrid === 'home' ? this.homeGridContainerRef() : this.gridContainerRef();
+    return ref?.nativeElement as HTMLElement | undefined;
+  }
+
+  private get activeOrder(): DashboardWidgetId[] {
+    return this._activeGrid === 'home' ? this.homeWidgetOrder() : this.widgetOrder();
+  }
+
+  onWidgetHeaderMouseDown(id: DashboardWidgetId, event: MouseEvent, grid: 'home' | 'projects' = 'projects'): void {
     event.preventDefault();
     this._moveTarget = id;
+    this._activeGrid = grid;
     this._dragAxis = null;
     this._dragStartX = event.clientX;
     this._dragStartY = event.clientY;
@@ -1127,7 +1555,7 @@ export class HomeComponent implements AfterViewInit {
   }
 
   private handleWidgetMove(event: MouseEvent): void {
-    const grid = this.gridContainerRef()?.nativeElement as HTMLElement | undefined;
+    const grid = this.activeGridEl;
     if (!grid || !this._moveTarget) return;
 
     // Determine axis lock once the threshold is crossed.
@@ -1151,7 +1579,8 @@ export class HomeComponent implements AfterViewInit {
       }
     } else {
       // Vertical only — change order, leave colStart alone.
-      const order = this.widgetOrder();
+      const order = this.activeOrder;
+      const orderSignal = this._activeGrid === 'home' ? this.homeWidgetOrder : this.widgetOrder;
       const others = order.filter(id => id !== this._moveTarget);
       let insertBeforeId: DashboardWidgetId | null = null;
       for (const otherId of others) {
@@ -1168,7 +1597,7 @@ export class HomeComponent implements AfterViewInit {
         ? others.length
         : others.indexOf(insertBeforeId);
       if (currentIdx !== targetIdx) {
-        this.widgetOrder.update(ord => {
+        orderSignal.update(ord => {
           const next = ord.filter(id => id !== this._moveTarget!);
           next.splice(targetIdx, 0, this._moveTarget!);
           return next;
@@ -1187,23 +1616,38 @@ export class HomeComponent implements AfterViewInit {
   private _resizeStartColSpan = 0;
   private _gridContainerWidth = 1200;
 
-  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent): void {
+  private readonly _heightGetMap: Partial<Record<DashboardWidgetId, () => number>> = {
+    openEstimates: () => this.estimatesHeight(),
+    recentActivity: () => this.activityHeight(),
+    needsAttention: () => this.attentionHeight(),
+    homeAttention: () => this.homeAttentionHeight(),
+    homeActivity: () => this.homeActivityHeight(),
+    homeTimeOff: () => this.homeTimeOffHeight(),
+  };
+
+  private readonly _heightSetMap: Partial<Record<DashboardWidgetId, (h: number) => void>> = {
+    openEstimates: h => this.estimatesHeight.set(h),
+    recentActivity: h => this.activityHeight.set(h),
+    needsAttention: h => this.attentionHeight.set(h),
+    homeAttention: h => this.homeAttentionHeight.set(h),
+    homeActivity: h => this.homeActivityHeight.set(h),
+    homeTimeOff: h => this.homeTimeOffHeight.set(h),
+  };
+
+  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, grid: 'home' | 'projects' = 'projects'): void {
     event.preventDefault();
     event.stopPropagation();
     this._resizeTarget = target;
     this._resizeDir = dir;
+    this._activeGrid = grid;
     this._resizeStartY = event.clientY;
     this._resizeStartX = event.clientX;
     if (dir === 'v' || dir === 'both') {
-      this._resizeStartH = target === 'openEstimates'
-        ? this.estimatesHeight()
-        : target === 'recentActivity'
-          ? this.activityHeight()
-          : this.attentionHeight();
+      this._resizeStartH = this._heightGetMap[target as DashboardWidgetId]?.() ?? 300;
     }
     if (dir === 'h' || dir === 'both') {
       this._resizeStartColSpan = this.widgetColSpans()[target as DashboardWidgetId] ?? 8;
-      this._gridContainerWidth = this.gridContainerRef()?.nativeElement?.offsetWidth ?? 1200;
+      this._gridContainerWidth = this.activeGridEl?.offsetWidth ?? 1200;
     }
   }
 
@@ -1215,16 +1659,15 @@ export class HomeComponent implements AfterViewInit {
     } else if (this._resizeTarget) {
       if (this._resizeDir === 'v' || this._resizeDir === 'both') {
         const newH = Math.max(120, this._resizeStartH + (event.clientY - this._resizeStartY));
-        if (this._resizeTarget === 'openEstimates') this.estimatesHeight.set(newH);
-        else if (this._resizeTarget === 'recentActivity') this.activityHeight.set(newH);
-        else this.attentionHeight.set(newH);
+        this._heightSetMap[this._resizeTarget as DashboardWidgetId]?.(newH);
       }
       if (this._resizeDir === 'h' || this._resizeDir === 'both') {
         const colW = this._gridContainerWidth / 16;
         const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
         const newSpan = this._resizeStartColSpan + deltaSpan;
         const id = this._resizeTarget as DashboardWidgetId;
-        const clampedSpan = Math.max(id === 'needsAttention' ? 3 : 4, Math.min(16, newSpan));
+        const minSpan = id === 'needsAttention' ? 3 : 4;
+        const clampedSpan = Math.max(minSpan, Math.min(16, newSpan));
         this.widgetColSpans.update(s => ({ ...s, [id]: clampedSpan }));
       }
     }
