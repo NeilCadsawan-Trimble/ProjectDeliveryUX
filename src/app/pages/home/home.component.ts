@@ -140,6 +140,7 @@ interface AiMessage {
           [mode]="isMobile() ? 'overlay' : 'push'"
           targetContent="#main-content"
           class="h-full"
+          [class.hidden]="isMobile() && !navExpanded()"
           (expandedChange)="navExpanded.set($event)"
         >
           <modus-menu size="lg">
@@ -1415,8 +1416,6 @@ export class HomeComponent implements AfterViewInit {
     // by the official Modus side-navigation demo.
     root.addEventListener('mainMenuOpenChange', (event: Event) => {
       const expanded = (event as CustomEvent<boolean>).detail;
-      const sideNav = root.querySelector('modus-wc-side-navigation') as (HTMLElement & { expanded: boolean }) | null;
-      if (sideNav) sideNav.expanded = expanded;
       this.navExpanded.set(expanded);
     });
 
