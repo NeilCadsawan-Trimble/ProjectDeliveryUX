@@ -4,6 +4,7 @@ import {
   Component,
   ElementRef,
   computed,
+  effect,
   signal,
   inject,
   viewChild,
@@ -1364,10 +1365,19 @@ export class HomeComponent implements AfterViewInit {
 
   // ── Estimates table responsive column ──
   private readonly estimatesContainerRef = viewChild<ElementRef>('estimatesContainer');
-  readonly estimatesNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 13);
-  readonly estimatesXNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 10);
-  readonly estimatesXXNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 9);
-  readonly estimatesUltraNarrow = computed(() => this.widgetColSpans()['openEstimates'] <= 6);
+
+  // Actual rendered pixel width of the widget — updated by a ResizeObserver so
+  // that breakpoints work correctly on mobile (where col-span is meaningless).
+  readonly estimatesContainerWidth = signal<number>(0);
+  private _estimatesResizeObserver: ResizeObserver | null = null;
+
+  // Pixel thresholds are calibrated to match the desktop col-span behaviour
+  // (≈62px/col × 16-col grid, 16px gaps) while also responding correctly when
+  // the widget is reflowed to a single full-width column on mobile.
+  readonly estimatesNarrow      = computed(() => this.estimatesContainerWidth() <= 1000);
+  readonly estimatesXNarrow     = computed(() => this.estimatesContainerWidth() <= 760);
+  readonly estimatesXXNarrow    = computed(() => this.estimatesContainerWidth() <= 680);
+  readonly estimatesUltraNarrow = computed(() => this.estimatesContainerWidth() <= 450);
 
   setActiveNav(page: 'home' | 'projects' | 'financials'): void {
     this.activeNav.set(page);
@@ -1381,6 +1391,25 @@ export class HomeComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     const root = this.appRootRef()?.nativeElement as HTMLElement | undefined;
     if (!root) return;
+
+    // Re-attach ResizeObserver whenever the estimates container enters/leaves
+    // the DOM (e.g. switching between Home and Projects tabs).
+    effect(() => {
+      const el = this.estimatesContainerRef()?.nativeElement as HTMLElement | undefined;
+      this._estimatesResizeObserver?.disconnect();
+      this._estimatesResizeObserver = null;
+      if (!el) {
+        this.estimatesContainerWidth.set(0);
+        return;
+      }
+      this.estimatesContainerWidth.set(el.offsetWidth);
+      const ro = new ResizeObserver(entries => {
+        const w = entries[0]?.contentRect.width ?? el.offsetWidth;
+        this.estimatesContainerWidth.set(w);
+      });
+      ro.observe(el);
+      this._estimatesResizeObserver = ro;
+    });
 
     // Catch the navbar's hamburger event on the common ancestor container and
     // set the side-nav expanded property directly — this is the pattern used
