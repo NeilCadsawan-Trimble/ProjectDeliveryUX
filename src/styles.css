@@ -1375,3 +1375,10 @@ modus-wc-progress.progress-danger .modus-wc-progress {
 modus-wc-progress.progress-primary .modus-wc-progress {
   color: var(--primary);
 }
+
+/* Prevent side nav from ever pushing content on mobile */
+@media (max-width: 767px) {
+  #main-content {
+    margin-left: 0 !important;
+  }
+}

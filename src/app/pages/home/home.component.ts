@@ -156,7 +156,7 @@ interface AiMessage {
         </modus-side-navigation>
 
         <!-- Main content -->
-        <div id="main-content" class="flex-1 overflow-auto bg-background" [style.margin-left]="isMobile() ? '0' : null">
+        <div id="main-content" class="flex-1 overflow-auto bg-background">
 
           @switch (activeNav()) {
             @case ('home') {
