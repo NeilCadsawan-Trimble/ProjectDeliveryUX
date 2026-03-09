@@ -1378,6 +1378,26 @@ export class HomeComponent implements AfterViewInit {
   readonly estimatesXXNarrow    = computed(() => this.estimatesContainerWidth() <= 680);
   readonly estimatesUltraNarrow = computed(() => this.estimatesContainerWidth() <= 450);
 
+  // Must be a field initializer (not inside ngAfterViewInit) so it runs within
+  // Angular's injection context. viewChild() returns undefined until after
+  // view init, at which point the effect re-runs and attaches the observer.
+  private readonly _estimatesResizeEffect = effect(() => {
+    const el = this.estimatesContainerRef()?.nativeElement as HTMLElement | undefined;
+    this._estimatesResizeObserver?.disconnect();
+    this._estimatesResizeObserver = null;
+    if (!el) {
+      this.estimatesContainerWidth.set(0);
+      return;
+    }
+    this.estimatesContainerWidth.set(el.offsetWidth);
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width ?? el.offsetWidth;
+      this.estimatesContainerWidth.set(w);
+    });
+    ro.observe(el);
+    this._estimatesResizeObserver = ro;
+  });
+
   setActiveNav(page: 'home' | 'projects' | 'financials'): void {
     this.activeNav.set(page);
     this.navExpanded.set(false);
@@ -1401,25 +1421,6 @@ export class HomeComponent implements AfterViewInit {
         if (sideNav) sideNav.expanded = expanded;
       }
     );
-
-    // Re-attach ResizeObserver whenever the estimates container enters/leaves
-    // the DOM (e.g. switching between Home and Projects tabs).
-    effect(() => {
-      const el = this.estimatesContainerRef()?.nativeElement as HTMLElement | undefined;
-      this._estimatesResizeObserver?.disconnect();
-      this._estimatesResizeObserver = null;
-      if (!el) {
-        this.estimatesContainerWidth.set(0);
-        return;
-      }
-      this.estimatesContainerWidth.set(el.offsetWidth);
-      const ro = new ResizeObserver(entries => {
-        const w = entries[0]?.contentRect.width ?? el.offsetWidth;
-        this.estimatesContainerWidth.set(w);
-      });
-      ro.observe(el);
-      this._estimatesResizeObserver = ro;
-    });
 
     // Track mobile breakpoint so the side nav switches between overlay (mobile)
     // and push (desktop) modes.  When switching to desktop, collapse any open
