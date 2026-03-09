@@ -1380,5 +1380,11 @@ modus-wc-progress.progress-primary .modus-wc-progress {
 @media (max-width: 767px) {
   #main-content {
     margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  modus-side-navigation {
+    position: absolute !important;
+    z-index: 999 !important;
   }
 }
