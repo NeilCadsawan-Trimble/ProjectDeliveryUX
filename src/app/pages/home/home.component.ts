@@ -127,31 +127,30 @@ interface AiMessage {
         </div>
       </modus-navbar>
 
+      <!-- Side Navigation (outside flex flow so it never pushes content) -->
+      <modus-side-navigation
+        [expanded]="navExpanded()"
+        [collapseOnClickOutside]="true"
+        maxWidth="256px"
+        mode="overlay"
+        class="side-nav-overlay"
+        (expandedChange)="navExpanded.set($event)"
+      >
+        <modus-menu size="lg">
+          <modus-menu-item label="Home" value="home" [selected]="activeNav() === 'home'" (itemSelect)="setActiveNav('home')">
+            <modus-icon slot="start-icon" name="home" [decorative]="true"></modus-icon>
+          </modus-menu-item>
+          <modus-menu-item label="Projects" value="projects" [selected]="activeNav() === 'projects'" (itemSelect)="setActiveNav('projects')">
+            <modus-icon slot="start-icon" name="briefcase" [decorative]="true"></modus-icon>
+          </modus-menu-item>
+          <modus-menu-item label="Financials" value="financials" [selected]="activeNav() === 'financials'" (itemSelect)="setActiveNav('financials')">
+            <modus-icon slot="start-icon" name="bar_graph" [decorative]="true"></modus-icon>
+          </modus-menu-item>
+        </modus-menu>
+      </modus-side-navigation>
+
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
-
-        <!-- Side Navigation -->
-        <modus-side-navigation
-          [expanded]="navExpanded()"
-          [collapseOnClickOutside]="true"
-          maxWidth="256px"
-          mode="overlay"
-          class="h-full"
-          (expandedChange)="navExpanded.set($event)"
-        >
-          <modus-menu size="lg">
-            <modus-menu-item label="Home" value="home" [selected]="activeNav() === 'home'" (itemSelect)="setActiveNav('home')">
-              <modus-icon slot="start-icon" name="home" [decorative]="true"></modus-icon>
-            </modus-menu-item>
-            <modus-menu-item label="Projects" value="projects" [selected]="activeNav() === 'projects'" (itemSelect)="setActiveNav('projects')">
-              <modus-icon slot="start-icon" name="briefcase" [decorative]="true"></modus-icon>
-            </modus-menu-item>
-            <modus-menu-item label="Financials" value="financials" [selected]="activeNav() === 'financials'" (itemSelect)="setActiveNav('financials')">
-              <modus-icon slot="start-icon" name="bar_graph" [decorative]="true"></modus-icon>
-            </modus-menu-item>
-          </modus-menu>
-        </modus-side-navigation>
-
         <!-- Main content -->
         <div id="main-content" class="flex-1 overflow-auto bg-background">
 
