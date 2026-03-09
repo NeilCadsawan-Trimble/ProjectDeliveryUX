@@ -140,7 +140,7 @@ interface AiMessage {
           [collapseOnClickOutside]="true"
           maxWidth="256px"
           [mode]="isMobile() ? 'overlay' : 'push'"
-          targetContent="#main-content"
+          [targetContent]="isMobile() ? '' : '#main-content'"
           class="h-full"
           (expandedChange)="navExpanded.set($event)"
         >
