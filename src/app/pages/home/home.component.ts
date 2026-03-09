@@ -1373,10 +1373,10 @@ export class HomeComponent implements AfterViewInit {
   // Pixel thresholds are calibrated to match the desktop col-span behaviour
   // (≈62px/col × 16-col grid, 16px gaps) while also responding correctly when
   // the widget is reflowed to a single full-width column on mobile.
-  readonly estimatesNarrow      = computed(() => this.estimatesContainerWidth() <= 1000);
-  readonly estimatesXNarrow     = computed(() => this.estimatesContainerWidth() <= 760);
-  readonly estimatesXXNarrow    = computed(() => this.estimatesContainerWidth() <= 680);
-  readonly estimatesUltraNarrow = computed(() => this.estimatesContainerWidth() <= 450);
+  readonly estimatesNarrow      = computed(() => { const w = this.estimatesContainerWidth(); return w > 0 && w <= 1000; });
+  readonly estimatesXNarrow     = computed(() => { const w = this.estimatesContainerWidth(); return w > 0 && w <= 760; });
+  readonly estimatesXXNarrow    = computed(() => { const w = this.estimatesContainerWidth(); return w > 0 && w <= 680; });
+  readonly estimatesUltraNarrow = computed(() => { const w = this.estimatesContainerWidth(); return w > 0 && w <= 450; });
 
   // Must be a field initializer (not inside ngAfterViewInit) so it runs within
   // Angular's injection context. viewChild() returns undefined until after
