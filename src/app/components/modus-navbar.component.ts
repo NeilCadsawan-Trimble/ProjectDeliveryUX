@@ -164,7 +164,7 @@ export class ModusNavbarComponent {
   readonly className = input<string | undefined>();
 
   /** The open state of the main menu. */
-  readonly mainMenuOpen = input<boolean | undefined>(false);
+  readonly mainMenuOpen = input<boolean | undefined>(undefined);
 
   /** The open state of the notifications menu. */
   readonly notificationsMenuOpen = input<boolean | undefined>(false);
