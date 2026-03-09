@@ -132,15 +132,11 @@ interface AiMessage {
       <div class="flex flex-1 overflow-hidden">
 
         <!-- Side Navigation -->
-        <!-- Desktop: push mode — icon strip visible when collapsed           -->
-        <!-- Mobile:  overlay mode — hidden entirely when collapsed,          -->
-        <!--          slides over content when hamburger is tapped            -->
         <modus-side-navigation
           [expanded]="navExpanded()"
           [collapseOnClickOutside]="true"
           maxWidth="256px"
-          [mode]="isMobile() ? 'overlay' : 'push'"
-          [targetContent]="isMobile() ? '' : '#main-content'"
+          mode="overlay"
           class="h-full"
           (expandedChange)="navExpanded.set($event)"
         >

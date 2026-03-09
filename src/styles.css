@@ -1376,15 +1376,13 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   color: var(--primary);
 }
 
-/* Prevent side nav from ever pushing content on mobile */
-@media (max-width: 767px) {
-  #main-content {
-    margin-left: 0 !important;
-    padding-left: 0 !important;
-  }
+/* Side nav floats over content — never pushes margins */
+#main-content {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
 
-  modus-side-navigation {
-    position: absolute !important;
-    z-index: 999 !important;
-  }
+modus-side-navigation {
+  position: absolute !important;
+  z-index: 999 !important;
 }
