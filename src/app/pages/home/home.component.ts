@@ -660,10 +660,10 @@ interface AiMessage {
 
                 @if (widgetId === 'projects') {
               <!-- ─── Projects Widget ─── -->
-              <div class="bg-card border-default rounded-lg overflow-hidden">
-                <!-- Draggable header -->
+              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [class.projects-widget-mobile]="isMobile()">
+                <!-- Draggable header (sticky) -->
                 <div
-                  class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
+                  class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
@@ -687,8 +687,8 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
-                <!-- Card grid -->
-                <div class="p-4">
+                <!-- Card grid (scrollable) -->
+                <div class="p-4 overflow-y-auto flex-1 min-h-0">
                   <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
                     @for (project of projects(); track project.id) {
                       <div class="bg-background border-default rounded-lg overflow-hidden flex flex-col">
