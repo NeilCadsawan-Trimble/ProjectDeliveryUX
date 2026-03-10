@@ -1567,3 +1567,37 @@ modus-wc-navbar .main-menu {
     width: 240px;
   }
 }
+
+/* ── Accessibility ── */
+
+.skip-nav {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 0 0 8px 8px;
+  font-size: var(--modus-wc-font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 150ms ease-in-out;
+}
+.skip-nav:focus {
+  top: 0;
+}
+
+[role="button"]:focus-visible,
+[role="radio"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="link"]:focus-visible,
+.custom-side-nav-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.custom-side-nav-item:focus-visible {
+  border-radius: 0;
+}

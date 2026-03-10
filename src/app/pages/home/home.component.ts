@@ -20,7 +20,7 @@ import { ThemeService } from '../../services/theme.service';
 type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'finBudgetByProject';
+type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'finBudgetByProject';
 
 type GridPage = 'home' | 'projects' | 'financials';
 
@@ -32,6 +32,17 @@ interface Rfi {
   project: string;
   assignee: string;
   status: RfiStatus;
+  dueDate: string;
+}
+
+type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
+interface Submittal {
+  id: string;
+  number: string;
+  subject: string;
+  project: string;
+  assignee: string;
+  status: SubmittalStatus;
   dueDate: string;
 }
 
@@ -101,6 +112,7 @@ interface AiMessage {
     '(document:mouseup)': 'onDocumentMouseUp()',
     '(document:touchmove)': 'onDocumentTouchMove($event)',
     '(document:touchend)': 'onDocumentTouchEnd()',
+    '(document:keydown.escape)': 'onEscapeKey()',
   },
   template: `
     <svg aria-hidden="true" class="svg-defs-hidden">
@@ -117,6 +129,7 @@ interface AiMessage {
         </radialGradient>
       </defs>
     </svg>
+    <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
     <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
       <!-- Navbar -->
       <modus-navbar
@@ -156,9 +169,14 @@ interface AiMessage {
             <div
               class="navbar-icon-btn"
               (click)="toggleDarkMode()"
+              (keydown.enter)="toggleDarkMode()"
+              (keydown.space)="$event.preventDefault(); toggleDarkMode()"
               [title]="isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+              role="button"
+              tabindex="0"
+              [attr.aria-label]="isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
             >
-              <i class="modus-icons text-xl">{{ isDark() ? 'brightness' : 'moon' }}</i>
+              <i class="modus-icons text-xl" aria-hidden="true">{{ isDark() ? 'brightness' : 'moon' }}</i>
             </div>
           }
           @if (isMobile()) {
@@ -171,7 +189,7 @@ interface AiMessage {
                 aria-label="More options"
                 [attr.aria-expanded]="moreMenuOpen()"
               >
-                <i class="modus-icons text-xl">more_vertical</i>
+                <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
               </div>
               @if (moreMenuOpen()) {
                 <div class="navbar-more-dropdown" role="menu" (keydown.escape)="closeMoreMenu()">
@@ -213,7 +231,7 @@ interface AiMessage {
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
-        <div class="flex-1 overflow-auto bg-background md:pl-14">
+        <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
 
           @switch (activeNav()) {
             @case ('home') {
@@ -221,42 +239,42 @@ interface AiMessage {
                 <!-- Page header -->
                 <div class="flex items-start justify-between mb-6">
                   <div>
-                    <div class="text-3xl font-bold text-foreground">Welcome back, Alex</div>
+                    <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Alex</div>
                     <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
                   </div>
                 </div>
 
                 <!-- KPI summary cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" (click)="setActiveNav('projects')">
+                  <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" role="link" tabindex="0" aria-label="Active Projects: {{ totalProjects() }}" (click)="setActiveNav('projects')" (keydown.enter)="setActiveNav('projects')" (keydown.space)="$event.preventDefault(); setActiveNav('projects')">
                     <div class="w-12 h-12 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
-                      <i class="modus-icons text-2xl text-primary">briefcase</i>
+                      <i class="modus-icons text-2xl text-primary" aria-hidden="true">briefcase</i>
                     </div>
                     <div class="flex-1 min-w-0">
                       <div class="text-2xl font-bold text-foreground">{{ totalProjects() }}</div>
                       <div class="text-sm text-foreground-60">Active Projects</div>
                     </div>
-                    <i class="modus-icons text-lg text-foreground-40">chevron_right</i>
+                    <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
                   </div>
-                  <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" (click)="setActiveNav('projects')">
+                  <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" role="link" tabindex="0" aria-label="Open Estimates: {{ openEstimatesCount() }}" (click)="setActiveNav('projects')" (keydown.enter)="setActiveNav('projects')" (keydown.space)="$event.preventDefault(); setActiveNav('projects')">
                     <div class="w-12 h-12 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
-                      <i class="modus-icons text-2xl text-warning">description</i>
+                      <i class="modus-icons text-2xl text-warning" aria-hidden="true">description</i>
                     </div>
                     <div class="flex-1 min-w-0">
                       <div class="text-2xl font-bold text-foreground">{{ openEstimatesCount() }}</div>
                       <div class="text-sm text-foreground-60">Open Estimates</div>
                     </div>
-                    <i class="modus-icons text-lg text-foreground-40">chevron_right</i>
+                    <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
                   </div>
-                  <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" (click)="setActiveNav('financials')">
+                  <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" role="link" tabindex="0" aria-label="Estimate Pipeline: {{ totalEstimateValue() }}" (click)="setActiveNav('financials')" (keydown.enter)="setActiveNav('financials')" (keydown.space)="$event.preventDefault(); setActiveNav('financials')">
                     <div class="w-12 h-12 rounded-xl bg-success-20 flex items-center justify-center flex-shrink-0">
-                      <i class="modus-icons text-2xl text-success">bar_graph</i>
+                      <i class="modus-icons text-2xl text-success" aria-hidden="true">bar_graph</i>
                     </div>
                     <div class="flex-1 min-w-0">
                       <div class="text-2xl font-bold text-foreground">{{ totalEstimateValue() }}</div>
                       <div class="text-sm text-foreground-60">Estimate Pipeline</div>
                     </div>
-                    <i class="modus-icons text-lg text-foreground-40">chevron_right</i>
+                    <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
                   </div>
                 </div>
 
@@ -287,9 +305,9 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                                <i class="modus-icons text-lg text-foreground-60">calendar</i>
-                                <div class="text-base font-semibold text-foreground">Time Off Requests</div>
+                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
+                                <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Time Off Requests</div>
                                 @if (pendingTimeOffCount() > 0) {
                                   <div class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
                                     <div class="text-xs font-medium text-warning">{{ pendingTimeOffCount() }} pending</div>
@@ -299,6 +317,8 @@ interface AiMessage {
                               <!-- View toggle — stop drag propagation -->
                               <div
                                 class="flex items-center rounded-lg border-default overflow-hidden flex-shrink-0"
+                                role="tablist"
+                                aria-label="Time off view"
                                 (mousedown)="$event.stopPropagation()"
                               >
                                 <div
@@ -306,20 +326,30 @@ interface AiMessage {
                                   [class.bg-primary]="timeOffView() === 'list'"
                                   [class.text-primary-foreground]="timeOffView() === 'list'"
                                   [class.text-foreground-60]="timeOffView() !== 'list'"
+                                  role="tab"
+                                  tabindex="0"
+                                  [attr.aria-selected]="timeOffView() === 'list'"
                                   (click)="timeOffView.set('list')"
+                                  (keydown.enter)="timeOffView.set('list')"
+                                  (keydown.space)="$event.preventDefault(); timeOffView.set('list')"
                                 >
-                                  <i class="modus-icons text-sm">list_bulleted</i>
+                                  <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
                                   <div>List</div>
                                 </div>
-                                <div class="w-px h-5 bg-muted flex-shrink-0"></div>
+                                <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
                                 <div
                                   class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
                                   [class.bg-primary]="timeOffView() === 'calendar'"
                                   [class.text-primary-foreground]="timeOffView() === 'calendar'"
                                   [class.text-foreground-60]="timeOffView() !== 'calendar'"
+                                  role="tab"
+                                  tabindex="0"
+                                  [attr.aria-selected]="timeOffView() === 'calendar'"
                                   (click)="timeOffView.set('calendar')"
+                                  (keydown.enter)="timeOffView.set('calendar')"
+                                  (keydown.space)="$event.preventDefault(); timeOffView.set('calendar')"
                                 >
-                                  <i class="modus-icons text-sm">calendar</i>
+                                  <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
                                   <div>Calendar</div>
                                 </div>
                               </div>
@@ -327,26 +357,26 @@ interface AiMessage {
 
                             <!-- List view -->
                             @if (timeOffView() === 'list') {
-                              <div class="overflow-y-auto flex-1">
-                                <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-                                  <div>Employee</div>
-                                  <div>Type</div>
-                                  <div>Dates</div>
-                                  <div>Days</div>
-                                  <div>Status</div>
+                              <div class="overflow-y-auto flex-1" role="table" aria-label="Time off requests">
+                                <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+                                  <div role="columnheader">Employee</div>
+                                  <div role="columnheader">Type</div>
+                                  <div role="columnheader">Dates</div>
+                                  <div role="columnheader">Days</div>
+                                  <div role="columnheader">Status</div>
                                 </div>
                                 @for (req of timeOffRequests; track req.id) {
-                                  <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
-                                    <div class="flex items-center gap-2">
-                                      <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                                  <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                                    <div class="flex items-center gap-2" role="cell">
+                                      <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0" aria-hidden="true">
                                         {{ req.initials }}
                                       </div>
                                       <div class="text-sm font-medium text-foreground truncate">{{ req.name }}</div>
                                     </div>
-                                    <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit">{{ req.type }}</div>
-                                    <div class="text-sm text-foreground-80">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
-                                    <div class="text-sm text-foreground-60">{{ req.days }}d</div>
-                                    <div>
+                                    <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit" role="cell">{{ req.type }}</div>
+                                    <div class="text-sm text-foreground-80" role="cell">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
+                                    <div class="text-sm text-foreground-60" role="cell">{{ req.days }}d</div>
+                                    <div role="cell">
                                       <div class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full
                                         {{ req.status === 'Approved' ? 'bg-success-20 text-success' :
                                            req.status === 'Pending'  ? 'bg-warning-20 text-warning' :
@@ -366,16 +396,26 @@ interface AiMessage {
                                 <div class="flex items-center justify-between px-5 py-3 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
                                   <div
                                     class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                                    role="button"
+                                    tabindex="0"
+                                    aria-label="Previous month"
                                     (click)="prevCalendarMonth()"
+                                    (keydown.enter)="prevCalendarMonth()"
+                                    (keydown.space)="$event.preventDefault(); prevCalendarMonth()"
                                   >
-                                    <i class="modus-icons text-sm text-foreground-60">chevron_left</i>
+                                    <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
                                   </div>
-                                  <div class="text-sm font-semibold text-foreground">{{ calendarMonthLabel() }}</div>
+                                  <div class="text-sm font-semibold text-foreground" aria-live="polite">{{ calendarMonthLabel() }}</div>
                                   <div
                                     class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                                    role="button"
+                                    tabindex="0"
+                                    aria-label="Next month"
                                     (click)="nextCalendarMonth()"
+                                    (keydown.enter)="nextCalendarMonth()"
+                                    (keydown.space)="$event.preventDefault(); nextCalendarMonth()"
                                   >
-                                    <i class="modus-icons text-sm text-foreground-60">chevron_right</i>
+                                    <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_right</i>
                                   </div>
                                 </div>
                                 <!-- Day-of-week headers -->
@@ -453,28 +493,37 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                                <i class="modus-icons text-lg text-foreground-60">calendar</i>
-                                <div class="text-base font-semibold text-foreground">Calendar</div>
+                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
+                                <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Calendar</div>
                                 <div class="text-xs text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</div>
                               </div>
                               <!-- Navigation — stop drag propagation -->
                               <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()">
                                 <div
                                   class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="Previous day"
                                   (click)="prevCalendarDay()"
+                                  (keydown.enter)="prevCalendarDay()"
+                                  (keydown.space)="$event.preventDefault(); prevCalendarDay()"
                                 >
-                                  <i class="modus-icons text-sm text-foreground-60">chevron_left</i>
+                                  <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
                                 </div>
                                 <div
                                   class="px-2 py-1 text-xs font-medium text-primary cursor-pointer hover:bg-primary-20 rounded transition-colors duration-150 select-none"
+                                  role="button" tabindex="0" aria-label="Go to today"
                                   (click)="resetCalendarToToday()"
+                                  (keydown.enter)="resetCalendarToToday()"
+                                  (keydown.space)="$event.preventDefault(); resetCalendarToToday()"
                                 >Today</div>
                                 <div
                                   class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="Next day"
                                   (click)="nextCalendarDay()"
+                                  (keydown.enter)="nextCalendarDay()"
+                                  (keydown.space)="$event.preventDefault(); nextCalendarDay()"
                                 >
-                                  <i class="modus-icons text-sm text-foreground-60">chevron_right</i>
+                                  <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_right</i>
                                 </div>
                               </div>
                             </div>
@@ -623,12 +672,164 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                                <i class="modus-icons text-lg text-foreground-60">clipboard</i>
-                                <div class="text-base font-semibold text-foreground">RFIs</div>
+                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">clipboard</i>
+                                <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">RFIs</div>
                                 @if (rfiCounts().overdue > 0) {
                                   <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
                                     <div class="text-xs font-medium text-destructive">{{ rfiCounts().overdue }} overdue</div>
+                                  </div>
+                                }
+                              </div>
+                            </div>
+
+                            <!-- KPI filter pills -->
+                            <div
+                              class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
+                              role="radiogroup" aria-label="Filter RFIs by status"
+                              (mousedown)="$event.stopPropagation()"
+                            >
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-primary]="rfiActiveFilter() === 'all'" [class.text-primary-foreground]="rfiActiveFilter() === 'all'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'all'" [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
+                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'all'"
+                                (click)="rfiActiveFilter.set('all')" (keydown.enter)="rfiActiveFilter.set('all')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('all')"
+                              >
+                                <div>All</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-primary-foreground]="rfiActiveFilter() === 'all'" [class.text-primary]="rfiActiveFilter() === 'all'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'all'" [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
+                                  aria-hidden="true"
+                                >{{ rfiCounts().all }}</div>
+                              </div>
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-primary]="rfiActiveFilter() === 'open'" [class.text-primary-foreground]="rfiActiveFilter() === 'open'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'open'" [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
+                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'open'"
+                                (click)="rfiActiveFilter.set('open')" (keydown.enter)="rfiActiveFilter.set('open')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('open')"
+                              >
+                                <div>Open</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-primary-foreground]="rfiActiveFilter() === 'open'" [class.text-primary]="rfiActiveFilter() === 'open'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'open'" [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
+                                  aria-hidden="true"
+                                >{{ rfiCounts().open }}</div>
+                              </div>
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-destructive]="rfiActiveFilter() === 'overdue'" [class.text-destructive-foreground]="rfiActiveFilter() === 'overdue'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'overdue'" [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
+                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'overdue'"
+                                (click)="rfiActiveFilter.set('overdue')" (keydown.enter)="rfiActiveFilter.set('overdue')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('overdue')"
+                              >
+                                <div>Overdue</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-destructive-foreground]="rfiActiveFilter() === 'overdue'" [class.text-destructive]="rfiActiveFilter() === 'overdue'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'overdue'" [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
+                                  aria-hidden="true"
+                                >{{ rfiCounts().overdue }}</div>
+                              </div>
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-warning]="rfiActiveFilter() === 'upcoming'" [class.text-warning-foreground]="rfiActiveFilter() === 'upcoming'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'upcoming'" [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
+                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'upcoming'"
+                                (click)="rfiActiveFilter.set('upcoming')" (keydown.enter)="rfiActiveFilter.set('upcoming')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('upcoming')"
+                              >
+                                <div>Upcoming</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-warning-foreground]="rfiActiveFilter() === 'upcoming'" [class.text-warning]="rfiActiveFilter() === 'upcoming'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'upcoming'" [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
+                                  aria-hidden="true"
+                                >{{ rfiCounts().upcoming }}</div>
+                              </div>
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-success]="rfiActiveFilter() === 'closed'" [class.text-success-foreground]="rfiActiveFilter() === 'closed'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'closed'" [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
+                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'closed'"
+                                (click)="rfiActiveFilter.set('closed')" (keydown.enter)="rfiActiveFilter.set('closed')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('closed')"
+                              >
+                                <div>Closed</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-success-foreground]="rfiActiveFilter() === 'closed'" [class.text-success]="rfiActiveFilter() === 'closed'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'closed'" [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
+                                  aria-hidden="true"
+                                >{{ rfiCounts().closed }}</div>
+                              </div>
+                            </div>
+
+                            <!-- Table header -->
+                            <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
+                              <div role="columnheader">RFI #</div>
+                              <div role="columnheader">Subject</div>
+                              <div role="columnheader">Project</div>
+                              <div role="columnheader">Assignee</div>
+                              <div role="columnheader">Due</div>
+                              <div role="columnheader">Status</div>
+                            </div>
+
+                            <!-- Table body -->
+                            <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
+                              @for (rfi of filteredRfis(); track rfi.id) {
+                                <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                                  <div class="text-sm font-medium text-primary" role="cell">{{ rfi.number }}</div>
+                                  <div class="text-sm text-foreground truncate" role="cell">{{ rfi.subject }}</div>
+                                  <div class="text-sm text-foreground-60 truncate" role="cell">{{ rfi.project }}</div>
+                                  <div class="text-sm text-foreground-60" role="cell">{{ rfi.assignee }}</div>
+                                  <div class="text-sm text-foreground-60" role="cell">{{ rfi.dueDate }}</div>
+                                  <div class="flex items-center gap-1.5" role="cell">
+                                    <div class="w-2 h-2 rounded-full {{ rfiStatusColor(rfi.status) }}" aria-hidden="true"></div>
+                                    <div class="text-xs font-medium text-foreground-60">{{ rfiStatusLabel(rfi.status) }}</div>
+                                  </div>
+                                </div>
+                              } @empty {
+                                <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                                  <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
+                                  <div class="text-sm">No RFIs match this filter</div>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                          <!-- Corner resize handle -->
+                          <div
+                            class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                            [class.cursor-nwse-resize]="!isMobile()"
+                            [class.cursor-ns-resize]="isMobile()"
+                            (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                            (touchstart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                          >
+                            <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                            </div>
+                          </div>
+                        }
+
+                        @else if (widgetId === 'homeSubmittals') {
+                          <!-- ─── Submittals Widget ─── -->
+                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+                            <!-- Draggable header -->
+                            <div
+                              class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                              (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                              (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                            >
+                              <div class="flex items-center gap-2">
+                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
+                                <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Submittals</div>
+                                @if (submittalCounts().overdue > 0) {
+                                  <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                                    <div class="text-xs font-medium text-destructive">{{ submittalCounts().overdue }} overdue</div>
                                   </div>
                                 }
                               </div>
@@ -641,89 +842,89 @@ interface AiMessage {
                             >
                               <div
                                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-primary]="rfiActiveFilter() === 'all'"
-                                [class.text-primary-foreground]="rfiActiveFilter() === 'all'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'all'"
-                                [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
-                                (click)="rfiActiveFilter.set('all')"
+                                [class.bg-primary]="submittalActiveFilter() === 'all'"
+                                [class.text-primary-foreground]="submittalActiveFilter() === 'all'"
+                                [class.bg-muted]="submittalActiveFilter() !== 'all'"
+                                [class.text-foreground-60]="submittalActiveFilter() !== 'all'"
+                                (click)="submittalActiveFilter.set('all')"
                               >
                                 <div>All</div>
                                 <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-primary-foreground]="rfiActiveFilter() === 'all'"
-                                  [class.text-primary]="rfiActiveFilter() === 'all'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'all'"
-                                  [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
-                                >{{ rfiCounts().all }}</div>
+                                  [class.bg-primary-foreground]="submittalActiveFilter() === 'all'"
+                                  [class.text-primary]="submittalActiveFilter() === 'all'"
+                                  [class.bg-secondary]="submittalActiveFilter() !== 'all'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'all'"
+                                >{{ submittalCounts().all }}</div>
                               </div>
                               <div
                                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-primary]="rfiActiveFilter() === 'open'"
-                                [class.text-primary-foreground]="rfiActiveFilter() === 'open'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'open'"
-                                [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
-                                (click)="rfiActiveFilter.set('open')"
+                                [class.bg-primary]="submittalActiveFilter() === 'open'"
+                                [class.text-primary-foreground]="submittalActiveFilter() === 'open'"
+                                [class.bg-muted]="submittalActiveFilter() !== 'open'"
+                                [class.text-foreground-60]="submittalActiveFilter() !== 'open'"
+                                (click)="submittalActiveFilter.set('open')"
                               >
                                 <div>Open</div>
                                 <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-primary-foreground]="rfiActiveFilter() === 'open'"
-                                  [class.text-primary]="rfiActiveFilter() === 'open'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'open'"
-                                  [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
-                                >{{ rfiCounts().open }}</div>
+                                  [class.bg-primary-foreground]="submittalActiveFilter() === 'open'"
+                                  [class.text-primary]="submittalActiveFilter() === 'open'"
+                                  [class.bg-secondary]="submittalActiveFilter() !== 'open'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'open'"
+                                >{{ submittalCounts().open }}</div>
                               </div>
                               <div
                                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-destructive]="rfiActiveFilter() === 'overdue'"
-                                [class.text-destructive-foreground]="rfiActiveFilter() === 'overdue'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'overdue'"
-                                [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
-                                (click)="rfiActiveFilter.set('overdue')"
+                                [class.bg-destructive]="submittalActiveFilter() === 'overdue'"
+                                [class.text-destructive-foreground]="submittalActiveFilter() === 'overdue'"
+                                [class.bg-muted]="submittalActiveFilter() !== 'overdue'"
+                                [class.text-foreground-60]="submittalActiveFilter() !== 'overdue'"
+                                (click)="submittalActiveFilter.set('overdue')"
                               >
                                 <div>Overdue</div>
                                 <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-destructive-foreground]="rfiActiveFilter() === 'overdue'"
-                                  [class.text-destructive]="rfiActiveFilter() === 'overdue'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'overdue'"
-                                  [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
-                                >{{ rfiCounts().overdue }}</div>
+                                  [class.bg-destructive-foreground]="submittalActiveFilter() === 'overdue'"
+                                  [class.text-destructive]="submittalActiveFilter() === 'overdue'"
+                                  [class.bg-secondary]="submittalActiveFilter() !== 'overdue'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'overdue'"
+                                >{{ submittalCounts().overdue }}</div>
                               </div>
                               <div
                                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-warning]="rfiActiveFilter() === 'upcoming'"
-                                [class.text-warning-foreground]="rfiActiveFilter() === 'upcoming'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'upcoming'"
-                                [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
-                                (click)="rfiActiveFilter.set('upcoming')"
+                                [class.bg-warning]="submittalActiveFilter() === 'upcoming'"
+                                [class.text-warning-foreground]="submittalActiveFilter() === 'upcoming'"
+                                [class.bg-muted]="submittalActiveFilter() !== 'upcoming'"
+                                [class.text-foreground-60]="submittalActiveFilter() !== 'upcoming'"
+                                (click)="submittalActiveFilter.set('upcoming')"
                               >
                                 <div>Upcoming</div>
                                 <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-warning-foreground]="rfiActiveFilter() === 'upcoming'"
-                                  [class.text-warning]="rfiActiveFilter() === 'upcoming'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'upcoming'"
-                                  [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
-                                >{{ rfiCounts().upcoming }}</div>
+                                  [class.bg-warning-foreground]="submittalActiveFilter() === 'upcoming'"
+                                  [class.text-warning]="submittalActiveFilter() === 'upcoming'"
+                                  [class.bg-secondary]="submittalActiveFilter() !== 'upcoming'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'upcoming'"
+                                >{{ submittalCounts().upcoming }}</div>
                               </div>
                               <div
                                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-success]="rfiActiveFilter() === 'closed'"
-                                [class.text-success-foreground]="rfiActiveFilter() === 'closed'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'closed'"
-                                [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
-                                (click)="rfiActiveFilter.set('closed')"
+                                [class.bg-success]="submittalActiveFilter() === 'closed'"
+                                [class.text-success-foreground]="submittalActiveFilter() === 'closed'"
+                                [class.bg-muted]="submittalActiveFilter() !== 'closed'"
+                                [class.text-foreground-60]="submittalActiveFilter() !== 'closed'"
+                                (click)="submittalActiveFilter.set('closed')"
                               >
                                 <div>Closed</div>
                                 <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-success-foreground]="rfiActiveFilter() === 'closed'"
-                                  [class.text-success]="rfiActiveFilter() === 'closed'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'closed'"
-                                  [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
-                                >{{ rfiCounts().closed }}</div>
+                                  [class.bg-success-foreground]="submittalActiveFilter() === 'closed'"
+                                  [class.text-success]="submittalActiveFilter() === 'closed'"
+                                  [class.bg-secondary]="submittalActiveFilter() !== 'closed'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'closed'"
+                                >{{ submittalCounts().closed }}</div>
                               </div>
                             </div>
 
                             <!-- Table header -->
                             <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                              <div>RFI #</div>
+                              <div>Sub #</div>
                               <div>Subject</div>
                               <div>Project</div>
                               <div>Assignee</div>
@@ -733,22 +934,22 @@ interface AiMessage {
 
                             <!-- Table body -->
                             <div class="overflow-y-auto flex-1">
-                              @for (rfi of filteredRfis(); track rfi.id) {
+                              @for (sub of filteredSubmittals(); track sub.id) {
                                 <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
-                                  <div class="text-sm font-medium text-primary">{{ rfi.number }}</div>
-                                  <div class="text-sm text-foreground truncate">{{ rfi.subject }}</div>
-                                  <div class="text-sm text-foreground-60 truncate">{{ rfi.project }}</div>
-                                  <div class="text-sm text-foreground-60">{{ rfi.assignee }}</div>
-                                  <div class="text-sm text-foreground-60">{{ rfi.dueDate }}</div>
+                                  <div class="text-sm font-medium text-primary">{{ sub.number }}</div>
+                                  <div class="text-sm text-foreground truncate">{{ sub.subject }}</div>
+                                  <div class="text-sm text-foreground-60 truncate">{{ sub.project }}</div>
+                                  <div class="text-sm text-foreground-60">{{ sub.assignee }}</div>
+                                  <div class="text-sm text-foreground-60">{{ sub.dueDate }}</div>
                                   <div class="flex items-center gap-1.5">
-                                    <div class="w-2 h-2 rounded-full {{ rfiStatusColor(rfi.status) }}"></div>
-                                    <div class="text-xs font-medium text-foreground-60">{{ rfiStatusLabel(rfi.status) }}</div>
+                                    <div class="w-2 h-2 rounded-full {{ submittalStatusColor(sub.status) }}"></div>
+                                    <div class="text-xs font-medium text-foreground-60">{{ submittalStatusLabel(sub.status) }}</div>
                                   </div>
                                 </div>
                               } @empty {
                                 <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                                  <i class="modus-icons text-3xl mb-2">clipboard</i>
-                                  <div class="text-sm">No RFIs match this filter</div>
+                                  <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
+                                  <div class="text-sm">No submittals match this filter</div>
                                 </div>
                               }
                             </div>
@@ -778,7 +979,7 @@ interface AiMessage {
                     </div>
                   }
                 </div>
-              </div>
+            </div>
             }<!-- end @case('home') -->
 
             @case ('projects') {
@@ -789,7 +990,7 @@ interface AiMessage {
             <!-- Page header -->
             <div class="flex items-start justify-between mb-6">
               <div>
-                <div class="text-3xl font-bold text-foreground">Projects Dashboard</div>
+                <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
                 <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0 mt-1">
@@ -804,7 +1005,7 @@ interface AiMessage {
                 <div class="flex items-center justify-between">
                   <div class="text-sm font-medium text-foreground-60">Active Projects</div>
                   <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center">
-                    <i class="modus-icons text-lg text-primary">briefcase</i>
+                    <i class="modus-icons text-lg text-primary" aria-hidden="true">briefcase</i>
                   </div>
                 </div>
                 <div class="text-4xl font-bold text-foreground">{{ totalProjects() }}</div>
@@ -819,7 +1020,7 @@ interface AiMessage {
                 <div class="flex items-center justify-between">
                   <div class="text-sm font-medium text-foreground-60">On Schedule</div>
                   <div class="w-9 h-9 rounded-lg bg-success-20 flex items-center justify-center">
-                    <i class="modus-icons text-lg text-success">check_circle</i>
+                    <i class="modus-icons text-lg text-success" aria-hidden="true">check_circle</i>
                   </div>
                 </div>
                 <div class="text-4xl font-bold text-success">{{ onSchedulePct() }}%</div>
@@ -830,7 +1031,7 @@ interface AiMessage {
                 <div class="flex items-center justify-between">
                   <div class="text-sm font-medium text-foreground-60">Open Estimates</div>
                   <div class="w-9 h-9 rounded-lg bg-warning-20 flex items-center justify-center">
-                    <i class="modus-icons text-lg text-warning">description</i>
+                    <i class="modus-icons text-lg text-warning" aria-hidden="true">description</i>
                   </div>
                 </div>
                 <div class="text-4xl font-bold text-foreground">{{ openEstimatesCount() }}</div>
@@ -843,7 +1044,7 @@ interface AiMessage {
                 <div class="flex items-center justify-between">
                   <div class="text-sm font-medium text-foreground-60">Estimate Pipeline</div>
                   <div class="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
-                    <i class="modus-icons text-lg text-foreground-60">payment_instant</i>
+                    <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payment_instant</i>
                   </div>
                 </div>
                 <div class="text-4xl font-bold text-foreground">{{ totalEstimateValue() }}</div>
@@ -881,9 +1082,9 @@ interface AiMessage {
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                    <i class="modus-icons text-lg text-foreground-60">apps</i>
-                    <div class="text-lg font-semibold text-foreground">Projects</div>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">apps</i>
+                    <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Projects</div>
                     <div class="text-xs text-foreground-40">{{ totalProjects() }} projects</div>
                   </div>
                   <div class="flex items-center gap-2">
@@ -928,7 +1129,7 @@ interface AiMessage {
                               <div class="text-xs text-foreground-60 truncate max-w-[80px]">{{ project.owner }}</div>
                             </div>
                             <div class="flex items-center gap-1 text-xs text-foreground-60">
-                              <i class="modus-icons text-sm">calendar</i>
+                              <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
                               <div>{{ project.dueDate }}</div>
                             </div>
                           </div>
@@ -966,69 +1167,71 @@ interface AiMessage {
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                    <i class="modus-icons text-lg text-foreground-60">description</i>
-                    <div class="text-lg font-semibold text-foreground">Open Estimates</div>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">description</i>
+                    <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Open Estimates</div>
                     <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
                   </div>
                 </div>
                 <!-- Table header -->
                 <div
+                  role="row"
                   class="grid gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0"
                   [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
                 >
                   @if (!estimatesXXNarrow()) {
-                    <div>ID</div>
+                    <div role="columnheader">ID</div>
                   }
-                  <div>Project / Client</div>
+                  <div role="columnheader">Project / Client</div>
                   @if (!estimatesXNarrow()) {
-                    <div>Type</div>
+                    <div role="columnheader">Type</div>
                   }
                   @if (!estimatesUltraNarrow()) {
-                    <div>Value</div>
+                    <div role="columnheader">Value</div>
                   }
-                  <div>Status</div>
+                  <div role="columnheader">Status</div>
                   @if (!estimatesNarrow()) {
-                    <div>Requested By</div>
+                    <div role="columnheader">Requested By</div>
                   }
-                  <div>Due Date</div>
+                  <div role="columnheader">Due Date</div>
                 </div>
                 <!-- Table rows -->
-                <div class="overflow-y-auto flex-1">
+                <div class="overflow-y-auto flex-1" role="table" aria-label="Open estimates">
                   @for (estimate of estimates(); track estimate.id) {
                     <div
+                      role="row"
                       class="grid gap-3 px-6 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150"
                       [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
                     >
                       @if (!estimatesXXNarrow()) {
-                        <div class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
+                        <div role="cell" class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
                       }
-                      <div>
+                      <div role="cell">
                         <div class="text-sm font-medium text-foreground truncate">{{ estimate.project }}</div>
                         <div class="text-xs text-foreground-60 mt-0.5 truncate">{{ estimate.client }}</div>
                       </div>
                       @if (!estimatesXNarrow()) {
-                        <div>
+                        <div role="cell">
                           <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</div>
                         </div>
                       }
                       @if (!estimatesUltraNarrow()) {
-                        <div class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
+                        <div role="cell" class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
                       }
-                      <div>
+                      <div role="cell">
                         <modus-badge [color]="estimateBadgeColor(estimate.status)" variant="outlined" size="sm">
                           {{ estimate.status }}
                         </modus-badge>
                       </div>
                       @if (!estimatesNarrow()) {
-                        <div class="flex items-center gap-2 min-w-0">
+                        <div role="cell" class="flex items-center gap-2 min-w-0">
                           <div class="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-xs font-semibold flex-shrink-0">
                             {{ estimate.requestedByInitials }}
                           </div>
                           <div class="text-xs text-foreground-80 truncate">{{ estimate.requestedBy }}</div>
                         </div>
                       }
-                      <div>
+                      <div role="cell">
                         <div class="text-sm text-foreground-80">{{ estimate.dueDate }}</div>
                         <div class="text-xs mt-0.5" [class]="dueDateClass(estimate.daysLeft)">
                           @if (estimate.daysLeft < 0) {
@@ -1073,15 +1276,15 @@ interface AiMessage {
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
-                  <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                  <i class="modus-icons text-lg text-foreground-60">history</i>
-                  <div class="text-lg font-semibold text-foreground">Recent Activity</div>
+                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                  <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
+                  <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Recent Activity</div>
                 </div>
                 <div class="overflow-y-auto flex-1">
                   @for (activity of activities; track activity.id) {
                     <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
                       <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <i class="modus-icons text-sm {{ activity.iconColor }}">{{ activity.icon }}</i>
+                        <i class="modus-icons text-sm {{ activity.iconColor }}" aria-hidden="true">{{ activity.icon }}</i>
                       </div>
                       <div class="flex-1 min-w-0">
                         <div class="text-sm text-foreground">
@@ -1125,9 +1328,9 @@ interface AiMessage {
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
-                  <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                  <i class="modus-icons text-lg text-warning">warning</i>
-                  <div class="text-lg font-semibold text-foreground">Needs Attention</div>
+                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                  <i class="modus-icons text-lg text-warning" aria-hidden="true">warning</i>
+                  <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Needs Attention</div>
                 </div>
                 <div class="overflow-y-auto flex-1">
                   @for (item of attentionItems; track item.id) {
@@ -1171,9 +1374,9 @@ interface AiMessage {
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                    <i class="modus-icons text-lg text-foreground-60">calendar</i>
-                    <div class="text-lg font-semibold text-foreground">Time Off Requests</div>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
+                    <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Time Off Requests</div>
                     @if (pendingTimeOffCount() > 0) {
                       <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning-20">
                         <div class="text-xs font-medium text-warning">{{ pendingTimeOffCount() }} pending</div>
@@ -1184,27 +1387,27 @@ interface AiMessage {
                     <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">New Request</modus-button>
                   </div>
                 </div>
-                <div class="overflow-y-auto">
+                <div class="overflow-y-auto" role="table" aria-label="Time off requests">
                   <!-- Header row -->
-                  <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-                    <div>Employee</div>
-                    <div>Type</div>
-                    <div>Dates</div>
-                    <div>Days</div>
-                    <div>Status</div>
+                  <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+                    <div role="columnheader">Employee</div>
+                    <div role="columnheader">Type</div>
+                    <div role="columnheader">Dates</div>
+                    <div role="columnheader">Days</div>
+                    <div role="columnheader">Status</div>
                   </div>
                   @for (req of timeOffRequests; track req.id) {
-                    <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-6 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
-                      <div class="flex items-center gap-2">
+                    <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-6 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                      <div class="flex items-center gap-2" role="cell">
                         <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0">
                           {{ req.initials }}
                         </div>
                         <div class="text-sm font-medium text-foreground truncate">{{ req.name }}</div>
                       </div>
-                      <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit">{{ req.type }}</div>
-                      <div class="text-sm text-foreground-80">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
-                      <div class="text-sm text-foreground-60">{{ req.days }}d</div>
-                      <div>
+                      <div role="cell" class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit">{{ req.type }}</div>
+                      <div role="cell" class="text-sm text-foreground-80">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
+                      <div role="cell" class="text-sm text-foreground-60">{{ req.days }}d</div>
+                      <div role="cell">
                         <div class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full
                           {{ req.status === 'Approved' ? 'bg-success-20 text-success' :
                              req.status === 'Pending'  ? 'bg-warning-20 text-warning' :
@@ -1254,7 +1457,7 @@ interface AiMessage {
               <div class="p-6 max-w-screen-xl mx-auto">
                 <div class="flex items-start justify-between mb-6">
                   <div>
-                    <div class="text-3xl font-bold text-foreground">Financials</div>
+                    <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials</div>
                     <div class="text-sm text-foreground-60 mt-1">Budget overview and cost tracking</div>
                   </div>
                   <div class="flex-shrink-0">
@@ -1268,7 +1471,7 @@ interface AiMessage {
                     <div class="flex items-center justify-between">
                       <div class="text-sm font-medium text-foreground-60">Total Budget</div>
                       <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center">
-                        <i class="modus-icons text-lg text-primary">payment_instant</i>
+                        <i class="modus-icons text-lg text-primary" aria-hidden="true">payment_instant</i>
                       </div>
                     </div>
                     <div class="text-4xl font-bold text-foreground">$3.7M</div>
@@ -1278,7 +1481,7 @@ interface AiMessage {
                     <div class="flex items-center justify-between">
                       <div class="text-sm font-medium text-foreground-60">Total Spent</div>
                       <div class="w-9 h-9 rounded-lg bg-warning-20 flex items-center justify-center">
-                        <i class="modus-icons text-lg text-warning">bar_graph_line</i>
+                        <i class="modus-icons text-lg text-warning" aria-hidden="true">bar_graph_line</i>
                       </div>
                     </div>
                     <div class="text-4xl font-bold text-foreground">$2.1M</div>
@@ -1288,7 +1491,7 @@ interface AiMessage {
                     <div class="flex items-center justify-between">
                       <div class="text-sm font-medium text-foreground-60">Remaining</div>
                       <div class="w-9 h-9 rounded-lg bg-success-20 flex items-center justify-center">
-                        <i class="modus-icons text-lg text-success">bar_graph</i>
+                        <i class="modus-icons text-lg text-success" aria-hidden="true">bar_graph</i>
                       </div>
                     </div>
                     <div class="text-4xl font-bold text-success">$1.6M</div>
@@ -1323,33 +1526,33 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'financials')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
-                                <i class="modus-icons text-lg text-foreground-60">payment_instant</i>
-                                <div class="text-base font-semibold text-foreground">Budget by Project</div>
+                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payment_instant</i>
+                                <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Budget by Project</div>
                               </div>
                             </div>
 
                             <!-- Table header -->
-                            <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                              <div>Project</div>
-                              <div>Client</div>
-                              <div class="text-right">Budget</div>
-                              <div>Progress</div>
-                              <div class="text-right">Used</div>
+                            <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
+                              <div role="columnheader">Project</div>
+                              <div role="columnheader">Client</div>
+                              <div class="text-right" role="columnheader">Budget</div>
+                              <div role="columnheader">Progress</div>
+                              <div class="text-right" role="columnheader">Used</div>
                             </div>
 
                             <!-- Table body -->
-                            <div class="overflow-y-auto flex-1">
+                            <div class="overflow-y-auto flex-1" role="table" aria-label="Budget by project">
                               @for (p of projects(); track p.id) {
-                                <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
-                                  <div class="text-sm font-medium text-foreground truncate">{{ p.name }}</div>
-                                  <div class="text-sm text-foreground-60 truncate">{{ p.client }}</div>
-                                  <div class="text-sm text-foreground-60 text-right">{{ p.budgetUsed }} / {{ p.budgetTotal }}</div>
-                                  <div class="w-full">
+                                <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                                  <div class="text-sm font-medium text-foreground truncate" role="cell">{{ p.name }}</div>
+                                  <div class="text-sm text-foreground-60 truncate" role="cell">{{ p.client }}</div>
+                                  <div class="text-sm text-foreground-60 text-right" role="cell">{{ p.budgetUsed }} / {{ p.budgetTotal }}</div>
+                                  <div class="w-full" role="cell">
                                     <modus-progress [value]="p.budgetPct" [max]="100" size="compact" />
                                   </div>
                                   <div class="text-xs font-medium text-right
-                                    {{ p.budgetPct >= 90 ? 'text-destructive' : p.budgetPct >= 75 ? 'text-warning' : 'text-success' }}">
+                                    {{ p.budgetPct >= 90 ? 'text-destructive' : p.budgetPct >= 75 ? 'text-warning' : 'text-success' }}" role="cell">
                                     {{ p.budgetPct }}%
                                   </div>
                                 </div>
@@ -1453,7 +1656,7 @@ interface AiMessage {
       <div slot="header" class="flex items-center justify-between w-full">
         <div class="flex items-center gap-2">
           <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-            <svg class="ai-icon-sm" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="ai-icon-sm" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#fff"/>
               <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#fff"/>
               <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#fff"/>
@@ -1471,7 +1674,7 @@ interface AiMessage {
           role="button"
           aria-label="Close AI Assistant"
         >
-          <i class="modus-icons text-base text-foreground-60">close</i>
+          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
         </div>
       </div>
 
@@ -1482,7 +1685,7 @@ interface AiMessage {
         @if (aiMessages().length === 0 && !aiThinking()) {
           <div class="flex flex-col items-center gap-4 px-4 pt-6 pb-2">
             <div class="w-14 h-14 rounded-full bg-primary-20 flex items-center justify-center">
-              <svg class="ai-icon-lg" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg class="ai-icon-lg" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
                 <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
                 <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
@@ -1500,10 +1703,13 @@ interface AiMessage {
                   class="px-4 py-2.5 rounded-lg border-default bg-card text-sm text-foreground cursor-pointer hover:bg-muted transition-colors duration-150 text-left"
                   (click)="selectAiSuggestion(suggestion)"
                   role="button"
+                  tabindex="0"
                   [attr.aria-label]="'Ask: ' + suggestion"
+                  (keydown.enter)="selectAiSuggestion(suggestion)"
+                  (keydown.space)="$event.preventDefault(); selectAiSuggestion(suggestion)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-sm text-primary flex-shrink-0">chevron_right</i>
+                    <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">chevron_right</i>
                     <div>{{ suggestion }}</div>
                   </div>
                 </div>
@@ -1514,7 +1720,7 @@ interface AiMessage {
 
         <!-- Message list -->
         @if (aiMessages().length > 0) {
-          <div class="flex flex-col gap-3 px-4 py-4 overflow-y-auto flex-1">
+          <div class="flex flex-col gap-3 px-4 py-4 overflow-y-auto flex-1" aria-live="polite" role="log" aria-label="Chat messages">
             @for (msg of aiMessages(); track msg.id) {
               @if (msg.role === 'user') {
                 <div class="flex justify-end">
@@ -1525,7 +1731,7 @@ interface AiMessage {
               } @else {
                 <div class="flex items-start gap-2">
                   <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg class="ai-icon-xs" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg class="ai-icon-xs" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                       <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
                       <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
                       <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
@@ -1543,7 +1749,7 @@ interface AiMessage {
             @if (aiThinking()) {
               <div class="flex items-start gap-2">
                 <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg class="ai-icon-xs" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg class="ai-icon-xs" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
                     <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
                     <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
@@ -1588,6 +1794,7 @@ interface AiMessage {
               class="modus-icons text-base"
               [class.text-primary-foreground]="aiInputText().trim().length > 0 && !aiThinking()"
               [class.text-foreground-40]="!aiInputText().trim().length || aiThinking()"
+              aria-hidden="true"
             >send</i>
           </div>
         </div>
@@ -1777,6 +1984,24 @@ export class HomeComponent implements AfterViewInit {
 
   toggleDarkMode(): void {
     this.themeService.toggleMode();
+  }
+
+  focusMain(): void {
+    const mainEl = document.getElementById('main-content');
+    if (mainEl) {
+      mainEl.focus();
+      mainEl.scrollIntoView();
+    }
+  }
+
+  onEscapeKey(): void {
+    if (this.aiPanelOpen()) {
+      this.aiPanelOpen.set(false);
+    } else if (this.navExpanded()) {
+      this.navExpanded.set(false);
+    } else if (this.moreMenuOpen()) {
+      this.moreMenuOpen.set(false);
+    }
   }
 
   // ── Date ──
@@ -2201,6 +2426,50 @@ export class HomeComponent implements AfterViewInit {
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
+  // ── Submittals ──
+  readonly submittals: Submittal[] = [
+    { id: '1', number: 'SUB-001', subject: 'Structural steel shop drawings', project: 'Highway 290 Expansion', assignee: 'Sarah Chen', status: 'open', dueDate: 'Mar 14' },
+    { id: '2', number: 'SUB-002', subject: 'Concrete mix design report', project: 'Downtown Bridge Rehab', assignee: 'James Carter', status: 'overdue', dueDate: 'Feb 25' },
+    { id: '3', number: 'SUB-003', subject: 'Waterproofing membrane samples', project: 'Riverside Commercial Park', assignee: 'Priya Nair', status: 'closed', dueDate: 'Feb 18' },
+    { id: '4', number: 'SUB-004', subject: 'HVAC equipment cut sheets', project: 'Airport Terminal B', assignee: 'Tom Evans', status: 'upcoming', dueDate: 'Mar 22' },
+    { id: '5', number: 'SUB-005', subject: 'Rebar placement drawings', project: 'Highway 290 Expansion', assignee: 'Lena Brooks', status: 'open', dueDate: 'Mar 16' },
+    { id: '6', number: 'SUB-006', subject: 'Asphalt mix design', project: 'Downtown Bridge Rehab', assignee: 'Mike Osei', status: 'overdue', dueDate: 'Mar 3' },
+    { id: '7', number: 'SUB-007', subject: 'Electrical panel schedule', project: 'Airport Terminal B', assignee: 'Sarah Chen', status: 'closed', dueDate: 'Feb 12' },
+    { id: '8', number: 'SUB-008', subject: 'Glazing system product data', project: 'Riverside Commercial Park', assignee: 'James Carter', status: 'upcoming', dueDate: 'Mar 25' },
+    { id: '9', number: 'SUB-009', subject: 'Fire-rated door schedule', project: 'Airport Terminal B', assignee: 'Priya Nair', status: 'open', dueDate: 'Mar 19' },
+    { id: '10', number: 'SUB-010', subject: 'Pile driving records', project: 'Highway 290 Expansion', assignee: 'Tom Evans', status: 'closed', dueDate: 'Jan 28' },
+  ];
+
+  readonly submittalActiveFilter = signal<SubmittalStatus | 'all'>('all');
+
+  readonly submittalCounts = computed(() => ({
+    all: this.submittals.length,
+    open: this.submittals.filter(s => s.status === 'open').length,
+    overdue: this.submittals.filter(s => s.status === 'overdue').length,
+    upcoming: this.submittals.filter(s => s.status === 'upcoming').length,
+    closed: this.submittals.filter(s => s.status === 'closed').length,
+  }));
+
+  readonly filteredSubmittals = computed(() => {
+    const filter = this.submittalActiveFilter();
+    if (filter === 'all') return this.submittals;
+    return this.submittals.filter(s => s.status === filter);
+  });
+
+  submittalStatusColor(status: SubmittalStatus): string {
+    const map: Record<SubmittalStatus, string> = {
+      open: 'bg-primary',
+      overdue: 'bg-destructive',
+      upcoming: 'bg-warning',
+      closed: 'bg-success',
+    };
+    return map[status];
+  }
+
+  submittalStatusLabel(status: SubmittalStatus): string {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
   // ── Helper methods ──
   statusBadgeColor(status: ProjectStatus): ModusBadgeColor {
     const map: Record<ProjectStatus, ModusBadgeColor> = {
@@ -2256,27 +2525,27 @@ export class HomeComponent implements AfterViewInit {
 
   private static readonly GAP_PX = 16;
 
-  readonly homeWidgets: DashboardWidgetId[] = ['homeTimeOff', 'homeCalendar', 'homeRfis'];
+  readonly homeWidgets: DashboardWidgetId[] = ['homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals'];
   readonly projectWidgets: DashboardWidgetId[] = ['projects', 'openEstimates', 'recentActivity', 'needsAttention'];
   readonly financialsWidgets: DashboardWidgetId[] = ['finBudgetByProject'];
 
   /** Column start (1-16) per widget. */
   readonly widgetColStarts = signal<Record<DashboardWidgetId, number>>({
     projects: 1, openEstimates: 1, recentActivity: 1, needsAttention: 13, timeOff: 1,
-    homeTimeOff: 1, homeCalendar: 9, homeRfis: 1,
+    homeTimeOff: 1, homeCalendar: 9, homeRfis: 1, homeSubmittals: 1,
     finBudgetByProject: 1,
   });
 
   /** Column span (1-16) per widget. */
   readonly widgetColSpans = signal<Record<DashboardWidgetId, number>>({
     projects: 16, openEstimates: 16, recentActivity: 12, needsAttention: 4, timeOff: 8,
-    homeTimeOff: 8, homeCalendar: 8, homeRfis: 16,
+    homeTimeOff: 8, homeCalendar: 8, homeRfis: 16, homeSubmittals: 16,
     finBudgetByProject: 16,
   });
 
   /** Top position in pixels (row offset in the 1px-per-row grid). */
   readonly widgetTops = signal<Record<DashboardWidgetId, number>>({
-    homeTimeOff: 0, homeCalendar: 0, homeRfis: 596,
+    homeTimeOff: 0, homeCalendar: 0, homeRfis: 596, homeSubmittals: 1072,
     projects: 0, openEstimates: 536, recentActivity: 1072, needsAttention: 1072,
     finBudgetByProject: 0,
     timeOff: 0,
@@ -2284,7 +2553,7 @@ export class HomeComponent implements AfterViewInit {
 
   /** Total widget height in pixels (= grid row span). */
   readonly widgetHeights = signal<Record<DashboardWidgetId, number>>({
-    homeTimeOff: 440, homeCalendar: 580, homeRfis: 460,
+    homeTimeOff: 440, homeCalendar: 580, homeRfis: 460, homeSubmittals: 460,
     projects: 520, openEstimates: 520, recentActivity: 420, needsAttention: 420,
     finBudgetByProject: 520,
     timeOff: 400,
