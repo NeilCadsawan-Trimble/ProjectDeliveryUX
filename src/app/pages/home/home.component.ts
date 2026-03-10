@@ -14,9 +14,6 @@ import { ModusProgressComponent } from '../../components/modus-progress.componen
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
-import { ModusSideNavigationComponent } from '../../components/modus-side-navigation.component';
-import { ModusMenuComponent } from '../../components/modus-menu.component';
-import { ModusMenuItemComponent } from '../../components/modus-menu-item.component';
 import { ModusIconComponent } from '../../components/modus-icon.component';
 import { ThemeService } from '../../services/theme.service';
 
@@ -83,7 +80,7 @@ interface AiMessage {
 
 @Component({
   selector: 'app-home',
-  imports: [ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusButtonComponent, ModusUtilityPanelComponent, ModusSideNavigationComponent, ModusMenuComponent, ModusMenuItemComponent, ModusIconComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusButtonComponent, ModusUtilityPanelComponent, ModusIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -95,64 +92,82 @@ interface AiMessage {
       <!-- Navbar -->
       <modus-navbar
         [userCard]="userCard"
-        [visibility]="{ user: true, notifications: true, apps: false, help: true, search: true, searchInput: true, mainMenu: true }"
+        [visibility]="navbarVisibility()"
         [searchInputOpen]="searchInputOpen()"
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
-        (mainMenuOpenChange)="navExpanded.set($event)"
       >
         <div slot="end" class="flex items-center pr-1 gap-0.5">
-          <!-- AI Assistant toggle -->
-          <div
-            class="{{ aiNavButtonClass() }}"
-            (click)="toggleAiPanel()"
-            [title]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
-            role="button"
-            [attr.aria-label]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
-            [attr.aria-expanded]="aiPanelOpen()"
-          >
-            <i class="modus-icons text-xl">chat</i>
-            @if (aiMessages().length > 0 && !aiPanelOpen()) {
-              <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary border-2 border-background"></div>
-            }
-          </div>
-          <!-- Dark mode toggle -->
-          <div
-            class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-            (click)="toggleDarkMode()"
-            [title]="isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-          >
-            <i class="modus-icons text-xl">{{ isDark() ? 'brightness' : 'moon' }}</i>
-          </div>
+          @if (!isMobile()) {
+            <!-- AI Assistant toggle (desktop) -->
+            <div
+              class="{{ aiNavButtonClass() }}"
+              (click)="toggleAiPanel()"
+              [title]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
+              role="button"
+              [attr.aria-label]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
+              [attr.aria-expanded]="aiPanelOpen()"
+            >
+              <i class="modus-icons text-xl">chat</i>
+              @if (aiMessages().length > 0 && !aiPanelOpen()) {
+                <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary border-2 border-background"></div>
+              }
+            </div>
+            <!-- Dark mode toggle (desktop) -->
+            <div
+              class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+              (click)="toggleDarkMode()"
+              [title]="isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+            >
+              <i class="modus-icons text-xl">{{ isDark() ? 'brightness' : 'moon' }}</i>
+            </div>
+          }
+          @if (isMobile()) {
+            <!-- More menu button (mobile only) -->
+            <div class="relative">
+              <div
+                class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                (click)="toggleMoreMenu()"
+                role="button"
+                aria-label="More options"
+                [attr.aria-expanded]="moreMenuOpen()"
+              >
+                <i class="modus-icons text-xl">more_vertical</i>
+              </div>
+              @if (moreMenuOpen()) {
+                <div class="navbar-more-dropdown" role="menu" (keydown.escape)="closeMoreMenu()">
+                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('search')" (keydown.enter)="moreMenuAction('search')">
+                    <i class="modus-icons text-lg" aria-hidden="true">search</i>
+                    <div>Search</div>
+                  </div>
+                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('notifications')" (keydown.enter)="moreMenuAction('notifications')">
+                    <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
+                    <div>Notifications</div>
+                  </div>
+                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('help')" (keydown.enter)="moreMenuAction('help')">
+                    <i class="modus-icons text-lg" aria-hidden="true">help</i>
+                    <div>Help</div>
+                  </div>
+                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('ai')" (keydown.enter)="moreMenuAction('ai')">
+                    <i class="modus-icons text-lg" aria-hidden="true">chat</i>
+                    <div>AI Assistant</div>
+                  </div>
+                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('darkmode')" (keydown.enter)="moreMenuAction('darkmode')">
+                    <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'brightness' : 'moon' }}</i>
+                    <div>{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
+                  </div>
+                </div>
+                <div class="navbar-more-backdrop" role="button" tabindex="-1" aria-label="Close menu" (click)="closeMoreMenu()"></div>
+              }
+            </div>
+          }
         </div>
       </modus-navbar>
-
-      <!-- Side Navigation (outside flex flow so it never pushes content) -->
-      <modus-side-navigation
-        [expanded]="navExpanded()"
-        [collapseOnClickOutside]="true"
-        maxWidth="256px"
-        mode="overlay"
-        class="side-nav-overlay"
-        (expandedChange)="navExpanded.set($event)"
-      >
-        <modus-menu size="lg">
-          <modus-menu-item label="Home" value="home" [selected]="activeNav() === 'home'" (itemSelect)="setActiveNav('home')">
-            <modus-icon slot="start-icon" name="home" [decorative]="true"></modus-icon>
-          </modus-menu-item>
-          <modus-menu-item label="Projects" value="projects" [selected]="activeNav() === 'projects'" (itemSelect)="setActiveNav('projects')">
-            <modus-icon slot="start-icon" name="briefcase" [decorative]="true"></modus-icon>
-          </modus-menu-item>
-          <modus-menu-item label="Financials" value="financials" [selected]="activeNav() === 'financials'" (itemSelect)="setActiveNav('financials')">
-            <modus-icon slot="start-icon" name="bar_graph" [decorative]="true"></modus-icon>
-          </modus-menu-item>
-        </modus-menu>
-      </modus-side-navigation>
 
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
-        <div id="main-content" class="flex-1 overflow-auto bg-background">
+        <div class="flex-1 overflow-auto bg-background md:pl-14">
 
           @switch (activeNav()) {
             @case ('home') {
@@ -1089,6 +1104,30 @@ interface AiMessage {
       </div>
 
 
+      <!-- Custom Side Navigation (position:fixed overlay, inside main container) -->
+      @if (!isMobile() || navExpanded()) {
+        <div class="custom-side-nav" [class.expanded]="navExpanded()">
+          @for (item of sideNavItems; track item.value) {
+            <div
+              class="custom-side-nav-item"
+              [class.selected]="activeNav() === item.value"
+              (click)="setActiveNav(item.value)"
+              [title]="item.label"
+              role="button"
+              [attr.aria-label]="item.label"
+            >
+              <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+              @if (navExpanded()) {
+                <div class="custom-side-nav-label">{{ item.label }}</div>
+              }
+            </div>
+          }
+        </div>
+      }
+      @if (navExpanded()) {
+        <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
+      }
+
     </div>
 
     <!-- ─── AI Assistant Panel (sibling to main container, fixed overlay) ─── -->
@@ -1231,6 +1270,7 @@ interface AiMessage {
 })
 export class HomeComponent implements AfterViewInit {
   private readonly themeService = inject(ThemeService);
+  private readonly elementRef = inject(ElementRef);
 
   readonly userCard: INavbarUserCard = {
     name: 'Alex Morgan',
@@ -1240,11 +1280,53 @@ export class HomeComponent implements AfterViewInit {
   readonly searchInputOpen = signal(false);
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
+  // ── Navbar visibility (responsive) ──
+  readonly moreMenuOpen = signal(false);
+
+  readonly navbarVisibility = computed(() => {
+    if (this.isMobile()) {
+      return { user: true, mainMenu: true, notifications: false, apps: false, help: false, search: false, searchInput: false };
+    }
+    return { user: true, mainMenu: true, notifications: true, apps: false, help: true, search: true, searchInput: true };
+  });
+
+  toggleMoreMenu(): void {
+    this.moreMenuOpen.update(v => !v);
+  }
+
+  closeMoreMenu(): void {
+    this.moreMenuOpen.set(false);
+  }
+
+  moreMenuAction(action: string): void {
+    this.moreMenuOpen.set(false);
+    switch (action) {
+      case 'search':
+        this.searchInputOpen.set(!this.searchInputOpen());
+        break;
+      case 'notifications':
+        break;
+      case 'help':
+        break;
+      case 'ai':
+        this.toggleAiPanel();
+        break;
+      case 'darkmode':
+        this.toggleDarkMode();
+        break;
+    }
+  }
 
   // ── Side Navigation ──
   readonly navExpanded = signal(false);
   readonly activeNav = signal<'home' | 'projects' | 'financials'>('home');
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  readonly sideNavItems: { value: 'home' | 'projects' | 'financials'; label: string; icon: string }[] = [
+    { value: 'home', label: 'Home', icon: 'home' },
+    { value: 'projects', label: 'Projects', icon: 'briefcase' },
+    { value: 'financials', label: 'Financials', icon: 'bar_graph' },
+  ];
 
 
   // ── AI Assistant ──
@@ -1399,20 +1481,35 @@ export class HomeComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    // Track mobile breakpoint so the side nav switches between overlay (mobile)
-    // and push (desktop) modes.  When switching to desktop, collapse any open
-    // overlay nav; when switching to mobile, collapse any pushed nav.
     const mq = window.matchMedia('(max-width: 767px)');
     const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList) => {
       this.isMobile.set(e.matches);
       if (!e.matches) {
-        // Switched to desktop — close overlay nav if open
         this.navExpanded.set(false);
       }
     };
     mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
-    // Sync initial state
     onBreakpointChange(mq);
+
+    this.attachHamburgerListener();
+  }
+
+  private attachHamburgerListener(): void {
+    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
+    if (!navbarWc) return;
+
+    const tryAttach = () => {
+      const btn = navbarWc.querySelector('.navbar-menu-btn, [data-testid="main-menu-btn"], button[aria-label="Main menu"]');
+      if (btn) {
+        btn.addEventListener('click', (e: Event) => {
+          e.stopImmediatePropagation();
+          this.navExpanded.set(!this.navExpanded());
+        }, { capture: true });
+        return;
+      }
+      requestAnimationFrame(tryAttach);
+    };
+    tryAttach();
   }
 
   // ── Time Off widget view toggle ──

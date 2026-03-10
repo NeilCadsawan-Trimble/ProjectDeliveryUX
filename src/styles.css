@@ -1376,21 +1376,120 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   color: var(--primary);
 }
 
-/* Side nav floats over content — never pushes margins */
-#main-content {
-  margin-left: 0 !important;
-  padding-left: 0 !important;
+/* Hide the navbar's internal main-menu panel visually; our custom side nav replaces it.
+   Using visibility:hidden instead of display:none so the WC's toggle logic stays intact. */
+modus-wc-navbar .main-menu {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 
-.side-nav-overlay {
-  position: fixed !important;
-  top: 56px !important;
-  left: 0 !important;
-  height: calc(100vh - 56px) !important;
-  z-index: 999 !important;
-  pointer-events: none;
+/* ========================================
+ * Navbar "More" Dropdown (mobile)
+ * ======================================== */
+.navbar-more-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 200px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  z-index: 1001;
+  padding: 0.25rem 0;
+  animation: navbar-more-in 0.15s ease-out;
 }
 
-.side-nav-overlay modus-wc-side-navigation {
-  pointer-events: auto;
+@keyframes navbar-more-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.navbar-more-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  color: var(--foreground);
+  font-size: var(--modus-wc-font-size-md);
+  transition: background-color 0.15s ease;
+}
+
+.navbar-more-item:hover {
+  background: var(--muted);
+}
+
+.navbar-more-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+/* ========================================
+ * Custom Side Navigation
+ * Pure CSS overlay — zero layout impact on main content.
+ * ======================================== */
+.custom-side-nav {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  width: 56px;
+  height: calc(100vh - 56px);
+  background: var(--card);
+  box-shadow: rgba(36, 35, 45, 0.3) 1px 0 4px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.2s ease-out;
+}
+
+.custom-side-nav.expanded {
+  width: 240px;
+}
+
+.custom-side-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  color: var(--foreground);
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.custom-side-nav-item:hover {
+  background: var(--muted);
+}
+
+.custom-side-nav-item.selected {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.custom-side-nav-label {
+  font-size: var(--modus-wc-font-size-lg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-side-nav-backdrop {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 998;
+}
+
+@media (max-width: 767px) {
+  .custom-side-nav {
+    width: 240px;
+  }
 }
