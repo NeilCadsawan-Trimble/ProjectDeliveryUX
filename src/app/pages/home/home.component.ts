@@ -20,7 +20,20 @@ import { ThemeService } from '../../services/theme.service';
 type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeTimeOff' | 'homeCalendar';
+type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'finBudgetByProject';
+
+type GridPage = 'home' | 'projects' | 'financials';
+
+type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
+interface Rfi {
+  id: string;
+  number: string;
+  subject: string;
+  project: string;
+  assignee: string;
+  status: RfiStatus;
+  dueDate: string;
+}
 
 type ApptType = 'meeting' | 'review' | 'call' | 'deadline' | 'focus';
 interface CalendarAppointment {
@@ -86,6 +99,8 @@ interface AiMessage {
     class: 'block h-screen overflow-hidden',
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
+    '(document:touchmove)': 'onDocumentTouchMove($event)',
+    '(document:touchend)': 'onDocumentTouchEnd()',
   },
   template: `
     <svg aria-hidden="true" class="svg-defs-hidden">
@@ -247,28 +262,32 @@ interface AiMessage {
 
                 <!-- Home widget grid -->
                 <div
-                  class="grid gap-4"
+                  class="grid"
                   [style.grid-template-columns]="isMobile() ? '1fr' : 'repeat(16, minmax(0, 1fr))'"
+                  [style.grid-auto-rows]="'1px'"
+                  [style.gap]="isMobile() ? '0' : '0 1rem'"
                   #homeWidgetGrid
                 >
-                  @for (widgetId of homeWidgetOrder(); track widgetId) {
+                  @for (widgetId of homeWidgets; track widgetId) {
                     <div
                       class="relative"
                       [attr.data-widget-id]="widgetId"
                       [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
+                      [style.grid-row]="(widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
                     >
-                      <div class="relative" [class.opacity-30]="moveTargetId() === widgetId">
+                      <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 
                         @if (widgetId === 'homeTimeOff') {
                           <!-- ─── Time Off Requests Widget ─── -->
-                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col">
+                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                             <!-- Draggable header -->
                             <div
                               class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                               (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                              (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
+                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
                                 <i class="modus-icons text-lg text-foreground-60">calendar</i>
                                 <div class="text-base font-semibold text-foreground">Time Off Requests</div>
                                 @if (pendingTimeOffCount() > 0) {
@@ -308,7 +327,7 @@ interface AiMessage {
 
                             <!-- List view -->
                             @if (timeOffView() === 'list') {
-                              <div class="overflow-y-auto flex-1" [style.height.px]="homeTimeOffHeight()">
+                              <div class="overflow-y-auto flex-1">
                                 <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
                                   <div>Employee</div>
                                   <div>Type</div>
@@ -342,7 +361,7 @@ interface AiMessage {
 
                             <!-- Calendar view -->
                             @if (timeOffView() === 'calendar') {
-                              <div class="flex flex-col" [style.height.px]="homeTimeOffHeight()">
+                              <div class="flex flex-col flex-1">
                                 <!-- Month navigation -->
                                 <div class="flex items-center justify-between px-5 py-3 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
                                   <div
@@ -405,10 +424,12 @@ interface AiMessage {
                             }
                           </div>
                           <!-- Corner resize handle -->
-                          @if (!isMobile()) {
                           <div
-                            class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                            class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                            [class.cursor-nwse-resize]="!isMobile()"
+                            [class.cursor-ns-resize]="isMobile()"
                             (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                            (touchstart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                           >
                             <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
                               <div class="flex gap-0.5">
@@ -421,18 +442,18 @@ interface AiMessage {
                               </div>
                             </div>
                           </div>
-                          }
                         }
                         @else if (widgetId === 'homeCalendar') {
                           <!-- ─── Two-Day Calendar Widget ─── -->
-                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col">
+                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                             <!-- Draggable header -->
                             <div
                               class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                               (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                              (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
+                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
                                 <i class="modus-icons text-lg text-foreground-60">calendar</i>
                                 <div class="text-base font-semibold text-foreground">Calendar</div>
                                 <div class="text-xs text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</div>
@@ -482,7 +503,7 @@ interface AiMessage {
                             </div>
 
                             <!-- Time grid -->
-                            <div class="flex overflow-y-auto" [style.height.px]="homeCalendarHeight()">
+                            <div class="flex overflow-y-auto flex-1">
 
                               <!-- Time gutter -->
                               <div class="w-12 flex-shrink-0">
@@ -572,10 +593,12 @@ interface AiMessage {
                             </div>
                           </div>
                           <!-- Corner resize handle -->
-                          @if (!isMobile()) {
                           <div
-                            class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                            class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                            [class.cursor-nwse-resize]="!isMobile()"
+                            [class.cursor-ns-resize]="isMobile()"
                             (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                            (touchstart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                           >
                             <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
                               <div class="flex gap-0.5">
@@ -588,7 +611,167 @@ interface AiMessage {
                               </div>
                             </div>
                           </div>
-                          }
+                        }
+
+                        @else if (widgetId === 'homeRfis') {
+                          <!-- ─── RFIs Widget ─── -->
+                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+                            <!-- Draggable header -->
+                            <div
+                              class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                              (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                              (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                            >
+                              <div class="flex items-center gap-2">
+                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60">clipboard</i>
+                                <div class="text-base font-semibold text-foreground">RFIs</div>
+                                @if (rfiCounts().overdue > 0) {
+                                  <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                                    <div class="text-xs font-medium text-destructive">{{ rfiCounts().overdue }} overdue</div>
+                                  </div>
+                                }
+                              </div>
+                            </div>
+
+                            <!-- KPI filter pills -->
+                            <div
+                              class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
+                              (mousedown)="$event.stopPropagation()"
+                            >
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-primary]="rfiActiveFilter() === 'all'"
+                                [class.text-primary-foreground]="rfiActiveFilter() === 'all'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'all'"
+                                [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
+                                (click)="rfiActiveFilter.set('all')"
+                              >
+                                <div>All</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-primary-foreground]="rfiActiveFilter() === 'all'"
+                                  [class.text-primary]="rfiActiveFilter() === 'all'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'all'"
+                                  [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
+                                >{{ rfiCounts().all }}</div>
+                              </div>
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-primary]="rfiActiveFilter() === 'open'"
+                                [class.text-primary-foreground]="rfiActiveFilter() === 'open'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'open'"
+                                [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
+                                (click)="rfiActiveFilter.set('open')"
+                              >
+                                <div>Open</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-primary-foreground]="rfiActiveFilter() === 'open'"
+                                  [class.text-primary]="rfiActiveFilter() === 'open'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'open'"
+                                  [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
+                                >{{ rfiCounts().open }}</div>
+                              </div>
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-destructive]="rfiActiveFilter() === 'overdue'"
+                                [class.text-destructive-foreground]="rfiActiveFilter() === 'overdue'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'overdue'"
+                                [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
+                                (click)="rfiActiveFilter.set('overdue')"
+                              >
+                                <div>Overdue</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-destructive-foreground]="rfiActiveFilter() === 'overdue'"
+                                  [class.text-destructive]="rfiActiveFilter() === 'overdue'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'overdue'"
+                                  [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
+                                >{{ rfiCounts().overdue }}</div>
+                              </div>
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-warning]="rfiActiveFilter() === 'upcoming'"
+                                [class.text-warning-foreground]="rfiActiveFilter() === 'upcoming'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'upcoming'"
+                                [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
+                                (click)="rfiActiveFilter.set('upcoming')"
+                              >
+                                <div>Upcoming</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-warning-foreground]="rfiActiveFilter() === 'upcoming'"
+                                  [class.text-warning]="rfiActiveFilter() === 'upcoming'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'upcoming'"
+                                  [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
+                                >{{ rfiCounts().upcoming }}</div>
+                              </div>
+                              <div
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                [class.bg-success]="rfiActiveFilter() === 'closed'"
+                                [class.text-success-foreground]="rfiActiveFilter() === 'closed'"
+                                [class.bg-muted]="rfiActiveFilter() !== 'closed'"
+                                [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
+                                (click)="rfiActiveFilter.set('closed')"
+                              >
+                                <div>Closed</div>
+                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                  [class.bg-success-foreground]="rfiActiveFilter() === 'closed'"
+                                  [class.text-success]="rfiActiveFilter() === 'closed'"
+                                  [class.bg-secondary]="rfiActiveFilter() !== 'closed'"
+                                  [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
+                                >{{ rfiCounts().closed }}</div>
+                              </div>
+                            </div>
+
+                            <!-- Table header -->
+                            <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                              <div>RFI #</div>
+                              <div>Subject</div>
+                              <div>Project</div>
+                              <div>Assignee</div>
+                              <div>Due</div>
+                              <div>Status</div>
+                            </div>
+
+                            <!-- Table body -->
+                            <div class="overflow-y-auto flex-1">
+                              @for (rfi of filteredRfis(); track rfi.id) {
+                                <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+                                  <div class="text-sm font-medium text-primary">{{ rfi.number }}</div>
+                                  <div class="text-sm text-foreground truncate">{{ rfi.subject }}</div>
+                                  <div class="text-sm text-foreground-60 truncate">{{ rfi.project }}</div>
+                                  <div class="text-sm text-foreground-60">{{ rfi.assignee }}</div>
+                                  <div class="text-sm text-foreground-60">{{ rfi.dueDate }}</div>
+                                  <div class="flex items-center gap-1.5">
+                                    <div class="w-2 h-2 rounded-full {{ rfiStatusColor(rfi.status) }}"></div>
+                                    <div class="text-xs font-medium text-foreground-60">{{ rfiStatusLabel(rfi.status) }}</div>
+                                  </div>
+                                </div>
+                              } @empty {
+                                <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                                  <i class="modus-icons text-3xl mb-2">clipboard</i>
+                                  <div class="text-sm">No RFIs match this filter</div>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                          <!-- Corner resize handle -->
+                          <div
+                            class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                            [class.cursor-nwse-resize]="!isMobile()"
+                            [class.cursor-ns-resize]="isMobile()"
+                            (mousedown)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                            (touchstart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                          >
+                            <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                            </div>
+                          </div>
                         }
 
                       </div>
@@ -671,32 +854,34 @@ interface AiMessage {
 
             <!-- Widget area: 16-column grid layout -->
             <div
-              class="grid gap-4 mb-6"
+              class="grid mb-6"
               [style.grid-template-columns]="isMobile() ? '1fr' : 'repeat(16, minmax(0, 1fr))'"
+              [style.grid-auto-rows]="'1px'"
+              [style.gap]="isMobile() ? '0' : '0 1rem'"
               #widgetGrid
             >
 
-              @for (widgetId of widgetOrder(); track widgetId) {
+              @for (widgetId of projectWidgets; track widgetId) {
 
-              <!-- Widget wrapper — column explicit, row from auto-flow (no overlaps) -->
               <div
                 class="relative"
                 [attr.data-widget-id]="widgetId"
                 [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
+                [style.grid-row]="(widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
               >
-                <!-- Widget card (dims while being moved) -->
-                <div class="relative" [class.opacity-30]="moveTargetId() === widgetId">
+                <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 
                 @if (widgetId === 'projects') {
               <!-- ─── Projects Widget ─── -->
-              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [class.projects-widget-mobile]="isMobile()">
+              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <!-- Draggable header (sticky) -->
                 <div
                   class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
                     <i class="modus-icons text-lg text-foreground-60">apps</i>
                     <div class="text-lg font-semibold text-foreground">Projects</div>
                     <div class="text-xs text-foreground-40">{{ totalProjects() }} projects</div>
@@ -773,25 +958,23 @@ interface AiMessage {
 
               } @else if (widgetId === 'openEstimates') {
               <!-- ─── Open Estimates Widget ─── -->
-              <div class="relative bg-card border-default rounded-lg overflow-hidden" #estimatesContainer>
+              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full" #estimatesContainer>
                 <!-- Draggable header -->
                 <div
-                  class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
+                  class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
                     <i class="modus-icons text-lg text-foreground-60">description</i>
                     <div class="text-lg font-semibold text-foreground">Open Estimates</div>
                     <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
                   </div>
-                  <div class="flex-shrink-0">
-                    <modus-button color="primary" variant="outlined" size="sm" icon="add" iconPosition="left">New Estimate</modus-button>
-                  </div>
                 </div>
                 <!-- Table header -->
                 <div
-                  class="grid gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide"
+                  class="grid gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0"
                   [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
                 >
                   @if (!estimatesXXNarrow()) {
@@ -811,7 +994,7 @@ interface AiMessage {
                   <div>Due Date</div>
                 </div>
                 <!-- Table rows -->
-                <div class="overflow-y-auto" [style.max-height.px]="estimatesHeight()">
+                <div class="overflow-y-auto flex-1">
                   @for (estimate of estimates(); track estimate.id) {
                     <div
                       class="grid gap-3 px-6 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150"
@@ -861,10 +1044,12 @@ interface AiMessage {
                   }
                 </div>
                 <!-- Corner resize handle (width + height) -->
-                @if (!isMobile()) {
                 <div
-                  class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                  class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                  [class.cursor-nwse-resize]="!isMobile()"
+                  [class.cursor-ns-resize]="isMobile()"
                   (mousedown)="startWidgetResize('openEstimates', 'both', $event)"
+                  (touchstart)="startWidgetResizeTouch('openEstimates', 'both', $event)"
                   title="Drag to resize"
                 >
                   <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
@@ -878,21 +1063,21 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
-                }
               </div>
 
               } @else if (widgetId === 'recentActivity') {
               <!-- ─── Recent Activity Widget ─── -->
-              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col">
+              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div
-                  class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
+                  class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
-                  <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
+                  <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
                   <i class="modus-icons text-lg text-foreground-60">history</i>
                   <div class="text-lg font-semibold text-foreground">Recent Activity</div>
                 </div>
-                <div class="overflow-y-auto" [style.max-height.px]="activityHeight()">
+                <div class="overflow-y-auto flex-1">
                   @for (activity of activities; track activity.id) {
                     <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
                       <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -911,10 +1096,12 @@ interface AiMessage {
                   }
                 </div>
                 <!-- Corner resize handle (width + height) -->
-                @if (!isMobile()) {
                 <div
-                  class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                  class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                  [class.cursor-nwse-resize]="!isMobile()"
+                  [class.cursor-ns-resize]="isMobile()"
                   (mousedown)="startWidgetResize('recentActivity', 'both', $event)"
+                  (touchstart)="startWidgetResizeTouch('recentActivity', 'both', $event)"
                   title="Drag to resize"
                 >
                   <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
@@ -928,21 +1115,21 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
-                }
               </div>
 
               } @else if (widgetId === 'needsAttention') {
               <!-- ─── Needs Attention Widget ─── -->
-              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col">
+              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div
-                  class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
+                  class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
-                  <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
+                  <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
                   <i class="modus-icons text-lg text-warning">warning</i>
                   <div class="text-lg font-semibold text-foreground">Needs Attention</div>
                 </div>
-                <div class="overflow-y-auto" [style.max-height.px]="attentionHeight()">
+                <div class="overflow-y-auto flex-1">
                   @for (item of attentionItems; track item.id) {
                     <div class="flex items-start gap-3 px-6 py-4 border-bottom-default last:border-b-0">
                       <div class="w-2 h-2 rounded-full flex-shrink-0 mt-2 {{ item.dotClass }}"></div>
@@ -954,10 +1141,12 @@ interface AiMessage {
                   }
                 </div>
                 <!-- Corner resize handle (width + height) -->
-                @if (!isMobile()) {
                 <div
-                  class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                  class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                  [class.cursor-nwse-resize]="!isMobile()"
+                  [class.cursor-ns-resize]="isMobile()"
                   (mousedown)="startWidgetResize('needsAttention', 'both', $event)"
+                  (touchstart)="startWidgetResizeTouch('needsAttention', 'both', $event)"
                   title="Drag to resize"
                 >
                   <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
@@ -971,18 +1160,18 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
-                }
               </div>
 
               } @else if (widgetId === 'timeOff') {
               <!-- ─── Time Off Requests Widget ─── -->
-              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col">
+              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div
                   class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none"
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" [class.hidden]="isMobile()">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
                     <i class="modus-icons text-lg text-foreground-60">calendar</i>
                     <div class="text-lg font-semibold text-foreground">Time Off Requests</div>
                     @if (pendingTimeOffCount() > 0) {
@@ -1027,10 +1216,12 @@ interface AiMessage {
                   }
                 </div>
                 <!-- Corner resize handle -->
-                @if (!isMobile()) {
                 <div
-                  class="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-30 select-none group"
+                  class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                  [class.cursor-nwse-resize]="!isMobile()"
+                  [class.cursor-ns-resize]="isMobile()"
                   (mousedown)="startWidgetResize('timeOff', 'both', $event)"
+                  (touchstart)="startWidgetResizeTouch('timeOff', 'both', $event)"
                   title="Drag to resize"
                 >
                   <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
@@ -1044,7 +1235,6 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
-                }
               </div>
 
               } <!-- end @if widgetId -->
@@ -1071,6 +1261,8 @@ interface AiMessage {
                     <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
                   </div>
                 </div>
+
+                <!-- KPI cards -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
                   <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
                     <div class="flex items-center justify-between">
@@ -1103,31 +1295,102 @@ interface AiMessage {
                     <div class="text-xs text-success font-medium">43% remaining budget</div>
                   </div>
                 </div>
-                <div class="bg-card border-default rounded-lg overflow-hidden">
-                  <div class="px-5 py-4 border-bottom-default">
-                    <div class="text-base font-semibold text-foreground">Budget by Project</div>
-                  </div>
-                  <div class="divide-y divide-[var(--border)]">
-                    @for (p of projects(); track p.id) {
-                      <div class="px-5 py-4 flex items-center gap-4">
-                        <div class="flex-1 min-w-0">
-                          <div class="text-sm font-medium text-foreground truncate">{{ p.name }}</div>
-                          <div class="text-xs text-foreground-60 mt-0.5">{{ p.client }}</div>
-                        </div>
-                        <div class="text-sm text-foreground-60 w-28 text-right shrink-0">{{ p.budgetUsed }} / {{ p.budgetTotal }}</div>
-                        <div class="w-32 shrink-0">
-                          <modus-progress [value]="p.budgetPct" [max]="100" size="compact" />
-                        </div>
-                        <div class="text-xs font-medium w-10 text-right shrink-0
-                          {{ p.budgetPct >= 90 ? 'text-destructive' : p.budgetPct >= 75 ? 'text-warning' : 'text-success' }}">
-                          {{ p.budgetPct }}%
-                        </div>
+
+                <!-- Widget area: 16-column grid layout -->
+                <div
+                  class="grid mb-6"
+                  [style.grid-template-columns]="isMobile() ? '1fr' : 'repeat(16, minmax(0, 1fr))'"
+                  [style.grid-auto-rows]="'1px'"
+                  [style.gap]="isMobile() ? '0' : '0 1rem'"
+                  #financialsWidgetGrid
+                >
+                  @for (widgetId of financialsWidgets; track widgetId) {
+                    <div
+                      class="relative"
+                      [attr.data-widget-id]="widgetId"
+                      [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
+                      [style.grid-row]="(widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
+                    >
+                      <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
+
+                        @if (widgetId === 'finBudgetByProject') {
+                          <!-- ─── Budget by Project Widget ─── -->
+                          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+                            <!-- Draggable header -->
+                            <div
+                              class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                              (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'financials')"
+                              (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'financials')"
+                            >
+                              <div class="flex items-center gap-2">
+                                <i class="modus-icons text-base text-foreground-40">drag_indicator</i>
+                                <i class="modus-icons text-lg text-foreground-60">payment_instant</i>
+                                <div class="text-base font-semibold text-foreground">Budget by Project</div>
+                              </div>
+                            </div>
+
+                            <!-- Table header -->
+                            <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                              <div>Project</div>
+                              <div>Client</div>
+                              <div class="text-right">Budget</div>
+                              <div>Progress</div>
+                              <div class="text-right">Used</div>
+                            </div>
+
+                            <!-- Table body -->
+                            <div class="overflow-y-auto flex-1">
+                              @for (p of projects(); track p.id) {
+                                <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+                                  <div class="text-sm font-medium text-foreground truncate">{{ p.name }}</div>
+                                  <div class="text-sm text-foreground-60 truncate">{{ p.client }}</div>
+                                  <div class="text-sm text-foreground-60 text-right">{{ p.budgetUsed }} / {{ p.budgetTotal }}</div>
+                                  <div class="w-full">
+                                    <modus-progress [value]="p.budgetPct" [max]="100" size="compact" />
+                                  </div>
+                                  <div class="text-xs font-medium text-right
+                                    {{ p.budgetPct >= 90 ? 'text-destructive' : p.budgetPct >= 75 ? 'text-warning' : 'text-success' }}">
+                                    {{ p.budgetPct }}%
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                          <!-- Corner resize handle -->
+                          <div
+                            class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                            [class.cursor-nwse-resize]="!isMobile()"
+                            [class.cursor-ns-resize]="isMobile()"
+                            (mousedown)="startWidgetResize(widgetId, 'both', $event, 'financials')"
+                            (touchstart)="startWidgetResizeTouch(widgetId, 'both', $event, 'financials')"
+                          >
+                            <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                              <div class="flex gap-0.5">
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                                <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                              </div>
+                            </div>
+                          </div>
+                        }
+
                       </div>
-                    }
-                  </div>
+                    </div>
+                  }
                 </div>
+
               </div>
             }<!-- end @case('financials') -->
+
+            @case ('settings') {
+              <div class="p-6 max-w-screen-xl mx-auto">
+                <div class="text-3xl font-bold text-foreground mb-2">Settings</div>
+                <div class="text-sm text-foreground-60">Application settings and preferences.</div>
+              </div>
+            }<!-- end @case('settings') -->
 
           }<!-- end @switch -->
 
@@ -1138,21 +1401,38 @@ interface AiMessage {
       <!-- Custom Side Navigation (position:fixed overlay, inside main container) -->
       @if (!isMobile() || navExpanded()) {
         <div class="custom-side-nav" [class.expanded]="navExpanded()">
-          @for (item of sideNavItems; track item.value) {
+          <div class="flex flex-col flex-1 min-h-0">
+            @for (item of sideNavItems; track item.value) {
+              <div
+                class="custom-side-nav-item"
+                [class.selected]="activeNav() === item.value"
+                (click)="setActiveNav(item.value)"
+                [title]="item.label"
+                role="button"
+                [attr.aria-label]="item.label"
+              >
+                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                @if (navExpanded()) {
+                  <div class="custom-side-nav-label">{{ item.label }}</div>
+                }
+              </div>
+            }
+          </div>
+          <div class="mt-auto border-top-default">
             <div
               class="custom-side-nav-item"
-              [class.selected]="activeNav() === item.value"
-              (click)="setActiveNav(item.value)"
-              [title]="item.label"
+              [class.selected]="activeNav() === 'settings'"
+              (click)="setActiveNav('settings')"
+              title="Settings"
               role="button"
-              [attr.aria-label]="item.label"
+              aria-label="Settings"
             >
-              <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
               @if (navExpanded()) {
-                <div class="custom-side-nav-label">{{ item.label }}</div>
+                <div class="custom-side-nav-label">Settings</div>
               }
             </div>
-          }
+          </div>
         </div>
       }
       @if (navExpanded()) {
@@ -1384,10 +1664,10 @@ export class HomeComponent implements AfterViewInit {
 
   // ── Side Navigation ──
   readonly navExpanded = signal(false);
-  readonly activeNav = signal<'home' | 'projects' | 'financials'>('home');
+  readonly activeNav = signal<'home' | 'projects' | 'financials' | 'settings'>('home');
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
-  readonly sideNavItems: { value: 'home' | 'projects' | 'financials'; label: string; icon: string }[] = [
+  readonly sideNavItems: { value: 'home' | 'projects' | 'financials' | 'settings'; label: string; icon: string }[] = [
     { value: 'home', label: 'Home', icon: 'home' },
     { value: 'projects', label: 'Projects', icon: 'briefcase' },
     { value: 'financials', label: 'Financials', icon: 'bar_graph' },
@@ -1540,7 +1820,7 @@ export class HomeComponent implements AfterViewInit {
     this._estimatesResizeObserver = ro;
   });
 
-  setActiveNav(page: 'home' | 'projects' | 'financials'): void {
+  setActiveNav(page: 'home' | 'projects' | 'financials' | 'settings'): void {
     this.activeNav.set(page);
     this.navExpanded.set(false);
   }
@@ -1548,13 +1828,24 @@ export class HomeComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     const mq = window.matchMedia('(max-width: 767px)');
     const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      const wasMobile = this.isMobile();
       this.isMobile.set(e.matches);
+      if (e.matches && !wasMobile) {
+        this._savedDesktopTops = { ...this.widgetTops() };
+        this.stackAllForMobile();
+      } else if (!e.matches && wasMobile && this._savedDesktopTops) {
+        this.widgetTops.set(this._savedDesktopTops);
+        this._savedDesktopTops = null;
+      }
       if (!e.matches) {
         this.navExpanded.set(false);
       }
     };
     mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
     onBreakpointChange(mq);
+    if (this.isMobile()) {
+      this.stackAllForMobile();
+    }
 
     this.attachHamburgerListener();
   }
@@ -1865,6 +2156,51 @@ export class HomeComponent implements AfterViewInit {
 
   readonly pendingTimeOffCount = computed(() => this.timeOffRequests.filter(r => r.status === 'Pending').length);
 
+  // ── RFIs ──
+  readonly rfis: Rfi[] = [
+    { id: '1', number: 'RFI-001', subject: 'Foundation depth clarification', project: 'Highway 290 Expansion', assignee: 'Sarah Chen', status: 'open', dueDate: 'Mar 12' },
+    { id: '2', number: 'RFI-002', subject: 'Steel grade specification', project: 'Downtown Bridge Rehab', assignee: 'James Carter', status: 'overdue', dueDate: 'Feb 28' },
+    { id: '3', number: 'RFI-003', subject: 'Drainage system alignment', project: 'Highway 290 Expansion', assignee: 'Priya Nair', status: 'open', dueDate: 'Mar 15' },
+    { id: '4', number: 'RFI-004', subject: 'Concrete mix design approval', project: 'Riverside Commercial Park', assignee: 'Tom Evans', status: 'upcoming', dueDate: 'Mar 20' },
+    { id: '5', number: 'RFI-005', subject: 'Electrical conduit routing', project: 'Airport Terminal B', assignee: 'Lena Brooks', status: 'closed', dueDate: 'Feb 15' },
+    { id: '6', number: 'RFI-006', subject: 'Fire suppression specs', project: 'Downtown Bridge Rehab', assignee: 'Mike Osei', status: 'overdue', dueDate: 'Mar 1' },
+    { id: '7', number: 'RFI-007', subject: 'Soil testing report review', project: 'Riverside Commercial Park', assignee: 'Sarah Chen', status: 'closed', dueDate: 'Feb 10' },
+    { id: '8', number: 'RFI-008', subject: 'HVAC duct sizing confirmation', project: 'Airport Terminal B', assignee: 'James Carter', status: 'upcoming', dueDate: 'Mar 22' },
+    { id: '9', number: 'RFI-009', subject: 'Retaining wall design change', project: 'Highway 290 Expansion', assignee: 'Priya Nair', status: 'open', dueDate: 'Mar 18' },
+    { id: '10', number: 'RFI-010', subject: 'Waterproofing membrane spec', project: 'Downtown Bridge Rehab', assignee: 'Tom Evans', status: 'closed', dueDate: 'Jan 30' },
+  ];
+
+  readonly rfiActiveFilter = signal<RfiStatus | 'all'>('all');
+
+  readonly rfiCounts = computed(() => ({
+    all: this.rfis.length,
+    open: this.rfis.filter(r => r.status === 'open').length,
+    overdue: this.rfis.filter(r => r.status === 'overdue').length,
+    upcoming: this.rfis.filter(r => r.status === 'upcoming').length,
+    closed: this.rfis.filter(r => r.status === 'closed').length,
+  }));
+
+  readonly filteredRfis = computed(() => {
+    const filter = this.rfiActiveFilter();
+    if (filter === 'all') return this.rfis;
+    return this.rfis.filter(r => r.status === filter);
+  });
+
+
+  rfiStatusColor(status: RfiStatus): string {
+    const map: Record<RfiStatus, string> = {
+      open: 'bg-primary',
+      overdue: 'bg-destructive',
+      upcoming: 'bg-warning',
+      closed: 'bg-success',
+    };
+    return map[status];
+  }
+
+  rfiStatusLabel(status: RfiStatus): string {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
   // ── Helper methods ──
   statusBadgeColor(status: ProjectStatus): ModusBadgeColor {
     const map: Record<ProjectStatus, ModusBadgeColor> = {
@@ -1915,116 +2251,180 @@ export class HomeComponent implements AfterViewInit {
   }
 
   // ── Widget layout ──
-  // Row order is determined by DOM sequence (CSS auto-flow — zero overlaps by design).
-  // Column start + span per widget control horizontal placement.
+  // Free-form grid: each widget has explicit column + row placement.
+  // Collision detection ensures no overlaps after move/resize.
 
-  readonly estimatesHeight = signal(420);
-  readonly activityHeight = signal(360);
-  readonly attentionHeight = signal(360);
+  private static readonly GAP_PX = 16;
 
-  // Home widget heights
-  readonly homeTimeOffHeight = signal(380);
-  readonly homeCalendarHeight = signal(460);
-
-  /** Render order — determines auto-flow row stacking (Projects page). */
-  readonly widgetOrder = signal<DashboardWidgetId[]>(['projects', 'openEstimates', 'recentActivity', 'needsAttention']);
-
-  /** Render order — determines auto-flow row stacking (Home page). */
-  readonly homeWidgetOrder = signal<DashboardWidgetId[]>(['homeTimeOff', 'homeCalendar']);
+  readonly homeWidgets: DashboardWidgetId[] = ['homeTimeOff', 'homeCalendar', 'homeRfis'];
+  readonly projectWidgets: DashboardWidgetId[] = ['projects', 'openEstimates', 'recentActivity', 'needsAttention'];
+  readonly financialsWidgets: DashboardWidgetId[] = ['finBudgetByProject'];
 
   /** Column start (1-16) per widget. */
   readonly widgetColStarts = signal<Record<DashboardWidgetId, number>>({
     projects: 1, openEstimates: 1, recentActivity: 1, needsAttention: 13, timeOff: 1,
-    homeTimeOff: 1, homeCalendar: 9,
+    homeTimeOff: 1, homeCalendar: 9, homeRfis: 1,
+    finBudgetByProject: 1,
   });
 
   /** Column span (1-16) per widget. */
   readonly widgetColSpans = signal<Record<DashboardWidgetId, number>>({
     projects: 16, openEstimates: 16, recentActivity: 12, needsAttention: 4, timeOff: 8,
-    homeTimeOff: 8, homeCalendar: 8,
+    homeTimeOff: 8, homeCalendar: 8, homeRfis: 16,
+    finBudgetByProject: 16,
+  });
+
+  /** Top position in pixels (row offset in the 1px-per-row grid). */
+  readonly widgetTops = signal<Record<DashboardWidgetId, number>>({
+    homeTimeOff: 0, homeCalendar: 0, homeRfis: 596,
+    projects: 0, openEstimates: 536, recentActivity: 1072, needsAttention: 1072,
+    finBudgetByProject: 0,
+    timeOff: 0,
+  });
+
+  /** Total widget height in pixels (= grid row span). */
+  readonly widgetHeights = signal<Record<DashboardWidgetId, number>>({
+    homeTimeOff: 440, homeCalendar: 580, homeRfis: 460,
+    projects: 520, openEstimates: 520, recentActivity: 420, needsAttention: 420,
+    finBudgetByProject: 520,
+    timeOff: 400,
   });
 
   private readonly gridContainerRef = viewChild<ElementRef>('widgetGrid');
   private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');
+  private readonly financialsGridContainerRef = viewChild<ElementRef>('financialsWidgetGrid');
+
+  private getGridWidgets(grid: GridPage): DashboardWidgetId[] {
+    switch (grid) {
+      case 'home': return this.homeWidgets;
+      case 'projects': return this.projectWidgets;
+      case 'financials': return this.financialsWidgets;
+    }
+  }
+
+  // ── Collision detection ──
+
+  private columnsOverlap(a: DashboardWidgetId, b: DashboardWidgetId): boolean {
+    const starts = this.widgetColStarts();
+    const spans = this.widgetColSpans();
+    return starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+  }
+
+  private rowsOverlap(a: DashboardWidgetId, b: DashboardWidgetId): boolean {
+    const tops = this.widgetTops();
+    const heights = this.widgetHeights();
+    return tops[a] < tops[b] + heights[b] && tops[b] < tops[a] + heights[a];
+  }
+
+  private resolveCollisions(movedId: DashboardWidgetId, widgets: DashboardWidgetId[]): void {
+    const tops = { ...this.widgetTops() };
+    const heights = this.widgetHeights();
+    const starts = this.widgetColStarts();
+    const spans = this.widgetColSpans();
+    const gap = HomeComponent.GAP_PX;
+
+    const mobile = this.isMobile();
+    const colOverlap = (a: DashboardWidgetId, b: DashboardWidgetId) =>
+      mobile || (starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a]);
+
+    // 1. Push overlapping widgets down by the minimum amount.
+    const nudgeDown = (sourceId: DashboardWidgetId) => {
+      const srcBottom = tops[sourceId] + heights[sourceId];
+      for (const otherId of widgets) {
+        if (otherId === sourceId) continue;
+        if (!colOverlap(sourceId, otherId)) continue;
+        const clearance = srcBottom + gap;
+        if (tops[otherId] < clearance && tops[sourceId] < tops[otherId] + heights[otherId]) {
+          tops[otherId] = clearance;
+          nudgeDown(otherId);
+        }
+      }
+    };
+    nudgeDown(movedId);
+
+    // 2. Compact upward: float every widget (except the one being
+    //    actively dragged) to the highest non-overlapping position.
+    const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
+    for (const id of sorted) {
+      if (id === movedId) continue;
+      let bestTop = 0;
+      for (const otherId of sorted) {
+        if (otherId === id) continue;
+        if (!colOverlap(id, otherId)) continue;
+        const otherBottom = tops[otherId] + heights[otherId] + gap;
+        if (otherBottom > bestTop && tops[otherId] < tops[id] + heights[id]) {
+          bestTop = Math.max(bestTop, otherBottom);
+        }
+      }
+      if (bestTop < tops[id]) {
+        tops[id] = bestTop;
+      }
+    }
+
+    const changed = widgets.some(id => tops[id] !== this.widgetTops()[id]);
+    if (changed) {
+      this.widgetTops.set(tops);
+    }
+  }
 
   // ── Drag-to-move ──
 
   readonly moveTargetId = signal<DashboardWidgetId | null>(null);
 
   private _moveTarget: DashboardWidgetId | null = null;
-  private _activeGrid: 'home' | 'projects' = 'projects';
+  private _activeGrid: GridPage = 'projects';
   private _dragAxis: 'h' | 'v' | null = null;
   private _dragStartX = 0;
   private _dragStartY = 0;
+  private _dragStartTop = 0;
 
   private get activeGridEl(): HTMLElement | undefined {
-    const ref = this._activeGrid === 'home' ? this.homeGridContainerRef() : this.gridContainerRef();
-    return ref?.nativeElement as HTMLElement | undefined;
+    const refMap: Record<GridPage, ElementRef | undefined> = {
+      home: this.homeGridContainerRef(),
+      projects: this.gridContainerRef(),
+      financials: this.financialsGridContainerRef(),
+    };
+    return refMap[this._activeGrid]?.nativeElement as HTMLElement | undefined;
   }
 
-  private get activeOrder(): DashboardWidgetId[] {
-    return this._activeGrid === 'home' ? this.homeWidgetOrder() : this.widgetOrder();
-  }
-
-  onWidgetHeaderMouseDown(id: DashboardWidgetId, event: MouseEvent, grid: 'home' | 'projects' = 'projects'): void {
+  onWidgetHeaderMouseDown(id: DashboardWidgetId, event: MouseEvent, grid: GridPage = 'projects'): void {
     event.preventDefault();
     this._moveTarget = id;
     this._activeGrid = grid;
     this._dragAxis = null;
     this._dragStartX = event.clientX;
     this._dragStartY = event.clientY;
+    this._dragStartTop = this.widgetTops()[id];
     this.moveTargetId.set(id);
   }
 
   private handleWidgetMove(event: MouseEvent): void {
     const grid = this.activeGridEl;
     if (!grid || !this._moveTarget) return;
+    const id = this._moveTarget;
+    const gridWidgets = this.getGridWidgets(this._activeGrid);
 
-    // Determine axis lock once the threshold is crossed.
     if (!this._dragAxis) {
       const dx = Math.abs(event.clientX - this._dragStartX);
       const dy = Math.abs(event.clientY - this._dragStartY);
-      if (dx < 8 && dy < 8) return; // below threshold — wait
-      this._dragAxis = dx >= dy ? 'h' : 'v';
+      if (dx < 8 && dy < 8) return;
+      this._dragAxis = this.isMobile() ? 'v' : (dx >= dy ? 'h' : 'v');
     }
 
-    const rect = grid.getBoundingClientRect();
-
     if (this._dragAxis === 'h') {
-      // Horizontal only — change colStart, leave order alone.
+      const rect = grid.getBoundingClientRect();
       const colW = rect.width / 16;
-      const span = this.widgetColSpans()[this._moveTarget];
+      const span = this.widgetColSpans()[id];
       const rawStart = Math.floor((event.clientX - rect.left) / colW) + 1;
       const newColStart = Math.max(1, Math.min(17 - span, rawStart));
-      if (newColStart !== this.widgetColStarts()[this._moveTarget]) {
-        this.widgetColStarts.update(s => ({ ...s, [this._moveTarget!]: newColStart }));
+      if (newColStart !== this.widgetColStarts()[id]) {
+        this.widgetColStarts.update(s => ({ ...s, [id]: newColStart }));
+        this.resolveCollisions(id, gridWidgets);
       }
     } else {
-      // Vertical only — change order, leave colStart alone.
-      const order = this.activeOrder;
-      const orderSignal = this._activeGrid === 'home' ? this.homeWidgetOrder : this.widgetOrder;
-      const others = order.filter(id => id !== this._moveTarget);
-      let insertBeforeId: DashboardWidgetId | null = null;
-      for (const otherId of others) {
-        const el = grid.querySelector(`[data-widget-id="${otherId}"]`) as HTMLElement | null;
-        if (!el) continue;
-        const er = el.getBoundingClientRect();
-        if (event.clientY < (er.top + er.bottom) / 2) {
-          insertBeforeId = otherId;
-          break;
-        }
-      }
-      const currentIdx = order.indexOf(this._moveTarget);
-      const targetIdx = insertBeforeId === null
-        ? others.length
-        : others.indexOf(insertBeforeId);
-      if (currentIdx !== targetIdx) {
-        orderSignal.update(ord => {
-          const next = ord.filter(id => id !== this._moveTarget!);
-          next.splice(targetIdx, 0, this._moveTarget!);
-          return next;
-        });
-      }
+      const newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY));
+      this.widgetTops.update(t => ({ ...t, [id]: newTop }));
+      this.resolveCollisions(id, gridWidgets);
     }
   }
 
@@ -2038,32 +2438,16 @@ export class HomeComponent implements AfterViewInit {
   private _resizeStartColSpan = 0;
   private _gridContainerWidth = 1200;
 
-  private readonly _heightGetMap: Partial<Record<DashboardWidgetId, () => number>> = {
-    openEstimates: () => this.estimatesHeight(),
-    recentActivity: () => this.activityHeight(),
-    needsAttention: () => this.attentionHeight(),
-    homeTimeOff: () => this.homeTimeOffHeight(),
-    homeCalendar: () => this.homeCalendarHeight(),
-  };
-
-  private readonly _heightSetMap: Partial<Record<DashboardWidgetId, (h: number) => void>> = {
-    openEstimates: h => this.estimatesHeight.set(h),
-    recentActivity: h => this.activityHeight.set(h),
-    needsAttention: h => this.attentionHeight.set(h),
-    homeTimeOff: h => this.homeTimeOffHeight.set(h),
-    homeCalendar: h => this.homeCalendarHeight.set(h),
-  };
-
-  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, grid: 'home' | 'projects' = 'projects'): void {
+  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, grid: GridPage = 'projects'): void {
     event.preventDefault();
     event.stopPropagation();
     this._resizeTarget = target;
-    this._resizeDir = dir;
+    this._resizeDir = this.isMobile() ? 'v' : dir;
     this._activeGrid = grid;
     this._resizeStartY = event.clientY;
     this._resizeStartX = event.clientX;
     if (dir === 'v' || dir === 'both') {
-      this._resizeStartH = this._heightGetMap[target as DashboardWidgetId]?.() ?? 300;
+      this._resizeStartH = this.widgetHeights()[target as DashboardWidgetId] ?? 400;
     }
     if (dir === 'h' || dir === 'both') {
       this._resizeStartColSpan = this.widgetColSpans()[target as DashboardWidgetId] ?? 8;
@@ -2077,18 +2461,22 @@ export class HomeComponent implements AfterViewInit {
     if (this._moveTarget) {
       this.handleWidgetMove(event);
     } else if (this._resizeTarget) {
+      const id = this._resizeTarget as DashboardWidgetId;
+      const gridWidgets = this.getGridWidgets(this._activeGrid);
+
       if (this._resizeDir === 'v' || this._resizeDir === 'both') {
-        const newH = Math.max(120, this._resizeStartH + (event.clientY - this._resizeStartY));
-        this._heightSetMap[this._resizeTarget as DashboardWidgetId]?.(newH);
+        const newH = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
+        this.widgetHeights.update(h => ({ ...h, [id]: newH }));
+        this.resolveCollisions(id, gridWidgets);
       }
       if (this._resizeDir === 'h' || this._resizeDir === 'both') {
         const colW = this._gridContainerWidth / 16;
         const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
         const newSpan = this._resizeStartColSpan + deltaSpan;
-        const id = this._resizeTarget as DashboardWidgetId;
         const minSpan = id === 'needsAttention' ? 3 : 4;
         const clampedSpan = Math.max(minSpan, Math.min(16, newSpan));
         this.widgetColSpans.update(s => ({ ...s, [id]: clampedSpan }));
+        this.resolveCollisions(id, gridWidgets);
       }
     }
   }
@@ -2098,5 +2486,71 @@ export class HomeComponent implements AfterViewInit {
     this._dragAxis = null;
     this.moveTargetId.set(null);
     this._resizeTarget = null;
+  }
+
+  // ── Touch event adapters for mobile drag/resize ──
+
+  onWidgetHeaderTouchStart(id: DashboardWidgetId, event: TouchEvent, grid: GridPage = 'projects'): void {
+    if (event.touches.length !== 1) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    this._moveTarget = id;
+    this._activeGrid = grid;
+    this._dragAxis = null;
+    this._dragStartX = touch.clientX;
+    this._dragStartY = touch.clientY;
+    this._dragStartTop = this.widgetTops()[id];
+    this.moveTargetId.set(id);
+  }
+
+  startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent, grid: GridPage = 'projects'): void {
+    if (event.touches.length !== 1) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const touch = event.touches[0];
+    this._resizeTarget = target;
+    this._resizeDir = this.isMobile() ? 'v' : dir;
+    this._activeGrid = grid;
+    this._resizeStartY = touch.clientY;
+    this._resizeStartX = touch.clientX;
+    if (this._resizeDir === 'v' || this._resizeDir === 'both') {
+      this._resizeStartH = this.widgetHeights()[target as DashboardWidgetId] ?? 400;
+    }
+    if (this._resizeDir === 'h' || this._resizeDir === 'both') {
+      this._resizeStartColSpan = this.widgetColSpans()[target as DashboardWidgetId] ?? 8;
+      this._gridContainerWidth = this.activeGridEl?.offsetWidth ?? 1200;
+    }
+  }
+
+  onDocumentTouchMove(event: TouchEvent): void {
+    if (!this._moveTarget && !this._resizeTarget) return;
+    if (event.touches.length !== 1) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    this.onDocumentMouseMove({ clientX: touch.clientX, clientY: touch.clientY } as MouseEvent);
+  }
+
+  onDocumentTouchEnd(): void {
+    this.onDocumentMouseUp();
+  }
+
+  // ── Mobile layout stacking ──
+
+  private _savedDesktopTops: Record<DashboardWidgetId, number> | null = null;
+
+  private stackAllForMobile(): void {
+    const gap = HomeComponent.GAP_PX;
+    const heights = this.widgetHeights();
+    const tops = { ...this.widgetTops() };
+
+    for (const widgets of [this.homeWidgets, this.projectWidgets, this.financialsWidgets]) {
+      let y = 0;
+      for (const id of widgets) {
+        tops[id] = y;
+        y += heights[id] + gap;
+      }
+    }
+
+    this.widgetTops.set(tops);
   }
 }

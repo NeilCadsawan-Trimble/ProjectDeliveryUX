@@ -1430,10 +1430,6 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   opacity: 0.9;
 }
 
-.projects-widget-mobile {
-  max-height: 75vh;
-  overflow-y: auto;
-}
 
 /* Hide the navbar's internal main-menu panel visually; our custom side nav replaces it.
    Using visibility:hidden instead of display:none so the WC's toggle logic stays intact. */
