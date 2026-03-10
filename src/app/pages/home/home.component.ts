@@ -83,11 +83,12 @@ interface AiMessage {
   imports: [ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusButtonComponent, ModusUtilityPanelComponent, ModusIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
+    class: 'block h-screen overflow-hidden',
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
   },
   template: `
-    <svg class="hidden" aria-hidden="true">
+    <svg aria-hidden="true" class="svg-defs-hidden">
       <defs>
         <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="20%" stop-color="#FF00FF" />
@@ -101,10 +102,8 @@ interface AiMessage {
         </radialGradient>
       </defs>
     </svg>
-    <div class="h-screen flex flex-col bg-background text-foreground overflow-hidden">
-
-      <!-- Navbar (fixed to top) -->
-      <div class="fixed top-0 left-0 right-0 z-[1000]">
+    <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
+      <!-- Navbar -->
       <modus-navbar
         [userCard]="userCard"
         [visibility]="navbarVisibility()"
@@ -195,10 +194,6 @@ interface AiMessage {
       </modus-navbar>
 
       <div class="navbar-shadow"></div>
-      </div>
-
-      <!-- Spacer for fixed navbar -->
-      <div class="navbar-spacer flex-shrink-0"></div>
 
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
