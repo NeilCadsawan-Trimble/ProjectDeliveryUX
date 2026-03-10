@@ -87,9 +87,24 @@ interface AiMessage {
     '(document:mouseup)': 'onDocumentMouseUp()',
   },
   template: `
+    <svg class="hidden" aria-hidden="true">
+      <defs>
+        <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="20%" stop-color="#FF00FF" />
+          <stop offset="60%" stop-color="#0066CC" />
+          <stop offset="100%" stop-color="#0066CC" />
+        </linearGradient>
+        <radialGradient id="ai-grad-dark" cx="18%" cy="18%" r="70%">
+          <stop offset="0%" stop-color="#FF00FF" />
+          <stop offset="50%" stop-color="#9933FF" />
+          <stop offset="100%" stop-color="#0066CC" />
+        </radialGradient>
+      </defs>
+    </svg>
     <div class="h-screen flex flex-col bg-background text-foreground overflow-hidden">
 
-      <!-- Navbar -->
+      <!-- Navbar (fixed to top) -->
+      <div class="fixed top-0 left-0 right-0 z-[1000]">
       <modus-navbar
         [userCard]="userCard"
         [visibility]="navbarVisibility()"
@@ -108,7 +123,17 @@ interface AiMessage {
               [attr.aria-label]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
               [attr.aria-expanded]="aiPanelOpen()"
             >
-              <i class="modus-icons text-xl">chat</i>
+              <svg class="ai-icon-nav" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
+                @if (aiPanelOpen() || isDark()) {
+                  <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
+                  <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-grad-dark)" transform="translate(-256, 0)"/>
+                } @else {
+                  <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
+                  <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
+                  <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
+                  <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
+                }
+              </svg>
               @if (aiMessages().length > 0 && !aiPanelOpen()) {
                 <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary border-2 border-background"></div>
               }
@@ -149,7 +174,12 @@ interface AiMessage {
                     <div>Help</div>
                   </div>
                   <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('ai')" (keydown.enter)="moreMenuAction('ai')">
-                    <i class="modus-icons text-lg" aria-hidden="true">chat</i>
+                    <svg class="ai-icon-menu" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
+                      <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
+                      <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
+                      <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
+                    </svg>
                     <div>AI Assistant</div>
                   </div>
                   <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('darkmode')" (keydown.enter)="moreMenuAction('darkmode')">
@@ -165,6 +195,10 @@ interface AiMessage {
       </modus-navbar>
 
       <div class="navbar-shadow"></div>
+      </div>
+
+      <!-- Spacer for fixed navbar -->
+      <div class="navbar-spacer flex-shrink-0"></div>
 
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
@@ -1144,7 +1178,12 @@ interface AiMessage {
       <div slot="header" class="flex items-center justify-between w-full">
         <div class="flex items-center gap-2">
           <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-            <i class="modus-icons text-sm text-primary-foreground">chat</i>
+            <svg class="ai-icon-sm" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#fff"/>
+              <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#fff"/>
+              <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#fff"/>
+              <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="#fff"/>
+            </svg>
           </div>
           <div>
             <div class="text-base font-semibold text-foreground">Trimble AI</div>
@@ -1168,7 +1207,12 @@ interface AiMessage {
         @if (aiMessages().length === 0 && !aiThinking()) {
           <div class="flex flex-col items-center gap-4 px-4 pt-6 pb-2">
             <div class="w-14 h-14 rounded-full bg-primary-20 flex items-center justify-center">
-              <i class="modus-icons text-3xl text-primary">chat</i>
+              <svg class="ai-icon-lg" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
+                <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
+                <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
+                <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
+              </svg>
             </div>
             <div class="text-center">
               <div class="text-base font-semibold text-foreground">How can I help?</div>
@@ -1206,7 +1250,12 @@ interface AiMessage {
               } @else {
                 <div class="flex items-start gap-2">
                   <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <i class="modus-icons text-xs text-primary">chat</i>
+                    <svg class="ai-icon-xs" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
+                      <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
+                      <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
+                      <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
+                    </svg>
                   </div>
                   <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed">
                     {{ msg.text }}
@@ -1219,7 +1268,12 @@ interface AiMessage {
             @if (aiThinking()) {
               <div class="flex items-start gap-2">
                 <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <i class="modus-icons text-xs text-primary">chat</i>
+                  <svg class="ai-icon-xs" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
+                    <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
+                    <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
+                    <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
+                  </svg>
                 </div>
                 <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-card border-default">
                   <div class="flex items-center gap-1">

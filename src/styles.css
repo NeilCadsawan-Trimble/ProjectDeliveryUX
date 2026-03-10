@@ -1376,6 +1376,32 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   color: var(--primary);
 }
 
+.ai-icon-nav {
+  width: 20px;
+  height: 22px;
+}
+
+.ai-icon-menu {
+  width: 18px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.ai-icon-sm {
+  width: 14px;
+  height: 16px;
+}
+
+.ai-icon-lg {
+  width: 30px;
+  height: 33px;
+}
+
+.ai-icon-xs {
+  width: 12px;
+  height: 14px;
+}
+
 .navbar-icon-btn {
   display: flex;
   align-items: center;
@@ -1421,6 +1447,10 @@ modus-wc-progress.progress-primary .modus-wc-progress {
     transparent
   );
   pointer-events: none;
+}
+
+.navbar-spacer {
+  height: 56px;
 }
 
 modus-wc-navbar .main-menu {
