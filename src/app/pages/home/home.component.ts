@@ -97,7 +97,7 @@ interface AiMessage {
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
       >
-        <div slot="end" class="flex items-center pr-1 gap-0.5">
+        <div slot="end" class="flex items-center gap-2">
           @if (!isMobile()) {
             <!-- AI Assistant toggle (desktop) -->
             <div
@@ -115,7 +115,7 @@ interface AiMessage {
             </div>
             <!-- Dark mode toggle (desktop) -->
             <div
-              class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+              class="navbar-icon-btn"
               (click)="toggleDarkMode()"
               [title]="isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
             >
@@ -163,6 +163,8 @@ interface AiMessage {
           }
         </div>
       </modus-navbar>
+
+      <div class="navbar-shadow"></div>
 
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
@@ -584,7 +586,7 @@ interface AiMessage {
             </div>
 
             <!-- KPI cards -->
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
               <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
                 <div class="flex items-center justify-between">
@@ -1271,6 +1273,20 @@ interface AiMessage {
 export class HomeComponent implements AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly elementRef = inject(ElementRef);
+  private hamburgerBtn: HTMLElement | null = null;
+
+  private readonly hamburgerEffect = effect(() => {
+    const expanded = this.navExpanded();
+    if (this.hamburgerBtn) {
+      if (expanded) {
+        this.hamburgerBtn.style.background = 'var(--primary)';
+        this.hamburgerBtn.style.color = 'var(--primary-foreground)';
+      } else {
+        this.hamburgerBtn.style.background = '';
+        this.hamburgerBtn.style.color = '';
+      }
+    }
+  });
 
   readonly userCard: INavbarUserCard = {
     name: 'Alex Morgan',
@@ -1424,10 +1440,10 @@ export class HomeComponent implements AfterViewInit {
   }
 
   aiNavButtonClass(): string {
-    const base = 'relative flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer transition-colors duration-150';
+    const base = 'relative navbar-icon-btn';
     return this.aiPanelOpen()
-      ? `${base} bg-primary text-primary-foreground`
-      : `${base} text-foreground hover:bg-muted`;
+      ? `${base} navbar-icon-btn-active`
+      : base;
   }
 
   toggleDarkMode(): void {
@@ -1501,6 +1517,7 @@ export class HomeComponent implements AfterViewInit {
     const tryAttach = () => {
       const btn = navbarWc.querySelector('.navbar-menu-btn, [data-testid="main-menu-btn"], button[aria-label="Main menu"]');
       if (btn) {
+        this.hamburgerBtn = btn as HTMLElement;
         btn.addEventListener('click', (e: Event) => {
           e.stopImmediatePropagation();
           this.navExpanded.set(!this.navExpanded());

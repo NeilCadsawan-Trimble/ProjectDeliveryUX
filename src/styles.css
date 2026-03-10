@@ -1376,8 +1376,48 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   color: var(--primary);
 }
 
+.navbar-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--modus-wc-border-radius-sm, 4px);
+  cursor: pointer;
+  background: var(--modus-wc-color-base-100);
+  color: var(--modus-wc-color-base-content);
+  border: 0;
+  box-shadow: none;
+  transition: opacity 0.15s ease;
+}
+
+.navbar-icon-btn:hover {
+  opacity: 0.8;
+}
+
+.navbar-icon-btn-active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.navbar-icon-btn-active:hover {
+  opacity: 0.9;
+}
+
 /* Hide the navbar's internal main-menu panel visually; our custom side nav replaces it.
    Using visibility:hidden instead of display:none so the WC's toggle logic stays intact. */
+.navbar-shadow {
+  height: 6px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(36, 35, 45, 0.18),
+    rgba(36, 35, 45, 0.06) 40%,
+    transparent
+  );
+  pointer-events: none;
+}
+
 modus-wc-navbar .main-menu {
   visibility: hidden !important;
   pointer-events: none !important;
@@ -1440,8 +1480,8 @@ modus-wc-navbar .main-menu {
   left: 0;
   width: 56px;
   height: calc(100vh - 56px);
-  background: var(--card);
-  box-shadow: rgba(36, 35, 45, 0.3) 1px 0 4px;
+  background: var(--background);
+  box-shadow: 4px 0 4px -2px rgba(36, 35, 45, 0.25);
   z-index: 999;
   display: flex;
   flex-direction: column;
