@@ -289,6 +289,7 @@ interface AiMessage {
                   @for (widgetId of homeWidgets; track widgetId) {
                     <div
                       class="relative"
+                      [class.overflow-hidden]="isMobile()"
                       [attr.data-widget-id]="widgetId"
                       [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
                       [style.grid-row]="(widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
@@ -1066,6 +1067,7 @@ interface AiMessage {
 
               <div
                 class="relative"
+                [class.overflow-hidden]="isMobile()"
                 [attr.data-widget-id]="widgetId"
                 [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
                 [style.grid-row]="(widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
@@ -1510,6 +1512,7 @@ interface AiMessage {
                   @for (widgetId of financialsWidgets; track widgetId) {
                     <div
                       class="relative"
+                      [class.overflow-hidden]="isMobile()"
                       [attr.data-widget-id]="widgetId"
                       [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
                       [style.grid-row]="(widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
@@ -2057,16 +2060,30 @@ export class HomeComponent implements AfterViewInit {
       this.isMobile.set(e.matches);
       if (e.matches && !wasMobile) {
         this._savedDesktopTops = { ...this.widgetTops() };
+        this._savedDesktopColStarts = { ...this.widgetColStarts() };
+        this._savedDesktopColSpans = { ...this.widgetColSpans() };
         this.stackAllForMobile();
       } else if (!e.matches && wasMobile && this._savedDesktopTops) {
         this.widgetTops.set(this._savedDesktopTops);
+        if (this._savedDesktopColStarts) this.widgetColStarts.set(this._savedDesktopColStarts);
+        if (this._savedDesktopColSpans) this.widgetColSpans.set(this._savedDesktopColSpans);
         this._savedDesktopTops = null;
+        this._savedDesktopColStarts = null;
+        this._savedDesktopColSpans = null;
       }
       if (!e.matches) {
         this.navExpanded.set(false);
       }
     };
     mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
+
+    window.addEventListener('resize', () => {
+      const mobile = window.innerWidth < 768;
+      if (mobile !== this.isMobile()) {
+        onBreakpointChange(mq);
+      }
+    });
+
     onBreakpointChange(mq);
     if (this.isMobile()) {
       this.stackAllForMobile();
@@ -2806,20 +2823,28 @@ export class HomeComponent implements AfterViewInit {
   // ── Mobile layout stacking ──
 
   private _savedDesktopTops: Record<DashboardWidgetId, number> | null = null;
+  private _savedDesktopColStarts: Record<DashboardWidgetId, number> | null = null;
+  private _savedDesktopColSpans: Record<DashboardWidgetId, number> | null = null;
 
   private stackAllForMobile(): void {
     const gap = HomeComponent.GAP_PX;
     const heights = this.widgetHeights();
     const tops = { ...this.widgetTops() };
+    const colStarts = { ...this.widgetColStarts() };
+    const colSpans = { ...this.widgetColSpans() };
 
     for (const widgets of [this.homeWidgets, this.projectWidgets, this.financialsWidgets]) {
       let y = 0;
       for (const id of widgets) {
         tops[id] = y;
+        colStarts[id] = 1;
+        colSpans[id] = 16;
         y += heights[id] + gap;
       }
     }
 
     this.widgetTops.set(tops);
+    this.widgetColStarts.set(colStarts);
+    this.widgetColSpans.set(colSpans);
   }
 }

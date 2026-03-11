@@ -1566,6 +1566,19 @@ modus-wc-navbar .main-menu {
   .custom-side-nav {
     width: 240px;
   }
+
+  .grid[style*="grid-auto-rows"] {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden;
+  }
+
+  .grid[style*="grid-auto-rows"] > [style*="grid-column"] {
+    grid-column: 1 / -1 !important;
+    max-width: 100% !important;
+  }
 }
 
 /* ── Accessibility ── */
