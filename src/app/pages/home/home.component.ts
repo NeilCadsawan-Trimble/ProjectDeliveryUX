@@ -699,87 +699,87 @@ interface AiMessage {
                             </div>
 
                             @if (isMobile() && !rfiMobileExpanded()) {
-                              <!-- Mobile KPI cards view -->
-                              <div class="grid grid-cols-2 gap-3 p-4 flex-1 overflow-y-auto">
+                              <!-- Mobile compact KPI list -->
+                              <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="All RFIs: {{ rfiCounts().all }}"
                                   (click)="expandRfiMobile('all')"
                                   (keydown.enter)="expandRfiMobile('all')"
                                   (keydown.space)="$event.preventDefault(); expandRfiMobile('all')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-primary" aria-hidden="true">clipboard</i>
+                                  <div class="w-8 h-8 rounded-lg bg-primary-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-primary" aria-hidden="true">clipboard</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().all }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">All RFIs</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">All RFIs</div>
                                   </div>
+                                  <div class="text-lg font-bold text-foreground">{{ rfiCounts().all }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="Open RFIs: {{ rfiCounts().open }}"
                                   (click)="expandRfiMobile('open')"
                                   (keydown.enter)="expandRfiMobile('open')"
                                   (keydown.space)="$event.preventDefault(); expandRfiMobile('open')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-primary" aria-hidden="true">clipboard</i>
+                                  <div class="w-8 h-8 rounded-lg bg-primary-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-primary" aria-hidden="true">clipboard</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().open }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">Open</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">Open</div>
                                   </div>
+                                  <div class="text-lg font-bold text-foreground">{{ rfiCounts().open }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="Overdue RFIs: {{ rfiCounts().overdue }}"
                                   (click)="expandRfiMobile('overdue')"
                                   (keydown.enter)="expandRfiMobile('overdue')"
                                   (keydown.space)="$event.preventDefault(); expandRfiMobile('overdue')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-destructive-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-destructive" aria-hidden="true">warning</i>
+                                  <div class="w-8 h-8 rounded-lg bg-destructive-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-destructive" aria-hidden="true">warning</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().overdue }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">Overdue</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">Overdue</div>
                                   </div>
+                                  <div class="text-lg font-bold text-destructive">{{ rfiCounts().overdue }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="Upcoming RFIs: {{ rfiCounts().upcoming }}"
                                   (click)="expandRfiMobile('upcoming')"
                                   (keydown.enter)="expandRfiMobile('upcoming')"
                                   (keydown.space)="$event.preventDefault(); expandRfiMobile('upcoming')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-warning" aria-hidden="true">clock</i>
+                                  <div class="w-8 h-8 rounded-lg bg-warning-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-warning" aria-hidden="true">clock</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().upcoming }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">Upcoming</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">Upcoming</div>
                                   </div>
+                                  <div class="text-lg font-bold text-foreground">{{ rfiCounts().upcoming }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150 col-span-2"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="Closed RFIs: {{ rfiCounts().closed }}"
                                   (click)="expandRfiMobile('closed')"
                                   (keydown.enter)="expandRfiMobile('closed')"
                                   (keydown.space)="$event.preventDefault(); expandRfiMobile('closed')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-success-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-success" aria-hidden="true">check_circle</i>
+                                  <div class="w-8 h-8 rounded-lg bg-success-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-success" aria-hidden="true">check_circle</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().closed }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">Closed</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">Closed</div>
                                   </div>
+                                  <div class="text-lg font-bold text-foreground">{{ rfiCounts().closed }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                               </div>
                             } @else {
@@ -953,87 +953,87 @@ interface AiMessage {
                             </div>
 
                             @if (isMobile() && !submittalMobileExpanded()) {
-                              <!-- Mobile KPI cards view -->
-                              <div class="grid grid-cols-2 gap-3 p-4 flex-1 overflow-y-auto">
+                              <!-- Mobile compact KPI list -->
+                              <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="All Submittals: {{ submittalCounts().all }}"
                                   (click)="expandSubmittalMobile('all')"
                                   (keydown.enter)="expandSubmittalMobile('all')"
                                   (keydown.space)="$event.preventDefault(); expandSubmittalMobile('all')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-primary" aria-hidden="true">document</i>
+                                  <div class="w-8 h-8 rounded-lg bg-primary-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-primary" aria-hidden="true">document</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().all }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">All Submittals</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">All Submittals</div>
                                   </div>
+                                  <div class="text-lg font-bold text-foreground">{{ submittalCounts().all }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="Open Submittals: {{ submittalCounts().open }}"
                                   (click)="expandSubmittalMobile('open')"
                                   (keydown.enter)="expandSubmittalMobile('open')"
                                   (keydown.space)="$event.preventDefault(); expandSubmittalMobile('open')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-primary" aria-hidden="true">document</i>
+                                  <div class="w-8 h-8 rounded-lg bg-primary-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-primary" aria-hidden="true">document</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().open }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">Open</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">Open</div>
                                   </div>
+                                  <div class="text-lg font-bold text-foreground">{{ submittalCounts().open }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="Overdue Submittals: {{ submittalCounts().overdue }}"
                                   (click)="expandSubmittalMobile('overdue')"
                                   (keydown.enter)="expandSubmittalMobile('overdue')"
                                   (keydown.space)="$event.preventDefault(); expandSubmittalMobile('overdue')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-destructive-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-destructive" aria-hidden="true">warning</i>
+                                  <div class="w-8 h-8 rounded-lg bg-destructive-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-destructive" aria-hidden="true">warning</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().overdue }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">Overdue</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">Overdue</div>
                                   </div>
+                                  <div class="text-lg font-bold text-destructive">{{ submittalCounts().overdue }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="Upcoming Submittals: {{ submittalCounts().upcoming }}"
                                   (click)="expandSubmittalMobile('upcoming')"
                                   (keydown.enter)="expandSubmittalMobile('upcoming')"
                                   (keydown.space)="$event.preventDefault(); expandSubmittalMobile('upcoming')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-warning" aria-hidden="true">clock</i>
+                                  <div class="w-8 h-8 rounded-lg bg-warning-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-warning" aria-hidden="true">clock</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().upcoming }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">Upcoming</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">Upcoming</div>
                                   </div>
+                                  <div class="text-lg font-bold text-foreground">{{ submittalCounts().upcoming }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                                 <div
-                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150 col-span-2"
+                                  class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="Closed Submittals: {{ submittalCounts().closed }}"
                                   (click)="expandSubmittalMobile('closed')"
                                   (keydown.enter)="expandSubmittalMobile('closed')"
                                   (keydown.space)="$event.preventDefault(); expandSubmittalMobile('closed')"
                                 >
-                                  <div class="w-10 h-10 rounded-xl bg-success-20 flex items-center justify-center flex-shrink-0">
-                                    <i class="modus-icons text-xl text-success" aria-hidden="true">check_circle</i>
+                                  <div class="w-8 h-8 rounded-lg bg-success-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-base text-success" aria-hidden="true">check_circle</i>
                                   </div>
-                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().closed }}</div>
-                                  <div class="flex items-center justify-between">
-                                    <div class="text-sm text-foreground-60">Closed</div>
-                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-foreground-60">Closed</div>
                                   </div>
+                                  <div class="text-lg font-bold text-foreground">{{ submittalCounts().closed }}</div>
+                                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                                 </div>
                               </div>
                             } @else {
