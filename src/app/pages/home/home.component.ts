@@ -673,7 +673,21 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                @if (isMobile() && rfiMobileExpanded()) {
+                                  <div
+                                    class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
+                                    role="button" tabindex="0" aria-label="Back to RFI summary"
+                                    (click)="$event.stopPropagation(); collapseRfiMobile()"
+                                    (mousedown)="$event.stopPropagation()"
+                                    (touchstart)="$event.stopPropagation()"
+                                    (keydown.enter)="collapseRfiMobile()"
+                                    (keydown.space)="$event.preventDefault(); collapseRfiMobile()"
+                                  >
+                                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
+                                  </div>
+                                } @else {
+                                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                }
                                 <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">clipboard</i>
                                 <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">RFIs</div>
                                 @if (rfiCounts().overdue > 0) {
@@ -684,115 +698,203 @@ interface AiMessage {
                               </div>
                             </div>
 
-                            <!-- KPI filter pills -->
-                            <div
-                              class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
-                              role="radiogroup" aria-label="Filter RFIs by status"
-                              (mousedown)="$event.stopPropagation()"
-                            >
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-primary]="rfiActiveFilter() === 'all'" [class.text-primary-foreground]="rfiActiveFilter() === 'all'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'all'" [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
-                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'all'"
-                                (click)="rfiActiveFilter.set('all')" (keydown.enter)="rfiActiveFilter.set('all')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('all')"
-                              >
-                                <div>All</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-primary-foreground]="rfiActiveFilter() === 'all'" [class.text-primary]="rfiActiveFilter() === 'all'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'all'" [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
-                                  aria-hidden="true"
-                                >{{ rfiCounts().all }}</div>
-                              </div>
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-primary]="rfiActiveFilter() === 'open'" [class.text-primary-foreground]="rfiActiveFilter() === 'open'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'open'" [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
-                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'open'"
-                                (click)="rfiActiveFilter.set('open')" (keydown.enter)="rfiActiveFilter.set('open')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('open')"
-                              >
-                                <div>Open</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-primary-foreground]="rfiActiveFilter() === 'open'" [class.text-primary]="rfiActiveFilter() === 'open'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'open'" [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
-                                  aria-hidden="true"
-                                >{{ rfiCounts().open }}</div>
-                              </div>
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-destructive]="rfiActiveFilter() === 'overdue'" [class.text-destructive-foreground]="rfiActiveFilter() === 'overdue'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'overdue'" [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
-                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'overdue'"
-                                (click)="rfiActiveFilter.set('overdue')" (keydown.enter)="rfiActiveFilter.set('overdue')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('overdue')"
-                              >
-                                <div>Overdue</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-destructive-foreground]="rfiActiveFilter() === 'overdue'" [class.text-destructive]="rfiActiveFilter() === 'overdue'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'overdue'" [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
-                                  aria-hidden="true"
-                                >{{ rfiCounts().overdue }}</div>
-                              </div>
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-warning]="rfiActiveFilter() === 'upcoming'" [class.text-warning-foreground]="rfiActiveFilter() === 'upcoming'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'upcoming'" [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
-                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'upcoming'"
-                                (click)="rfiActiveFilter.set('upcoming')" (keydown.enter)="rfiActiveFilter.set('upcoming')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('upcoming')"
-                              >
-                                <div>Upcoming</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-warning-foreground]="rfiActiveFilter() === 'upcoming'" [class.text-warning]="rfiActiveFilter() === 'upcoming'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'upcoming'" [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
-                                  aria-hidden="true"
-                                >{{ rfiCounts().upcoming }}</div>
-                              </div>
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-success]="rfiActiveFilter() === 'closed'" [class.text-success-foreground]="rfiActiveFilter() === 'closed'"
-                                [class.bg-muted]="rfiActiveFilter() !== 'closed'" [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
-                                role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'closed'"
-                                (click)="rfiActiveFilter.set('closed')" (keydown.enter)="rfiActiveFilter.set('closed')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('closed')"
-                              >
-                                <div>Closed</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-success-foreground]="rfiActiveFilter() === 'closed'" [class.text-success]="rfiActiveFilter() === 'closed'"
-                                  [class.bg-secondary]="rfiActiveFilter() !== 'closed'" [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
-                                  aria-hidden="true"
-                                >{{ rfiCounts().closed }}</div>
-                              </div>
-                            </div>
-
-                            <!-- Table header -->
-                            <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
-                              <div role="columnheader">RFI #</div>
-                              <div role="columnheader">Subject</div>
-                              <div role="columnheader">Project</div>
-                              <div role="columnheader">Assignee</div>
-                              <div role="columnheader">Due</div>
-                              <div role="columnheader">Status</div>
-                            </div>
-
-                            <!-- Table body -->
-                            <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
-                              @for (rfi of filteredRfis(); track rfi.id) {
-                                <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
-                                  <div class="text-sm font-medium text-primary" role="cell">{{ rfi.number }}</div>
-                                  <div class="text-sm text-foreground truncate" role="cell">{{ rfi.subject }}</div>
-                                  <div class="text-sm text-foreground-60 truncate" role="cell">{{ rfi.project }}</div>
-                                  <div class="text-sm text-foreground-60" role="cell">{{ rfi.assignee }}</div>
-                                  <div class="text-sm text-foreground-60" role="cell">{{ rfi.dueDate }}</div>
-                                  <div class="flex items-center gap-1.5" role="cell">
-                                    <div class="w-2 h-2 rounded-full {{ rfiStatusColor(rfi.status) }}" aria-hidden="true"></div>
-                                    <div class="text-xs font-medium text-foreground-60">{{ rfiStatusLabel(rfi.status) }}</div>
+                            @if (isMobile() && !rfiMobileExpanded()) {
+                              <!-- Mobile KPI cards view -->
+                              <div class="grid grid-cols-2 gap-3 p-4 flex-1 overflow-y-auto">
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="All RFIs: {{ rfiCounts().all }}"
+                                  (click)="expandRfiMobile('all')"
+                                  (keydown.enter)="expandRfiMobile('all')"
+                                  (keydown.space)="$event.preventDefault(); expandRfiMobile('all')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-primary" aria-hidden="true">clipboard</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().all }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">All RFIs</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
                                   </div>
                                 </div>
-                              } @empty {
-                                <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                                  <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
-                                  <div class="text-sm">No RFIs match this filter</div>
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="Open RFIs: {{ rfiCounts().open }}"
+                                  (click)="expandRfiMobile('open')"
+                                  (keydown.enter)="expandRfiMobile('open')"
+                                  (keydown.space)="$event.preventDefault(); expandRfiMobile('open')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-primary" aria-hidden="true">clipboard</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().open }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">Open</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  </div>
                                 </div>
-                              }
-                            </div>
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="Overdue RFIs: {{ rfiCounts().overdue }}"
+                                  (click)="expandRfiMobile('overdue')"
+                                  (keydown.enter)="expandRfiMobile('overdue')"
+                                  (keydown.space)="$event.preventDefault(); expandRfiMobile('overdue')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-destructive-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-destructive" aria-hidden="true">warning</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().overdue }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">Overdue</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  </div>
+                                </div>
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="Upcoming RFIs: {{ rfiCounts().upcoming }}"
+                                  (click)="expandRfiMobile('upcoming')"
+                                  (keydown.enter)="expandRfiMobile('upcoming')"
+                                  (keydown.space)="$event.preventDefault(); expandRfiMobile('upcoming')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-warning" aria-hidden="true">clock</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().upcoming }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">Upcoming</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  </div>
+                                </div>
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150 col-span-2"
+                                  role="button" tabindex="0" aria-label="Closed RFIs: {{ rfiCounts().closed }}"
+                                  (click)="expandRfiMobile('closed')"
+                                  (keydown.enter)="expandRfiMobile('closed')"
+                                  (keydown.space)="$event.preventDefault(); expandRfiMobile('closed')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-success-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-success" aria-hidden="true">check_circle</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ rfiCounts().closed }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">Closed</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  </div>
+                                </div>
+                              </div>
+                            } @else {
+                              <!-- Desktop / Mobile-expanded: filter pills + table -->
+
+                              <!-- KPI filter pills -->
+                              <div
+                                class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
+                                role="radiogroup" aria-label="Filter RFIs by status"
+                                (mousedown)="$event.stopPropagation()"
+                              >
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-primary]="rfiActiveFilter() === 'all'" [class.text-primary-foreground]="rfiActiveFilter() === 'all'"
+                                  [class.bg-muted]="rfiActiveFilter() !== 'all'" [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'all'"
+                                  (click)="rfiActiveFilter.set('all')" (keydown.enter)="rfiActiveFilter.set('all')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('all')"
+                                >
+                                  <div>All</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-primary-foreground]="rfiActiveFilter() === 'all'" [class.text-primary]="rfiActiveFilter() === 'all'"
+                                    [class.bg-secondary]="rfiActiveFilter() !== 'all'" [class.text-foreground-60]="rfiActiveFilter() !== 'all'"
+                                    aria-hidden="true"
+                                  >{{ rfiCounts().all }}</div>
+                                </div>
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-primary]="rfiActiveFilter() === 'open'" [class.text-primary-foreground]="rfiActiveFilter() === 'open'"
+                                  [class.bg-muted]="rfiActiveFilter() !== 'open'" [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'open'"
+                                  (click)="rfiActiveFilter.set('open')" (keydown.enter)="rfiActiveFilter.set('open')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('open')"
+                                >
+                                  <div>Open</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-primary-foreground]="rfiActiveFilter() === 'open'" [class.text-primary]="rfiActiveFilter() === 'open'"
+                                    [class.bg-secondary]="rfiActiveFilter() !== 'open'" [class.text-foreground-60]="rfiActiveFilter() !== 'open'"
+                                    aria-hidden="true"
+                                  >{{ rfiCounts().open }}</div>
+                                </div>
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-destructive]="rfiActiveFilter() === 'overdue'" [class.text-destructive-foreground]="rfiActiveFilter() === 'overdue'"
+                                  [class.bg-muted]="rfiActiveFilter() !== 'overdue'" [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'overdue'"
+                                  (click)="rfiActiveFilter.set('overdue')" (keydown.enter)="rfiActiveFilter.set('overdue')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('overdue')"
+                                >
+                                  <div>Overdue</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-destructive-foreground]="rfiActiveFilter() === 'overdue'" [class.text-destructive]="rfiActiveFilter() === 'overdue'"
+                                    [class.bg-secondary]="rfiActiveFilter() !== 'overdue'" [class.text-foreground-60]="rfiActiveFilter() !== 'overdue'"
+                                    aria-hidden="true"
+                                  >{{ rfiCounts().overdue }}</div>
+                                </div>
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-warning]="rfiActiveFilter() === 'upcoming'" [class.text-warning-foreground]="rfiActiveFilter() === 'upcoming'"
+                                  [class.bg-muted]="rfiActiveFilter() !== 'upcoming'" [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'upcoming'"
+                                  (click)="rfiActiveFilter.set('upcoming')" (keydown.enter)="rfiActiveFilter.set('upcoming')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('upcoming')"
+                                >
+                                  <div>Upcoming</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-warning-foreground]="rfiActiveFilter() === 'upcoming'" [class.text-warning]="rfiActiveFilter() === 'upcoming'"
+                                    [class.bg-secondary]="rfiActiveFilter() !== 'upcoming'" [class.text-foreground-60]="rfiActiveFilter() !== 'upcoming'"
+                                    aria-hidden="true"
+                                  >{{ rfiCounts().upcoming }}</div>
+                                </div>
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-success]="rfiActiveFilter() === 'closed'" [class.text-success-foreground]="rfiActiveFilter() === 'closed'"
+                                  [class.bg-muted]="rfiActiveFilter() !== 'closed'" [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === 'closed'"
+                                  (click)="rfiActiveFilter.set('closed')" (keydown.enter)="rfiActiveFilter.set('closed')" (keydown.space)="$event.preventDefault(); rfiActiveFilter.set('closed')"
+                                >
+                                  <div>Closed</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-success-foreground]="rfiActiveFilter() === 'closed'" [class.text-success]="rfiActiveFilter() === 'closed'"
+                                    [class.bg-secondary]="rfiActiveFilter() !== 'closed'" [class.text-foreground-60]="rfiActiveFilter() !== 'closed'"
+                                    aria-hidden="true"
+                                  >{{ rfiCounts().closed }}</div>
+                                </div>
+                              </div>
+
+                              <!-- Table header -->
+                              <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
+                                <div role="columnheader">RFI #</div>
+                                <div role="columnheader">Subject</div>
+                                <div role="columnheader">Project</div>
+                                <div role="columnheader">Assignee</div>
+                                <div role="columnheader">Due</div>
+                                <div role="columnheader">Status</div>
+                              </div>
+
+                              <!-- Table body -->
+                              <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
+                                @for (rfi of filteredRfis(); track rfi.id) {
+                                  <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                                    <div class="text-sm font-medium text-primary" role="cell">{{ rfi.number }}</div>
+                                    <div class="text-sm text-foreground truncate" role="cell">{{ rfi.subject }}</div>
+                                    <div class="text-sm text-foreground-60 truncate" role="cell">{{ rfi.project }}</div>
+                                    <div class="text-sm text-foreground-60" role="cell">{{ rfi.assignee }}</div>
+                                    <div class="text-sm text-foreground-60" role="cell">{{ rfi.dueDate }}</div>
+                                    <div class="flex items-center gap-1.5" role="cell">
+                                      <div class="w-2 h-2 rounded-full {{ rfiStatusColor(rfi.status) }}" aria-hidden="true"></div>
+                                      <div class="text-xs font-medium text-foreground-60">{{ rfiStatusLabel(rfi.status) }}</div>
+                                    </div>
+                                  </div>
+                                } @empty {
+                                  <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                                    <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
+                                    <div class="text-sm">No RFIs match this filter</div>
+                                  </div>
+                                }
+                              </div>
+                            }
                           </div>
                           <!-- Corner resize handle -->
                           <div
@@ -825,7 +927,21 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                @if (isMobile() && submittalMobileExpanded()) {
+                                  <div
+                                    class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
+                                    role="button" tabindex="0" aria-label="Back to Submittal summary"
+                                    (click)="$event.stopPropagation(); collapseSubmittalMobile()"
+                                    (mousedown)="$event.stopPropagation()"
+                                    (touchstart)="$event.stopPropagation()"
+                                    (keydown.enter)="collapseSubmittalMobile()"
+                                    (keydown.space)="$event.preventDefault(); collapseSubmittalMobile()"
+                                  >
+                                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
+                                  </div>
+                                } @else {
+                                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                }
                                 <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
                                 <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Submittals</div>
                                 @if (submittalCounts().overdue > 0) {
@@ -836,124 +952,223 @@ interface AiMessage {
                               </div>
                             </div>
 
-                            <!-- KPI filter pills -->
-                            <div
-                              class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
-                              (mousedown)="$event.stopPropagation()"
-                            >
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-primary]="submittalActiveFilter() === 'all'"
-                                [class.text-primary-foreground]="submittalActiveFilter() === 'all'"
-                                [class.bg-muted]="submittalActiveFilter() !== 'all'"
-                                [class.text-foreground-60]="submittalActiveFilter() !== 'all'"
-                                (click)="submittalActiveFilter.set('all')"
-                              >
-                                <div>All</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-primary-foreground]="submittalActiveFilter() === 'all'"
-                                  [class.text-primary]="submittalActiveFilter() === 'all'"
-                                  [class.bg-secondary]="submittalActiveFilter() !== 'all'"
-                                  [class.text-foreground-60]="submittalActiveFilter() !== 'all'"
-                                >{{ submittalCounts().all }}</div>
-                              </div>
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-primary]="submittalActiveFilter() === 'open'"
-                                [class.text-primary-foreground]="submittalActiveFilter() === 'open'"
-                                [class.bg-muted]="submittalActiveFilter() !== 'open'"
-                                [class.text-foreground-60]="submittalActiveFilter() !== 'open'"
-                                (click)="submittalActiveFilter.set('open')"
-                              >
-                                <div>Open</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-primary-foreground]="submittalActiveFilter() === 'open'"
-                                  [class.text-primary]="submittalActiveFilter() === 'open'"
-                                  [class.bg-secondary]="submittalActiveFilter() !== 'open'"
-                                  [class.text-foreground-60]="submittalActiveFilter() !== 'open'"
-                                >{{ submittalCounts().open }}</div>
-                              </div>
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-destructive]="submittalActiveFilter() === 'overdue'"
-                                [class.text-destructive-foreground]="submittalActiveFilter() === 'overdue'"
-                                [class.bg-muted]="submittalActiveFilter() !== 'overdue'"
-                                [class.text-foreground-60]="submittalActiveFilter() !== 'overdue'"
-                                (click)="submittalActiveFilter.set('overdue')"
-                              >
-                                <div>Overdue</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-destructive-foreground]="submittalActiveFilter() === 'overdue'"
-                                  [class.text-destructive]="submittalActiveFilter() === 'overdue'"
-                                  [class.bg-secondary]="submittalActiveFilter() !== 'overdue'"
-                                  [class.text-foreground-60]="submittalActiveFilter() !== 'overdue'"
-                                >{{ submittalCounts().overdue }}</div>
-                              </div>
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-warning]="submittalActiveFilter() === 'upcoming'"
-                                [class.text-warning-foreground]="submittalActiveFilter() === 'upcoming'"
-                                [class.bg-muted]="submittalActiveFilter() !== 'upcoming'"
-                                [class.text-foreground-60]="submittalActiveFilter() !== 'upcoming'"
-                                (click)="submittalActiveFilter.set('upcoming')"
-                              >
-                                <div>Upcoming</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-warning-foreground]="submittalActiveFilter() === 'upcoming'"
-                                  [class.text-warning]="submittalActiveFilter() === 'upcoming'"
-                                  [class.bg-secondary]="submittalActiveFilter() !== 'upcoming'"
-                                  [class.text-foreground-60]="submittalActiveFilter() !== 'upcoming'"
-                                >{{ submittalCounts().upcoming }}</div>
-                              </div>
-                              <div
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                                [class.bg-success]="submittalActiveFilter() === 'closed'"
-                                [class.text-success-foreground]="submittalActiveFilter() === 'closed'"
-                                [class.bg-muted]="submittalActiveFilter() !== 'closed'"
-                                [class.text-foreground-60]="submittalActiveFilter() !== 'closed'"
-                                (click)="submittalActiveFilter.set('closed')"
-                              >
-                                <div>Closed</div>
-                                <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                                  [class.bg-success-foreground]="submittalActiveFilter() === 'closed'"
-                                  [class.text-success]="submittalActiveFilter() === 'closed'"
-                                  [class.bg-secondary]="submittalActiveFilter() !== 'closed'"
-                                  [class.text-foreground-60]="submittalActiveFilter() !== 'closed'"
-                                >{{ submittalCounts().closed }}</div>
-                              </div>
-                            </div>
-
-                            <!-- Table header -->
-                            <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                              <div>Sub #</div>
-                              <div>Subject</div>
-                              <div>Project</div>
-                              <div>Assignee</div>
-                              <div>Due</div>
-                              <div>Status</div>
-                            </div>
-
-                            <!-- Table body -->
-                            <div class="overflow-y-auto flex-1">
-                              @for (sub of filteredSubmittals(); track sub.id) {
-                                <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
-                                  <div class="text-sm font-medium text-primary">{{ sub.number }}</div>
-                                  <div class="text-sm text-foreground truncate">{{ sub.subject }}</div>
-                                  <div class="text-sm text-foreground-60 truncate">{{ sub.project }}</div>
-                                  <div class="text-sm text-foreground-60">{{ sub.assignee }}</div>
-                                  <div class="text-sm text-foreground-60">{{ sub.dueDate }}</div>
-                                  <div class="flex items-center gap-1.5">
-                                    <div class="w-2 h-2 rounded-full {{ submittalStatusColor(sub.status) }}"></div>
-                                    <div class="text-xs font-medium text-foreground-60">{{ submittalStatusLabel(sub.status) }}</div>
+                            @if (isMobile() && !submittalMobileExpanded()) {
+                              <!-- Mobile KPI cards view -->
+                              <div class="grid grid-cols-2 gap-3 p-4 flex-1 overflow-y-auto">
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="All Submittals: {{ submittalCounts().all }}"
+                                  (click)="expandSubmittalMobile('all')"
+                                  (keydown.enter)="expandSubmittalMobile('all')"
+                                  (keydown.space)="$event.preventDefault(); expandSubmittalMobile('all')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-primary" aria-hidden="true">document</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().all }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">All Submittals</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
                                   </div>
                                 </div>
-                              } @empty {
-                                <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                                  <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
-                                  <div class="text-sm">No submittals match this filter</div>
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="Open Submittals: {{ submittalCounts().open }}"
+                                  (click)="expandSubmittalMobile('open')"
+                                  (keydown.enter)="expandSubmittalMobile('open')"
+                                  (keydown.space)="$event.preventDefault(); expandSubmittalMobile('open')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-primary" aria-hidden="true">document</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().open }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">Open</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  </div>
                                 </div>
-                              }
-                            </div>
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="Overdue Submittals: {{ submittalCounts().overdue }}"
+                                  (click)="expandSubmittalMobile('overdue')"
+                                  (keydown.enter)="expandSubmittalMobile('overdue')"
+                                  (keydown.space)="$event.preventDefault(); expandSubmittalMobile('overdue')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-destructive-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-destructive" aria-hidden="true">warning</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().overdue }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">Overdue</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  </div>
+                                </div>
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                                  role="button" tabindex="0" aria-label="Upcoming Submittals: {{ submittalCounts().upcoming }}"
+                                  (click)="expandSubmittalMobile('upcoming')"
+                                  (keydown.enter)="expandSubmittalMobile('upcoming')"
+                                  (keydown.space)="$event.preventDefault(); expandSubmittalMobile('upcoming')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-warning" aria-hidden="true">clock</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().upcoming }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">Upcoming</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  </div>
+                                </div>
+                                <div
+                                  class="bg-muted rounded-lg p-4 flex flex-col gap-2 cursor-pointer hover:bg-secondary transition-colors duration-150 col-span-2"
+                                  role="button" tabindex="0" aria-label="Closed Submittals: {{ submittalCounts().closed }}"
+                                  (click)="expandSubmittalMobile('closed')"
+                                  (keydown.enter)="expandSubmittalMobile('closed')"
+                                  (keydown.space)="$event.preventDefault(); expandSubmittalMobile('closed')"
+                                >
+                                  <div class="w-10 h-10 rounded-xl bg-success-20 flex items-center justify-center flex-shrink-0">
+                                    <i class="modus-icons text-xl text-success" aria-hidden="true">check_circle</i>
+                                  </div>
+                                  <div class="text-2xl font-bold text-foreground">{{ submittalCounts().closed }}</div>
+                                  <div class="flex items-center justify-between">
+                                    <div class="text-sm text-foreground-60">Closed</div>
+                                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">chevron_right</i>
+                                  </div>
+                                </div>
+                              </div>
+                            } @else {
+                              <!-- Desktop / Mobile-expanded: filter pills + table -->
+
+                              <!-- KPI filter pills -->
+                              <div
+                                class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
+                                role="radiogroup" aria-label="Filter Submittals by status"
+                                (mousedown)="$event.stopPropagation()"
+                              >
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-primary]="submittalActiveFilter() === 'all'"
+                                  [class.text-primary-foreground]="submittalActiveFilter() === 'all'"
+                                  [class.bg-muted]="submittalActiveFilter() !== 'all'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'all'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="submittalActiveFilter() === 'all'"
+                                  (click)="submittalActiveFilter.set('all')" (keydown.enter)="submittalActiveFilter.set('all')" (keydown.space)="$event.preventDefault(); submittalActiveFilter.set('all')"
+                                >
+                                  <div>All</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-primary-foreground]="submittalActiveFilter() === 'all'"
+                                    [class.text-primary]="submittalActiveFilter() === 'all'"
+                                    [class.bg-secondary]="submittalActiveFilter() !== 'all'"
+                                    [class.text-foreground-60]="submittalActiveFilter() !== 'all'"
+                                    aria-hidden="true"
+                                  >{{ submittalCounts().all }}</div>
+                                </div>
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-primary]="submittalActiveFilter() === 'open'"
+                                  [class.text-primary-foreground]="submittalActiveFilter() === 'open'"
+                                  [class.bg-muted]="submittalActiveFilter() !== 'open'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'open'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="submittalActiveFilter() === 'open'"
+                                  (click)="submittalActiveFilter.set('open')" (keydown.enter)="submittalActiveFilter.set('open')" (keydown.space)="$event.preventDefault(); submittalActiveFilter.set('open')"
+                                >
+                                  <div>Open</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-primary-foreground]="submittalActiveFilter() === 'open'"
+                                    [class.text-primary]="submittalActiveFilter() === 'open'"
+                                    [class.bg-secondary]="submittalActiveFilter() !== 'open'"
+                                    [class.text-foreground-60]="submittalActiveFilter() !== 'open'"
+                                    aria-hidden="true"
+                                  >{{ submittalCounts().open }}</div>
+                                </div>
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-destructive]="submittalActiveFilter() === 'overdue'"
+                                  [class.text-destructive-foreground]="submittalActiveFilter() === 'overdue'"
+                                  [class.bg-muted]="submittalActiveFilter() !== 'overdue'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'overdue'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="submittalActiveFilter() === 'overdue'"
+                                  (click)="submittalActiveFilter.set('overdue')" (keydown.enter)="submittalActiveFilter.set('overdue')" (keydown.space)="$event.preventDefault(); submittalActiveFilter.set('overdue')"
+                                >
+                                  <div>Overdue</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-destructive-foreground]="submittalActiveFilter() === 'overdue'"
+                                    [class.text-destructive]="submittalActiveFilter() === 'overdue'"
+                                    [class.bg-secondary]="submittalActiveFilter() !== 'overdue'"
+                                    [class.text-foreground-60]="submittalActiveFilter() !== 'overdue'"
+                                    aria-hidden="true"
+                                  >{{ submittalCounts().overdue }}</div>
+                                </div>
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-warning]="submittalActiveFilter() === 'upcoming'"
+                                  [class.text-warning-foreground]="submittalActiveFilter() === 'upcoming'"
+                                  [class.bg-muted]="submittalActiveFilter() !== 'upcoming'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'upcoming'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="submittalActiveFilter() === 'upcoming'"
+                                  (click)="submittalActiveFilter.set('upcoming')" (keydown.enter)="submittalActiveFilter.set('upcoming')" (keydown.space)="$event.preventDefault(); submittalActiveFilter.set('upcoming')"
+                                >
+                                  <div>Upcoming</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-warning-foreground]="submittalActiveFilter() === 'upcoming'"
+                                    [class.text-warning]="submittalActiveFilter() === 'upcoming'"
+                                    [class.bg-secondary]="submittalActiveFilter() !== 'upcoming'"
+                                    [class.text-foreground-60]="submittalActiveFilter() !== 'upcoming'"
+                                    aria-hidden="true"
+                                  >{{ submittalCounts().upcoming }}</div>
+                                </div>
+                                <div
+                                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                                  [class.bg-success]="submittalActiveFilter() === 'closed'"
+                                  [class.text-success-foreground]="submittalActiveFilter() === 'closed'"
+                                  [class.bg-muted]="submittalActiveFilter() !== 'closed'"
+                                  [class.text-foreground-60]="submittalActiveFilter() !== 'closed'"
+                                  role="radio" tabindex="0" [attr.aria-checked]="submittalActiveFilter() === 'closed'"
+                                  (click)="submittalActiveFilter.set('closed')" (keydown.enter)="submittalActiveFilter.set('closed')" (keydown.space)="$event.preventDefault(); submittalActiveFilter.set('closed')"
+                                >
+                                  <div>Closed</div>
+                                  <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+                                    [class.bg-success-foreground]="submittalActiveFilter() === 'closed'"
+                                    [class.text-success]="submittalActiveFilter() === 'closed'"
+                                    [class.bg-secondary]="submittalActiveFilter() !== 'closed'"
+                                    [class.text-foreground-60]="submittalActiveFilter() !== 'closed'"
+                                    aria-hidden="true"
+                                  >{{ submittalCounts().closed }}</div>
+                                </div>
+                              </div>
+
+                              <!-- Table header -->
+                              <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
+                                <div role="columnheader">Sub #</div>
+                                <div role="columnheader">Subject</div>
+                                <div role="columnheader">Project</div>
+                                <div role="columnheader">Assignee</div>
+                                <div role="columnheader">Due</div>
+                                <div role="columnheader">Status</div>
+                              </div>
+
+                              <!-- Table body -->
+                              <div class="overflow-y-auto flex-1" role="table" aria-label="Submittals" aria-live="polite">
+                                @for (sub of filteredSubmittals(); track sub.id) {
+                                  <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                                    <div class="text-sm font-medium text-primary" role="cell">{{ sub.number }}</div>
+                                    <div class="text-sm text-foreground truncate" role="cell">{{ sub.subject }}</div>
+                                    <div class="text-sm text-foreground-60 truncate" role="cell">{{ sub.project }}</div>
+                                    <div class="text-sm text-foreground-60" role="cell">{{ sub.assignee }}</div>
+                                    <div class="text-sm text-foreground-60" role="cell">{{ sub.dueDate }}</div>
+                                    <div class="flex items-center gap-1.5" role="cell">
+                                      <div class="w-2 h-2 rounded-full {{ submittalStatusColor(sub.status) }}" aria-hidden="true"></div>
+                                      <div class="text-xs font-medium text-foreground-60">{{ submittalStatusLabel(sub.status) }}</div>
+                                    </div>
+                                  </div>
+                                } @empty {
+                                  <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                                    <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
+                                    <div class="text-sm">No submittals match this filter</div>
+                                  </div>
+                                }
+                              </div>
+                            }
                           </div>
                           <!-- Corner resize handle -->
                           <div
@@ -2413,6 +2628,17 @@ export class HomeComponent implements AfterViewInit {
   ];
 
   readonly rfiActiveFilter = signal<RfiStatus | 'all'>('all');
+  readonly rfiMobileExpanded = signal(false);
+
+  expandRfiMobile(filter: RfiStatus | 'all'): void {
+    this.rfiActiveFilter.set(filter);
+    this.rfiMobileExpanded.set(true);
+  }
+
+  collapseRfiMobile(): void {
+    this.rfiMobileExpanded.set(false);
+    this.rfiActiveFilter.set('all');
+  }
 
   readonly rfiCounts = computed(() => ({
     all: this.rfis.length,
@@ -2458,6 +2684,17 @@ export class HomeComponent implements AfterViewInit {
   ];
 
   readonly submittalActiveFilter = signal<SubmittalStatus | 'all'>('all');
+  readonly submittalMobileExpanded = signal(false);
+
+  expandSubmittalMobile(filter: SubmittalStatus | 'all'): void {
+    this.submittalActiveFilter.set(filter);
+    this.submittalMobileExpanded.set(true);
+  }
+
+  collapseSubmittalMobile(): void {
+    this.submittalMobileExpanded.set(false);
+    this.submittalActiveFilter.set('all');
+  }
 
   readonly submittalCounts = computed(() => ({
     all: this.submittals.length,
