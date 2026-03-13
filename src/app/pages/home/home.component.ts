@@ -15,6 +15,7 @@ import { ModusNavbarComponent, type INavbarUserCard } from '../../components/mod
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { ModusIconComponent } from '../../components/modus-icon.component';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
 
 type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
@@ -139,6 +140,10 @@ interface AiMessage {
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
       >
+        <div slot="start" class="flex items-center gap-3">
+          <div class="w-px h-5 bg-foreground-20"></div>
+          <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide">Project Delivery</div>
+        </div>
         <div slot="end" class="flex items-center gap-2">
           @if (!isMobile()) {
             <!-- AI Assistant toggle (desktop) -->
@@ -1323,7 +1328,18 @@ interface AiMessage {
                 <div class="p-4 overflow-y-auto flex-1 min-h-0">
                   <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
                     @for (project of projects(); track project.id) {
-                      <div class="bg-background border-default rounded-lg overflow-hidden flex flex-col">
+                      <div
+                        class="bg-background border-default rounded-lg overflow-hidden flex flex-col"
+                        [class.cursor-pointer]="project.id === 1"
+                        [class.hover:bg-muted]="project.id === 1"
+                        [class.transition-colors]="project.id === 1"
+                        [class.duration-150]="project.id === 1"
+                        (click)="project.id === 1 ? navigateToProject(project.id) : null"
+                        (keydown.enter)="project.id === 1 ? navigateToProject(project.id) : null"
+                        [attr.role]="project.id === 1 ? 'link' : null"
+                        [attr.tabindex]="project.id === 1 ? 0 : null"
+                        [attr.aria-label]="project.id === 1 ? 'Open ' + project.name + ' dashboard' : null"
+                      >
                         <div class="h-1 w-full flex-shrink-0"
                           [class.bg-success]="project.status === 'On Track'"
                           [class.bg-warning]="project.status === 'At Risk'"
@@ -2026,6 +2042,8 @@ interface AiMessage {
 })
 export class HomeComponent implements AfterViewInit {
   private readonly themeService = inject(ThemeService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly elementRef = inject(ElementRef);
   private hamburgerBtn: HTMLElement | null = null;
 
@@ -2268,7 +2286,18 @@ export class HomeComponent implements AfterViewInit {
     this.navExpanded.set(false);
   }
 
+  navigateToProject(projectId: number): void {
+    this.router.navigate(['/project', projectId]);
+  }
+
   ngAfterViewInit(): void {
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'];
+      if (tab === 'projects' || tab === 'financials' || tab === 'settings') {
+        this.activeNav.set(tab);
+      }
+    });
+
     const mq = window.matchMedia('(max-width: 767px)');
     const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList) => {
       const wasMobile = this.isMobile();

@@ -225,6 +225,19 @@
   font-size: var(--modus-wc-font-size-4xl) !important; /* 30px */
 }
 
+/* Responsive Modus Font Size Overrides - ensures md: variants work with !important */
+@media (min-width: 768px) {
+  .md\:text-2xs { font-size: var(--modus-wc-font-size-2xs) !important; }
+  .md\:text-xs { font-size: var(--modus-wc-font-size-xs) !important; }
+  .md\:text-sm { font-size: var(--modus-wc-font-size-sm) !important; }
+  .md\:text-base { font-size: var(--modus-wc-font-size-md) !important; }
+  .md\:text-lg { font-size: var(--modus-wc-font-size-lg) !important; }
+  .md\:text-xl { font-size: var(--modus-wc-font-size-xl) !important; }
+  .md\:text-2xl { font-size: var(--modus-wc-font-size-2xl) !important; }
+  .md\:text-3xl { font-size: var(--modus-wc-font-size-3xl) !important; }
+  .md\:text-4xl { font-size: var(--modus-wc-font-size-4xl) !important; }
+}
+
 /* Custom Border Utilities - Tailwind v4 Compatible */
 .border-default {
   border: 1px solid var(--border);
@@ -1613,4 +1626,61 @@ modus-wc-navbar .main-menu {
 
 .custom-side-nav-item:focus-visible {
   border-radius: 0;
+}
+
+/* Floorplan drawing SVG styles */
+.floorplan-grid {
+  stroke: var(--muted);
+  stroke-width: 0.5;
+}
+.floorplan-wall {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 2.5;
+}
+.floorplan-room {
+  fill: color-mix(in srgb, var(--primary) 6%, transparent);
+  stroke: var(--primary);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 3;
+}
+.floorplan-rack {
+  fill: color-mix(in srgb, var(--primary) 25%, transparent);
+  stroke: var(--primary);
+  stroke-width: 1;
+}
+.floorplan-utility {
+  fill: color-mix(in srgb, var(--warning) 15%, transparent);
+  stroke: var(--warning);
+  stroke-width: 1;
+  stroke-dasharray: 4 2;
+}
+.floorplan-door {
+  stroke: var(--success);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.floorplan-cable {
+  stroke: var(--secondary);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+}
+.floorplan-dim {
+  stroke: var(--foreground);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 2;
+  opacity: 0.4;
+}
+.floorplan-label {
+  fill: var(--foreground);
+  font-size: 10px;
+  font-weight: 500;
+  text-anchor: middle;
+  opacity: 0.7;
+}
+.floorplan-dim-text {
+  fill: var(--foreground);
+  font-size: 9px;
+  text-anchor: middle;
+  opacity: 0.4;
 }

@@ -25,6 +25,15 @@ export const routes: Routes = [
     title: 'Home',
   },
 
+  {
+    path: 'project/:id',
+    loadComponent: () =>
+      import('./pages/project-dashboard/project-dashboard.component').then(
+        (m) => m.ProjectDashboardComponent,
+      ),
+    title: 'Project Dashboard',
+  },
+
   // Dev routes - conditionally added based on environment
   ...(environment.devPanel
     ? [
