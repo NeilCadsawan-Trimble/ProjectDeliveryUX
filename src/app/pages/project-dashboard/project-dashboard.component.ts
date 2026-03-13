@@ -1088,35 +1088,26 @@ export class ProjectDashboardComponent implements AfterViewInit {
     const colOverlap = (a: ProjectWidgetId, b: ProjectWidgetId) =>
       mobile || (starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a]);
 
-    const nudgeDown = (sourceId: ProjectWidgetId) => {
-      const srcBottom = tops[sourceId] + heights[sourceId];
-      for (const otherId of this.widgets) {
-        if (otherId === sourceId) continue;
-        if (!colOverlap(sourceId, otherId)) continue;
-        const clearance = srcBottom + gap;
-        if (tops[otherId] < clearance && tops[sourceId] < tops[otherId] + heights[otherId]) {
-          tops[otherId] = clearance;
-          nudgeDown(otherId);
-        }
-      }
-    };
-    nudgeDown(movedId);
-
     const sorted = [...this.widgets].sort((a, b) => tops[a] - tops[b]);
+    const placed: ProjectWidgetId[] = [movedId];
+
     for (const id of sorted) {
       if (id === movedId) continue;
-      let bestTop = 0;
-      for (const otherId of sorted) {
-        if (otherId === id) continue;
-        if (!colOverlap(id, otherId)) continue;
-        const otherBottom = tops[otherId] + heights[otherId] + gap;
-        if (otherBottom > bestTop && tops[otherId] < tops[id] + heights[id]) {
-          bestTop = Math.max(bestTop, otherBottom);
+      let y = 0;
+      let settled = false;
+      while (!settled) {
+        settled = true;
+        for (const placedId of placed) {
+          if (!colOverlap(id, placedId)) continue;
+          const pBot = tops[placedId] + heights[placedId];
+          if (y < pBot && y + heights[id] > tops[placedId]) {
+            y = pBot + gap;
+            settled = false;
+          }
         }
       }
-      if (bestTop < tops[id]) {
-        tops[id] = bestTop;
-      }
+      tops[id] = y;
+      placed.push(id);
     }
 
     if (this.widgets.some(id => tops[id] !== this.wTops()[id])) {
