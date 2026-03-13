@@ -2879,38 +2879,26 @@ export class HomeComponent implements AfterViewInit {
     const colOverlap = (a: DashboardWidgetId, b: DashboardWidgetId) =>
       mobile || (starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a]);
 
-    // 1. Push overlapping widgets down by the minimum amount.
-    const nudgeDown = (sourceId: DashboardWidgetId) => {
-      const srcBottom = tops[sourceId] + heights[sourceId];
-      for (const otherId of widgets) {
-        if (otherId === sourceId) continue;
-        if (!colOverlap(sourceId, otherId)) continue;
-        const clearance = srcBottom + gap;
-        if (tops[otherId] < clearance && tops[sourceId] < tops[otherId] + heights[otherId]) {
-          tops[otherId] = clearance;
-          nudgeDown(otherId);
-        }
-      }
-    };
-    nudgeDown(movedId);
-
-    // 2. Compact upward: float every widget (except the one being
-    //    actively dragged) to the highest non-overlapping position.
     const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
+    const placed: DashboardWidgetId[] = [movedId];
+
     for (const id of sorted) {
       if (id === movedId) continue;
-      let bestTop = 0;
-      for (const otherId of sorted) {
-        if (otherId === id) continue;
-        if (!colOverlap(id, otherId)) continue;
-        const otherBottom = tops[otherId] + heights[otherId] + gap;
-        if (otherBottom > bestTop && tops[otherId] < tops[id] + heights[id]) {
-          bestTop = Math.max(bestTop, otherBottom);
+      let y = 0;
+      let settled = false;
+      while (!settled) {
+        settled = true;
+        for (const placedId of placed) {
+          if (!colOverlap(id, placedId)) continue;
+          const pBot = tops[placedId] + heights[placedId];
+          if (y < pBot && y + heights[id] > tops[placedId]) {
+            y = pBot + gap;
+            settled = false;
+          }
         }
       }
-      if (bestTop < tops[id]) {
-        tops[id] = bestTop;
-      }
+      tops[id] = y;
+      placed.push(id);
     }
 
     const changed = widgets.some(id => tops[id] !== this.widgetTops()[id]);
@@ -3034,10 +3022,15 @@ export class HomeComponent implements AfterViewInit {
   }
 
   onDocumentMouseUp(): void {
+    const hadInteraction = !!this._moveTarget || !!this._resizeTarget;
+    const grid = this._activeGrid;
     this._moveTarget = null;
     this._dragAxis = null;
     this.moveTargetId.set(null);
     this._resizeTarget = null;
+    if (hadInteraction) {
+      this.compactAll(grid);
+    }
   }
 
   // ── Touch event adapters for mobile drag/resize ──
@@ -3112,5 +3105,45 @@ export class HomeComponent implements AfterViewInit {
     this.widgetTops.set(tops);
     this.widgetColStarts.set(colStarts);
     this.widgetColSpans.set(colSpans);
+  }
+
+  private compactAll(gridPage: GridPage): void {
+    if (this.isMobile()) {
+      this.stackAllForMobile();
+      return;
+    }
+    const gap = HomeComponent.GAP_PX;
+    const tops = { ...this.widgetTops() };
+    const heights = this.widgetHeights();
+    const starts = this.widgetColStarts();
+    const spans = this.widgetColSpans();
+    const widgets = this.getGridWidgets(gridPage);
+    const colOverlap = (a: DashboardWidgetId, b: DashboardWidgetId) =>
+      starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+
+    const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
+    const placed: DashboardWidgetId[] = [];
+
+    for (const id of sorted) {
+      let y = 0;
+      let settled = false;
+      while (!settled) {
+        settled = true;
+        for (const placedId of placed) {
+          if (!colOverlap(id, placedId)) continue;
+          const pBot = tops[placedId] + heights[placedId];
+          if (y < pBot && y + heights[id] > tops[placedId]) {
+            y = pBot + gap;
+            settled = false;
+          }
+        }
+      }
+      tops[id] = y;
+      placed.push(id);
+    }
+
+    if (widgets.some(id => tops[id] !== this.widgetTops()[id])) {
+      this.widgetTops.set(tops);
+    }
   }
 }
