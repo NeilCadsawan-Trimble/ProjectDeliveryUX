@@ -2284,6 +2284,8 @@ export class HomeComponent implements AfterViewInit {
   setActiveNav(page: 'home' | 'projects' | 'financials' | 'settings'): void {
     this.activeNav.set(page);
     this.navExpanded.set(false);
+    const qp = page === 'home' ? {} : { tab: page };
+    this.router.navigate([], { queryParams: qp, replaceUrl: true });
   }
 
   navigateToProject(projectId: number): void {
