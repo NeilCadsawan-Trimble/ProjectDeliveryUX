@@ -3099,15 +3099,15 @@ export class HomeComponent implements AfterViewInit {
   private _savedDesktopColSpans: Record<DashboardWidgetId, number> | null = null;
   private _savedDesktopHeights: Record<DashboardWidgetId, number> | null = null;
 
-  private static readonly MOBILE_HEADER_H = 57;
-  private static readonly MOBILE_KPI_ROW_H = 52;
+  private static readonly MOBILE_HEADER_H = 58;
+  private static readonly MOBILE_KPI_ROW_H = 53;
   private static readonly MOBILE_KPI_GAP = 8;
-  private static readonly MOBILE_KPI_PADDING = 24;
+  private static readonly MOBILE_KPI_PADDING = 26;
   private static readonly MOBILE_KPI_ROWS = 5;
-  private static readonly MOBILE_FILTER_PILLS_H = 48;
-  private static readonly MOBILE_TABLE_HEADER_H = 40;
-  private static readonly MOBILE_TABLE_ROW_H = 48;
-  private static readonly MOBILE_EMPTY_STATE_H = 100;
+  private static readonly MOBILE_FILTER_PILLS_H = 50;
+  private static readonly MOBILE_TABLE_HEADER_H = 42;
+  private static readonly MOBILE_TABLE_ROW_H = 49;
+  private static readonly MOBILE_EMPTY_STATE_H = 104;
 
   private mobileWidgetHeight(expanded: boolean, rowCount: number): number {
     const maxH = Math.floor(window.innerHeight * 0.75);
