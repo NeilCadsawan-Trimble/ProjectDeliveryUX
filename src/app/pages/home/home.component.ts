@@ -142,7 +142,7 @@ interface AiMessage {
       >
         <div slot="start" class="flex items-center gap-3">
           <div class="w-px h-5 bg-foreground-20"></div>
-          <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide">Project Delivery</div>
+          <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">Project Delivery</div>
         </div>
         <div slot="end" class="flex items-center gap-2">
           @if (!isMobile()) {
