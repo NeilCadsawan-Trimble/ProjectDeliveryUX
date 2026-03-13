@@ -2667,11 +2667,15 @@ export class HomeComponent implements AfterViewInit {
   expandRfiMobile(filter: RfiStatus | 'all'): void {
     this.rfiActiveFilter.set(filter);
     this.rfiMobileExpanded.set(true);
+    this.applyMobileHeights();
+    this.compactAll('home');
   }
 
   collapseRfiMobile(): void {
     this.rfiMobileExpanded.set(false);
     this.rfiActiveFilter.set('all');
+    this.applyMobileHeights();
+    this.compactAll('home');
   }
 
   readonly rfiCounts = computed(() => ({
@@ -2723,11 +2727,15 @@ export class HomeComponent implements AfterViewInit {
   expandSubmittalMobile(filter: SubmittalStatus | 'all'): void {
     this.submittalActiveFilter.set(filter);
     this.submittalMobileExpanded.set(true);
+    this.applyMobileHeights();
+    this.compactAll('home');
   }
 
   collapseSubmittalMobile(): void {
     this.submittalMobileExpanded.set(false);
     this.submittalActiveFilter.set('all');
+    this.applyMobileHeights();
+    this.compactAll('home');
   }
 
   readonly submittalCounts = computed(() => ({
@@ -3091,16 +3099,37 @@ export class HomeComponent implements AfterViewInit {
   private _savedDesktopColSpans: Record<DashboardWidgetId, number> | null = null;
   private _savedDesktopHeights: Record<DashboardWidgetId, number> | null = null;
 
-  private static readonly MOBILE_COMPACT_HEIGHTS: Partial<Record<DashboardWidgetId, number>> = {
-    homeRfis: 340,
-    homeSubmittals: 340,
-  };
+  private static readonly MOBILE_HEADER_H = 57;
+  private static readonly MOBILE_KPI_ROW_H = 52;
+  private static readonly MOBILE_KPI_GAP = 8;
+  private static readonly MOBILE_KPI_PADDING = 24;
+  private static readonly MOBILE_KPI_ROWS = 5;
+  private static readonly MOBILE_FILTER_PILLS_H = 48;
+  private static readonly MOBILE_TABLE_HEADER_H = 40;
+  private static readonly MOBILE_TABLE_ROW_H = 48;
+  private static readonly MOBILE_EMPTY_STATE_H = 100;
+
+  private mobileWidgetHeight(expanded: boolean, rowCount: number): number {
+    const maxH = Math.floor(window.innerHeight * 0.75);
+    const { MOBILE_HEADER_H, MOBILE_KPI_ROW_H, MOBILE_KPI_GAP, MOBILE_KPI_PADDING,
+            MOBILE_KPI_ROWS, MOBILE_FILTER_PILLS_H, MOBILE_TABLE_HEADER_H,
+            MOBILE_TABLE_ROW_H, MOBILE_EMPTY_STATE_H } = HomeComponent;
+
+    if (expanded) {
+      const tableBodyH = rowCount > 0 ? rowCount * MOBILE_TABLE_ROW_H : MOBILE_EMPTY_STATE_H;
+      return Math.min(MOBILE_HEADER_H + MOBILE_FILTER_PILLS_H + MOBILE_TABLE_HEADER_H + tableBodyH, maxH);
+    }
+    return Math.min(
+      MOBILE_HEADER_H + MOBILE_KPI_PADDING + MOBILE_KPI_ROWS * MOBILE_KPI_ROW_H + (MOBILE_KPI_ROWS - 1) * MOBILE_KPI_GAP,
+      maxH,
+    );
+  }
 
   private applyMobileHeights(): void {
+    if (!this.isMobile()) return;
     const heights = { ...this.widgetHeights() };
-    for (const [id, h] of Object.entries(HomeComponent.MOBILE_COMPACT_HEIGHTS)) {
-      heights[id as DashboardWidgetId] = h;
-    }
+    heights.homeRfis = this.mobileWidgetHeight(this.rfiMobileExpanded(), this.filteredRfis().length);
+    heights.homeSubmittals = this.mobileWidgetHeight(this.submittalMobileExpanded(), this.filteredSubmittals().length);
     this.widgetHeights.set(heights);
   }
 
