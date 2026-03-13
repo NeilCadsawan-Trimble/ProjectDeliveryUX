@@ -2306,14 +2306,18 @@ export class HomeComponent implements AfterViewInit {
         this._savedDesktopTops = { ...this.widgetTops() };
         this._savedDesktopColStarts = { ...this.widgetColStarts() };
         this._savedDesktopColSpans = { ...this.widgetColSpans() };
+        this._savedDesktopHeights = { ...this.widgetHeights() };
+        this.applyMobileHeights();
         this.stackAllForMobile();
       } else if (!e.matches && wasMobile && this._savedDesktopTops) {
         this.widgetTops.set(this._savedDesktopTops);
         if (this._savedDesktopColStarts) this.widgetColStarts.set(this._savedDesktopColStarts);
         if (this._savedDesktopColSpans) this.widgetColSpans.set(this._savedDesktopColSpans);
+        if (this._savedDesktopHeights) this.widgetHeights.set(this._savedDesktopHeights);
         this._savedDesktopTops = null;
         this._savedDesktopColStarts = null;
         this._savedDesktopColSpans = null;
+        this._savedDesktopHeights = null;
       }
       if (!e.matches) {
         this.navExpanded.set(false);
@@ -2330,6 +2334,7 @@ export class HomeComponent implements AfterViewInit {
 
     onBreakpointChange(mq);
     if (this.isMobile()) {
+      this.applyMobileHeights();
       this.stackAllForMobile();
     }
 
@@ -3084,6 +3089,20 @@ export class HomeComponent implements AfterViewInit {
   private _savedDesktopTops: Record<DashboardWidgetId, number> | null = null;
   private _savedDesktopColStarts: Record<DashboardWidgetId, number> | null = null;
   private _savedDesktopColSpans: Record<DashboardWidgetId, number> | null = null;
+  private _savedDesktopHeights: Record<DashboardWidgetId, number> | null = null;
+
+  private static readonly MOBILE_COMPACT_HEIGHTS: Partial<Record<DashboardWidgetId, number>> = {
+    homeRfis: 340,
+    homeSubmittals: 340,
+  };
+
+  private applyMobileHeights(): void {
+    const heights = { ...this.widgetHeights() };
+    for (const [id, h] of Object.entries(HomeComponent.MOBILE_COMPACT_HEIGHTS)) {
+      heights[id as DashboardWidgetId] = h;
+    }
+    this.widgetHeights.set(heights);
+  }
 
   private stackAllForMobile(): void {
     const gap = HomeComponent.GAP_PX;
