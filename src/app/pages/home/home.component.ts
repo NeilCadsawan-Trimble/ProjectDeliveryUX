@@ -17,6 +17,7 @@ import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel
 import { ModusIconComponent } from '../../components/modus-icon.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
+import { WidgetLayoutService } from '../../services/widget-layout.service';
 
 type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
@@ -2045,6 +2046,7 @@ export class HomeComponent implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly elementRef = inject(ElementRef);
+  private readonly layoutService = inject(WidgetLayoutService);
   private hamburgerBtn: HTMLElement | null = null;
 
   private readonly hamburgerEffect = effect(() => {
@@ -2293,6 +2295,22 @@ export class HomeComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    const startMobile = window.innerWidth < 768;
+    if (startMobile) {
+      this.restoreDesktopLayout();
+      this._savedDesktopTops = { ...this.widgetTops() };
+      this._savedDesktopColStarts = { ...this.widgetColStarts() };
+      this._savedDesktopColSpans = { ...this.widgetColSpans() };
+      this._savedDesktopHeights = { ...this.widgetHeights() };
+      const restoredMobile = this.restoreMobileLayout();
+      if (!restoredMobile) {
+        this.applyMobileHeights();
+        this.stackAllForMobile();
+      }
+    } else {
+      this.restoreDesktopLayout();
+    }
+
     this.route.queryParams.subscribe(params => {
       const tab = params['tab'];
       if (tab === 'projects' || tab === 'financials' || tab === 'settings') {
@@ -2309,17 +2327,25 @@ export class HomeComponent implements AfterViewInit {
         this._savedDesktopColStarts = { ...this.widgetColStarts() };
         this._savedDesktopColSpans = { ...this.widgetColSpans() };
         this._savedDesktopHeights = { ...this.widgetHeights() };
-        this.applyMobileHeights();
-        this.stackAllForMobile();
-      } else if (!e.matches && wasMobile && this._savedDesktopTops) {
-        this.widgetTops.set(this._savedDesktopTops);
-        if (this._savedDesktopColStarts) this.widgetColStarts.set(this._savedDesktopColStarts);
-        if (this._savedDesktopColSpans) this.widgetColSpans.set(this._savedDesktopColSpans);
-        if (this._savedDesktopHeights) this.widgetHeights.set(this._savedDesktopHeights);
-        this._savedDesktopTops = null;
-        this._savedDesktopColStarts = null;
-        this._savedDesktopColSpans = null;
-        this._savedDesktopHeights = null;
+        const restoredMobile = this.restoreMobileLayout();
+        if (!restoredMobile) {
+          this.applyMobileHeights();
+          this.stackAllForMobile();
+        }
+      } else if (!e.matches && wasMobile) {
+        this.persistLayout();
+        if (this._savedDesktopTops) {
+          this.widgetTops.set(this._savedDesktopTops);
+          if (this._savedDesktopColStarts) this.widgetColStarts.set(this._savedDesktopColStarts);
+          if (this._savedDesktopColSpans) this.widgetColSpans.set(this._savedDesktopColSpans);
+          if (this._savedDesktopHeights) this.widgetHeights.set(this._savedDesktopHeights);
+          this._savedDesktopTops = null;
+          this._savedDesktopColStarts = null;
+          this._savedDesktopColSpans = null;
+          this._savedDesktopHeights = null;
+        } else {
+          this.restoreDesktopLayout();
+        }
       }
       if (!e.matches) {
         this.navExpanded.set(false);
@@ -2334,11 +2360,7 @@ export class HomeComponent implements AfterViewInit {
       }
     });
 
-    onBreakpointChange(mq);
-    if (this.isMobile()) {
-      this.applyMobileHeights();
-      this.stackAllForMobile();
-    }
+    this.isMobile.set(startMobile);
 
     this.attachHamburgerListener();
   }
@@ -3045,6 +3067,7 @@ export class HomeComponent implements AfterViewInit {
     this._resizeTarget = null;
     if (hadInteraction) {
       this.compactAll(grid);
+      this.persistLayout();
     }
   }
 
@@ -3092,6 +3115,38 @@ export class HomeComponent implements AfterViewInit {
 
   onDocumentTouchEnd(): void {
     this.onDocumentMouseUp();
+  }
+
+  // ── Layout persistence ──
+
+  private persistLayout(): void {
+    const mobile = this.isMobile();
+    this.layoutService.save('home', mobile, {
+      tops: this.widgetTops(),
+      heights: this.widgetHeights(),
+      colStarts: this.widgetColStarts(),
+      colSpans: this.widgetColSpans(),
+    });
+  }
+
+  private restoreDesktopLayout(): boolean {
+    const saved = this.layoutService.load('home', false);
+    if (!saved) return false;
+    this.widgetTops.set(saved.tops as Record<DashboardWidgetId, number>);
+    this.widgetHeights.set(saved.heights as Record<DashboardWidgetId, number>);
+    this.widgetColStarts.set(saved.colStarts as Record<DashboardWidgetId, number>);
+    this.widgetColSpans.set(saved.colSpans as Record<DashboardWidgetId, number>);
+    return true;
+  }
+
+  private restoreMobileLayout(): boolean {
+    const saved = this.layoutService.load('home', true);
+    if (!saved) return false;
+    this.widgetTops.set(saved.tops as Record<DashboardWidgetId, number>);
+    this.widgetHeights.set(saved.heights as Record<DashboardWidgetId, number>);
+    this.widgetColStarts.set(saved.colStarts as Record<DashboardWidgetId, number>);
+    this.widgetColSpans.set(saved.colSpans as Record<DashboardWidgetId, number>);
+    return true;
   }
 
   // ── Mobile layout stacking ──

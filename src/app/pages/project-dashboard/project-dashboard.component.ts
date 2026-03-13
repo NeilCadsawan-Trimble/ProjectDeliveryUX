@@ -16,6 +16,7 @@ import { ModusNavbarComponent, type INavbarUserCard } from '../../components/mod
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { ThemeService } from '../../services/theme.service';
+import { WidgetLayoutService } from '../../services/widget-layout.service';
 
 interface AiMessage {
   id: number;
@@ -698,6 +699,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly themeService = inject(ThemeService);
   private readonly elementRef = inject(ElementRef);
+  private readonly layoutService = inject(WidgetLayoutService);
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
   readonly isMobile = signal(false);
@@ -861,6 +863,20 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    const startMobile = window.innerWidth < 768;
+    if (startMobile) {
+      this.restoreDesktopLayout();
+      this._savedDesktopTops = { ...this.wTops() };
+      this._savedDesktopColStarts = { ...this.wColStarts() };
+      this._savedDesktopColSpans = { ...this.wColSpans() };
+      const restoredMobile = this.restoreMobileLayout();
+      if (!restoredMobile) {
+        this.stackAllForMobile();
+      }
+    } else {
+      this.restoreDesktopLayout();
+    }
+
     const mq = window.matchMedia('(max-width: 767px)');
     const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList) => {
       const wasMobile = this.isMobile();
@@ -869,14 +885,22 @@ export class ProjectDashboardComponent implements AfterViewInit {
         this._savedDesktopTops = { ...this.wTops() };
         this._savedDesktopColStarts = { ...this.wColStarts() };
         this._savedDesktopColSpans = { ...this.wColSpans() };
-        this.stackAllForMobile();
-      } else if (!e.matches && wasMobile && this._savedDesktopTops) {
-        this.wTops.set(this._savedDesktopTops);
-        if (this._savedDesktopColStarts) this.wColStarts.set(this._savedDesktopColStarts);
-        if (this._savedDesktopColSpans) this.wColSpans.set(this._savedDesktopColSpans);
-        this._savedDesktopTops = null;
-        this._savedDesktopColStarts = null;
-        this._savedDesktopColSpans = null;
+        const restoredMobile = this.restoreMobileLayout();
+        if (!restoredMobile) {
+          this.stackAllForMobile();
+        }
+      } else if (!e.matches && wasMobile) {
+        this.persistLayout();
+        if (this._savedDesktopTops) {
+          this.wTops.set(this._savedDesktopTops);
+          if (this._savedDesktopColStarts) this.wColStarts.set(this._savedDesktopColStarts);
+          if (this._savedDesktopColSpans) this.wColSpans.set(this._savedDesktopColSpans);
+          this._savedDesktopTops = null;
+          this._savedDesktopColStarts = null;
+          this._savedDesktopColSpans = null;
+        } else {
+          this.restoreDesktopLayout();
+        }
       }
     };
     mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
@@ -885,10 +909,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
         onBreakpointChange(mq);
       }
     });
-    onBreakpointChange(mq);
-    if (this.isMobile()) {
-      this.stackAllForMobile();
-    }
+
+    this.isMobile.set(startMobile);
 
     this.fixNavbarLayout();
   }
@@ -1033,6 +1055,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this._resizeTarget = null;
     if (hadInteraction) {
       this.compactAll();
+      this.persistLayout();
     }
   }
 
@@ -1046,6 +1069,38 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   onDocumentTouchEnd(): void {
     this.onDocumentMouseUp();
+  }
+
+  // ── Layout persistence ──
+
+  private persistLayout(): void {
+    const mobile = this.isMobile();
+    this.layoutService.save('project', mobile, {
+      tops: this.wTops(),
+      heights: this.wHeights(),
+      colStarts: this.wColStarts(),
+      colSpans: this.wColSpans(),
+    });
+  }
+
+  private restoreDesktopLayout(): boolean {
+    const saved = this.layoutService.load('project', false);
+    if (!saved) return false;
+    this.wTops.set(saved.tops as Record<ProjectWidgetId, number>);
+    this.wHeights.set(saved.heights as Record<ProjectWidgetId, number>);
+    this.wColStarts.set(saved.colStarts as Record<ProjectWidgetId, number>);
+    this.wColSpans.set(saved.colSpans as Record<ProjectWidgetId, number>);
+    return true;
+  }
+
+  private restoreMobileLayout(): boolean {
+    const saved = this.layoutService.load('project', true);
+    if (!saved) return false;
+    this.wTops.set(saved.tops as Record<ProjectWidgetId, number>);
+    this.wHeights.set(saved.heights as Record<ProjectWidgetId, number>);
+    this.wColStarts.set(saved.colStarts as Record<ProjectWidgetId, number>);
+    this.wColSpans.set(saved.colSpans as Record<ProjectWidgetId, number>);
+    return true;
   }
 
   private handleWidgetMove(event: MouseEvent): void {
