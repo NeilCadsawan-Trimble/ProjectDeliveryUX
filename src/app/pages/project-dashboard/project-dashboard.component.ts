@@ -1026,14 +1026,13 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   onDocumentMouseUp(): void {
-    const pinnedId = this._moveTarget ?? this._resizeTarget;
-    const hadInteraction = !!pinnedId;
+    const hadInteraction = !!this._moveTarget || !!this._resizeTarget;
     this._moveTarget = null;
     this._dragAxis = null;
     this.moveTargetId.set(null);
     this._resizeTarget = null;
     if (hadInteraction) {
-      this.compactAll(pinnedId);
+      this.compactAll();
     }
   }
 
