@@ -1132,14 +1132,23 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this.wColSpans.set(colSpans);
   }
 
-  private compactAll(pinnedId?: ProjectWidgetId | null): void {
-    if (this.isMobile()) {
-      this.stackAllForMobile();
-      return;
-    }
+  private compactAll(): void {
     const gap = ProjectDashboardComponent.GAP_PX;
     const tops = { ...this.wTops() };
     const heights = this.wHeights();
+    const mobile = this.isMobile();
+
+    if (mobile) {
+      const sorted = [...this.widgets].sort((a, b) => tops[a] - tops[b]);
+      let y = 0;
+      for (const id of sorted) {
+        tops[id] = y;
+        y += heights[id] + gap;
+      }
+      this.wTops.set(tops);
+      return;
+    }
+
     const starts = this.wColStarts();
     const spans = this.wColSpans();
     const colOverlap = (a: ProjectWidgetId, b: ProjectWidgetId) =>
@@ -1147,10 +1156,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
     const sorted = [...this.widgets].sort((a, b) => tops[a] - tops[b]);
     const placed: ProjectWidgetId[] = [];
-    if (pinnedId) placed.push(pinnedId);
 
     for (const id of sorted) {
-      if (id === pinnedId) continue;
       let y = 0;
       let settled = false;
       while (!settled) {

@@ -3108,16 +3108,25 @@ export class HomeComponent implements AfterViewInit {
   }
 
   private compactAll(gridPage: GridPage): void {
-    if (this.isMobile()) {
-      this.stackAllForMobile();
-      return;
-    }
     const gap = HomeComponent.GAP_PX;
     const tops = { ...this.widgetTops() };
     const heights = this.widgetHeights();
+    const widgets = this.getGridWidgets(gridPage);
+    const mobile = this.isMobile();
+
+    if (mobile) {
+      const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
+      let y = 0;
+      for (const id of sorted) {
+        tops[id] = y;
+        y += heights[id] + gap;
+      }
+      this.widgetTops.set(tops);
+      return;
+    }
+
     const starts = this.widgetColStarts();
     const spans = this.widgetColSpans();
-    const widgets = this.getGridWidgets(gridPage);
     const colOverlap = (a: DashboardWidgetId, b: DashboardWidgetId) =>
       starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
 
