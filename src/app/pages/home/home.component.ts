@@ -297,7 +297,7 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                                 <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
                                 <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Time Off Requests</div>
                                 @if (pendingTimeOffCount() > 0) {
@@ -485,7 +485,7 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                                 <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
                                 <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Calendar</div>
                                 <div class="text-xs text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</div>
@@ -677,7 +677,7 @@ interface AiMessage {
                                     <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
                                   </div>
                                 } @else {
-                                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                                 }
                                 <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">clipboard</i>
                                 <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">RFIs</div>
@@ -933,7 +933,7 @@ interface AiMessage {
                                     <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
                                   </div>
                                 } @else {
-                                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                                 }
                                 <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
                                 <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Submittals</div>
@@ -1294,7 +1294,7 @@ interface AiMessage {
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">apps</i>
                     <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Projects</div>
                     <div class="text-xs text-foreground-40">{{ totalProjects() }} projects</div>
@@ -1390,7 +1390,7 @@ interface AiMessage {
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">description</i>
                     <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Open Estimates</div>
                     <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
@@ -1499,7 +1499,7 @@ interface AiMessage {
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
-                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                   <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
                   <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Recent Activity</div>
                 </div>
@@ -1551,7 +1551,7 @@ interface AiMessage {
                   (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
-                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                   <i class="modus-icons text-lg text-warning" aria-hidden="true">warning</i>
                   <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Needs Attention</div>
                 </div>
@@ -1597,7 +1597,7 @@ interface AiMessage {
                   (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
                 >
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
                     <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Time Off Requests</div>
                     @if (pendingTimeOffCount() > 0) {
@@ -1750,7 +1750,7 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'financials')"
                             >
                               <div class="flex items-center gap-2">
-                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                                <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                                 <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payment_instant</i>
                                 <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Budget by Project</div>
                               </div>
@@ -3093,8 +3093,16 @@ export class HomeComponent implements AfterViewInit {
 
   onWidgetHeaderTouchStart(id: DashboardWidgetId, event: TouchEvent, grid: GridPage = 'projects'): void {
     if (event.touches.length !== 1) return;
-    event.preventDefault();
     const touch = event.touches[0];
+    const header = event.currentTarget as HTMLElement;
+    const handle = header.querySelector('[data-drag-handle]') as HTMLElement | null;
+    if (handle) {
+      const rect = handle.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      if (Math.abs(touch.clientX - cx) > 16 || Math.abs(touch.clientY - cy) > 16) return;
+    }
+    event.preventDefault();
     this._moveTarget = id;
     this._activeGrid = grid;
     this._dragAxis = null;

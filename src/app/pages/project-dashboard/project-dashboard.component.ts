@@ -250,7 +250,7 @@ interface Drawing {
               <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-primary" aria-hidden="true">flag</i>
                     <div class="text-base font-semibold text-foreground">Milestones</div>
                   </div>
@@ -300,7 +300,7 @@ interface Drawing {
               <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-primary" aria-hidden="true">clipboard</i>
                     <div class="text-base font-semibold text-foreground">Key Tasks</div>
                   </div>
@@ -332,7 +332,7 @@ interface Drawing {
               <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-warning" aria-hidden="true">warning</i>
                     <div class="text-base font-semibold text-foreground">Risks</div>
                   </div>
@@ -366,7 +366,7 @@ interface Drawing {
               <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-primary" aria-hidden="true">floorplan</i>
                     <div class="text-base font-semibold text-foreground">Drawing</div>
                   </div>
@@ -423,7 +423,7 @@ interface Drawing {
               <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-primary" aria-hidden="true">bar_graph</i>
                     <div class="text-base font-semibold text-foreground">Budget</div>
                   </div>
@@ -471,7 +471,7 @@ interface Drawing {
               <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-primary" aria-hidden="true">people_group</i>
                     <div class="text-base font-semibold text-foreground">Team</div>
                   </div>
@@ -504,7 +504,7 @@ interface Drawing {
               <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true">drag_indicator</i>
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                     <i class="modus-icons text-lg text-primary" aria-hidden="true">history</i>
                     <div class="text-base font-semibold text-foreground">Recent Activity</div>
                   </div>
@@ -977,8 +977,16 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   onWidgetHeaderTouchStart(id: ProjectWidgetId, event: TouchEvent): void {
     if (event.touches.length !== 1) return;
-    event.preventDefault();
     const touch = event.touches[0];
+    const header = event.currentTarget as HTMLElement;
+    const handle = header.querySelector('[data-drag-handle]') as HTMLElement | null;
+    if (handle) {
+      const rect = handle.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      if (Math.abs(touch.clientX - cx) > 16 || Math.abs(touch.clientY - cy) > 16) return;
+    }
+    event.preventDefault();
     this._moveTarget = id;
     this._dragAxis = null;
     this._dragStartX = touch.clientX;
