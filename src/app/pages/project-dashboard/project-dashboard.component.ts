@@ -50,8 +50,8 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
     class: 'block h-screen overflow-hidden',
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
-    '(document:touchmove)': 'onDocumentTouchMove($event)',
     '(document:touchend)': 'onDocumentTouchEnd()',
+    '(document:touchcancel)': 'onDocumentTouchEnd()',
     '(document:keydown.escape)': 'onEscapeKey()',
     '(document:click)': 'onDocumentClick($event)',
   },
@@ -713,6 +713,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   private _savedDesktopTops: Record<ProjectWidgetId, number> | null = null;
   private _savedDesktopColStarts: Record<ProjectWidgetId, number> | null = null;
   private _savedDesktopColSpans: Record<ProjectWidgetId, number> | null = null;
+  private _savedDesktopHeights: Record<ProjectWidgetId, number> | null = null;
 
   readonly navbarVisibility = computed(() => {
     const mobile = this.isMobile();
@@ -825,8 +826,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
       this._savedDesktopTops = { ...this.wTops() };
       this._savedDesktopColStarts = { ...this.wColStarts() };
       this._savedDesktopColSpans = { ...this.wColSpans() };
+      this._savedDesktopHeights = { ...this.wHeights() };
       const restoredMobile = this.restoreMobileLayout();
-      if (!restoredMobile) {
+      if (restoredMobile) {
+        this.compactAll();
+      } else {
         this.stackAllForMobile();
       }
     } else {
@@ -841,8 +845,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
         this._savedDesktopTops = { ...this.wTops() };
         this._savedDesktopColStarts = { ...this.wColStarts() };
         this._savedDesktopColSpans = { ...this.wColSpans() };
+        this._savedDesktopHeights = { ...this.wHeights() };
         const restoredMobile = this.restoreMobileLayout();
-        if (!restoredMobile) {
+        if (restoredMobile) {
+          this.compactAll();
+        } else {
           this.stackAllForMobile();
         }
       } else if (!e.matches && wasMobile) {
@@ -851,9 +858,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
           this.wTops.set(this._savedDesktopTops);
           if (this._savedDesktopColStarts) this.wColStarts.set(this._savedDesktopColStarts);
           if (this._savedDesktopColSpans) this.wColSpans.set(this._savedDesktopColSpans);
+          if (this._savedDesktopHeights) this.wHeights.set(this._savedDesktopHeights);
           this._savedDesktopTops = null;
           this._savedDesktopColStarts = null;
           this._savedDesktopColSpans = null;
+          this._savedDesktopHeights = null;
         } else {
           this.restoreDesktopLayout();
         }
@@ -865,6 +874,16 @@ export class ProjectDashboardComponent implements AfterViewInit {
         onBreakpointChange(mq);
       }
     });
+
+    document.addEventListener('touchmove', (e: TouchEvent) => {
+      if (this._moveTarget || this._resizeTarget) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        if (touch) {
+          this.onDocumentMouseMove({ clientX: touch.clientX, clientY: touch.clientY } as MouseEvent);
+        }
+      }
+    }, { passive: false });
 
     this.isMobile.set(startMobile);
 
@@ -1018,14 +1037,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
       this.compactAll();
       this.persistLayout();
     }
-  }
-
-  onDocumentTouchMove(event: TouchEvent): void {
-    if (!this._moveTarget && !this._resizeTarget) return;
-    if (event.touches.length !== 1) return;
-    event.preventDefault();
-    const touch = event.touches[0];
-    this.onDocumentMouseMove({ clientX: touch.clientX, clientY: touch.clientY } as MouseEvent);
   }
 
   onDocumentTouchEnd(): void {
@@ -1257,7 +1268,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
       const mobile = this.isMobile();
       if (mobile) {
         const restored = this.restoreMobileLayout();
-        if (!restored) this.stackAllForMobile();
+        if (restored) {
+          this.compactAll();
+        } else {
+          this.stackAllForMobile();
+        }
       } else {
         const restored = this.restoreDesktopLayout();
         if (!restored) {

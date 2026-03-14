@@ -113,8 +113,8 @@ interface AiMessage {
     class: 'block h-screen overflow-hidden',
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
-    '(document:touchmove)': 'onDocumentTouchMove($event)',
     '(document:touchend)': 'onDocumentTouchEnd()',
+    '(document:touchcancel)': 'onDocumentTouchEnd()',
     '(document:keydown.escape)': 'onEscapeKey()',
     '(document:click)': 'onDocumentClick($event)',
   },
@@ -2291,7 +2291,12 @@ export class HomeComponent implements AfterViewInit {
       this._savedDesktopColSpans = { ...this.widgetColSpans() };
       this._savedDesktopHeights = { ...this.widgetHeights() };
       const restoredMobile = this.restoreMobileLayout();
-      if (!restoredMobile) {
+      if (restoredMobile) {
+        this.applyMobileHeights();
+        for (const grid of ['home', 'projects', 'financials'] as const) {
+          this.compactAll(grid);
+        }
+      } else {
         this.applyMobileHeights();
         this.stackAllForMobile();
       }
@@ -2316,7 +2321,12 @@ export class HomeComponent implements AfterViewInit {
         this._savedDesktopColSpans = { ...this.widgetColSpans() };
         this._savedDesktopHeights = { ...this.widgetHeights() };
         const restoredMobile = this.restoreMobileLayout();
-        if (!restoredMobile) {
+        if (restoredMobile) {
+          this.applyMobileHeights();
+          for (const grid of ['home', 'projects', 'financials'] as const) {
+            this.compactAll(grid);
+          }
+        } else {
           this.applyMobileHeights();
           this.stackAllForMobile();
         }
@@ -2347,6 +2357,16 @@ export class HomeComponent implements AfterViewInit {
         onBreakpointChange(mq);
       }
     });
+
+    document.addEventListener('touchmove', (e: TouchEvent) => {
+      if (this._moveTarget || this._resizeTarget) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        if (touch) {
+          this.onDocumentMouseMove({ clientX: touch.clientX, clientY: touch.clientY } as MouseEvent);
+        }
+      }
+    }, { passive: false });
 
     this.isMobile.set(startMobile);
 
@@ -3125,14 +3145,6 @@ export class HomeComponent implements AfterViewInit {
       this._resizeStartColSpan = this.widgetColSpans()[target as DashboardWidgetId] ?? 8;
       this._gridContainerWidth = this.activeGridEl?.offsetWidth ?? 1200;
     }
-  }
-
-  onDocumentTouchMove(event: TouchEvent): void {
-    if (!this._moveTarget && !this._resizeTarget) return;
-    if (event.touches.length !== 1) return;
-    event.preventDefault();
-    const touch = event.touches[0];
-    this.onDocumentMouseMove({ clientX: touch.clientX, clientY: touch.clientY } as MouseEvent);
   }
 
   onDocumentTouchEnd(): void {
