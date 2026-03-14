@@ -311,7 +311,7 @@ interface AiMessage {
                                 class="flex items-center rounded-lg border-default overflow-hidden flex-shrink-0"
                                 role="tablist"
                                 aria-label="Time off view"
-                                (mousedown)="$event.stopPropagation()"
+                                (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
                               >
                                 <div
                                   class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
@@ -385,7 +385,7 @@ interface AiMessage {
                             @if (timeOffView() === 'calendar') {
                               <div class="flex flex-col flex-1">
                                 <!-- Month navigation -->
-                                <div class="flex items-center justify-between px-5 py-3 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
+                                <div class="flex items-center justify-between px-5 py-3 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                                   <div
                                     class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                                     role="button"
@@ -438,7 +438,7 @@ interface AiMessage {
                                   }
                                 </div>
                                 <!-- Legend -->
-                                <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
+                                <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                                   <div class="flex items-center gap-1.5">
                                     <div class="w-2.5 h-2.5 rounded-sm bg-success"></div>
                                     <div class="text-xs text-foreground-60">Approved</div>
@@ -521,7 +521,7 @@ interface AiMessage {
                             </div>
 
                             <!-- Day column headers -->
-                            <div class="flex flex-shrink-0 border-bottom-default" (mousedown)="$event.stopPropagation()">
+                            <div class="flex flex-shrink-0 border-bottom-default" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                               <div class="w-12 flex-shrink-0"></div>
                               <!-- Day 1 header -->
                               <div class="flex-1 py-2 px-3 text-center border-right-default">
@@ -610,7 +610,7 @@ interface AiMessage {
                             </div>
 
                             <!-- Legend -->
-                            <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
+                            <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                               <div class="flex items-center gap-1.5">
                                 <div class="w-2 h-2 rounded-sm bg-primary"></div>
                                 <div class="text-xs text-foreground-60">Meeting</div>
@@ -781,7 +781,7 @@ interface AiMessage {
                               <div
                                 class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
                                 role="radiogroup" aria-label="Filter RFIs by status"
-                                (mousedown)="$event.stopPropagation()"
+                                (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
                               >
                                 <div
                                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
@@ -1037,7 +1037,7 @@ interface AiMessage {
                               <div
                                 class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
                                 role="radiogroup" aria-label="Filter Submittals by status"
-                                (mousedown)="$event.stopPropagation()"
+                                (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
                               >
                                 <div
                                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
