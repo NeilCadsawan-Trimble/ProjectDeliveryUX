@@ -1232,10 +1232,41 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this.projectDropdownOpen.update(v => !v);
   }
 
+  private readonly defaultTops: Record<ProjectWidgetId, number> = {
+    milestones: 0, tasks: 536, risks: 952,
+    drawing: 0, budget: 436, team: 902, activity: 1318,
+  };
+  private readonly defaultHeights: Record<ProjectWidgetId, number> = {
+    milestones: 520, tasks: 400, risks: 350,
+    drawing: 420, budget: 450, team: 400, activity: 350,
+  };
+  private readonly defaultColStarts: Record<ProjectWidgetId, number> = {
+    milestones: 1, tasks: 1, risks: 1,
+    drawing: 12, budget: 12, team: 12, activity: 12,
+  };
+  private readonly defaultColSpans: Record<ProjectWidgetId, number> = {
+    milestones: 11, tasks: 11, risks: 11,
+    drawing: 5, budget: 5, team: 5, activity: 5,
+  };
+
   switchProject(id: number): void {
     this.projectDropdownOpen.set(false);
     if (id !== this.projectId()) {
+      this.persistLayout();
       this.projectId.set(id);
+      const mobile = this.isMobile();
+      if (mobile) {
+        const restored = this.restoreMobileLayout();
+        if (!restored) this.stackAllForMobile();
+      } else {
+        const restored = this.restoreDesktopLayout();
+        if (!restored) {
+          this.wTops.set({ ...this.defaultTops });
+          this.wHeights.set({ ...this.defaultHeights });
+          this.wColStarts.set({ ...this.defaultColStarts });
+          this.wColSpans.set({ ...this.defaultColSpans });
+        }
+      }
       this.router.navigate(['/project', id], { replaceUrl: true });
     }
   }
