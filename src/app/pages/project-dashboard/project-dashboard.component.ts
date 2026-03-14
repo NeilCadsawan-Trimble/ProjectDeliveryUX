@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
@@ -18,6 +18,21 @@ import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel
 
 import { ThemeService } from '../../services/theme.service';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
+import {
+  PROJECT_DATA,
+  type ProjectStatus,
+  type MilestoneStatus,
+  type TaskPriority,
+  type RiskSeverity,
+  type Milestone,
+  type TeamMember,
+  type Task,
+  type Risk,
+  type ActivityEntry,
+  type Drawing,
+  type SummaryStat,
+  type BudgetBreakdown,
+} from '../../data/project-data';
 
 interface AiMessage {
   id: number;
@@ -25,69 +40,7 @@ interface AiMessage {
   text: string;
 }
 
-type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
-type MilestoneStatus = 'completed' | 'in-progress' | 'upcoming' | 'overdue';
-type TaskPriority = 'high' | 'medium' | 'low';
-type RiskSeverity = 'high' | 'medium' | 'low';
-
-interface Milestone {
-  id: number;
-  name: string;
-  dueDate: string;
-  status: MilestoneStatus;
-  progress: number;
-}
-
-interface TeamMember {
-  id: number;
-  initials: string;
-  name: string;
-  role: string;
-  tasksCompleted: number;
-  tasksTotal: number;
-  availability: number;
-}
-
-interface Task {
-  id: number;
-  title: string;
-  assigneeInitials: string;
-  assignee: string;
-  priority: TaskPriority;
-  dueDate: string;
-  status: string;
-}
-
-interface Risk {
-  id: number;
-  title: string;
-  severity: RiskSeverity;
-  impact: string;
-  mitigation: string;
-}
-
-interface ActivityEntry {
-  id: number;
-  actorInitials: string;
-  text: string;
-  timeAgo: string;
-  icon: string;
-}
-
 type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity';
-type DrawingType = 'server-room' | 'network' | 'power';
-
-interface Drawing {
-  id: number;
-  name: string;
-  type: DrawingType;
-  version: string;
-  isLatest: boolean;
-  updatedBy: string;
-  updatedAt: string;
-  revisionCount: number;
-  fileSize: string;
-}
 
 @Component({
   selector: 'app-project-dashboard',
@@ -129,7 +82,7 @@ interface Drawing {
         (aiClick)="toggleAiPanel()"
         (trimbleLogoClick)="navigateToProjects()"
       >
-        <div slot="start" class="flex items-center gap-3 overflow-hidden w-full">
+        <div slot="start" class="flex items-center gap-3 w-full min-w-0">
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
           <div
             class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
@@ -142,7 +95,44 @@ interface Drawing {
             <div class="text-sm hidden md:block">Projects</div>
           </div>
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-          <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
+          <div class="relative min-w-0 flex-1">
+            <div
+              class="flex items-center gap-1 cursor-pointer min-w-0"
+              role="button"
+              tabindex="0"
+              [attr.aria-expanded]="projectDropdownOpen()"
+              aria-haspopup="listbox"
+              (click)="toggleProjectDropdown()"
+              (keydown.enter)="toggleProjectDropdown()"
+            >
+              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
+              <i class="modus-icons text-sm text-foreground-40 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectDropdownOpen()" aria-hidden="true">expand_more</i>
+            </div>
+            @if (projectDropdownOpen()) {
+              <div class="absolute left-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[260px] max-w-[360px] py-1 max-h-[320px] overflow-y-auto" role="listbox" aria-label="Switch project">
+                @for (proj of allProjects; track proj.id) {
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors duration-150"
+                    [class.bg-primary-20]="proj.id === projectId()"
+                    [class.text-primary]="proj.id === projectId()"
+                    [class.text-foreground]="proj.id !== projectId()"
+                    [class.hover:bg-muted]="proj.id !== projectId()"
+                    role="option"
+                    [attr.aria-selected]="proj.id === projectId()"
+                    (click)="switchProject(proj.id)"
+                  >
+                    <div class="w-2 h-2 rounded-full flex-shrink-0"
+                      [class.bg-success]="proj.status === 'On Track'"
+                      [class.bg-warning]="proj.status === 'At Risk'"
+                      [class.bg-destructive]="proj.status === 'Overdue'"
+                      [class.bg-secondary]="proj.status === 'Planning'"
+                    ></div>
+                    <div class="text-sm truncate">{{ proj.name }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
         </div>
         <div slot="end" class="flex items-center gap-1">
           <!-- Desktop: dark mode toggle -->
@@ -430,35 +420,22 @@ interface Drawing {
                 </div>
                 <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1">
                   <div class="flex items-baseline justify-between">
-                    <div class="text-3xl font-bold text-foreground">$544K</div>
-                    <div class="text-sm text-foreground-60">of $800K</div>
+                    <div class="text-3xl font-bold text-foreground">{{ budgetUsed() }}</div>
+                    <div class="text-sm text-foreground-60">of {{ budgetTotal() }}</div>
                   </div>
-                  <modus-progress [value]="68" [max]="100" className="progress-primary" />
+                  <modus-progress [value]="budgetPct()" [max]="100" [className]="budgetHealthy() ? 'progress-primary' : 'progress-danger'" />
                   <div class="grid grid-cols-2 gap-3">
-                    <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
-                      <div class="text-2xs text-foreground-40 uppercase tracking-wide">Labor</div>
-                      <div class="text-sm font-semibold text-foreground">$382K</div>
-                      <div class="text-2xs text-foreground-60">70% of spend</div>
-                    </div>
-                    <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
-                      <div class="text-2xs text-foreground-40 uppercase tracking-wide">Infrastructure</div>
-                      <div class="text-sm font-semibold text-foreground">$98K</div>
-                      <div class="text-2xs text-foreground-60">18% of spend</div>
-                    </div>
-                    <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
-                      <div class="text-2xs text-foreground-40 uppercase tracking-wide">Licensing</div>
-                      <div class="text-sm font-semibold text-foreground">$42K</div>
-                      <div class="text-2xs text-foreground-60">8% of spend</div>
-                    </div>
-                    <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
-                      <div class="text-2xs text-foreground-40 uppercase tracking-wide">Other</div>
-                      <div class="text-sm font-semibold text-foreground">$22K</div>
-                      <div class="text-2xs text-foreground-60">4% of spend</div>
-                    </div>
+                    @for (item of budgetBreakdown(); track item.label) {
+                      <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
+                        <div class="text-2xs text-foreground-40 uppercase tracking-wide">{{ item.label }}</div>
+                        <div class="text-sm font-semibold text-foreground">{{ item.amount }}</div>
+                        <div class="text-2xs text-foreground-60">{{ item.pct }}% of spend</div>
+                      </div>
+                    }
                   </div>
-                  <div class="flex items-center gap-2 p-3 bg-success-20 border-success rounded-lg">
-                    <i class="modus-icons text-sm text-success" aria-hidden="true">check_circle</i>
-                    <div class="text-xs text-foreground">Budget on track -- $256K remaining</div>
+                  <div class="flex items-center gap-2 p-3 rounded-lg" [class]="budgetHealthy() ? 'bg-success-20 border-success' : 'bg-destructive-20 border-destructive'">
+                    <i class="modus-icons text-sm" [class]="budgetHealthy() ? 'text-success' : 'text-destructive'" aria-hidden="true">{{ budgetHealthy() ? 'check_circle' : 'warning' }}</i>
+                    <div class="text-xs text-foreground">{{ budgetHealthy() ? 'Budget on track' : 'Budget critical' }} -- {{ budgetRemaining() }} remaining</div>
                   </div>
                 </div>
                 <div class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group" [class.cursor-nwse-resize]="!isMobile()" [class.cursor-ns-resize]="isMobile()" (mousedown)="startWidgetResize(wId, 'both', $event)" (touchstart)="startWidgetResizeTouch(wId, 'both', $event)">
@@ -690,6 +667,7 @@ interface Drawing {
 export class ProjectDashboardComponent implements AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly elementRef = inject(ElementRef);
   private readonly layoutService = inject(WidgetLayoutService);
 
@@ -755,71 +733,49 @@ export class ProjectDashboardComponent implements AfterViewInit {
     email: 'alex.morgan@trimble.com',
   };
 
-  readonly projectName = signal('Cloud Infrastructure Migration');
-  readonly projectStatus = signal<ProjectStatus>('On Track');
+  readonly projectId = signal(1);
 
-  readonly summaryStats = signal([
-    { label: 'Schedule', value: '72%', subtext: 'On track', subtextClass: 'text-success' },
-    { label: 'Budget Used', value: '$544K', subtext: '68% of $800K', subtextClass: 'text-foreground-60' },
-    { label: 'Team Members', value: '6', subtext: '2 available', subtextClass: 'text-foreground-60' },
-    { label: 'Due Date', value: 'Mar 15', subtext: '2 days remaining', subtextClass: 'text-warning font-medium' },
-  ]);
+  private readonly projectData = computed(() => PROJECT_DATA[this.projectId()] ?? PROJECT_DATA[1]);
 
-  readonly milestones = signal<Milestone[]>([
-    { id: 1, name: 'Infrastructure Assessment', dueDate: 'Jan 15, 2026', status: 'completed', progress: 100 },
-    { id: 2, name: 'Architecture Design & Approval', dueDate: 'Feb 1, 2026', status: 'completed', progress: 100 },
-    { id: 3, name: 'Dev/Staging Migration', dueDate: 'Feb 20, 2026', status: 'completed', progress: 100 },
-    { id: 4, name: 'Production Migration Wave 1', dueDate: 'Mar 5, 2026', status: 'in-progress', progress: 78 },
-    { id: 5, name: 'Production Migration Wave 2', dueDate: 'Mar 12, 2026', status: 'in-progress', progress: 35 },
-    { id: 6, name: 'Cutover & Validation', dueDate: 'Mar 15, 2026', status: 'upcoming', progress: 0 },
-  ]);
+  readonly projectName = computed(() => this.projectData().name);
+  readonly projectStatus = computed(() => this.projectData().status);
+  readonly summaryStats = computed(() => this.projectData().summaryStats);
+  readonly milestones = computed(() => this.projectData().milestones);
+  readonly tasks = computed(() => this.projectData().tasks);
+  readonly risks = computed(() => this.projectData().risks);
+  readonly team = computed(() => this.projectData().team);
+  readonly activity = computed(() => this.projectData().activity);
+  readonly latestDrawing = computed(() => this.projectData().latestDrawing);
+  readonly budgetBreakdown = computed(() => this.projectData().budgetBreakdown);
+  readonly budgetUsed = computed(() => this.projectData().budgetUsed);
+  readonly budgetTotal = computed(() => this.projectData().budgetTotal);
+  readonly budgetPct = computed(() => this.projectData().budgetPct);
 
   readonly completedMilestones = computed(() =>
     this.milestones().filter(ms => ms.status === 'completed').length
   );
 
-  readonly tasks = signal<Task[]>([
-    { id: 1, title: 'Configure load balancer for prod cluster', assigneeInitials: 'SC', assignee: 'Sarah Chen', priority: 'high', dueDate: 'Mar 10', status: 'In Progress' },
-    { id: 2, title: 'Database replication validation', assigneeInitials: 'PN', assignee: 'Priya Nair', priority: 'high', dueDate: 'Mar 8', status: 'In Progress' },
-    { id: 3, title: 'Update DNS records for new endpoints', assigneeInitials: 'MO', assignee: 'Mike Osei', priority: 'medium', dueDate: 'Mar 12', status: 'To Do' },
-    { id: 4, title: 'Security scan on migrated services', assigneeInitials: 'JC', assignee: 'James Carter', priority: 'high', dueDate: 'Mar 11', status: 'To Do' },
-    { id: 5, title: 'Client notification for maintenance window', assigneeInitials: 'LB', assignee: 'Lena Brooks', priority: 'medium', dueDate: 'Mar 13', status: 'To Do' },
-    { id: 6, title: 'Rollback procedure documentation', assigneeInitials: 'TE', assignee: 'Tom Evans', priority: 'low', dueDate: 'Mar 14', status: 'To Do' },
-  ]);
-
   readonly openTaskCount = computed(() =>
     this.tasks().filter(t => t.status !== 'Done').length
   );
 
-  readonly risks = signal<Risk[]>([
-    { id: 1, title: 'Database migration data loss', severity: 'high', impact: 'Potential loss of transactional data during cutover', mitigation: 'Dual-write pattern with automated reconciliation checks' },
-    { id: 2, title: 'Extended downtime during cutover', severity: 'medium', impact: 'Customer-facing services unavailable beyond maintenance window', mitigation: 'Blue-green deployment with automated rollback triggers' },
-    { id: 3, title: 'Third-party API compatibility', severity: 'low', impact: 'Some integrations may need endpoint updates', mitigation: 'API gateway abstraction layer already in place' },
-  ]);
+  readonly budgetRemaining = computed(() => {
+    const total = this.budgetTotal().replace(/[^0-9.KMkm]/g, '');
+    const used = this.budgetUsed().replace(/[^0-9.KMkm]/g, '');
+    const parseVal = (v: string) => {
+      if (v.endsWith('K') || v.endsWith('k')) return parseFloat(v) * 1000;
+      if (v.endsWith('M') || v.endsWith('m')) return parseFloat(v) * 1000000;
+      return parseFloat(v);
+    };
+    const diff = parseVal(total) - parseVal(used);
+    if (diff >= 1_000_000) return `$${(diff / 1_000_000).toFixed(1)}M`;
+    if (diff >= 1_000) return `$${Math.round(diff / 1_000)}K`;
+    return `$${Math.round(diff)}`;
+  });
 
-  readonly team = signal<TeamMember[]>([
-    { id: 1, initials: 'SC', name: 'Sarah Chen', role: 'Project Lead', tasksCompleted: 14, tasksTotal: 18, availability: 100 },
-    { id: 2, initials: 'PN', name: 'Priya Nair', role: 'Senior Engineer', tasksCompleted: 11, tasksTotal: 15, availability: 80 },
-    { id: 3, initials: 'MO', name: 'Mike Osei', role: 'DevOps Engineer', tasksCompleted: 8, tasksTotal: 12, availability: 100 },
-    { id: 4, initials: 'JC', name: 'James Carter', role: 'Security Analyst', tasksCompleted: 5, tasksTotal: 8, availability: 60 },
-    { id: 5, initials: 'LB', name: 'Lena Brooks', role: 'Project Coordinator', tasksCompleted: 7, tasksTotal: 9, availability: 100 },
-    { id: 6, initials: 'TE', name: 'Tom Evans', role: 'Solutions Architect', tasksCompleted: 6, tasksTotal: 10, availability: 40 },
-  ]);
-
-  readonly activity = signal<ActivityEntry[]>([
-    { id: 1, actorInitials: 'SC', text: 'Completed load balancer configuration for staging', timeAgo: '25 min ago', icon: 'check_circle' },
-    { id: 2, actorInitials: 'PN', text: 'Updated database replication status to 98% sync', timeAgo: '1 hr ago', icon: 'database' },
-    { id: 3, actorInitials: 'MO', text: 'Deployed monitoring dashboards for Wave 1 services', timeAgo: '2 hrs ago', icon: 'dashboard' },
-    { id: 4, actorInitials: 'JC', text: 'Submitted security review for migrated APIs', timeAgo: '3 hrs ago', icon: 'security' },
-    { id: 5, actorInitials: 'LB', text: 'Sent stakeholder update on migration progress', timeAgo: '4 hrs ago', icon: 'email' },
-    { id: 6, actorInitials: 'SC', text: 'Created cutover checklist for production Wave 2', timeAgo: '5 hrs ago', icon: 'clipboard' },
-  ]);
+  readonly budgetHealthy = computed(() => this.budgetPct() < 90);
 
   readonly gridLines = Array.from({ length: 21 }, (_, i) => i);
-
-  readonly latestDrawing = signal<Drawing>({
-    id: 1, name: 'Server Room - Floor 3 Layout', type: 'server-room', version: 'v3.2', isLatest: true, updatedBy: 'Mike Osei', updatedAt: 'Mar 11, 2026', revisionCount: 8, fileSize: '4.2 MB',
-  });
 
   statusBadgeColor(): ModusBadgeColor {
     const map: Record<ProjectStatus, ModusBadgeColor> = {
@@ -860,6 +816,9 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (idParam) this.projectId.set(Number(idParam));
+
     const startMobile = window.innerWidth < 768;
     if (startMobile) {
       this.restoreDesktopLayout();
@@ -1075,9 +1034,13 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   // ── Layout persistence ──
 
+  private get layoutKey(): string {
+    return `project-${this.projectId()}`;
+  }
+
   private persistLayout(): void {
     const mobile = this.isMobile();
-    this.layoutService.save('project', mobile, {
+    this.layoutService.save(this.layoutKey, mobile, {
       tops: this.wTops(),
       heights: this.wHeights(),
       colStarts: this.wColStarts(),
@@ -1086,7 +1049,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   private restoreDesktopLayout(): boolean {
-    const saved = this.layoutService.load('project', false);
+    const saved = this.layoutService.load(this.layoutKey, false);
     if (!saved) return false;
     this.wTops.set(saved.tops as Record<ProjectWidgetId, number>);
     this.wHeights.set(saved.heights as Record<ProjectWidgetId, number>);
@@ -1096,7 +1059,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   private restoreMobileLayout(): boolean {
-    const saved = this.layoutService.load('project', true);
+    const saved = this.layoutService.load(this.layoutKey, true);
     if (!saved) return false;
     this.wTops.set(saved.tops as Record<ProjectWidgetId, number>);
     this.wHeights.set(saved.heights as Record<ProjectWidgetId, number>);
@@ -1257,6 +1220,26 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
+  // ── Project Dropdown ──
+  readonly projectDropdownOpen = signal(false);
+  readonly allProjects = Object.entries(PROJECT_DATA).map(([id, data]) => ({
+    id: Number(id),
+    name: data.name,
+    status: data.status,
+  }));
+
+  toggleProjectDropdown(): void {
+    this.projectDropdownOpen.update(v => !v);
+  }
+
+  switchProject(id: number): void {
+    this.projectDropdownOpen.set(false);
+    if (id !== this.projectId()) {
+      this.projectId.set(id);
+      this.router.navigate(['/project', id], { replaceUrl: true });
+    }
+  }
+
   // ── Mobile More Menu ──
   readonly moreMenuOpen = signal(false);
 
@@ -1281,7 +1264,9 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   onEscapeKey(): void {
-    if (this.moreMenuOpen()) {
+    if (this.projectDropdownOpen()) {
+      this.projectDropdownOpen.set(false);
+    } else if (this.moreMenuOpen()) {
       this.moreMenuOpen.set(false);
     } else if (this.aiPanelOpen()) {
       this.aiPanelOpen.set(false);
@@ -1289,9 +1274,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   onDocumentClick(event: MouseEvent): void {
-    if (!this.moreMenuOpen()) return;
     const target = event.target as HTMLElement;
-    if (!target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
+    if (this.projectDropdownOpen() && !target.closest('[aria-haspopup="listbox"]') && !target.closest('[role="option"]')) {
+      this.projectDropdownOpen.set(false);
+    }
+    if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);
     }
   }
@@ -1345,7 +1332,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
       return 'No tasks are overdue yet, but 2 high-priority tasks need attention: "Configure load balancer" (due Mar 10) and "Database replication validation" (due Mar 8) are both In Progress. 4 tasks are still in To Do status.';
     }
     if (q.includes('budget') || q.includes('cost') || q.includes('spend')) {
-      return 'Budget usage is at $544K of $800K total (68%). At current burn rate, the project should complete within budget. Infrastructure costs are the largest line item.';
+      return `Budget usage is at ${this.budgetUsed()} of ${this.budgetTotal()} total (${this.budgetPct()}%). ${this.budgetHealthy() ? 'At current burn rate, the project should complete within budget.' : 'Budget is in critical state and may require additional funding.'}`;
     }
     if (q.includes('team') || q.includes('member') || q.includes('availability')) {
       return '6 team members are assigned. Sarah Chen (Lead) and Mike Osei (DevOps) are at 100% availability. James Carter (Security) is at 60% and Tom Evans (Architect) at 40% due to other commitments.';

@@ -1319,16 +1319,12 @@ interface AiMessage {
                   <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
                     @for (project of projects(); track project.id) {
                       <div
-                        class="bg-background border-default rounded-lg overflow-hidden flex flex-col"
-                        [class.cursor-pointer]="project.id === 1"
-                        [class.hover:bg-muted]="project.id === 1"
-                        [class.transition-colors]="project.id === 1"
-                        [class.duration-150]="project.id === 1"
-                        (click)="project.id === 1 ? navigateToProject(project.id) : null"
-                        (keydown.enter)="project.id === 1 ? navigateToProject(project.id) : null"
-                        [attr.role]="project.id === 1 ? 'link' : null"
-                        [attr.tabindex]="project.id === 1 ? 0 : null"
-                        [attr.aria-label]="project.id === 1 ? 'Open ' + project.name + ' dashboard' : null"
+                        class="bg-background border-default rounded-lg overflow-hidden flex flex-col cursor-pointer hover:bg-muted transition-colors duration-150"
+                        (click)="navigateToProject(project.id)"
+                        (keydown.enter)="navigateToProject(project.id)"
+                        role="link"
+                        tabindex="0"
+                        [attr.aria-label]="'Open ' + project.name + ' dashboard'"
                       >
                         <div class="h-1 w-full flex-shrink-0"
                           [class.bg-success]="project.status === 'On Track'"
