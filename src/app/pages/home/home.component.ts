@@ -491,7 +491,7 @@ interface AiMessage {
                                 <div class="text-xs text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</div>
                               </div>
                               <!-- Navigation — stop drag propagation -->
-                              <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()">
+                              <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                                 <div
                                   class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                                   role="button" tabindex="0" aria-label="Previous day"
