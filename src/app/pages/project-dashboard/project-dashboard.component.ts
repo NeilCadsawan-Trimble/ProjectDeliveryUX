@@ -219,19 +219,21 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
         <!-- 16-column widget grid -->
         <div
-          class="grid mb-6"
-          [style.grid-template-columns]="isMobile() ? '1fr' : 'repeat(16, minmax(0, 1fr))'"
-          [style.grid-auto-rows]="'1px'"
-          [style.gap]="isMobile() ? '0' : '0 1rem'"
+          [class]="isMobile() ? 'relative mb-6' : 'grid mb-6'"
+          [style.grid-template-columns]="isMobile() ? null : 'repeat(16, minmax(0, 1fr))'"
+          [style.grid-auto-rows]="isMobile() ? null : '1px'"
+          [style.gap]="isMobile() ? null : '0 1rem'"
+          [style.height.px]="isMobile() ? mobileGridHeight() : null"
           #widgetGrid
         >
           @for (wId of widgets; track wId) {
             <div
-              class="relative"
-              [class.overflow-hidden]="isMobile()"
+              [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
               [attr.data-widget-id]="wId"
-              [style.grid-column]="isMobile() ? '1 / -1' : wColStarts()[wId] + ' / span ' + wColSpans()[wId]"
-              [style.grid-row]="(wTops()[wId] + 1) + ' / span ' + wHeights()[wId]"
+              [style.grid-column]="isMobile() ? null : wColStarts()[wId] + ' / span ' + wColSpans()[wId]"
+              [style.grid-row]="isMobile() ? null : (wTops()[wId] + 1) + ' / span ' + wHeights()[wId]"
+              [style.top.px]="isMobile() ? wTops()[wId] : null"
+              [style.height.px]="isMobile() ? wHeights()[wId] : null"
             >
               <div class="relative h-full" [class.opacity-30]="moveTargetId() === wId">
 
@@ -698,6 +700,16 @@ export class ProjectDashboardComponent implements AfterViewInit {
   });
   readonly moveTargetId = signal<ProjectWidgetId | null>(null);
 
+  readonly mobileGridHeight = computed(() => {
+    const tops = this.wTops();
+    const heights = this.wHeights();
+    let max = 0;
+    for (const id of this.widgets) {
+      max = Math.max(max, tops[id] + heights[id]);
+    }
+    return max;
+  });
+
   private _moveTarget: ProjectWidgetId | null = null;
   private _dragAxis: 'h' | 'v' | null = null;
   private _dragStartX = 0;
@@ -821,6 +833,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
     if (idParam) this.projectId.set(Number(idParam));
 
     const startMobile = window.innerWidth < 768;
+    this.isMobile.set(startMobile);
+
     if (startMobile) {
       this.restoreDesktopLayout();
       this._savedDesktopTops = { ...this.wTops() };
@@ -884,8 +898,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
         }
       }
     }, { passive: false });
-
-    this.isMobile.set(startMobile);
 
     this.fixNavbarLayout();
     this.reorderNavbarEnd();

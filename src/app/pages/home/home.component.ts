@@ -271,19 +271,21 @@ interface AiMessage {
 
                 <!-- Home widget grid -->
                 <div
-                  class="grid"
-                  [style.grid-template-columns]="isMobile() ? '1fr' : 'repeat(16, minmax(0, 1fr))'"
-                  [style.grid-auto-rows]="'1px'"
-                  [style.gap]="isMobile() ? '0' : '0 1rem'"
+                  [class]="isMobile() ? 'relative' : 'grid'"
+                  [style.grid-template-columns]="isMobile() ? null : 'repeat(16, minmax(0, 1fr))'"
+                  [style.grid-auto-rows]="isMobile() ? null : '1px'"
+                  [style.gap]="isMobile() ? null : '0 1rem'"
+                  [style.height.px]="isMobile() ? mobileGridHeight('home') : null"
                   #homeWidgetGrid
                 >
                   @for (widgetId of homeWidgets; track widgetId) {
                     <div
-                      class="relative"
-                      [class.overflow-hidden]="isMobile()"
+                      [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
                       [attr.data-widget-id]="widgetId"
-                      [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
-                      [style.grid-row]="(widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
+                      [style.grid-column]="isMobile() ? null : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
+                      [style.grid-row]="isMobile() ? null : (widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
+                      [style.top.px]="isMobile() ? widgetTops()[widgetId] : null"
+                      [style.height.px]="isMobile() ? widgetHeights()[widgetId] : null"
                     >
                       <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 
@@ -1266,21 +1268,23 @@ interface AiMessage {
 
             <!-- Widget area: 16-column grid layout -->
             <div
-              class="grid mb-6"
-              [style.grid-template-columns]="isMobile() ? '1fr' : 'repeat(16, minmax(0, 1fr))'"
-              [style.grid-auto-rows]="'1px'"
-              [style.gap]="isMobile() ? '0' : '0 1rem'"
+              [class]="isMobile() ? 'relative mb-6' : 'grid mb-6'"
+              [style.grid-template-columns]="isMobile() ? null : 'repeat(16, minmax(0, 1fr))'"
+              [style.grid-auto-rows]="isMobile() ? null : '1px'"
+              [style.gap]="isMobile() ? null : '0 1rem'"
+              [style.height.px]="isMobile() ? mobileGridHeight('projects') : null"
               #widgetGrid
             >
 
               @for (widgetId of projectWidgets; track widgetId) {
 
               <div
-                class="relative"
-                [class.overflow-hidden]="isMobile()"
+                [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
                 [attr.data-widget-id]="widgetId"
-                [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
-                [style.grid-row]="(widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
+                [style.grid-column]="isMobile() ? null : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
+                [style.grid-row]="isMobile() ? null : (widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
+                [style.top.px]="isMobile() ? widgetTops()[widgetId] : null"
+                [style.height.px]="isMobile() ? widgetHeights()[widgetId] : null"
               >
                 <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 
@@ -1720,19 +1724,21 @@ interface AiMessage {
 
                 <!-- Widget area: 16-column grid layout -->
                 <div
-                  class="grid mb-6"
-                  [style.grid-template-columns]="isMobile() ? '1fr' : 'repeat(16, minmax(0, 1fr))'"
-                  [style.grid-auto-rows]="'1px'"
-                  [style.gap]="isMobile() ? '0' : '0 1rem'"
+                  [class]="isMobile() ? 'relative mb-6' : 'grid mb-6'"
+                  [style.grid-template-columns]="isMobile() ? null : 'repeat(16, minmax(0, 1fr))'"
+                  [style.grid-auto-rows]="isMobile() ? null : '1px'"
+                  [style.gap]="isMobile() ? null : '0 1rem'"
+                  [style.height.px]="isMobile() ? mobileGridHeight('financials') : null"
                   #financialsWidgetGrid
                 >
                   @for (widgetId of financialsWidgets; track widgetId) {
                     <div
-                      class="relative"
-                      [class.overflow-hidden]="isMobile()"
+                      [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
                       [attr.data-widget-id]="widgetId"
-                      [style.grid-column]="isMobile() ? '1 / -1' : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
-                      [style.grid-row]="(widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
+                      [style.grid-column]="isMobile() ? null : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
+                      [style.grid-row]="isMobile() ? null : (widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
+                      [style.top.px]="isMobile() ? widgetTops()[widgetId] : null"
+                      [style.height.px]="isMobile() ? widgetHeights()[widgetId] : null"
                     >
                       <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 
@@ -2284,6 +2290,8 @@ export class HomeComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     const startMobile = window.innerWidth < 768;
+    this.isMobile.set(startMobile);
+
     if (startMobile) {
       this.restoreDesktopLayout();
       this._savedDesktopTops = { ...this.widgetTops() };
@@ -2367,8 +2375,6 @@ export class HomeComponent implements AfterViewInit {
         }
       }
     }, { passive: false });
-
-    this.isMobile.set(startMobile);
 
     this.attachHamburgerListener();
     this.reorderNavbarEnd();
@@ -2916,6 +2922,17 @@ export class HomeComponent implements AfterViewInit {
   private readonly gridContainerRef = viewChild<ElementRef>('widgetGrid');
   private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');
   private readonly financialsGridContainerRef = viewChild<ElementRef>('financialsWidgetGrid');
+
+  mobileGridHeight(grid: GridPage): number {
+    const widgets = this.getGridWidgets(grid);
+    const tops = this.widgetTops();
+    const heights = this.widgetHeights();
+    let max = 0;
+    for (const id of widgets) {
+      max = Math.max(max, tops[id] + heights[id]);
+    }
+    return max;
+  }
 
   private getGridWidgets(grid: GridPage): DashboardWidgetId[] {
     switch (grid) {
