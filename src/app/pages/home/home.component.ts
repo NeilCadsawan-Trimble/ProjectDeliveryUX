@@ -15,6 +15,7 @@ import { ModusNavbarComponent, type INavbarUserCard } from '../../components/mod
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { ModusIconComponent } from '../../components/modus-icon.component';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { ThemeService } from '../../services/theme.service';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
@@ -115,6 +116,7 @@ interface AiMessage {
     '(document:touchmove)': 'onDocumentTouchMove($event)',
     '(document:touchend)': 'onDocumentTouchEnd()',
     '(document:keydown.escape)': 'onEscapeKey()',
+    '(document:click)': 'onDocumentClick($event)',
   },
   template: `
     <svg aria-hidden="true" class="svg-defs-hidden">
@@ -137,95 +139,78 @@ interface AiMessage {
       <modus-navbar
         [userCard]="userCard"
         [visibility]="navbarVisibility()"
+        [condensed]="isMobile()"
         [searchInputOpen]="searchInputOpen()"
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
+        (aiClick)="toggleAiPanel()"
       >
         <div slot="start" class="flex items-center gap-3">
           <div class="w-px h-5 bg-foreground-20"></div>
           <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">Project Delivery</div>
         </div>
-        <div slot="end" class="flex items-center gap-2">
-          @if (!isMobile()) {
-            <!-- AI Assistant toggle (desktop) -->
-            <div
-              class="{{ aiNavButtonClass() }}"
-              (click)="toggleAiPanel()"
-              [title]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
-              role="button"
-              [attr.aria-label]="aiPanelOpen() ? 'Close AI Assistant' : 'Open Trimble AI Assistant'"
-              [attr.aria-expanded]="aiPanelOpen()"
-            >
-              <svg class="ai-icon-nav" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg">
-                @if (aiPanelOpen() || isDark()) {
-                  <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
-                  <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-grad-dark)" transform="translate(-256, 0)"/>
-                } @else {
-                  <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                  <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
-                  <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                  <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
-                }
-              </svg>
-              @if (aiMessages().length > 0 && !aiPanelOpen()) {
-                <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary border-2 border-background"></div>
-              }
-            </div>
-            <!-- Dark mode toggle (desktop) -->
-            <div
-              class="navbar-icon-btn"
-              (click)="toggleDarkMode()"
-              (keydown.enter)="toggleDarkMode()"
-              (keydown.space)="$event.preventDefault(); toggleDarkMode()"
-              [title]="isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-              role="button"
-              tabindex="0"
-              [attr.aria-label]="isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-            >
-              <i class="modus-icons text-xl" aria-hidden="true">{{ isDark() ? 'brightness' : 'moon' }}</i>
-            </div>
-          }
+        <div slot="end" class="flex items-center gap-1">
+          <!-- Desktop: dark mode toggle -->
+          <div
+            class="hidden md:flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+            role="button"
+            [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+            (click)="toggleDarkMode()"
+            (keydown.enter)="toggleDarkMode()"
+            tabindex="0"
+          >
+            <i class="modus-icons text-xl" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+          </div>
+          <!-- Mobile: more menu with dark mode + other actions -->
           @if (isMobile()) {
-            <!-- More menu button (mobile only) -->
             <div class="relative">
               <div
                 class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                (click)="toggleMoreMenu()"
                 role="button"
                 aria-label="More options"
                 [attr.aria-expanded]="moreMenuOpen()"
+                (click)="toggleMoreMenu()"
+                (keydown.enter)="toggleMoreMenu()"
+                tabindex="0"
               >
                 <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
               </div>
               @if (moreMenuOpen()) {
-                <div class="navbar-more-dropdown" role="menu" (keydown.escape)="closeMoreMenu()">
-                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('search')" (keydown.enter)="moreMenuAction('search')">
-                    <i class="modus-icons text-lg" aria-hidden="true">search</i>
-                    <div>Search</div>
+                <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="moreMenuAction('search')"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">search</i>
+                    <div class="text-sm">Search</div>
                   </div>
-                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('notifications')" (keydown.enter)="moreMenuAction('notifications')">
-                    <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
-                    <div>Notifications</div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="moreMenuAction('notifications')"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">notifications</i>
+                    <div class="text-sm">Notifications</div>
                   </div>
-                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('help')" (keydown.enter)="moreMenuAction('help')">
-                    <i class="modus-icons text-lg" aria-hidden="true">help</i>
-                    <div>Help</div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="moreMenuAction('help')"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">help</i>
+                    <div class="text-sm">Help</div>
                   </div>
-                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('ai')" (keydown.enter)="moreMenuAction('ai')">
-                    <svg class="ai-icon-menu" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                      <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
-                      <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                      <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
-                    </svg>
-                    <div>AI Assistant</div>
-                  </div>
-                  <div class="navbar-more-item" role="menuitem" tabindex="0" (click)="moreMenuAction('darkmode')" (keydown.enter)="moreMenuAction('darkmode')">
-                    <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'brightness' : 'moon' }}</i>
-                    <div>{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
+                  <div class="border-bottom-default mx-3 my-1"></div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="moreMenuAction('darkMode')"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+                    <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
                   </div>
                 </div>
-                <div class="navbar-more-backdrop" role="button" tabindex="-1" aria-label="Close menu" (click)="closeMoreMenu()"></div>
               }
             </div>
           }
@@ -679,7 +664,7 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                @if (isMobile() && rfiMobileExpanded()) {
+                                @if (isRfiCompact() && rfiMobileExpanded()) {
                                   <div
                                     class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
                                     role="button" tabindex="0" aria-label="Back to RFI summary"
@@ -704,7 +689,7 @@ interface AiMessage {
                               </div>
                             </div>
 
-                            @if (isMobile() && !rfiMobileExpanded()) {
+                            @if (isRfiCompact() && !rfiMobileExpanded()) {
                               <!-- Mobile compact KPI list -->
                               <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
                                 <div
@@ -791,7 +776,8 @@ interface AiMessage {
                             } @else {
                               <!-- Desktop / Mobile-expanded: filter pills + table -->
 
-                              <!-- KPI filter pills -->
+                              @if (!isRfiCompact()) {
+                              <!-- KPI filter pills (hidden in compact mode) -->
                               <div
                                 class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
                                 role="radiogroup" aria-label="Filter RFIs by status"
@@ -868,6 +854,7 @@ interface AiMessage {
                                   >{{ rfiCounts().closed }}</div>
                                 </div>
                               </div>
+                              }
 
                               <!-- Table header -->
                               <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
@@ -933,7 +920,7 @@ interface AiMessage {
                               (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                             >
                               <div class="flex items-center gap-2">
-                                @if (isMobile() && submittalMobileExpanded()) {
+                                @if (isSubmittalCompact() && submittalMobileExpanded()) {
                                   <div
                                     class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
                                     role="button" tabindex="0" aria-label="Back to Submittal summary"
@@ -958,7 +945,7 @@ interface AiMessage {
                               </div>
                             </div>
 
-                            @if (isMobile() && !submittalMobileExpanded()) {
+                            @if (isSubmittalCompact() && !submittalMobileExpanded()) {
                               <!-- Mobile compact KPI list -->
                               <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
                                 <div
@@ -1045,7 +1032,8 @@ interface AiMessage {
                             } @else {
                               <!-- Desktop / Mobile-expanded: filter pills + table -->
 
-                              <!-- KPI filter pills -->
+                              @if (!isSubmittalCompact()) {
+                              <!-- KPI filter pills (hidden in compact mode) -->
                               <div
                                 class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
                                 role="radiogroup" aria-label="Filter Submittals by status"
@@ -1142,6 +1130,7 @@ interface AiMessage {
                                   >{{ submittalCounts().closed }}</div>
                                 </div>
                               </div>
+                              }
 
                               <!-- Table header -->
                               <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
@@ -2068,44 +2057,21 @@ export class HomeComponent implements AfterViewInit {
   };
 
   readonly searchInputOpen = signal(false);
-  readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
   // ── Navbar visibility (responsive) ──
-  readonly moreMenuOpen = signal(false);
-
   readonly navbarVisibility = computed(() => {
-    if (this.isMobile()) {
-      return { user: true, mainMenu: true, notifications: false, apps: false, help: false, search: false, searchInput: false };
-    }
-    return { user: true, mainMenu: true, notifications: true, apps: false, help: true, search: true, searchInput: true };
+    const mobile = this.isMobile();
+    return {
+      user: true,
+      mainMenu: true,
+      ai: true,
+      notifications: !mobile,
+      apps: false,
+      help: !mobile,
+      search: !mobile,
+      searchInput: !mobile,
+    };
   });
-
-  toggleMoreMenu(): void {
-    this.moreMenuOpen.update(v => !v);
-  }
-
-  closeMoreMenu(): void {
-    this.moreMenuOpen.set(false);
-  }
-
-  moreMenuAction(action: string): void {
-    this.moreMenuOpen.set(false);
-    switch (action) {
-      case 'search':
-        this.searchInputOpen.set(!this.searchInputOpen());
-        break;
-      case 'notifications':
-        break;
-      case 'help':
-        break;
-      case 'ai':
-        this.toggleAiPanel();
-        break;
-      case 'darkmode':
-        this.toggleDarkMode();
-        break;
-    }
-  }
 
   // ── Side Navigation ──
   readonly navExpanded = signal(false);
@@ -2118,6 +2084,29 @@ export class HomeComponent implements AfterViewInit {
     { value: 'financials', label: 'Financials', icon: 'bar_graph' },
   ];
 
+
+  // ── Mobile More Menu ──
+  readonly moreMenuOpen = signal(false);
+
+  toggleMoreMenu(): void {
+    this.moreMenuOpen.update(v => !v);
+  }
+
+  moreMenuAction(action: string): void {
+    this.moreMenuOpen.set(false);
+    switch (action) {
+      case 'search':
+        this.searchInputOpen.set(!this.searchInputOpen());
+        break;
+      case 'notifications':
+        break;
+      case 'help':
+        break;
+      case 'darkMode':
+        this.toggleDarkMode();
+        break;
+    }
+  }
 
   // ── AI Assistant ──
   readonly aiPanelOpen = signal(false);
@@ -2135,6 +2124,12 @@ export class HomeComponent implements AfterViewInit {
 
   toggleAiPanel(): void {
     this.aiPanelOpen.update(v => !v);
+  }
+
+  readonly isDark = computed(() => this.themeService.mode() === 'dark');
+
+  toggleDarkMode(): void {
+    this.themeService.toggleMode();
   }
 
   selectAiSuggestion(suggestion: string): void {
@@ -2213,17 +2208,6 @@ export class HomeComponent implements AfterViewInit {
     return `I can help with project status, estimates, budgets, and team insights. Try asking "Which projects are at risk?" or "Summarize project status".`;
   }
 
-  aiNavButtonClass(): string {
-    const base = 'relative navbar-icon-btn';
-    return this.aiPanelOpen()
-      ? `${base} navbar-icon-btn-active`
-      : base;
-  }
-
-  toggleDarkMode(): void {
-    this.themeService.toggleMode();
-  }
-
   focusMain(): void {
     const mainEl = document.getElementById('main-content');
     if (mainEl) {
@@ -2233,11 +2217,19 @@ export class HomeComponent implements AfterViewInit {
   }
 
   onEscapeKey(): void {
-    if (this.aiPanelOpen()) {
+    if (this.moreMenuOpen()) {
+      this.moreMenuOpen.set(false);
+    } else if (this.aiPanelOpen()) {
       this.aiPanelOpen.set(false);
     } else if (this.navExpanded()) {
       this.navExpanded.set(false);
-    } else if (this.moreMenuOpen()) {
+    }
+  }
+
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.moreMenuOpen()) return;
+    const target = event.target as HTMLElement;
+    if (!target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);
     }
   }
@@ -2363,6 +2355,30 @@ export class HomeComponent implements AfterViewInit {
     this.isMobile.set(startMobile);
 
     this.attachHamburgerListener();
+    this.reorderNavbarEnd();
+  }
+
+  private reorderNavbarEnd(): void {
+    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
+    if (!navbarWc) return;
+    const tryReorder = () => {
+      const shadow = navbarWc.shadowRoot;
+      if (!shadow) { requestAnimationFrame(tryReorder); return; }
+      const endDiv = shadow.querySelector('div[slot="end"]') as HTMLElement | null;
+      if (!endDiv) { requestAnimationFrame(tryReorder); return; }
+      const endSlot = endDiv.querySelector(':scope > slot[name="end"]') as HTMLElement | null;
+      if (endSlot) endSlot.style.order = '1';
+      for (const child of Array.from(endDiv.children)) {
+        const el = child as HTMLElement;
+        const label = el.getAttribute('aria-label') || '';
+        if (label === 'User profile') {
+          el.style.order = '2';
+        }
+      }
+      const userMenu = endDiv.querySelector(':scope > div.user') as HTMLElement | null;
+      if (userMenu) userMenu.style.order = '2';
+    };
+    requestAnimationFrame(tryReorder);
   }
 
   private attachHamburgerListener(): void {
@@ -2687,6 +2703,7 @@ export class HomeComponent implements AfterViewInit {
 
   readonly rfiActiveFilter = signal<RfiStatus | 'all'>('all');
   readonly rfiMobileExpanded = signal(false);
+  readonly isRfiCompact = computed(() => this.isMobile() || this.widgetColSpans()['homeRfis'] <= 5);
 
   expandRfiMobile(filter: RfiStatus | 'all'): void {
     this.rfiActiveFilter.set(filter);
@@ -2747,6 +2764,7 @@ export class HomeComponent implements AfterViewInit {
 
   readonly submittalActiveFilter = signal<SubmittalStatus | 'all'>('all');
   readonly submittalMobileExpanded = signal(false);
+  readonly isSubmittalCompact = computed(() => this.isMobile() || this.widgetColSpans()['homeSubmittals'] <= 5);
 
   expandSubmittalMobile(filter: SubmittalStatus | 'all'): void {
     this.submittalActiveFilter.set(filter);
