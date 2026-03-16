@@ -73,6 +73,8 @@ interface Project {
   budgetPct: number;
   budgetUsed: string;
   budgetTotal: string;
+  latestDrawingName: string;
+  latestDrawingVersion: string;
 }
 
 interface Estimate {
@@ -1211,61 +1213,6 @@ interface AiMessage {
               </div>
             </div>
 
-            <!-- KPI cards -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-
-              <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-                <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Active Projects</div>
-                  <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center">
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">briefcase</i>
-                  </div>
-                </div>
-                <div class="text-4xl font-bold text-foreground">{{ totalProjects() }}</div>
-                <div class="flex items-center gap-1.5">
-                  <div class="text-xs text-success font-medium">{{ onTrackCount() }} on track</div>
-                  <div class="text-xs text-foreground-40">·</div>
-                  <div class="text-xs text-warning font-medium">{{ atRiskCount() }} at risk</div>
-                </div>
-              </div>
-
-              <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-                <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">On Schedule</div>
-                  <div class="w-9 h-9 rounded-lg bg-success-20 flex items-center justify-center">
-                    <i class="modus-icons text-lg text-success" aria-hidden="true">check_circle</i>
-                  </div>
-                </div>
-                <div class="text-4xl font-bold text-success">{{ onSchedulePct() }}%</div>
-                <div class="text-xs text-foreground-60">{{ onTrackCount() }} of {{ totalProjects() }} projects</div>
-              </div>
-
-              <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-                <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Open Estimates</div>
-                  <div class="w-9 h-9 rounded-lg bg-warning-20 flex items-center justify-center">
-                    <i class="modus-icons text-lg text-warning" aria-hidden="true">description</i>
-                  </div>
-                </div>
-                <div class="text-4xl font-bold text-foreground">{{ openEstimatesCount() }}</div>
-                <div class="flex items-center gap-1.5">
-                  <div class="text-xs text-warning font-medium">{{ awaitingApprovalCount() }} awaiting approval</div>
-                </div>
-              </div>
-
-              <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-                <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Estimate Pipeline</div>
-                  <div class="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
-                    <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payment_instant</i>
-                  </div>
-                </div>
-                <div class="text-4xl font-bold text-foreground">{{ totalEstimateValue() }}</div>
-                <div class="text-xs text-foreground-60">Total open estimate value</div>
-              </div>
-
-            </div>
-
             <!-- Widget area: 16-column grid layout -->
             <div
               [class]="isMobile() ? 'relative mb-6' : 'grid mb-6'"
@@ -1290,7 +1237,7 @@ interface AiMessage {
 
                 @if (widgetId === 'projects') {
               <!-- ─── Projects Widget ─── -->
-              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
                 <!-- Draggable header (sticky) -->
                 <div
                   class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
@@ -1318,7 +1265,7 @@ interface AiMessage {
                     </div>
                   </div>
                 </div>
-                <!-- Card grid (scrollable) -->
+                <!-- Card grid -->
                 <div class="p-4 overflow-y-auto flex-1 min-h-0">
                   <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
                     @for (project of projects(); track project.id) {
@@ -1373,9 +1320,36 @@ interface AiMessage {
                             <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
                             <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
                           </div>
+                          <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
+                            <i class="modus-icons text-sm text-primary" aria-hidden="true">draft</i>
+                            <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project.id); $event.stopPropagation()">
+                              {{ project.latestDrawingName }}
+                            </div>
+                            <div class="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</div>
+                          </div>
                         </div>
                       </div>
                     }
+                  </div>
+                </div>
+                <!-- Corner resize handle (width + height) -->
+                <div
+                  class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group"
+                  [class.cursor-nwse-resize]="!isMobile()"
+                  [class.cursor-ns-resize]="isMobile()"
+                  (mousedown)="startWidgetResize('projects', 'both', $event)"
+                  (touchstart)="startWidgetResizeTouch('projects', 'both', $event)"
+                  title="Drag to resize"
+                >
+                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none">
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
+                    <div class="flex gap-0.5">
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                      <div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2628,14 +2602,14 @@ export class HomeComponent implements AfterViewInit {
 
   // ── Projects data ──
   readonly projects = signal<Project[]>([
-    { id: 1, name: 'Cloud Infrastructure Migration', client: 'Trimble Internal', ownerInitials: 'SC', owner: 'Sarah Chen', status: 'On Track', dueDate: 'Mar 15, 2026', progress: 72, budgetPct: 68, budgetUsed: '$544K', budgetTotal: '$800K' },
-    { id: 2, name: 'Mobile App Redesign', client: 'Apex Corp', ownerInitials: 'JC', owner: 'James Carter', status: 'At Risk', dueDate: 'Mar 28, 2026', progress: 45, budgetPct: 82, budgetUsed: '$246K', budgetTotal: '$300K' },
-    { id: 3, name: 'ERP System Upgrade', client: 'GlobalTech Ltd', ownerInitials: 'PN', owner: 'Priya Nair', status: 'Overdue', dueDate: 'Feb 20, 2026', progress: 60, budgetPct: 95, budgetUsed: '$855K', budgetTotal: '$900K' },
-    { id: 4, name: 'Data Analytics Platform', client: 'NexGen Analytics', ownerInitials: 'TE', owner: 'Tom Evans', status: 'On Track', dueDate: 'Apr 10, 2026', progress: 35, budgetPct: 30, budgetUsed: '$150K', budgetTotal: '$500K' },
-    { id: 5, name: 'Customer Portal v3', client: 'Brightline Co', ownerInitials: 'LB', owner: 'Lena Brooks', status: 'Planning', dueDate: 'Apr 30, 2026', progress: 12, budgetPct: 8, budgetUsed: '$24K', budgetTotal: '$350K' },
-    { id: 6, name: 'Security & Compliance Audit', client: 'Trimble Internal', ownerInitials: 'MO', owner: 'Mike Osei', status: 'On Track', dueDate: 'Mar 5, 2026', progress: 88, budgetPct: 72, budgetUsed: '$108K', budgetTotal: '$150K' },
-    { id: 7, name: 'API Gateway Modernization', client: 'CoreSystems Inc', ownerInitials: 'SC', owner: 'Sarah Chen', status: 'Overdue', dueDate: 'Feb 14, 2026', progress: 30, budgetPct: 55, budgetUsed: '$110K', budgetTotal: '$200K' },
-    { id: 8, name: 'ML Model Deployment Pipeline', client: 'DataDrive AI', ownerInitials: 'PN', owner: 'Priya Nair', status: 'On Track', dueDate: 'May 20, 2026', progress: 20, budgetPct: 18, budgetUsed: '$90K', budgetTotal: '$500K' },
+    { id: 1, name: 'Cloud Infrastructure Migration', client: 'Trimble Internal', ownerInitials: 'SC', owner: 'Sarah Chen', status: 'On Track', dueDate: 'Mar 15, 2026', progress: 72, budgetPct: 68, budgetUsed: '$544K', budgetTotal: '$800K', latestDrawingName: 'Server Room - Floor 3 Layout', latestDrawingVersion: 'v3.2' },
+    { id: 2, name: 'Mobile App Redesign', client: 'Apex Corp', ownerInitials: 'JC', owner: 'James Carter', status: 'At Risk', dueDate: 'Mar 28, 2026', progress: 45, budgetPct: 82, budgetUsed: '$246K', budgetTotal: '$300K', latestDrawingName: 'App Navigation Flow v2', latestDrawingVersion: 'v2.4' },
+    { id: 3, name: 'ERP System Upgrade', client: 'GlobalTech Ltd', ownerInitials: 'PN', owner: 'Priya Nair', status: 'Overdue', dueDate: 'Feb 20, 2026', progress: 60, budgetPct: 95, budgetUsed: '$855K', budgetTotal: '$900K', latestDrawingName: 'ERP Integration Architecture', latestDrawingVersion: 'v4.1' },
+    { id: 4, name: 'Data Analytics Platform', client: 'NexGen Analytics', ownerInitials: 'TE', owner: 'Tom Evans', status: 'On Track', dueDate: 'Apr 10, 2026', progress: 35, budgetPct: 30, budgetUsed: '$150K', budgetTotal: '$500K', latestDrawingName: 'Data Pipeline Architecture', latestDrawingVersion: 'v2.0' },
+    { id: 5, name: 'Customer Portal v3', client: 'Brightline Co', ownerInitials: 'LB', owner: 'Lena Brooks', status: 'Planning', dueDate: 'Apr 30, 2026', progress: 12, budgetPct: 8, budgetUsed: '$24K', budgetTotal: '$350K', latestDrawingName: 'Portal Sitemap & Wireframes', latestDrawingVersion: 'v1.2' },
+    { id: 6, name: 'Security & Compliance Audit', client: 'Trimble Internal', ownerInitials: 'MO', owner: 'Mike Osei', status: 'On Track', dueDate: 'Mar 5, 2026', progress: 88, budgetPct: 72, budgetUsed: '$108K', budgetTotal: '$150K', latestDrawingName: 'Network Security Topology', latestDrawingVersion: 'v2.3' },
+    { id: 7, name: 'API Gateway Modernization', client: 'CoreSystems Inc', ownerInitials: 'SC', owner: 'Sarah Chen', status: 'Overdue', dueDate: 'Feb 14, 2026', progress: 30, budgetPct: 55, budgetUsed: '$110K', budgetTotal: '$200K', latestDrawingName: 'API Gateway Architecture', latestDrawingVersion: 'v3.0' },
+    { id: 8, name: 'ML Model Deployment Pipeline', client: 'DataDrive AI', ownerInitials: 'PN', owner: 'Priya Nair', status: 'On Track', dueDate: 'May 20, 2026', progress: 20, budgetPct: 18, budgetUsed: '$90K', budgetTotal: '$500K', latestDrawingName: 'ML Pipeline Architecture', latestDrawingVersion: 'v1.5' },
   ]);
 
   readonly totalProjects = computed(() => this.projects().length);
@@ -2906,7 +2880,7 @@ export class HomeComponent implements AfterViewInit {
   /** Top position in pixels (row offset in the 1px-per-row grid). */
   readonly widgetTops = signal<Record<DashboardWidgetId, number>>({
     homeTimeOff: 0, homeCalendar: 0, homeRfis: 596, homeSubmittals: 1072,
-    projects: 0, openEstimates: 536, recentActivity: 1072, needsAttention: 1072,
+    projects: 0, openEstimates: 784, recentActivity: 1320, needsAttention: 1320,
     finBudgetByProject: 0,
     timeOff: 0,
   });
@@ -2914,7 +2888,7 @@ export class HomeComponent implements AfterViewInit {
   /** Total widget height in pixels (= grid row span). */
   readonly widgetHeights = signal<Record<DashboardWidgetId, number>>({
     homeTimeOff: 440, homeCalendar: 580, homeRfis: 460, homeSubmittals: 460,
-    projects: 520, openEstimates: 520, recentActivity: 420, needsAttention: 420,
+    projects: 768, openEstimates: 520, recentActivity: 420, needsAttention: 420,
     finBudgetByProject: 520,
     timeOff: 400,
   });
