@@ -13,7 +13,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
-import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 
 import { ThemeService } from '../../services/theme.service';
@@ -44,7 +43,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusButtonComponent, ModusUtilityPanelComponent],
+  imports: [TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block h-screen overflow-hidden',
@@ -137,14 +136,14 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         <div slot="end" class="flex items-center gap-1">
           <!-- Desktop: dark mode toggle -->
           <div
-            class="hidden md:flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+            class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
             role="button"
             [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
             (click)="toggleDarkMode()"
             (keydown.enter)="toggleDarkMode()"
             tabindex="0"
           >
-            <i class="modus-icons text-xl" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+            <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
           </div>
           <!-- Mobile: more menu with dark mode + other actions -->
           @if (isMobile()) {
