@@ -3093,7 +3093,8 @@ export class HomeComponent implements AfterViewInit {
       const gridWidgets = this.getGridWidgets(this._activeGrid);
 
       if (this._resizeDir === 'v' || this._resizeDir === 'both') {
-        const newH = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
+        const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
+        const newH = Math.round(raw / 16) * 16;
         this.widgetHeights.update(h => ({ ...h, [id]: newH }));
         this.resolveCollisions(id, gridWidgets);
       }
