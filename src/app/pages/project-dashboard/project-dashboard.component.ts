@@ -14,6 +14,10 @@ import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modu
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
+import { ModusSideNavigationComponent } from '../../components/modus-side-navigation.component';
+import { ModusMenuComponent } from '../../components/modus-menu.component';
+import { ModusMenuItemComponent } from '../../components/modus-menu-item.component';
+import { ModusIconComponent } from '../../components/modus-icon.component';
 
 import { ThemeService } from '../../services/theme.service';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
@@ -43,7 +47,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent],
+  imports: [TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, ModusSideNavigationComponent, ModusMenuComponent, ModusMenuItemComponent, ModusIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block h-screen overflow-hidden',
@@ -69,7 +73,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         </radialGradient>
       </defs>
     </svg>
-    <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
+    <div class="layout-with-navbar h-full bg-background text-foreground overflow-hidden">
       <!-- Navbar -->
       <modus-navbar
         [userCard]="userCard"
@@ -201,8 +205,31 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         </div>
       </modus-navbar>
 
-      <!-- Main Content -->
-      <div class="flex-1 overflow-y-auto p-4 md:p-6">
+      <!-- Main Content Row with Side Navigation -->
+      <div class="main-content-row flex flex-1 overflow-hidden">
+        <modus-side-navigation
+          [expanded]="false"
+          [collapseOnClickOutside]="true"
+          [maxWidth]="'256px'"
+          mode="push"
+          [targetContent]="'#project-panel-content'"
+          class="side-navigation h-full"
+        >
+          <modus-menu size="lg">
+            @for (item of sideNavItems; track item.value) {
+              <modus-menu-item
+                [label]="item.label"
+                [value]="item.value"
+                [selected]="activeNavItem() === item.value"
+                (click)="selectNavItem(item.value)"
+              >
+                <modus-icon slot="start-icon" [name]="item.icon" [decorative]="true"></modus-icon>
+              </modus-menu-item>
+            }
+          </modus-menu>
+        </modus-side-navigation>
+
+        <div id="project-panel-content" class="panel-content flex-1 overflow-y-auto !p-4 md:!p-6">
         <!-- Overview Row -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           @for (stat of summaryStats(); track stat.label) {
@@ -513,6 +540,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
           }
         </div>
       </div>
+      </div>
     </div>
 
     <!-- AI Assistant Panel -->
@@ -674,6 +702,18 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   readonly isMobile = signal(false);
   readonly searchInputOpen = signal(false);
+  readonly activeNavItem = signal<string>('dashboard');
+
+  readonly sideNavItems = [
+    { value: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { value: 'milestones', label: 'Milestones', icon: 'flag' },
+    { value: 'tasks', label: 'Tasks', icon: 'clipboard' },
+    { value: 'risks', label: 'Risks', icon: 'warning' },
+    { value: 'drawing', label: 'Drawings', icon: 'floorplan' },
+    { value: 'budget', label: 'Budget', icon: 'bar_graph' },
+    { value: 'team', label: 'Team', icon: 'people_group' },
+    { value: 'activity', label: 'Activity', icon: 'history' },
+  ];
 
   // Widget grid system
   private static readonly GAP_PX = 16;
@@ -730,7 +770,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
     const mobile = this.isMobile();
     return {
       user: true,
-      mainMenu: false,
+      mainMenu: true,
       ai: true,
       notifications: !mobile,
       apps: false,
@@ -900,6 +940,26 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
     this.fixNavbarLayout();
     this.reorderNavbarEnd();
+    this.setupSideNavIntegration();
+  }
+
+  private setupSideNavIntegration(): void {
+    const container = this.elementRef.nativeElement.querySelector('.layout-with-navbar');
+    if (!container) return;
+
+    container.addEventListener('mainMenuOpenChange', (event: CustomEvent<boolean>) => {
+      const sideNav = container.querySelector('modus-wc-side-navigation');
+      if (sideNav) {
+        sideNav.expanded = event.detail;
+      }
+    });
+
+    const sideNav = container.querySelector('modus-wc-side-navigation');
+    if (sideNav) {
+      sideNav.addEventListener('expandedChange', (event: CustomEvent<boolean>) => {
+        // Sync state if needed
+      });
+    }
   }
 
   private fixNavbarLayout(): void {
@@ -951,6 +1011,19 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   navigateToProjects(): void {
     this.router.navigate(['/'], { queryParams: { tab: 'projects' } });
+  }
+
+  selectNavItem(value: string): void {
+    this.activeNavItem.set(value);
+    if (value === 'dashboard') {
+      const panelContent = document.getElementById('project-panel-content');
+      if (panelContent) panelContent.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const widgetEl = this.elementRef.nativeElement.querySelector(`[data-widget-id="${value}"]`);
+    if (widgetEl) {
+      widgetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   // Widget grid drag & resize
