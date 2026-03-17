@@ -1273,7 +1273,7 @@ interface AiMessage {
 
                 @if (widgetId === 'projects') {
               <!-- ─── Projects Widget ─── -->
-              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+              <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full" #projectsContainer>
                 <!-- Draggable header (sticky) -->
                 <div
                   class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
@@ -1303,7 +1303,7 @@ interface AiMessage {
                 </div>
                 <!-- Card grid -->
                 <div class="p-4 overflow-y-auto flex-1 min-h-0">
-                  <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
+                  <div class="grid gap-3" [class]="projectsGridCols()">
                     @for (project of projects(); track project.id) {
                       <div
                         class="bg-background border-default rounded-lg overflow-hidden flex flex-col cursor-pointer hover:bg-muted transition-colors duration-150"
@@ -2285,6 +2285,36 @@ export class HomeComponent implements AfterViewInit {
     });
     ro.observe(el);
     this._estimatesResizeObserver = ro;
+  });
+
+  // ── Projects widget responsive grid ──
+  private readonly projectsContainerRef = viewChild<ElementRef>('projectsContainer');
+  readonly projectsContainerWidth = signal<number>(0);
+  private _projectsResizeObserver: ResizeObserver | null = null;
+
+  readonly projectsGridCols = computed(() => {
+    const w = this.projectsContainerWidth();
+    if (w > 0 && w <= 400) return 'grid-cols-1';
+    if (w > 0 && w <= 640) return 'grid-cols-2';
+    if (w > 0 && w <= 960) return 'grid-cols-3';
+    return 'grid-cols-4';
+  });
+
+  private readonly _projectsResizeEffect = effect(() => {
+    const el = this.projectsContainerRef()?.nativeElement as HTMLElement | undefined;
+    this._projectsResizeObserver?.disconnect();
+    this._projectsResizeObserver = null;
+    if (!el) {
+      this.projectsContainerWidth.set(0);
+      return;
+    }
+    this.projectsContainerWidth.set(el.offsetWidth);
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width ?? el.offsetWidth;
+      this.projectsContainerWidth.set(w);
+    });
+    ro.observe(el);
+    this._projectsResizeObserver = ro;
   });
 
   setActiveNav(page: 'home' | 'projects' | 'financials' | 'settings'): void {
