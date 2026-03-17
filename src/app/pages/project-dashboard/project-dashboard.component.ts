@@ -70,6 +70,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         </radialGradient>
       </defs>
     </svg>
+    <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
     <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
       <!-- Navbar -->
       <modus-navbar
@@ -79,7 +80,6 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         [searchInputOpen]="searchInputOpen()"
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
-        (aiClick)="toggleAiPanel()"
         (trimbleLogoClick)="navigateToProjects()"
       >
         <div slot="start" class="flex items-center gap-3 w-full min-w-0">
@@ -135,6 +135,43 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
           </div>
         </div>
         <div slot="end" class="flex items-center gap-1">
+          <!-- AI assistant button -->
+          <div
+            class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+            role="button"
+            aria-label="AI assistant"
+            (click)="toggleAiPanel()"
+            (keydown.enter)="toggleAiPanel()"
+            tabindex="0"
+          >
+            @if (isDark()) {
+              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="ai-nav-grad-dark" cx="18%" cy="18%" r="70%">
+                    <stop offset="0%" stop-color="#FF00FF" />
+                    <stop offset="50%" stop-color="#9933FF" />
+                    <stop offset="100%" stop-color="#0066CC" />
+                  </radialGradient>
+                </defs>
+                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
+                <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-nav-grad-dark)" transform="translate(-256, 0)"/>
+              </svg>
+            } @else {
+              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="ai-nav-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="20%" stop-color="#FF00FF" />
+                    <stop offset="60%" stop-color="#0066CC" />
+                    <stop offset="100%" stop-color="#0066CC" />
+                  </linearGradient>
+                </defs>
+                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
+                <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
+                <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
+                <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-nav-grad-light)"/>
+              </svg>
+            }
+          </div>
           <!-- Desktop: dark mode toggle -->
           <div
             class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
@@ -206,7 +243,9 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
-        <div class="flex-1 overflow-y-auto bg-background md:pl-14 p-4 md:p-6">
+        <!-- Main content -->
+        <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+          <div class="p-4 md:p-6">
         <!-- Overview Row -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           @for (stat of summaryStats(); track stat.label) {
@@ -515,6 +554,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
               </div>
             </div>
           }
+          </div>
         </div>
       </div>
 
@@ -789,7 +829,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
     return {
       user: true,
       mainMenu: true,
-      ai: true,
+      ai: false,
       notifications: !mobile,
       apps: false,
       help: !mobile,
@@ -1030,6 +1070,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
     requestAnimationFrame(tryReorder);
   }
 
+  focusMain(): void {
+    const main = document.getElementById('main-content');
+    if (main) main.focus();
+  }
+
   navigateToProjects(): void {
     this.router.navigate(['/'], { queryParams: { tab: 'projects' } });
   }
@@ -1038,7 +1083,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this.activeNavItem.set(value);
     this.navExpanded.set(false);
     if (value === 'dashboard') {
-      const contentEl = this.elementRef.nativeElement.querySelector('.flex-1.overflow-y-auto');
+      const contentEl = document.getElementById('main-content');
       if (contentEl) contentEl.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
