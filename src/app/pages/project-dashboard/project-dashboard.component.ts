@@ -4,6 +4,7 @@ import {
   Component,
   ElementRef,
   computed,
+  effect,
   inject,
   signal,
   viewChild,
@@ -14,10 +15,6 @@ import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modu
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
-import { ModusSideNavigationComponent } from '../../components/modus-side-navigation.component';
-import { ModusMenuComponent } from '../../components/modus-menu.component';
-import { ModusMenuItemComponent } from '../../components/modus-menu-item.component';
-import { ModusIconComponent } from '../../components/modus-icon.component';
 
 import { ThemeService } from '../../services/theme.service';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
@@ -47,7 +44,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, ModusSideNavigationComponent, ModusMenuComponent, ModusMenuItemComponent, ModusIconComponent],
+  imports: [TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block h-screen overflow-hidden',
@@ -73,7 +70,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         </radialGradient>
       </defs>
     </svg>
-    <div class="layout-with-navbar h-full bg-background text-foreground overflow-hidden">
+    <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
       <!-- Navbar -->
       <modus-navbar
         [userCard]="userCard"
@@ -205,31 +202,11 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         </div>
       </modus-navbar>
 
-      <!-- Main Content Row with Side Navigation -->
-      <div class="main-content-row flex flex-1 overflow-hidden">
-        <modus-side-navigation
-          [expanded]="false"
-          [collapseOnClickOutside]="true"
-          [maxWidth]="'256px'"
-          mode="push"
-          [targetContent]="'#project-panel-content'"
-          class="side-navigation h-full"
-        >
-          <modus-menu size="lg">
-            @for (item of sideNavItems; track item.value) {
-              <modus-menu-item
-                [label]="item.label"
-                [value]="item.value"
-                [selected]="activeNavItem() === item.value"
-                (click)="selectNavItem(item.value)"
-              >
-                <modus-icon slot="start-icon" [name]="item.icon" [decorative]="true"></modus-icon>
-              </modus-menu-item>
-            }
-          </modus-menu>
-        </modus-side-navigation>
+      <div class="navbar-shadow"></div>
 
-        <div id="project-panel-content" class="panel-content flex-1 overflow-y-auto !p-4 md:!p-6">
+      <!-- Body -->
+      <div class="flex flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto bg-background md:pl-14 p-4 md:p-6">
         <!-- Overview Row -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           @for (stat of summaryStats(); track stat.label) {
@@ -540,7 +517,33 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
           }
         </div>
       </div>
-      </div>
+
+      <!-- Custom Side Navigation -->
+      @if (!isMobile() || navExpanded()) {
+        <div class="custom-side-nav" [class.expanded]="navExpanded()">
+          <div class="flex flex-col flex-1 min-h-0">
+            @for (item of sideNavItems; track item.value) {
+              <div
+                class="custom-side-nav-item"
+                [class.selected]="activeNavItem() === item.value"
+                (click)="selectNavItem(item.value)"
+                [title]="item.label"
+                role="button"
+                [attr.aria-label]="item.label"
+              >
+                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                @if (navExpanded()) {
+                  <div class="custom-side-nav-label">{{ item.label }}</div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+      @if (navExpanded()) {
+        <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
+      }
+
     </div>
 
     <!-- AI Assistant Panel -->
@@ -699,9 +702,24 @@ export class ProjectDashboardComponent implements AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly elementRef = inject(ElementRef);
   private readonly layoutService = inject(WidgetLayoutService);
+  private hamburgerBtn: HTMLElement | null = null;
+
+  private readonly hamburgerEffect = effect(() => {
+    const expanded = this.navExpanded();
+    if (this.hamburgerBtn) {
+      if (expanded) {
+        this.hamburgerBtn.style.background = 'var(--primary)';
+        this.hamburgerBtn.style.color = 'var(--primary-foreground)';
+      } else {
+        this.hamburgerBtn.style.background = '';
+        this.hamburgerBtn.style.color = '';
+      }
+    }
+  });
 
   readonly isMobile = signal(false);
   readonly searchInputOpen = signal(false);
+  readonly navExpanded = signal(false);
   readonly activeNavItem = signal<string>('dashboard');
 
   readonly sideNavItems = [
@@ -920,6 +938,9 @@ export class ProjectDashboardComponent implements AfterViewInit {
           this.restoreDesktopLayout();
         }
       }
+      if (!e.matches) {
+        this.navExpanded.set(false);
+      }
     };
     mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
     window.addEventListener('resize', () => {
@@ -940,26 +961,26 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
     this.fixNavbarLayout();
     this.reorderNavbarEnd();
-    this.setupSideNavIntegration();
+    this.attachHamburgerListener();
   }
 
-  private setupSideNavIntegration(): void {
-    const container = this.elementRef.nativeElement.querySelector('.layout-with-navbar');
-    if (!container) return;
+  private attachHamburgerListener(): void {
+    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
+    if (!navbarWc) return;
 
-    container.addEventListener('mainMenuOpenChange', (event: CustomEvent<boolean>) => {
-      const sideNav = container.querySelector('modus-wc-side-navigation');
-      if (sideNav) {
-        sideNav.expanded = event.detail;
+    const tryAttach = () => {
+      const btn = navbarWc.querySelector('.navbar-menu-btn, [data-testid="main-menu-btn"], button[aria-label="Main menu"]');
+      if (btn) {
+        this.hamburgerBtn = btn as HTMLElement;
+        btn.addEventListener('click', (e: Event) => {
+          e.stopImmediatePropagation();
+          this.navExpanded.set(!this.navExpanded());
+        }, { capture: true });
+        return;
       }
-    });
-
-    const sideNav = container.querySelector('modus-wc-side-navigation');
-    if (sideNav) {
-      sideNav.addEventListener('expandedChange', (event: CustomEvent<boolean>) => {
-        // Sync state if needed
-      });
-    }
+      requestAnimationFrame(tryAttach);
+    };
+    tryAttach();
   }
 
   private fixNavbarLayout(): void {
@@ -1015,9 +1036,10 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   selectNavItem(value: string): void {
     this.activeNavItem.set(value);
+    this.navExpanded.set(false);
     if (value === 'dashboard') {
-      const panelContent = document.getElementById('project-panel-content');
-      if (panelContent) panelContent.scrollTo({ top: 0, behavior: 'smooth' });
+      const contentEl = this.elementRef.nativeElement.querySelector('.flex-1.overflow-y-auto');
+      if (contentEl) contentEl.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     const widgetEl = this.elementRef.nativeElement.querySelector(`[data-widget-id="${value}"]`);
@@ -1401,6 +1423,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
       this.moreMenuOpen.set(false);
     } else if (this.aiPanelOpen()) {
       this.aiPanelOpen.set(false);
+    } else if (this.navExpanded()) {
+      this.navExpanded.set(false);
     }
   }
 
