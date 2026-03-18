@@ -1076,7 +1076,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   navigateToProjects(): void {
-    this.router.navigate(['/'], { queryParams: { tab: 'projects' } });
+    this.router.navigate(['/projects']);
   }
 
   selectNavItem(value: string): void {

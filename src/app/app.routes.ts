@@ -21,8 +21,34 @@ export const routes: Routes = [
   // User routes - add your application routes here
   {
     path: '',
-    loadComponent: () => import('./pages/home/home.component').then((m) => m.HomeComponent),
-    title: 'Home',
+    loadComponent: () =>
+      import('./pages/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./pages/home-page/home-page.component').then((m) => m.HomePageComponent),
+        title: 'Home',
+      },
+      {
+        path: 'projects',
+        loadComponent: () =>
+          import('./pages/projects-page/projects-page.component').then(
+            (m) => m.ProjectsPageComponent,
+          ),
+        title: 'Projects',
+      },
+      {
+        path: 'financials',
+        loadComponent: () =>
+          import('./pages/financials-page/financials-page.component').then(
+            (m) => m.FinancialsPageComponent,
+          ),
+        title: 'Financials',
+      },
+    ],
   },
 
   {
