@@ -80,21 +80,24 @@ import {
       </div>
 
       <div
-        [class]="isMobile() ? 'relative' : 'grid'"
-        [style.grid-template-columns]="isMobile() ? null : 'repeat(16, minmax(0, 1fr))'"
-        [style.grid-auto-rows]="isMobile() ? null : '1px'"
-        [style.gap]="isMobile() ? null : '0 1rem'"
-        [style.height.px]="isMobile() ? mobileGridHeight('home') : null"
+        [class]="isCanvasMode() ? 'relative overflow-visible' : isMobile() ? 'relative' : 'grid'"
+        [style.grid-template-columns]="!isCanvasMode() && !isMobile() ? 'repeat(16, minmax(0, 1fr))' : null"
+        [style.grid-auto-rows]="!isCanvasMode() && !isMobile() ? '1px' : null"
+        [style.gap]="!isCanvasMode() && !isMobile() ? '0 1rem' : null"
+        [style.height.px]="!isCanvasMode() && isMobile() ? mobileGridHeight('home') : null"
+        [style.min-height.px]="isCanvasMode() ? canvasGridMinHeight() : null"
         #homeWidgetGrid
       >
         @for (widgetId of homeWidgets; track widgetId) {
           <div
-            [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
+            [class]="isCanvasMode() ? 'absolute overflow-hidden' : isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
             [attr.data-widget-id]="widgetId"
-            [style.grid-column]="isMobile() ? null : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
-            [style.grid-row]="isMobile() ? null : (widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
-            [style.top.px]="isMobile() ? widgetTops()[widgetId] : null"
-            [style.height.px]="isMobile() ? widgetHeights()[widgetId] : null"
+            [style.grid-column]="!isCanvasMode() && !isMobile() ? widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId] : null"
+            [style.grid-row]="!isCanvasMode() && !isMobile() ? (widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId] : null"
+            [style.top.px]="isCanvasMode() || isMobile() ? widgetTops()[widgetId] : null"
+            [style.left.px]="isCanvasMode() ? widgetLefts()[widgetId] : null"
+            [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : null"
+            [style.height.px]="isCanvasMode() || isMobile() ? widgetHeights()[widgetId] : null"
           >
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 
@@ -750,6 +753,7 @@ export class HomePageComponent implements AfterViewInit {
   private readonly layoutService = inject(WidgetLayoutService);
 
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  readonly isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
   readonly today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -785,9 +789,22 @@ export class HomePageComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     const startMobile = window.innerWidth < 768;
+    const startCanvas = window.innerWidth >= 2000;
     this.isMobile.set(startMobile);
+    this.isCanvasMode.set(startCanvas);
 
-    if (startMobile) {
+    if (startCanvas) {
+      this.restoreDesktopLayout();
+      this._savedDesktopForCanvas = {
+        tops: { ...this.widgetTops() },
+        heights: { ...this.widgetHeights() },
+        colStarts: { ...this.widgetColStarts() },
+        colSpans: { ...this.widgetColSpans() },
+      };
+      if (!this.restoreCanvasLayout()) {
+        this.applyCanvasDefaults();
+      }
+    } else if (startMobile) {
       this.restoreDesktopLayout();
       this._savedDesktopTops = { ...this.widgetTops() };
       this._savedDesktopColStarts = { ...this.widgetColStarts() };
@@ -806,10 +823,42 @@ export class HomePageComponent implements AfterViewInit {
     }
 
     const mq = window.matchMedia('(max-width: 767px)');
-    const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList) => {
+    const canvasQuery = window.matchMedia('(min-width: 2000px)');
+
+    const onBreakpointChange = () => {
+      const w = window.innerWidth;
       const wasMobile = this.isMobile();
-      this.isMobile.set(e.matches);
-      if (e.matches && !wasMobile) {
+      const wasCanvas = this.isCanvasMode();
+      const nowMobile = w < 768;
+      const nowCanvas = w >= 2000;
+
+      this.isMobile.set(nowMobile);
+      this.isCanvasMode.set(nowCanvas);
+
+      if (wasCanvas && !nowCanvas) {
+        this.persistCanvasLayout();
+        if (this._savedDesktopForCanvas) {
+          this.widgetTops.set(this._savedDesktopForCanvas.tops);
+          this.widgetHeights.set(this._savedDesktopForCanvas.heights);
+          this.widgetColStarts.set(this._savedDesktopForCanvas.colStarts);
+          this.widgetColSpans.set(this._savedDesktopForCanvas.colSpans);
+          this._savedDesktopForCanvas = null;
+        } else {
+          this.restoreDesktopLayout();
+        }
+      } else if (!wasCanvas && nowCanvas) {
+        if (!wasMobile) {
+          this._savedDesktopForCanvas = {
+            tops: { ...this.widgetTops() },
+            heights: { ...this.widgetHeights() },
+            colStarts: { ...this.widgetColStarts() },
+            colSpans: { ...this.widgetColSpans() },
+          };
+        }
+        if (!this.restoreCanvasLayout()) {
+          this.applyCanvasDefaults();
+        }
+      } else if (nowMobile && !wasMobile) {
         this._savedDesktopTops = { ...this.widgetTops() };
         this._savedDesktopColStarts = { ...this.widgetColStarts() };
         this._savedDesktopColSpans = { ...this.widgetColSpans() };
@@ -822,7 +871,7 @@ export class HomePageComponent implements AfterViewInit {
           this.applyMobileHeights();
           this.stackAllForMobile();
         }
-      } else if (!e.matches && wasMobile) {
+      } else if (!nowMobile && wasMobile) {
         this.persistLayout();
         if (this._savedDesktopTops) {
           this.widgetTops.set(this._savedDesktopTops);
@@ -838,14 +887,11 @@ export class HomePageComponent implements AfterViewInit {
         }
       }
     };
-    mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
 
-    window.addEventListener('resize', () => {
-      const mobile = window.innerWidth < 768;
-      if (mobile !== this.isMobile()) {
-        onBreakpointChange(mq);
-      }
-    });
+    mq.addEventListener('change', onBreakpointChange);
+    canvasQuery.addEventListener('change', onBreakpointChange);
+
+    window.addEventListener('resize', onBreakpointChange);
 
     document.addEventListener('touchmove', (e: TouchEvent) => {
       if (this._moveTarget || this._resizeTarget) {
@@ -951,6 +997,42 @@ export class HomePageComponent implements AfterViewInit {
     homeSubmittals: 460,
   });
 
+  private static readonly CANVAS_STEP = 81;
+
+  readonly widgetLefts = signal<Record<string, number>>({
+    homeTimeOff: 0,
+    homeCalendar: 648,
+    homeRfis: 0,
+    homeSubmittals: 0,
+  });
+  readonly widgetPixelWidths = signal<Record<string, number>>({
+    homeTimeOff: 632,
+    homeCalendar: 632,
+    homeRfis: 1280,
+    homeSubmittals: 1280,
+  });
+
+  private syncColSpansFromPixelWidths(): void {
+    const widths = this.widgetPixelWidths();
+    const step = HomePageComponent.CANVAS_STEP;
+    const gap = HomePageComponent.GAP_PX;
+    const spans: Record<string, number> = {};
+    for (const id of this.homeWidgets) {
+      spans[id] = Math.max(4, Math.min(16, Math.round((widths[id] + gap) / step)));
+    }
+    this.widgetColSpans.set(spans);
+  }
+
+  readonly canvasGridMinHeight = computed(() => {
+    const tops = this.widgetTops();
+    const heights = this.widgetHeights();
+    let max = 0;
+    for (const id of this.homeWidgets) {
+      max = Math.max(max, tops[id] + heights[id]);
+    }
+    return max + 100;
+  });
+
   private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');
 
   mobileGridHeight(_grid: GridPage): number {
@@ -983,13 +1065,22 @@ export class HomePageComponent implements AfterViewInit {
   private resolveCollisions(movedId: DashboardWidgetId, widgets: DashboardWidgetId[]): void {
     const tops = { ...this.widgetTops() };
     const heights = this.widgetHeights();
-    const starts = this.widgetColStarts();
-    const spans = this.widgetColSpans();
     const gap = HomePageComponent.GAP_PX;
 
     const mobile = this.isMobile();
-    const colOverlap = (a: string, b: string) =>
-      mobile || (starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a]);
+    const canvas = this.isCanvasMode();
+    let colOverlap: (a: string, b: string) => boolean;
+    if (mobile) {
+      colOverlap = () => true;
+    } else if (canvas) {
+      const lefts = this.widgetLefts();
+      const widths = this.widgetPixelWidths();
+      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
+    } else {
+      const starts = this.widgetColStarts();
+      const spans = this.widgetColSpans();
+      colOverlap = (a, b) => starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+    }
 
     const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
     const placed: string[] = [movedId];
@@ -1023,10 +1114,11 @@ export class HomePageComponent implements AfterViewInit {
 
   private _moveTarget: DashboardWidgetId | null = null;
   private _activeGrid: GridPage = 'home';
-  private _dragAxis: 'h' | 'v' | null = null;
+  private _dragAxis: 'h' | 'v' | 'free' | null = null;
   private _dragStartX = 0;
   private _dragStartY = 0;
   private _dragStartTop = 0;
+  private _dragStartLeft = 0;
 
   private get activeGridEl(): HTMLElement | undefined {
     return this.homeGridContainerRef()?.nativeElement as HTMLElement | undefined;
@@ -1036,10 +1128,11 @@ export class HomePageComponent implements AfterViewInit {
     event.preventDefault();
     this._moveTarget = id;
     this._activeGrid = 'home';
-    this._dragAxis = null;
+    this._dragAxis = this.isCanvasMode() ? 'free' : null;
     this._dragStartX = event.clientX;
     this._dragStartY = event.clientY;
     this._dragStartTop = this.widgetTops()[id];
+    this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
   }
 
@@ -1048,6 +1141,15 @@ export class HomePageComponent implements AfterViewInit {
     if (!grid || !this._moveTarget) return;
     const id = this._moveTarget;
     const gridWidgets = this.getGridWidgets(this._activeGrid);
+
+    if (this._dragAxis === 'free') {
+      const newTop = this._dragStartTop + (event.clientY - this._dragStartY);
+      const newLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
+      this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
+      this.widgetLefts.update((l) => ({ ...l, [id]: newLeft }));
+      this.resolveCollisions(id, gridWidgets);
+      return;
+    }
 
     if (!this._dragAxis) {
       const dx = Math.abs(event.clientX - this._dragStartX);
@@ -1105,6 +1207,24 @@ export class HomePageComponent implements AfterViewInit {
       const id = this._resizeTarget as DashboardWidgetId;
       const gridWidgets = this.getGridWidgets(this._activeGrid);
 
+      if (this.isCanvasMode()) {
+        if (this._resizeDir === 'v' || this._resizeDir === 'both') {
+          const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
+          const newH = Math.round(raw / 16) * 16;
+          this.widgetHeights.update((h) => ({ ...h, [id]: newH }));
+        }
+        if (this._resizeDir === 'h' || this._resizeDir === 'both') {
+          const colW = this._gridContainerWidth / 16;
+          const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
+          const newSpan = Math.max(4, Math.min(16, this._resizeStartColSpan + deltaSpan));
+          const newW = newSpan * HomePageComponent.CANVAS_STEP - HomePageComponent.GAP_PX;
+          this.widgetPixelWidths.update((w) => ({ ...w, [id]: newW }));
+          this.widgetColSpans.update((s) => ({ ...s, [id]: newSpan }));
+        }
+        this.resolveCollisions(id, gridWidgets);
+        return;
+      }
+
       if (this._resizeDir === 'v' || this._resizeDir === 'both') {
         const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
         const newH = Math.round(raw / 16) * 16;
@@ -1131,7 +1251,11 @@ export class HomePageComponent implements AfterViewInit {
     this._resizeTarget = null;
     if (hadInteraction) {
       this.compactAll(grid);
-      this.persistLayout();
+      if (this.isCanvasMode()) {
+        this.persistCanvasLayout();
+      } else {
+        this.persistLayout();
+      }
     }
   }
 
@@ -1149,10 +1273,11 @@ export class HomePageComponent implements AfterViewInit {
     event.preventDefault();
     this._moveTarget = id;
     this._activeGrid = 'home';
-    this._dragAxis = null;
+    this._dragAxis = this.isCanvasMode() ? 'free' : null;
     this._dragStartX = touch.clientX;
     this._dragStartY = touch.clientY;
     this._dragStartTop = this.widgetTops()[id];
+    this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
   }
 
@@ -1268,10 +1393,16 @@ export class HomePageComponent implements AfterViewInit {
       return;
     }
 
-    const starts = this.widgetColStarts();
-    const spans = this.widgetColSpans();
-    const colOverlap = (a: string, b: string) =>
-      starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+    let colOverlap: (a: string, b: string) => boolean;
+    if (this.isCanvasMode()) {
+      const lefts = this.widgetLefts();
+      const widths = this.widgetPixelWidths();
+      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
+    } else {
+      const starts = this.widgetColStarts();
+      const spans = this.widgetColSpans();
+      colOverlap = (a, b) => starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+    }
 
     const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
     const placed: string[] = [];
@@ -1658,6 +1789,82 @@ export class HomePageComponent implements AfterViewInit {
 
   submittalStatusLabel(status: SubmittalStatus): string {
     return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  private _savedDesktopForCanvas: {
+    tops: Record<string, number>;
+    heights: Record<string, number>;
+    colStarts: Record<string, number>;
+    colSpans: Record<string, number>;
+  } | null = null;
+
+  private persistCanvasLayout(): void {
+    const layout: Record<string, Record<string, number>> = {
+      tops: {}, heights: {}, lefts: {}, widths: {},
+    };
+    for (const id of this.homeWidgets) {
+      layout['tops'][id] = this.widgetTops()[id];
+      layout['heights'][id] = this.widgetHeights()[id];
+      layout['lefts'][id] = this.widgetLefts()[id];
+      layout['widths'][id] = this.widgetPixelWidths()[id];
+    }
+    try {
+      localStorage.setItem('canvas-layout:dashboard-home:v5', JSON.stringify(layout));
+    } catch { /* quota exceeded */ }
+  }
+
+  private restoreCanvasLayout(): boolean {
+    try {
+      const raw = localStorage.getItem('canvas-layout:dashboard-home:v5');
+      if (!raw) return false;
+      const layout = JSON.parse(raw);
+      const tops = { ...this.widgetTops() };
+      const heights = { ...this.widgetHeights() };
+      const lefts = { ...this.widgetLefts() };
+      const widths = { ...this.widgetPixelWidths() };
+      for (const id of this.homeWidgets) {
+        if (layout.tops?.[id] != null) tops[id] = layout.tops[id];
+        if (layout.heights?.[id] != null) heights[id] = layout.heights[id];
+        if (layout.lefts?.[id] != null) lefts[id] = layout.lefts[id];
+        if (layout.widths?.[id] != null) widths[id] = layout.widths[id];
+      }
+      this.widgetTops.set(tops);
+      this.widgetHeights.set(heights);
+      this.widgetLefts.set(lefts);
+      this.widgetPixelWidths.set(widths);
+      this.syncColSpansFromPixelWidths();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private applyCanvasDefaults(): void {
+    this.widgetLefts.set({
+      homeTimeOff: 0,
+      homeCalendar: 648,
+      homeRfis: 0,
+      homeSubmittals: 0,
+    });
+    this.widgetPixelWidths.set({
+      homeTimeOff: 632,
+      homeCalendar: 632,
+      homeRfis: 1280,
+      homeSubmittals: 1280,
+    });
+    this.widgetTops.set({
+      homeTimeOff: 0,
+      homeCalendar: 0,
+      homeRfis: 456,
+      homeSubmittals: 932,
+    });
+    this.widgetHeights.set({
+      homeTimeOff: 440,
+      homeCalendar: 580,
+      homeRfis: 460,
+      homeSubmittals: 460,
+    });
+    this.syncColSpansFromPixelWidths();
   }
 
   navigateToProjects(): void {

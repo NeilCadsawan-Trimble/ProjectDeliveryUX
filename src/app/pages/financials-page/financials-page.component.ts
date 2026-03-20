@@ -72,21 +72,24 @@ import { PROJECTS } from '../../data/dashboard-data';
 
       <!-- Widget area: 16-column grid layout -->
       <div
-        [class]="isMobile() ? 'relative mb-6' : 'grid mb-6'"
-        [style.grid-template-columns]="isMobile() ? null : 'repeat(16, minmax(0, 1fr))'"
-        [style.grid-auto-rows]="isMobile() ? null : '1px'"
-        [style.gap]="isMobile() ? null : '0 16px'"
-        [style.height.px]="isMobile() ? mobileGridHeight() : null"
+        [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : isMobile() ? 'relative mb-6' : 'grid mb-6'"
+        [style.grid-template-columns]="!isCanvasMode() && !isMobile() ? 'repeat(16, minmax(0, 1fr))' : null"
+        [style.grid-auto-rows]="!isCanvasMode() && !isMobile() ? '1px' : null"
+        [style.gap]="!isCanvasMode() && !isMobile() ? '0 16px' : null"
+        [style.height.px]="!isCanvasMode() && isMobile() ? mobileGridHeight() : null"
+        [style.min-height.px]="isCanvasMode() ? canvasGridMinHeight() : null"
         #financialsWidgetGrid
       >
         @for (widgetId of financialsWidgets; track widgetId) {
           <div
-            [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
+            [class]="isCanvasMode() ? 'absolute overflow-hidden' : isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
             [attr.data-widget-id]="widgetId"
-            [style.grid-column]="isMobile() ? null : widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId]"
-            [style.grid-row]="isMobile() ? null : (widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId]"
-            [style.top.px]="isMobile() ? widgetTops()[widgetId] : null"
-            [style.height.px]="isMobile() ? widgetHeights()[widgetId] : null"
+            [style.grid-column]="!isCanvasMode() && !isMobile() ? widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId] : null"
+            [style.grid-row]="!isCanvasMode() && !isMobile() ? (widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId] : null"
+            [style.top.px]="isCanvasMode() || isMobile() ? widgetTops()[widgetId] : null"
+            [style.left.px]="isCanvasMode() ? widgetLefts()[widgetId] : null"
+            [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : null"
+            [style.height.px]="isCanvasMode() || isMobile() ? widgetHeights()[widgetId] : null"
           >
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 
@@ -167,6 +170,7 @@ export class FinancialsPageComponent implements AfterViewInit {
   private readonly layoutService = inject(WidgetLayoutService);
 
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  readonly isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
   readonly projects = signal<Project[]>(PROJECTS);
   readonly totalProjects = computed(() => this.projects().length);
 
@@ -186,16 +190,46 @@ export class FinancialsPageComponent implements AfterViewInit {
   });
 
   private static readonly GAP_PX = 16;
+  private static readonly CANVAS_STEP = 81;
+
+  readonly widgetLefts = signal<Record<string, number>>({
+    finBudgetByProject: 0,
+  });
+  readonly widgetPixelWidths = signal<Record<string, number>>({
+    finBudgetByProject: 1280,
+  });
+
+  private syncColSpansFromPixelWidths(): void {
+    const widths = this.widgetPixelWidths();
+    const step = FinancialsPageComponent.CANVAS_STEP;
+    const gap = FinancialsPageComponent.GAP_PX;
+    const spans: Record<string, number> = {};
+    for (const id of this.financialsWidgets) {
+      spans[id] = Math.max(1, Math.round((widths[id] + gap) / step));
+    }
+    this.widgetColSpans.set(spans);
+  }
+
+  readonly canvasGridMinHeight = computed(() => {
+    const tops = this.widgetTops();
+    const heights = this.widgetHeights();
+    let max = 0;
+    for (const id of this.financialsWidgets) {
+      max = Math.max(max, tops[id] + heights[id]);
+    }
+    return max + 200;
+  });
 
   private readonly financialsGridContainerRef = viewChild<ElementRef>('financialsWidgetGrid');
 
   readonly moveTargetId = signal<DashboardWidgetId | null>(null);
 
   private _moveTarget: DashboardWidgetId | null = null;
-  private _dragAxis: 'h' | 'v' | null = null;
+  private _dragAxis: 'h' | 'v' | 'free' | null = null;
   private _dragStartX = 0;
   private _dragStartY = 0;
   private _dragStartTop = 0;
+  private _dragStartLeft = 0;
 
   private _resizeTarget: string | null = null;
   private _resizeDir: 'h' | 'v' | 'both' = 'v';
@@ -235,8 +269,17 @@ export class FinancialsPageComponent implements AfterViewInit {
     const gap = FinancialsPageComponent.GAP_PX;
 
     const mobile = this.isMobile();
-    const colOverlap = (a: DashboardWidgetId, b: DashboardWidgetId) =>
-      mobile || (starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a]);
+    const canvas = this.isCanvasMode();
+    let colOverlap: (a: DashboardWidgetId, b: DashboardWidgetId) => boolean;
+    if (mobile) {
+      colOverlap = () => true;
+    } else if (canvas) {
+      const lefts = this.widgetLefts();
+      const widths = this.widgetPixelWidths();
+      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
+    } else {
+      colOverlap = (a, b) => starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+    }
 
     const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
     const placed: DashboardWidgetId[] = [movedId];
@@ -269,10 +312,11 @@ export class FinancialsPageComponent implements AfterViewInit {
   onWidgetHeaderMouseDown(id: DashboardWidgetId, event: MouseEvent): void {
     event.preventDefault();
     this._moveTarget = id;
-    this._dragAxis = null;
+    this._dragAxis = this.isCanvasMode() ? 'free' : null;
     this._dragStartX = event.clientX;
     this._dragStartY = event.clientY;
     this._dragStartTop = this.widgetTops()[id];
+    this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
   }
 
@@ -280,7 +324,15 @@ export class FinancialsPageComponent implements AfterViewInit {
     const grid = this.activeGridEl;
     if (!grid || !this._moveTarget) return;
     const id = this._moveTarget;
-    const gridWidgets = this.financialsWidgets;
+
+    if (this._dragAxis === 'free') {
+      const newTop = this._dragStartTop + (event.clientY - this._dragStartY);
+      const newLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
+      this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
+      this.widgetLefts.update((l) => ({ ...l, [id]: newLeft }));
+      this.resolveCollisions(id);
+      return;
+    }
 
     if (!this._dragAxis) {
       const dx = Math.abs(event.clientX - this._dragStartX);
@@ -327,22 +379,39 @@ export class FinancialsPageComponent implements AfterViewInit {
       this.handleWidgetMove(event);
     } else if (this._resizeTarget) {
       const id = this._resizeTarget as DashboardWidgetId;
-      const gridWidgets = this.financialsWidgets;
 
-      if (this._resizeDir === 'v' || this._resizeDir === 'both') {
-        const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
-        const newH = Math.round(raw / 16) * 16;
-        this.widgetHeights.update(h => ({ ...h, [id]: newH }));
-        this.resolveCollisions(id);
-      }
-      if (this._resizeDir === 'h' || this._resizeDir === 'both') {
-        const colW = this._gridContainerWidth / 16;
-        const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
-        const newSpan = this._resizeStartColSpan + deltaSpan;
-        const minSpan = 4;
-        const clampedSpan = Math.max(minSpan, Math.min(16, newSpan));
-        this.widgetColSpans.update(s => ({ ...s, [id]: clampedSpan }));
-        this.resolveCollisions(id);
+      if (this.isCanvasMode()) {
+        if (this._resizeDir === 'v' || this._resizeDir === 'both') {
+          const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
+          const newH = Math.round(raw / 16) * 16;
+          this.widgetHeights.update((h) => ({ ...h, [id]: newH }));
+          this.resolveCollisions(id);
+        }
+        if (this._resizeDir === 'h' || this._resizeDir === 'both') {
+          const colW = this._gridContainerWidth / 16;
+          const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
+          const newSpan = Math.max(4, Math.min(16, this._resizeStartColSpan + deltaSpan));
+          const newW = newSpan * FinancialsPageComponent.CANVAS_STEP - FinancialsPageComponent.GAP_PX;
+          this.widgetPixelWidths.update((w) => ({ ...w, [id]: newW }));
+          this.widgetColSpans.update((s) => ({ ...s, [id]: newSpan }));
+          this.resolveCollisions(id);
+        }
+      } else {
+        if (this._resizeDir === 'v' || this._resizeDir === 'both') {
+          const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
+          const newH = Math.round(raw / 16) * 16;
+          this.widgetHeights.update((h) => ({ ...h, [id]: newH }));
+          this.resolveCollisions(id);
+        }
+        if (this._resizeDir === 'h' || this._resizeDir === 'both') {
+          const colW = this._gridContainerWidth / 16;
+          const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
+          const newSpan = this._resizeStartColSpan + deltaSpan;
+          const minSpan = 4;
+          const clampedSpan = Math.max(minSpan, Math.min(16, newSpan));
+          this.widgetColSpans.update((s) => ({ ...s, [id]: clampedSpan }));
+          this.resolveCollisions(id);
+        }
       }
     }
   }
@@ -355,7 +424,11 @@ export class FinancialsPageComponent implements AfterViewInit {
     this._resizeTarget = null;
     if (hadInteraction) {
       this.compactAll();
-      this.persistLayout();
+      if (this.isCanvasMode()) {
+        this.persistCanvasLayout();
+      } else {
+        this.persistLayout();
+      }
     }
   }
 
@@ -372,10 +445,11 @@ export class FinancialsPageComponent implements AfterViewInit {
     }
     event.preventDefault();
     this._moveTarget = id;
-    this._dragAxis = null;
+    this._dragAxis = this.isCanvasMode() ? 'free' : null;
     this._dragStartX = touch.clientX;
     this._dragStartY = touch.clientY;
     this._dragStartTop = this.widgetTops()[id];
+    this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
   }
 
@@ -461,6 +535,62 @@ export class FinancialsPageComponent implements AfterViewInit {
     return true;
   }
 
+  private _savedDesktopForCanvas: {
+    tops: Record<string, number>;
+    heights: Record<string, number>;
+    colStarts: Record<string, number>;
+    colSpans: Record<string, number>;
+  } | null = null;
+
+  private persistCanvasLayout(): void {
+    const layout: Record<string, Record<string, number>> = {
+      tops: {}, heights: {}, lefts: {}, widths: {},
+    };
+    for (const id of this.financialsWidgets) {
+      layout['tops'][id] = this.widgetTops()[id];
+      layout['heights'][id] = this.widgetHeights()[id];
+      layout['lefts'][id] = this.widgetLefts()[id];
+      layout['widths'][id] = this.widgetPixelWidths()[id];
+    }
+    try {
+      localStorage.setItem('canvas-layout:dashboard-financials:v1', JSON.stringify(layout));
+    } catch { /* quota exceeded */ }
+  }
+
+  private restoreCanvasLayout(): boolean {
+    try {
+      const raw = localStorage.getItem('canvas-layout:dashboard-financials:v1');
+      if (!raw) return false;
+      const layout = JSON.parse(raw);
+      const tops = { ...this.widgetTops() };
+      const heights = { ...this.widgetHeights() };
+      const lefts = { ...this.widgetLefts() };
+      const widths = { ...this.widgetPixelWidths() };
+      for (const id of this.financialsWidgets) {
+        if (layout.tops?.[id] != null) tops[id] = layout.tops[id];
+        if (layout.heights?.[id] != null) heights[id] = layout.heights[id];
+        if (layout.lefts?.[id] != null) lefts[id] = layout.lefts[id];
+        if (layout.widths?.[id] != null) widths[id] = layout.widths[id];
+      }
+      this.widgetTops.set(tops);
+      this.widgetHeights.set(heights);
+      this.widgetLefts.set(lefts);
+      this.widgetPixelWidths.set(widths);
+      this.syncColSpansFromPixelWidths();
+      return true;
+    } catch { return false; }
+  }
+
+  private applyCanvasDefaults(): void {
+    this.widgetLefts.set({
+      finBudgetByProject: 0,
+    });
+    this.widgetPixelWidths.set({
+      finBudgetByProject: 1280,
+    });
+    this.syncColSpansFromPixelWidths();
+  }
+
   private stackAllForMobile(): void {
     const gap = FinancialsPageComponent.GAP_PX;
     const heights = this.widgetHeights();
@@ -501,8 +631,15 @@ export class FinancialsPageComponent implements AfterViewInit {
 
     const starts = this.widgetColStarts();
     const spans = this.widgetColSpans();
-    const colOverlap = (a: DashboardWidgetId, b: DashboardWidgetId) =>
-      starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+    const canvas = this.isCanvasMode();
+    let colOverlap: (a: DashboardWidgetId, b: DashboardWidgetId) => boolean;
+    if (canvas) {
+      const lefts = this.widgetLefts();
+      const widths = this.widgetPixelWidths();
+      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
+    } else {
+      colOverlap = (a, b) => starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+    }
 
     const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
     const placed: DashboardWidgetId[] = [];
@@ -525,16 +662,29 @@ export class FinancialsPageComponent implements AfterViewInit {
       placed.push(id);
     }
 
-    if (widgets.some(id => tops[id] !== this.widgetTops()[id])) {
+    if (widgets.some((id) => tops[id] !== this.widgetTops()[id])) {
       this.widgetTops.set(tops);
     }
   }
 
   ngAfterViewInit(): void {
     const startMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const startCanvas = typeof window !== 'undefined' && window.innerWidth >= 2000;
     this.isMobile.set(startMobile);
+    this.isCanvasMode.set(startCanvas);
 
-    if (startMobile) {
+    if (startCanvas) {
+      this.restoreDesktopLayout();
+      this._savedDesktopForCanvas = {
+        tops: { ...this.widgetTops() },
+        heights: { ...this.widgetHeights() },
+        colStarts: { ...this.widgetColStarts() },
+        colSpans: { ...this.widgetColSpans() },
+      };
+      if (!this.restoreCanvasLayout()) {
+        this.applyCanvasDefaults();
+      }
+    } else if (startMobile) {
       const restoredMobile = this.restoreMobileLayout();
       if (restoredMobile) {
         this.compactAll();
@@ -547,26 +697,57 @@ export class FinancialsPageComponent implements AfterViewInit {
 
     if (typeof window !== 'undefined') {
       const mq = window.matchMedia('(max-width: 767px)');
-      const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList): void => {
+      const canvasQuery = window.matchMedia('(min-width: 2000px)');
+
+      const onBreakpointChange = (): void => {
+        const w = window.innerWidth;
         const wasMobile = this.isMobile();
-        this.isMobile.set(e.matches);
-        if (e.matches && !wasMobile) {
+        const wasCanvas = this.isCanvasMode();
+        const nowMobile = w < 768;
+        const nowCanvas = w >= 2000;
+
+        this.isMobile.set(nowMobile);
+        this.isCanvasMode.set(nowCanvas);
+
+        if (wasCanvas && !nowCanvas) {
+          this.persistCanvasLayout();
+          if (this._savedDesktopForCanvas) {
+            this.widgetTops.set(this._savedDesktopForCanvas.tops);
+            this.widgetHeights.set(this._savedDesktopForCanvas.heights);
+            this.widgetColStarts.set(this._savedDesktopForCanvas.colStarts);
+            this.widgetColSpans.set(this._savedDesktopForCanvas.colSpans);
+            this._savedDesktopForCanvas = null;
+          } else {
+            this.restoreDesktopLayout();
+          }
+        } else if (!wasCanvas && nowCanvas) {
+          if (!wasMobile) {
+            this._savedDesktopForCanvas = {
+              tops: { ...this.widgetTops() },
+              heights: { ...this.widgetHeights() },
+              colStarts: { ...this.widgetColStarts() },
+              colSpans: { ...this.widgetColSpans() },
+            };
+          }
+          if (!this.restoreCanvasLayout()) {
+            this.applyCanvasDefaults();
+          }
+        } else if (nowMobile && !wasMobile) {
           const restoredMobile = this.restoreMobileLayout();
           if (restoredMobile) {
             this.compactAll();
           } else {
             this.stackAllForMobile();
           }
+        } else if (!nowMobile && wasMobile && !nowCanvas) {
+          this.persistLayout();
+          this.restoreDesktopLayout();
         }
       };
-      mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
 
-      window.addEventListener('resize', () => {
-        const mobile = window.innerWidth < 768;
-        if (mobile !== this.isMobile()) {
-          onBreakpointChange(mq);
-        }
-      });
+      mq.addEventListener('change', () => onBreakpointChange());
+      canvasQuery.addEventListener('change', () => onBreakpointChange());
+      window.addEventListener('resize', () => onBreakpointChange());
 
       document.addEventListener('touchmove', (e: TouchEvent) => {
         if (this._moveTarget || this._resizeTarget) {

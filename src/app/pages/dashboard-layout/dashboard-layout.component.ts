@@ -25,9 +25,17 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'block h-screen overflow-hidden',
+    class: 'block',
+    '[class.h-screen]': '!isCanvas()',
+    '[class.overflow-hidden]': '!isCanvas()',
+    '[class.canvas-pan-ready]': 'isPanReady()',
+    '[class.canvas-panning]': 'isPanning()',
     '(window:keydown.escape)': 'onEscapeKey()',
     '(document:click)': 'onDocumentClick($event)',
+    '(window:keydown)': 'onKeyDown($event)',
+    '(window:keyup)': 'onKeyUp($event)',
+    '(document:mousemove)': 'onPanMouseMove($event)',
+    '(document:mouseup)': 'onPanMouseUp()',
   },
   template: `
     <svg aria-hidden="true" class="svg-defs-hidden">
@@ -45,142 +53,68 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
       </defs>
     </svg>
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
-    <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
-      <!-- Navbar -->
-      <modus-navbar
-        [userCard]="userCard"
-        [visibility]="navbarVisibility()"
-        [condensed]="isMobile()"
-        [searchInputOpen]="searchInputOpen()"
-        (searchClick)="searchInputOpen.set(!searchInputOpen())"
-        (searchInputOpenChange)="searchInputOpen.set($event)"
-        (aiClick)="toggleAiPanel()"
-      >
-        <div slot="start" class="flex items-center gap-3">
-          <div class="w-px h-5 bg-foreground-20"></div>
-          <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">Project Delivery</div>
-        </div>
-        <div slot="end" class="flex items-center gap-1">
-          <!-- AI assistant button -->
-          <div
-            class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-            role="button"
-            aria-label="AI assistant"
-            (click)="toggleAiPanel()"
-            (keydown.enter)="toggleAiPanel()"
-            tabindex="0"
+
+    @if (isCanvas()) {
+      <!-- ═══ INFINITE CANVAS LAYOUT (>= 2000px) ═══ -->
+      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="onPanMouseDown($event)" (wheel)="onCanvasWheel($event)">
+
+        <!-- Navbar: fixed top-center, 1280px -->
+        <div class="canvas-navbar">
+          <modus-navbar
+            [userCard]="userCard"
+            [visibility]="navbarVisibility()"
+            [condensed]="false"
+            [searchInputOpen]="searchInputOpen()"
+            (searchClick)="searchInputOpen.set(!searchInputOpen())"
+            (searchInputOpenChange)="searchInputOpen.set($event)"
+            (aiClick)="toggleAiPanel()"
           >
-            @if (isDark()) {
-              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <radialGradient id="ai-nav-grad-dark" cx="18%" cy="18%" r="70%">
-                    <stop offset="0%" stop-color="#FF00FF" />
-                    <stop offset="50%" stop-color="#9933FF" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </radialGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
-                <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-nav-grad-dark)" transform="translate(-256, 0)"/>
-              </svg>
-            } @else {
-              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="ai-nav-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="20%" stop-color="#FF00FF" />
-                    <stop offset="60%" stop-color="#0066CC" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </linearGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
-                <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-nav-grad-light)"/>
-              </svg>
-            }
-          </div>
-          <!-- Desktop: dark mode toggle -->
-          <div
-            class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-            role="button"
-            [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-            (click)="toggleDarkMode()"
-            (keydown.enter)="toggleDarkMode()"
-            tabindex="0"
-          >
-            <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-          </div>
-          <!-- Mobile: more menu with dark mode + other actions -->
-          @if (isMobile()) {
-            <div class="relative">
+            <div slot="start" class="flex items-center gap-3">
+              <div class="w-px h-5 bg-foreground-20"></div>
+              <div class="text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">Project Delivery</div>
+            </div>
+            <div slot="end" class="flex items-center gap-1">
               <div
-                class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
-                aria-label="More options"
-                [attr.aria-expanded]="moreMenuOpen()"
-                (click)="toggleMoreMenu()"
-                (keydown.enter)="toggleMoreMenu()"
+                aria-label="AI assistant"
+                (click)="toggleAiPanel()"
+                (keydown.enter)="toggleAiPanel()"
                 tabindex="0"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
+                @if (isDark()) {
+                  <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
+                    <defs><radialGradient id="ai-nav-grad-dark-c" cx="18%" cy="18%" r="70%"><stop offset="0%" stop-color="#FF00FF" /><stop offset="50%" stop-color="#9933FF" /><stop offset="100%" stop-color="#0066CC" /></radialGradient></defs>
+                    <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
+                    <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-nav-grad-dark-c)" transform="translate(-256, 0)"/>
+                  </svg>
+                } @else {
+                  <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
+                    <defs><linearGradient id="ai-nav-grad-light-c" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="20%" stop-color="#FF00FF" /><stop offset="60%" stop-color="#0066CC" /><stop offset="100%" stop-color="#0066CC" /></linearGradient></defs>
+                    <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
+                    <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
+                    <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
+                    <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-nav-grad-light-c)"/>
+                  </svg>
+                }
               </div>
-              @if (moreMenuOpen()) {
-                <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('search')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">search</i>
-                    <div class="text-sm">Search</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('notifications')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">notifications</i>
-                    <div class="text-sm">Notifications</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('help')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">help</i>
-                    <div class="text-sm">Help</div>
-                  </div>
-                  <div class="border-bottom-default mx-3 my-1"></div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('darkMode')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-                    <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
-                  </div>
-                </div>
-              }
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+                (click)="toggleDarkMode()"
+                (keydown.enter)="toggleDarkMode()"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+              </div>
             </div>
-          }
+          </modus-navbar>
         </div>
-      </modus-navbar>
+        <div class="canvas-navbar-shadow navbar-shadow"></div>
 
-      <div class="navbar-shadow"></div>
-
-      <!-- Body -->
-      <div class="flex flex-1 overflow-hidden">
-        <!-- Main content -->
-        <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
-
-          <router-outlet />
-
-        </div>
-      </div>
-
-
-      <!-- Custom Side Navigation (position:fixed overlay, inside main container) -->
-      @if (!isMobile() || navExpanded()) {
-        <div class="custom-side-nav" [class.expanded]="navExpanded()">
+        <!-- Sidenav: fixed left-center, 1000px -->
+        <div class="canvas-side-nav" [class.expanded]="navExpanded()">
           <div class="flex flex-col flex-1 min-h-0">
             @for (item of sideNavItems; track item.value) {
               <div
@@ -201,6 +135,18 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
           <div class="mt-auto border-top-default">
             <div
               class="custom-side-nav-item"
+              (click)="resetCanvasView()"
+              title="Reset view"
+              role="button"
+              aria-label="Reset view"
+            >
+              <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+              @if (navExpanded()) {
+                <div class="custom-side-nav-label">Reset View</div>
+              }
+            </div>
+            <div
+              class="custom-side-nav-item"
               [class.selected]="activeNav() === 'settings'"
               (click)="selectNavItem('settings')"
               title="Settings"
@@ -214,12 +160,192 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
             </div>
           </div>
         </div>
-      }
-      @if (navExpanded()) {
-        <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
-      }
+        @if (navExpanded()) {
+          <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
+        }
 
-    </div>
+        <!-- Main content canvas surface -->
+        <div class="canvas-content" role="main" id="main-content" tabindex="-1"
+          [style.transform]="(panOffsetX() || panOffsetY()) ? 'translate(' + panOffsetX() + 'px,' + panOffsetY() + 'px)' : null">
+          <router-outlet />
+        </div>
+
+      </div>
+    } @else {
+      <!-- ═══ STANDARD LAYOUT (< 2000px) ═══ -->
+      <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
+        <!-- Navbar -->
+        <modus-navbar
+          [userCard]="userCard"
+          [visibility]="navbarVisibility()"
+          [condensed]="isMobile()"
+          [searchInputOpen]="searchInputOpen()"
+          (searchClick)="searchInputOpen.set(!searchInputOpen())"
+          (searchInputOpenChange)="searchInputOpen.set($event)"
+          (aiClick)="toggleAiPanel()"
+        >
+          <div slot="start" class="flex items-center gap-3">
+            <div class="w-px h-5 bg-foreground-20"></div>
+            <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">Project Delivery</div>
+          </div>
+          <div slot="end" class="flex items-center gap-1">
+            <!-- AI assistant button -->
+            <div
+              class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+              role="button"
+              aria-label="AI assistant"
+              (click)="toggleAiPanel()"
+              (keydown.enter)="toggleAiPanel()"
+              tabindex="0"
+            >
+              @if (isDark()) {
+                <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="ai-nav-grad-dark" cx="18%" cy="18%" r="70%">
+                      <stop offset="0%" stop-color="#FF00FF" />
+                      <stop offset="50%" stop-color="#9933FF" />
+                      <stop offset="100%" stop-color="#0066CC" />
+                    </radialGradient>
+                  </defs>
+                  <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
+                  <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-nav-grad-dark)" transform="translate(-256, 0)"/>
+                </svg>
+              } @else {
+                <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="ai-nav-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="20%" stop-color="#FF00FF" />
+                      <stop offset="60%" stop-color="#0066CC" />
+                      <stop offset="100%" stop-color="#0066CC" />
+                    </linearGradient>
+                  </defs>
+                  <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
+                  <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
+                  <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
+                  <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-nav-grad-light)"/>
+                </svg>
+              }
+            </div>
+            <!-- Desktop: dark mode toggle -->
+            <div
+              class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+              role="button"
+              [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+              (click)="toggleDarkMode()"
+              (keydown.enter)="toggleDarkMode()"
+              tabindex="0"
+            >
+              <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+            </div>
+            <!-- Mobile: more menu with dark mode + other actions -->
+            @if (isMobile()) {
+              <div class="relative">
+                <div
+                  class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                  role="button"
+                  aria-label="More options"
+                  [attr.aria-expanded]="moreMenuOpen()"
+                  (click)="toggleMoreMenu()"
+                  (keydown.enter)="toggleMoreMenu()"
+                  tabindex="0"
+                >
+                  <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
+                </div>
+                @if (moreMenuOpen()) {
+                  <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                    <div
+                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                      role="menuitem"
+                      (click)="moreMenuAction('search')"
+                    >
+                      <i class="modus-icons text-base" aria-hidden="true">search</i>
+                      <div class="text-sm">Search</div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                      role="menuitem"
+                      (click)="moreMenuAction('notifications')"
+                    >
+                      <i class="modus-icons text-base" aria-hidden="true">notifications</i>
+                      <div class="text-sm">Notifications</div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                      role="menuitem"
+                      (click)="moreMenuAction('help')"
+                    >
+                      <i class="modus-icons text-base" aria-hidden="true">help</i>
+                      <div class="text-sm">Help</div>
+                    </div>
+                    <div class="border-bottom-default mx-3 my-1"></div>
+                    <div
+                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                      role="menuitem"
+                      (click)="moreMenuAction('darkMode')"
+                    >
+                      <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+                      <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </modus-navbar>
+
+        <div class="navbar-shadow"></div>
+
+        <!-- Body -->
+        <div class="flex flex-1 overflow-hidden">
+          <!-- Main content -->
+          <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+            <router-outlet />
+          </div>
+        </div>
+
+        <!-- Custom Side Navigation (position:fixed overlay) -->
+        @if (!isMobile() || navExpanded()) {
+          <div class="custom-side-nav" [class.expanded]="navExpanded()">
+            <div class="flex flex-col flex-1 min-h-0">
+              @for (item of sideNavItems; track item.value) {
+                <div
+                  class="custom-side-nav-item"
+                  [class.selected]="activeNav() === item.value"
+                  (click)="selectNavItem(item.value)"
+                  [title]="item.label"
+                  role="button"
+                  [attr.aria-label]="item.label"
+                >
+                  <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                  @if (navExpanded()) {
+                    <div class="custom-side-nav-label">{{ item.label }}</div>
+                  }
+                </div>
+              }
+            </div>
+            <div class="mt-auto border-top-default">
+              <div
+                class="custom-side-nav-item"
+                [class.selected]="activeNav() === 'settings'"
+                (click)="selectNavItem('settings')"
+                title="Settings"
+                role="button"
+                aria-label="Settings"
+              >
+                <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+                @if (navExpanded()) {
+                  <div class="custom-side-nav-label">Settings</div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+        @if (navExpanded()) {
+          <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
+        }
+
+      </div>
+    }
 
     <!-- ─── AI Assistant Panel (sibling to main container, fixed overlay) ─── -->
     <modus-utility-panel
@@ -427,6 +553,16 @@ export class DashboardLayoutComponent implements AfterViewInit {
 
   readonly navExpanded = signal(false);
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
+
+  readonly isPanReady = signal(false);
+  readonly isPanning = signal(false);
+  readonly panOffsetX = signal(0);
+  readonly panOffsetY = signal(0);
+  private _panStartX = 0;
+  private _panStartY = 0;
+  private _panStartOffsetX = 0;
+  private _panStartOffsetY = 0;
 
   readonly activeNav = computed((): 'home' | 'projects' | 'financials' | 'settings' => {
     const url = this.currentUrl();
@@ -608,6 +744,58 @@ export class DashboardLayoutComponent implements AfterViewInit {
     }
   }
 
+  onKeyDown(event: KeyboardEvent): void {
+    if (event.code !== 'Space' || !this.isCanvas()) return;
+    const tag = (event.target as HTMLElement)?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || (event.target as HTMLElement)?.isContentEditable) return;
+    event.preventDefault();
+    if (!event.repeat) {
+      this.isPanReady.set(true);
+    }
+  }
+
+  onKeyUp(event: KeyboardEvent): void {
+    if (event.code !== 'Space') return;
+    event.preventDefault();
+    this.isPanReady.set(false);
+    this.isPanning.set(false);
+  }
+
+  onPanMouseDown(event: MouseEvent): void {
+    if (!this.isPanReady()) return;
+    event.preventDefault();
+    this.isPanning.set(true);
+    this._panStartX = event.clientX;
+    this._panStartY = event.clientY;
+    this._panStartOffsetX = this.panOffsetX();
+    this._panStartOffsetY = this.panOffsetY();
+  }
+
+  onPanMouseMove(event: MouseEvent): void {
+    if (!this.isPanning()) return;
+    const dx = event.clientX - this._panStartX;
+    const dy = event.clientY - this._panStartY;
+    this.panOffsetX.set(this._panStartOffsetX + dx);
+    this.panOffsetY.set(this._panStartOffsetY + dy);
+  }
+
+  onPanMouseUp(): void {
+    if (this.isPanning()) {
+      this.isPanning.set(false);
+    }
+  }
+
+  onCanvasWheel(event: WheelEvent): void {
+    event.preventDefault();
+    this.panOffsetX.update((x) => x - event.deltaX);
+    this.panOffsetY.update((y) => y - event.deltaY);
+  }
+
+  resetCanvasView(): void {
+    this.panOffsetX.set(0);
+    this.panOffsetY.set(0);
+  }
+
   onDocumentClick(event: MouseEvent): void {
     if (!this.moreMenuOpen()) return;
     const target = event.target as HTMLElement;
@@ -619,6 +807,7 @@ export class DashboardLayoutComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     const startMobile = window.innerWidth < 768;
     this.isMobile.set(startMobile);
+    this.isCanvas.set(window.innerWidth >= 2000);
 
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
@@ -628,6 +817,8 @@ export class DashboardLayoutComponent implements AfterViewInit {
     this.currentUrl.set(this.router.url);
 
     const mq = window.matchMedia('(max-width: 767px)');
+    const mqCanvas = window.matchMedia('(min-width: 2000px)');
+
     const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList) => {
       this.isMobile.set(e.matches);
       if (!e.matches) {
@@ -636,10 +827,19 @@ export class DashboardLayoutComponent implements AfterViewInit {
     };
     mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
 
+    const onCanvasChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      this.isCanvas.set(e.matches);
+    };
+    mqCanvas.addEventListener('change', onCanvasChange as (e: MediaQueryListEvent) => void);
+
     window.addEventListener('resize', () => {
       const mobile = window.innerWidth < 768;
       if (mobile !== this.isMobile()) {
         onBreakpointChange(mq);
+      }
+      const canvas = window.innerWidth >= 2000;
+      if (canvas !== this.isCanvas()) {
+        onCanvasChange(mqCanvas);
       }
     });
 
