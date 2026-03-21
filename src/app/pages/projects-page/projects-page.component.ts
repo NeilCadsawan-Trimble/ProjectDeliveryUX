@@ -78,6 +78,7 @@ import {
           [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
           [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
           [style.height.px]="widgetHeights()[widgetId]"
+          [style.z-index]="widgetZIndices()[widgetId] ?? 0"
         >
           <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 
@@ -402,6 +403,7 @@ export class ProjectsPageComponent implements AfterViewInit {
   readonly widgetHeights = this.engine.widgetHeights;
   readonly widgetLefts = this.engine.widgetLefts;
   readonly widgetPixelWidths = this.engine.widgetPixelWidths;
+  readonly widgetZIndices = this.engine.widgetZIndices;
   readonly moveTargetId = this.engine.moveTargetId;
   readonly canvasGridMinHeight = this.engine.canvasGridMinHeight;
 

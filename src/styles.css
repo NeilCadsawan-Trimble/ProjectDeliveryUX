@@ -1633,7 +1633,6 @@ modus-wc-navbar .main-menu {
     z-index: 1001;
     border-radius: 0 0 12px 12px;
     box-shadow: 0 1px 4px rgba(36, 35, 45, 0.3);
-    overflow: hidden;
   }
 
   .canvas-navbar-shadow {

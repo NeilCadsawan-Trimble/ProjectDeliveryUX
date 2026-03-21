@@ -40,6 +40,7 @@ export class DashboardLayoutEngine {
   readonly widgetLefts: WritableSignal<Record<string, number>>;
   readonly widgetPixelWidths: WritableSignal<Record<string, number>>;
   readonly moveTargetId: WritableSignal<string | null>;
+  readonly widgetZIndices: WritableSignal<Record<string, number>>;
   readonly isMobile: WritableSignal<boolean>;
   readonly isCanvasMode: WritableSignal<boolean>;
   readonly canvasGridMinHeight: Signal<number>;
@@ -56,6 +57,7 @@ export class DashboardLayoutEngine {
 
   private _interactionSeq = 0;
   private _widgetLastInteraction: Record<string, number> = {};
+  private _zCounter = 0;
 
   private _resizeTarget: string | null = null;
   private _resizeDir: 'h' | 'v' | 'both' = 'v';
@@ -92,6 +94,7 @@ export class DashboardLayoutEngine {
     this.widgetLefts = signal({ ...config.defaultLefts });
     this.widgetPixelWidths = signal({ ...config.defaultPixelWidths });
     this.moveTargetId = signal<string | null>(null);
+    this.widgetZIndices = signal<Record<string, number>>({});
     this.isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     this.isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
 
@@ -270,6 +273,7 @@ export class DashboardLayoutEngine {
     this._dragStartTop = this.widgetTops()[id];
     this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
+    this.bumpZIndex(id);
   }
 
   onWidgetHeaderTouchStart(id: string, event: TouchEvent): void {
@@ -291,6 +295,7 @@ export class DashboardLayoutEngine {
     this._dragStartTop = this.widgetTops()[id];
     this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
+    this.bumpZIndex(id);
   }
 
   startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent): void {
@@ -306,6 +311,7 @@ export class DashboardLayoutEngine {
     if (dir === 'h' || dir === 'both') {
       this._resizeStartW = this.widgetPixelWidths()[target] ?? 600;
     }
+    this.bumpZIndex(target);
   }
 
   startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent): void {
@@ -323,6 +329,7 @@ export class DashboardLayoutEngine {
     if (this._resizeDir === 'h' || this._resizeDir === 'both') {
       this._resizeStartW = this.widgetPixelWidths()[target] ?? 600;
     }
+    this.bumpZIndex(target);
   }
 
   onDocumentMouseMove(event: MouseEvent): void {
@@ -366,6 +373,11 @@ export class DashboardLayoutEngine {
 
   cleanupOverlaps(): void {
     this.cleanupCanvasOverlaps();
+  }
+
+  private bumpZIndex(id: string): void {
+    this._zCounter++;
+    this.widgetZIndices.update(z => ({ ...z, [id]: this._zCounter }));
   }
 
   private handleWidgetMove(event: MouseEvent): void {
@@ -686,47 +698,90 @@ export class DashboardLayoutEngine {
       headerBottom = headerRect.bottom - gridRect.top;
     }
 
-    const recency = this._widgetLastInteraction;
+    const zIndices = this.widgetZIndices();
     const sorted = [...widgets].sort(
-      (x, y) => (recency[y] ?? 0) - (recency[x] ?? 0),
+      (x, y) => (zIndices[x] ?? 0) - (zIndices[y] ?? 0),
     );
 
-    let changed = true;
-    while (changed) {
-      changed = false;
-
-      for (const id of sorted) {
-        if (tops[id] < headerBottom + gap) {
-          tops[id] = headerBottom + gap;
-          changed = true;
-        }
+    for (const id of sorted) {
+      if (tops[id] < headerBottom + gap) {
+        tops[id] = headerBottom + gap;
       }
+    }
 
-      for (let i = 0; i < sorted.length; i++) {
-        for (let j = i + 1; j < sorted.length; j++) {
-          const mover = sorted[i];
-          const other = sorted[j];
+    const overlaps = (
+      aTop: number, aLeft: number, aW: number, aH: number,
+      bTop: number, bLeft: number, bW: number, bH: number,
+    ): boolean => {
+      const hO = Math.min(aLeft + aW, bLeft + bW) - Math.max(aLeft, bLeft);
+      const vO = Math.min(aTop + aH, bTop + bH) - Math.max(aTop, bTop);
+      return hO + gap > 0 && vO + gap > 0;
+    };
 
-          const hOverlap = Math.min(lefts[mover] + widths[mover], lefts[other] + widths[other]) - Math.max(lefts[mover], lefts[other]);
-          const vOverlap = Math.min(tops[mover] + heights[mover], tops[other] + heights[other]) - Math.max(tops[mover], tops[other]);
-          if (hOverlap + gap <= 0 || vOverlap + gap <= 0) continue;
+    const placed: string[] = [sorted[0]];
+    for (let k = 1; k < sorted.length; k++) {
+      const mover = sorted[k];
 
-          if (vOverlap <= hOverlap) {
-            if (tops[mover] <= tops[other]) {
-              tops[mover] -= vOverlap + gap;
-            } else {
-              tops[mover] += vOverlap + gap;
-            }
-          } else {
-            if (lefts[mover] <= lefts[other]) {
-              lefts[mover] -= hOverlap + gap;
-            } else {
-              lefts[mover] += hOverlap + gap;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const colliding: string[] = [];
+        for (const pid of placed) {
+          if (overlaps(tops[mover], lefts[mover], widths[mover], heights[mover],
+                       tops[pid], lefts[pid], widths[pid], heights[pid])) {
+            colliding.push(pid);
+          }
+        }
+        if (colliding.length === 0) break;
+
+        let escapeUp = Infinity;
+        let escapeDown = -Infinity;
+        let escapeLeft = Infinity;
+        let escapeRight = -Infinity;
+
+        for (const pid of colliding) {
+          escapeUp = Math.min(escapeUp, tops[pid] - heights[mover] - gap);
+          escapeDown = Math.max(escapeDown, tops[pid] + heights[pid] + gap);
+          escapeLeft = Math.min(escapeLeft, lefts[pid] - widths[mover] - gap);
+          escapeRight = Math.max(escapeRight, lefts[pid] + widths[pid] + gap);
+        }
+
+        escapeUp = Math.max(escapeUp, headerBottom + gap);
+
+        const candidates = [
+          { t: escapeUp, l: lefts[mover], d: Math.abs(tops[mover] - escapeUp) },
+          { t: escapeDown, l: lefts[mover], d: Math.abs(tops[mover] - escapeDown) },
+          { t: tops[mover], l: escapeLeft, d: Math.abs(lefts[mover] - escapeLeft) },
+          { t: tops[mover], l: escapeRight, d: Math.abs(lefts[mover] - escapeRight) },
+        ];
+        candidates.sort((a, b) => a.d - b.d);
+
+        let applied = false;
+        for (const c of candidates) {
+          let clear = true;
+          for (const pid of placed) {
+            if (overlaps(c.t, c.l, widths[mover], heights[mover],
+                         tops[pid], lefts[pid], widths[pid], heights[pid])) {
+              clear = false;
+              break;
             }
           }
-          changed = true;
+          if (clear) {
+            tops[mover] = c.t;
+            lefts[mover] = c.l;
+            applied = true;
+            break;
+          }
+        }
+
+        if (!applied) {
+          tops[mover] = candidates[0].t;
+          lefts[mover] = candidates[0].l;
         }
       }
+
+      if (tops[mover] < headerBottom + gap) {
+        tops[mover] = headerBottom + gap;
+      }
+      placed.push(mover);
     }
 
     const moved = widgets.some((id) => tops[id] !== origTops[id] || lefts[id] !== origLefts[id]);
