@@ -2,23 +2,27 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
-import { TitleCasePipe } from '@angular/common';
+import { NgTemplateOutlet, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { WidgetResizeHandleComponent } from '../../components/widget-resize-handle.component';
+import { AiIconComponent } from '../../components/ai-icon.component';
 
 import { ThemeService } from '../../services/theme.service';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
+import { CanvasResetService } from '../../services/canvas-reset.service';
 import {
   PROJECT_DATA,
   type ProjectStatus,
@@ -45,16 +49,22 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetResizeHandleComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetResizeHandleComponent, AiIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'block h-screen overflow-hidden',
+    class: 'block',
+    '[class.h-screen]': '!isCanvas()',
+    '[class.overflow-hidden]': '!isCanvas()',
+    '[class.canvas-pan-ready]': 'isPanReady()',
+    '[class.canvas-panning]': 'isPanning()',
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
     '(document:touchend)': 'onDocumentTouchEnd()',
     '(document:touchcancel)': 'onDocumentTouchEnd()',
-    '(document:keydown.escape)': 'onEscapeKey()',
+    '(window:keydown.escape)': 'onEscapeKey()',
     '(document:click)': 'onDocumentClick($event)',
+    '(window:keydown)': 'onKeyDown($event)',
+    '(window:keyup)': 'onKeyUp($event)',
   },
   template: `
     <svg aria-hidden="true" class="svg-defs-hidden">
@@ -71,182 +81,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         </radialGradient>
       </defs>
     </svg>
-    <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
-    <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
-      <!-- Navbar -->
-      <modus-navbar
-        [userCard]="userCard"
-        [visibility]="navbarVisibility()"
-        [condensed]="isMobile()"
-        [searchInputOpen]="searchInputOpen()"
-        (searchClick)="searchInputOpen.set(!searchInputOpen())"
-        (searchInputOpenChange)="searchInputOpen.set($event)"
-        (trimbleLogoClick)="navigateToProjects()"
-      >
-        <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-          <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-          <div
-            class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
-            (click)="navigateToProjects()"
-            role="button"
-            tabindex="0"
-            (keydown.enter)="navigateToProjects()"
-          >
-            <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-            <div class="text-sm hidden md:block">Projects</div>
-          </div>
-          <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-          <div class="relative min-w-0 flex-1">
-            <div
-              class="flex items-center gap-1 cursor-pointer min-w-0"
-              role="button"
-              tabindex="0"
-              [attr.aria-expanded]="projectDropdownOpen()"
-              aria-haspopup="listbox"
-              (click)="toggleProjectDropdown()"
-              (keydown.enter)="toggleProjectDropdown()"
-            >
-              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
-              <i class="modus-icons text-sm text-foreground-40 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectDropdownOpen()" aria-hidden="true">expand_more</i>
-            </div>
-            @if (projectDropdownOpen()) {
-              <div class="absolute left-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[260px] max-w-[360px] py-1 max-h-[320px] overflow-y-auto" role="listbox" aria-label="Switch project">
-                @for (proj of allProjects; track proj.id) {
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors duration-150"
-                    [class.bg-primary-20]="proj.id === projectId()"
-                    [class.text-primary]="proj.id === projectId()"
-                    [class.text-foreground]="proj.id !== projectId()"
-                    [class.hover:bg-muted]="proj.id !== projectId()"
-                    role="option"
-                    [attr.aria-selected]="proj.id === projectId()"
-                    (click)="switchProject(proj.id)"
-                  >
-                    <div class="w-2 h-2 rounded-full flex-shrink-0"
-                      [class.bg-success]="proj.status === 'On Track'"
-                      [class.bg-warning]="proj.status === 'At Risk'"
-                      [class.bg-destructive]="proj.status === 'Overdue'"
-                      [class.bg-secondary]="proj.status === 'Planning'"
-                    ></div>
-                    <div class="text-sm truncate">{{ proj.name }}</div>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        </div>
-        <div slot="end" class="flex items-center gap-1">
-          <!-- AI assistant button -->
-          <div
-            class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-            role="button"
-            aria-label="AI assistant"
-            (click)="toggleAiPanel()"
-            (keydown.enter)="toggleAiPanel()"
-            tabindex="0"
-          >
-            @if (isDark()) {
-              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <radialGradient id="ai-nav-grad-dark" cx="18%" cy="18%" r="70%">
-                    <stop offset="0%" stop-color="#FF00FF" />
-                    <stop offset="50%" stop-color="#9933FF" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </radialGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
-                <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-nav-grad-dark)" transform="translate(-256, 0)"/>
-              </svg>
-            } @else {
-              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="ai-nav-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="20%" stop-color="#FF00FF" />
-                    <stop offset="60%" stop-color="#0066CC" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </linearGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
-                <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-nav-grad-light)"/>
-              </svg>
-            }
-          </div>
-          <!-- Desktop: dark mode toggle -->
-          <div
-            class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-            role="button"
-            [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-            (click)="toggleDarkMode()"
-            (keydown.enter)="toggleDarkMode()"
-            tabindex="0"
-          >
-            <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-          </div>
-          <!-- Mobile: more menu with dark mode + other actions -->
-          @if (isMobile()) {
-            <div class="relative">
-              <div
-                class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                aria-label="More options"
-                [attr.aria-expanded]="moreMenuOpen()"
-                (click)="toggleMoreMenu()"
-                (keydown.enter)="toggleMoreMenu()"
-                tabindex="0"
-              >
-                <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
-              </div>
-              @if (moreMenuOpen()) {
-                <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('search')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">search</i>
-                    <div class="text-sm">Search</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('notifications')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">notifications</i>
-                    <div class="text-sm">Notifications</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('help')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">help</i>
-                    <div class="text-sm">Help</div>
-                  </div>
-                  <div class="border-bottom-default mx-3 my-1"></div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('darkMode')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-                    <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        </div>
-      </modus-navbar>
-
-      <div class="navbar-shadow"></div>
-
-      <!-- Body -->
-      <div class="flex flex-1 overflow-hidden">
-        <!-- Main content -->
-        <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
-          <div class="p-4 md:p-6">
+    <ng-template #dashboardContent>
         <!-- Overview Row -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           @for (stat of summaryStats(); track stat.label) {
@@ -260,23 +95,21 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
           }
         </div>
 
-        <!-- 16-column widget grid -->
+        <!-- Widget grid -->
         <div
-          [class]="isMobile() ? 'relative mb-6' : 'grid mb-6'"
-          [style.grid-template-columns]="isMobile() ? null : 'repeat(16, minmax(0, 1fr))'"
-          [style.grid-auto-rows]="isMobile() ? null : '1px'"
-          [style.gap]="isMobile() ? null : '0 1rem'"
+          class="relative mb-6"
           [style.height.px]="isMobile() ? mobileGridHeight() : null"
+          [style.min-height.px]="!isMobile() ? desktopGridMinHeight() : null"
           #widgetGrid
         >
           @for (wId of widgets; track wId) {
             <div
-              [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
+              [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden'"
               [attr.data-widget-id]="wId"
-              [style.grid-column]="isMobile() ? null : wColStarts()[wId] + ' / span ' + wColSpans()[wId]"
-              [style.grid-row]="isMobile() ? null : (wTops()[wId] + 1) + ' / span ' + wHeights()[wId]"
-              [style.top.px]="isMobile() ? wTops()[wId] : null"
-              [style.height.px]="isMobile() ? wHeights()[wId] : null"
+              [style.top.px]="wTops()[wId]"
+              [style.left.px]="!isMobile() ? wLefts()[wId] : null"
+              [style.width.px]="!isMobile() ? wPixelWidths()[wId] : null"
+              [style.height.px]="wHeights()[wId]"
             >
               <div class="relative h-full" [class.opacity-30]="moveTargetId() === wId">
 
@@ -542,6 +375,352 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
             </div>
           }
           </div>
+    </ng-template>
+
+    @if (isCanvas()) {
+      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="onPanMouseDown($event)" (wheel)="onCanvasWheel($event)">
+        <div class="canvas-navbar">
+          <modus-navbar
+            [userCard]="userCard"
+            [visibility]="navbarVisibility()"
+            [condensed]="false"
+            [searchInputOpen]="searchInputOpen()"
+            (searchClick)="searchInputOpen.set(!searchInputOpen())"
+            (searchInputOpenChange)="searchInputOpen.set($event)"
+            (trimbleLogoClick)="navigateToProjects()"
+          >
+            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
+              <div
+                class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
+                (click)="navigateToProjects()"
+                role="button"
+                tabindex="0"
+                (keydown.enter)="navigateToProjects()"
+              >
+                <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
+                <div class="text-sm">Projects</div>
+              </div>
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
+              <div class="relative min-w-0 flex-1">
+                <div
+                  class="flex items-center gap-1 cursor-pointer min-w-0"
+                  role="button"
+                  tabindex="0"
+                  [attr.aria-expanded]="projectDropdownOpen()"
+                  aria-haspopup="listbox"
+                  (click)="toggleProjectDropdown()"
+                  (keydown.enter)="toggleProjectDropdown()"
+                >
+                  <div class="text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
+                  <i class="modus-icons text-sm text-foreground-40 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectDropdownOpen()" aria-hidden="true">expand_more</i>
+                </div>
+                @if (projectDropdownOpen()) {
+                  <div class="absolute left-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[260px] max-w-[360px] py-1 max-h-[320px] overflow-y-auto" role="listbox" aria-label="Switch project">
+                    @for (proj of allProjects; track proj.id) {
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors duration-150"
+                        [class.bg-primary-20]="proj.id === projectId()"
+                        [class.text-primary]="proj.id === projectId()"
+                        [class.text-foreground]="proj.id !== projectId()"
+                        [class.hover:bg-muted]="proj.id !== projectId()"
+                        role="option"
+                        [attr.aria-selected]="proj.id === projectId()"
+                        (click)="switchProject(proj.id)"
+                      >
+                        <div class="w-2 h-2 rounded-full flex-shrink-0"
+                          [class.bg-success]="proj.status === 'On Track'"
+                          [class.bg-warning]="proj.status === 'At Risk'"
+                          [class.bg-destructive]="proj.status === 'Overdue'"
+                          [class.bg-secondary]="proj.status === 'Planning'"
+                        ></div>
+                        <div class="text-sm truncate">{{ proj.name }}</div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+            <div slot="end" class="flex items-center gap-1">
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="AI assistant"
+                (click)="toggleAiPanel()"
+                (keydown.enter)="toggleAiPanel()"
+                tabindex="0"
+              >
+                <ai-icon variant="nav" [isDark]="isDark()" />
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+                (click)="toggleDarkMode()"
+                (keydown.enter)="toggleDarkMode()"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+              </div>
+            </div>
+          </modus-navbar>
+        </div>
+        <div class="canvas-navbar-shadow navbar-shadow"></div>
+
+        <div class="canvas-side-nav" [class.expanded]="navExpanded()">
+          <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+            @for (item of sideNavItems; track item.value) {
+              <div
+                class="custom-side-nav-item"
+                [class.selected]="activeNavItem() === item.value"
+                (click)="selectNavItem(item.value)"
+                [title]="item.label"
+                role="button"
+                [attr.aria-label]="item.label"
+              >
+                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                @if (navExpanded()) {
+                  <div class="custom-side-nav-label">{{ item.label }}</div>
+                }
+              </div>
+            }
+          </div>
+          <div class="mt-auto border-top-default">
+            <div class="relative">
+              <div
+                class="custom-side-nav-item"
+                (click)="toggleResetMenu(); $event.stopPropagation()"
+                title="Reset options"
+                role="button"
+                aria-label="Reset options"
+                [attr.aria-expanded]="resetMenuOpen()"
+              >
+                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                @if (navExpanded()) {
+                  <div class="custom-side-nav-label">Reset</div>
+                }
+              </div>
+              @if (resetMenuOpen()) {
+                <div class="canvas-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="resetMenuAction('view'); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">window_fit</i>
+                    <div class="text-sm">Reset View</div>
+                  </div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="resetMenuAction('cleanup'); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">group_items</i>
+                    <div class="text-sm">Clean Up Overlaps</div>
+                  </div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="resetMenuAction('widgets'); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
+                    <div class="text-sm">Reset Widgets</div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+        @if (navExpanded()) {
+          <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
+        }
+
+        <div class="canvas-content" role="main" id="main-content" tabindex="-1"
+          [style.transform]="(panOffsetX() || panOffsetY()) ? 'translate(' + panOffsetX() + 'px,' + panOffsetY() + 'px)' : null">
+          <div class="py-6 max-w-screen-xl mx-auto">
+            <ng-container [ngTemplateOutlet]="dashboardContent" />
+          </div>
+        </div>
+      </div>
+    } @else {
+    <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
+    <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
+      <!-- Navbar -->
+      <modus-navbar
+        [userCard]="userCard"
+        [visibility]="navbarVisibility()"
+        [condensed]="isMobile()"
+        [searchInputOpen]="searchInputOpen()"
+        (searchClick)="searchInputOpen.set(!searchInputOpen())"
+        (searchInputOpenChange)="searchInputOpen.set($event)"
+        (trimbleLogoClick)="navigateToProjects()"
+      >
+        <div slot="start" class="flex items-center gap-3 w-full min-w-0">
+          <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
+          <div
+            class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
+            (click)="navigateToProjects()"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="navigateToProjects()"
+          >
+            <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
+            <div class="text-sm hidden md:block">Projects</div>
+          </div>
+          <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
+          <div class="relative min-w-0 flex-1">
+            <div
+              class="flex items-center gap-1 cursor-pointer min-w-0"
+              role="button"
+              tabindex="0"
+              [attr.aria-expanded]="projectDropdownOpen()"
+              aria-haspopup="listbox"
+              (click)="toggleProjectDropdown()"
+              (keydown.enter)="toggleProjectDropdown()"
+            >
+              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
+              <i class="modus-icons text-sm text-foreground-40 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectDropdownOpen()" aria-hidden="true">expand_more</i>
+            </div>
+            @if (projectDropdownOpen()) {
+              <div class="absolute left-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[260px] max-w-[360px] py-1 max-h-[320px] overflow-y-auto" role="listbox" aria-label="Switch project">
+                @for (proj of allProjects; track proj.id) {
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors duration-150"
+                    [class.bg-primary-20]="proj.id === projectId()"
+                    [class.text-primary]="proj.id === projectId()"
+                    [class.text-foreground]="proj.id !== projectId()"
+                    [class.hover:bg-muted]="proj.id !== projectId()"
+                    role="option"
+                    [attr.aria-selected]="proj.id === projectId()"
+                    (click)="switchProject(proj.id)"
+                  >
+                    <div class="w-2 h-2 rounded-full flex-shrink-0"
+                      [class.bg-success]="proj.status === 'On Track'"
+                      [class.bg-warning]="proj.status === 'At Risk'"
+                      [class.bg-destructive]="proj.status === 'Overdue'"
+                      [class.bg-secondary]="proj.status === 'Planning'"
+                    ></div>
+                    <div class="text-sm truncate">{{ proj.name }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <div slot="end" class="flex items-center gap-1">
+          <!-- AI assistant button -->
+          <div
+            class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+            role="button"
+            aria-label="AI assistant"
+            (click)="toggleAiPanel()"
+            (keydown.enter)="toggleAiPanel()"
+            tabindex="0"
+          >
+            @if (isDark()) {
+              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="ai-nav-grad-dark" cx="18%" cy="18%" r="70%">
+                    <stop offset="0%" stop-color="#FF00FF" />
+                    <stop offset="50%" stop-color="#9933FF" />
+                    <stop offset="100%" stop-color="#0066CC" />
+                  </radialGradient>
+                </defs>
+                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
+                <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-nav-grad-dark)" transform="translate(-256, 0)"/>
+              </svg>
+            } @else {
+              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="ai-nav-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="20%" stop-color="#FF00FF" />
+                    <stop offset="60%" stop-color="#0066CC" />
+                    <stop offset="100%" stop-color="#0066CC" />
+                  </linearGradient>
+                </defs>
+                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
+                <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
+                <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
+                <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-nav-grad-light)"/>
+              </svg>
+            }
+          </div>
+          <!-- Desktop: dark mode toggle -->
+          <div
+            class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+            role="button"
+            [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+            (click)="toggleDarkMode()"
+            (keydown.enter)="toggleDarkMode()"
+            tabindex="0"
+          >
+            <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+          </div>
+          <!-- Mobile: more menu with dark mode + other actions -->
+          @if (isMobile()) {
+            <div class="relative">
+              <div
+                class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="More options"
+                [attr.aria-expanded]="moreMenuOpen()"
+                (click)="toggleMoreMenu()"
+                (keydown.enter)="toggleMoreMenu()"
+                tabindex="0"
+              >
+                <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
+              </div>
+              @if (moreMenuOpen()) {
+                <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="moreMenuAction('search')"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">search</i>
+                    <div class="text-sm">Search</div>
+                  </div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="moreMenuAction('notifications')"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">notifications</i>
+                    <div class="text-sm">Notifications</div>
+                  </div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="moreMenuAction('help')"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">help</i>
+                    <div class="text-sm">Help</div>
+                  </div>
+                  <div class="border-bottom-default mx-3 my-1"></div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="moreMenuAction('darkMode')"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+                    <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </modus-navbar>
+
+      <div class="navbar-shadow"></div>
+
+      <!-- Body -->
+      <div class="flex flex-1 overflow-hidden">
+        <!-- Main content -->
+        <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+          <div class="px-4 py-4 md:px-0 md:py-6 max-w-screen-xl mx-auto">
+            <ng-container [ngTemplateOutlet]="dashboardContent" />
+          </div>
         </div>
       </div>
 
@@ -572,6 +751,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
       }
 
     </div>
+    }
 
     <!-- AI Assistant Panel -->
     <modus-utility-panel
@@ -729,6 +909,10 @@ export class ProjectDashboardComponent implements AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly elementRef = inject(ElementRef);
   private readonly layoutService = inject(WidgetLayoutService);
+  private readonly canvasResetService = inject(CanvasResetService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly _abortCtrl = new AbortController();
+  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this._abortCtrl.abort());
   private hamburgerBtn: HTMLElement | null = null;
 
   private readonly hamburgerEffect = effect(() => {
@@ -745,9 +929,19 @@ export class ProjectDashboardComponent implements AfterViewInit {
   });
 
   readonly isMobile = signal(false);
+  readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
+  readonly isPanReady = signal(false);
+  readonly isPanning = signal(false);
+  readonly panOffsetX = signal(0);
+  readonly panOffsetY = signal(0);
+  private _panStartX = 0;
+  private _panStartY = 0;
+  private _panStartOffsetX = 0;
+  private _panStartOffsetY = 0;
   readonly searchInputOpen = signal(false);
   readonly navExpanded = signal(false);
   readonly activeNavItem = signal<string>('dashboard');
+  readonly resetMenuOpen = signal(false);
 
   readonly sideNavItems = [
     { value: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -782,6 +976,14 @@ export class ProjectDashboardComponent implements AfterViewInit {
     milestones: 520, tasks: 400, risks: 350,
     drawing: 420, budget: 450, team: 400, activity: 350,
   });
+  readonly wLefts = signal<Record<ProjectWidgetId, number>>({
+    milestones: 0, tasks: 0, risks: 0,
+    drawing: 891, budget: 891, team: 891, activity: 891,
+  });
+  readonly wPixelWidths = signal<Record<ProjectWidgetId, number>>({
+    milestones: 875, tasks: 875, risks: 875,
+    drawing: 389, budget: 389, team: 389, activity: 389,
+  });
   readonly moveTargetId = signal<ProjectWidgetId | null>(null);
 
   readonly mobileGridHeight = computed(() => {
@@ -794,28 +996,41 @@ export class ProjectDashboardComponent implements AfterViewInit {
     return max;
   });
 
+  readonly desktopGridMinHeight = computed(() => {
+    const tops = this.wTops();
+    const heights = this.wHeights();
+    let max = 0;
+    for (const id of this.widgets) {
+      max = Math.max(max, tops[id] + heights[id]);
+    }
+    return max + 200;
+  });
+
   private _moveTarget: ProjectWidgetId | null = null;
-  private _dragAxis: 'h' | 'v' | null = null;
+  private _dragAxis: 'v' | 'free' | null = null;
   private _dragStartX = 0;
   private _dragStartY = 0;
   private _dragStartTop = 0;
+  private _dragStartLeft = 0;
   private _resizeTarget: ProjectWidgetId | null = null;
   private _resizeDir: 'h' | 'v' | 'both' = 'v';
   private _resizeStartX = 0;
   private _resizeStartY = 0;
   private _resizeStartH = 0;
-  private _resizeStartColSpan = 0;
-  private _gridContainerWidth = 1200;
+  private _resizeStartW = 0;
   private _savedDesktopTops: Record<ProjectWidgetId, number> | null = null;
   private _savedDesktopColStarts: Record<ProjectWidgetId, number> | null = null;
   private _savedDesktopColSpans: Record<ProjectWidgetId, number> | null = null;
   private _savedDesktopHeights: Record<ProjectWidgetId, number> | null = null;
+  private _savedDesktopLefts: Record<ProjectWidgetId, number> | null = null;
+  private _savedDesktopWidths: Record<ProjectWidgetId, number> | null = null;
 
   readonly navbarVisibility = computed(() => {
     const mobile = this.isMobile();
+    const canvas = this.isCanvas();
     return {
       user: true,
-      mainMenu: true,
+      mainMenu: !canvas,
       ai: false,
       notifications: !mobile,
       apps: false,
@@ -918,6 +1133,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
     const startMobile = window.innerWidth < 768;
     this.isMobile.set(startMobile);
+    this.isCanvas.set(window.innerWidth >= 2000);
 
     if (startMobile) {
       this.restoreDesktopLayout();
@@ -925,6 +1141,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
       this._savedDesktopColStarts = { ...this.wColStarts() };
       this._savedDesktopColSpans = { ...this.wColSpans() };
       this._savedDesktopHeights = { ...this.wHeights() };
+      this._savedDesktopLefts = { ...this.wLefts() };
+      this._savedDesktopWidths = { ...this.wPixelWidths() };
       const restoredMobile = this.restoreMobileLayout();
       if (restoredMobile) {
         this.compactAll();
@@ -944,6 +1162,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
         this._savedDesktopColStarts = { ...this.wColStarts() };
         this._savedDesktopColSpans = { ...this.wColSpans() };
         this._savedDesktopHeights = { ...this.wHeights() };
+        this._savedDesktopLefts = { ...this.wLefts() };
+        this._savedDesktopWidths = { ...this.wPixelWidths() };
         const restoredMobile = this.restoreMobileLayout();
         if (restoredMobile) {
           this.compactAll();
@@ -957,10 +1177,14 @@ export class ProjectDashboardComponent implements AfterViewInit {
           if (this._savedDesktopColStarts) this.wColStarts.set(this._savedDesktopColStarts);
           if (this._savedDesktopColSpans) this.wColSpans.set(this._savedDesktopColSpans);
           if (this._savedDesktopHeights) this.wHeights.set(this._savedDesktopHeights);
+          if (this._savedDesktopLefts) this.wLefts.set(this._savedDesktopLefts);
+          if (this._savedDesktopWidths) this.wPixelWidths.set(this._savedDesktopWidths);
           this._savedDesktopTops = null;
           this._savedDesktopColStarts = null;
           this._savedDesktopColSpans = null;
           this._savedDesktopHeights = null;
+          this._savedDesktopLefts = null;
+          this._savedDesktopWidths = null;
         } else {
           this.restoreDesktopLayout();
         }
@@ -969,12 +1193,23 @@ export class ProjectDashboardComponent implements AfterViewInit {
         this.navExpanded.set(false);
       }
     };
-    mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
+    mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void, { signal: this._abortCtrl.signal });
+
+    const mqCanvas = window.matchMedia('(min-width: 2000px)');
+    const onCanvasChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      this.isCanvas.set(e.matches);
+    };
+    mqCanvas.addEventListener('change', onCanvasChange as (e: MediaQueryListEvent) => void, { signal: this._abortCtrl.signal });
+
     window.addEventListener('resize', () => {
       if ((window.innerWidth < 768) !== this.isMobile()) {
         onBreakpointChange(mq);
       }
-    });
+      const canvas = window.innerWidth >= 2000;
+      if (canvas !== this.isCanvas()) {
+        onCanvasChange(mqCanvas);
+      }
+    }, { signal: this._abortCtrl.signal });
 
     document.addEventListener('touchmove', (e: TouchEvent) => {
       if (this._moveTarget || this._resizeTarget) {
@@ -1084,10 +1319,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
   onWidgetHeaderMouseDown(id: ProjectWidgetId, event: MouseEvent): void {
     event.preventDefault();
     this._moveTarget = id;
-    this._dragAxis = null;
+    this._dragAxis = this.isMobile() ? null : 'free';
     this._dragStartX = event.clientX;
     this._dragStartY = event.clientY;
     this._dragStartTop = this.wTops()[id];
+    this._dragStartLeft = this.wLefts()[id] ?? 0;
     this.moveTargetId.set(id);
   }
 
@@ -1104,10 +1340,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
     }
     event.preventDefault();
     this._moveTarget = id;
-    this._dragAxis = null;
+    this._dragAxis = this.isMobile() ? null : 'free';
     this._dragStartX = touch.clientX;
     this._dragStartY = touch.clientY;
     this._dragStartTop = this.wTops()[id];
+    this._dragStartLeft = this.wLefts()[id] ?? 0;
     this.moveTargetId.set(id);
   }
 
@@ -1122,8 +1359,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
       this._resizeStartH = this.wHeights()[target];
     }
     if (dir === 'h' || dir === 'both') {
-      this._resizeStartColSpan = this.wColSpans()[target];
-      this._gridContainerWidth = this.gridRef()?.nativeElement?.offsetWidth ?? 1200;
+      this._resizeStartW = this.wPixelWidths()[target] ?? 600;
     }
   }
 
@@ -1140,12 +1376,18 @@ export class ProjectDashboardComponent implements AfterViewInit {
       this._resizeStartH = this.wHeights()[target];
     }
     if (this._resizeDir === 'h' || this._resizeDir === 'both') {
-      this._resizeStartColSpan = this.wColSpans()[target];
-      this._gridContainerWidth = this.gridRef()?.nativeElement?.offsetWidth ?? 1200;
+      this._resizeStartW = this.wPixelWidths()[target] ?? 600;
     }
   }
 
   onDocumentMouseMove(event: MouseEvent): void {
+    if (this.isPanning()) {
+      const dx = event.clientX - this._panStartX;
+      const dy = event.clientY - this._panStartY;
+      this.panOffsetX.set(this._panStartOffsetX + dx);
+      this.panOffsetY.set(this._panStartOffsetY + dy);
+      return;
+    }
     if (this._moveTarget) {
       this.handleWidgetMove(event);
     } else if (this._resizeTarget) {
@@ -1154,19 +1396,21 @@ export class ProjectDashboardComponent implements AfterViewInit {
         const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
         const newH = Math.round(raw / 16) * 16;
         this.wHeights.update(h => ({ ...h, [id]: newH }));
-        this.resolveCollisions(id);
       }
       if (this._resizeDir === 'h' || this._resizeDir === 'both') {
-        const colW = this._gridContainerWidth / 16;
-        const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
-        const newSpan = Math.max(3, Math.min(16, this._resizeStartColSpan + deltaSpan));
-        this.wColSpans.update(s => ({ ...s, [id]: newSpan }));
-        this.resolveCollisions(id);
+        const raw = Math.max(200, this._resizeStartW + (event.clientX - this._resizeStartX));
+        const newW = Math.round(raw / 16) * 16;
+        this.wPixelWidths.update(w => ({ ...w, [id]: newW }));
       }
+      this.resolveCollisions(id);
     }
   }
 
   onDocumentMouseUp(): void {
+    if (this.isPanning()) {
+      this.isPanning.set(false);
+      return;
+    }
     const hadInteraction = !!this._moveTarget || !!this._resizeTarget;
     this._moveTarget = null;
     this._dragAxis = null;
@@ -1195,6 +1439,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
       heights: this.wHeights(),
       colStarts: this.wColStarts(),
       colSpans: this.wColSpans(),
+      lefts: this.wLefts(),
+      widths: this.wPixelWidths(),
     });
   }
 
@@ -1205,6 +1451,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this.wHeights.set(saved.heights as Record<ProjectWidgetId, number>);
     this.wColStarts.set(saved.colStarts as Record<ProjectWidgetId, number>);
     this.wColSpans.set(saved.colSpans as Record<ProjectWidgetId, number>);
+    if (saved.lefts) this.wLefts.set(saved.lefts as Record<ProjectWidgetId, number>);
+    if (saved.widths) this.wPixelWidths.set(saved.widths as Record<ProjectWidgetId, number>);
     return true;
   }
 
@@ -1222,40 +1470,43 @@ export class ProjectDashboardComponent implements AfterViewInit {
     const grid = this.gridRef()?.nativeElement as HTMLElement | undefined;
     if (!grid || !this._moveTarget) return;
     const id = this._moveTarget;
+    const gap = ProjectDashboardComponent.GAP_PX;
+
+    if (this._dragAxis === 'free') {
+      const rawTop = this._dragStartTop + (event.clientY - this._dragStartY);
+      const rawLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
+      const newTop = Math.round(rawTop / gap) * gap;
+      const newLeft = Math.round(rawLeft / gap) * gap;
+      this.wTops.update(t => ({ ...t, [id]: newTop }));
+      this.wLefts.update(l => ({ ...l, [id]: newLeft }));
+      this.resolveCollisions(id);
+      return;
+    }
 
     if (!this._dragAxis) {
-      const dx = Math.abs(event.clientX - this._dragStartX);
       const dy = Math.abs(event.clientY - this._dragStartY);
-      if (dx < 8 && dy < 8) return;
-      this._dragAxis = this.isMobile() ? 'v' : (dx >= dy ? 'h' : 'v');
+      if (dy < 8) return;
+      this._dragAxis = 'v';
     }
 
-    if (this._dragAxis === 'h') {
-      const rect = grid.getBoundingClientRect();
-      const colW = rect.width / 16;
-      const span = this.wColSpans()[id];
-      const rawStart = Math.floor((event.clientX - rect.left) / colW) + 1;
-      const newColStart = Math.max(1, Math.min(17 - span, rawStart));
-      if (newColStart !== this.wColStarts()[id]) {
-        this.wColStarts.update(s => ({ ...s, [id]: newColStart }));
-        this.resolveCollisions(id);
-      }
-    } else {
-      const newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY));
-      this.wTops.update(t => ({ ...t, [id]: newTop }));
-      this.resolveCollisions(id);
-    }
+    const newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY));
+    this.wTops.update(t => ({ ...t, [id]: newTop }));
+    this.resolveCollisions(id);
   }
 
   private resolveCollisions(movedId: ProjectWidgetId): void {
     const tops = { ...this.wTops() };
     const heights = this.wHeights();
-    const starts = this.wColStarts();
-    const spans = this.wColSpans();
     const gap = ProjectDashboardComponent.GAP_PX;
     const mobile = this.isMobile();
-    const colOverlap = (a: ProjectWidgetId, b: ProjectWidgetId) =>
-      mobile || (starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a]);
+    let colOverlap: (a: ProjectWidgetId, b: ProjectWidgetId) => boolean;
+    if (mobile) {
+      colOverlap = () => true;
+    } else {
+      const lefts = this.wLefts();
+      const widths = this.wPixelWidths();
+      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
+    }
 
     const sorted = [...this.widgets].sort((a, b) => tops[a] - tops[b]);
     const placed: ProjectWidgetId[] = [movedId];
@@ -1319,10 +1570,10 @@ export class ProjectDashboardComponent implements AfterViewInit {
       return;
     }
 
-    const starts = this.wColStarts();
-    const spans = this.wColSpans();
+    const lefts = this.wLefts();
+    const widths = this.wPixelWidths();
     const colOverlap = (a: ProjectWidgetId, b: ProjectWidgetId) =>
-      starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+      lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
 
     const sorted = [...this.widgets].sort((a, b) => tops[a] - tops[b]);
     const placed: ProjectWidgetId[] = [];
@@ -1398,6 +1649,14 @@ export class ProjectDashboardComponent implements AfterViewInit {
     milestones: 11, tasks: 11, risks: 11,
     drawing: 5, budget: 5, team: 5, activity: 5,
   };
+  private readonly defaultLefts: Record<ProjectWidgetId, number> = {
+    milestones: 0, tasks: 0, risks: 0,
+    drawing: 891, budget: 891, team: 891, activity: 891,
+  };
+  private readonly defaultPixelWidths: Record<ProjectWidgetId, number> = {
+    milestones: 875, tasks: 875, risks: 875,
+    drawing: 389, budget: 389, team: 389, activity: 389,
+  };
 
   switchProject(id: number): void {
     this.projectDropdownOpen.set(false);
@@ -1419,6 +1678,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
           this.wHeights.set({ ...this.defaultHeights });
           this.wColStarts.set({ ...this.defaultColStarts });
           this.wColSpans.set({ ...this.defaultColSpans });
+          this.wLefts.set({ ...this.defaultLefts });
+          this.wPixelWidths.set({ ...this.defaultPixelWidths });
         }
       }
       this.router.navigate(['/project', id], { replaceUrl: true });
@@ -1449,7 +1710,9 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   onEscapeKey(): void {
-    if (this.projectDropdownOpen()) {
+    if (this.resetMenuOpen()) {
+      this.resetMenuOpen.set(false);
+    } else if (this.projectDropdownOpen()) {
       this.projectDropdownOpen.set(false);
     } else if (this.moreMenuOpen()) {
       this.moreMenuOpen.set(false);
@@ -1462,12 +1725,84 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
+    if (this.resetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.canvas-reset-flyout')) {
+      this.resetMenuOpen.set(false);
+    }
     if (this.projectDropdownOpen() && !target.closest('[aria-haspopup="listbox"]') && !target.closest('[role="option"]')) {
       this.projectDropdownOpen.set(false);
     }
     if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);
     }
+  }
+
+  toggleResetMenu(): void {
+    this.resetMenuOpen.update((v) => !v);
+  }
+
+  resetMenuAction(action: 'view' | 'widgets' | 'cleanup'): void {
+    this.resetMenuOpen.set(false);
+    if (action === 'view') {
+      this.resetCanvasView();
+    } else if (action === 'widgets') {
+      this.resetCanvasView();
+      this.resetWidgetsToDefaults();
+    } else if (action === 'cleanup') {
+      this.cleanupCanvasOverlaps();
+    }
+  }
+
+  resetCanvasView(): void {
+    this.panOffsetX.set(0);
+    this.panOffsetY.set(0);
+  }
+
+  private resetWidgetsToDefaults(): void {
+    this.wTops.set({ ...this.defaultTops });
+    this.wHeights.set({ ...this.defaultHeights });
+    this.wColStarts.set({ ...this.defaultColStarts });
+    this.wColSpans.set({ ...this.defaultColSpans });
+    this.wLefts.set({ ...this.defaultLefts });
+    this.wPixelWidths.set({ ...this.defaultPixelWidths });
+    this.persistLayout();
+  }
+
+  private cleanupCanvasOverlaps(): void {
+    this.compactAll();
+    this.persistLayout();
+  }
+
+  onKeyDown(event: KeyboardEvent): void {
+    if (event.code !== 'Space' || !this.isCanvas()) return;
+    const tag = (event.target as HTMLElement)?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || (event.target as HTMLElement)?.isContentEditable) return;
+    event.preventDefault();
+    if (!event.repeat) {
+      this.isPanReady.set(true);
+    }
+  }
+
+  onKeyUp(event: KeyboardEvent): void {
+    if (event.code !== 'Space') return;
+    event.preventDefault();
+    this.isPanReady.set(false);
+    this.isPanning.set(false);
+  }
+
+  onPanMouseDown(event: MouseEvent): void {
+    if (!this.isPanReady()) return;
+    event.preventDefault();
+    this.isPanning.set(true);
+    this._panStartX = event.clientX;
+    this._panStartY = event.clientY;
+    this._panStartOffsetX = this.panOffsetX();
+    this._panStartOffsetY = this.panOffsetY();
+  }
+
+  onCanvasWheel(event: WheelEvent): void {
+    event.preventDefault();
+    this.panOffsetX.update((x) => x - event.deltaX);
+    this.panOffsetY.update((y) => y - event.deltaY);
   }
 
   toggleDarkMode(): void {

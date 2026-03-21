@@ -5,6 +5,8 @@ export interface WidgetLayout {
   heights: Record<string, number>;
   colStarts: Record<string, number>;
   colSpans: Record<string, number>;
+  lefts?: Record<string, number>;
+  widths?: Record<string, number>;
 }
 
 @Injectable({

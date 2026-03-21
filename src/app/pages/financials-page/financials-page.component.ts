@@ -78,26 +78,21 @@ import { PROJECTS } from '../../data/dashboard-data';
       </div>
       </div>
 
-      <!-- Widget area: 16-column grid layout -->
+      <!-- Widget area -->
       <div
-        [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : isMobile() ? 'relative mb-6' : 'grid mb-6'"
-        [style.grid-template-columns]="!isCanvasMode() && !isMobile() ? 'repeat(16, minmax(0, 1fr))' : null"
-        [style.grid-auto-rows]="!isCanvasMode() && !isMobile() ? '1px' : null"
-        [style.gap]="!isCanvasMode() && !isMobile() ? '0 16px' : null"
-        [style.height.px]="!isCanvasMode() && isMobile() ? mobileGridHeight() : null"
-        [style.min-height.px]="isCanvasMode() ? canvasGridMinHeight() : null"
+        [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : 'relative mb-6'"
+        [style.height.px]="isMobile() ? mobileGridHeight() : null"
+        [style.min-height.px]="!isMobile() ? canvasGridMinHeight() : null"
         #financialsWidgetGrid
       >
         @for (widgetId of financialsWidgets; track widgetId) {
           <div
-            [class]="isCanvasMode() ? 'absolute overflow-hidden' : isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'relative'"
+            [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden'"
             [attr.data-widget-id]="widgetId"
-            [style.grid-column]="!isCanvasMode() && !isMobile() ? widgetColStarts()[widgetId] + ' / span ' + widgetColSpans()[widgetId] : null"
-            [style.grid-row]="!isCanvasMode() && !isMobile() ? (widgetTops()[widgetId] + 1) + ' / span ' + widgetHeights()[widgetId] : null"
-            [style.top.px]="isCanvasMode() || isMobile() ? widgetTops()[widgetId] : null"
-            [style.left.px]="isCanvasMode() ? widgetLefts()[widgetId] : null"
-            [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : null"
-            [style.height.px]="isCanvasMode() || isMobile() ? widgetHeights()[widgetId] : null"
+            [style.top.px]="widgetTops()[widgetId]"
+            [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
+            [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
+            [style.height.px]="widgetHeights()[widgetId]"
           >
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 

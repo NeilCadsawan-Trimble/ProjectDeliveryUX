@@ -62,18 +62,21 @@ export class DashboardLayoutEngine {
   private _resizeStartX = 0;
   private _resizeStartY = 0;
   private _resizeStartH = 0;
-  private _resizeStartColSpan = 0;
-  private _gridContainerWidth = 1200;
+  private _resizeStartW = 0;
 
   private _savedDesktopTops: Record<string, number> | null = null;
   private _savedDesktopColStarts: Record<string, number> | null = null;
   private _savedDesktopColSpans: Record<string, number> | null = null;
   private _savedDesktopHeights: Record<string, number> | null = null;
+  private _savedDesktopLefts: Record<string, number> | null = null;
+  private _savedDesktopWidths: Record<string, number> | null = null;
   private _savedDesktopForCanvas: {
     tops: Record<string, number>;
     heights: Record<string, number>;
     colStarts: Record<string, number>;
     colSpans: Record<string, number>;
+    lefts: Record<string, number>;
+    widths: Record<string, number>;
   } | null = null;
 
   readonly abortCtrl = new AbortController();
@@ -135,6 +138,8 @@ export class DashboardLayoutEngine {
         heights: { ...this.widgetHeights() },
         colStarts: { ...this.widgetColStarts() },
         colSpans: { ...this.widgetColSpans() },
+        lefts: { ...this.widgetLefts() },
+        widths: { ...this.widgetPixelWidths() },
       };
       if (!this.restoreCanvasLayout()) {
         this.applyCanvasDefaults();
@@ -146,6 +151,8 @@ export class DashboardLayoutEngine {
         this._savedDesktopColStarts = { ...this.widgetColStarts() };
         this._savedDesktopColSpans = { ...this.widgetColSpans() };
         this._savedDesktopHeights = { ...this.widgetHeights() };
+        this._savedDesktopLefts = { ...this.widgetLefts() };
+        this._savedDesktopWidths = { ...this.widgetPixelWidths() };
       }
       const restoredMobile = this.restoreMobileLayout();
       if (restoredMobile) {
@@ -181,6 +188,8 @@ export class DashboardLayoutEngine {
           this.widgetHeights.set(this._savedDesktopForCanvas.heights);
           this.widgetColStarts.set(this._savedDesktopForCanvas.colStarts);
           this.widgetColSpans.set(this._savedDesktopForCanvas.colSpans);
+          this.widgetLefts.set(this._savedDesktopForCanvas.lefts);
+          this.widgetPixelWidths.set(this._savedDesktopForCanvas.widths);
           this._savedDesktopForCanvas = null;
         } else {
           this.restoreDesktopLayout();
@@ -192,6 +201,8 @@ export class DashboardLayoutEngine {
             heights: { ...this.widgetHeights() },
             colStarts: { ...this.widgetColStarts() },
             colSpans: { ...this.widgetColSpans() },
+            lefts: { ...this.widgetLefts() },
+            widths: { ...this.widgetPixelWidths() },
           };
         }
         if (!this.restoreCanvasLayout()) {
@@ -203,6 +214,8 @@ export class DashboardLayoutEngine {
           this._savedDesktopColStarts = { ...this.widgetColStarts() };
           this._savedDesktopColSpans = { ...this.widgetColSpans() };
           this._savedDesktopHeights = { ...this.widgetHeights() };
+          this._savedDesktopLefts = { ...this.widgetLefts() };
+          this._savedDesktopWidths = { ...this.widgetPixelWidths() };
         }
         const restoredMobile = this.restoreMobileLayout();
         if (restoredMobile) {
@@ -219,10 +232,14 @@ export class DashboardLayoutEngine {
           if (this._savedDesktopColStarts) this.widgetColStarts.set(this._savedDesktopColStarts);
           if (this._savedDesktopColSpans) this.widgetColSpans.set(this._savedDesktopColSpans);
           if (this._savedDesktopHeights) this.widgetHeights.set(this._savedDesktopHeights);
+          if (this._savedDesktopLefts) this.widgetLefts.set(this._savedDesktopLefts);
+          if (this._savedDesktopWidths) this.widgetPixelWidths.set(this._savedDesktopWidths);
           this._savedDesktopTops = null;
           this._savedDesktopColStarts = null;
           this._savedDesktopColSpans = null;
           this._savedDesktopHeights = null;
+          this._savedDesktopLefts = null;
+          this._savedDesktopWidths = null;
         } else {
           this.restoreDesktopLayout();
         }
@@ -247,7 +264,7 @@ export class DashboardLayoutEngine {
   onWidgetHeaderMouseDown(id: string, event: MouseEvent): void {
     event.preventDefault();
     this._moveTarget = id;
-    this._dragAxis = this.isCanvasMode() ? 'free' : null;
+    this._dragAxis = this.isMobile() ? null : 'free';
     this._dragStartX = event.clientX;
     this._dragStartY = event.clientY;
     this._dragStartTop = this.widgetTops()[id];
@@ -268,7 +285,7 @@ export class DashboardLayoutEngine {
     }
     event.preventDefault();
     this._moveTarget = id;
-    this._dragAxis = this.isCanvasMode() ? 'free' : null;
+    this._dragAxis = this.isMobile() ? null : 'free';
     this._dragStartX = touch.clientX;
     this._dragStartY = touch.clientY;
     this._dragStartTop = this.widgetTops()[id];
@@ -287,8 +304,7 @@ export class DashboardLayoutEngine {
       this._resizeStartH = this.widgetHeights()[target] ?? 400;
     }
     if (dir === 'h' || dir === 'both') {
-      this._resizeStartColSpan = this.widgetColSpans()[target] ?? 8;
-      this._gridContainerWidth = this.activeGridEl?.offsetWidth ?? 1200;
+      this._resizeStartW = this.widgetPixelWidths()[target] ?? 600;
     }
   }
 
@@ -305,8 +321,7 @@ export class DashboardLayoutEngine {
       this._resizeStartH = this.widgetHeights()[target] ?? 400;
     }
     if (this._resizeDir === 'h' || this._resizeDir === 'both') {
-      this._resizeStartColSpan = this.widgetColSpans()[target] ?? 8;
-      this._gridContainerWidth = this.activeGridEl?.offsetWidth ?? 1200;
+      this._resizeStartW = this.widgetPixelWidths()[target] ?? 600;
     }
   }
 
@@ -360,12 +375,12 @@ export class DashboardLayoutEngine {
     const widgets = this.config.widgets;
 
     if (this._dragAxis === 'free') {
-      const step = DashboardLayoutEngine.CANVAS_STEP;
       const gap = DashboardLayoutEngine.GAP_PX;
       const rawTop = this._dragStartTop + (event.clientY - this._dragStartY);
       const rawLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
       const newTop = Math.round(rawTop / gap) * gap;
-      const newLeft = Math.round(rawLeft / step) * step;
+      const hStep = this.isCanvasMode() ? DashboardLayoutEngine.CANVAS_STEP : gap;
+      const newLeft = Math.round(rawLeft / hStep) * hStep;
       this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
       this.widgetLefts.update((l) => ({ ...l, [id]: newLeft }));
       this.resolveCollisions(id, widgets);
@@ -373,66 +388,31 @@ export class DashboardLayoutEngine {
     }
 
     if (!this._dragAxis) {
-      const dx = Math.abs(event.clientX - this._dragStartX);
       const dy = Math.abs(event.clientY - this._dragStartY);
-      if (dx < 8 && dy < 8) return;
-      this._dragAxis = this.isMobile() ? 'v' : dx >= dy ? 'h' : 'v';
+      if (dy < 8) return;
+      this._dragAxis = 'v';
     }
 
-    if (this._dragAxis === 'h') {
-      const rect = grid.getBoundingClientRect();
-      const colW = rect.width / 16;
-      const span = this.widgetColSpans()[id];
-      const rawStart = Math.floor((event.clientX - rect.left) / colW) + 1;
-      const newColStart = Math.max(1, Math.min(17 - span, rawStart));
-      if (newColStart !== this.widgetColStarts()[id]) {
-        this.widgetColStarts.update((s) => ({ ...s, [id]: newColStart }));
-        this.resolveCollisions(id, widgets);
-      }
-    } else {
-      const newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY));
-      this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
-      this.resolveCollisions(id, widgets);
-    }
+    const newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY));
+    this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
+    this.resolveCollisions(id, widgets);
   }
 
   private handleResize(event: MouseEvent): void {
     const id = this._resizeTarget!;
     const widgets = this.config.widgets;
-    const minColSpan = this.config.widgetMinColSpans?.[id] ?? this.config.minColSpan ?? 4;
-
-    if (this.isCanvasMode()) {
-      if (this._resizeDir === 'v' || this._resizeDir === 'both') {
-        const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
-        const newH = Math.round(raw / 16) * 16;
-        this.widgetHeights.update((h) => ({ ...h, [id]: newH }));
-      }
-      if (this._resizeDir === 'h' || this._resizeDir === 'both') {
-        const colW = this._gridContainerWidth / 16;
-        const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
-        const newSpan = Math.max(minColSpan, Math.min(16, this._resizeStartColSpan + deltaSpan));
-        const newW = newSpan * DashboardLayoutEngine.CANVAS_STEP - DashboardLayoutEngine.GAP_PX;
-        this.widgetPixelWidths.update((w) => ({ ...w, [id]: newW }));
-        this.widgetColSpans.update((s) => ({ ...s, [id]: newSpan }));
-      }
-      this.resolveCollisions(id, widgets);
-      return;
-    }
 
     if (this._resizeDir === 'v' || this._resizeDir === 'both') {
       const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
       const newH = Math.round(raw / 16) * 16;
       this.widgetHeights.update((h) => ({ ...h, [id]: newH }));
-      this.resolveCollisions(id, widgets);
     }
     if (this._resizeDir === 'h' || this._resizeDir === 'both') {
-      const colW = this._gridContainerWidth / 16;
-      const deltaSpan = Math.round((event.clientX - this._resizeStartX) / colW);
-      const newSpan = this._resizeStartColSpan + deltaSpan;
-      const clampedSpan = Math.max(minColSpan, Math.min(16, newSpan));
-      this.widgetColSpans.update((s) => ({ ...s, [id]: clampedSpan }));
-      this.resolveCollisions(id, widgets);
+      const raw = Math.max(200, this._resizeStartW + (event.clientX - this._resizeStartX));
+      const newW = Math.round(raw / DashboardLayoutEngine.GAP_PX) * DashboardLayoutEngine.GAP_PX;
+      this.widgetPixelWidths.update((w) => ({ ...w, [id]: newW }));
     }
+    this.resolveCollisions(id, widgets);
   }
 
   private resolveCollisions(movedId: string, widgets: string[]): void {
@@ -447,9 +427,9 @@ export class DashboardLayoutEngine {
     if (mobile) {
       colOverlap = () => true;
     } else {
-      const starts = this.widgetColStarts();
-      const spans = this.widgetColSpans();
-      colOverlap = (a, b) => starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
+      const lefts = this.widgetLefts();
+      const widths = this.widgetPixelWidths();
+      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
     }
 
     const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
@@ -498,16 +478,10 @@ export class DashboardLayoutEngine {
       return;
     }
 
-    let colOverlap: (a: string, b: string) => boolean;
-    if (this.isCanvasMode()) {
-      const lefts = this.widgetLefts();
-      const widths = this.widgetPixelWidths();
-      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
-    } else {
-      const starts = this.widgetColStarts();
-      const spans = this.widgetColSpans();
-      colOverlap = (a, b) => starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
-    }
+    const lefts = this.widgetLefts();
+    const widths = this.widgetPixelWidths();
+    const colOverlap = (a: string, b: string) =>
+      lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
 
     const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
     const placed: string[] = [];
@@ -574,17 +548,23 @@ export class DashboardLayoutEngine {
     const heights: Record<string, number> = {};
     const colStarts: Record<string, number> = {};
     const colSpans: Record<string, number> = {};
+    const lefts: Record<string, number> = {};
+    const widths: Record<string, number> = {};
     for (const id of this.config.widgets) {
       tops[id] = this.widgetTops()[id];
       heights[id] = this.widgetHeights()[id];
       colStarts[id] = this.widgetColStarts()[id];
       colSpans[id] = this.widgetColSpans()[id];
+      lefts[id] = this.widgetLefts()[id];
+      widths[id] = this.widgetPixelWidths()[id];
     }
     this.layoutService.save(this.config.layoutStorageKey, mobile, {
       tops,
       heights,
       colStarts,
       colSpans,
+      lefts,
+      widths,
     });
   }
 
@@ -610,16 +590,22 @@ export class DashboardLayoutEngine {
     const heights = { ...this.widgetHeights() };
     const colStarts = { ...this.widgetColStarts() };
     const colSpans = { ...this.widgetColSpans() };
+    const lefts = { ...this.widgetLefts() };
+    const pixelWidths = { ...this.widgetPixelWidths() };
     for (const id of this.config.widgets) {
       if (saved.tops[id] != null) tops[id] = saved.tops[id];
       if (saved.heights[id] != null) heights[id] = saved.heights[id];
       if (saved.colStarts[id] != null) colStarts[id] = saved.colStarts[id];
       if (saved.colSpans[id] != null) colSpans[id] = saved.colSpans[id];
+      if (saved.lefts?.[id] != null) lefts[id] = saved.lefts[id];
+      if (saved.widths?.[id] != null) pixelWidths[id] = saved.widths[id];
     }
     this.widgetTops.set(tops);
     this.widgetHeights.set(heights);
     this.widgetColStarts.set(colStarts);
     this.widgetColSpans.set(colSpans);
+    this.widgetLefts.set(lefts);
+    this.widgetPixelWidths.set(pixelWidths);
     return true;
   }
 
