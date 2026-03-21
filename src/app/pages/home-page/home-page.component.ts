@@ -2,14 +2,18 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
+  effect,
   signal,
   inject,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
+import { CanvasResetService } from '../../services/canvas-reset.service';
 import type {
   DashboardWidgetId,
   GridPage,
@@ -39,6 +43,7 @@ import {
   },
   template: `
     <div class="p-6 max-w-screen-xl mx-auto">
+      <div #pageHeader>
       <div class="flex items-start justify-between mb-6">
         <div>
           <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Alex</div>
@@ -77,6 +82,7 @@ import {
           </div>
           <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
         </div>
+      </div>
       </div>
 
       <div
@@ -749,8 +755,29 @@ import {
 })
 export class HomePageComponent implements AfterViewInit {
   private readonly router = inject(Router);
-  private readonly elementRef = inject(ElementRef);
   private readonly layoutService = inject(WidgetLayoutService);
+  private readonly canvasResetService = inject(CanvasResetService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly _abortCtrl = new AbortController();
+
+  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this._abortCtrl.abort());
+
+  private readonly _resetWidgetsEffect = effect(() => {
+    const tick = this.canvasResetService.resetWidgetsTick();
+    if (tick > 0 && this.isCanvasMode()) {
+      untracked(() => {
+        localStorage.removeItem('canvas-layout:dashboard-home:v5');
+        this.applyCanvasDefaults();
+      });
+    }
+  });
+
+  private readonly _cleanupOverlapsEffect = effect(() => {
+    const tick = this.canvasResetService.cleanupOverlapsTick();
+    if (tick > 0 && this.isCanvasMode()) {
+      untracked(() => this.cleanupCanvasOverlaps());
+    }
+  });
 
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   readonly isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
@@ -769,14 +796,8 @@ export class HomePageComponent implements AfterViewInit {
   readonly estimates = signal(ESTIMATES);
 
   readonly totalProjects = computed(() => this.projects().length);
-  readonly onTrackCount = computed(() => this.projects().filter((p) => p.status === 'On Track').length);
-  readonly atRiskCount = computed(() => this.projects().filter((p) => p.status === 'At Risk').length);
-  readonly overdueCount = computed(() => this.projects().filter((p) => p.status === 'Overdue').length);
   readonly openEstimatesCount = computed(() =>
     this.estimates().filter((e) => e.status !== 'Approved').length
-  );
-  readonly awaitingApprovalCount = computed(() =>
-    this.estimates().filter((e) => e.status === 'Awaiting Approval').length
   );
   readonly totalEstimateValue = computed(() => {
     const total = this.estimates()
@@ -888,10 +909,10 @@ export class HomePageComponent implements AfterViewInit {
       }
     };
 
-    mq.addEventListener('change', onBreakpointChange);
-    canvasQuery.addEventListener('change', onBreakpointChange);
+    mq.addEventListener('change', onBreakpointChange, { signal: this._abortCtrl.signal });
+    canvasQuery.addEventListener('change', onBreakpointChange, { signal: this._abortCtrl.signal });
 
-    window.addEventListener('resize', onBreakpointChange);
+    window.addEventListener('resize', onBreakpointChange, { signal: this._abortCtrl.signal });
 
     document.addEventListener('touchmove', (e: TouchEvent) => {
       if (this._moveTarget || this._resizeTarget) {
@@ -901,7 +922,7 @@ export class HomePageComponent implements AfterViewInit {
           this.onDocumentMouseMove({ clientX: touch.clientX, clientY: touch.clientY } as MouseEvent);
         }
       }
-    }, { passive: false });
+    }, { passive: false, signal: this._abortCtrl.signal });
   }
 
   private _savedDesktopTops: Record<string, number> | null = null;
@@ -1033,6 +1054,7 @@ export class HomePageComponent implements AfterViewInit {
     return max + 100;
   });
 
+  private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');
 
   mobileGridHeight(_grid: GridPage): number {
@@ -1063,19 +1085,16 @@ export class HomePageComponent implements AfterViewInit {
   }
 
   private resolveCollisions(movedId: DashboardWidgetId, widgets: DashboardWidgetId[]): void {
+    if (this.isCanvasMode()) return;
+
     const tops = { ...this.widgetTops() };
     const heights = this.widgetHeights();
     const gap = HomePageComponent.GAP_PX;
 
     const mobile = this.isMobile();
-    const canvas = this.isCanvasMode();
     let colOverlap: (a: string, b: string) => boolean;
     if (mobile) {
       colOverlap = () => true;
-    } else if (canvas) {
-      const lefts = this.widgetLefts();
-      const widths = this.widgetPixelWidths();
-      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
     } else {
       const starts = this.widgetColStarts();
       const spans = this.widgetColSpans();
@@ -1143,8 +1162,12 @@ export class HomePageComponent implements AfterViewInit {
     const gridWidgets = this.getGridWidgets(this._activeGrid);
 
     if (this._dragAxis === 'free') {
-      const newTop = this._dragStartTop + (event.clientY - this._dragStartY);
-      const newLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
+      const step = HomePageComponent.CANVAS_STEP;
+      const gap = HomePageComponent.GAP_PX;
+      const rawTop = this._dragStartTop + (event.clientY - this._dragStartY);
+      const rawLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
+      const newTop = Math.round(rawTop / gap) * gap;
+      const newLeft = Math.round(rawLeft / step) * step;
       this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
       this.widgetLefts.update((l) => ({ ...l, [id]: newLeft }));
       this.resolveCollisions(id, gridWidgets);
@@ -1174,6 +1197,9 @@ export class HomePageComponent implements AfterViewInit {
       this.resolveCollisions(id, gridWidgets);
     }
   }
+
+  private _interactionSeq = 0;
+  private _widgetLastInteraction: Record<string, number> = {};
 
   private _resizeTarget: string | null = null;
   private _resizeDir: 'h' | 'v' | 'both' = 'v';
@@ -1244,13 +1270,19 @@ export class HomePageComponent implements AfterViewInit {
 
   onDocumentMouseUp(): void {
     const hadInteraction = !!this._moveTarget || !!this._resizeTarget;
+    const interactedId = this._moveTarget ?? this._resizeTarget;
     const grid = this._activeGrid;
     this._moveTarget = null;
     this._dragAxis = null;
     this.moveTargetId.set(null);
     this._resizeTarget = null;
     if (hadInteraction) {
-      this.compactAll(grid);
+      if (interactedId) {
+        this._widgetLastInteraction[interactedId] = ++this._interactionSeq;
+      }
+      if (!this.isCanvasMode()) {
+        this.compactAll(grid);
+      }
       if (this.isCanvasMode()) {
         this.persistCanvasLayout();
       } else {
@@ -1797,6 +1829,76 @@ export class HomePageComponent implements AfterViewInit {
     colStarts: Record<string, number>;
     colSpans: Record<string, number>;
   } | null = null;
+
+  private cleanupCanvasOverlaps(): void {
+    const gap = HomePageComponent.GAP_PX;
+    const widgets = this.homeWidgets;
+    const origTops = this.widgetTops();
+    const origLefts = this.widgetLefts();
+    const tops = { ...origTops };
+    const heights = this.widgetHeights();
+    const lefts = { ...origLefts };
+    const widths = this.widgetPixelWidths();
+
+    const gridEl = this.activeGridEl;
+    const headerEl = this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
+    let headerBottom = 0;
+    if (gridEl && headerEl) {
+      const gridRect = gridEl.getBoundingClientRect();
+      const headerRect = headerEl.getBoundingClientRect();
+      headerBottom = headerRect.bottom - gridRect.top;
+    }
+
+    const recency = this._widgetLastInteraction;
+    const sorted = [...widgets].sort(
+      (x, y) => (recency[y] ?? 0) - (recency[x] ?? 0),
+    );
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+
+      for (const id of sorted) {
+        if (tops[id] < headerBottom + gap) {
+          tops[id] = headerBottom + gap;
+          changed = true;
+        }
+      }
+
+      for (let i = 0; i < sorted.length; i++) {
+        for (let j = i + 1; j < sorted.length; j++) {
+          const mover = sorted[i];
+          const other = sorted[j];
+
+          const hOverlap = Math.min(lefts[mover] + widths[mover], lefts[other] + widths[other]) - Math.max(lefts[mover], lefts[other]);
+          const vOverlap = Math.min(tops[mover] + heights[mover], tops[other] + heights[other]) - Math.max(tops[mover], tops[other]);
+          if (hOverlap + gap <= 0 || vOverlap + gap <= 0) continue;
+
+          if (vOverlap <= hOverlap) {
+            if (tops[mover] <= tops[other]) {
+              tops[mover] -= vOverlap + gap;
+            } else {
+              tops[mover] += vOverlap + gap;
+            }
+          } else {
+            if (lefts[mover] <= lefts[other]) {
+              lefts[mover] -= hOverlap + gap;
+            } else {
+              lefts[mover] += hOverlap + gap;
+            }
+          }
+          changed = true;
+        }
+      }
+    }
+
+    const moved = widgets.some((id) => tops[id] !== origTops[id] || lefts[id] !== origLefts[id]);
+    if (!moved) return;
+
+    this.widgetTops.set(tops);
+    this.widgetLefts.set(lefts);
+    this.persistCanvasLayout();
+  }
 
   private persistCanvasLayout(): void {
     const layout: Record<string, Record<string, number>> = {

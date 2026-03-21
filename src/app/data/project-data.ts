@@ -1,4 +1,5 @@
-export type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
+import type { ProjectStatus } from './dashboard-data';
+export type { ProjectStatus };
 export type MilestoneStatus = 'completed' | 'in-progress' | 'upcoming' | 'overdue';
 export type TaskPriority = 'high' | 'medium' | 'low';
 export type RiskSeverity = 'high' | 'medium' | 'low';

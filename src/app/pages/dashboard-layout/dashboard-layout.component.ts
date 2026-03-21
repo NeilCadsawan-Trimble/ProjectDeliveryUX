@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
@@ -9,10 +10,12 @@ import {
   inject,
 } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { ThemeService } from '../../services/theme.service';
+import { CanvasResetService } from '../../services/canvas-reset.service';
 import type { AiMessage, Project, Estimate } from '../../data/dashboard-data';
 import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data';
 
@@ -115,7 +118,7 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
 
         <!-- Sidenav: fixed left-center, 1000px -->
         <div class="canvas-side-nav" [class.expanded]="navExpanded()">
-          <div class="flex flex-col flex-1 min-h-0">
+          <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
             @for (item of sideNavItems; track item.value) {
               <div
                 class="custom-side-nav-item"
@@ -133,16 +136,47 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
             }
           </div>
           <div class="mt-auto border-top-default">
-            <div
-              class="custom-side-nav-item"
-              (click)="resetCanvasView()"
-              title="Reset view"
-              role="button"
-              aria-label="Reset view"
-            >
-              <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
-              @if (navExpanded()) {
-                <div class="custom-side-nav-label">Reset View</div>
+            <div class="relative">
+              <div
+                class="custom-side-nav-item"
+                (click)="toggleResetMenu(); $event.stopPropagation()"
+                title="Reset options"
+                role="button"
+                aria-label="Reset options"
+                [attr.aria-expanded]="resetMenuOpen()"
+              >
+                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                @if (navExpanded()) {
+                  <div class="custom-side-nav-label">Reset</div>
+                }
+              </div>
+              @if (resetMenuOpen()) {
+                <div class="canvas-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="resetMenuAction('view'); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">window_fit</i>
+                    <div class="text-sm">Reset View</div>
+                  </div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="resetMenuAction('cleanup'); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">group_items</i>
+                    <div class="text-sm">Clean Up Overlaps</div>
+                  </div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="resetMenuAction('widgets'); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
+                    <div class="text-sm">Reset Widgets</div>
+                  </div>
+                </div>
               }
             </div>
             <div
@@ -513,7 +547,11 @@ export class DashboardLayoutComponent implements AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly elementRef = inject(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly _abortCtrl = new AbortController();
   private hamburgerBtn: HTMLElement | null = null;
+
+  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this._abortCtrl.abort());
 
   private readonly currentUrl = signal('/');
 
@@ -539,9 +577,10 @@ export class DashboardLayoutComponent implements AfterViewInit {
 
   readonly navbarVisibility = computed(() => {
     const mobile = this.isMobile();
+    const canvas = this.isCanvas();
     return {
       user: true,
-      mainMenu: true,
+      mainMenu: !canvas,
       ai: false,
       notifications: !mobile,
       apps: false,
@@ -579,9 +618,28 @@ export class DashboardLayoutComponent implements AfterViewInit {
   ];
 
   readonly moreMenuOpen = signal(false);
+  readonly resetMenuOpen = signal(false);
+
+  private readonly canvasResetService = inject(CanvasResetService);
 
   toggleMoreMenu(): void {
     this.moreMenuOpen.update((v) => !v);
+  }
+
+  toggleResetMenu(): void {
+    this.resetMenuOpen.update((v) => !v);
+  }
+
+  resetMenuAction(action: 'view' | 'widgets' | 'cleanup'): void {
+    this.resetMenuOpen.set(false);
+    if (action === 'view') {
+      this.resetCanvasView();
+    } else if (action === 'widgets') {
+      this.resetCanvasView();
+      this.canvasResetService.triggerResetWidgets();
+    } else if (action === 'cleanup') {
+      this.canvasResetService.triggerCleanupOverlaps();
+    }
   }
 
   moreMenuAction(action: string): void {
@@ -735,7 +793,9 @@ export class DashboardLayoutComponent implements AfterViewInit {
   }
 
   onEscapeKey(): void {
-    if (this.moreMenuOpen()) {
+    if (this.resetMenuOpen()) {
+      this.resetMenuOpen.set(false);
+    } else if (this.moreMenuOpen()) {
       this.moreMenuOpen.set(false);
     } else if (this.aiPanelOpen()) {
       this.aiPanelOpen.set(false);
@@ -797,9 +857,11 @@ export class DashboardLayoutComponent implements AfterViewInit {
   }
 
   onDocumentClick(event: MouseEvent): void {
-    if (!this.moreMenuOpen()) return;
     const target = event.target as HTMLElement;
-    if (!target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
+    if (this.resetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.canvas-reset-flyout')) {
+      this.resetMenuOpen.set(false);
+    }
+    if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);
     }
   }
@@ -810,7 +872,10 @@ export class DashboardLayoutComponent implements AfterViewInit {
     this.isCanvas.set(window.innerWidth >= 2000);
 
     this.router.events
-      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe((e) => {
         this.currentUrl.set(e.urlAfterRedirects);
       });
@@ -825,12 +890,12 @@ export class DashboardLayoutComponent implements AfterViewInit {
         this.navExpanded.set(false);
       }
     };
-    mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void);
+    mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void, { signal: this._abortCtrl.signal });
 
     const onCanvasChange = (e: MediaQueryListEvent | MediaQueryList) => {
       this.isCanvas.set(e.matches);
     };
-    mqCanvas.addEventListener('change', onCanvasChange as (e: MediaQueryListEvent) => void);
+    mqCanvas.addEventListener('change', onCanvasChange as (e: MediaQueryListEvent) => void, { signal: this._abortCtrl.signal });
 
     window.addEventListener('resize', () => {
       const mobile = window.innerWidth < 768;
@@ -841,7 +906,7 @@ export class DashboardLayoutComponent implements AfterViewInit {
       if (canvas !== this.isCanvas()) {
         onCanvasChange(mqCanvas);
       }
-    });
+    }, { signal: this._abortCtrl.signal });
 
     this.attachHamburgerListener();
     this.reorderNavbarEnd();
@@ -890,7 +955,7 @@ export class DashboardLayoutComponent implements AfterViewInit {
             e.stopImmediatePropagation();
             this.navExpanded.set(!this.navExpanded());
           },
-          { capture: true }
+          { capture: true, signal: this._abortCtrl.signal }
         );
         return;
       }

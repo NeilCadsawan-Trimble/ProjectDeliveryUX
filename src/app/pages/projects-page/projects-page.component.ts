@@ -2,11 +2,13 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
   signal,
   inject,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -14,6 +16,7 @@ import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
+import { CanvasResetService } from '../../services/canvas-reset.service';
 import type {
   DashboardWidgetId,
   Project,
@@ -46,7 +49,7 @@ import {
     <div class="p-6 max-w-screen-xl mx-auto">
 
       <!-- Page header -->
-      <div class="flex items-start justify-between mb-6">
+      <div #pageHeader class="flex items-start justify-between mb-6">
         <div>
           <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
           <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
@@ -413,8 +416,29 @@ import {
 })
 export class ProjectsPageComponent implements AfterViewInit {
   private readonly router = inject(Router);
-  private readonly elementRef = inject(ElementRef);
   private readonly layoutService = inject(WidgetLayoutService);
+  private readonly canvasResetService = inject(CanvasResetService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly _abortCtrl = new AbortController();
+
+  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this._abortCtrl.abort());
+
+  private readonly _resetWidgetsEffect = effect(() => {
+    const tick = this.canvasResetService.resetWidgetsTick();
+    if (tick > 0 && this.isCanvasMode()) {
+      untracked(() => {
+        localStorage.removeItem('canvas-layout:dashboard-projects:v1');
+        this.applyCanvasDefaults();
+      });
+    }
+  });
+
+  private readonly _cleanupOverlapsEffect = effect(() => {
+    const tick = this.canvasResetService.cleanupOverlapsTick();
+    if (tick > 0 && this.isCanvasMode()) {
+      untracked(() => this.cleanupCanvasOverlaps());
+    }
+  });
 
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   readonly isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
@@ -434,25 +458,6 @@ export class ProjectsPageComponent implements AfterViewInit {
   readonly onTrackCount = computed(() => this.projects().filter((p) => p.status === 'On Track').length);
   readonly atRiskCount = computed(() => this.projects().filter((p) => p.status === 'At Risk').length);
   readonly overdueCount = computed(() => this.projects().filter((p) => p.status === 'Overdue').length);
-  readonly onSchedulePct = computed(() =>
-    Math.round((this.onTrackCount() / this.totalProjects()) * 100)
-  );
-
-  readonly openEstimatesCount = computed(() =>
-    this.estimates().filter((e) => e.status !== 'Approved').length
-  );
-  readonly awaitingApprovalCount = computed(() =>
-    this.estimates().filter((e) => e.status === 'Awaiting Approval').length
-  );
-  readonly totalEstimateValue = computed(() => {
-    const total = this.estimates()
-      .filter((e) => e.status !== 'Approved')
-      .reduce((sum, e) => sum + e.valueRaw, 0);
-    if (total >= 1_000_000) return `$${(total / 1_000_000).toFixed(1)}M`;
-    if (total >= 1_000) return `$${(total / 1_000).toFixed(0)}K`;
-    return `$${total}`;
-  });
-
   private readonly estimatesContainerRef = viewChild<ElementRef>('estimatesContainer');
   readonly estimatesContainerWidth = signal<number>(0);
   private _estimatesResizeObserver: ResizeObserver | null = null;
@@ -585,6 +590,7 @@ export class ProjectsPageComponent implements AfterViewInit {
   });
 
   private static readonly GAP_PX = 16;
+  private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly gridContainerRef = viewChild<ElementRef>('widgetGrid');
 
   mobileGridHeight(): number {
@@ -609,20 +615,17 @@ export class ProjectsPageComponent implements AfterViewInit {
   }
 
   private resolveCollisions(movedId: DashboardWidgetId): void {
+    if (this.isCanvasMode()) return;
+
     const tops = { ...this.widgetTops() };
     const heights = this.widgetHeights();
     const gap = ProjectsPageComponent.GAP_PX;
     const mobile = this.isMobile();
     const starts = this.widgetColStarts();
     const spans = this.widgetColSpans();
-    const canvas = this.isCanvasMode();
     let colOverlap: (a: DashboardWidgetId, b: DashboardWidgetId) => boolean;
     if (mobile) {
       colOverlap = () => true;
-    } else if (canvas) {
-      const lefts = this.widgetLefts();
-      const widths = this.widgetPixelWidths();
-      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
     } else {
       colOverlap = (a, b) => starts[a] < starts[b] + spans[b] && starts[b] < starts[a] + spans[a];
     }
@@ -684,8 +687,12 @@ export class ProjectsPageComponent implements AfterViewInit {
     const id = this._moveTarget;
 
     if (this._dragAxis === 'free') {
-      const newTop = this._dragStartTop + (event.clientY - this._dragStartY);
-      const newLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
+      const step = ProjectsPageComponent.CANVAS_STEP;
+      const gap = ProjectsPageComponent.GAP_PX;
+      const rawTop = this._dragStartTop + (event.clientY - this._dragStartY);
+      const rawLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
+      const newTop = Math.round(rawTop / gap) * gap;
+      const newLeft = Math.round(rawLeft / step) * step;
       this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
       this.widgetLefts.update((l) => ({ ...l, [id]: newLeft }));
       this.resolveCollisions(id);
@@ -715,6 +722,9 @@ export class ProjectsPageComponent implements AfterViewInit {
       this.resolveCollisions(id);
     }
   }
+
+  private _interactionSeq = 0;
+  private _widgetLastInteraction: Record<string, number> = {};
 
   private _resizeTarget: string | null = null;
   private _resizeDir: 'h' | 'v' | 'both' = 'v';
@@ -788,12 +798,18 @@ export class ProjectsPageComponent implements AfterViewInit {
 
   onDocumentMouseUp(): void {
     const hadInteraction = !!this._moveTarget || !!this._resizeTarget;
+    const interactedId = this._moveTarget ?? this._resizeTarget;
     this._moveTarget = null;
     this._dragAxis = null;
     this.moveTargetId.set(null);
     this._resizeTarget = null;
     if (hadInteraction) {
-      this.compactAll();
+      if (interactedId) {
+        this._widgetLastInteraction[interactedId] = ++this._interactionSeq;
+      }
+      if (!this.isCanvasMode()) {
+        this.compactAll();
+      }
       if (this.isCanvasMode()) {
         this.persistCanvasLayout();
       } else {
@@ -890,6 +906,76 @@ export class ProjectsPageComponent implements AfterViewInit {
     colStarts: Record<string, number>;
     colSpans: Record<string, number>;
   } | null = null;
+
+  private cleanupCanvasOverlaps(): void {
+    const gap = ProjectsPageComponent.GAP_PX;
+    const widgets = this.projectWidgets;
+    const origTops = this.widgetTops();
+    const origLefts = this.widgetLefts();
+    const tops = { ...origTops };
+    const heights = this.widgetHeights();
+    const lefts = { ...origLefts };
+    const widths = this.widgetPixelWidths();
+
+    const gridEl = this.activeGridEl;
+    const headerEl = this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
+    let headerBottom = 0;
+    if (gridEl && headerEl) {
+      const gridRect = gridEl.getBoundingClientRect();
+      const headerRect = headerEl.getBoundingClientRect();
+      headerBottom = headerRect.bottom - gridRect.top;
+    }
+
+    const recency = this._widgetLastInteraction;
+    const sorted = [...widgets].sort(
+      (x, y) => (recency[y] ?? 0) - (recency[x] ?? 0),
+    );
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+
+      for (const id of sorted) {
+        if (tops[id] < headerBottom + gap) {
+          tops[id] = headerBottom + gap;
+          changed = true;
+        }
+      }
+
+      for (let i = 0; i < sorted.length; i++) {
+        for (let j = i + 1; j < sorted.length; j++) {
+          const mover = sorted[i];
+          const other = sorted[j];
+
+          const hOverlap = Math.min(lefts[mover] + widths[mover], lefts[other] + widths[other]) - Math.max(lefts[mover], lefts[other]);
+          const vOverlap = Math.min(tops[mover] + heights[mover], tops[other] + heights[other]) - Math.max(tops[mover], tops[other]);
+          if (hOverlap + gap <= 0 || vOverlap + gap <= 0) continue;
+
+          if (vOverlap <= hOverlap) {
+            if (tops[mover] <= tops[other]) {
+              tops[mover] -= vOverlap + gap;
+            } else {
+              tops[mover] += vOverlap + gap;
+            }
+          } else {
+            if (lefts[mover] <= lefts[other]) {
+              lefts[mover] -= hOverlap + gap;
+            } else {
+              lefts[mover] += hOverlap + gap;
+            }
+          }
+          changed = true;
+        }
+      }
+    }
+
+    const moved = widgets.some((id) => tops[id] !== origTops[id] || lefts[id] !== origLefts[id]);
+    if (!moved) return;
+
+    this.widgetTops.set(tops);
+    this.widgetLefts.set(lefts);
+    this.persistCanvasLayout();
+  }
 
   private persistCanvasLayout(): void {
     const layout: Record<string, Record<string, number>> = {
@@ -1135,9 +1221,9 @@ export class ProjectsPageComponent implements AfterViewInit {
       }
     };
 
-    mq.addEventListener('change', onBreakpointChange);
-    canvasQuery.addEventListener('change', onBreakpointChange);
-    window.addEventListener('resize', onBreakpointChange);
+    mq.addEventListener('change', onBreakpointChange, { signal: this._abortCtrl.signal });
+    canvasQuery.addEventListener('change', onBreakpointChange, { signal: this._abortCtrl.signal });
+    window.addEventListener('resize', onBreakpointChange, { signal: this._abortCtrl.signal });
 
     document.addEventListener(
       'touchmove',
@@ -1153,7 +1239,7 @@ export class ProjectsPageComponent implements AfterViewInit {
           }
         }
       },
-      { passive: false }
+      { passive: false, signal: this._abortCtrl.signal }
     );
   }
 }
