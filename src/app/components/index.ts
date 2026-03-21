@@ -2,6 +2,7 @@
  * Export all Modus Angular wrapper components
  */
 
+export * from './ai-icon.component';
 export * from './modus-accordion.component';
 export * from './modus-alert.component';
 export * from './modus-autocomplete.component';
@@ -50,4 +51,4 @@ export * from './modus-toolbar.component';
 export * from './modus-tooltip.component';
 export * from './modus-typography.component';
 export * from './modus-utility-panel.component';
-export * from './theme-demo.component';
+export * from './widget-resize-handle.component';

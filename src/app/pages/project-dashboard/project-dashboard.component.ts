@@ -15,6 +15,7 @@ import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modu
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
+import { WidgetResizeHandleComponent } from '../../components/widget-resize-handle.component';
 
 import { ThemeService } from '../../services/theme.service';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
@@ -44,7 +45,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent],
+  imports: [TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetResizeHandleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block h-screen overflow-hidden',
@@ -324,9 +325,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <div class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group" [class.cursor-nwse-resize]="!isMobile()" [class.cursor-ns-resize]="isMobile()" (mousedown)="startWidgetResize(wId, 'both', $event)" (touchstart)="startWidgetResizeTouch(wId, 'both', $event)">
-                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none"><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div></div>
-                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
 
@@ -356,9 +355,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <div class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group" [class.cursor-nwse-resize]="!isMobile()" [class.cursor-ns-resize]="isMobile()" (mousedown)="startWidgetResize(wId, 'both', $event)" (touchstart)="startWidgetResizeTouch(wId, 'both', $event)">
-                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none"><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div></div>
-                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
 
@@ -390,9 +387,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <div class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group" [class.cursor-nwse-resize]="!isMobile()" [class.cursor-ns-resize]="isMobile()" (mousedown)="startWidgetResize(wId, 'both', $event)" (touchstart)="startWidgetResizeTouch(wId, 'both', $event)">
-                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none"><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div></div>
-                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
 
@@ -447,9 +442,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   </div>
                 </div>
-                <div class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group" [class.cursor-nwse-resize]="!isMobile()" [class.cursor-ns-resize]="isMobile()" (mousedown)="startWidgetResize(wId, 'both', $event)" (touchstart)="startWidgetResizeTouch(wId, 'both', $event)">
-                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none"><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div></div>
-                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
 
@@ -482,9 +475,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     <div class="text-xs text-foreground">{{ budgetHealthy() ? 'Budget on track' : 'Budget critical' }} -- {{ budgetRemaining() }} remaining</div>
                   </div>
                 </div>
-                <div class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group" [class.cursor-nwse-resize]="!isMobile()" [class.cursor-ns-resize]="isMobile()" (mousedown)="startWidgetResize(wId, 'both', $event)" (touchstart)="startWidgetResizeTouch(wId, 'both', $event)">
-                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none"><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div></div>
-                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
 
@@ -515,9 +506,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <div class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group" [class.cursor-nwse-resize]="!isMobile()" [class.cursor-ns-resize]="isMobile()" (mousedown)="startWidgetResize(wId, 'both', $event)" (touchstart)="startWidgetResizeTouch(wId, 'both', $event)">
-                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none"><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div></div>
-                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
 
@@ -544,9 +533,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <div class="absolute bottom-0 right-0 w-5 h-5 z-30 select-none group" [class.cursor-nwse-resize]="!isMobile()" [class.cursor-ns-resize]="isMobile()" (mousedown)="startWidgetResize(wId, 'both', $event)" (touchstart)="startWidgetResizeTouch(wId, 'both', $event)">
-                  <div class="absolute bottom-1 right-1 flex flex-col gap-0.5 pointer-events-none"><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div><div class="flex gap-0.5"><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div><div class="w-1 h-1 rounded-full bg-foreground-20 group-hover:bg-foreground-60 transition-colors duration-150"></div></div></div>
-                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
               }
