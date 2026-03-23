@@ -147,6 +147,7 @@ export class DashboardLayoutEngine {
       if (!this.restoreCanvasLayout()) {
         this.applyCanvasDefaults();
       }
+      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
     } else if (startMobile) {
       if (this.config.savesDesktopOnMobile) {
         this.restoreDesktopLayout();
@@ -211,6 +212,7 @@ export class DashboardLayoutEngine {
         if (!this.restoreCanvasLayout()) {
           this.applyCanvasDefaults();
         }
+        requestAnimationFrame(() => this.cleanupCanvasOverlaps());
       } else if (nowMobile && !wasMobile) {
         if (this.config.savesDesktopOnMobile) {
           this._savedDesktopTops = { ...this.widgetTops() };
@@ -369,6 +371,7 @@ export class DashboardLayoutEngine {
   resetWidgets(): void {
     localStorage.removeItem(this.config.canvasStorageKey);
     this.applyCanvasDefaults();
+    requestAnimationFrame(() => this.cleanupCanvasOverlaps());
   }
 
   cleanupOverlaps(): void {

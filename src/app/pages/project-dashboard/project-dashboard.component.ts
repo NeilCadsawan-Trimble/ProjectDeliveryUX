@@ -1179,6 +1179,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
       if (!this.restoreCanvasLayout()) {
         this.applyCanvasDefaults();
       }
+      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
     } else if (startMobile) {
       this.restoreDesktopLayout();
       this._savedDesktopTops = { ...this.wTops() };
@@ -1237,6 +1238,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
         if (!this.restoreCanvasLayout()) {
           this.applyCanvasDefaults();
         }
+        requestAnimationFrame(() => this.cleanupCanvasOverlaps());
       } else if (nowMobile && !wasMobile) {
         this._savedDesktopTops = { ...this.wTops() };
         this._savedDesktopColStarts = { ...this.wColStarts() };
@@ -1818,6 +1820,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
         if (!this.restoreCanvasLayout()) {
           this.applyCanvasDefaults();
         }
+        requestAnimationFrame(() => this.cleanupCanvasOverlaps());
       } else if (mobile) {
         const restored = this.restoreMobileLayout();
         if (restored) {
@@ -1915,6 +1918,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
     if (this.isCanvas()) {
       localStorage.removeItem(this.canvasLayoutKey);
       this.applyCanvasDefaults();
+      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
     } else {
       this.wTops.set({ ...this.defaultTops });
       this.wHeights.set({ ...this.defaultHeights });
