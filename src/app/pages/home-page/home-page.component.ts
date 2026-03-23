@@ -14,6 +14,7 @@ import {
 import { Router } from '@angular/router';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
 import { CanvasResetService } from '../../services/canvas-reset.service';
+import { WidgetFocusService } from '../../services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../services/dashboard-layout-engine';
 import { WidgetResizeHandleComponent } from '../../components/widget-resize-handle.component';
 import type {
@@ -107,7 +108,7 @@ import {
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
 
               @if (widgetId === 'homeTimeOff') {
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -272,7 +273,7 @@ import {
                 />
               }
               @else if (widgetId === 'homeCalendar') {
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -417,7 +418,7 @@ import {
                 />
               }
               @else if (widgetId === 'homeRfis') {
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -555,7 +556,7 @@ import {
                 />
               }
               @else if (widgetId === 'homeSubmittals') {
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -703,6 +704,7 @@ import {
 export class HomePageComponent implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly canvasResetService = inject(CanvasResetService);
+  private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly engine = new DashboardLayoutEngine({
@@ -723,6 +725,7 @@ export class HomePageComponent implements AfterViewInit {
     canvasGridMinHeightOffset: 100,
     savesDesktopOnMobile: true,
     onBeforeMobileCompact: () => this.applyMobileHeights(),
+    onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
   }, inject(WidgetLayoutService));
 
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
@@ -781,6 +784,7 @@ export class HomePageComponent implements AfterViewInit {
   });
 
   readonly homeWidgets: DashboardWidgetId[] = ['homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals'];
+  readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');

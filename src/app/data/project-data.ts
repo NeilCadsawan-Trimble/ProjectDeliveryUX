@@ -536,3 +536,12 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     ],
   },
 };
+
+export const CLOUD_INFRA_PROJECT = PROJECT_DATA[1];
+export const MOBILE_APP_PROJECT = PROJECT_DATA[2];
+export const ERP_UPGRADE_PROJECT = PROJECT_DATA[3];
+export const DATA_ANALYTICS_PROJECT = PROJECT_DATA[4];
+export const CUSTOMER_PORTAL_PROJECT = PROJECT_DATA[5];
+export const SECURITY_AUDIT_PROJECT = PROJECT_DATA[6];
+export const API_GATEWAY_PROJECT = PROJECT_DATA[7];
+export const ML_PIPELINE_PROJECT = PROJECT_DATA[8];

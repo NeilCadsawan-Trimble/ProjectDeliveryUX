@@ -7,12 +7,13 @@ import {
   computed,
   effect,
   inject,
+  input,
   signal,
   untracked,
   viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet, TitleCasePipe } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
@@ -23,8 +24,9 @@ import { AiIconComponent } from '../../components/ai-icon.component';
 import { ThemeService } from '../../services/theme.service';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
 import { CanvasResetService } from '../../services/canvas-reset.service';
+import { WidgetFocusService } from '../../services/widget-focus.service';
 import {
-  PROJECT_DATA,
+  type ProjectDashboardData,
   type ProjectStatus,
   type MilestoneStatus,
   type TaskPriority,
@@ -116,7 +118,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
               @switch (wId) {
                 @case ('milestones') {
-              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
@@ -164,7 +166,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 }
 
                 @case ('tasks') {
-              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
@@ -194,7 +196,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 }
 
                 @case ('risks') {
-              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
@@ -226,7 +228,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 }
 
                 @case ('drawing') {
-              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
@@ -281,7 +283,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 }
 
                 @case ('budget') {
-              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
@@ -314,7 +316,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 }
 
                 @case ('team') {
-              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
@@ -345,7 +347,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 }
 
                 @case ('activity') {
-              <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
                 <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
@@ -403,43 +405,8 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 <div class="text-sm">Projects</div>
               </div>
               <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              <div class="relative min-w-0 flex-1">
-                <div
-                  class="flex items-center gap-1 cursor-pointer min-w-0"
-                  role="button"
-                  tabindex="0"
-                  [attr.aria-expanded]="projectDropdownOpen()"
-                  aria-haspopup="listbox"
-                  (click)="toggleProjectDropdown()"
-                  (keydown.enter)="toggleProjectDropdown()"
-                >
-                  <div class="text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
-                  <i class="modus-icons text-sm text-foreground-40 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectDropdownOpen()" aria-hidden="true">expand_more</i>
-                </div>
-                @if (projectDropdownOpen()) {
-                  <div class="absolute left-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[260px] max-w-[360px] py-1 max-h-[320px] overflow-y-auto" role="listbox" aria-label="Switch project">
-                    @for (proj of allProjects; track proj.id) {
-                      <div
-                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors duration-150"
-                        [class.bg-primary-20]="proj.id === projectId()"
-                        [class.text-primary]="proj.id === projectId()"
-                        [class.text-foreground]="proj.id !== projectId()"
-                        [class.hover:bg-muted]="proj.id !== projectId()"
-                        role="option"
-                        [attr.aria-selected]="proj.id === projectId()"
-                        (click)="switchProject(proj.id)"
-                      >
-                        <div class="w-2 h-2 rounded-full flex-shrink-0"
-                          [class.bg-success]="proj.status === 'On Track'"
-                          [class.bg-warning]="proj.status === 'At Risk'"
-                          [class.bg-destructive]="proj.status === 'Overdue'"
-                          [class.bg-secondary]="proj.status === 'Planning'"
-                        ></div>
-                        <div class="text-sm truncate">{{ proj.name }}</div>
-                      </div>
-                    }
-                  </div>
-                }
+              <div class="min-w-0 flex-1">
+                <div class="text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
               </div>
             </div>
             <div slot="end" class="flex items-center gap-1">
@@ -569,43 +536,8 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
             <div class="text-sm hidden md:block">Projects</div>
           </div>
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-          <div class="relative min-w-0 flex-1">
-            <div
-              class="flex items-center gap-1 cursor-pointer min-w-0"
-              role="button"
-              tabindex="0"
-              [attr.aria-expanded]="projectDropdownOpen()"
-              aria-haspopup="listbox"
-              (click)="toggleProjectDropdown()"
-              (keydown.enter)="toggleProjectDropdown()"
-            >
-              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
-              <i class="modus-icons text-sm text-foreground-40 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectDropdownOpen()" aria-hidden="true">expand_more</i>
-            </div>
-            @if (projectDropdownOpen()) {
-              <div class="absolute left-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[260px] max-w-[360px] py-1 max-h-[320px] overflow-y-auto" role="listbox" aria-label="Switch project">
-                @for (proj of allProjects; track proj.id) {
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors duration-150"
-                    [class.bg-primary-20]="proj.id === projectId()"
-                    [class.text-primary]="proj.id === projectId()"
-                    [class.text-foreground]="proj.id !== projectId()"
-                    [class.hover:bg-muted]="proj.id !== projectId()"
-                    role="option"
-                    [attr.aria-selected]="proj.id === projectId()"
-                    (click)="switchProject(proj.id)"
-                  >
-                    <div class="w-2 h-2 rounded-full flex-shrink-0"
-                      [class.bg-success]="proj.status === 'On Track'"
-                      [class.bg-warning]="proj.status === 'At Risk'"
-                      [class.bg-destructive]="proj.status === 'Overdue'"
-                      [class.bg-secondary]="proj.status === 'Planning'"
-                    ></div>
-                    <div class="text-sm truncate">{{ proj.name }}</div>
-                  </div>
-                }
-              </div>
-            }
+          <div class="min-w-0 flex-1">
+            <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
           </div>
         </div>
         <div slot="end" class="flex items-center gap-1">
@@ -773,8 +705,8 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
             </svg>
           </div>
           <div>
-            <div class="text-base font-semibold text-foreground">Trimble AI</div>
-            <div class="text-xs text-foreground-60">Project Assistant</div>
+            <div class="text-base font-semibold text-foreground">{{ widgetFocusService.aiAssistantTitle() }}</div>
+            <div class="text-xs text-foreground-60">{{ widgetFocusService.aiAssistantSubtitle() }}</div>
           </div>
         </div>
         <div
@@ -803,7 +735,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
               <div class="text-sm text-foreground-60 mt-1">Ask me about this project, milestones, budget, or team status.</div>
             </div>
             <div class="flex flex-col gap-2 w-full mt-2">
-              @for (suggestion of aiSuggestions; track suggestion) {
+              @for (suggestion of aiSuggestions(); track suggestion) {
                 <div
                   class="px-4 py-2.5 rounded-lg border-default bg-card text-sm text-foreground cursor-pointer hover:bg-muted transition-colors duration-150 text-left"
                   (click)="selectAiSuggestion(suggestion)"
@@ -907,10 +839,10 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 export class ProjectDashboardComponent implements AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
   private readonly elementRef = inject(ElementRef);
   private readonly layoutService = inject(WidgetLayoutService);
   private readonly canvasResetService = inject(CanvasResetService);
+  readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly _abortCtrl = new AbortController();
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this._abortCtrl.abort());
@@ -977,6 +909,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
 
   readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'drawing', 'budget', 'team', 'activity'];
+  readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   readonly wColStarts = signal<Record<ProjectWidgetId, number>>({
     milestones: 1, tasks: 1, risks: 1,
@@ -1075,9 +1008,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
     email: 'alex.morgan@trimble.com',
   };
 
-  readonly projectId = signal(1);
-
-  private readonly projectData = computed(() => PROJECT_DATA[this.projectId()] ?? PROJECT_DATA[1]);
+  readonly projectData = input.required<ProjectDashboardData>();
+  readonly projectId = input<number>(1);
 
   readonly projectName = computed(() => this.projectData().name);
   readonly projectStatus = computed(() => this.projectData().status);
@@ -1158,9 +1090,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    const idParam = this.route.snapshot.paramMap.get('id');
-    if (idParam) this.projectId.set(Number(idParam));
-
     const startMobile = window.innerWidth < 768;
     const startCanvas = window.innerWidth >= 2000;
     this.isMobile.set(startMobile);
@@ -1396,6 +1325,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this._dragStartLeft = this.wLefts()[id] ?? 0;
     this.moveTargetId.set(id);
     this.bumpZIndex(id);
+    this.widgetFocusService.selectWidget(id);
   }
 
   onWidgetHeaderTouchStart(id: ProjectWidgetId, event: TouchEvent): void {
@@ -1418,6 +1348,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this._dragStartLeft = this.wLefts()[id] ?? 0;
     this.moveTargetId.set(id);
     this.bumpZIndex(id);
+    this.widgetFocusService.selectWidget(id);
   }
 
   startWidgetResize(target: ProjectWidgetId, dir: 'h' | 'v' | 'both', event: MouseEvent): void {
@@ -1473,7 +1404,20 @@ export class ProjectDashboardComponent implements AfterViewInit {
       }
       if (this._resizeDir === 'h' || this._resizeDir === 'both') {
         const raw = Math.max(200, this._resizeStartW + (event.clientX - this._resizeStartX));
-        const newW = Math.round(raw / 16) * 16;
+        const hStep = ProjectDashboardComponent.CANVAS_STEP;
+        const gap = ProjectDashboardComponent.GAP_PX;
+        const snapped = Math.round((raw + gap) / hStep) * hStep - gap;
+        let newW = Math.max(hStep - gap, snapped);
+
+        if (!this.isCanvas()) {
+          const grid = this.gridRef()?.nativeElement as HTMLElement | undefined;
+          if (grid) {
+            const containerWidth = grid.clientWidth;
+            const widgetLeft = this.wLefts()[id] ?? 0;
+            newW = Math.min(newW, containerWidth - widgetLeft);
+          }
+        }
+
         this.wPixelWidths.update(w => ({ ...w, [id]: newW }));
       }
       this.resolveCollisions(id);
@@ -1606,13 +1550,21 @@ export class ProjectDashboardComponent implements AfterViewInit {
     if (!grid || !this._moveTarget) return;
     const id = this._moveTarget;
     const gap = ProjectDashboardComponent.GAP_PX;
+    const hStep = ProjectDashboardComponent.CANVAS_STEP;
 
     if (this._dragAxis === 'free') {
       const rawTop = this._dragStartTop + (event.clientY - this._dragStartY);
       const rawLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
-      const newTop = Math.round(rawTop / gap) * gap;
-      const hStep = this.isCanvas() ? ProjectDashboardComponent.CANVAS_STEP : gap;
-      const newLeft = Math.round(rawLeft / hStep) * hStep;
+      let newTop = Math.round(rawTop / gap) * gap;
+      let newLeft = Math.round(rawLeft / hStep) * hStep;
+
+      if (!this.isCanvas()) {
+        const containerWidth = grid.clientWidth;
+        const widgetWidth = this.wPixelWidths()[id] ?? 0;
+        newTop = Math.max(0, newTop);
+        newLeft = Math.max(0, Math.min(newLeft, containerWidth - widgetWidth));
+      }
+
       this.wTops.update(t => ({ ...t, [id]: newTop }));
       this.wLefts.update(l => ({ ...l, [id]: newLeft }));
       this.resolveCollisions(id);
@@ -1746,12 +1698,22 @@ export class ProjectDashboardComponent implements AfterViewInit {
   readonly aiThinking = signal(false);
   private aiMessageCounter = 0;
 
-  readonly aiSuggestions = [
+  private readonly defaultAiSuggestions = [
     'What are the biggest risks right now?',
     'Summarize migration progress',
     'Which tasks are overdue?',
     'How is the budget tracking?',
   ];
+
+  readonly aiSuggestions = computed(() =>
+    this.widgetFocusService.aiSuggestions() ?? this.defaultAiSuggestions
+  );
+
+  private readonly _clearMessagesOnWidgetChange = effect(() => {
+    this.widgetFocusService.selectedWidgetId();
+    this.aiMessages.set([]);
+    this.aiThinking.set(false);
+  });
 
   toggleAiPanel(): void {
     this.aiPanelOpen.update(v => !v);
@@ -1759,17 +1721,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
-  // ── Project Dropdown ──
-  readonly projectDropdownOpen = signal(false);
-  readonly allProjects = Object.entries(PROJECT_DATA).map(([id, data]) => ({
-    id: Number(id),
-    name: data.name,
-    status: data.status,
-  }));
-
-  toggleProjectDropdown(): void {
-    this.projectDropdownOpen.update(v => !v);
-  }
+  // ── Project Navigation ──
 
   private readonly defaultTops: Record<ProjectWidgetId, number> = {
     milestones: 0, tasks: 536, risks: 952,
@@ -1796,52 +1748,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
     drawing: 389, budget: 389, team: 389, activity: 389,
   };
 
-  switchProject(id: number): void {
-    this.projectDropdownOpen.set(false);
-    if (id !== this.projectId()) {
-      if (this.isCanvas()) {
-        this.persistCanvasLayout();
-      } else {
-        this.persistLayout();
-      }
-      this.projectId.set(id);
-      const mobile = this.isMobile();
-      const canvas = this.isCanvas();
-      if (canvas) {
-        this.restoreDesktopLayout();
-        this._savedDesktopForCanvas = {
-          tops: { ...this.wTops() },
-          heights: { ...this.wHeights() },
-          colStarts: { ...this.wColStarts() },
-          colSpans: { ...this.wColSpans() },
-          lefts: { ...this.wLefts() },
-          widths: { ...this.wPixelWidths() },
-        };
-        if (!this.restoreCanvasLayout()) {
-          this.applyCanvasDefaults();
-        }
-        requestAnimationFrame(() => this.cleanupCanvasOverlaps());
-      } else if (mobile) {
-        const restored = this.restoreMobileLayout();
-        if (restored) {
-          this.compactAll();
-        } else {
-          this.stackAllForMobile();
-        }
-      } else {
-        const restored = this.restoreDesktopLayout();
-        if (!restored) {
-          this.wTops.set({ ...this.defaultTops });
-          this.wHeights.set({ ...this.defaultHeights });
-          this.wColStarts.set({ ...this.defaultColStarts });
-          this.wColSpans.set({ ...this.defaultColSpans });
-          this.wLefts.set({ ...this.defaultLefts });
-          this.wPixelWidths.set({ ...this.defaultPixelWidths });
-        }
-      }
-      this.router.navigate(['/project', id], { replaceUrl: true });
-    }
-  }
 
   // ── Mobile More Menu ──
   readonly moreMenuOpen = signal(false);
@@ -1869,8 +1775,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
   onEscapeKey(): void {
     if (this.resetMenuOpen()) {
       this.resetMenuOpen.set(false);
-    } else if (this.projectDropdownOpen()) {
-      this.projectDropdownOpen.set(false);
     } else if (this.moreMenuOpen()) {
       this.moreMenuOpen.set(false);
     } else if (this.aiPanelOpen()) {
@@ -1884,9 +1788,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
     const target = event.target as HTMLElement;
     if (this.resetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.canvas-reset-flyout')) {
       this.resetMenuOpen.set(false);
-    }
-    if (this.projectDropdownOpen() && !target.closest('[aria-haspopup="listbox"]') && !target.closest('[role="option"]')) {
-      this.projectDropdownOpen.set(false);
     }
     if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);

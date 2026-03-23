@@ -17,6 +17,7 @@ import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel
 import { AiIconComponent } from '../../components/ai-icon.component';
 import { ThemeService } from '../../services/theme.service';
 import { CanvasResetService } from '../../services/canvas-reset.service';
+import { WidgetFocusService } from '../../services/widget-focus.service';
 import type { AiMessage, Project, Estimate } from '../../data/dashboard-data';
 import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data';
 
@@ -358,8 +359,8 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
             <ai-icon variant="solid-white" size="sm" />
           </div>
           <div>
-            <div class="text-base font-semibold text-foreground">Trimble AI</div>
-            <div class="text-xs text-foreground-60">Project Assistant</div>
+            <div class="text-base font-semibold text-foreground">{{ widgetFocusService.aiAssistantTitle() }}</div>
+            <div class="text-xs text-foreground-60">{{ widgetFocusService.aiAssistantSubtitle() }}</div>
           </div>
         </div>
         <div
@@ -387,7 +388,7 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
             </div>
             <!-- Suggestion chips -->
             <div class="flex flex-col gap-2 w-full mt-2">
-              @for (suggestion of aiSuggestions; track suggestion) {
+              @for (suggestion of aiSuggestions(); track suggestion) {
                 <div
                   class="px-4 py-2.5 rounded-lg border-default bg-card text-sm text-foreground cursor-pointer hover:bg-muted transition-colors duration-150 text-left"
                   (click)="selectAiSuggestion(suggestion)"
@@ -563,6 +564,7 @@ export class DashboardLayoutComponent implements AfterViewInit {
   readonly resetMenuOpen = signal(false);
 
   private readonly canvasResetService = inject(CanvasResetService);
+  readonly widgetFocusService = inject(WidgetFocusService);
 
   toggleMoreMenu(): void {
     this.moreMenuOpen.update((v) => !v);
@@ -606,12 +608,22 @@ export class DashboardLayoutComponent implements AfterViewInit {
   readonly aiThinking = signal(false);
   private aiMessageCounter = 0;
 
-  readonly aiSuggestions: string[] = [
+  private readonly defaultAiSuggestions: string[] = [
     'Summarize project status',
     'Which projects are at risk?',
     'Show overdue estimates',
     'What needs attention today?',
   ];
+
+  readonly aiSuggestions = computed(() =>
+    this.widgetFocusService.aiSuggestions() ?? this.defaultAiSuggestions
+  );
+
+  private readonly _clearMessagesOnWidgetChange = effect(() => {
+    this.widgetFocusService.selectedWidgetId();
+    this.aiMessages.set([]);
+    this.aiThinking.set(false);
+  });
 
   readonly projects = signal<Project[]>(PROJECTS);
   readonly estimates = signal<Estimate[]>(ESTIMATES);

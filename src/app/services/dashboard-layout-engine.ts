@@ -20,6 +20,7 @@ export interface DashboardLayoutConfig {
   canvasGridMinHeightOffset?: number;
   savesDesktopOnMobile?: boolean;
   onBeforeMobileCompact?: () => void;
+  onWidgetSelect?: (id: string) => void;
 }
 
 /**
@@ -276,6 +277,7 @@ export class DashboardLayoutEngine {
     this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
     this.bumpZIndex(id);
+    this.config.onWidgetSelect?.(id);
   }
 
   onWidgetHeaderTouchStart(id: string, event: TouchEvent): void {
@@ -298,6 +300,7 @@ export class DashboardLayoutEngine {
     this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
     this.bumpZIndex(id);
+    this.config.onWidgetSelect?.(id);
   }
 
   startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent): void {
@@ -391,11 +394,19 @@ export class DashboardLayoutEngine {
 
     if (this._dragAxis === 'free') {
       const gap = DashboardLayoutEngine.GAP_PX;
+      const hStep = DashboardLayoutEngine.CANVAS_STEP;
       const rawTop = this._dragStartTop + (event.clientY - this._dragStartY);
       const rawLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
-      const newTop = Math.round(rawTop / gap) * gap;
-      const hStep = this.isCanvasMode() ? DashboardLayoutEngine.CANVAS_STEP : gap;
-      const newLeft = Math.round(rawLeft / hStep) * hStep;
+      let newTop = Math.round(rawTop / gap) * gap;
+      let newLeft = Math.round(rawLeft / hStep) * hStep;
+
+      if (!this.isCanvasMode()) {
+        const containerWidth = grid.clientWidth;
+        const widgetWidth = this.widgetPixelWidths()[id] ?? 0;
+        newTop = Math.max(0, newTop);
+        newLeft = Math.max(0, Math.min(newLeft, containerWidth - widgetWidth));
+      }
+
       this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
       this.widgetLefts.update((l) => ({ ...l, [id]: newLeft }));
       this.resolveCollisions(id, widgets);
@@ -424,7 +435,20 @@ export class DashboardLayoutEngine {
     }
     if (this._resizeDir === 'h' || this._resizeDir === 'both') {
       const raw = Math.max(200, this._resizeStartW + (event.clientX - this._resizeStartX));
-      const newW = Math.round(raw / DashboardLayoutEngine.GAP_PX) * DashboardLayoutEngine.GAP_PX;
+      const hStep = DashboardLayoutEngine.CANVAS_STEP;
+      const gap = DashboardLayoutEngine.GAP_PX;
+      const snapped = Math.round((raw + gap) / hStep) * hStep - gap;
+      let newW = Math.max(hStep - gap, snapped);
+
+      if (!this.isCanvasMode()) {
+        const grid = this.activeGridEl;
+        if (grid) {
+          const containerWidth = grid.clientWidth;
+          const widgetLeft = this.widgetLefts()[id] ?? 0;
+          newW = Math.min(newW, containerWidth - widgetLeft);
+        }
+      }
+
       this.widgetPixelWidths.update((w) => ({ ...w, [id]: newW }));
     }
     this.resolveCollisions(id, widgets);

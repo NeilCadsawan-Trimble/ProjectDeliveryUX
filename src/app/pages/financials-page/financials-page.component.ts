@@ -16,6 +16,7 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
 import { WidgetResizeHandleComponent } from '../../components/widget-resize-handle.component';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
 import { CanvasResetService } from '../../services/canvas-reset.service';
+import { WidgetFocusService } from '../../services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../services/dashboard-layout-engine';
 import type { DashboardWidgetId, Project } from '../../data/dashboard-data';
 import { PROJECTS } from '../../data/dashboard-data';
@@ -99,7 +100,7 @@ import { PROJECTS } from '../../data/dashboard-data';
 
               @if (widgetId === 'finBudgetByProject') {
                 <!-- Budget by Project Widget -->
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <!-- Draggable header -->
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
@@ -156,6 +157,7 @@ import { PROJECTS } from '../../data/dashboard-data';
 })
 export class FinancialsPageComponent implements AfterViewInit {
   private readonly canvasResetService = inject(CanvasResetService);
+  private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly engine = new DashboardLayoutEngine({
@@ -173,6 +175,7 @@ export class FinancialsPageComponent implements AfterViewInit {
     minColSpan: 1,
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: false,
+    onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
   }, inject(WidgetLayoutService));
 
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
@@ -205,6 +208,7 @@ export class FinancialsPageComponent implements AfterViewInit {
 
   readonly projects = signal<Project[]>(PROJECTS);
   readonly totalProjects = computed(() => this.projects().length);
+  readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
   readonly financialsWidgets: DashboardWidgetId[] = ['finBudgetByProject'];
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');

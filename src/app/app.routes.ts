@@ -52,12 +52,68 @@ export const routes: Routes = [
   },
 
   {
-    path: 'project/:id',
+    path: 'project/cloud-infrastructure-migration',
     loadComponent: () =>
-      import('./pages/project-dashboard/project-dashboard.component').then(
-        (m) => m.ProjectDashboardComponent,
+      import('./pages/projects/cloud-infrastructure-migration/cloud-infrastructure-migration-page.component').then(
+        (m) => m.CloudInfrastructureMigrationPageComponent,
       ),
-    title: 'Project Dashboard',
+    title: 'Cloud Infrastructure Migration',
+  },
+  {
+    path: 'project/mobile-app-redesign',
+    loadComponent: () =>
+      import('./pages/projects/mobile-app-redesign/mobile-app-redesign-page.component').then(
+        (m) => m.MobileAppRedesignPageComponent,
+      ),
+    title: 'Mobile App Redesign',
+  },
+  {
+    path: 'project/erp-system-upgrade',
+    loadComponent: () =>
+      import('./pages/projects/erp-system-upgrade/erp-system-upgrade-page.component').then(
+        (m) => m.ErpSystemUpgradePageComponent,
+      ),
+    title: 'ERP System Upgrade',
+  },
+  {
+    path: 'project/data-analytics-platform',
+    loadComponent: () =>
+      import('./pages/projects/data-analytics-platform/data-analytics-platform-page.component').then(
+        (m) => m.DataAnalyticsPlatformPageComponent,
+      ),
+    title: 'Data Analytics Platform',
+  },
+  {
+    path: 'project/customer-portal-v3',
+    loadComponent: () =>
+      import('./pages/projects/customer-portal-v3/customer-portal-v3-page.component').then(
+        (m) => m.CustomerPortalV3PageComponent,
+      ),
+    title: 'Customer Portal v3',
+  },
+  {
+    path: 'project/security-compliance-audit',
+    loadComponent: () =>
+      import('./pages/projects/security-compliance-audit/security-compliance-audit-page.component').then(
+        (m) => m.SecurityComplianceAuditPageComponent,
+      ),
+    title: 'Security & Compliance Audit',
+  },
+  {
+    path: 'project/api-gateway-modernization',
+    loadComponent: () =>
+      import('./pages/projects/api-gateway-modernization/api-gateway-modernization-page.component').then(
+        (m) => m.ApiGatewayModernizationPageComponent,
+      ),
+    title: 'API Gateway Modernization',
+  },
+  {
+    path: 'project/ml-model-deployment-pipeline',
+    loadComponent: () =>
+      import('./pages/projects/ml-model-deployment-pipeline/ml-model-deployment-pipeline-page.component').then(
+        (m) => m.MlModelDeploymentPipelinePageComponent,
+      ),
+    title: 'ML Model Deployment Pipeline',
   },
 
   // Dev routes - conditionally added based on environment

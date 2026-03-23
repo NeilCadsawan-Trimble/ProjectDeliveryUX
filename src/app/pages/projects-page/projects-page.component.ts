@@ -18,6 +18,7 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
 import { WidgetResizeHandleComponent } from '../../components/widget-resize-handle.component';
 import { WidgetLayoutService } from '../../services/widget-layout.service';
 import { CanvasResetService } from '../../services/canvas-reset.service';
+import { WidgetFocusService } from '../../services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../services/dashboard-layout-engine';
 import type {
   DashboardWidgetId,
@@ -84,7 +85,7 @@ import {
 
             @if (widgetId === 'projects') {
             <!-- Projects Widget -->
-            <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full" #projectsContainer>
+            <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId" #projectsContainer>
               <div
                 class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                 (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -116,8 +117,8 @@ import {
                   @for (project of projects(); track project.id) {
                     <div
                       class="bg-background border-default rounded-lg overflow-hidden flex flex-col cursor-pointer hover:bg-muted transition-colors duration-150"
-                      (click)="navigateToProject(project.id)"
-                      (keydown.enter)="navigateToProject(project.id)"
+                      (click)="navigateToProject(project)"
+                      (keydown.enter)="navigateToProject(project)"
                       role="link"
                       tabindex="0"
                       [attr.aria-label]="'Open ' + project.name + ' dashboard'"
@@ -167,7 +168,7 @@ import {
                         </div>
                         <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
                           <i class="modus-icons text-sm text-primary" aria-hidden="true">draft</i>
-                          <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project.id); $event.stopPropagation()">
+                          <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project); $event.stopPropagation()">
                             {{ project.latestDrawingName }}
                           </div>
                           <div class="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</div>
@@ -186,7 +187,7 @@ import {
 
             } @else if (widgetId === 'openEstimates') {
             <!-- Open Estimates Widget -->
-            <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full" #estimatesContainer>
+            <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId" #estimatesContainer>
               <div
                 class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                 (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -279,7 +280,7 @@ import {
 
             } @else if (widgetId === 'recentActivity') {
             <!-- Recent Activity Widget -->
-            <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+            <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
               <div
                 class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                 (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -316,7 +317,7 @@ import {
 
             } @else if (widgetId === 'needsAttention') {
             <!-- Needs Attention Widget -->
-            <div class="relative bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+            <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
               <div
                 class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                 (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -359,6 +360,7 @@ import {
 export class ProjectsPageComponent implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly canvasResetService = inject(CanvasResetService);
+  private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly engine = new DashboardLayoutEngine({
@@ -377,6 +379,7 @@ export class ProjectsPageComponent implements AfterViewInit {
     widgetMinColSpans: { needsAttention: 3 },
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: true,
+    onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
   }, inject(WidgetLayoutService));
 
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
@@ -489,8 +492,8 @@ export class ProjectsPageComponent implements AfterViewInit {
     this._projectsResizeObserver = ro;
   });
 
-  navigateToProject(projectId: number): void {
-    this.router.navigate(['/project', projectId]);
+  navigateToProject(project: Project): void {
+    this.router.navigate(['/project', project.slug]);
   }
 
   readonly statusBadgeColor = statusBadgeColor;
@@ -500,6 +503,7 @@ export class ProjectsPageComponent implements AfterViewInit {
   readonly estimateBadgeColor = estimateBadgeColor;
   readonly dueDateClass = dueDateClass;
 
+  readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
   readonly projectWidgets: DashboardWidgetId[] = [
     'projects',
     'openEstimates',
