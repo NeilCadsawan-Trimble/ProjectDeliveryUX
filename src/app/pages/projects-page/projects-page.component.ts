@@ -48,7 +48,7 @@ import {
     '(document:touchend)': 'onDocumentTouchEnd()',
   },
   template: `
-    <div class="p-6 max-w-screen-xl mx-auto">
+    <div class="px-4 py-4 md:px-0 md:py-6 max-w-screen-xl mx-auto">
 
       <!-- Page header -->
       <div #pageHeader class="flex items-start justify-between mb-6">
