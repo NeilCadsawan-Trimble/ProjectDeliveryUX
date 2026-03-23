@@ -102,7 +102,7 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
             </div>
           </modus-navbar>
         </div>
-        <div class="canvas-navbar-shadow navbar-shadow"></div>
+        <div class="canvas-navbar-shadow"></div>
 
         <!-- Sidenav: fixed left-center, 1000px -->
         <div class="canvas-side-nav" [class.expanded]="navExpanded()">

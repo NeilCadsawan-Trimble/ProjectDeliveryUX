@@ -1632,17 +1632,20 @@ modus-wc-navbar .main-menu {
     width: 1280px;
     z-index: 1001;
     border-radius: 0 0 12px 12px;
-    box-shadow: 0 1px 4px rgba(36, 35, 45, 0.3);
+    overflow: hidden;
   }
 
   .canvas-navbar-shadow {
     position: fixed;
-    top: 56px;
+    top: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 1280px;
-    z-index: 1001;
+    height: 56px;
+    z-index: 1000;
     border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 6px rgba(36, 35, 45, 0.25);
+    pointer-events: none;
   }
 
   /* Sidenav: fixed left-center, 1000px tall */
@@ -1651,16 +1654,21 @@ modus-wc-navbar .main-menu {
     left: 0;
     top: 50%;
     transform: translateY(-50%);
-    height: 1000px;
+    min-height: 600px;
+    max-height: 800px;
     width: 56px;
     z-index: 1000;
-    background: var(--card);
+    background: var(--background);
     box-shadow: 4px 0 4px -2px rgba(36, 35, 45, 0.25);
     display: flex;
     flex-direction: column;
     overflow: visible;
     transition: width 0.2s ease-out;
     border-radius: 0 12px 12px 0;
+  }
+
+  .canvas-side-nav > div:first-child > .custom-side-nav-item:first-child {
+    border-radius: 0 12px 0 0;
   }
 
   .canvas-side-nav.expanded {
