@@ -274,15 +274,8 @@ export class ExampleHomeComponent implements AfterViewInit {
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0 && this.engine.isCanvasMode()) {
-      untracked(() => this.engine.resetWidgets());
-    }
-  });
-
-  private readonly _cleanupOverlapsEffect = effect(() => {
-    const tick = this.canvasResetService.cleanupOverlapsTick();
-    if (tick > 0 && this.engine.isCanvasMode()) {
-      untracked(() => this.engine.cleanupOverlaps());
+    if (tick > 0) {
+      untracked(() => this.engine.resetToDefaults());
     }
   });
 

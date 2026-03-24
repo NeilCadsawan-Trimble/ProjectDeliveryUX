@@ -49,7 +49,7 @@ import {
     '(document:touchend)': 'onDocumentTouchEnd()',
   },
   template: `
-    <div class="px-4 py-4 md:px-0 md:py-6 max-w-screen-xl mx-auto">
+    <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
 
       <!-- Page header -->
       <div #pageHeader class="flex items-start justify-between mb-6">
@@ -180,6 +180,12 @@ import {
               </div>
               <widget-resize-handle
                 [isMobile]="isMobile()"
+                position="left"
+                (resizeStart)="startWidgetResize('projects', 'both', $event, 'left')"
+                (resizeTouchStart)="startWidgetResizeTouch('projects', 'both', $event, 'left')"
+              />
+              <widget-resize-handle
+                [isMobile]="isMobile()"
                 (resizeStart)="startWidgetResize('projects', 'both', $event)"
                 (resizeTouchStart)="startWidgetResizeTouch('projects', 'both', $event)"
               />
@@ -273,6 +279,12 @@ import {
               </div>
               <widget-resize-handle
                 [isMobile]="isMobile()"
+                position="left"
+                (resizeStart)="startWidgetResize('openEstimates', 'both', $event, 'left')"
+                (resizeTouchStart)="startWidgetResizeTouch('openEstimates', 'both', $event, 'left')"
+              />
+              <widget-resize-handle
+                [isMobile]="isMobile()"
                 (resizeStart)="startWidgetResize('openEstimates', 'both', $event)"
                 (resizeTouchStart)="startWidgetResizeTouch('openEstimates', 'both', $event)"
               />
@@ -310,6 +322,12 @@ import {
               </div>
               <widget-resize-handle
                 [isMobile]="isMobile()"
+                position="left"
+                (resizeStart)="startWidgetResize('recentActivity', 'both', $event, 'left')"
+                (resizeTouchStart)="startWidgetResizeTouch('recentActivity', 'both', $event, 'left')"
+              />
+              <widget-resize-handle
+                [isMobile]="isMobile()"
                 (resizeStart)="startWidgetResize('recentActivity', 'both', $event)"
                 (resizeTouchStart)="startWidgetResizeTouch('recentActivity', 'both', $event)"
               />
@@ -338,6 +356,12 @@ import {
                   </div>
                 }
               </div>
+              <widget-resize-handle
+                [isMobile]="isMobile()"
+                position="left"
+                (resizeStart)="startWidgetResize('needsAttention', 'both', $event, 'left')"
+                (resizeTouchStart)="startWidgetResizeTouch('needsAttention', 'both', $event, 'left')"
+              />
               <widget-resize-handle
                 [isMobile]="isMobile()"
                 (resizeStart)="startWidgetResize('needsAttention', 'both', $event)"
@@ -386,15 +410,8 @@ export class ProjectsPageComponent implements AfterViewInit {
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0 && this.engine.isCanvasMode()) {
-      untracked(() => this.engine.resetWidgets());
-    }
-  });
-
-  private readonly _cleanupOverlapsEffect = effect(() => {
-    const tick = this.canvasResetService.cleanupOverlapsTick();
-    if (tick > 0 && this.engine.isCanvasMode()) {
-      untracked(() => this.engine.cleanupOverlaps());
+    if (tick > 0) {
+      untracked(() => this.engine.resetToDefaults());
     }
   });
 
@@ -429,7 +446,6 @@ export class ProjectsPageComponent implements AfterViewInit {
 
   private readonly estimatesContainerRef = viewChild<ElementRef>('estimatesContainer');
   readonly estimatesContainerWidth = signal<number>(0);
-  private _estimatesResizeObserver: ResizeObserver | null = null;
   readonly estimatesBreakpoint = computed<'wide' | 'narrow' | 'xNarrow' | 'xxNarrow' | 'ultraNarrow'>(() => {
     const w = this.estimatesContainerWidth();
     if (w > 0 && w <= 450) return 'ultraNarrow';
@@ -448,26 +464,10 @@ export class ProjectsPageComponent implements AfterViewInit {
     return bp === 'xxNarrow' || bp === 'ultraNarrow';
   });
   readonly estimatesUltraNarrow = computed(() => this.estimatesBreakpoint() === 'ultraNarrow');
-  private readonly _estimatesResizeEffect = effect(() => {
-    const el = this.estimatesContainerRef()?.nativeElement as HTMLElement | undefined;
-    this._estimatesResizeObserver?.disconnect();
-    this._estimatesResizeObserver = null;
-    if (!el) {
-      this.estimatesContainerWidth.set(0);
-      return;
-    }
-    this.estimatesContainerWidth.set(el.offsetWidth);
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? el.offsetWidth;
-      this.estimatesContainerWidth.set(w);
-    });
-    ro.observe(el);
-    this._estimatesResizeObserver = ro;
-  });
+  private readonly _estimatesResizeEffect = this.trackContainerWidth(this.estimatesContainerRef, this.estimatesContainerWidth);
 
   private readonly projectsContainerRef = viewChild<ElementRef>('projectsContainer');
   readonly projectsContainerWidth = signal<number>(0);
-  private _projectsResizeObserver: ResizeObserver | null = null;
   readonly projectsGridCols = computed(() => {
     const w = this.projectsContainerWidth();
     if (w > 0 && w <= 400) return 'grid-cols-1';
@@ -475,22 +475,30 @@ export class ProjectsPageComponent implements AfterViewInit {
     if (w > 0 && w <= 960) return 'grid-cols-3';
     return 'grid-cols-4';
   });
-  private readonly _projectsResizeEffect = effect(() => {
-    const el = this.projectsContainerRef()?.nativeElement as HTMLElement | undefined;
-    this._projectsResizeObserver?.disconnect();
-    this._projectsResizeObserver = null;
-    if (!el) {
-      this.projectsContainerWidth.set(0);
-      return;
-    }
-    this.projectsContainerWidth.set(el.offsetWidth);
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? el.offsetWidth;
-      this.projectsContainerWidth.set(w);
+  private readonly _projectsResizeEffect = this.trackContainerWidth(this.projectsContainerRef, this.projectsContainerWidth);
+
+  private trackContainerWidth(
+    ref: ReturnType<typeof viewChild<ElementRef>>,
+    widthSignal: ReturnType<typeof signal<number>>,
+  ) {
+    let observer: ResizeObserver | null = null;
+    return effect(() => {
+      const el = ref()?.nativeElement as HTMLElement | undefined;
+      observer?.disconnect();
+      observer = null;
+      if (!el) {
+        widthSignal.set(0);
+        return;
+      }
+      widthSignal.set(el.offsetWidth);
+      const ro = new ResizeObserver((entries) => {
+        const w = entries[0]?.contentRect.width ?? el.offsetWidth;
+        widthSignal.set(w);
+      });
+      ro.observe(el);
+      observer = ro;
     });
-    ro.observe(el);
-    this._projectsResizeObserver = ro;
-  });
+  }
 
   navigateToProject(project: Project): void {
     this.router.navigate(['/project', project.slug]);
@@ -526,12 +534,12 @@ export class ProjectsPageComponent implements AfterViewInit {
     this.engine.onWidgetHeaderTouchStart(id, event);
   }
 
-  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent): void {
-    this.engine.startWidgetResize(target, dir, event);
+  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, edge: 'left' | 'right' = 'right'): void {
+    this.engine.startWidgetResize(target, dir, event, edge);
   }
 
-  startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent): void {
-    this.engine.startWidgetResizeTouch(target, dir, event);
+  startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent, edge: 'left' | 'right' = 'right'): void {
+    this.engine.startWidgetResizeTouch(target, dir, event, edge);
   }
 
   onDocumentMouseMove(event: MouseEvent): void {

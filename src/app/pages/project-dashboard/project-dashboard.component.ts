@@ -25,28 +25,15 @@ import { ThemeService } from '../../shell/services/theme.service';
 import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
+import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
 import {
   type ProjectDashboardData,
   type ProjectStatus,
   type MilestoneStatus,
   type TaskPriority,
   type RiskSeverity,
-  type Milestone,
-  type TeamMember,
-  type Task,
-  type Risk,
-  type ActivityEntry,
-  type Drawing,
-  type SummaryStat,
-  type BudgetBreakdown,
 } from '../../data/project-data';
-import { PROJECTS } from '../../data/dashboard-data';
-
-interface AiMessage {
-  id: number;
-  role: 'user' | 'assistant';
-  text: string;
-}
+import { PROJECTS, type AiMessage } from '../../data/dashboard-data';
 
 type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity';
 
@@ -162,6 +149,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
+                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -192,6 +180,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
+                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -224,6 +213,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
+                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -279,6 +269,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   </div>
                 </div>
+                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -312,6 +303,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     <div class="text-xs text-foreground">{{ budgetHealthy() ? 'Budget on track' : 'Budget critical' }} -- {{ budgetRemaining() }} remaining</div>
                   </div>
                 </div>
+                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -343,6 +335,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
+                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -370,6 +363,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
+                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -511,18 +505,10 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                   <div
                     class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
                     role="menuitem"
-                    (click)="resetMenuAction('cleanup'); $event.stopPropagation()"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">group_items</i>
-                    <div class="text-sm">Clean Up Overlaps</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
                     (click)="resetMenuAction('widgets'); $event.stopPropagation()"
                   >
                     <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
-                    <div class="text-sm">Reset Widgets</div>
+                    <div class="text-sm">Reset Layout</div>
                   </div>
                 </div>
               }
@@ -721,7 +707,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
         <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
-          <div class="px-4 py-4 md:px-0 md:py-6 max-w-screen-xl mx-auto">
+          <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
         </div>
@@ -923,25 +909,53 @@ export class ProjectDashboardComponent implements AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly elementRef = inject(ElementRef);
-  private readonly layoutService = inject(WidgetLayoutService);
   private readonly canvasResetService = inject(CanvasResetService);
   readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly _abortCtrl = new AbortController();
-  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this._abortCtrl.abort());
+
+  readonly projectData = input.required<ProjectDashboardData>();
+  readonly projectId = input<number>(1);
+
+  private readonly engine = new DashboardLayoutEngine({
+    widgets: ['milestones', 'tasks', 'risks', 'drawing', 'budget', 'team', 'activity'],
+    layoutStorageKey: () => `project-${this.projectId()}`,
+    canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v1`,
+    defaultColStarts: { milestones: 1, tasks: 1, risks: 1, drawing: 12, budget: 12, team: 12, activity: 12 },
+    defaultColSpans: { milestones: 11, tasks: 11, risks: 11, drawing: 5, budget: 5, team: 5, activity: 5 },
+    defaultTops: { milestones: 0, tasks: 536, risks: 952, drawing: 0, budget: 436, team: 902, activity: 1318 },
+    defaultHeights: { milestones: 520, tasks: 400, risks: 350, drawing: 420, budget: 450, team: 400, activity: 350 },
+    defaultLefts: { milestones: 0, tasks: 0, risks: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
+    defaultPixelWidths: { milestones: 875, tasks: 875, risks: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
+    canvasDefaultLefts: { milestones: 0, tasks: 0, risks: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
+    canvasDefaultPixelWidths: { milestones: 875, tasks: 875, risks: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
+    canvasDefaultTops: { milestones: 0, tasks: 536, risks: 952, drawing: 0, budget: 436, team: 902, activity: 1318 },
+    canvasDefaultHeights: { milestones: 520, tasks: 400, risks: 350, drawing: 420, budget: 450, team: 400, activity: 350 },
+    minColSpan: 4,
+    canvasGridMinHeightOffset: 200,
+    savesDesktopOnMobile: true,
+    onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
+  }, inject(WidgetLayoutService));
+
+  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0 && this.isCanvas()) {
-      untracked(() => this.resetWidgetsToDefaults());
+    if (tick > 0) {
+      untracked(() => this.engine.resetToDefaults());
     }
   });
 
-  private readonly _cleanupOverlapsEffect = effect(() => {
-    const tick = this.canvasResetService.cleanupOverlapsTick();
-    if (tick > 0 && this.isCanvas()) {
-      untracked(() => this.cleanupCanvasOverlaps());
+  private _prevProjectId: number | null = null;
+  private readonly _projectChangeEffect = effect(() => {
+    const id = this.projectId();
+    if (this._prevProjectId !== null && this._prevProjectId !== id) {
+      const prevId = this._prevProjectId;
+      untracked(() => this.engine.reinitLayout(
+        `project-${prevId}`,
+        `canvas-layout:project-${prevId}:v1`,
+      ));
     }
+    this._prevProjectId = id;
   });
 
   private hamburgerBtn: HTMLElement | null = null;
@@ -959,8 +973,19 @@ export class ProjectDashboardComponent implements AfterViewInit {
     }
   });
 
-  readonly isMobile = signal(false);
-  readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
+  readonly isMobile = this.engine.isMobile;
+  readonly isCanvas = this.engine.isCanvasMode;
+  readonly wTops = this.engine.widgetTops;
+  readonly wHeights = this.engine.widgetHeights;
+  readonly wLefts = this.engine.widgetLefts;
+  readonly wPixelWidths = this.engine.widgetPixelWidths;
+  readonly wZIndices = this.engine.widgetZIndices;
+  readonly wColStarts = this.engine.widgetColStarts;
+  readonly wColSpans = this.engine.widgetColSpans;
+  readonly moveTargetId = this.engine.moveTargetId;
+  readonly mobileGridHeight = computed(() => this.engine.mobileGridHeight());
+  readonly desktopGridMinHeight = this.engine.canvasGridMinHeight;
+
   readonly isPanReady = signal(false);
   readonly isPanning = signal(false);
   readonly panOffsetX = signal(0);
@@ -985,91 +1010,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
     { value: 'activity', label: 'Activity', icon: 'history' },
   ];
 
-  // Widget grid system
-  private static readonly GAP_PX = 16;
-  private static readonly CANVAS_STEP = 81;
   private readonly gridRef = viewChild<ElementRef>('widgetGrid');
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
 
   readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'drawing', 'budget', 'team', 'activity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
-
-  readonly wColStarts = signal<Record<ProjectWidgetId, number>>({
-    milestones: 1, tasks: 1, risks: 1,
-    drawing: 12, budget: 12, team: 12, activity: 12,
-  });
-  readonly wColSpans = signal<Record<ProjectWidgetId, number>>({
-    milestones: 11, tasks: 11, risks: 11,
-    drawing: 5, budget: 5, team: 5, activity: 5,
-  });
-  readonly wTops = signal<Record<ProjectWidgetId, number>>({
-    milestones: 0, tasks: 536, risks: 952,
-    drawing: 0, budget: 436, team: 902, activity: 1318,
-  });
-  readonly wHeights = signal<Record<ProjectWidgetId, number>>({
-    milestones: 520, tasks: 400, risks: 350,
-    drawing: 420, budget: 450, team: 400, activity: 350,
-  });
-  readonly wLefts = signal<Record<ProjectWidgetId, number>>({
-    milestones: 0, tasks: 0, risks: 0,
-    drawing: 891, budget: 891, team: 891, activity: 891,
-  });
-  readonly wPixelWidths = signal<Record<ProjectWidgetId, number>>({
-    milestones: 875, tasks: 875, risks: 875,
-    drawing: 389, budget: 389, team: 389, activity: 389,
-  });
-  readonly moveTargetId = signal<ProjectWidgetId | null>(null);
-  readonly wZIndices = signal<Record<string, number>>({});
-  private _zCounter = 0;
-
-  readonly mobileGridHeight = computed(() => {
-    const tops = this.wTops();
-    const heights = this.wHeights();
-    let max = 0;
-    for (const id of this.widgets) {
-      max = Math.max(max, tops[id] + heights[id]);
-    }
-    return max;
-  });
-
-  readonly desktopGridMinHeight = computed(() => {
-    const tops = this.wTops();
-    const heights = this.wHeights();
-    let max = 0;
-    for (const id of this.widgets) {
-      max = Math.max(max, tops[id] + heights[id]);
-    }
-    return max + 200;
-  });
-
-  private _moveTarget: ProjectWidgetId | null = null;
-  private _dragAxis: 'v' | 'free' | null = null;
-  private _dragStartX = 0;
-  private _dragStartY = 0;
-  private _dragStartTop = 0;
-  private _dragStartLeft = 0;
-  private _resizeTarget: ProjectWidgetId | null = null;
-  private _resizeDir: 'h' | 'v' | 'both' = 'v';
-  private _resizeStartX = 0;
-  private _resizeStartY = 0;
-  private _resizeStartH = 0;
-  private _resizeStartW = 0;
-  private _interactionSeq = 0;
-  private _widgetLastInteraction: Record<string, number> = {};
-  private _savedDesktopTops: Record<ProjectWidgetId, number> | null = null;
-  private _savedDesktopColStarts: Record<ProjectWidgetId, number> | null = null;
-  private _savedDesktopColSpans: Record<ProjectWidgetId, number> | null = null;
-  private _savedDesktopHeights: Record<ProjectWidgetId, number> | null = null;
-  private _savedDesktopLefts: Record<ProjectWidgetId, number> | null = null;
-  private _savedDesktopWidths: Record<ProjectWidgetId, number> | null = null;
-  private _savedDesktopForCanvas: {
-    tops: Record<ProjectWidgetId, number>;
-    heights: Record<ProjectWidgetId, number>;
-    colStarts: Record<ProjectWidgetId, number>;
-    colSpans: Record<ProjectWidgetId, number>;
-    lefts: Record<ProjectWidgetId, number>;
-    widths: Record<ProjectWidgetId, number>;
-  } | null = null;
 
   readonly navbarVisibility = computed(() => {
     const mobile = this.isMobile();
@@ -1090,9 +1035,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
     name: 'Alex Morgan',
     email: 'alex.morgan@trimble.com',
   };
-
-  readonly projectData = input.required<ProjectDashboardData>();
-  readonly projectId = input<number>(1);
 
   readonly projectName = computed(() => this.projectData().name);
   readonly projectStatus = computed(() => this.projectData().status);
@@ -1178,135 +1120,9 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    const startMobile = window.innerWidth < 768;
-    const startCanvas = window.innerWidth >= 2000;
-    this.isMobile.set(startMobile);
-    this.isCanvas.set(startCanvas);
-
-    if (startCanvas) {
-      this.restoreDesktopLayout();
-      this._savedDesktopForCanvas = {
-        tops: { ...this.wTops() },
-        heights: { ...this.wHeights() },
-        colStarts: { ...this.wColStarts() },
-        colSpans: { ...this.wColSpans() },
-        lefts: { ...this.wLefts() },
-        widths: { ...this.wPixelWidths() },
-      };
-      if (!this.restoreCanvasLayout()) {
-        this.applyCanvasDefaults();
-      }
-      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
-    } else if (startMobile) {
-      this.restoreDesktopLayout();
-      this._savedDesktopTops = { ...this.wTops() };
-      this._savedDesktopColStarts = { ...this.wColStarts() };
-      this._savedDesktopColSpans = { ...this.wColSpans() };
-      this._savedDesktopHeights = { ...this.wHeights() };
-      this._savedDesktopLefts = { ...this.wLefts() };
-      this._savedDesktopWidths = { ...this.wPixelWidths() };
-      const restoredMobile = this.restoreMobileLayout();
-      if (restoredMobile) {
-        this.compactAll();
-      } else {
-        this.stackAllForMobile();
-      }
-    } else {
-      this.restoreDesktopLayout();
-    }
-
-    const mq = window.matchMedia('(max-width: 767px)');
-    const canvasQuery = window.matchMedia('(min-width: 2000px)');
-
-    const onBreakpointChange = (): void => {
-      const w = window.innerWidth;
-      const wasMobile = this.isMobile();
-      const wasCanvas = this.isCanvas();
-      const nowMobile = w < 768;
-      const nowCanvas = w >= 2000;
-
-      this.isMobile.set(nowMobile);
-      this.isCanvas.set(nowCanvas);
-
-      if (wasCanvas && !nowCanvas) {
-        this.persistCanvasLayout();
-        if (this._savedDesktopForCanvas) {
-          this.wTops.set(this._savedDesktopForCanvas.tops);
-          this.wHeights.set(this._savedDesktopForCanvas.heights);
-          this.wColStarts.set(this._savedDesktopForCanvas.colStarts);
-          this.wColSpans.set(this._savedDesktopForCanvas.colSpans);
-          this.wLefts.set(this._savedDesktopForCanvas.lefts);
-          this.wPixelWidths.set(this._savedDesktopForCanvas.widths);
-          this._savedDesktopForCanvas = null;
-        } else {
-          this.restoreDesktopLayout();
-        }
-      } else if (!wasCanvas && nowCanvas) {
-        if (!wasMobile) {
-          this._savedDesktopForCanvas = {
-            tops: { ...this.wTops() },
-            heights: { ...this.wHeights() },
-            colStarts: { ...this.wColStarts() },
-            colSpans: { ...this.wColSpans() },
-            lefts: { ...this.wLefts() },
-            widths: { ...this.wPixelWidths() },
-          };
-        }
-        if (!this.restoreCanvasLayout()) {
-          this.applyCanvasDefaults();
-        }
-        requestAnimationFrame(() => this.cleanupCanvasOverlaps());
-      } else if (nowMobile && !wasMobile) {
-        this._savedDesktopTops = { ...this.wTops() };
-        this._savedDesktopColStarts = { ...this.wColStarts() };
-        this._savedDesktopColSpans = { ...this.wColSpans() };
-        this._savedDesktopHeights = { ...this.wHeights() };
-        this._savedDesktopLefts = { ...this.wLefts() };
-        this._savedDesktopWidths = { ...this.wPixelWidths() };
-        const restoredMobile = this.restoreMobileLayout();
-        if (restoredMobile) {
-          this.compactAll();
-        } else {
-          this.stackAllForMobile();
-        }
-      } else if (!nowMobile && wasMobile && !nowCanvas) {
-        this.persistLayout();
-        if (this._savedDesktopTops) {
-          this.wTops.set(this._savedDesktopTops);
-          if (this._savedDesktopColStarts) this.wColStarts.set(this._savedDesktopColStarts);
-          if (this._savedDesktopColSpans) this.wColSpans.set(this._savedDesktopColSpans);
-          if (this._savedDesktopHeights) this.wHeights.set(this._savedDesktopHeights);
-          if (this._savedDesktopLefts) this.wLefts.set(this._savedDesktopLefts);
-          if (this._savedDesktopWidths) this.wPixelWidths.set(this._savedDesktopWidths);
-          this._savedDesktopTops = null;
-          this._savedDesktopColStarts = null;
-          this._savedDesktopColSpans = null;
-          this._savedDesktopHeights = null;
-          this._savedDesktopLefts = null;
-          this._savedDesktopWidths = null;
-        } else {
-          this.restoreDesktopLayout();
-        }
-      }
-
-      if (!nowMobile) {
-        this.navExpanded.set(false);
-      }
-    };
-
-    mq.addEventListener('change', onBreakpointChange, { signal: this._abortCtrl.signal });
-    canvasQuery.addEventListener('change', onBreakpointChange, { signal: this._abortCtrl.signal });
-    window.addEventListener('resize', onBreakpointChange, { signal: this._abortCtrl.signal });
-
-    document.addEventListener('touchmove', (e: TouchEvent) => {
-      if (this._moveTarget || this._resizeTarget) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        if (touch) {
-          this.onDocumentMouseMove({ clientX: touch.clientX, clientY: touch.clientY } as MouseEvent);
-        }
-      }
-    }, { passive: false });
+    this.engine.gridElAccessor = () => this.gridRef()?.nativeElement as HTMLElement | undefined;
+    this.engine.headerElAccessor = () => this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
+    this.engine.init();
 
     this.fixNavbarLayout();
     this.reorderNavbarEnd();
@@ -1425,75 +1241,20 @@ export class ProjectDashboardComponent implements AfterViewInit {
     }
   }
 
-  // Widget grid drag & resize
   onWidgetHeaderMouseDown(id: ProjectWidgetId, event: MouseEvent): void {
-    event.preventDefault();
-    this._moveTarget = id;
-    this._dragAxis = this.isMobile() ? null : 'free';
-    this._dragStartX = event.clientX;
-    this._dragStartY = event.clientY;
-    this._dragStartTop = this.wTops()[id];
-    this._dragStartLeft = this.wLefts()[id] ?? 0;
-    this.moveTargetId.set(id);
-    this.bumpZIndex(id);
-    this.widgetFocusService.selectWidget(id);
+    this.engine.onWidgetHeaderMouseDown(id, event);
   }
 
   onWidgetHeaderTouchStart(id: ProjectWidgetId, event: TouchEvent): void {
-    if (event.touches.length !== 1) return;
-    const touch = event.touches[0];
-    const header = event.currentTarget as HTMLElement;
-    const handle = header.querySelector('[data-drag-handle]') as HTMLElement | null;
-    if (handle) {
-      const rect = handle.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      if (Math.abs(touch.clientX - cx) > 16 || Math.abs(touch.clientY - cy) > 16) return;
-    }
-    event.preventDefault();
-    this._moveTarget = id;
-    this._dragAxis = this.isMobile() ? null : 'free';
-    this._dragStartX = touch.clientX;
-    this._dragStartY = touch.clientY;
-    this._dragStartTop = this.wTops()[id];
-    this._dragStartLeft = this.wLefts()[id] ?? 0;
-    this.moveTargetId.set(id);
-    this.bumpZIndex(id);
-    this.widgetFocusService.selectWidget(id);
+    this.engine.onWidgetHeaderTouchStart(id, event);
   }
 
-  startWidgetResize(target: ProjectWidgetId, dir: 'h' | 'v' | 'both', event: MouseEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this._resizeTarget = target;
-    this._resizeDir = this.isMobile() ? 'v' : dir;
-    this._resizeStartY = event.clientY;
-    this._resizeStartX = event.clientX;
-    if (dir === 'v' || dir === 'both') {
-      this._resizeStartH = this.wHeights()[target];
-    }
-    if (dir === 'h' || dir === 'both') {
-      this._resizeStartW = this.wPixelWidths()[target] ?? 600;
-    }
-    this.bumpZIndex(target);
+  startWidgetResize(target: ProjectWidgetId, dir: 'h' | 'v' | 'both', event: MouseEvent, edge: 'left' | 'right' = 'right'): void {
+    this.engine.startWidgetResize(target, dir, event, edge);
   }
 
-  startWidgetResizeTouch(target: ProjectWidgetId, dir: 'h' | 'v' | 'both', event: TouchEvent): void {
-    if (event.touches.length !== 1) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const touch = event.touches[0];
-    this._resizeTarget = target;
-    this._resizeDir = this.isMobile() ? 'v' : dir;
-    this._resizeStartY = touch.clientY;
-    this._resizeStartX = touch.clientX;
-    if (this._resizeDir === 'v' || this._resizeDir === 'both') {
-      this._resizeStartH = this.wHeights()[target];
-    }
-    if (this._resizeDir === 'h' || this._resizeDir === 'both') {
-      this._resizeStartW = this.wPixelWidths()[target] ?? 600;
-    }
-    this.bumpZIndex(target);
+  startWidgetResizeTouch(target: ProjectWidgetId, dir: 'h' | 'v' | 'both', event: TouchEvent, edge: 'left' | 'right' = 'right'): void {
+    this.engine.startWidgetResizeTouch(target, dir, event, edge);
   }
 
   onDocumentMouseMove(event: MouseEvent): void {
@@ -1504,35 +1265,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
       this.panOffsetY.set(this._panStartOffsetY + dy);
       return;
     }
-    if (this._moveTarget) {
-      this.handleWidgetMove(event);
-    } else if (this._resizeTarget) {
-      const id = this._resizeTarget;
-      if (this._resizeDir === 'v' || this._resizeDir === 'both') {
-        const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
-        const newH = Math.round(raw / 16) * 16;
-        this.wHeights.update(h => ({ ...h, [id]: newH }));
-      }
-      if (this._resizeDir === 'h' || this._resizeDir === 'both') {
-        const raw = Math.max(200, this._resizeStartW + (event.clientX - this._resizeStartX));
-        const hStep = ProjectDashboardComponent.CANVAS_STEP;
-        const gap = ProjectDashboardComponent.GAP_PX;
-        const snapped = Math.round((raw + gap) / hStep) * hStep - gap;
-        let newW = Math.max(hStep - gap, snapped);
-
-        if (!this.isCanvas()) {
-          const grid = this.gridRef()?.nativeElement as HTMLElement | undefined;
-          if (grid) {
-            const containerWidth = grid.clientWidth;
-            const widgetLeft = this.wLefts()[id] ?? 0;
-            newW = Math.min(newW, containerWidth - widgetLeft);
-          }
-        }
-
-        this.wPixelWidths.update(w => ({ ...w, [id]: newW }));
-      }
-      this.resolveCollisions(id);
-    }
+    this.engine.onDocumentMouseMove(event);
   }
 
   onDocumentMouseUp(): void {
@@ -1540,267 +1273,17 @@ export class ProjectDashboardComponent implements AfterViewInit {
       this.isPanning.set(false);
       return;
     }
-    const hadInteraction = !!this._moveTarget || !!this._resizeTarget;
-    const interactedId = this._moveTarget ?? this._resizeTarget;
-    this._moveTarget = null;
-    this._dragAxis = null;
-    this.moveTargetId.set(null);
-    this._resizeTarget = null;
-    if (hadInteraction) {
-      if (interactedId) {
-        this._widgetLastInteraction[interactedId] = ++this._interactionSeq;
-      }
-      if (!this.isCanvas()) {
-        this.compactAll();
-      }
-      if (this.isCanvas()) {
-        this.persistCanvasLayout();
-      } else {
-        this.persistLayout();
-      }
-    }
+    this.engine.onDocumentMouseUp();
   }
 
   onDocumentTouchEnd(): void {
-    this.onDocumentMouseUp();
-  }
-
-  // ── Layout persistence ──
-
-  private get layoutKey(): string {
-    return `project-${this.projectId()}`;
-  }
-
-  private get canvasLayoutKey(): string {
-    return `canvas-layout:project-${this.projectId()}:v1`;
-  }
-
-  private persistLayout(): void {
-    const mobile = this.isMobile();
-    this.layoutService.save(this.layoutKey, mobile, {
-      tops: this.wTops(),
-      heights: this.wHeights(),
-      colStarts: this.wColStarts(),
-      colSpans: this.wColSpans(),
-      lefts: this.wLefts(),
-      widths: this.wPixelWidths(),
-    });
-  }
-
-  private persistCanvasLayout(): void {
-    const layout: Record<string, Record<string, number>> = {
-      tops: {}, heights: {}, lefts: {}, widths: {},
-    };
-    for (const id of this.widgets) {
-      layout['tops'][id] = this.wTops()[id];
-      layout['heights'][id] = this.wHeights()[id];
-      layout['lefts'][id] = this.wLefts()[id];
-      layout['widths'][id] = this.wPixelWidths()[id];
-    }
-    try {
-      localStorage.setItem(this.canvasLayoutKey, JSON.stringify(layout));
-    } catch { /* quota exceeded */ }
-  }
-
-  private restoreCanvasLayout(): boolean {
-    try {
-      const raw = localStorage.getItem(this.canvasLayoutKey);
-      if (!raw) return false;
-      const layout = JSON.parse(raw);
-      const tops = { ...this.wTops() };
-      const heights = { ...this.wHeights() };
-      const lefts = { ...this.wLefts() };
-      const widths = { ...this.wPixelWidths() };
-      for (const id of this.widgets) {
-        if (layout.tops?.[id] != null) tops[id] = layout.tops[id];
-        if (layout.heights?.[id] != null) heights[id] = layout.heights[id];
-        if (layout.lefts?.[id] != null) lefts[id] = layout.lefts[id];
-        if (layout.widths?.[id] != null) widths[id] = layout.widths[id];
-      }
-      this.wTops.set(tops as Record<ProjectWidgetId, number>);
-      this.wHeights.set(heights as Record<ProjectWidgetId, number>);
-      this.wLefts.set(lefts as Record<ProjectWidgetId, number>);
-      this.wPixelWidths.set(widths as Record<ProjectWidgetId, number>);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  private applyCanvasDefaults(): void {
-    this.wLefts.set({ ...this.defaultLefts });
-    this.wPixelWidths.set({ ...this.defaultPixelWidths });
-    this.wTops.set({ ...this.defaultTops });
-    this.wHeights.set({ ...this.defaultHeights });
-  }
-
-  private restoreDesktopLayout(): boolean {
-    const saved = this.layoutService.load(this.layoutKey, false);
-    if (!saved) return false;
-    this.wTops.set(saved.tops as Record<ProjectWidgetId, number>);
-    this.wHeights.set(saved.heights as Record<ProjectWidgetId, number>);
-    this.wColStarts.set(saved.colStarts as Record<ProjectWidgetId, number>);
-    this.wColSpans.set(saved.colSpans as Record<ProjectWidgetId, number>);
-    if (saved.lefts) this.wLefts.set(saved.lefts as Record<ProjectWidgetId, number>);
-    if (saved.widths) this.wPixelWidths.set(saved.widths as Record<ProjectWidgetId, number>);
-    return true;
-  }
-
-  private restoreMobileLayout(): boolean {
-    const saved = this.layoutService.load(this.layoutKey, true);
-    if (!saved) return false;
-    this.wTops.set(saved.tops as Record<ProjectWidgetId, number>);
-    this.wHeights.set(saved.heights as Record<ProjectWidgetId, number>);
-    this.wColStarts.set(saved.colStarts as Record<ProjectWidgetId, number>);
-    this.wColSpans.set(saved.colSpans as Record<ProjectWidgetId, number>);
-    return true;
-  }
-
-  private handleWidgetMove(event: MouseEvent): void {
-    const grid = this.gridRef()?.nativeElement as HTMLElement | undefined;
-    if (!grid || !this._moveTarget) return;
-    const id = this._moveTarget;
-    const gap = ProjectDashboardComponent.GAP_PX;
-    const hStep = ProjectDashboardComponent.CANVAS_STEP;
-
-    if (this._dragAxis === 'free') {
-      const rawTop = this._dragStartTop + (event.clientY - this._dragStartY);
-      const rawLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
-      let newTop = Math.round(rawTop / gap) * gap;
-      let newLeft = Math.round(rawLeft / hStep) * hStep;
-
-      if (!this.isCanvas()) {
-        const containerWidth = grid.clientWidth;
-        const widgetWidth = this.wPixelWidths()[id] ?? 0;
-        newTop = Math.max(0, newTop);
-        newLeft = Math.max(0, Math.min(newLeft, containerWidth - widgetWidth));
-      }
-
-      this.wTops.update(t => ({ ...t, [id]: newTop }));
-      this.wLefts.update(l => ({ ...l, [id]: newLeft }));
-      this.resolveCollisions(id);
+    if (this.isPanning()) {
+      this.isPanning.set(false);
       return;
     }
-
-    if (!this._dragAxis) {
-      const dy = Math.abs(event.clientY - this._dragStartY);
-      if (dy < 8) return;
-      this._dragAxis = 'v';
-    }
-
-    const newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY));
-    this.wTops.update(t => ({ ...t, [id]: newTop }));
-    this.resolveCollisions(id);
+    this.engine.onDocumentTouchEnd();
   }
 
-  private resolveCollisions(movedId: ProjectWidgetId): void {
-    if (this.isCanvas()) return;
-
-    const tops = { ...this.wTops() };
-    const heights = this.wHeights();
-    const gap = ProjectDashboardComponent.GAP_PX;
-    const mobile = this.isMobile();
-    let colOverlap: (a: ProjectWidgetId, b: ProjectWidgetId) => boolean;
-    if (mobile) {
-      colOverlap = () => true;
-    } else {
-      const lefts = this.wLefts();
-      const widths = this.wPixelWidths();
-      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
-    }
-
-    const sorted = [...this.widgets].sort((a, b) => tops[a] - tops[b]);
-    const placed: ProjectWidgetId[] = [movedId];
-
-    for (const id of sorted) {
-      if (id === movedId) continue;
-      let y = 0;
-      let settled = false;
-      while (!settled) {
-        settled = true;
-        for (const placedId of placed) {
-          if (!colOverlap(id, placedId)) continue;
-          const pBot = tops[placedId] + heights[placedId];
-          if (y < pBot && y + heights[id] > tops[placedId]) {
-            y = pBot + gap;
-            settled = false;
-          }
-        }
-      }
-      tops[id] = y;
-      placed.push(id);
-    }
-
-    if (this.widgets.some(id => tops[id] !== this.wTops()[id])) {
-      this.wTops.set(tops);
-    }
-  }
-
-  private stackAllForMobile(): void {
-    const gap = ProjectDashboardComponent.GAP_PX;
-    const heights = this.wHeights();
-    const tops = { ...this.wTops() };
-    const colStarts = { ...this.wColStarts() };
-    const colSpans = { ...this.wColSpans() };
-    let y = 0;
-    for (const id of this.widgets) {
-      tops[id] = y;
-      colStarts[id] = 1;
-      colSpans[id] = 16;
-      y += heights[id] + gap;
-    }
-    this.wTops.set(tops);
-    this.wColStarts.set(colStarts);
-    this.wColSpans.set(colSpans);
-  }
-
-  private compactAll(): void {
-    const gap = ProjectDashboardComponent.GAP_PX;
-    const tops = { ...this.wTops() };
-    const heights = this.wHeights();
-    const mobile = this.isMobile();
-
-    if (mobile) {
-      const sorted = [...this.widgets].sort((a, b) => tops[a] - tops[b]);
-      let y = 0;
-      for (const id of sorted) {
-        tops[id] = y;
-        y += heights[id] + gap;
-      }
-      this.wTops.set(tops);
-      return;
-    }
-
-    const lefts = this.wLefts();
-    const widths = this.wPixelWidths();
-    const colOverlap = (a: ProjectWidgetId, b: ProjectWidgetId) =>
-      lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
-
-    const sorted = [...this.widgets].sort((a, b) => tops[a] - tops[b]);
-    const placed: ProjectWidgetId[] = [];
-
-    for (const id of sorted) {
-      let y = 0;
-      let settled = false;
-      while (!settled) {
-        settled = true;
-        for (const placedId of placed) {
-          if (!colOverlap(id, placedId)) continue;
-          const pBot = tops[placedId] + heights[placedId];
-          if (y < pBot && y + heights[id] > tops[placedId]) {
-            y = pBot + gap;
-            settled = false;
-          }
-        }
-      }
-      tops[id] = y;
-      placed.push(id);
-    }
-
-    if (this.widgets.some(id => tops[id] !== this.wTops()[id])) {
-      this.wTops.set(tops);
-    }
-  }
 
   // AI Assistant
   readonly aiPanelOpen = signal(false);
@@ -1831,34 +1314,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
-
-  // ── Project Navigation ──
-
-  private readonly defaultTops: Record<ProjectWidgetId, number> = {
-    milestones: 0, tasks: 536, risks: 952,
-    drawing: 0, budget: 436, team: 902, activity: 1318,
-  };
-  private readonly defaultHeights: Record<ProjectWidgetId, number> = {
-    milestones: 520, tasks: 400, risks: 350,
-    drawing: 420, budget: 450, team: 400, activity: 350,
-  };
-  private readonly defaultColStarts: Record<ProjectWidgetId, number> = {
-    milestones: 1, tasks: 1, risks: 1,
-    drawing: 12, budget: 12, team: 12, activity: 12,
-  };
-  private readonly defaultColSpans: Record<ProjectWidgetId, number> = {
-    milestones: 11, tasks: 11, risks: 11,
-    drawing: 5, budget: 5, team: 5, activity: 5,
-  };
-  private readonly defaultLefts: Record<ProjectWidgetId, number> = {
-    milestones: 0, tasks: 0, risks: 0,
-    drawing: 891, budget: 891, team: 891, activity: 891,
-  };
-  private readonly defaultPixelWidths: Record<ProjectWidgetId, number> = {
-    milestones: 875, tasks: 875, risks: 875,
-    drawing: 389, budget: 389, team: 389, activity: 389,
-  };
-
 
   // ── Mobile More Menu ──
   readonly moreMenuOpen = signal(false);
@@ -1914,15 +1369,13 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this.resetMenuOpen.update((v) => !v);
   }
 
-  resetMenuAction(action: 'view' | 'widgets' | 'cleanup'): void {
+  resetMenuAction(action: 'view' | 'widgets'): void {
     this.resetMenuOpen.set(false);
     if (action === 'view') {
       this.resetCanvasView();
     } else if (action === 'widgets') {
       this.resetCanvasView();
       this.resetWidgetsToDefaults();
-    } else if (action === 'cleanup') {
-      this.cleanupCanvasOverlaps();
     }
   }
 
@@ -1932,136 +1385,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   private resetWidgetsToDefaults(): void {
-    if (this.isCanvas()) {
-      localStorage.removeItem(this.canvasLayoutKey);
-      this.applyCanvasDefaults();
-      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
-    } else {
-      this.wTops.set({ ...this.defaultTops });
-      this.wHeights.set({ ...this.defaultHeights });
-      this.wColStarts.set({ ...this.defaultColStarts });
-      this.wColSpans.set({ ...this.defaultColSpans });
-      this.wLefts.set({ ...this.defaultLefts });
-      this.wPixelWidths.set({ ...this.defaultPixelWidths });
-      this.persistLayout();
-    }
-  }
-
-  private bumpZIndex(id: ProjectWidgetId): void {
-    this._zCounter++;
-    this.wZIndices.update(z => ({ ...z, [id]: this._zCounter }));
-  }
-
-  private cleanupCanvasOverlaps(): void {
-    const gap = ProjectDashboardComponent.GAP_PX;
-    const origTops = this.wTops();
-    const origLefts = this.wLefts();
-    const tops = { ...origTops };
-    const heights = this.wHeights();
-    const lefts = { ...origLefts };
-    const widths = this.wPixelWidths();
-
-    const gridEl = this.gridRef()?.nativeElement as HTMLElement | undefined;
-    const headerEl = this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
-    let headerBottom = 0;
-    if (gridEl && headerEl) {
-      const gridRect = gridEl.getBoundingClientRect();
-      const headerRect = headerEl.getBoundingClientRect();
-      headerBottom = headerRect.bottom - gridRect.top;
-    }
-
-    const zIndices = this.wZIndices();
-    const sorted = [...this.widgets].sort(
-      (x, y) => (zIndices[x] ?? 0) - (zIndices[y] ?? 0),
-    );
-
-    for (const id of sorted) {
-      if (tops[id] < headerBottom + gap) {
-        tops[id] = headerBottom + gap;
-      }
-    }
-
-    const overlaps = (
-      aTop: number, aLeft: number, aW: number, aH: number,
-      bTop: number, bLeft: number, bW: number, bH: number,
-    ): boolean => {
-      const hO = Math.min(aLeft + aW, bLeft + bW) - Math.max(aLeft, bLeft);
-      const vO = Math.min(aTop + aH, bTop + bH) - Math.max(aTop, bTop);
-      return hO + gap > 0 && vO + gap > 0;
-    };
-
-    const placed: ProjectWidgetId[] = [sorted[0]];
-    for (let k = 1; k < sorted.length; k++) {
-      const mover = sorted[k];
-
-      for (let attempt = 0; attempt < 30; attempt++) {
-        const colliding: ProjectWidgetId[] = [];
-        for (const pid of placed) {
-          if (overlaps(tops[mover], lefts[mover], widths[mover], heights[mover],
-                       tops[pid], lefts[pid], widths[pid], heights[pid])) {
-            colliding.push(pid);
-          }
-        }
-        if (colliding.length === 0) break;
-
-        let escapeUp = Infinity;
-        let escapeDown = -Infinity;
-        let escapeLeft = Infinity;
-        let escapeRight = -Infinity;
-
-        for (const pid of colliding) {
-          escapeUp = Math.min(escapeUp, tops[pid] - heights[mover] - gap);
-          escapeDown = Math.max(escapeDown, tops[pid] + heights[pid] + gap);
-          escapeLeft = Math.min(escapeLeft, lefts[pid] - widths[mover] - gap);
-          escapeRight = Math.max(escapeRight, lefts[pid] + widths[pid] + gap);
-        }
-
-        escapeUp = Math.max(escapeUp, headerBottom + gap);
-
-        const candidates = [
-          { t: escapeUp, l: lefts[mover], d: Math.abs(tops[mover] - escapeUp) },
-          { t: escapeDown, l: lefts[mover], d: Math.abs(tops[mover] - escapeDown) },
-          { t: tops[mover], l: escapeLeft, d: Math.abs(lefts[mover] - escapeLeft) },
-          { t: tops[mover], l: escapeRight, d: Math.abs(lefts[mover] - escapeRight) },
-        ];
-        candidates.sort((a, b) => a.d - b.d);
-
-        let applied = false;
-        for (const c of candidates) {
-          let clear = true;
-          for (const pid of placed) {
-            if (overlaps(c.t, c.l, widths[mover], heights[mover],
-                         tops[pid], lefts[pid], widths[pid], heights[pid])) {
-              clear = false;
-              break;
-            }
-          }
-          if (clear) {
-            tops[mover] = c.t;
-            lefts[mover] = c.l;
-            applied = true;
-            break;
-          }
-        }
-
-        if (!applied) {
-          tops[mover] = candidates[0].t;
-          lefts[mover] = candidates[0].l;
-        }
-      }
-
-      if (tops[mover] < headerBottom + gap) {
-        tops[mover] = headerBottom + gap;
-      }
-      placed.push(mover);
-    }
-
-    const moved = this.widgets.some((id) => tops[id] !== origTops[id] || lefts[id] !== origLefts[id]);
-    if (!moved) return;
-
-    this.wTops.set(tops as Record<ProjectWidgetId, number>);
-    this.wLefts.set(lefts as Record<ProjectWidgetId, number>);
-    this.persistCanvasLayout();
+    this.engine.resetToDefaults();
   }
 
   onKeyDown(event: KeyboardEvent): void {

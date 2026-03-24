@@ -164,18 +164,10 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   <div
                     class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
                     role="menuitem"
-                    (click)="resetMenuAction('cleanup'); $event.stopPropagation()"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">group_items</i>
-                    <div class="text-sm">Clean Up Overlaps</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
                     (click)="resetMenuAction('widgets'); $event.stopPropagation()"
                   >
                     <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
-                    <div class="text-sm">Reset Widgets</div>
+                    <div class="text-sm">Reset Layout</div>
                   </div>
                 </div>
               }
@@ -325,6 +317,33 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               }
             </div>
             <div class="mt-auto border-top-default">
+              <div class="relative">
+                <div
+                  class="custom-side-nav-item"
+                  (click)="toggleDesktopResetMenu(); $event.stopPropagation()"
+                  title="Reset options"
+                  role="button"
+                  aria-label="Reset options"
+                  [attr.aria-expanded]="desktopResetMenuOpen()"
+                >
+                  <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                  @if (navExpanded()) {
+                    <div class="custom-side-nav-label">Reset</div>
+                  }
+                </div>
+                @if (desktopResetMenuOpen()) {
+                  <div class="desktop-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                    <div
+                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                      role="menuitem"
+                      (click)="resetMenuAction('widgets'); $event.stopPropagation()"
+                    >
+                      <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
+                      <div class="text-sm">Reset Layout</div>
+                    </div>
+                  </div>
+                }
+              </div>
               <div
                 class="custom-side-nav-item"
                 [class.selected]="activeNav() === 'settings'"
@@ -565,6 +584,7 @@ export class DashboardShellComponent implements AfterViewInit {
 
   readonly moreMenuOpen = signal(false);
   readonly resetMenuOpen = signal(false);
+  readonly desktopResetMenuOpen = signal(false);
 
   private readonly canvasResetService = inject(CanvasResetService);
   readonly widgetFocusService = inject(WidgetFocusService);
@@ -603,15 +623,22 @@ export class DashboardShellComponent implements AfterViewInit {
     this.resetMenuOpen.update((v) => !v);
   }
 
-  resetMenuAction(action: 'view' | 'widgets' | 'cleanup'): void {
+  toggleDesktopResetMenu(): void {
+    this.desktopResetMenuOpen.update((v) => !v);
+  }
+
+  resetMenuAction(action: 'view' | 'widgets'): void {
     this.resetMenuOpen.set(false);
+    this.desktopResetMenuOpen.set(false);
     if (action === 'view') {
-      this.resetCanvasView();
+      if (this.isCanvas()) {
+        this.resetCanvasView();
+      }
     } else if (action === 'widgets') {
-      this.resetCanvasView();
+      if (this.isCanvas()) {
+        this.resetCanvasView();
+      }
       this.canvasResetService.triggerResetWidgets();
-    } else if (action === 'cleanup') {
-      this.canvasResetService.triggerCleanupOverlaps();
     }
   }
 
@@ -765,6 +792,9 @@ export class DashboardShellComponent implements AfterViewInit {
     const target = event.target as HTMLElement;
     if (this.resetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.canvas-reset-flyout')) {
       this.resetMenuOpen.set(false);
+    }
+    if (this.desktopResetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.desktop-reset-flyout')) {
+      this.desktopResetMenuOpen.set(false);
     }
     if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);

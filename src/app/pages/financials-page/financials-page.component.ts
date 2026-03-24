@@ -19,7 +19,7 @@ import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
 import type { DashboardWidgetId, Project } from '../../data/dashboard-data';
-import { PROJECTS } from '../../data/dashboard-data';
+import { PROJECTS, budgetProgressClass } from '../../data/dashboard-data';
 
 @Component({
   selector: 'app-financials-page',
@@ -31,7 +31,7 @@ import { PROJECTS } from '../../data/dashboard-data';
     '(document:touchend)': 'onDocumentTouchEnd()',
   },
   template: `
-    <div class="px-4 py-4 md:px-0 md:py-6 max-w-screen-xl mx-auto">
+    <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
       <div #pageHeader>
       <!-- Page header -->
       <div class="flex items-start justify-between mb-6">
@@ -143,6 +143,12 @@ import { PROJECTS } from '../../data/dashboard-data';
                 </div>
                 <widget-resize-handle
                   [isMobile]="isMobile()"
+                  position="left"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'left')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'left')"
+                />
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
                 />
@@ -182,15 +188,8 @@ export class FinancialsPageComponent implements AfterViewInit {
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0 && this.engine.isCanvasMode()) {
-      untracked(() => this.engine.resetWidgets());
-    }
-  });
-
-  private readonly _cleanupOverlapsEffect = effect(() => {
-    const tick = this.canvasResetService.cleanupOverlapsTick();
-    if (tick > 0 && this.engine.isCanvasMode()) {
-      untracked(() => this.engine.cleanupOverlaps());
+    if (tick > 0) {
+      untracked(() => this.engine.resetToDefaults());
     }
   });
 
@@ -214,11 +213,7 @@ export class FinancialsPageComponent implements AfterViewInit {
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly financialsGridContainerRef = viewChild<ElementRef>('financialsWidgetGrid');
 
-  budgetProgressClass(pct: number): string {
-    if (pct >= 90) return 'progress-danger';
-    if (pct >= 75) return 'progress-warning';
-    return 'progress-success';
-  }
+  readonly budgetProgressClass = budgetProgressClass;
 
   mobileGridHeight(): number {
     return this.engine.mobileGridHeight();
@@ -232,12 +227,12 @@ export class FinancialsPageComponent implements AfterViewInit {
     this.engine.onWidgetHeaderTouchStart(id, event);
   }
 
-  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent): void {
-    this.engine.startWidgetResize(target, dir, event);
+  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, edge: 'left' | 'right' = 'right'): void {
+    this.engine.startWidgetResize(target, dir, event, edge);
   }
 
-  startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent): void {
-    this.engine.startWidgetResizeTouch(target, dir, event);
+  startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent, edge: 'left' | 'right' = 'right'): void {
+    this.engine.startWidgetResizeTouch(target, dir, event, edge);
   }
 
   onDocumentMouseMove(event: MouseEvent): void {

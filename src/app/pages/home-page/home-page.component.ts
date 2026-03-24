@@ -46,7 +46,7 @@ import {
     '(document:touchend)': 'onDocumentTouchEnd()',
   },
   template: `
-    <div class="px-4 py-4 md:px-0 md:py-6 max-w-screen-xl mx-auto">
+    <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
       <div #pageHeader>
       <div class="flex items-start justify-between mb-6">
         <div>
@@ -115,157 +115,205 @@ import {
                     (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   >
                     <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      @if (isTimeOffCompact() && timeOffMobileExpanded()) {
+                        <div
+                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
+                          role="button" tabindex="0" aria-label="Back to Time Off summary"
+                          (click)="$event.stopPropagation(); collapseTimeOffMobile()"
+                          (mousedown)="$event.stopPropagation()"
+                          (touchstart)="$event.stopPropagation()"
+                          (keydown.enter)="collapseTimeOffMobile()"
+                          (keydown.space)="$event.preventDefault(); collapseTimeOffMobile()"
+                        >
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
+                        </div>
+                      } @else {
+                        <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      }
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Time Off Requests</div>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Time Off</div>
                       @if (pendingTimeOffCount() > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
                           <div class="text-xs font-medium text-warning">{{ pendingTimeOffCount() }} pending</div>
                         </div>
                       }
                     </div>
-                    <div
-                      class="flex items-center rounded-lg border-default overflow-hidden flex-shrink-0"
-                      role="tablist"
-                      aria-label="Time off view"
-                      (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
-                    >
+                    @if (!isTimeOffCompact()) {
                       <div
-                        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                        [class.bg-primary]="timeOffView() === 'list'"
-                        [class.text-primary-foreground]="timeOffView() === 'list'"
-                        [class.text-foreground-60]="timeOffView() !== 'list'"
-                        role="tab"
-                        tabindex="0"
-                        [attr.aria-selected]="timeOffView() === 'list'"
-                        (click)="timeOffView.set('list')"
-                        (keydown.enter)="timeOffView.set('list')"
-                        (keydown.space)="$event.preventDefault(); timeOffView.set('list')"
+                        class="flex items-center rounded-lg border-default overflow-hidden flex-shrink-0"
+                        role="tablist"
+                        aria-label="Time off view"
+                        (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
                       >
-                        <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
-                        <div>List</div>
+                        <div
+                          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                          [class.bg-primary]="timeOffView() === 'list'"
+                          [class.text-primary-foreground]="timeOffView() === 'list'"
+                          [class.text-foreground-60]="timeOffView() !== 'list'"
+                          role="tab"
+                          tabindex="0"
+                          [attr.aria-selected]="timeOffView() === 'list'"
+                          (click)="timeOffView.set('list')"
+                          (keydown.enter)="timeOffView.set('list')"
+                          (keydown.space)="$event.preventDefault(); timeOffView.set('list')"
+                        >
+                          <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
+                          <div>List</div>
+                        </div>
+                        <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
+                        <div
+                          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                          [class.bg-primary]="timeOffView() === 'calendar'"
+                          [class.text-primary-foreground]="timeOffView() === 'calendar'"
+                          [class.text-foreground-60]="timeOffView() !== 'calendar'"
+                          role="tab"
+                          tabindex="0"
+                          [attr.aria-selected]="timeOffView() === 'calendar'"
+                          (click)="timeOffView.set('calendar')"
+                          (keydown.enter)="timeOffView.set('calendar')"
+                          (keydown.space)="$event.preventDefault(); timeOffView.set('calendar')"
+                        >
+                          <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                          <div>Calendar</div>
+                        </div>
                       </div>
-                      <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
-                      <div
-                        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                        [class.bg-primary]="timeOffView() === 'calendar'"
-                        [class.text-primary-foreground]="timeOffView() === 'calendar'"
-                        [class.text-foreground-60]="timeOffView() !== 'calendar'"
-                        role="tab"
-                        tabindex="0"
-                        [attr.aria-selected]="timeOffView() === 'calendar'"
-                        (click)="timeOffView.set('calendar')"
-                        (keydown.enter)="timeOffView.set('calendar')"
-                        (keydown.space)="$event.preventDefault(); timeOffView.set('calendar')"
-                      >
-                        <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                        <div>Calendar</div>
-                      </div>
-                    </div>
+                    }
                   </div>
 
-                  @if (timeOffView() === 'list') {
-                    <div class="overflow-y-auto flex-1" role="table" aria-label="Time off requests">
-                      <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-                        <div role="columnheader">Employee</div>
-                        <div role="columnheader">Type</div>
-                        <div role="columnheader">Dates</div>
-                        <div role="columnheader">Days</div>
-                        <div role="columnheader">Status</div>
-                      </div>
-                      @for (req of timeOffRequests; track req.id) {
-                        <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
-                          <div class="flex items-center gap-2" role="cell">
-                            <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0" aria-hidden="true">
-                              {{ req.initials }}
-                            </div>
-                            <div class="text-sm font-medium text-foreground truncate">{{ req.name }}</div>
+                  @if (isTimeOffCompact() && !timeOffMobileExpanded()) {
+                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                      @for (item of timeOffCompactItems; track item.key) {
+                        <div
+                          class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                          role="button" tabindex="0"
+                          [attr.aria-label]="item.label + ': ' + timeOffCounts()[item.key]"
+                          (click)="expandTimeOffMobile(item.key)"
+                          (keydown.enter)="expandTimeOffMobile(item.key)"
+                          (keydown.space)="$event.preventDefault(); expandTimeOffMobile(item.key)"
+                        >
+                          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 {{ item.colorBg }}">
+                            <i class="modus-icons text-base {{ item.colorText }}" aria-hidden="true">{{ item.icon }}</i>
                           </div>
-                          <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit" role="cell">{{ req.type }}</div>
-                          <div class="text-sm text-foreground-80" role="cell">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
-                          <div class="text-sm text-foreground-60" role="cell">{{ req.days }}d</div>
-                          <div role="cell">
-                            <div class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full
-                              {{ req.status === 'Approved' ? 'bg-success-20 text-success' :
-                                 req.status === 'Pending'  ? 'bg-warning-20 text-warning' :
-                                 'bg-destructive-20 text-destructive' }}">
-                              {{ req.status }}
-                            </div>
+                          <div class="flex-1 min-w-0">
+                            <div class="text-xs text-foreground-60">{{ item.label }}</div>
                           </div>
+                          <div class="text-lg font-bold"
+                            [class.text-foreground]="item.key !== 'Denied'"
+                            [class.text-destructive]="item.key === 'Denied'">{{ timeOffCounts()[item.key] }}</div>
+                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                         </div>
                       }
                     </div>
-                  }
-
-                  @if (timeOffView() === 'calendar') {
-                    <div class="flex flex-col flex-1">
-                      <div class="flex items-center justify-between px-5 py-3 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
-                        <div
-                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                          role="button"
-                          tabindex="0"
-                          aria-label="Previous month"
-                          (click)="prevCalendarMonth()"
-                          (keydown.enter)="prevCalendarMonth()"
-                          (keydown.space)="$event.preventDefault(); prevCalendarMonth()"
-                        >
-                          <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
+                  } @else {
+                    @if (timeOffView() === 'list' || (isTimeOffCompact() && timeOffMobileExpanded())) {
+                      <div class="overflow-y-auto flex-1" role="table" aria-label="Time off requests">
+                        <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+                          <div role="columnheader">Employee</div>
+                          <div role="columnheader">Type</div>
+                          <div role="columnheader">Dates</div>
+                          <div role="columnheader">Days</div>
+                          <div role="columnheader">Status</div>
                         </div>
-                        <div class="text-sm font-semibold text-foreground" aria-live="polite">{{ calendarMonthLabel() }}</div>
-                        <div
-                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                          role="button"
-                          tabindex="0"
-                          aria-label="Next month"
-                          (click)="nextCalendarMonth()"
-                          (keydown.enter)="nextCalendarMonth()"
-                          (keydown.space)="$event.preventDefault(); nextCalendarMonth()"
-                        >
-                          <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_right</i>
-                        </div>
-                      </div>
-                      <div class="grid grid-cols-7 px-3 pt-2 pb-1 flex-shrink-0">
-                        @for (d of ['Su','Mo','Tu','We','Th','Fr','Sa']; track d) {
-                          <div class="text-center text-2xs font-semibold text-foreground-40 uppercase py-1">{{ d }}</div>
-                        }
-                      </div>
-                      <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1">
-                        @for (cell of calendarDays(); track cell.day ?? $index) {
-                          <div class="min-h-[52px] rounded-lg p-1 flex flex-col gap-0.5"
-                            [class.bg-muted]="cell.day !== null && cell.requests.length === 0"
-                            [class.bg-primary-20]="cell.requests.length > 0"
-                          >
-                            @if (cell.day !== null) {
-                              <div class="text-xs font-medium text-foreground-60 text-center leading-4">{{ cell.day }}</div>
-                              @for (req of cell.requests.slice(0, 2); track req.id) {
-                                <div class="flex items-center gap-1 rounded px-1 py-0.5 {{ timeOffStatusColor(req.status) }}">
-                                  <div class="text-2xs font-semibold leading-none truncate">{{ req.initials }}</div>
-                                </div>
-                              }
-                              @if (cell.requests.length > 2) {
-                                <div class="text-2xs text-foreground-60 text-center">+{{ cell.requests.length - 2 }}</div>
-                              }
-                            }
+                        @for (req of filteredTimeOff(); track req.id) {
+                          <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                            <div class="flex items-center gap-2" role="cell">
+                              <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0" aria-hidden="true">
+                                {{ req.initials }}
+                              </div>
+                              <div class="text-sm font-medium text-foreground truncate">{{ req.name }}</div>
+                            </div>
+                            <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit" role="cell">{{ req.type }}</div>
+                            <div class="text-sm text-foreground-80" role="cell">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
+                            <div class="text-sm text-foreground-60" role="cell">{{ req.days }}d</div>
+                            <div role="cell">
+                              <div class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full
+                                {{ req.status === 'Approved' ? 'bg-success-20 text-success' :
+                                   req.status === 'Pending'  ? 'bg-warning-20 text-warning' :
+                                   'bg-destructive-20 text-destructive' }}">
+                                {{ req.status }}
+                              </div>
+                            </div>
                           </div>
                         }
                       </div>
-                      <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2.5 h-2.5 rounded-sm bg-success"></div>
-                          <div class="text-xs text-foreground-60">Approved</div>
+                    }
+
+                    @if (timeOffView() === 'calendar' && !isTimeOffCompact()) {
+                      <div class="flex flex-col flex-1">
+                        <div class="flex items-center justify-between px-5 py-3 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                          <div
+                            class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                            role="button"
+                            tabindex="0"
+                            aria-label="Previous month"
+                            (click)="prevCalendarMonth()"
+                            (keydown.enter)="prevCalendarMonth()"
+                            (keydown.space)="$event.preventDefault(); prevCalendarMonth()"
+                          >
+                            <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
+                          </div>
+                          <div class="text-sm font-semibold text-foreground" aria-live="polite">{{ calendarMonthLabel() }}</div>
+                          <div
+                            class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                            role="button"
+                            tabindex="0"
+                            aria-label="Next month"
+                            (click)="nextCalendarMonth()"
+                            (keydown.enter)="nextCalendarMonth()"
+                            (keydown.space)="$event.preventDefault(); nextCalendarMonth()"
+                          >
+                            <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_right</i>
+                          </div>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2.5 h-2.5 rounded-sm bg-warning"></div>
-                          <div class="text-xs text-foreground-60">Pending</div>
+                        <div class="grid grid-cols-7 px-3 pt-2 pb-1 flex-shrink-0">
+                          @for (d of ['Su','Mo','Tu','We','Th','Fr','Sa']; track d) {
+                            <div class="text-center text-2xs font-semibold text-foreground-40 uppercase py-1">{{ d }}</div>
+                          }
                         </div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2.5 h-2.5 rounded-sm bg-destructive"></div>
-                          <div class="text-xs text-foreground-60">Denied</div>
+                        <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1">
+                          @for (cell of calendarDays(); track cell.day ?? $index) {
+                            <div class="min-h-[52px] rounded-lg p-1 flex flex-col gap-0.5"
+                              [class.bg-muted]="cell.day !== null && cell.requests.length === 0"
+                              [class.bg-primary-20]="cell.requests.length > 0"
+                            >
+                              @if (cell.day !== null) {
+                                <div class="text-xs font-medium text-foreground-60 text-center leading-4">{{ cell.day }}</div>
+                                @for (req of cell.requests.slice(0, 2); track req.id) {
+                                  <div class="flex items-center gap-1 rounded px-1 py-0.5 {{ timeOffStatusColor(req.status) }}">
+                                    <div class="text-2xs font-semibold leading-none truncate">{{ req.initials }}</div>
+                                  </div>
+                                }
+                                @if (cell.requests.length > 2) {
+                                  <div class="text-2xs text-foreground-60 text-center">+{{ cell.requests.length - 2 }}</div>
+                                }
+                              }
+                            </div>
+                          }
+                        </div>
+                        <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                          <div class="flex items-center gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-sm bg-success"></div>
+                            <div class="text-xs text-foreground-60">Approved</div>
+                          </div>
+                          <div class="flex items-center gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-sm bg-warning"></div>
+                            <div class="text-xs text-foreground-60">Pending</div>
+                          </div>
+                          <div class="flex items-center gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-sm bg-destructive"></div>
+                            <div class="text-xs text-foreground-60">Denied</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    }
                   }
                 </div>
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  position="left"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
+                />
                 <widget-resize-handle
                   [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -413,6 +461,12 @@ import {
                 </div>
                 <widget-resize-handle
                   [isMobile]="isMobile()"
+                  position="left"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
+                />
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 />
@@ -549,6 +603,12 @@ import {
                     </div>
                   }
                 </div>
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  position="left"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
+                />
                 <widget-resize-handle
                   [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -689,6 +749,12 @@ import {
                 </div>
                 <widget-resize-handle
                   [isMobile]="isMobile()"
+                  position="left"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
+                />
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 />
@@ -709,18 +775,18 @@ export class HomePageComponent implements AfterViewInit {
 
   private readonly engine = new DashboardLayoutEngine({
     widgets: ['homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals'],
-    layoutStorageKey: 'dashboard-home',
-    canvasStorageKey: 'canvas-layout:dashboard-home:v5',
-    defaultColStarts: { homeTimeOff: 1, homeCalendar: 9, homeRfis: 1, homeSubmittals: 1 },
-    defaultColSpans: { homeTimeOff: 8, homeCalendar: 8, homeRfis: 16, homeSubmittals: 16 },
-    defaultTops: { homeTimeOff: 0, homeCalendar: 0, homeRfis: 596, homeSubmittals: 1072 },
-    defaultHeights: { homeTimeOff: 440, homeCalendar: 580, homeRfis: 460, homeSubmittals: 460 },
-    defaultLefts: { homeTimeOff: 0, homeCalendar: 648, homeRfis: 0, homeSubmittals: 0 },
-    defaultPixelWidths: { homeTimeOff: 632, homeCalendar: 632, homeRfis: 1280, homeSubmittals: 1280 },
-    canvasDefaultLefts: { homeTimeOff: 0, homeCalendar: 648, homeRfis: 0, homeSubmittals: 0 },
-    canvasDefaultPixelWidths: { homeTimeOff: 632, homeCalendar: 632, homeRfis: 1280, homeSubmittals: 1280 },
-    canvasDefaultTops: { homeTimeOff: 0, homeCalendar: 0, homeRfis: 456, homeSubmittals: 932 },
-    canvasDefaultHeights: { homeTimeOff: 440, homeCalendar: 580, homeRfis: 460, homeSubmittals: 460 },
+    layoutStorageKey: 'dashboard-home-v2',
+    canvasStorageKey: 'canvas-layout:dashboard-home:v6',
+    defaultColStarts: { homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1 },
+    defaultColSpans: { homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 16 },
+    defaultTops: { homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356 },
+    defaultHeights: { homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
+    defaultLefts: { homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
+    defaultPixelWidths: { homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
+    canvasDefaultLefts: { homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
+    canvasDefaultPixelWidths: { homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
+    canvasDefaultTops: { homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356 },
+    canvasDefaultHeights: { homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
     minColSpan: 4,
     canvasGridMinHeightOffset: 100,
     savesDesktopOnMobile: true,
@@ -732,15 +798,8 @@ export class HomePageComponent implements AfterViewInit {
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0 && this.engine.isCanvasMode()) {
-      untracked(() => this.engine.resetWidgets());
-    }
-  });
-
-  private readonly _cleanupOverlapsEffect = effect(() => {
-    const tick = this.canvasResetService.cleanupOverlapsTick();
-    if (tick > 0 && this.engine.isCanvasMode()) {
-      untracked(() => this.engine.cleanupOverlaps());
+    if (tick > 0) {
+      untracked(() => this.engine.resetToDefaults());
     }
   });
 
@@ -801,12 +860,12 @@ export class HomePageComponent implements AfterViewInit {
     this.engine.onWidgetHeaderTouchStart(id, event);
   }
 
-  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, _grid: GridPage = 'home'): void {
-    this.engine.startWidgetResize(target, dir, event);
+  startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, _grid: GridPage = 'home', edge: 'left' | 'right' = 'right'): void {
+    this.engine.startWidgetResize(target, dir, event, edge);
   }
 
-  startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent, _grid: GridPage = 'home'): void {
-    this.engine.startWidgetResizeTouch(target, dir, event);
+  startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent, _grid: GridPage = 'home', edge: 'left' | 'right' = 'right'): void {
+    this.engine.startWidgetResizeTouch(target, dir, event, edge);
   }
 
   onDocumentMouseMove(event: MouseEvent): void {
@@ -868,6 +927,10 @@ export class HomePageComponent implements AfterViewInit {
     heights['homeSubmittals'] = this.mobileWidgetHeight(
       this.submittalMobileExpanded(),
       this.filteredSubmittals().length
+    );
+    heights['homeTimeOff'] = this.mobileWidgetHeight(
+      this.timeOffMobileExpanded(),
+      this.filteredTimeOff().length
     );
     this.widgetHeights.set(heights);
   }
@@ -989,6 +1052,46 @@ export class HomePageComponent implements AfterViewInit {
   readonly pendingTimeOffCount = computed(() =>
     this.timeOffRequests.filter((r) => r.status === 'Pending').length
   );
+
+  readonly timeOffFilterOptions: readonly ('all' | 'Pending' | 'Approved' | 'Denied')[] = ['all', 'Pending', 'Approved', 'Denied'] as const;
+  readonly timeOffCompactItems: readonly { key: 'all' | 'Pending' | 'Approved' | 'Denied'; label: string; icon: string; colorBg: string; colorText: string }[] = [
+    { key: 'all', label: 'All Requests', icon: 'calendar', colorBg: 'bg-primary-20', colorText: 'text-primary' },
+    { key: 'Pending', label: 'Pending', icon: 'clock', colorBg: 'bg-warning-20', colorText: 'text-warning' },
+    { key: 'Approved', label: 'Approved', icon: 'check_circle', colorBg: 'bg-success-20', colorText: 'text-success' },
+    { key: 'Denied', label: 'Denied', icon: 'cancel_circle', colorBg: 'bg-destructive-20', colorText: 'text-destructive' },
+  ];
+  readonly timeOffActiveFilter = signal<'all' | 'Pending' | 'Approved' | 'Denied'>('all');
+  readonly timeOffMobileExpanded = signal(false);
+  readonly isTimeOffCompact = computed(
+    () => this.isMobile() || (this.widgetColSpans()['homeTimeOff'] ?? 16) <= 6
+  );
+
+  readonly timeOffCounts = computed(() => ({
+    all: this.timeOffRequests.length,
+    Pending: this.timeOffRequests.filter((r) => r.status === 'Pending').length,
+    Approved: this.timeOffRequests.filter((r) => r.status === 'Approved').length,
+    Denied: this.timeOffRequests.filter((r) => r.status === 'Denied').length,
+  }));
+
+  readonly filteredTimeOff = computed(() => {
+    const filter = this.timeOffActiveFilter();
+    if (filter === 'all') return this.timeOffRequests;
+    return this.timeOffRequests.filter((r) => r.status === filter);
+  });
+
+  expandTimeOffMobile(filter: 'all' | 'Pending' | 'Approved' | 'Denied'): void {
+    this.timeOffActiveFilter.set(filter);
+    this.timeOffMobileExpanded.set(true);
+    this.applyMobileHeights();
+    this.engine.compactAll();
+  }
+
+  collapseTimeOffMobile(): void {
+    this.timeOffMobileExpanded.set(false);
+    this.timeOffActiveFilter.set('all');
+    this.applyMobileHeights();
+    this.engine.compactAll();
+  }
 
   private readonly _apptTypeColor: Record<ApptType, string> = {
     meeting: 'bg-primary-20 text-primary border-primary',

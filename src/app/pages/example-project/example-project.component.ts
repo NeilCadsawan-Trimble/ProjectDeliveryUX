@@ -337,8 +337,8 @@ export class ExampleProjectComponent implements AfterViewInit {
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0 && this.engine.isCanvasMode()) {
-      untracked(() => this.engine.resetWidgets());
+    if (tick > 0) {
+      untracked(() => this.engine.resetToDefaults());
     }
   });
 

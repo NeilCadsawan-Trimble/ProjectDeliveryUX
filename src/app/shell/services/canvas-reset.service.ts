@@ -7,14 +7,7 @@ export class CanvasResetService {
   private readonly _resetWidgetsTick = signal(0);
   readonly resetWidgetsTick = this._resetWidgetsTick.asReadonly();
 
-  private readonly _cleanupOverlapsTick = signal(0);
-  readonly cleanupOverlapsTick = this._cleanupOverlapsTick.asReadonly();
-
   triggerResetWidgets(): void {
     this._resetWidgetsTick.update((n) => n + 1);
-  }
-
-  triggerCleanupOverlaps(): void {
-    this._cleanupOverlapsTick.update((n) => n + 1);
   }
 }
