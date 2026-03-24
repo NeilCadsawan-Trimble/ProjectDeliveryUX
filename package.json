@@ -55,7 +55,7 @@
   "devDependencies": {
     "@angular/build": "^20.3.8",
     "@angular/cli": "^20.3.8",
-    "@angular/compiler-cli": "^20.3.0",
+    "@angular/compiler-cli": "^21.2.5",
     "@playwright/test": "^1.58.2",
     "glob": "^11.0.0",
     "husky": "^9.1.7",
