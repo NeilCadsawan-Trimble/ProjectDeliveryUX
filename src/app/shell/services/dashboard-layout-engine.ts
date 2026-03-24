@@ -700,17 +700,19 @@ export class DashboardLayoutEngine {
   }
 
   /**
-   * Cascading push-then-squeeze for desktop horizontal resize.
+   * Cascading squeeze-then-push for desktop horizontal resize.
    *
    * Right-edge resize:
-   * 1. Push same-row right neighbors rightward, keeping original widths.
-   * 2. When the rightmost widget hits the container edge, squeeze it.
-   * 3. When a squeezed widget reaches the 4-col minimum, relocate it
+   * 1. For each same-row right neighbor, try to squeeze it first (shrink its
+   *    width from the left side while keeping its right edge anchored).
+   * 2. If squeezing alone cannot keep the neighbor at the 4-col minimum,
+   *    push it rightward at minimum width.
+   * 3. When a pushed widget overflows the container edge, relocate it
    *    (restore its snapshot width; vertical collision pushes it to a new row).
    *
    * Left-edge resize:
-   * Mirror of the above — push left neighbors leftward toward 0, squeeze
-   * the leftmost against the container's left edge, relocate when minimum reached.
+   * Mirror of the above — squeeze left neighbors from the right side first,
+   * then push leftward at minimum width when squeezing is insufficient.
    *
    * Uses _resizeSnapshot so that resizing back fully un-pushes / un-squeezes.
    */
@@ -770,9 +772,16 @@ export class DashboardLayoutEngine {
             widths[id] = snap[id].width;
             cursor = snap[id].left - gap;
           } else {
-            widths[id] = snap[id].width;
-            lefts[id] = cursor - widths[id];
-            cursor = lefts[id] - gap;
+            const squeezedWidth = cursor - snap[id].left;
+            if (squeezedWidth >= minWidth) {
+              lefts[id] = snap[id].left;
+              widths[id] = squeezedWidth;
+              cursor = snap[id].left - gap;
+            } else {
+              widths[id] = minWidth;
+              lefts[id] = cursor - minWidth;
+              cursor = lefts[id] - gap;
+            }
           }
         }
 
@@ -820,9 +829,17 @@ export class DashboardLayoutEngine {
             widths[id] = snap[id].width;
             cursor = snap[id].left + snap[id].width + gap;
           } else {
-            lefts[id] = cursor;
-            widths[id] = snap[id].width;
-            cursor = lefts[id] + widths[id] + gap;
+            const snapRight = snap[id].left + snap[id].width;
+            const squeezedWidth = snapRight - cursor;
+            if (squeezedWidth >= minWidth) {
+              lefts[id] = cursor;
+              widths[id] = squeezedWidth;
+              cursor = snapRight + gap;
+            } else {
+              lefts[id] = cursor;
+              widths[id] = minWidth;
+              cursor = lefts[id] + widths[id] + gap;
+            }
           }
         }
 

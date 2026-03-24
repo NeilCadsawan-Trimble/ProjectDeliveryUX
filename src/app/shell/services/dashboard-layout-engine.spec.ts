@@ -299,6 +299,39 @@ describe('DashboardLayoutEngine', () => {
 
       expect(engine.widgetLefts()['w2']).toBeGreaterThanOrEqual(origW2Left);
     });
+
+    it('squeezes a wide neighbor before pushing it', () => {
+      const engine = createEngine({
+        widgets: ['w1', 'w2'],
+        defaultLefts: { w1: 0, w2: 400 },
+        defaultPixelWidths: { w1: 308, w2: 700 },
+        defaultColStarts: { w1: 1, w2: 6 },
+        defaultColSpans: { w1: 4, w2: 10 },
+        defaultTops: { w1: 0, w2: 0 },
+        defaultHeights: { w1: 380, w2: 380 },
+        canvasDefaultLefts: { w1: 0, w2: 400 },
+        canvasDefaultPixelWidths: { w1: 308, w2: 700 },
+      });
+      engine.isMobile.set(false);
+      engine.isCanvasMode.set(false);
+
+      const fakeGrid = { clientWidth: 1280 } as HTMLElement;
+      engine.gridElAccessor = () => fakeGrid;
+
+      engine.widgetLefts.set({ w1: 0, w2: 400 });
+      engine.widgetPixelWidths.set({ w1: 308, w2: 700 });
+      engine.widgetTops.set({ w1: 0, w2: 0 });
+      engine.widgetHeights.set({ w1: 380, w2: 380 });
+
+      const origW2Right = 400 + 700;
+      engine.startWidgetResize('w1', 'h', { clientX: 308, clientY: 200, preventDefault: vi.fn(), stopPropagation: vi.fn() } as unknown as MouseEvent, 'right');
+
+      engine.onDocumentMouseMove({ clientX: 458, clientY: 200 } as MouseEvent);
+
+      const w2Right = engine.widgetLefts()['w2'] + engine.widgetPixelWidths()['w2'];
+      expect(w2Right).toBe(origW2Right);
+      expect(engine.widgetPixelWidths()['w2']).toBeLessThan(700);
+    });
   });
 
   describe('applyResizePushSqueeze - left edge', () => {
@@ -321,6 +354,38 @@ describe('DashboardLayoutEngine', () => {
       engine.onDocumentMouseMove({ clientX: 448, clientY: 200 } as MouseEvent);
 
       expect(engine.widgetLefts()['w2']).toBeLessThanOrEqual(origW2Left);
+    });
+
+    it('squeezes a wide neighbor from the right before pushing it', () => {
+      const engine = createEngine({
+        widgets: ['w1', 'w2'],
+        defaultLefts: { w1: 0, w2: 500 },
+        defaultPixelWidths: { w1: 700, w2: 308 },
+        defaultColStarts: { w1: 1, w2: 10 },
+        defaultColSpans: { w1: 10, w2: 4 },
+        defaultTops: { w1: 0, w2: 0 },
+        defaultHeights: { w1: 380, w2: 380 },
+        canvasDefaultLefts: { w1: 0, w2: 500 },
+        canvasDefaultPixelWidths: { w1: 700, w2: 308 },
+      });
+      engine.isMobile.set(false);
+      engine.isCanvasMode.set(false);
+
+      const fakeGrid = { clientWidth: 1280 } as HTMLElement;
+      engine.gridElAccessor = () => fakeGrid;
+
+      engine.widgetLefts.set({ w1: 0, w2: 500 });
+      engine.widgetPixelWidths.set({ w1: 700, w2: 308 });
+      engine.widgetTops.set({ w1: 0, w2: 0 });
+      engine.widgetHeights.set({ w1: 380, w2: 380 });
+
+      const origW1Left = 0;
+      engine.startWidgetResize('w2', 'h', { clientX: 500, clientY: 200, preventDefault: vi.fn(), stopPropagation: vi.fn() } as unknown as MouseEvent, 'left');
+
+      engine.onDocumentMouseMove({ clientX: 400, clientY: 200 } as MouseEvent);
+
+      expect(engine.widgetLefts()['w1']).toBe(origW1Left);
+      expect(engine.widgetPixelWidths()['w1']).toBeLessThan(700);
     });
   });
 
