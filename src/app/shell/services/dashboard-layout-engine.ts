@@ -82,6 +82,8 @@ export class DashboardLayoutEngine {
     left: number; width: number; top: number; height: number;
   }> | null = null;
 
+  private _pushSqueezeActive: Set<string> = new Set();
+
   private _savedDesktopForMobile: LayoutSnapshot | null = null;
   private _savedDesktopForCanvas: LayoutSnapshot | null = null;
 
@@ -597,8 +599,16 @@ export class DashboardLayoutEngine {
     const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
     const placed: string[] = [movedId];
 
+    const activeSet = isHResize ? this._pushSqueezeActive : new Set<string>();
+    if (isHResize) {
+      for (const id of sorted) {
+        if (id === movedId || !activeSet.has(id)) continue;
+        placed.push(id);
+      }
+    }
+
     for (const id of sorted) {
-      if (id === movedId) continue;
+      if (id === movedId || activeSet.has(id)) continue;
       let y = 0;
       let settled = false;
       while (!settled) {
@@ -700,19 +710,14 @@ export class DashboardLayoutEngine {
   }
 
   /**
-   * Cascading squeeze-then-push for desktop horizontal resize.
+   * Two-phase push-then-squeeze for desktop horizontal resize.
    *
-   * Right-edge resize:
-   * 1. For each same-row right neighbor, try to squeeze it first (shrink its
-   *    width from the left side while keeping its right edge anchored).
-   * 2. If squeezing alone cannot keep the neighbor at the 4-col minimum,
-   *    push it rightward at minimum width.
-   * 3. When a pushed widget overflows the container edge, relocate it
-   *    (restore its snapshot width; vertical collision pushes it to a new row).
-   *
-   * Left-edge resize:
-   * Mirror of the above — squeeze left neighbors from the right side first,
-   * then push leftward at minimum width when squeezing is insufficient.
+   * Phase 1 — Push all same-row neighbors outward, keeping original widths.
+   * Phase 2 — If the cascade overflows the container boundary, squeeze from
+   *           the far end inward (outermost widget absorbs first, then the
+   *           next, etc.) down to the 4-col minimum.  When all neighbors are
+   *           at minimum and overflow remains, relocate the outermost widget
+   *           and re-run with the remaining set.
    *
    * Uses _resizeSnapshot so that resizing back fully un-pushes / un-squeezes.
    */
@@ -743,6 +748,8 @@ export class DashboardLayoutEngine {
     const rHeight = snap[resizedId].height;
     const rBottom = rTop + rHeight;
 
+    let finalActive: string[] = [];
+
     if (this._resizeEdge === 'left') {
       const rLeft = lefts[resizedId];
 
@@ -764,43 +771,58 @@ export class DashboardLayoutEngine {
       while (!settled && maxIter-- > 0) {
         settled = true;
 
-        let cursor = rLeft - gap;
-        for (const id of active) {
-          const snapRight = snap[id].left + snap[id].width;
-          if (snapRight <= cursor) {
-            lefts[id] = snap[id].left;
-            widths[id] = snap[id].width;
-            cursor = snap[id].left - gap;
-          } else {
-            const squeezedWidth = cursor - snap[id].left;
-            if (squeezedWidth >= minWidth) {
-              lefts[id] = snap[id].left;
-              widths[id] = squeezedWidth;
-              cursor = snap[id].left - gap;
+        for (const id of active) { widths[id] = snap[id].width; }
+
+        let lastLeft = 0;
+        {
+          let cur = rLeft - gap;
+          for (const id of active) {
+            const snapRight = snap[id].left + snap[id].width;
+            if (snapRight <= cur) {
+              lastLeft = snap[id].left;
+              cur = snap[id].left - gap;
             } else {
-              widths[id] = minWidth;
-              lefts[id] = cursor - minWidth;
-              cursor = lefts[id] - gap;
+              lastLeft = cur - snap[id].width;
+              cur = lastLeft - gap;
             }
           }
         }
+        let underflow = Math.max(0, -lastLeft);
 
-        if (active.length === 0) break;
-        const lastId = active[active.length - 1];
+        if (underflow > 0) {
+          for (let i = active.length - 1; i >= 0 && underflow > 0; i--) {
+            const id = active[i];
+            const canSqueeze = Math.max(snap[id].width - minWidth, 0);
+            const squeeze = Math.min(canSqueeze, underflow);
+            if (squeeze > 0) {
+              widths[id] -= squeeze;
+              underflow -= squeeze;
+            }
+          }
 
-        if (lefts[lastId] < 0) {
-          const available = lefts[lastId] + widths[lastId];
-          if (available >= minWidth) {
-            lefts[lastId] = 0;
-            widths[lastId] = available;
-          } else {
-            lefts[lastId] = snap[lastId].left;
-            widths[lastId] = snap[lastId].width;
+          if (underflow > 0) {
+            const relocateId = active[active.length - 1];
+            lefts[relocateId] = snap[relocateId].left;
+            widths[relocateId] = snap[relocateId].width;
             active.pop();
             settled = false;
+            continue;
+          }
+        }
+
+        let cursor = rLeft - gap;
+        for (const id of active) {
+          const snapRight = snap[id].left + snap[id].width;
+          if (snapRight <= cursor && widths[id] === snap[id].width) {
+            lefts[id] = snap[id].left;
+            cursor = snap[id].left - gap;
+          } else {
+            lefts[id] = cursor - widths[id];
+            cursor = lefts[id] - gap;
           }
         }
       }
+      finalActive = active;
     } else {
       const rRight = lefts[resizedId] + widths[resizedId];
 
@@ -822,44 +844,59 @@ export class DashboardLayoutEngine {
       while (!settled && maxIter-- > 0) {
         settled = true;
 
-        let cursor = rRight + gap;
-        for (const id of active) {
-          if (cursor <= snap[id].left) {
-            lefts[id] = snap[id].left;
-            widths[id] = snap[id].width;
-            cursor = snap[id].left + snap[id].width + gap;
-          } else {
-            const snapRight = snap[id].left + snap[id].width;
-            const squeezedWidth = snapRight - cursor;
-            if (squeezedWidth >= minWidth) {
-              lefts[id] = cursor;
-              widths[id] = squeezedWidth;
-              cursor = snapRight + gap;
+        for (const id of active) { widths[id] = snap[id].width; }
+
+        let lastRight = 0;
+        {
+          let cur = rRight + gap;
+          for (const id of active) {
+            if (cur <= snap[id].left) {
+              lastRight = snap[id].left + snap[id].width;
+              cur = lastRight + gap;
             } else {
-              lefts[id] = cursor;
-              widths[id] = minWidth;
-              cursor = lefts[id] + widths[id] + gap;
+              lastRight = cur + snap[id].width;
+              cur = lastRight + gap;
             }
           }
         }
+        let overflow = Math.max(0, lastRight - containerWidth);
 
-        if (active.length === 0) break;
-        const lastId = active[active.length - 1];
-        const lastRight = lefts[lastId] + widths[lastId];
+        if (overflow > 0) {
+          for (let i = active.length - 1; i >= 0 && overflow > 0; i--) {
+            const id = active[i];
+            const canSqueeze = Math.max(snap[id].width - minWidth, 0);
+            const squeeze = Math.min(canSqueeze, overflow);
+            if (squeeze > 0) {
+              widths[id] -= squeeze;
+              overflow -= squeeze;
+            }
+          }
 
-        if (lastRight > containerWidth) {
-          const available = containerWidth - lefts[lastId];
-          if (available >= minWidth) {
-            widths[lastId] = available;
-          } else {
-            lefts[lastId] = snap[lastId].left;
-            widths[lastId] = snap[lastId].width;
+          if (overflow > 0) {
+            const relocateId = active[active.length - 1];
+            lefts[relocateId] = snap[relocateId].left;
+            widths[relocateId] = snap[relocateId].width;
             active.pop();
             settled = false;
+            continue;
+          }
+        }
+
+        let cursor = rRight + gap;
+        for (const id of active) {
+          if (cursor <= snap[id].left && widths[id] === snap[id].width) {
+            lefts[id] = snap[id].left;
+            cursor = snap[id].left + widths[id] + gap;
+          } else {
+            lefts[id] = cursor;
+            cursor = lefts[id] + widths[id] + gap;
           }
         }
       }
+      finalActive = active;
     }
+
+    this._pushSqueezeActive = new Set(finalActive);
 
     this.widgetLefts.set(lefts);
     this.widgetPixelWidths.set(widths);

@@ -775,6 +775,9 @@ export class DashboardShellComponent implements AfterViewInit {
 
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
+    if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]')) {
+      this.widgetFocusService.clearSelection();
+    }
     if (this.resetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.canvas-reset-flyout')) {
       this.resetMenuOpen.set(false);
     }

@@ -300,7 +300,7 @@ describe('DashboardLayoutEngine', () => {
       expect(engine.widgetLefts()['w2']).toBeGreaterThanOrEqual(origW2Left);
     });
 
-    it('squeezes a wide neighbor before pushing it', () => {
+    it('squeezes the far-end neighbor first at the container edge', () => {
       const engine = createEngine({
         widgets: ['w1', 'w2'],
         defaultLefts: { w1: 0, w2: 400 },
@@ -323,13 +323,12 @@ describe('DashboardLayoutEngine', () => {
       engine.widgetTops.set({ w1: 0, w2: 0 });
       engine.widgetHeights.set({ w1: 380, w2: 380 });
 
-      const origW2Right = 400 + 700;
       engine.startWidgetResize('w1', 'h', { clientX: 308, clientY: 200, preventDefault: vi.fn(), stopPropagation: vi.fn() } as unknown as MouseEvent, 'right');
 
-      engine.onDocumentMouseMove({ clientX: 458, clientY: 200 } as MouseEvent);
+      engine.onDocumentMouseMove({ clientX: 708, clientY: 200 } as MouseEvent);
 
       const w2Right = engine.widgetLefts()['w2'] + engine.widgetPixelWidths()['w2'];
-      expect(w2Right).toBe(origW2Right);
+      expect(w2Right).toBe(1280);
       expect(engine.widgetPixelWidths()['w2']).toBeLessThan(700);
     });
   });
@@ -356,7 +355,7 @@ describe('DashboardLayoutEngine', () => {
       expect(engine.widgetLefts()['w2']).toBeLessThanOrEqual(origW2Left);
     });
 
-    it('squeezes a wide neighbor from the right before pushing it', () => {
+    it('squeezes the far-end neighbor first at left boundary', () => {
       const engine = createEngine({
         widgets: ['w1', 'w2'],
         defaultLefts: { w1: 0, w2: 500 },
@@ -379,12 +378,11 @@ describe('DashboardLayoutEngine', () => {
       engine.widgetTops.set({ w1: 0, w2: 0 });
       engine.widgetHeights.set({ w1: 380, w2: 380 });
 
-      const origW1Left = 0;
       engine.startWidgetResize('w2', 'h', { clientX: 500, clientY: 200, preventDefault: vi.fn(), stopPropagation: vi.fn() } as unknown as MouseEvent, 'left');
 
       engine.onDocumentMouseMove({ clientX: 400, clientY: 200 } as MouseEvent);
 
-      expect(engine.widgetLefts()['w1']).toBe(origW1Left);
+      expect(engine.widgetLefts()['w1']).toBe(0);
       expect(engine.widgetPixelWidths()['w1']).toBeLessThan(700);
     });
   });
