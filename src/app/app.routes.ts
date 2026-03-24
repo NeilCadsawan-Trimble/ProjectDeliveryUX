@@ -116,6 +116,22 @@ export const routes: Routes = [
     title: 'ML Model Deployment Pipeline',
   },
 
+  // Example pages (starter template demos)
+  {
+    path: 'example',
+    loadComponent: () =>
+      import('./pages/example-home/example-home.component').then((m) => m.ExampleHomeComponent),
+    title: 'Example Home',
+  },
+  {
+    path: 'example-project/:slug',
+    loadComponent: () =>
+      import('./pages/example-project/example-project.component').then(
+        (m) => m.ExampleProjectComponent,
+      ),
+    title: 'Example Project',
+  },
+
   // Dev routes - conditionally added based on environment
   ...(environment.devPanel
     ? [

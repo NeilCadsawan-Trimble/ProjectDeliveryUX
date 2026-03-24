@@ -18,13 +18,13 @@ import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modu
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
-import { WidgetResizeHandleComponent } from '../../components/widget-resize-handle.component';
-import { AiIconComponent } from '../../components/ai-icon.component';
+import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
+import { AiIconComponent } from '../../shell/components/ai-icon.component';
 
-import { ThemeService } from '../../services/theme.service';
-import { WidgetLayoutService } from '../../services/widget-layout.service';
-import { CanvasResetService } from '../../services/canvas-reset.service';
-import { WidgetFocusService } from '../../services/widget-focus.service';
+import { ThemeService } from '../../shell/services/theme.service';
+import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
+import { CanvasResetService } from '../../shell/services/canvas-reset.service';
+import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import {
   type ProjectDashboardData,
   type ProjectStatus,

@@ -15,11 +15,11 @@ import { Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
-import { WidgetResizeHandleComponent } from '../../components/widget-resize-handle.component';
-import { WidgetLayoutService } from '../../services/widget-layout.service';
-import { CanvasResetService } from '../../services/canvas-reset.service';
-import { WidgetFocusService } from '../../services/widget-focus.service';
-import { DashboardLayoutEngine } from '../../services/dashboard-layout-engine';
+import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
+import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
+import { CanvasResetService } from '../../shell/services/canvas-reset.service';
+import { WidgetFocusService } from '../../shell/services/widget-focus.service';
+import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
 import type {
   DashboardWidgetId,
   Project,

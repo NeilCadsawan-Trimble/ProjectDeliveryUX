@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { ThemeService, ThemeMode, ThemeName } from '../../services/theme.service';
+import { ThemeService, ThemeMode, ThemeName } from '../../shell/services/theme.service';
 import { ModusDropdownMenuComponent } from '../../components/modus-dropdown-menu.component';
 import { ModusMenuComponent } from '../../components/modus-menu.component';
 import { ModusMenuItemComponent } from '../../components/modus-menu-item.component';

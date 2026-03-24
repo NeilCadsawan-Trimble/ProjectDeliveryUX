@@ -1,7 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ThemeService } from './services/theme.service';
+import { ThemeService } from './shell/services/theme.service';
+import { WidgetFocusService } from './shell/services/widget-focus.service';
 import { DevPanelService, DevPanelComponent } from './dev';
+import { ALL_WIDGETS } from './data/widget-registrations';
 
 /**
  * Main Application Component.
@@ -38,10 +40,11 @@ import { DevPanelService, DevPanelComponent } from './dev';
 export class App implements OnInit {
   readonly devPanelService = inject(DevPanelService);
   private readonly themeService = inject(ThemeService);
+  private readonly widgetFocusService = inject(WidgetFocusService);
 
   ngOnInit(): void {
-    // Initialize theme service - this will load theme from localStorage
-    // and apply it to the document
     this.themeService.getThemeConfig();
+    this.widgetFocusService.setDefaults('Trimble AI', 'Project Assistant');
+    this.widgetFocusService.registerWidgets(ALL_WIDGETS);
   }
 }
