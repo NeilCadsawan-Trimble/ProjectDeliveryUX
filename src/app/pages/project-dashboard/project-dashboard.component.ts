@@ -40,6 +40,7 @@ import {
   type SummaryStat,
   type BudgetBreakdown,
 } from '../../data/project-data';
+import { PROJECTS } from '../../data/dashboard-data';
 
 interface AiMessage {
   id: number;
@@ -405,8 +406,37 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 <div class="text-sm">Projects</div>
               </div>
               <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              <div class="min-w-0 flex-1">
-                <div class="text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
+              <div class="relative min-w-0 flex-1">
+                <div
+                  class="flex items-center gap-1 cursor-pointer select-none"
+                  role="button"
+                  [attr.aria-expanded]="projectSelectorOpen()"
+                  [attr.aria-label]="projectName()"
+                  (click)="toggleProjectSelector(); $event.stopPropagation()"
+                  (keydown.enter)="toggleProjectSelector(); $event.stopPropagation()"
+                  tabindex="0"
+                >
+                  <div class="text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
+                  <i class="modus-icons text-base text-foreground-60 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectSelectorOpen()" aria-hidden="true">expand_more</i>
+                </div>
+                @if (projectSelectorOpen()) {
+                  <div class="absolute top-full left-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[260px] max-w-[340px] py-1" role="listbox" aria-label="Switch project">
+                    @for (proj of otherProjects(); track proj.id) {
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                        role="option"
+                        [attr.aria-label]="proj.name"
+                        (click)="navigateToProject(proj.slug); $event.stopPropagation()"
+                      >
+                        <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="statusDotClass(proj.status)"></div>
+                        <div class="min-w-0 flex-1">
+                          <div class="text-sm font-medium text-foreground truncate">{{ proj.name }}</div>
+                          <div class="text-xs text-foreground-60 truncate">{{ proj.client }}</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             </div>
             <div slot="end" class="flex items-center gap-1">
@@ -497,6 +527,17 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 </div>
               }
             </div>
+            <div
+              class="custom-side-nav-item"
+              title="Settings"
+              role="button"
+              aria-label="Settings"
+            >
+              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              @if (navExpanded()) {
+                <div class="custom-side-nav-label">Settings</div>
+              }
+            </div>
           </div>
         </div>
         @if (navExpanded()) {
@@ -536,8 +577,37 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
             <div class="text-sm hidden md:block">Projects</div>
           </div>
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-          <div class="min-w-0 flex-1">
-            <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
+          <div class="relative min-w-0 flex-1">
+            <div
+              class="flex items-center gap-1 cursor-pointer select-none"
+              role="button"
+              [attr.aria-expanded]="projectSelectorOpen()"
+              [attr.aria-label]="projectName()"
+              (click)="toggleProjectSelector(); $event.stopPropagation()"
+              (keydown.enter)="toggleProjectSelector(); $event.stopPropagation()"
+              tabindex="0"
+            >
+              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
+              <i class="modus-icons text-base text-foreground-60 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectSelectorOpen()" aria-hidden="true">expand_more</i>
+            </div>
+            @if (projectSelectorOpen()) {
+              <div class="absolute top-full left-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[260px] max-w-[340px] py-1" role="listbox" aria-label="Switch project">
+                @for (proj of otherProjects(); track proj.id) {
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                    role="option"
+                    [attr.aria-label]="proj.name"
+                    (click)="navigateToProject(proj.slug); $event.stopPropagation()"
+                  >
+                    <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="statusDotClass(proj.status)"></div>
+                    <div class="min-w-0 flex-1">
+                      <div class="text-sm font-medium text-foreground truncate">{{ proj.name }}</div>
+                      <div class="text-xs text-foreground-60 truncate">{{ proj.client }}</div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
           </div>
         </div>
         <div slot="end" class="flex items-center gap-1">
@@ -676,6 +746,19 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 }
               </div>
             }
+          </div>
+          <div class="mt-auto border-top-default">
+            <div
+              class="custom-side-nav-item"
+              title="Settings"
+              role="button"
+              aria-label="Settings"
+            >
+              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              @if (navExpanded()) {
+                <div class="custom-side-nav-label">Settings</div>
+              }
+            </div>
           </div>
         </div>
       }
@@ -1013,6 +1096,11 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   readonly projectName = computed(() => this.projectData().name);
   readonly projectStatus = computed(() => this.projectData().status);
+
+  readonly projectSelectorOpen = signal(false);
+  readonly otherProjects = computed(() =>
+    PROJECTS.filter(p => p.id !== this.projectId())
+  );
   readonly summaryStats = computed(() => this.projectData().summaryStats);
   readonly milestones = computed(() => this.projectData().milestones);
   readonly tasks = computed(() => this.projectData().tasks);
@@ -1298,6 +1386,25 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   navigateToProjects(): void {
     this.router.navigate(['/projects']);
+  }
+
+  toggleProjectSelector(): void {
+    this.projectSelectorOpen.update(v => !v);
+  }
+
+  navigateToProject(slug: string): void {
+    this.projectSelectorOpen.set(false);
+    this.router.navigate(['/project', slug]);
+  }
+
+  statusDotClass(status: ProjectStatus): string {
+    const map: Record<ProjectStatus, string> = {
+      'On Track': 'bg-success',
+      'At Risk': 'bg-warning',
+      'Overdue': 'bg-destructive',
+      'Planning': 'bg-secondary',
+    };
+    return map[status];
   }
 
   selectNavItem(value: string): void {
@@ -1773,7 +1880,9 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   onEscapeKey(): void {
-    if (this.resetMenuOpen()) {
+    if (this.projectSelectorOpen()) {
+      this.projectSelectorOpen.set(false);
+    } else if (this.resetMenuOpen()) {
       this.resetMenuOpen.set(false);
     } else if (this.moreMenuOpen()) {
       this.moreMenuOpen.set(false);
@@ -1791,6 +1900,9 @@ export class ProjectDashboardComponent implements AfterViewInit {
     }
     if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);
+    }
+    if (this.projectSelectorOpen() && !target.closest('[role="listbox"]') && !target.closest('[aria-expanded]')) {
+      this.projectSelectorOpen.set(false);
     }
   }
 
