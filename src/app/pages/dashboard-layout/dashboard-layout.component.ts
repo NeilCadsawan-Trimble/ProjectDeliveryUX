@@ -73,6 +73,7 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
             [searchInputOpen]="searchInputOpen()"
             (searchClick)="searchInputOpen.set(!searchInputOpen())"
             (searchInputOpenChange)="searchInputOpen.set($event)"
+            (trimbleLogoClick)="navigateHome()"
             (aiClick)="toggleAiPanel()"
           >
             <div slot="start" class="flex items-center gap-3">
@@ -205,6 +206,7 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
           [searchInputOpen]="searchInputOpen()"
           (searchClick)="searchInputOpen.set(!searchInputOpen())"
           (searchInputOpenChange)="searchInputOpen.set($event)"
+          (trimbleLogoClick)="navigateHome()"
           (aiClick)="toggleAiPanel()"
         >
           <div slot="start" class="flex items-center gap-3">
@@ -715,6 +717,10 @@ export class DashboardLayoutComponent implements AfterViewInit {
       return "Hello! I'm your Trimble AI Assistant. I can help you understand your project status, estimates, budgets, and more. What would you like to know?";
     }
     return `I can help with project status, estimates, budgets, and team insights. Try asking "Which projects are at risk?" or "Summarize project status".`;
+  }
+
+  navigateHome(): void {
+    this.router.navigate(['/']);
   }
 
   selectNavItem(page: 'home' | 'projects' | 'financials' | 'settings'): void {
