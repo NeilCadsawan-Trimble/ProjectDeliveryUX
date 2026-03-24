@@ -1671,6 +1671,10 @@ modus-wc-navbar .main-menu {
     border-radius: 0 12px 0 0;
   }
 
+  .canvas-side-nav > div:last-child > .custom-side-nav-item:last-child {
+    border-radius: 0 0 12px 0;
+  }
+
   .canvas-side-nav.expanded {
     width: 240px;
   }
