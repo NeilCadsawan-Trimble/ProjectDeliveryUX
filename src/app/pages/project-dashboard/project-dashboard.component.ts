@@ -391,7 +391,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
             [searchInputOpen]="searchInputOpen()"
             (searchClick)="searchInputOpen.set(!searchInputOpen())"
             (searchInputOpenChange)="searchInputOpen.set($event)"
-            (trimbleLogoClick)="navigateToProjects()"
+            (trimbleLogoClick)="navigateHome()"
           >
             <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
@@ -562,7 +562,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         [searchInputOpen]="searchInputOpen()"
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
-        (trimbleLogoClick)="navigateToProjects()"
+        (trimbleLogoClick)="navigateHome()"
       >
         <div slot="start" class="flex items-center gap-3 w-full min-w-0">
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
@@ -1382,6 +1382,10 @@ export class ProjectDashboardComponent implements AfterViewInit {
   focusMain(): void {
     const main = document.getElementById('main-content');
     if (main) main.focus();
+  }
+
+  navigateHome(): void {
+    this.router.navigate(['/']);
   }
 
   navigateToProjects(): void {
