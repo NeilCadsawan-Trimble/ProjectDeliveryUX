@@ -199,41 +199,41 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       </div>
     } @else {
       <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
-        <modus-navbar
-          [userCard]="userCard()"
-          [visibility]="navbarVisibility()"
-          [condensed]="isMobile()"
-          [searchInputOpen]="searchInputOpen()"
-          (searchClick)="searchInputOpen.set(!searchInputOpen())"
-          (searchInputOpenChange)="searchInputOpen.set($event)"
-          (trimbleLogoClick)="navigateHome()"
-          (aiClick)="toggleAiPanel()"
-        >
-          <div slot="start" class="flex items-center gap-3">
-            <div class="w-px h-5 bg-foreground-20"></div>
-            <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
-          </div>
-          <div slot="end" class="flex items-center gap-1">
-            <div
-              class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-              role="button"
-              aria-label="AI assistant"
-              (click)="toggleAiPanel()"
-              (keydown.enter)="toggleAiPanel()"
-              tabindex="0"
-            >
-              <ai-icon variant="nav" [isDark]="isDark()" />
+          <modus-navbar
+            [userCard]="userCard()"
+            [visibility]="navbarVisibility()"
+            [condensed]="isMobile()"
+            [searchInputOpen]="searchInputOpen()"
+            (searchClick)="searchInputOpen.set(!searchInputOpen())"
+            (searchInputOpenChange)="searchInputOpen.set($event)"
+            (trimbleLogoClick)="navigateHome()"
+            (aiClick)="toggleAiPanel()"
+          >
+            <div slot="start" class="flex items-center gap-3">
+              <div class="w-px h-5 bg-foreground-20"></div>
+              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
             </div>
-            <div
-              class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-              role="button"
-              [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-              (click)="toggleDarkMode()"
-              (keydown.enter)="toggleDarkMode()"
-              tabindex="0"
-            >
-              <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-            </div>
+            <div slot="end" class="flex items-center gap-1">
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="AI assistant"
+                (click)="toggleAiPanel()"
+                (keydown.enter)="toggleAiPanel()"
+                tabindex="0"
+              >
+                <ai-icon variant="nav" [isDark]="isDark()" />
+              </div>
+              <div
+                class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+                (click)="toggleDarkMode()"
+                (keydown.enter)="toggleDarkMode()"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+              </div>
             @if (isMobile()) {
               <div class="relative">
                 <div
@@ -504,8 +504,6 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly elementRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly _abortCtrl = new AbortController();
-  private hamburgerBtn: HTMLElement | null = null;
-
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this._abortCtrl.abort());
 
   readonly appTitle = input('Dashboard');
@@ -523,19 +521,6 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly aiPlaceholder = input('Ask a question...');
 
   private readonly currentUrl = signal('/');
-
-  private readonly hamburgerEffect = effect(() => {
-    const expanded = this.navExpanded();
-    if (this.hamburgerBtn) {
-      if (expanded) {
-        this.hamburgerBtn.style.background = 'var(--primary)';
-        this.hamburgerBtn.style.color = 'var(--primary-foreground)';
-      } else {
-        this.hamburgerBtn.style.background = '';
-        this.hamburgerBtn.style.color = '';
-      }
-    }
-  });
 
   readonly searchInputOpen = signal(false);
 
@@ -862,9 +847,11 @@ export class DashboardShellComponent implements AfterViewInit {
     const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
     if (!navbarWc) return;
     const tryAttach = () => {
-      const btn = navbarWc.querySelector('.navbar-menu-btn, [data-testid="main-menu-btn"], button[aria-label="Main menu"]');
+      const btn =
+        navbarWc.querySelector('button[aria-label="Main menu"]') ??
+        navbarWc.shadowRoot?.querySelector('button[aria-label="Main menu"]') ??
+        navbarWc.querySelector('.navbar-menu-btn');
       if (btn) {
-        this.hamburgerBtn = btn as HTMLElement;
         btn.addEventListener('click', (e: Event) => {
           e.stopImmediatePropagation();
           this.navExpanded.set(!this.navExpanded());
