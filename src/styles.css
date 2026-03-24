@@ -1540,6 +1540,16 @@ modus-wc-navbar .main-menu {
   width: 240px;
 }
 
+[data-theme="modus-classic-dark"] .custom-side-nav,
+[data-theme="modus-classic-dark"] .canvas-side-nav {
+  background: var(--modus-wc-color-gray-10);
+}
+
+[data-theme="modus-modern-dark"] .custom-side-nav,
+[data-theme="modus-modern-dark"] .canvas-side-nav {
+  background: var(--modus-wc-color-trimble-gray);
+}
+
 .custom-side-nav-item {
   display: flex;
   align-items: center;
@@ -1633,6 +1643,10 @@ modus-wc-navbar .main-menu {
     z-index: 1001;
     border-radius: 0 0 12px 12px;
     overflow: visible;
+  }
+
+  .canvas-navbar modus-wc-navbar .modus-wc-navbar {
+    border-radius: 0 0 12px 12px;
   }
 
   .canvas-navbar-shadow {

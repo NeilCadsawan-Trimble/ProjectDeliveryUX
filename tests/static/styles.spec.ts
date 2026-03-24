@@ -36,6 +36,32 @@ describe('styles.css regression', () => {
     });
   });
 
+  describe('.canvas-navbar', () => {
+    it('has overflow: visible so dropdowns are not clipped', () => {
+      const match = CSS.match(/\.canvas-navbar\s*\{([^}]*)\}/m);
+      expect(match).toBeTruthy();
+      const block = match![1];
+      expect(block).toContain('overflow: visible');
+      expect(block).not.toContain('overflow: hidden');
+      expect(block).not.toContain('overflow: auto');
+    });
+
+    it('has border-radius for bottom corners', () => {
+      const match = CSS.match(/\.canvas-navbar\s*\{([^}]*)\}/m);
+      expect(match).toBeTruthy();
+      expect(match![1]).toContain('border-radius');
+    });
+
+    it('applies border-radius to inner modus-wc-navbar', () => {
+      expect(CSS).toContain('.canvas-navbar modus-wc-navbar .modus-wc-navbar');
+      const match = CSS.match(
+        /\.canvas-navbar\s+modus-wc-navbar\s+\.modus-wc-navbar\s*\{([^}]*)\}/m,
+      );
+      expect(match).toBeTruthy();
+      expect(match![1]).toContain('border-radius');
+    });
+  });
+
   describe('.desktop-reset-flyout', () => {
     it('has position: absolute', () => {
       const flyoutMatch = CSS.match(
