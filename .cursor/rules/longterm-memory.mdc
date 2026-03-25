@@ -1,0 +1,116 @@
+---
+description: Long-term memory for AI assistant. Consult BEFORE asking the user any question. Contains user preferences, decisions made, workflow conventions, and project context accumulated across all sessions.
+alwaysApply: true
+---
+
+# Long-Term Memory
+
+Consult this file before asking the user a question. If the answer is here, act on it directly.
+
+## User Preferences
+
+### Communication Style
+- Prefers action over discussion. Execute tasks directly rather than asking for confirmation.
+- When given a letter response (e.g., "D"), it is selecting an option from a prior multiple-choice question.
+- Dislikes repetitive errors. If something has broken before, it must not break again -- add regression tests.
+- Values progress tracking. Maintain `PROGRESS.md` when significant milestones are reached.
+
+### Workflow: Git Push
+- When asked to "push to github", ALWAYS run regression tests first.
+- Regression test sequence: `npm run lint:all` then `npm run test:static` then `npm run type-check`.
+- If any test fails, stop the push, fix the issue, re-run tests, and repeat until clean.
+- Only after all tests pass, commit and push.
+- After a successful push, this becomes the new regression baseline.
+
+### Workflow: Implementation Plans
+- When given a plan file, do NOT edit the plan file itself.
+- Mark to-do items as in_progress as work begins.
+- Work through all to-dos sequentially without stopping.
+- Do not re-create to-dos that already exist.
+
+### Workflow: Skills and Documentation
+- Create skills (`.cursor/skills/`) for hard-won patterns that caused repeated failures.
+- Existing skill: `dashboard-layout-lessons` covers push-squeeze, collision priority, canvas navbar, dark-mode sidenav, widget deselection.
+- Update `PROGRESS.md` when phases of work are completed.
+
+## Decisions Already Made (Do Not Re-Ask)
+
+### Architecture
+- **3 main pages**: Home (`/`), Projects (`/projects`), Financials (`/financials`).
+- **8 project detail pages**: Slug-based routes under `/projects/:slug`, all use shared `ProjectDashboardComponent`.
+- **Shared layout engine**: `DashboardLayoutEngine` service manages drag, resize, push-squeeze, and collision for all dashboard pages.
+- **Dashboard shell**: `DashboardShellComponent` provides navbar, sidenav, AI panel, and document-level event handling for all pages.
+- **Canvas mode**: Activates at viewport >= 2000px with fixed navbar (1280px centered), spacebar panning, and overlap resolution.
+- **Widget persistence**: sessionStorage per-page/per-project. Not server-side yet.
+
+### Design System
+- **9-color system only**: background, foreground, card, muted, secondary, primary, success, warning, destructive.
+- **No emojis anywhere**: Use Modus icons instead.
+- **Div-only HTML**: No semantic elements (h1, p, section, header, etc.).
+- **Custom opacity utilities**: `-80`, `-60`, `-40`, `-20` suffix, not Tailwind `/80` syntax.
+- **Custom border utilities**: `border-default`, `border-primary`, etc.
+- **Modus icons with underscores**: `save_disk`, `arrow_left`, `check_circle`.
+
+### Layout Engine Behavior
+- **Push-squeeze on resize**: Push all neighbors first (maintaining widths), then squeeze from far end inward to 4-column minimum, then relocate outermost if still overflowing.
+- **Collision priority**: Widgets actively placed by push-squeeze get priority in vertical collision resolution. Relocated widgets yield.
+- **Click outside deselects**: Clicking anywhere not inside `[data-widget-id]` clears widget selection.
+
+### Canvas Navbar
+- **overflow: visible** on `.canvas-navbar`. NEVER set to hidden (clips dropdowns). This has regressed before.
+- **border-radius** applied to inner `.canvas-navbar modus-wc-navbar .modus-wc-navbar` for visual rounding.
+
+### Dark Mode Side Nav
+- `modus-classic-dark`: side nav uses `var(--modus-wc-color-gray-10)` to match navbar.
+- `modus-modern-dark`: side nav uses `var(--modus-wc-color-trimble-gray)` to match navbar.
+- Other themes: default `var(--background)` is correct.
+
+### Testing Strategy
+- **Unit tests** (`ng test`): 41 tests covering layout engine, widget layout service, canvas reset.
+- **Static tests** (`npm run test:static` via Vitest): 55 tests scanning source files for structural regressions.
+- **E2E tests** (Playwright): 8 specs, minimal coverage. Configured but not primary gate.
+- **Lint checks** (`npm run lint:all`): Colors, borders, opacity, icons, icon names, inline styles.
+- **Type checking** (`npm run type-check`): Strict TypeScript validation.
+
+### Deployment
+- **Vercel**: Connected to GitHub repo. Auto-deploys on push.
+- **Node version**: Set via `NODE_VERSION` env var in Vercel.
+- **Framework override**: Must NOT be set to null (breaks Git-triggered builds).
+
+## Known Fragile Areas
+
+These areas have broken multiple times. Extra care required:
+
+| Area | Risk | Mitigation |
+|------|------|------------|
+| Hamburger/sidenav | DOM listener can be overwritten by Angular lifecycle | Use native DOM listener with capture phase; test in static specs |
+| Canvas navbar overflow | Setting `overflow: hidden` clips dropdowns | Static test asserts `overflow: visible`; border-radius on inner element |
+| Push-squeeze ordering | Wrong cascade order causes incorrect widget relocation | Unit tests cover right-edge and left-edge squeeze ordering |
+| Collision after resize | Active vs relocated widget priority | `_pushSqueezeActive` set tracks active widgets; unit tests cover |
+| Widget deselection | Missing `data-widget-id` attribute breaks click-outside | All widget containers must have `[attr.data-widget-id]` |
+
+## Project File Map
+
+| Purpose | Location |
+|---------|----------|
+| Progress tracker | `PROGRESS.md` |
+| Layout engine | `src/app/shell/services/dashboard-layout-engine.ts` |
+| Dashboard shell | `src/app/shell/layout/dashboard-shell.component.ts` |
+| Global styles | `src/styles.css` |
+| Static tests | `tests/static/*.spec.ts` |
+| Unit tests | `src/app/shell/services/*.spec.ts` |
+| E2E tests | `e2e/*.spec.ts` |
+| Skills (lessons) | `.cursor/skills/dashboard-layout-lessons/SKILL.md` |
+| Lint scripts | `scripts/` |
+| Dashboard data | `src/app/data/dashboard-data.ts` |
+| Routes | `src/app/app.routes.ts` |
+| Theme service | `src/app/shell/services/theme.service.ts` |
+
+## Chat Session History
+
+| Session | UUID | Key Topics |
+|---------|------|------------|
+| 1 (Mar 23) | `348b2862-fd0b-474a-9ed3-4270d9ec1bc4` | Dev server startup |
+| 2 (Mar 23) | `0b841993-1534-43b7-8fa6-b99bd77e5e30` | GitHub push, Vercel deploy |
+| 3 (Mar 23) | `b90d3dde-b222-49be-9649-3bc611187ed1` | Desktop resize, canvas collision, project selector |
+| 4 (Mar 24) | `bc28969b-5fd7-49fc-907e-894008a53ccc` | Push-squeeze, regression testing, collision priority, theming, skills, progress tracker |
