@@ -3,7 +3,7 @@
  *
  * Guards against recurring regressions:
  * - Desktop padding (px-4) must not be overridden by md:px-0
- * - Both left and right resize handles must be present
+ * - Right resize handles must be present (left removed intentionally)
  * - Compact mode signals must exist
  */
 import { readFileSync } from 'node:fs';
@@ -29,16 +29,12 @@ describe('HomePageComponent (template regression)', () => {
   });
 
   describe('resize handles', () => {
-    it('has left position resize handles', () => {
-      expect(SRC).toContain('position="left"');
-    });
-
     it('has widget-resize-handle components', () => {
       expect(SRC).toContain('<widget-resize-handle');
     });
 
-    it('passes edge parameter for left resize', () => {
-      expect(SRC).toContain("'left')");
+    it('does not have left position resize handles', () => {
+      expect(SRC).not.toContain('position="left"');
     });
   });
 

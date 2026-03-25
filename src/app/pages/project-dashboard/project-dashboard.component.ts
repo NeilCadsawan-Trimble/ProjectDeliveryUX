@@ -151,7 +151,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
+
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -182,7 +182,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
+
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -215,7 +215,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
+
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -271,7 +271,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   </div>
                 </div>
-                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
+
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -305,7 +305,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     <div class="text-xs text-foreground">{{ budgetHealthy() ? 'Budget on track' : 'Budget critical' }} -- {{ budgetRemaining() }} remaining</div>
                   </div>
                 </div>
-                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
+
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -337,7 +337,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
+
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -365,7 +365,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                     </div>
                   }
                 </div>
-                <widget-resize-handle [isMobile]="isMobile()" position="left" (resizeStart)="startWidgetResize(wId, 'both', $event, 'left')" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event, 'left')" />
+
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }

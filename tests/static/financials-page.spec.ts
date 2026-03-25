@@ -21,12 +21,12 @@ describe('FinancialsPageComponent (template regression)', () => {
   });
 
   describe('resize handles', () => {
-    it('has left position resize handles', () => {
-      expect(SRC).toContain('position="left"');
-    });
-
     it('has widget-resize-handle components', () => {
       expect(SRC).toContain('<widget-resize-handle');
+    });
+
+    it('does not have left position resize handles', () => {
+      expect(SRC).not.toContain('position="left"');
     });
   });
 

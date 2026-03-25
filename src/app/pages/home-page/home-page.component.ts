@@ -310,12 +310,6 @@ import {
                 </div>
                 <widget-resize-handle
                   [isMobile]="isMobile()"
-                  position="left"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
-                />
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 />
@@ -461,12 +455,6 @@ import {
                 </div>
                 <widget-resize-handle
                   [isMobile]="isMobile()"
-                  position="left"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
-                />
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 />
@@ -605,12 +593,6 @@ import {
                 </div>
                 <widget-resize-handle
                   [isMobile]="isMobile()"
-                  position="left"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
-                />
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 />
@@ -747,12 +729,6 @@ import {
                     </div>
                   }
                 </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  position="left"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
-                />
                 <widget-resize-handle
                   [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"

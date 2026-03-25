@@ -180,12 +180,6 @@ import {
               </div>
               <widget-resize-handle
                 [isMobile]="isMobile()"
-                position="left"
-                (resizeStart)="startWidgetResize('projects', 'both', $event, 'left')"
-                (resizeTouchStart)="startWidgetResizeTouch('projects', 'both', $event, 'left')"
-              />
-              <widget-resize-handle
-                [isMobile]="isMobile()"
                 (resizeStart)="startWidgetResize('projects', 'both', $event)"
                 (resizeTouchStart)="startWidgetResizeTouch('projects', 'both', $event)"
               />
@@ -279,12 +273,6 @@ import {
               </div>
               <widget-resize-handle
                 [isMobile]="isMobile()"
-                position="left"
-                (resizeStart)="startWidgetResize('openEstimates', 'both', $event, 'left')"
-                (resizeTouchStart)="startWidgetResizeTouch('openEstimates', 'both', $event, 'left')"
-              />
-              <widget-resize-handle
-                [isMobile]="isMobile()"
                 (resizeStart)="startWidgetResize('openEstimates', 'both', $event)"
                 (resizeTouchStart)="startWidgetResizeTouch('openEstimates', 'both', $event)"
               />
@@ -322,12 +310,6 @@ import {
               </div>
               <widget-resize-handle
                 [isMobile]="isMobile()"
-                position="left"
-                (resizeStart)="startWidgetResize('recentActivity', 'both', $event, 'left')"
-                (resizeTouchStart)="startWidgetResizeTouch('recentActivity', 'both', $event, 'left')"
-              />
-              <widget-resize-handle
-                [isMobile]="isMobile()"
                 (resizeStart)="startWidgetResize('recentActivity', 'both', $event)"
                 (resizeTouchStart)="startWidgetResizeTouch('recentActivity', 'both', $event)"
               />
@@ -356,12 +338,6 @@ import {
                   </div>
                 }
               </div>
-              <widget-resize-handle
-                [isMobile]="isMobile()"
-                position="left"
-                (resizeStart)="startWidgetResize('needsAttention', 'both', $event, 'left')"
-                (resizeTouchStart)="startWidgetResizeTouch('needsAttention', 'both', $event, 'left')"
-              />
               <widget-resize-handle
                 [isMobile]="isMobile()"
                 (resizeStart)="startWidgetResize('needsAttention', 'both', $event)"

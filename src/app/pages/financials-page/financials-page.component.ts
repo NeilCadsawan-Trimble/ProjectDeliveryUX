@@ -143,12 +143,6 @@ import { PROJECTS, budgetProgressClass } from '../../data/dashboard-data';
                 </div>
                 <widget-resize-handle
                   [isMobile]="isMobile()"
-                  position="left"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'left')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'left')"
-                />
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
                 />
