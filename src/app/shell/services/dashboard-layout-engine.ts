@@ -353,6 +353,7 @@ export class DashboardLayoutEngine {
         this.compactAll();
       }
       if (this.isCanvasMode()) {
+        this.syncColSpansFromPixelWidths();
         this.persistCanvasLayout();
       } else {
         this.syncColsFromPixelPositions();
@@ -555,7 +556,9 @@ export class DashboardLayoutEngine {
       }
     }
     this.resolveCollisions(id, widgets);
-    if (!this.isCanvasMode()) {
+    if (this.isCanvasMode()) {
+      this.syncColSpansFromPixelWidths();
+    } else {
       this.syncColsFromPixelPositions();
     }
   }

@@ -158,7 +158,7 @@ Features and improvements not yet started.
 - [ ] Real-time data updates (WebSocket or polling)
 
 ### AI Assistant
-- [ ] Backend AI service integration (current panel is static suggestions)
+- [x] Backend AI service integration (current panel is static suggestions)
 - [ ] Context-aware widget suggestions based on real project data
 
 ### Testing

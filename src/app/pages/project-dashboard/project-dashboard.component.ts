@@ -1360,7 +1360,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]')) {
+    const insideAiPanel = !!target.closest('modus-utility-panel');
+    if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !insideAiPanel) {
       this.widgetFocusService.clearSelection();
     }
     if (this.resetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.canvas-reset-flyout')) {
