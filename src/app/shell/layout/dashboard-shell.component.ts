@@ -16,9 +16,11 @@ import { filter } from 'rxjs/operators';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { AiIconComponent } from '../components/ai-icon.component';
+import { Subscription } from 'rxjs';
 import { ThemeService } from '../services/theme.service';
 import { CanvasResetService } from '../services/canvas-reset.service';
 import { WidgetFocusService } from '../services/widget-focus.service';
+import { AiService, type AiChatMessage } from '../../services/ai.service';
 
 export interface ShellNavItem {
   value: string;
@@ -31,6 +33,7 @@ export interface AiMessage {
   id: number;
   role: 'user' | 'assistant';
   text: string;
+  streaming?: boolean;
 }
 
 export type AiResponseFn = (input: string) => string | Promise<string>;
@@ -573,12 +576,14 @@ export class DashboardShellComponent implements AfterViewInit {
 
   private readonly canvasResetService = inject(CanvasResetService);
   readonly widgetFocusService = inject(WidgetFocusService);
+  private readonly aiService = inject(AiService);
 
   readonly aiPanelOpen = signal(false);
   readonly aiMessages = signal<AiMessage[]>([]);
   readonly aiInputText = signal('');
   readonly aiThinking = signal(false);
   private aiMessageCounter = 0;
+  private aiStreamSub: Subscription | null = null;
 
   readonly aiSuggestions = computed(() =>
     this.widgetFocusService.aiSuggestions() ?? this.defaultAiSuggestions()
@@ -586,6 +591,8 @@ export class DashboardShellComponent implements AfterViewInit {
 
   private readonly _clearMessagesOnWidgetChange = effect(() => {
     this.widgetFocusService.selectedWidgetId();
+    this.aiStreamSub?.unsubscribe();
+    this.aiStreamSub = null;
     this.aiMessages.set([]);
     this.aiThinking.set(false);
   });
@@ -655,6 +662,8 @@ export class DashboardShellComponent implements AfterViewInit {
     const text = this.aiInputText().trim();
     if (!text || this.aiThinking()) return;
 
+    this.aiStreamSub?.unsubscribe();
+
     this.aiMessages.update((msgs) => [
       ...msgs,
       { id: ++this.aiMessageCounter, role: 'user', text },
@@ -662,35 +671,37 @@ export class DashboardShellComponent implements AfterViewInit {
     this.aiInputText.set('');
     this.aiThinking.set(true);
 
-    const fn = this.aiResponseFn();
-    if (fn) {
-      const result = fn(text);
-      if (result instanceof Promise) {
-        result.then((response) => this.appendAiResponse(response));
-      } else {
-        setTimeout(() => this.appendAiResponse(result), 600);
-      }
-    } else {
-      setTimeout(() => {
-        this.appendAiResponse(this.defaultAiResponse(text));
-      }, 600);
-    }
-  }
-
-  private appendAiResponse(text: string): void {
+    const assistantMsgId = ++this.aiMessageCounter;
     this.aiMessages.update((msgs) => [
       ...msgs,
-      { id: ++this.aiMessageCounter, role: 'assistant', text },
+      { id: assistantMsgId, role: 'assistant', text: '', streaming: true },
     ]);
-    this.aiThinking.set(false);
-  }
 
-  private defaultAiResponse(input: string): string {
-    const q = input.toLowerCase();
-    if (q.includes('hello') || q.includes('hi') || q.includes('hey')) {
-      return "Hello! I'm your AI Assistant. I can help you understand your dashboard data. What would you like to know?";
-    }
-    return 'I can help with dashboard insights. Try asking about status, trends, or specific items.';
+    const history: AiChatMessage[] = this.aiMessages()
+      .filter((m) => m.id !== assistantMsgId)
+      .map((m) => ({ role: m.role, content: m.text }));
+
+    const context = this.aiService.buildContext('dashboard');
+
+    this.aiStreamSub = this.aiService.sendMessage(text, history, context).subscribe({
+      next: (chunk) => {
+        this.aiMessages.update((msgs) =>
+          msgs.map((m) => m.id === assistantMsgId ? { ...m, text: m.text + chunk } : m),
+        );
+      },
+      error: () => {
+        this.aiMessages.update((msgs) =>
+          msgs.map((m) => m.id === assistantMsgId ? { ...m, text: m.text || 'Sorry, something went wrong. Please try again.', streaming: false } : m),
+        );
+        this.aiThinking.set(false);
+      },
+      complete: () => {
+        this.aiMessages.update((msgs) =>
+          msgs.map((m) => m.id === assistantMsgId ? { ...m, streaming: false } : m),
+        );
+        this.aiThinking.set(false);
+      },
+    });
   }
 
   navigateHome(): void {

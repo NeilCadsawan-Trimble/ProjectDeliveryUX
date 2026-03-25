@@ -21,11 +21,13 @@ import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
 
+import { Subscription } from 'rxjs';
 import { ThemeService } from '../../shell/services/theme.service';
 import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { AiService, type AiChatMessage } from '../../services/ai.service';
 import {
   type ProjectDashboardData,
   type ProjectStatus,
@@ -911,6 +913,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   private readonly elementRef = inject(ElementRef);
   private readonly canvasResetService = inject(CanvasResetService);
   readonly widgetFocusService = inject(WidgetFocusService);
+  private readonly aiService = inject(AiService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly projectData = input.required<ProjectDashboardData>();
@@ -1291,6 +1294,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   readonly aiInputText = signal('');
   readonly aiThinking = signal(false);
   private aiMessageCounter = 0;
+  private aiStreamSub: Subscription | null = null;
 
   private readonly defaultAiSuggestions = [
     'What are the biggest risks right now?',
@@ -1305,6 +1309,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   private readonly _clearMessagesOnWidgetChange = effect(() => {
     this.widgetFocusService.selectedWidgetId();
+    this.aiStreamSub?.unsubscribe();
+    this.aiStreamSub = null;
     this.aiMessages.set([]);
     this.aiThinking.set(false);
   });
@@ -1354,6 +1360,9 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
+    if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]')) {
+      this.widgetFocusService.clearSelection();
+    }
     if (this.resetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.canvas-reset-flyout')) {
       this.resetMenuOpen.set(false);
     }
@@ -1434,6 +1443,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
     const text = this.aiInputText().trim();
     if (!text || this.aiThinking()) return;
 
+    this.aiStreamSub?.unsubscribe();
+
     this.aiMessages.update(msgs => [
       ...msgs,
       { id: ++this.aiMessageCounter, role: 'user', text },
@@ -1441,14 +1452,40 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this.aiInputText.set('');
     this.aiThinking.set(true);
 
-    setTimeout(() => {
-      const response = this.generateAiResponse(text);
-      this.aiMessages.update(msgs => [
-        ...msgs,
-        { id: ++this.aiMessageCounter, role: 'assistant', text: response },
-      ]);
-      this.aiThinking.set(false);
-    }, 800 + Math.random() * 1200);
+    const assistantMsgId = ++this.aiMessageCounter;
+    this.aiMessages.update(msgs => [
+      ...msgs,
+      { id: assistantMsgId, role: 'assistant', text: '', streaming: true },
+    ]);
+
+    const history: AiChatMessage[] = this.aiMessages()
+      .filter(m => m.id !== assistantMsgId)
+      .map(m => ({ role: m.role, content: m.text }));
+
+    const context = this.aiService.buildContext('project-dashboard', {
+      projectName: this.projectName(),
+      projectData: this.buildProjectContextData(),
+    });
+
+    this.aiStreamSub = this.aiService.sendMessage(text, history, context).subscribe({
+      next: (chunk) => {
+        this.aiMessages.update(msgs =>
+          msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text + chunk } : m),
+        );
+      },
+      error: () => {
+        this.aiMessages.update(msgs =>
+          msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text || 'Sorry, something went wrong. Please try again.', streaming: false } : m),
+        );
+        this.aiThinking.set(false);
+      },
+      complete: () => {
+        this.aiMessages.update(msgs =>
+          msgs.map(m => m.id === assistantMsgId ? { ...m, streaming: false } : m),
+        );
+        this.aiThinking.set(false);
+      },
+    });
   }
 
   handleAiKeydown(event: KeyboardEvent): void {
@@ -1458,24 +1495,20 @@ export class ProjectDashboardComponent implements AfterViewInit {
     }
   }
 
-  private generateAiResponse(query: string): string {
-    const q = query.toLowerCase();
-    if (q.includes('risk')) {
-      return 'The highest risk is "Database migration data loss" (HIGH). Mitigation: dual-write pattern with automated reconciliation. "Extended downtime during cutover" is MEDIUM risk with blue-green deployment as the safeguard.';
+  private buildProjectContextData(): string {
+    const parts: string[] = [];
+    parts.push(`Project: ${this.projectName()}`);
+    parts.push(`Status: ${this.projectStatus()}`);
+    parts.push(`Budget: ${this.budgetUsed()} of ${this.budgetTotal()} (${this.budgetPct()}%)`);
+    parts.push(`Budget health: ${this.budgetHealthy() ? 'On track' : 'Critical'}`);
+    parts.push(`Milestones: ${this.completedMilestones()} of ${this.milestones().length} completed`);
+    parts.push(`Open tasks: ${this.openTaskCount()}`);
+    const highRisks = this.risks().filter(r => r.severity === 'high');
+    if (highRisks.length > 0) {
+      parts.push(`High risks: ${highRisks.map(r => r.title).join(', ')}`);
     }
-    if (q.includes('progress') || q.includes('migration') || q.includes('status')) {
-      return 'Cloud Infrastructure Migration is 72% complete. 3 of 6 milestones done. Wave 1 production migration is at 78%, Wave 2 at 35%. Cutover & Validation is upcoming. 2 days remain until the Mar 15 deadline.';
-    }
-    if (q.includes('overdue') || q.includes('task')) {
-      return 'No tasks are overdue yet, but 2 high-priority tasks need attention: "Configure load balancer" (due Mar 10) and "Database replication validation" (due Mar 8) are both In Progress. 4 tasks are still in To Do status.';
-    }
-    if (q.includes('budget') || q.includes('cost') || q.includes('spend')) {
-      return `Budget usage is at ${this.budgetUsed()} of ${this.budgetTotal()} total (${this.budgetPct()}%). ${this.budgetHealthy() ? 'At current burn rate, the project should complete within budget.' : 'Budget is in critical state and may require additional funding.'}`;
-    }
-    if (q.includes('team') || q.includes('member') || q.includes('availability')) {
-      return '6 team members are assigned. Sarah Chen (Lead) and Mike Osei (DevOps) are at 100% availability. James Carter (Security) is at 60% and Tom Evans (Architect) at 40% due to other commitments.';
-    }
-    return 'I can help with this project\'s risks, migration progress, task status, budget tracking, and team availability. Try asking about a specific area.';
+    parts.push(`Team: ${this.team().map(t => `${t.name} (${t.role}, ${t.availability})`).join('; ')}`);
+    return parts.join('\n');
   }
 
 }

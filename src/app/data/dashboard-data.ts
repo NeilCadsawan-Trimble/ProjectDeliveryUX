@@ -84,6 +84,7 @@ export interface AiMessage {
   id: number;
   role: 'user' | 'assistant';
   text: string;
+  streaming?: boolean;
 }
 
 export const PROJECTS: Project[] = [
