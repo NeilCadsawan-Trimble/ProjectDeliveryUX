@@ -21,6 +21,10 @@ import { ThemeService } from '../services/theme.service';
 import { CanvasResetService } from '../services/canvas-reset.service';
 import { WidgetFocusService } from '../services/widget-focus.service';
 import { AiService, type AiChatMessage } from '../../services/ai.service';
+import {
+  PROJECTS, ESTIMATES, ACTIVITIES, ATTENTION_ITEMS,
+  TIME_OFF_REQUESTS, RFIS, SUBMITTALS, CALENDAR_APPOINTMENTS,
+} from '../../data/dashboard-data';
 
 export interface ShellNavItem {
   value: string;
@@ -681,7 +685,10 @@ export class DashboardShellComponent implements AfterViewInit {
       .filter((m) => m.id !== assistantMsgId)
       .map((m) => ({ role: m.role, content: m.text }));
 
-    const context = this.aiService.buildContext('dashboard');
+    const pageName = this.getPageName();
+    const context = this.aiService.buildContext(pageName, {
+      projectData: this.buildDashboardContextData(pageName),
+    });
 
     this.aiStreamSub = this.aiService.sendMessage(text, history, context).subscribe({
       next: (chunk) => {
@@ -702,6 +709,111 @@ export class DashboardShellComponent implements AfterViewInit {
         this.aiThinking.set(false);
       },
     });
+  }
+
+  private getPageName(): string {
+    const url = this.currentUrl();
+    if (url.startsWith('/projects')) return 'projects';
+    if (url.startsWith('/financials')) return 'financials';
+    return 'home';
+  }
+
+  private buildDashboardContextData(page: string): string {
+    const parts: string[] = [];
+    const focusedWidget = this.widgetFocusService.selectedWidgetId();
+
+    if (page === 'home') {
+      switch (focusedWidget) {
+        case 'homeTimeOff':
+          parts.push('Time off requests:');
+          for (const r of TIME_OFF_REQUESTS) {
+            parts.push(`  ${r.name}: ${r.type}, ${r.startDate}-${r.endDate} (${r.days} day(s)), status: ${r.status}`);
+          }
+          break;
+        case 'homeCalendar': {
+          parts.push('Upcoming calendar:');
+          const upcoming = CALENDAR_APPOINTMENTS.slice(0, 10);
+          for (const a of upcoming) {
+            const d = a.date;
+            parts.push(`  ${a.title}: ${d.toLocaleDateString()}, ${a.startHour}:${String(a.startMin).padStart(2, '0')}-${a.endHour}:${String(a.endMin).padStart(2, '0')}, type: ${a.type}`);
+          }
+          break;
+        }
+        case 'homeRfis':
+          parts.push(`RFIs: ${RFIS.length} total`);
+          for (const r of RFIS) {
+            parts.push(`  ${r.number}: ${r.subject}, project: ${r.project}, assignee: ${r.assignee}, status: ${r.status}, due: ${r.dueDate}`);
+          }
+          break;
+        case 'homeSubmittals':
+          parts.push(`Submittals: ${SUBMITTALS.length} total`);
+          for (const s of SUBMITTALS) {
+            parts.push(`  ${s.number}: ${s.subject}, project: ${s.project}, assignee: ${s.assignee}, status: ${s.status}, due: ${s.dueDate}`);
+          }
+          break;
+        default:
+          parts.push(`${PROJECTS.length} projects, ${ESTIMATES.length} open estimates`);
+          const atRisk = PROJECTS.filter(p => p.status === 'At Risk').length;
+          const overdue = PROJECTS.filter(p => p.status === 'Overdue').length;
+          if (atRisk > 0) parts.push(`${atRisk} project(s) at risk`);
+          if (overdue > 0) parts.push(`${overdue} project(s) overdue`);
+          break;
+      }
+    } else if (page === 'projects') {
+      switch (focusedWidget) {
+        case 'projects':
+          parts.push('All projects:');
+          for (const p of PROJECTS) {
+            parts.push(`  ${p.name}: ${p.status}, ${p.progress}% complete, budget ${p.budgetUsed}/${p.budgetTotal} (${p.budgetPct}%), due ${p.dueDate}, owner: ${p.owner}`);
+          }
+          break;
+        case 'openEstimates':
+          parts.push('Open estimates:');
+          for (const e of ESTIMATES) {
+            parts.push(`  ${e.id}: ${e.project}, ${e.value} (${e.type}), status: ${e.status}, requested by ${e.requestedBy}, due ${e.dueDate}, ${e.daysLeft} days left`);
+          }
+          break;
+        case 'recentActivity':
+          parts.push('Recent activity:');
+          for (const a of ACTIVITIES) {
+            parts.push(`  ${a.text} (${a.timeAgo})`);
+          }
+          break;
+        case 'needsAttention':
+          parts.push('Items needing attention:');
+          for (const item of ATTENTION_ITEMS) {
+            parts.push(`  ${item.title}: ${item.subtitle}`);
+          }
+          break;
+        default:
+          parts.push(`${PROJECTS.length} projects, ${ESTIMATES.length} open estimates`);
+          parts.push(`${ATTENTION_ITEMS.length} items need attention`);
+          break;
+      }
+    } else if (page === 'financials') {
+      switch (focusedWidget) {
+        case 'finBudgetByProject':
+          parts.push('Budget by project:');
+          for (const p of PROJECTS) {
+            parts.push(`  ${p.name}: ${p.budgetUsed} of ${p.budgetTotal} (${p.budgetPct}%), client: ${p.client}`);
+          }
+          break;
+        default: {
+          const totalUsed = PROJECTS.reduce((sum, p) => {
+            const val = parseFloat(p.budgetUsed.replace(/[$K]/g, '')) * 1000;
+            return sum + val;
+          }, 0);
+          const totalBudget = PROJECTS.reduce((sum, p) => {
+            const val = parseFloat(p.budgetTotal.replace(/[$K]/g, '')) * 1000;
+            return sum + val;
+          }, 0);
+          parts.push(`Total budget across ${PROJECTS.length} projects: $${Math.round(totalUsed / 1000)}K used of $${Math.round(totalBudget / 1000)}K`);
+          break;
+        }
+      }
+    }
+
+    return parts.join('\n');
   }
 
   navigateHome(): void {

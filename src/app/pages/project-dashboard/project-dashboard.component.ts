@@ -1499,15 +1499,74 @@ export class ProjectDashboardComponent implements AfterViewInit {
     const parts: string[] = [];
     parts.push(`Project: ${this.projectName()}`);
     parts.push(`Status: ${this.projectStatus()}`);
-    parts.push(`Budget: ${this.budgetUsed()} of ${this.budgetTotal()} (${this.budgetPct()}%)`);
-    parts.push(`Budget health: ${this.budgetHealthy() ? 'On track' : 'Critical'}`);
-    parts.push(`Milestones: ${this.completedMilestones()} of ${this.milestones().length} completed`);
-    parts.push(`Open tasks: ${this.openTaskCount()}`);
-    const highRisks = this.risks().filter(r => r.severity === 'high');
-    if (highRisks.length > 0) {
-      parts.push(`High risks: ${highRisks.map(r => r.title).join(', ')}`);
+
+    const focusedWidget = this.widgetFocusService.selectedWidgetId();
+
+    switch (focusedWidget) {
+      case 'budget':
+        parts.push(`Budget: ${this.budgetUsed()} of ${this.budgetTotal()} (${this.budgetPct()}%)`);
+        parts.push(`Budget health: ${this.budgetHealthy() ? 'On track' : 'Critical'}`);
+        parts.push(`Remaining: ${this.budgetRemaining()}`);
+        for (const item of this.budgetBreakdown()) {
+          parts.push(`  ${item.label}: ${item.amount} (${item.pct}%)`);
+        }
+        break;
+
+      case 'milestones':
+        parts.push(`Milestones: ${this.completedMilestones()} of ${this.milestones().length} completed`);
+        for (const ms of this.milestones()) {
+          parts.push(`  ${ms.name}: ${ms.status}, due ${ms.dueDate}, ${ms.progress}% done`);
+        }
+        break;
+
+      case 'tasks':
+        parts.push(`Tasks: ${this.openTaskCount()} open of ${this.tasks().length} total`);
+        for (const t of this.tasks()) {
+          parts.push(`  ${t.title}: ${t.status}, priority ${t.priority}, assigned to ${t.assignee}, due ${t.dueDate}`);
+        }
+        break;
+
+      case 'risks':
+        parts.push(`Risks: ${this.risks().length} total`);
+        for (const r of this.risks()) {
+          parts.push(`  ${r.title}: severity ${r.severity}, impact: ${r.impact}, mitigation: ${r.mitigation}`);
+        }
+        break;
+
+      case 'team':
+        parts.push(`Team: ${this.team().length} members`);
+        for (const t of this.team()) {
+          parts.push(`  ${t.name} (${t.role}): ${t.tasksCompleted}/${t.tasksTotal} tasks done, ${t.availability}% available`);
+        }
+        break;
+
+      case 'activity':
+        parts.push(`Recent activity:`);
+        for (const a of this.activity()) {
+          parts.push(`  ${a.text} (${a.timeAgo})`);
+        }
+        break;
+
+      case 'drawing':
+        const d = this.latestDrawing();
+        parts.push(`Latest drawing: ${d.name}`);
+        parts.push(`  Version: ${d.version}, type: ${d.type}, updated by ${d.updatedBy} on ${d.updatedAt}`);
+        parts.push(`  Revisions: ${d.revisionCount}, file size: ${d.fileSize}`);
+        break;
+
+      default:
+        parts.push(`Budget: ${this.budgetUsed()} of ${this.budgetTotal()} (${this.budgetPct()}%)`);
+        parts.push(`Budget health: ${this.budgetHealthy() ? 'On track' : 'Critical'}`);
+        parts.push(`Milestones: ${this.completedMilestones()} of ${this.milestones().length} completed`);
+        parts.push(`Open tasks: ${this.openTaskCount()}`);
+        const highRisks = this.risks().filter(r => r.severity === 'high');
+        if (highRisks.length > 0) {
+          parts.push(`High risks: ${highRisks.map(r => r.title).join(', ')}`);
+        }
+        parts.push(`Team: ${this.team().map(t => `${t.name} (${t.role})`).join('; ')}`);
+        break;
     }
-    parts.push(`Team: ${this.team().map(t => `${t.name} (${t.role}, ${t.availability})`).join('; ')}`);
+
     return parts.join('\n');
   }
 
