@@ -8,6 +8,10 @@ const SRC = readFileSync(
   resolve(__dir, '../../src/app/shell/layout/dashboard-shell.component.ts'),
   'utf-8',
 );
+const ENGINE_SRC = readFileSync(
+  resolve(__dir, '../../src/app/shell/services/dashboard-layout-engine.ts'),
+  'utf-8',
+);
 
 describe('DashboardShellComponent (regression)', () => {
   describe('hamburger button', () => {
@@ -85,6 +89,22 @@ describe('DashboardShellComponent (regression)', () => {
 
     it('calls canvasResetService.triggerResetWidgets', () => {
       expect(SRC).toContain('triggerResetWidgets');
+    });
+  });
+});
+
+describe('DashboardLayoutEngine (regression)', () => {
+  describe('locked widget move clamping', () => {
+    it('has clampMoveAgainstLocked method', () => {
+      expect(ENGINE_SRC).toContain('clampMoveAgainstLocked');
+    });
+
+    it('calls clampMoveAgainstLocked in handleWidgetMove', () => {
+      expect(ENGINE_SRC).toContain('this.clampMoveAgainstLocked(id,');
+    });
+
+    it('has clampAgainstLocked method for resize clamping', () => {
+      expect(ENGINE_SRC).toContain('clampAgainstLocked');
     });
   });
 });
