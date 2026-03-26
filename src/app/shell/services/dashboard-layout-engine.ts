@@ -273,6 +273,7 @@ export class DashboardLayoutEngine {
   }
 
   onWidgetHeaderMouseDown(id: string, event: MouseEvent): void {
+    this.config.onWidgetSelect?.(id);
     if (this.isWidgetLocked(id)) return;
     event.preventDefault();
     this._moveTarget = id;
@@ -283,10 +284,10 @@ export class DashboardLayoutEngine {
     this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
     this.bumpZIndex(id);
-    this.config.onWidgetSelect?.(id);
   }
 
   onWidgetHeaderTouchStart(id: string, event: TouchEvent): void {
+    this.config.onWidgetSelect?.(id);
     if (this.isWidgetLocked(id)) return;
     if (event.touches.length !== 1) return;
     const touch = event.touches[0];
@@ -307,7 +308,6 @@ export class DashboardLayoutEngine {
     this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     this.moveTargetId.set(id);
     this.bumpZIndex(id);
-    this.config.onWidgetSelect?.(id);
   }
 
   startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, edge: 'left' | 'right' = 'right'): void {
@@ -531,6 +531,10 @@ export class DashboardLayoutEngine {
         newLeft = Math.max(0, Math.min(newLeft, containerWidth - widgetWidth));
       }
 
+      const clamped = this.clampMoveAgainstLocked(id, newTop, newLeft);
+      newTop = clamped.top;
+      newLeft = clamped.left;
+
       this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
       this.widgetLefts.update((l) => ({ ...l, [id]: newLeft }));
       this.resolveCollisions(id, widgets);
@@ -543,7 +547,11 @@ export class DashboardLayoutEngine {
       this._dragAxis = 'v';
     }
 
-    const newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY));
+    let newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY));
+    const currentLeft = this.widgetLefts()[id] ?? 0;
+    const clamped = this.clampMoveAgainstLocked(id, newTop, currentLeft);
+    newTop = clamped.top;
+
     this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
     this.resolveCollisions(id, widgets);
   }
@@ -668,6 +676,71 @@ export class DashboardLayoutEngine {
       this.widgetPixelWidths.update((w) => ({ ...w, [resizedId]: rWidth }));
       this.widgetLefts.update((l) => ({ ...l, [resizedId]: rLeft }));
     }
+  }
+
+  private clampMoveAgainstLocked(
+    movedId: string,
+    candidateTop: number,
+    candidateLeft: number,
+  ): { top: number; left: number } {
+    const gap = DashboardLayoutEngine.GAP_PX;
+    const locked = this.widgetLocked();
+    const heights = this.widgetHeights();
+    const widths = this.widgetPixelWidths();
+    const tops = this.widgetTops();
+    const lefts = this.widgetLefts();
+
+    const mW = widths[movedId];
+    const mH = heights[movedId];
+    let mTop = candidateTop;
+    let mLeft = candidateLeft;
+
+    let safety = 0;
+    const maxPasses = this.config.widgets.length * 4;
+
+    let hadCorrection = true;
+    while (hadCorrection && safety++ < maxPasses) {
+      hadCorrection = false;
+      for (const otherId of this.config.widgets) {
+        if (otherId === movedId || !locked[otherId]) continue;
+
+        const oTop = tops[otherId];
+        const oLeft = lefts[otherId];
+        const oW = widths[otherId];
+        const oH = heights[otherId];
+        const oRight = oLeft + oW;
+        const oBottom = oTop + oH;
+
+        const hOverlap = Math.min(mLeft + mW, oRight) - Math.max(mLeft, oLeft);
+        const vOverlap = Math.min(mTop + mH, oBottom) - Math.max(mTop, oTop);
+        if (hOverlap <= 0 || vOverlap <= 0) continue;
+
+        const pushRight = oRight + gap - mLeft;
+        const pushLeft = mLeft + mW + gap - oLeft;
+        const pushDown = oBottom + gap - mTop;
+        const pushUp = mTop + mH + gap - oTop;
+
+        const minH = Math.min(pushRight, pushLeft);
+        const minV = Math.min(pushDown, pushUp);
+
+        if (minH <= minV) {
+          if (pushRight <= pushLeft) {
+            mLeft = oRight + gap;
+          } else {
+            mLeft = oLeft - mW - gap;
+          }
+        } else {
+          if (pushDown <= pushUp) {
+            mTop = oBottom + gap;
+          } else {
+            mTop = oTop - mH - gap;
+          }
+        }
+        hadCorrection = true;
+      }
+    }
+
+    return { top: mTop, left: mLeft };
   }
 
   private resolveCollisions(movedId: string, widgets: string[]): void {
