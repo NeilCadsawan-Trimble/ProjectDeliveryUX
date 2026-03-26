@@ -48,6 +48,14 @@ export const routes: Routes = [
           ),
         title: 'Financials',
       },
+      {
+        path: 'rfi/:id',
+        loadComponent: () =>
+          import('./pages/rfi-detail/rfi-detail-page.component').then(
+            (m) => m.RfiDetailPageComponent,
+          ),
+        title: 'RFI Detail',
+      },
     ],
   },
 

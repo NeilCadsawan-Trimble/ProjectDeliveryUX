@@ -4,6 +4,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  OnInit,
   computed,
   effect,
   inject,
@@ -36,9 +37,10 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, type AiMessage } from '../../data/dashboard-data';
+import { PROJECTS, RFIS, SUBMITTALS, type AiMessage, type Rfi, type Submittal, type RfiStatus, type SubmittalStatus } from '../../data/dashboard-data';
 
-type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity';
+type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals';
+type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submittal };
 
 @Component({
   selector: 'app-project-dashboard',
@@ -75,6 +77,112 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
       </defs>
     </svg>
     <ng-template #dashboardContent>
+      @if (detailView()) {
+        <div class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
+          role="button" tabindex="0"
+          (click)="clearDetailView()"
+          (keydown.enter)="clearDetailView()"
+        >
+          <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
+          <div class="text-sm font-medium">Back to Dashboard</div>
+        </div>
+        @if (detailRfi(); as rfi) {
+          <div class="bg-card border-default rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-lg flex items-center justify-center" [class]="rfiStatusDot(rfi.status)">
+                  <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">clipboard</i>
+                </div>
+                <div>
+                  <div class="text-xl font-semibold text-foreground">{{ rfi.number }}</div>
+                  <div class="text-sm text-foreground-60">Request for Information</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full" [class]="rfiStatusDot(rfi.status)"></div>
+                <div class="text-sm font-medium text-foreground">{{ rfiStatusText(rfi.status) }}</div>
+              </div>
+            </div>
+            <div class="px-6 py-6 flex flex-col gap-6">
+              <div>
+                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Subject</div>
+                <div class="text-base text-foreground">{{ rfi.subject }}</div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Project</div>
+                  <div class="text-base text-foreground">{{ rfi.project }}</div>
+                </div>
+                <div>
+                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Assignee</div>
+                  <div class="text-base text-foreground">{{ rfi.assignee }}</div>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Due Date</div>
+                  <div class="text-base text-foreground">{{ rfi.dueDate }}</div>
+                </div>
+                <div>
+                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Status</div>
+                  <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full" [class]="rfiStatusDot(rfi.status)"></div>
+                    <div class="text-base font-medium text-foreground">{{ rfiStatusText(rfi.status) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+        @if (detailSubmittal(); as sub) {
+          <div class="bg-card border-default rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-lg flex items-center justify-center" [class]="submittalStatusDot(sub.status)">
+                  <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">document</i>
+                </div>
+                <div>
+                  <div class="text-xl font-semibold text-foreground">{{ sub.number }}</div>
+                  <div class="text-sm text-foreground-60">Submittal</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full" [class]="submittalStatusDot(sub.status)"></div>
+                <div class="text-sm font-medium text-foreground">{{ submittalStatusText(sub.status) }}</div>
+              </div>
+            </div>
+            <div class="px-6 py-6 flex flex-col gap-6">
+              <div>
+                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Subject</div>
+                <div class="text-base text-foreground">{{ sub.subject }}</div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Project</div>
+                  <div class="text-base text-foreground">{{ sub.project }}</div>
+                </div>
+                <div>
+                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Assignee</div>
+                  <div class="text-base text-foreground">{{ sub.assignee }}</div>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Due Date</div>
+                  <div class="text-base text-foreground">{{ sub.dueDate }}</div>
+                </div>
+                <div>
+                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Status</div>
+                  <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full" [class]="submittalStatusDot(sub.status)"></div>
+                    <div class="text-base font-medium text-foreground">{{ submittalStatusText(sub.status) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      } @else {
         <!-- Overview Row -->
         <div #pageHeader class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           @for (stat of summaryStats(); track stat.label) {
@@ -218,6 +326,92 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                   }
                 </div>
 
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
+              </div>
+                }
+
+                @case ('rfis') {
+              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
+                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
+                  <div class="flex items-center gap-2">
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                    <i class="modus-icons text-lg text-primary" aria-hidden="true">clipboard</i>
+                    <div class="text-base font-semibold text-foreground">RFIs</div>
+                    @if (rfiOverdueCount() > 0) {
+                      <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                        <div class="text-xs font-medium text-destructive">{{ rfiOverdueCount() }} overdue</div>
+                      </div>
+                    }
+                  </div>
+                  <div class="text-xs text-foreground-60">{{ projectRfis().length }} Total</div>
+                </div>
+                <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
+                  <div role="columnheader">RFI #</div>
+                  <div role="columnheader">Subject</div>
+                  <div role="columnheader">Due</div>
+                  <div role="columnheader">Status</div>
+                </div>
+                <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
+                  @for (rfi of projectRfis(); track rfi.id) {
+                    <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToRfi(rfi)" (keydown.enter)="navigateToRfi(rfi)" (mousedown)="$event.stopPropagation()">
+                      <div class="text-sm font-medium text-primary" role="cell">{{ rfi.number }}</div>
+                      <div class="text-sm text-foreground truncate" role="cell">{{ rfi.subject }}</div>
+                      <div class="text-sm text-foreground-60" role="cell">{{ rfi.dueDate }}</div>
+                      <div class="flex items-center gap-1.5" role="cell">
+                        <div class="w-2 h-2 rounded-full" [class]="rfiStatusDot(rfi.status)"></div>
+                        <div class="text-xs font-medium text-foreground-60">{{ rfiStatusText(rfi.status) }}</div>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
+                      <div class="text-sm">No RFIs for this project</div>
+                    </div>
+                  }
+                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
+              </div>
+                }
+
+                @case ('submittals') {
+              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
+                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
+                  <div class="flex items-center gap-2">
+                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                    <i class="modus-icons text-lg text-primary" aria-hidden="true">document</i>
+                    <div class="text-base font-semibold text-foreground">Submittals</div>
+                    @if (submittalOverdueCount() > 0) {
+                      <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                        <div class="text-xs font-medium text-destructive">{{ submittalOverdueCount() }} overdue</div>
+                      </div>
+                    }
+                  </div>
+                  <div class="text-xs text-foreground-60">{{ projectSubmittals().length }} Total</div>
+                </div>
+                <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
+                  <div role="columnheader">SUB #</div>
+                  <div role="columnheader">Subject</div>
+                  <div role="columnheader">Due</div>
+                  <div role="columnheader">Status</div>
+                </div>
+                <div class="overflow-y-auto flex-1" role="table" aria-label="Submittals" aria-live="polite">
+                  @for (sub of projectSubmittals(); track sub.id) {
+                    <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToSubmittal(sub)" (keydown.enter)="navigateToSubmittal(sub)" (mousedown)="$event.stopPropagation()">
+                      <div class="text-sm font-medium text-primary" role="cell">{{ sub.number }}</div>
+                      <div class="text-sm text-foreground truncate" role="cell">{{ sub.subject }}</div>
+                      <div class="text-sm text-foreground-60" role="cell">{{ sub.dueDate }}</div>
+                      <div class="flex items-center gap-1.5" role="cell">
+                        <div class="w-2 h-2 rounded-full" [class]="submittalStatusDot(sub.status)"></div>
+                        <div class="text-xs font-medium text-foreground-60">{{ submittalStatusText(sub.status) }}</div>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
+                      <div class="text-sm">No submittals for this project</div>
+                    </div>
+                  }
+                </div>
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
               </div>
                 }
@@ -377,6 +571,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
             </div>
           }
           </div>
+      }
     </ng-template>
 
     @if (isCanvas()) {
@@ -909,7 +1104,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
     </modus-utility-panel>
   `,
 })
-export class ProjectDashboardComponent implements AfterViewInit {
+export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly elementRef = inject(ElementRef);
@@ -922,19 +1117,19 @@ export class ProjectDashboardComponent implements AfterViewInit {
   readonly projectId = input<number>(1);
 
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['milestones', 'tasks', 'risks', 'drawing', 'budget', 'team', 'activity'],
-    layoutStorageKey: () => `project-${this.projectId()}`,
-    canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v1`,
-    defaultColStarts: { milestones: 1, tasks: 1, risks: 1, drawing: 12, budget: 12, team: 12, activity: 12 },
-    defaultColSpans: { milestones: 11, tasks: 11, risks: 11, drawing: 5, budget: 5, team: 5, activity: 5 },
-    defaultTops: { milestones: 0, tasks: 536, risks: 952, drawing: 0, budget: 436, team: 902, activity: 1318 },
-    defaultHeights: { milestones: 520, tasks: 400, risks: 350, drawing: 420, budget: 450, team: 400, activity: 350 },
-    defaultLefts: { milestones: 0, tasks: 0, risks: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
-    defaultPixelWidths: { milestones: 875, tasks: 875, risks: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
-    canvasDefaultLefts: { milestones: 0, tasks: 0, risks: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
-    canvasDefaultPixelWidths: { milestones: 875, tasks: 875, risks: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
-    canvasDefaultTops: { milestones: 0, tasks: 536, risks: 952, drawing: 0, budget: 436, team: 902, activity: 1318 },
-    canvasDefaultHeights: { milestones: 520, tasks: 400, risks: 350, drawing: 420, budget: 450, team: 400, activity: 350 },
+    widgets: ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'budget', 'team', 'activity'],
+    layoutStorageKey: () => `project-${this.projectId()}-v2`,
+    canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v2`,
+    defaultColStarts: { milestones: 1, tasks: 1, risks: 1, rfis: 1, submittals: 1, drawing: 12, budget: 12, team: 12, activity: 12 },
+    defaultColSpans: { milestones: 11, tasks: 11, risks: 11, rfis: 11, submittals: 11, drawing: 5, budget: 5, team: 5, activity: 5 },
+    defaultTops: { milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, budget: 436, team: 902, activity: 1318 },
+    defaultHeights: { milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, budget: 450, team: 400, activity: 350 },
+    defaultLefts: { milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
+    defaultPixelWidths: { milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
+    canvasDefaultLefts: { milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
+    canvasDefaultPixelWidths: { milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
+    canvasDefaultTops: { milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, budget: 436, team: 902, activity: 1318 },
+    canvasDefaultHeights: { milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, budget: 450, team: 400, activity: 350 },
     minColSpan: 4,
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: true,
@@ -1010,6 +1205,8 @@ export class ProjectDashboardComponent implements AfterViewInit {
     { value: 'milestones', label: 'Milestones', icon: 'flag' },
     { value: 'tasks', label: 'Tasks', icon: 'clipboard' },
     { value: 'risks', label: 'Risks', icon: 'warning' },
+    { value: 'rfis', label: 'RFIs', icon: 'clipboard' },
+    { value: 'submittals', label: 'Submittals', icon: 'document' },
     { value: 'drawing', label: 'Drawings', icon: 'floorplan' },
     { value: 'budget', label: 'Budget', icon: 'bar_graph' },
     { value: 'team', label: 'Team', icon: 'people_group' },
@@ -1019,7 +1216,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   private readonly gridRef = viewChild<ElementRef>('widgetGrid');
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
 
-  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'drawing', 'budget', 'team', 'activity'];
+  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'budget', 'team', 'activity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   readonly navbarVisibility = computed(() => {
@@ -1085,6 +1282,34 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   readonly budgetHealthy = computed(() => this.budgetPct() < 90);
 
+  readonly projectRfis = computed(() =>
+    RFIS.filter(r => r.project === this.projectName())
+  );
+
+  readonly rfiOverdueCount = computed(() =>
+    this.projectRfis().filter(r => r.status === 'overdue').length
+  );
+
+  readonly projectSubmittals = computed(() =>
+    SUBMITTALS.filter(s => s.project === this.projectName())
+  );
+
+  readonly submittalOverdueCount = computed(() =>
+    this.projectSubmittals().filter(s => s.status === 'overdue').length
+  );
+
+  readonly detailView = signal<DetailView | null>(null);
+
+  readonly detailRfi = computed(() => {
+    const d = this.detailView();
+    return d?.type === 'rfi' ? d.item : null;
+  });
+
+  readonly detailSubmittal = computed(() => {
+    const d = this.detailView();
+    return d?.type === 'submittal' ? d.item : null;
+  });
+
   readonly gridLines = Array.from({ length: 21 }, (_, i) => i);
 
   statusBadgeColor(): ModusBadgeColor {
@@ -1123,6 +1348,61 @@ export class ProjectDashboardComponent implements AfterViewInit {
       low: 'secondary',
     };
     return map[severity];
+  }
+
+  rfiStatusDot(status: RfiStatus): string {
+    const map: Record<RfiStatus, string> = { open: 'bg-primary', overdue: 'bg-destructive', upcoming: 'bg-warning', closed: 'bg-success' };
+    return map[status];
+  }
+
+  rfiStatusText(status: RfiStatus): string {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  submittalStatusDot(status: SubmittalStatus): string {
+    const map: Record<SubmittalStatus, string> = { open: 'bg-primary', overdue: 'bg-destructive', upcoming: 'bg-warning', closed: 'bg-success' };
+    return map[status];
+  }
+
+  submittalStatusText(status: SubmittalStatus): string {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  navigateToRfi(rfi: Rfi): void {
+    this.detailView.set({ type: 'rfi', item: rfi });
+    this.activeNavItem.set('rfis');
+  }
+
+  navigateToSubmittal(sub: Submittal): void {
+    this.detailView.set({ type: 'submittal', item: sub });
+    this.activeNavItem.set('submittals');
+  }
+
+  clearDetailView(): void {
+    this.detailView.set(null);
+    this.activeNavItem.set('dashboard');
+  }
+
+  ngOnInit(): void {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    const id = params.get('id');
+    if (view && id) {
+      if (view === 'rfi') {
+        const rfi = RFIS.find(r => r.id === id);
+        if (rfi) {
+          this.detailView.set({ type: 'rfi', item: rfi });
+          this.activeNavItem.set('rfis');
+        }
+      } else if (view === 'submittal') {
+        const submittal = SUBMITTALS.find(s => s.id === id);
+        if (submittal) {
+          this.detailView.set({ type: 'submittal', item: submittal });
+          this.activeNavItem.set('submittals');
+        }
+      }
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }
 
   ngAfterViewInit(): void {
@@ -1234,6 +1514,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   }
 
   selectNavItem(value: string): void {
+    this.detailView.set(null);
     this.activeNavItem.set(value);
     this.navExpanded.set(false);
     if (value === 'dashboard') {

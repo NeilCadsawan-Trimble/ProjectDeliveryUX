@@ -573,7 +573,13 @@ import {
                     </div>
                     <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
                       @for (rfi of filteredRfis(); track rfi.id) {
-                        <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                        <div
+                          class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                          role="row" tabindex="0"
+                          (click)="openRfiDetail(rfi)"
+                          (keydown.enter)="openRfiDetail(rfi)"
+                          (mousedown)="$event.stopPropagation()"
+                        >
                           <div class="text-sm font-medium text-primary" role="cell">{{ rfi.number }}</div>
                           <div class="text-sm text-foreground truncate" role="cell">{{ rfi.subject }}</div>
                           <div class="text-sm text-foreground-60 truncate" role="cell">{{ rfi.project }}</div>
@@ -711,7 +717,7 @@ import {
                     </div>
                     <div class="overflow-y-auto flex-1" role="table" aria-label="Submittals" aria-live="polite">
                       @for (sub of filteredSubmittals(); track sub.id) {
-                        <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                        <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="openSubmittalDetail(sub)" (keydown.enter)="openSubmittalDetail(sub)" (mousedown)="$event.stopPropagation()">
                           <div class="text-sm font-medium text-primary" role="cell">{{ sub.number }}</div>
                           <div class="text-sm text-foreground truncate" role="cell">{{ sub.subject }}</div>
                           <div class="text-sm text-foreground-60 truncate" role="cell">{{ sub.project }}</div>
@@ -743,6 +749,7 @@ import {
         }
       </div>
     </div>
+
   `,
 })
 export class HomePageComponent implements AfterViewInit {
@@ -1267,6 +1274,25 @@ export class HomePageComponent implements AfterViewInit {
 
   rfiStatusLabel(status: RfiStatus): string {
     return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  private findProjectSlug(projectName: string): string | null {
+    const project = PROJECTS.find(p => p.name === projectName);
+    return project ? project.slug : null;
+  }
+
+  openRfiDetail(rfi: Rfi): void {
+    const slug = this.findProjectSlug(rfi.project);
+    if (slug) {
+      this.router.navigate(['/project', slug], { queryParams: { view: 'rfi', id: rfi.id } });
+    }
+  }
+
+  openSubmittalDetail(sub: Submittal): void {
+    const slug = this.findProjectSlug(sub.project);
+    if (slug) {
+      this.router.navigate(['/project', slug], { queryParams: { view: 'submittal', id: sub.id } });
+    }
   }
 
   readonly submittalFilterOptions: readonly (SubmittalStatus | 'all')[] = ['all', 'open', 'overdue', 'upcoming', 'closed'] as const;

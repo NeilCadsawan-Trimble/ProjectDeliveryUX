@@ -141,29 +141,29 @@ export const TIME_OFF_REQUESTS = [
 ];
 
 export const RFIS: Rfi[] = [
-  { id: '1', number: 'RFI-001', subject: 'Foundation depth clarification', project: 'Highway 290 Expansion', assignee: 'Sarah Chen', status: 'open', dueDate: 'Mar 12' },
-  { id: '2', number: 'RFI-002', subject: 'Steel grade specification', project: 'Downtown Bridge Rehab', assignee: 'James Carter', status: 'overdue', dueDate: 'Feb 28' },
-  { id: '3', number: 'RFI-003', subject: 'Drainage system alignment', project: 'Highway 290 Expansion', assignee: 'Priya Nair', status: 'open', dueDate: 'Mar 15' },
-  { id: '4', number: 'RFI-004', subject: 'Concrete mix design approval', project: 'Riverside Commercial Park', assignee: 'Tom Evans', status: 'upcoming', dueDate: 'Mar 20' },
-  { id: '5', number: 'RFI-005', subject: 'Electrical conduit routing', project: 'Airport Terminal B', assignee: 'Lena Brooks', status: 'closed', dueDate: 'Feb 15' },
-  { id: '6', number: 'RFI-006', subject: 'Fire suppression specs', project: 'Downtown Bridge Rehab', assignee: 'Mike Osei', status: 'overdue', dueDate: 'Mar 1' },
-  { id: '7', number: 'RFI-007', subject: 'Soil testing report review', project: 'Riverside Commercial Park', assignee: 'Sarah Chen', status: 'closed', dueDate: 'Feb 10' },
-  { id: '8', number: 'RFI-008', subject: 'HVAC duct sizing confirmation', project: 'Airport Terminal B', assignee: 'James Carter', status: 'upcoming', dueDate: 'Mar 22' },
-  { id: '9', number: 'RFI-009', subject: 'Retaining wall design change', project: 'Highway 290 Expansion', assignee: 'Priya Nair', status: 'open', dueDate: 'Mar 18' },
-  { id: '10', number: 'RFI-010', subject: 'Waterproofing membrane spec', project: 'Downtown Bridge Rehab', assignee: 'Tom Evans', status: 'closed', dueDate: 'Jan 30' },
+  { id: '1', number: 'RFI-001', subject: 'Cloud provider SLA clarification', project: 'Cloud Infrastructure Migration', assignee: 'Sarah Chen', status: 'open', dueDate: 'Mar 12' },
+  { id: '2', number: 'RFI-002', subject: 'Navigation flow accessibility review', project: 'Mobile App Redesign', assignee: 'James Carter', status: 'overdue', dueDate: 'Feb 28' },
+  { id: '3', number: 'RFI-003', subject: 'Data migration rollback strategy', project: 'ERP System Upgrade', assignee: 'Priya Nair', status: 'open', dueDate: 'Mar 15' },
+  { id: '4', number: 'RFI-004', subject: 'Dashboard KPI data source confirmation', project: 'Data Analytics Platform', assignee: 'Tom Evans', status: 'upcoming', dueDate: 'Mar 20' },
+  { id: '5', number: 'RFI-005', subject: 'SSO integration scope', project: 'Customer Portal v3', assignee: 'Lena Brooks', status: 'closed', dueDate: 'Feb 15' },
+  { id: '6', number: 'RFI-006', subject: 'Compliance framework selection', project: 'Security & Compliance Audit', assignee: 'Mike Osei', status: 'overdue', dueDate: 'Mar 1' },
+  { id: '7', number: 'RFI-007', subject: 'Rate limiting policy approval', project: 'API Gateway Modernization', assignee: 'Sarah Chen', status: 'closed', dueDate: 'Feb 10' },
+  { id: '8', number: 'RFI-008', subject: 'Model versioning approach', project: 'ML Model Deployment Pipeline', assignee: 'Priya Nair', status: 'upcoming', dueDate: 'Mar 22' },
+  { id: '9', number: 'RFI-009', subject: 'Load balancer configuration specs', project: 'Cloud Infrastructure Migration', assignee: 'James Carter', status: 'open', dueDate: 'Mar 18' },
+  { id: '10', number: 'RFI-010', subject: 'Legacy module deprecation timeline', project: 'ERP System Upgrade', assignee: 'Tom Evans', status: 'closed', dueDate: 'Jan 30' },
 ];
 
 export const SUBMITTALS: Submittal[] = [
-  { id: '1', number: 'SUB-001', subject: 'Structural steel shop drawings', project: 'Highway 290 Expansion', assignee: 'Sarah Chen', status: 'open', dueDate: 'Mar 14' },
-  { id: '2', number: 'SUB-002', subject: 'Concrete mix design report', project: 'Downtown Bridge Rehab', assignee: 'James Carter', status: 'overdue', dueDate: 'Feb 25' },
-  { id: '3', number: 'SUB-003', subject: 'Waterproofing membrane samples', project: 'Riverside Commercial Park', assignee: 'Priya Nair', status: 'closed', dueDate: 'Feb 18' },
-  { id: '4', number: 'SUB-004', subject: 'HVAC equipment cut sheets', project: 'Airport Terminal B', assignee: 'Tom Evans', status: 'upcoming', dueDate: 'Mar 22' },
-  { id: '5', number: 'SUB-005', subject: 'Rebar placement drawings', project: 'Highway 290 Expansion', assignee: 'Lena Brooks', status: 'open', dueDate: 'Mar 16' },
-  { id: '6', number: 'SUB-006', subject: 'Asphalt mix design', project: 'Downtown Bridge Rehab', assignee: 'Mike Osei', status: 'overdue', dueDate: 'Mar 3' },
-  { id: '7', number: 'SUB-007', subject: 'Electrical panel schedule', project: 'Airport Terminal B', assignee: 'Sarah Chen', status: 'closed', dueDate: 'Feb 12' },
-  { id: '8', number: 'SUB-008', subject: 'Glazing system product data', project: 'Riverside Commercial Park', assignee: 'James Carter', status: 'upcoming', dueDate: 'Mar 25' },
-  { id: '9', number: 'SUB-009', subject: 'Fire-rated door schedule', project: 'Airport Terminal B', assignee: 'Priya Nair', status: 'open', dueDate: 'Mar 19' },
-  { id: '10', number: 'SUB-010', subject: 'Pile driving records', project: 'Highway 290 Expansion', assignee: 'Tom Evans', status: 'closed', dueDate: 'Jan 28' },
+  { id: '1', number: 'SUB-001', subject: 'Network architecture diagrams', project: 'Cloud Infrastructure Migration', assignee: 'Sarah Chen', status: 'open', dueDate: 'Mar 14' },
+  { id: '2', number: 'SUB-002', subject: 'UI component library specs', project: 'Mobile App Redesign', assignee: 'James Carter', status: 'overdue', dueDate: 'Feb 25' },
+  { id: '3', number: 'SUB-003', subject: 'Data migration test results', project: 'ERP System Upgrade', assignee: 'Priya Nair', status: 'closed', dueDate: 'Feb 18' },
+  { id: '4', number: 'SUB-004', subject: 'ETL pipeline documentation', project: 'Data Analytics Platform', assignee: 'Tom Evans', status: 'upcoming', dueDate: 'Mar 22' },
+  { id: '5', number: 'SUB-005', subject: 'User onboarding wireframes', project: 'Customer Portal v3', assignee: 'Lena Brooks', status: 'open', dueDate: 'Mar 16' },
+  { id: '6', number: 'SUB-006', subject: 'Penetration test report', project: 'Security & Compliance Audit', assignee: 'Mike Osei', status: 'overdue', dueDate: 'Mar 3' },
+  { id: '7', number: 'SUB-007', subject: 'API schema definitions', project: 'API Gateway Modernization', assignee: 'Sarah Chen', status: 'closed', dueDate: 'Feb 12' },
+  { id: '8', number: 'SUB-008', subject: 'Training data validation report', project: 'ML Model Deployment Pipeline', assignee: 'Priya Nair', status: 'upcoming', dueDate: 'Mar 25' },
+  { id: '9', number: 'SUB-009', subject: 'Disaster recovery runbook', project: 'Cloud Infrastructure Migration', assignee: 'James Carter', status: 'open', dueDate: 'Mar 19' },
+  { id: '10', number: 'SUB-010', subject: 'Module integration test plan', project: 'ERP System Upgrade', assignee: 'Tom Evans', status: 'closed', dueDate: 'Jan 28' },
 ];
 
 export const CALENDAR_APPOINTMENTS: CalendarAppointment[] = [
