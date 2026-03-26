@@ -1847,3 +1847,11 @@ modus-wc-navbar .main-menu {
   text-anchor: middle;
   opacity: 0.4;
 }
+
+modus-wc-utility-panel .modus-wc-utility-panel-footer {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}

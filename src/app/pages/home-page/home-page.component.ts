@@ -16,6 +16,7 @@ import { WidgetLayoutService } from '../../shell/services/widget-layout.service'
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import type {
   DashboardWidgetId,
@@ -38,7 +39,7 @@ import {
 
 @Component({
   selector: 'app-home-page',
-  imports: [WidgetResizeHandleComponent],
+  imports: [WidgetLockToggleComponent, WidgetResizeHandleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -106,6 +107,7 @@ import {
             [style.z-index]="widgetZIndices()[widgetId] ?? 0"
           >
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
+              <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
 
               @if (widgetId === 'homeTimeOff') {
                 <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
@@ -788,6 +790,7 @@ export class HomePageComponent implements AfterViewInit {
   readonly widgetLefts = this.engine.widgetLefts;
   readonly widgetPixelWidths = this.engine.widgetPixelWidths;
   readonly widgetZIndices = this.engine.widgetZIndices;
+  readonly widgetLocked = this.engine.widgetLocked;
   readonly moveTargetId = this.engine.moveTargetId;
   readonly canvasGridMinHeight = this.engine.canvasGridMinHeight;
 
@@ -842,6 +845,10 @@ export class HomePageComponent implements AfterViewInit {
 
   startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent, _grid: GridPage = 'home', edge: 'left' | 'right' = 'right'): void {
     this.engine.startWidgetResizeTouch(target, dir, event, edge);
+  }
+
+  toggleWidgetLock(id: string): void {
+    this.engine.toggleWidgetLock(id);
   }
 
   onDocumentMouseMove(event: MouseEvent): void {

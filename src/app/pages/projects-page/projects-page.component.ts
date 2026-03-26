@@ -15,6 +15,7 @@ import { Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
+import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
@@ -41,7 +42,7 @@ import {
 
 @Component({
   selector: 'app-projects-page',
-  imports: [ModusBadgeComponent, ModusProgressComponent, ModusButtonComponent, WidgetResizeHandleComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, ModusButtonComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -82,6 +83,7 @@ import {
           [style.z-index]="widgetZIndices()[widgetId] ?? 0"
         >
           <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
+            <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
 
             @if (widgetId === 'projects') {
             <!-- Projects Widget -->
@@ -400,6 +402,7 @@ export class ProjectsPageComponent implements AfterViewInit {
   readonly widgetLefts = this.engine.widgetLefts;
   readonly widgetPixelWidths = this.engine.widgetPixelWidths;
   readonly widgetZIndices = this.engine.widgetZIndices;
+  readonly widgetLocked = this.engine.widgetLocked;
   readonly moveTargetId = this.engine.moveTargetId;
   readonly canvasGridMinHeight = this.engine.canvasGridMinHeight;
 
@@ -516,6 +519,10 @@ export class ProjectsPageComponent implements AfterViewInit {
 
   startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent, edge: 'left' | 'right' = 'right'): void {
     this.engine.startWidgetResizeTouch(target, dir, event, edge);
+  }
+
+  toggleWidgetLock(id: string): void {
+    this.engine.toggleWidgetLock(id);
   }
 
   onDocumentMouseMove(event: MouseEvent): void {

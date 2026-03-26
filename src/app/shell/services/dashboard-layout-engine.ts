@@ -51,6 +51,7 @@ export class DashboardLayoutEngine {
   readonly widgetPixelWidths: WritableSignal<Record<string, number>>;
   readonly moveTargetId: WritableSignal<string | null>;
   readonly widgetZIndices: WritableSignal<Record<string, number>>;
+  readonly widgetLocked: WritableSignal<Record<string, boolean>>;
   readonly isMobile: WritableSignal<boolean>;
   readonly isCanvasMode: WritableSignal<boolean>;
   readonly canvasGridMinHeight: Signal<number>;
@@ -101,6 +102,7 @@ export class DashboardLayoutEngine {
     this.widgetPixelWidths = signal({ ...config.defaultPixelWidths });
     this.moveTargetId = signal<string | null>(null);
     this.widgetZIndices = signal<Record<string, number>>({});
+    this.widgetLocked = signal<Record<string, boolean>>(this.loadLockedState());
     this.isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     this.isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
 
@@ -118,6 +120,39 @@ export class DashboardLayoutEngine {
 
   destroy(): void {
     this.abortCtrl.abort();
+  }
+
+  isWidgetLocked(id: string): boolean {
+    return !!this.widgetLocked()[id];
+  }
+
+  toggleWidgetLock(id: string): void {
+    this.widgetLocked.update((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      this.persistLockedState(next);
+      return next;
+    });
+  }
+
+  private get lockedKey(): string {
+    return `${this.layoutKey}__locked`;
+  }
+
+  private loadLockedState(): Record<string, boolean> {
+    if (typeof sessionStorage === 'undefined') return {};
+    try {
+      const raw = sessionStorage.getItem(`${typeof this.config.layoutStorageKey === 'function' ? this.config.layoutStorageKey() : this.config.layoutStorageKey}__locked`);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private persistLockedState(state: Record<string, boolean>): void {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      sessionStorage.setItem(this.lockedKey, JSON.stringify(state));
+    } catch { /* quota exceeded */ }
   }
 
   private get layoutKey(): string {
@@ -238,6 +273,7 @@ export class DashboardLayoutEngine {
   }
 
   onWidgetHeaderMouseDown(id: string, event: MouseEvent): void {
+    if (this.isWidgetLocked(id)) return;
     event.preventDefault();
     this._moveTarget = id;
     this._dragAxis = this.isMobile() ? null : 'free';
@@ -251,6 +287,7 @@ export class DashboardLayoutEngine {
   }
 
   onWidgetHeaderTouchStart(id: string, event: TouchEvent): void {
+    if (this.isWidgetLocked(id)) return;
     if (event.touches.length !== 1) return;
     const touch = event.touches[0];
     const header = event.currentTarget as HTMLElement;
@@ -274,6 +311,7 @@ export class DashboardLayoutEngine {
   }
 
   startWidgetResize(target: string, dir: 'h' | 'v' | 'both', event: MouseEvent, edge: 'left' | 'right' = 'right'): void {
+    if (this.isWidgetLocked(target)) return;
     event.preventDefault();
     event.stopPropagation();
     this._resizeTarget = target;
@@ -293,6 +331,7 @@ export class DashboardLayoutEngine {
   }
 
   startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent, edge: 'left' | 'right' = 'right'): void {
+    if (this.isWidgetLocked(target)) return;
     if (event.touches.length !== 1) return;
     event.preventDefault();
     event.stopPropagation();
@@ -512,6 +551,7 @@ export class DashboardLayoutEngine {
   private handleResize(event: MouseEvent): void {
     const id = this._resizeTarget!;
     const widgets = this.config.widgets;
+    const gap = DashboardLayoutEngine.GAP_PX;
 
     if (this._resizeDir === 'v' || this._resizeDir === 'both') {
       const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
@@ -520,7 +560,6 @@ export class DashboardLayoutEngine {
     }
     if (this._resizeDir === 'h' || this._resizeDir === 'both') {
       const hStep = this.currentStep;
-      const gap = DashboardLayoutEngine.GAP_PX;
       const minResizeCols = 4;
       const minW = minResizeCols * hStep - gap;
 
@@ -555,11 +594,79 @@ export class DashboardLayoutEngine {
         this.widgetPixelWidths.update((w) => ({ ...w, [id]: newW }));
       }
     }
+
+    this.clampAgainstLocked(id);
+
     this.resolveCollisions(id, widgets);
+
+    this.clampAgainstLocked(id);
+
     if (this.isCanvasMode()) {
       this.syncColSpansFromPixelWidths();
     } else {
       this.syncColsFromPixelPositions();
+    }
+  }
+
+  private clampAgainstLocked(resizedId: string): void {
+    const gap = DashboardLayoutEngine.GAP_PX;
+    const locked = this.widgetLocked();
+
+    const rTop = this.widgetTops()[resizedId];
+    let rLeft = this.widgetLefts()[resizedId];
+    let rWidth = this.widgetPixelWidths()[resizedId];
+    let rHeight = this.widgetHeights()[resizedId];
+    let changed = false;
+
+    const hGrew = (this._resizeDir === 'v' || this._resizeDir === 'both')
+      && rHeight > this._resizeStartH;
+    const wGrewRight = (this._resizeDir === 'h' || this._resizeDir === 'both')
+      && this._resizeEdge === 'right' && rWidth > this._resizeStartW;
+    const wGrewLeft = (this._resizeDir === 'h' || this._resizeDir === 'both')
+      && this._resizeEdge === 'left' && rLeft < this._resizeStartL;
+
+    for (const otherId of this.config.widgets) {
+      if (otherId === resizedId || !locked[otherId]) continue;
+
+      const oTop = this.widgetTops()[otherId];
+      const oLeft = this.widgetLefts()[otherId];
+      const oWidth = this.widgetPixelWidths()[otherId];
+      const oHeight = this.widgetHeights()[otherId];
+      const oRight = oLeft + oWidth;
+      const oBottom = oTop + oHeight;
+
+      if (hGrew && oTop > rTop) {
+        const hO = rLeft < oRight && oLeft < rLeft + rWidth;
+        if (hO && rTop + rHeight + gap > oTop) {
+          const maxH = oTop - gap - rTop;
+          if (maxH > 0) { rHeight = Math.min(rHeight, maxH); changed = true; }
+        }
+      }
+
+      if (wGrewRight && oLeft > rLeft) {
+        const vO = rTop < oBottom && oTop < rTop + rHeight;
+        if (vO && rLeft + rWidth + gap > oLeft) {
+          const maxW = oLeft - gap - rLeft;
+          if (maxW > 0) { rWidth = Math.min(rWidth, maxW); changed = true; }
+        }
+      }
+
+      if (wGrewLeft && oRight < rLeft + rWidth) {
+        const vO = rTop < oBottom && oTop < rTop + rHeight;
+        if (vO && rLeft < oRight + gap) {
+          const minL = oRight + gap;
+          const rightEdge = rLeft + rWidth;
+          rLeft = Math.max(rLeft, minL);
+          rWidth = rightEdge - rLeft;
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      this.widgetHeights.update((h) => ({ ...h, [resizedId]: rHeight }));
+      this.widgetPixelWidths.update((w) => ({ ...w, [resizedId]: rWidth }));
+      this.widgetLefts.update((l) => ({ ...l, [resizedId]: rLeft }));
     }
   }
 
@@ -610,8 +717,10 @@ export class DashboardLayoutEngine {
       }
     }
 
+    const locked = this.widgetLocked();
     for (const id of sorted) {
       if (id === movedId || activeSet.has(id)) continue;
+      if (locked[id]) { placed.push(id); continue; }
       let y = 0;
       let settled = false;
       while (!settled) {
@@ -669,8 +778,10 @@ export class DashboardLayoutEngine {
       const pR = pL + widths[pusherId];
       const pB = pT + heights[pusherId];
 
+      const locked = this.widgetLocked();
       for (const otherId of widgets) {
         if (otherId === pusherId) continue;
+        if (locked[otherId]) continue;
         if (!hasOverlap(pusherId, otherId)) continue;
 
         const oL = lefts[otherId];
@@ -751,6 +862,7 @@ export class DashboardLayoutEngine {
     const rHeight = snap[resizedId].height;
     const rBottom = rTop + rHeight;
 
+    const locked = this.widgetLocked();
     let finalActive: string[] = [];
 
     if (this._resizeEdge === 'left') {
@@ -758,7 +870,7 @@ export class DashboardLayoutEngine {
 
       const leftNeighbors: string[] = [];
       for (const id of this.config.widgets) {
-        if (id === resizedId) continue;
+        if (id === resizedId || locked[id]) continue;
         const sTop = snap[id].top;
         const sBottom = sTop + snap[id].height;
         if (sTop < rBottom && sBottom > rTop && (snap[id].left + snap[id].width) <= (snap[resizedId].left + snap[resizedId].width)) {
@@ -831,7 +943,7 @@ export class DashboardLayoutEngine {
 
       const rightNeighbors: string[] = [];
       for (const id of this.config.widgets) {
-        if (id === resizedId) continue;
+        if (id === resizedId || locked[id]) continue;
         const sTop = snap[id].top;
         const sBottom = sTop + snap[id].height;
         if (sTop < rBottom && sBottom > rTop && snap[id].left >= lefts[resizedId]) {
@@ -912,12 +1024,13 @@ export class DashboardLayoutEngine {
     const widgets = this.config.widgets;
     const mobile = this.isMobile();
 
+    const lockedState = this.widgetLocked();
     if (mobile) {
       const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
       let y = 0;
       for (const id of sorted) {
-        tops[id] = y;
-        y += heights[id] + gap;
+        if (!lockedState[id]) tops[id] = y;
+        y = tops[id] + heights[id] + gap;
       }
       this.widgetTops.set(tops);
       return;
@@ -932,6 +1045,7 @@ export class DashboardLayoutEngine {
     const placed: string[] = [];
 
     for (const id of sorted) {
+      if (lockedState[id]) { placed.push(id); continue; }
       let y = 0;
       let settled = false;
       while (!settled) {

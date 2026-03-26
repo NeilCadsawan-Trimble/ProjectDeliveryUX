@@ -471,10 +471,10 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         }
       </div>
 
-      <div slot="footer" class="w-full">
-        <div class="flex items-end gap-2 p-2">
+      <div slot="footer" class="w-full overflow-hidden box-border min-h-[70px]">
+        <div class="flex items-end gap-2 px-2 pt-2 pb-1">
           <textarea
-            class="flex-1 min-h-[40px] max-h-[120px] px-3 py-2 text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40"
+            class="flex-1 min-h-[36px] max-h-[80px] px-3 py-1.5 text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40"
             [placeholder]="aiPlaceholder()"
             rows="1"
             [value]="aiInputText()"
@@ -483,7 +483,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             aria-label="Message input"
           ></textarea>
           <div
-            class="w-9 h-9 flex-shrink-0 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-150"
+            class="w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-150"
             [class.bg-primary]="aiInputText().trim().length > 0 && !aiThinking()"
             [class.bg-muted]="!aiInputText().trim().length || aiThinking()"
             (click)="sendAiMessage()"
@@ -491,15 +491,15 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             aria-label="Send message"
           >
             <i
-              class="modus-icons text-base"
+              class="modus-icons text-sm"
               [class.text-primary-foreground]="aiInputText().trim().length > 0 && !aiThinking()"
               [class.text-foreground-40]="!aiInputText().trim().length || aiThinking()"
               aria-hidden="true"
             >send</i>
           </div>
         </div>
-        <div class="text-center pb-2">
-          <div class="text-xs text-foreground-40">AI may make mistakes. Verify important info.</div>
+        <div class="text-center pb-1">
+          <div class="text-2xs text-foreground-40 leading-tight">AI may make mistakes. Verify important info.</div>
         </div>
       </div>
     </modus-utility-panel>

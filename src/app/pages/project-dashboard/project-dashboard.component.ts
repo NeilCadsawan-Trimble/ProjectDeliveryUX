@@ -18,6 +18,7 @@ import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modu
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
+import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
 
@@ -41,7 +42,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetResizeHandleComponent, AiIconComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, AiIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -105,6 +106,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
               [style.z-index]="wZIndices()[wId] ?? 0"
             >
               <div class="relative h-full" [class.opacity-30]="moveTargetId() === wId">
+                <widget-lock-toggle [locked]="wLocked()[wId]" (toggle)="toggleWidgetLock(wId)" />
 
               @switch (wId) {
                 @case ('milestones') {
@@ -983,6 +985,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
   readonly wLefts = this.engine.widgetLefts;
   readonly wPixelWidths = this.engine.widgetPixelWidths;
   readonly wZIndices = this.engine.widgetZIndices;
+  readonly wLocked = this.engine.widgetLocked;
   readonly wColStarts = this.engine.widgetColStarts;
   readonly wColSpans = this.engine.widgetColSpans;
   readonly moveTargetId = this.engine.moveTargetId;
@@ -1258,6 +1261,10 @@ export class ProjectDashboardComponent implements AfterViewInit {
 
   startWidgetResizeTouch(target: ProjectWidgetId, dir: 'h' | 'v' | 'both', event: TouchEvent, edge: 'left' | 'right' = 'right'): void {
     this.engine.startWidgetResizeTouch(target, dir, event, edge);
+  }
+
+  toggleWidgetLock(id: string): void {
+    this.engine.toggleWidgetLock(id);
   }
 
   onDocumentMouseMove(event: MouseEvent): void {

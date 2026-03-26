@@ -4,5 +4,5 @@
  */
 export const environment = {
   production: false,
-  devPanel: true,
+  devPanel: false,
 };
