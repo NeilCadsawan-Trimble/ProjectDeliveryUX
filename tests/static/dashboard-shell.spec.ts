@@ -11,7 +11,7 @@ const SRC = readFileSync(
 
 describe('DashboardShellComponent (regression)', () => {
   describe('hamburger button', () => {
-    it('has attachHamburgerListener method', () => {
+    it('has attachHamburgerListener method as fallback', () => {
       expect(SRC).toContain('attachHamburgerListener');
     });
 
@@ -29,6 +29,14 @@ describe('DashboardShellComponent (regression)', () => {
 
     it('uses capture phase for click listener', () => {
       expect(SRC).toContain('capture: true');
+    });
+
+    it('binds mainMenuOpenChange on modus-navbar for reliable toggle', () => {
+      expect(SRC).toContain('(mainMenuOpenChange)="onMainMenuToggle($event)"');
+    });
+
+    it('has onMainMenuToggle method', () => {
+      expect(SRC).toContain('onMainMenuToggle');
     });
   });
 

@@ -54,4 +54,50 @@ test.describe('Hamburger Button', () => {
     const sideNav = page.locator('.custom-side-nav').first();
     await expect(sideNav).not.toHaveClass(/expanded/);
   });
+
+  test('hamburger still works after delayed interaction (race condition guard)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.waitForTimeout(2000);
+
+    const hamburger = page.locator('button[aria-label="Main menu"]').first();
+    await hamburger.click();
+    await page.waitForTimeout(300);
+
+    const sideNav = page.locator('.custom-side-nav').first();
+    await expect(sideNav).toHaveClass(/expanded/);
+
+    await hamburger.click();
+    await page.waitForTimeout(300);
+    await expect(sideNav).not.toHaveClass(/expanded/);
+  });
+
+  test('hamburger works on mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.waitForTimeout(500);
+
+    const hamburger = page.locator('button[aria-label="Main menu"]').first();
+    await expect(hamburger).toBeVisible();
+    await hamburger.click();
+    await page.waitForTimeout(300);
+
+    const sideNav = page.locator('.custom-side-nav').first();
+    await expect(sideNav).toHaveClass(/expanded/);
+  });
+
+  test('backdrop click closes expanded side nav', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.waitForTimeout(500);
+
+    const hamburger = page.locator('button[aria-label="Main menu"]').first();
+    await hamburger.click();
+    await page.waitForTimeout(300);
+
+    const sideNav = page.locator('.custom-side-nav').first();
+    await expect(sideNav).toHaveClass(/expanded/);
+
+    const backdrop = page.locator('.custom-side-nav-backdrop').first();
+    await backdrop.click();
+    await page.waitForTimeout(300);
+    await expect(sideNav).not.toHaveClass(/expanded/);
+  });
 });

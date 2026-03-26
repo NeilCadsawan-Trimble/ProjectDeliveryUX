@@ -94,6 +94,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             (searchInputOpenChange)="searchInputOpen.set($event)"
             (trimbleLogoClick)="navigateHome()"
             (aiClick)="toggleAiPanel()"
+            (mainMenuOpenChange)="onMainMenuToggle($event)"
           >
             <div slot="start" class="flex items-center gap-3">
               <div class="w-px h-5 bg-foreground-20"></div>
@@ -215,6 +216,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             (searchInputOpenChange)="searchInputOpen.set($event)"
             (trimbleLogoClick)="navigateHome()"
             (aiClick)="toggleAiPanel()"
+            (mainMenuOpenChange)="onMainMenuToggle($event)"
           >
             <div slot="start" class="flex items-center gap-3">
               <div class="w-px h-5 bg-foreground-20"></div>
@@ -818,6 +820,10 @@ export class DashboardShellComponent implements AfterViewInit {
 
   navigateHome(): void {
     this.router.navigate([this.homeRoute()]);
+  }
+
+  onMainMenuToggle(_open: boolean): void {
+    this.navExpanded.set(!this.navExpanded());
   }
 
   selectNavItem(value: string): void {
