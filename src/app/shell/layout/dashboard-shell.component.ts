@@ -471,7 +471,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         }
       </div>
 
-      <div slot="footer" class="w-full overflow-hidden box-border">
+      <div slot="footer" class="w-full overflow-hidden box-border min-h-[70px]">
         <div class="flex items-end gap-2 px-2 pt-2 pb-1">
           <textarea
             class="flex-1 min-h-[36px] max-h-[80px] px-3 py-1.5 text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40"
