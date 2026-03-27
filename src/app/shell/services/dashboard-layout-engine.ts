@@ -1,6 +1,7 @@
 import { signal, computed, type WritableSignal, type Signal } from '@angular/core';
 import type { WidgetLayoutService } from './widget-layout.service';
 import { runCanvasPushBfs, type WidgetRect } from './canvas-push';
+import type { CanvasItemHost } from './canvas-item-host';
 
 export interface DashboardLayoutConfig {
   widgets: string[];
@@ -37,7 +38,7 @@ interface LayoutSnapshot {
  * Shared layout engine for dashboard pages with drag/resize/persist/canvas support.
  * Each page component creates its own instance with page-specific config.
  */
-export class DashboardLayoutEngine {
+export class DashboardLayoutEngine implements CanvasItemHost {
   static readonly GAP_PX = 16;
   static readonly CANVAS_STEP = 81;
 
@@ -90,6 +91,10 @@ export class DashboardLayoutEngine {
   private _savedDesktopForCanvas: LayoutSnapshot | null = null;
 
   readonly abortCtrl = new AbortController();
+
+  get isInteracting(): boolean {
+    return !!this._moveTarget || !!this._resizeTarget;
+  }
 
   constructor(config: DashboardLayoutConfig, layoutService: WidgetLayoutService) {
     this.config = config;
