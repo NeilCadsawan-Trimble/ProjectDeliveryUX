@@ -48,6 +48,7 @@ import {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
     '(document:touchend)': 'onDocumentTouchEnd()',
+    '(document:click)': 'onDocumentClick($event)',
   },
   template: `
     <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
@@ -104,7 +105,7 @@ import {
         @if (isCanvasMode()) {
           <div
             class="absolute overflow-hidden"
-            [class.widget-detail-transition]="hasCanvasDetails()"
+            [class.widget-detail-transition]="shouldTransition('homeHeader')"
             [attr.data-widget-id]="'homeHeader'"
             [style.top.px]="widgetTops()['homeHeader']"
             [style.left.px]="widgetLefts()['homeHeader']"
@@ -154,34 +155,61 @@ import {
         }
         @for (widgetId of homeWidgets; track widgetId) {
           <div
-            [class]="(canvasDetailViews()[widgetId] ? 'absolute' : (isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden')) + (hasCanvasDetails() && canvasInteractingId() !== widgetId ? ' widget-detail-transition' : '')"
+            [class]="(canvasDetailViews()[widgetId] ? 'absolute' : (isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden')) + (shouldTransition(widgetId) ? ' widget-detail-transition' : '')"
             [attr.data-widget-id]="widgetId"
             [style.top.px]="widgetTops()[widgetId]"
             [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
             [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
             [style.height.px]="widgetHeights()[widgetId]"
             [style.z-index]="canvasDetailViews()[widgetId] ? 9999 : (widgetZIndices()[widgetId] ?? 0)"
-            (mousedown)="canvasDetailViews()[widgetId] ? $event.stopPropagation() : null"
+            (mousedown)="canvasDetailViews()[widgetId] ? selectDetailWidget(widgetId, $event) : null"
           >
           @if (canvasDetailViews()[widgetId]; as detail) {
-            <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full border-primary shadow-2xl">
+            <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
+              [class.border-default]="selectedWidgetId() !== widgetId"
+              [class.border-primary]="selectedWidgetId() === widgetId">
               <div
                 class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                 (mousedown)="onCanvasDetailHeaderMouseDown($event, widgetId)"
               >
-                <div class="flex items-center gap-2 text-foreground-60 cursor-pointer hover:text-foreground transition-colors duration-150"
-                  (click)="closeCanvasDetail(widgetId)"
-                  (keydown.enter)="closeCanvasDetail(widgetId)"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-                  <div class="text-sm font-medium">Back to Home</div>
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
+                    [class]="detail.type === 'rfi' ? rfiStatusColor(detail.item.status) : submittalStatusColor(detail.item.status)">
+                    <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">{{ detail.type === 'rfi' ? 'clipboard' : 'document' }}</i>
+                  </div>
+                  <div class="text-sm font-semibold text-foreground truncate">{{ detail.item.number }}</div>
                 </div>
-                <div
-                  class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                  (click)="closeCanvasDetail(widgetId)"
-                  aria-label="Close detail"
-                >
-                  <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <div class="relative">
+                    <div class="flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer hover:bg-muted transition-colors duration-150"
+                      (click)="toggleCanvasHeaderStatus(widgetId, $event)"
+                      (mousedown)="$event.stopPropagation()">
+                      <div class="w-2 h-2 rounded-full"
+                        [class]="detail.type === 'rfi' ? rfiStatusColor(detail.item.status) : submittalStatusColor(detail.item.status)"></div>
+                      <div class="text-xs font-medium text-foreground">{{ detail.type === 'rfi' ? rfiStatusLabel(detail.item.status) : submittalStatusLabel(detail.item.status) }}</div>
+                      <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
+                    </div>
+                    @if (canvasHeaderStatusOpen() === widgetId) {
+                      <div class="absolute top-full right-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[160px] py-1"
+                        role="listbox" (mousedown)="$event.stopPropagation()">
+                        @for (opt of STATUS_OPTIONS; track opt.value) {
+                          <div class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted transition-colors duration-150"
+                            role="option" [attr.aria-selected]="opt.value === detail.item.status"
+                            (click)="onCanvasHeaderStatusSelect(widgetId, opt.value, $event)">
+                            <div class="w-2 h-2 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
+                            <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
+                            @if (opt.value === detail.item.status) {
+                              <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                  <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                    (click)="closeCanvasDetail(widgetId)" aria-label="Close detail">
+                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                  </div>
                 </div>
               </div>
               @if (subnavConfigs[detail.type === 'rfi' ? 'rfi-detail' : 'submittal-detail']; as snConfig) {
@@ -222,6 +250,7 @@ import {
               <div class="flex-1 overflow-y-auto p-5">
                 @if (detail.type === 'rfi') {
                   <app-item-detail-view
+                    [hideHeader]="true"
                     icon="clipboard"
                     typeLabel="Request for Information"
                     [number]="detail.item.number"
@@ -247,6 +276,7 @@ import {
                 }
                 @if (detail.type === 'submittal') {
                   <app-item-detail-view
+                    [hideHeader]="true"
                     icon="document"
                     typeLabel="Submittal"
                     [number]="detail.item.number"
@@ -1055,6 +1085,13 @@ export class HomePageComponent implements AfterViewInit {
     this.engine.onDocumentTouchEnd();
   }
 
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (this.canvasHeaderStatusOpen() && !target.closest('[role="listbox"]') && !target.closest('[role="option"]')) {
+      this.canvasHeaderStatusOpen.set(null);
+    }
+  }
+
   private static readonly MOBILE_HEADER_H = 58;
   private static readonly MOBILE_KPI_ROW_H = 53;
   private static readonly MOBILE_KPI_GAP = 8;
@@ -1580,12 +1617,36 @@ export class HomePageComponent implements AfterViewInit {
   readonly canvasDetailViews = this._detailMgr.canvasDetailViews;
   readonly hasCanvasDetails = this._detailMgr.hasCanvasDetails;
   readonly canvasInteractingId = this._detailMgr.canvasInteractingId;
+
+  shouldTransition(widgetId: string): boolean {
+    return this._detailMgr.shouldTransition(widgetId, this.moveTargetId());
+  }
+
   readonly subnavConfigs = SUBNAV_CONFIGS;
   readonly detailSubnavSearch = signal('');
   readonly detailSubnavViewMode = signal<string>('details');
+  readonly canvasHeaderStatusOpen = signal<string | null>(null);
+
+  toggleCanvasHeaderStatus(widgetId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.canvasHeaderStatusOpen.update(v => v === widgetId ? null : widgetId);
+  }
+
+  onCanvasHeaderStatusSelect(widgetId: string, newStatus: string, event: MouseEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.canvasHeaderStatusOpen.set(null);
+    this.onCanvasDetailStatusChange(widgetId, newStatus);
+  }
 
   private openCanvasDetail(sourceWidgetId: string, detail: DetailView): void {
     this._detailMgr.openDetail(sourceWidgetId, detail, this.engine);
+  }
+
+  selectDetailWidget(widgetId: string, event: MouseEvent): void {
+    this.widgetFocusService.selectWidget(widgetId);
+    event.stopPropagation();
   }
 
   onCanvasDetailHeaderMouseDown(event: MouseEvent, widgetId: string): void {
