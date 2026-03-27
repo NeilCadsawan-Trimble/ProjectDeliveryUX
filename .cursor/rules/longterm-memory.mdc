@@ -66,8 +66,8 @@ Consult this file before asking the user a question. If the answer is here, act 
 - Other themes: default `var(--background)` is correct.
 
 ### Testing Strategy
-- **Unit tests** (`ng test`): 41 tests covering layout engine, widget layout service, canvas reset.
-- **Static tests** (`npm run test:static` via Vitest): 55 tests scanning source files for structural regressions.
+- **Unit tests** (`ng test`): 58 tests covering layout engine, canvas BFS push, widget layout service, canvas reset.
+- **Static tests** (`npm run test:static` via Vitest): 59 tests scanning source files for structural regressions.
 - **E2E tests** (Playwright): 8 specs, minimal coverage. Configured but not primary gate.
 - **Lint checks** (`npm run lint:all`): Colors, borders, opacity, icons, icon names, inline styles.
 - **Type checking** (`npm run type-check`): Strict TypeScript validation.
@@ -88,13 +88,18 @@ These areas have broken multiple times. Extra care required:
 | Push-squeeze ordering | Wrong cascade order causes incorrect widget relocation | Unit tests cover right-edge and left-edge squeeze ordering |
 | Collision after resize | Active vs relocated widget priority | `_pushSqueezeActive` set tracks active widgets; unit tests cover |
 | Widget deselection | Missing `data-widget-id` attribute breaks click-outside | All widget containers must have `[attr.data-widget-id]` |
+| Canvas BFS cascade direction | Cascade pusher uses own center for direction, bouncing widgets back toward mover | Direction always references mover center; 16 unit tests in `canvas-push.spec.ts` |
+| Canvas detail double rAF | Single rAF reads stale dimensions, pushes incorrectly | Always use double `requestAnimationFrame` before push; see skill section 7 |
 
 ## Project File Map
 
 | Purpose | Location |
 |---------|----------|
 | Progress tracker | `PROGRESS.md` |
-| Layout engine | `src/app/shell/services/dashboard-layout-engine.ts` |
+| Layout engine (desktop) | `src/app/shell/services/dashboard-layout-engine.ts` |
+| Canvas BFS push algorithm | `src/app/shell/services/canvas-push.ts` |
+| Canvas detail manager | `src/app/shell/services/canvas-detail-manager.ts` |
+| Subpage tile canvas | `src/app/shell/services/subpage-tile-canvas.ts` |
 | Dashboard shell | `src/app/shell/layout/dashboard-shell.component.ts` |
 | Global styles | `src/styles.css` |
 | Static tests | `tests/static/*.spec.ts` |
@@ -120,3 +125,6 @@ These areas have broken multiple times. Extra care required:
 | 2 (Mar 23) | `0b841993-1534-43b7-8fa6-b99bd77e5e30` | GitHub push, Vercel deploy |
 | 3 (Mar 23) | `b90d3dde-b222-49be-9649-3bc611187ed1` | Desktop resize, canvas collision, project selector |
 | 4 (Mar 24) | `bc28969b-5fd7-49fc-907e-894008a53ccc` | Push-squeeze, regression testing, collision priority, theming, skills, progress tracker |
+| 5 (Mar 25) | `8807b645-9b9a-4f2d-b223-80e249dd101f` | Canvas compact mode revert on resize |
+| 6 (Mar 26) | `b3ea14f9-5bd7-453f-8329-20bad1e7cc3a` | Short-term memory, detail view navigation, URL state |
+| 7 (Mar 26-27) | `6387a8f3-f2de-4dae-933b-eeec94687608` | Canvas detail expansion, BFS push refactoring, cascade direction fix, unit tests |
