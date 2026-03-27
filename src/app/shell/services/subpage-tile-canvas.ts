@@ -31,6 +31,8 @@ export interface TileDetailView {
  * collision resolution and multi-detail widget expansion.
  */
 export class SubpageTileCanvas {
+  static readonly CANVAS_STEP = 81;
+
   readonly positions: WritableSignal<Record<string, TileRect>>;
   readonly locked: WritableSignal<Record<string, boolean>>;
   readonly zIndices: WritableSignal<Record<string, number>>;
@@ -296,16 +298,83 @@ export class SubpageTileCanvas {
     this.positions.set(pos);
   }
 
+  private clampMoveAgainstLocked(
+    movedId: string,
+    candidateTop: number,
+    candidateLeft: number,
+  ): { top: number; left: number } {
+    const gap = this.config.gap;
+    const locked = this.locked();
+    const pos = this.positions();
+
+    const mRect = pos[movedId];
+    if (!mRect) return { top: candidateTop, left: candidateLeft };
+    const mW = mRect.width;
+    const mH = mRect.height;
+    let mTop = candidateTop;
+    let mLeft = candidateLeft;
+
+    let hadCorrection = true;
+    let safety = 0;
+    const maxPasses = Object.keys(pos).length * 4;
+
+    while (hadCorrection && safety++ < maxPasses) {
+      hadCorrection = false;
+      for (const otherId of Object.keys(pos)) {
+        if (otherId === movedId || !locked[otherId]) continue;
+
+        const o = pos[otherId];
+        const oRight = o.left + o.width;
+        const oBottom = o.top + o.height;
+
+        const hOverlap = Math.min(mLeft + mW, oRight) - Math.max(mLeft, o.left);
+        const vOverlap = Math.min(mTop + mH, oBottom) - Math.max(mTop, o.top);
+        if (hOverlap <= 0 || vOverlap <= 0) continue;
+
+        const pushRight = oRight + gap - mLeft;
+        const pushLeft = mLeft + mW + gap - o.left;
+        const pushDown = oBottom + gap - mTop;
+        const pushUp = mTop + mH + gap - o.top;
+
+        const minH = Math.min(pushRight, pushLeft);
+        const minV = Math.min(pushDown, pushUp);
+
+        if (minH <= minV) {
+          if (pushRight <= pushLeft) {
+            mLeft = oRight + gap;
+          } else {
+            mLeft = o.left - mW - gap;
+          }
+        } else {
+          if (pushDown <= pushUp) {
+            mTop = oBottom + gap;
+          } else {
+            mTop = o.top - mH - gap;
+          }
+        }
+        hadCorrection = true;
+      }
+    }
+
+    return { top: mTop, left: mLeft };
+  }
+
   private handleMove(event: MouseEvent): void {
     const id = this._moveTarget!;
+    const gap = this.config.gap;
     const dx = event.clientX - this._dragStartX;
     const dy = event.clientY - this._dragStartY;
-    const newTop = Math.max(0, this._dragStartTop + dy);
-    const newLeft = Math.max(0, this._dragStartLeft + dx);
+    const rawTop = this._dragStartTop + dy;
+    const rawLeft = this._dragStartLeft + dx;
+
+    const snappedTop = Math.round(rawTop / gap) * gap;
+    const snappedLeft = Math.round(rawLeft / SubpageTileCanvas.CANVAS_STEP) * SubpageTileCanvas.CANVAS_STEP;
+
+    const clamped = this.clampMoveAgainstLocked(id, snappedTop, snappedLeft);
 
     this.positions.update(p => ({
       ...p,
-      [id]: { ...p[id], top: newTop, left: newLeft },
+      [id]: { ...p[id], top: clamped.top, left: clamped.left },
     }));
     this.resolveCanvasPush(id);
   }

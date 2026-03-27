@@ -363,10 +363,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                       <div class="text-xs font-medium text-foreground">{{ drawing.revision }}</div>
                       <div class="text-xs text-foreground-60">{{ drawing.date }}</div>
                     </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="tileCanvas.onTileResizeMouseDown('tile-drawing-' + drawing.id, $event)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
-                    </div>
                   </div>
                 </div>
               }
@@ -644,10 +640,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                         (dueDateChange)="onTileDetailDueDateChange('tile-rfi-' + rfi.id, $event)"
                       />
                     </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="onTileDetailResizeMouseDown($event, 'tile-rfi-' + rfi.id)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
-                    </div>
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
@@ -678,10 +670,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                           <div>{{ rfi.dueDate }}</div>
                         </div>
                       </div>
-                    </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="tileCanvas.onTileResizeMouseDown('tile-rfi-' + rfi.id, $event)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
                     </div>
                   </div>
                 }
@@ -765,10 +753,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                         (dueDateChange)="onTileDetailDueDateChange('tile-sub-' + sub.id, $event)"
                       />
                     </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="onTileDetailResizeMouseDown($event, 'tile-sub-' + sub.id)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
-                    </div>
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
@@ -799,10 +783,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                           <div>{{ sub.dueDate }}</div>
                         </div>
                       </div>
-                    </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="tileCanvas.onTileResizeMouseDown('tile-sub-' + sub.id, $event)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
                     </div>
                   </div>
                 }
@@ -2283,13 +2263,6 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.tileInteractingId.set(tileId);
     this.widgetFocusService.selectWidget(tileId);
     this.tileCanvas.onTileMouseDown(tileId, event);
-  }
-
-  onTileDetailResizeMouseDown(event: MouseEvent, tileId: string): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.tileInteractingId.set(tileId);
-    this.tileCanvas.onTileResizeMouseDown(tileId, event);
   }
 
   updateTileDetailField(tileId: string, field: string, value: string): void {
