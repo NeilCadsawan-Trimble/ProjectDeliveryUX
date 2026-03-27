@@ -33,6 +33,15 @@ export class CanvasDetailManager {
   readonly hasCanvasDetails = computed(() => Object.keys(this.canvasDetailViews()).length > 0);
   readonly canvasInteractingId = signal<string | null>(null);
 
+  /**
+   * Whether the given widget should have the smooth position transition.
+   * Returns false during any active drag to prevent visual overlap lag.
+   * Use this in templates instead of manually assembling the condition.
+   */
+  shouldTransition(widgetId: string, moveTargetId: string | null): boolean {
+    return this.hasCanvasDetails() && !moveTargetId && this.canvasInteractingId() !== widgetId;
+  }
+
   private _originalRects: Record<string, { top: number; left: number; width: number; height: number }> = {};
   private _baselineSnapshot: LayoutSnapshot | null = null;
 

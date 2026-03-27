@@ -63,4 +63,18 @@ describe('HomePageComponent (template regression)', () => {
       expect(SRC).not.toContain('cleanupOverlaps');
     });
   });
+
+  describe('widget-detail-transition guard', () => {
+    it('uses shouldTransition() for all widget-detail-transition bindings', () => {
+      const matches = SRC.match(/widget-detail-transition/g) ?? [];
+      expect(matches.length).toBeGreaterThan(0);
+      const rawConditionPattern = /hasCanvasDetails\(\)\s*&&[^']*widget-detail-transition/;
+      expect(SRC).not.toMatch(rawConditionPattern);
+    });
+
+    it('has shouldTransition method delegating to _detailMgr', () => {
+      expect(SRC).toContain('shouldTransition(');
+      expect(SRC).toContain('_detailMgr.shouldTransition(');
+    });
+  });
 });

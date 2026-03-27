@@ -173,7 +173,7 @@ describe('runCanvasPushBfs', () => {
       expect(rects['locked'].top).toBe(0);
     });
 
-    it('pushes unlocked widgets away from locked widgets after BFS', () => {
+    it('widget trapped between mover and locked widget stops, mover pushed back', () => {
       const rects: Record<string, WidgetRect> = {
         mover:    { left: 0, top: 0, width: 300, height: 300 },
         unlocked: { left: 100, top: 0, width: 300, height: 300 },
@@ -182,61 +182,203 @@ describe('runCanvasPushBfs', () => {
       runCanvasPushBfs('mover', rects, { locked: true }, GAP);
 
       expect(rects['locked'].left).toBe(350);
+      expect(rects['unlocked'].left).toBe(100);
+      // Mover is pushed back to clear the frozen widget
+      expect(rects['mover'].left).toBeLessThanOrEqual(100 - 300 - GAP);
+    });
+
+    it('push succeeds when target position clears all locked widgets', () => {
+      const rects: Record<string, WidgetRect> = {
+        mover:    { left: 0, top: 0, width: 200, height: 200 },
+        unlocked: { left: 100, top: 0, width: 100, height: 200 },
+        locked:   { left: 500, top: 0, width: 100, height: 200 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].left).toBe(500);
+      expect(rects['unlocked'].left).toBe(200 + GAP);
       expect(noOverlap(rects, GAP, 'unlocked', 'locked')).toBe(true);
     });
   });
 
-  describe('off-screen clamping', () => {
-    it('falls back to push right when left push would go off-screen', () => {
-      // Widget is to the left of mover center but too close to left edge
+  describe('negative coordinate push (no clamping)', () => {
+    it('pushes widget into negative x without clamping', () => {
+      // Both at top=0 → sameRow → horizontal push.
+      // Widget center (200) < mover center (300) → push left.
+      // candidateLeft = 200 - 200 - 16 = -16. No clamping.
+      const rects: Record<string, WidgetRect> = {
+        mover: { left: 200, top: 0, width: 200, height: 600 },
+        left:  { left: 100, top: 0, width: 200, height: 600 },
+      };
+      runCanvasPushBfs('mover', rects, {}, GAP);
+
+      expect(rects['left'].left).toBe(200 - 200 - GAP); // -16
+    });
+
+    it('pushes widget into negative y without clamping', () => {
+      // tops differ by 100 > GAP → not sameRow → side-aware clearance.
+      // vClear < hClear → vertical push. Widget pushed up past origin.
+      const rects: Record<string, WidgetRect> = {
+        mover: { left: 0, top: 200, width: 600, height: 200 },
+        above: { left: 0, top: 100, width: 600, height: 200 },
+      };
+      runCanvasPushBfs('mover', rects, {}, GAP);
+
+      expect(rects['above'].top).toBe(200 - 200 - GAP); // -16
+    });
+
+    it('widget pushed left continues past x=0 — no direction reversal', () => {
       const rects: Record<string, WidgetRect> = {
         mover: { left: 0, top: 0, width: 500, height: 300 },
         left:  { left: 10, top: 0, width: 400, height: 300 },
       };
+      const origLeft = rects['left'].left;
       runCanvasPushBfs('mover', rects, {}, GAP);
 
-      expect(rects['left'].left).toBeGreaterThanOrEqual(0);
-      expect(noOverlap(rects, GAP, 'mover', 'left')).toBe(true);
+      // Must go left (negative), never jump right
+      expect(rects['left'].left).toBeLessThanOrEqual(origLeft);
+      expect(rects['left'].left).toBeLessThan(0);
     });
+  });
 
-    it('falls back to horizontal push when upward push would go off-screen', () => {
+  describe('cascade left push past origin (regression)', () => {
+    it('cascade widgets continue into negative x, never reverse direction', () => {
       const rects: Record<string, WidgetRect> = {
-        mover: { left: 0, top: 0, width: 300, height: 500 },
-        above: { left: 0, top: 10, width: 300, height: 400 },
+        mover: { left: 100, top: 0, width: 300, height: 600 },
+        a:     { left: 50,  top: 0, width: 200, height: 600 },
+        b:     { left: 0,   top: 0, width: 100, height: 600 },
       };
       runCanvasPushBfs('mover', rects, {}, GAP);
 
-      expect(rects['above'].top).toBeGreaterThanOrEqual(0);
-      expect(noOverlap(rects, GAP, 'mover', 'above')).toBe(true);
+      // a pushed left of mover: 100 - 200 - 16 = -116
+      expect(rects['a'].left).toBe(100 - 200 - GAP);
+      // b pushed left of a
+      expect(rects['b'].left).toBeLessThan(rects['a'].left);
+      // No overlaps
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('widget near origin pushed left continues smoothly', () => {
+      const rects: Record<string, WidgetRect> = {
+        mover:  { left: 50,  top: 0, width: 200, height: 600 },
+        target: { left: 5,   top: 0, width: 100, height: 600 },
+      };
+      runCanvasPushBfs('mover', rects, {}, GAP);
+
+      // 50 - 100 - 16 = -66
+      expect(rects['target'].left).toBe(50 - 100 - GAP);
+    });
+
+    it('incremental cascade smoothly pushes into negative coordinates', () => {
+      const rects: Record<string, WidgetRect> = {
+        b:     { left: 0,   top: 0, width: 100, height: 600 },
+        a:     { left: 116, top: 0, width: 100, height: 600 },
+        mover: { left: 232, top: 0, width: 100, height: 600 },
+      };
+
+      for (let i = 0; i < 300; i++) {
+        rects['mover'] = {
+          ...rects['mover'],
+          left: 232 - i,
+          width: 100 + i,
+        };
+        runCanvasPushBfs('mover', rects, {}, GAP);
+      }
+
+      // After 300 frames of incremental pushing, both a and b
+      // should be well into negative territory, stacked left of mover.
+      expect(rects['a'].left).toBeLessThan(0);
+      expect(rects['b'].left).toBeLessThan(rects['a'].left);
+      // No pairwise overlaps
+      assertNoPairwiseOverlap(rects, GAP);
     });
   });
 
   describe('axis selection', () => {
-    it('initial push uses clearance-based axis (horizontal when clearR <= clearD)', () => {
-      // Widget is mostly overlapping vertically, small horizontal overlap
+    it('side-aware clearance selects horizontal when overlap is from the right', () => {
+      // target is to the right of mover, small horizontal overlap
       const rects: Record<string, WidgetRect> = {
         mover: { left: 0, top: 0, width: 200, height: 200 },
         other: { left: 190, top: 50, width: 200, height: 200 },
       };
-      // clearR = 200 + 16 - 190 = 26, clearD = 200 + 16 - 50 = 166
-      // clearR < clearD → pushH=true → push right
+      // tops differ by 50 > GAP → not sameRow → side-aware clearance
+      // hClear = pR+gap-o.left = 26, vClear = pB+gap-o.top = 166
+      // pushH = 26 <= 166 → true → push right
       runCanvasPushBfs('mover', rects, {}, GAP);
 
       expect(rects['other'].left).toBe(200 + GAP);
       expect(rects['other'].top).toBe(50);
     });
 
-    it('initial push uses clearance-based axis (vertical when clearD < clearR)', () => {
+    it('side-aware clearance selects vertical when overlap is from below', () => {
       const rects: Record<string, WidgetRect> = {
         mover: { left: 0, top: 0, width: 200, height: 200 },
         other: { left: 50, top: 190, width: 200, height: 200 },
       };
-      // clearR = 200 + 16 - 50 = 166, clearD = 200 + 16 - 190 = 26
-      // clearD < clearR → pushH=false → push down
+      // tops differ by 190 > GAP → not sameRow → side-aware clearance
+      // hClear = pR+gap-o.left = 166, vClear = pB+gap-o.top = 26
+      // pushH = 166 <= 26 → false → push down
       runCanvasPushBfs('mover', rects, {}, GAP);
 
       expect(rects['other'].left).toBe(50);
       expect(rects['other'].top).toBe(200 + GAP);
+    });
+
+    it('same-row override: widgets sharing the same top always push horizontally', () => {
+      // Simulates a drag scenario where mover encroaches from the right.
+      // Both widgets share top=0. clearR would be huge, clearD would be
+      // small → old code would push vertically. sameRow override fixes this.
+      const rects: Record<string, WidgetRect> = {
+        mover:  { left: 388, top: 0, width: 389, height: 340 },
+        target: { left: 0,   top: 0, width: 389, height: 340 },
+      };
+      runCanvasPushBfs('mover', rects, {}, GAP);
+
+      // Must push horizontally (left), not vertically
+      expect(rects['target'].top).toBe(0);
+      expect(rects['target'].left).toBeLessThan(388);
+    });
+  });
+
+  describe('drag push (same-row widgets)', () => {
+    it('dragging a widget left pushes same-row neighbor left, not vertically', () => {
+      // TimeOff | RFIs | Submittals — all on the same row.
+      // User drags Submittals 2px to the left, encroaching on RFIs.
+      const rects: Record<string, WidgetRect> = {
+        timeOff:    { left: 0,   top: 206, width: 470, height: 340 },
+        rfis:       { left: 486, top: 206, width: 389, height: 340 },
+        submittals: { left: 889, top: 206, width: 389, height: 340 },
+      };
+      runCanvasPushBfs('submittals', rects, {}, GAP);
+
+      // RFIs must stay on the same row (pushed left, NOT down/up)
+      expect(rects['rfis'].top).toBe(206);
+      expect(rects['rfis'].left).toBeLessThan(889);
+      // TimeOff must also stay on the same row
+      expect(rects['timeOff'].top).toBe(206);
+    });
+
+    it('incremental drag keeps all same-row widgets horizontal, never vertical', () => {
+      // Simulate incremental dragging: submittals moves 1px left per frame.
+      // RFIs and TimeOff must never be pushed vertically (the original bug).
+      const rects: Record<string, WidgetRect> = {
+        timeOff:    { left: 0,   top: 206, width: 470, height: 340 },
+        rfis:       { left: 486, top: 206, width: 389, height: 340 },
+        submittals: { left: 891, top: 206, width: 389, height: 340 },
+      };
+
+      for (let i = 0; i < 100; i++) {
+        rects['submittals'] = { ...rects['submittals'], left: 891 - i };
+        runCanvasPushBfs('submittals', rects, {}, GAP);
+
+        // Critical: no widget should ever leave its row
+        expect(rects['rfis'].top).toBe(206);
+        expect(rects['timeOff'].top).toBe(206);
+      }
+
+      // After dragging 100px, all widgets still on same row, no overlaps
+      expect(noOverlap(rects, GAP, 'timeOff', 'rfis')).toBe(true);
+      expect(noOverlap(rects, GAP, 'rfis', 'submittals')).toBe(true);
     });
   });
 

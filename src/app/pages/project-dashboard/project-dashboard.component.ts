@@ -1102,7 +1102,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
           @if (isCanvas()) {
             <div
               class="absolute overflow-hidden"
-              [class.widget-detail-transition]="hasCanvasDetails()"
+              [class.widget-detail-transition]="shouldTransition('projHeader')"
               [attr.data-widget-id]="'projHeader'"
               [style.top.px]="wTops()['projHeader']"
               [style.left.px]="wLefts()['projHeader']"
@@ -1128,7 +1128,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
           }
           @for (wId of widgets; track wId) {
             <div
-              [class]="(canvasDetailViews()[wId] ? 'absolute' : (isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden')) + (hasCanvasDetails() && canvasInteractingId() !== wId ? ' widget-detail-transition' : '')"
+              [class]="(canvasDetailViews()[wId] ? 'absolute' : (isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden')) + (shouldTransition(wId) ? ' widget-detail-transition' : '')"
               [attr.data-widget-id]="wId"
               [style.top.px]="wTops()[wId]"
               [style.left.px]="!isMobile() ? wLefts()[wId] : null"
@@ -2638,6 +2638,10 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly canvasDetailViews = this._detailMgr.canvasDetailViews;
   readonly hasCanvasDetails = this._detailMgr.hasCanvasDetails;
   readonly canvasInteractingId = this._detailMgr.canvasInteractingId;
+
+  shouldTransition(widgetId: string): boolean {
+    return this._detailMgr.shouldTransition(widgetId, this.moveTargetId());
+  }
 
   onCanvasDetailHeaderMouseDown(event: MouseEvent, widgetId: string): void {
     this._detailMgr.headerMouseDown(event, widgetId, this.engine);

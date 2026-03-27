@@ -6,8 +6,25 @@ export interface WidgetRect {
 }
 
 /**
- * BFS-based canvas push algorithm. Resolves overlaps by pushing widgets apart
- * using minimum penetration depth along the axis of least overlap.
+ * BFS-based canvas push algorithm. Resolves overlaps by pushing widgets apart.
+ *
+ * Axis selection for the initial push from the mover:
+ *   1. Same-row widgets (tops within gap) always push horizontally.
+ *   2. Otherwise, side-aware clearance picks the axis with less penetration
+ *      measured from the side where the target sits.
+ * Cascade pushes use center-to-center distance for axis selection.
+ *
+ * Pushed widgets are allowed to go into negative coordinates. This ensures
+ * the push cascade continues smoothly regardless of position in the
+ * coordinate system — no clamping, no direction reversal, no jumping.
+ *
+ * Locked widget handling: pushes that would land a widget on top of a
+ * locked widget are silently discarded — the widget stays put (is
+ * "frozen") rather than jumping around the locked element.
+ *
+ * When a frozen widget still overlaps the mover after BFS, the mover
+ * is pushed back to clear the frozen widget, as if the frozen widget
+ * were itself a wall. This stops the drag at the locked boundary.
  *
  * @param movedId   The widget that was just moved/resized (push source).
  * @param rects     Mutable map of widget id -> rect. Updated in place.
@@ -29,10 +46,23 @@ export function runCanvasPushBfs(
         && ar.top < br.top + br.height + gap && br.top < ar.top + ar.height + gap;
   };
 
+  const rectOverlapsLocked = (r: WidgetRect): boolean => {
+    for (const lid of ids) {
+      if (!isLocked[lid]) continue;
+      const l = rects[lid];
+      if (r.left < l.left + l.width + gap && l.left < r.left + r.width + gap
+          && r.top < l.top + l.height + gap && l.top < r.top + r.height + gap) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const pushAway = (pusherId: string, otherId: string): void => {
     const p = rects[pusherId];
     const o = rects[otherId];
     const pR = p.left + p.width, pB = p.top + p.height;
+    const oR = o.left + o.width, oB = o.top + o.height;
 
     const pCX = (p.left + pR) / 2, pCY = (p.top + pB) / 2;
     const oCX = o.left + o.width / 2;
@@ -40,46 +70,45 @@ export function runCanvasPushBfs(
 
     let pushH: boolean;
     if (pusherId === movedId) {
-      const clearR = pR + gap - o.left;
-      const clearD = pB + gap - o.top;
-      pushH = clearR <= clearD;
+      const sameRow = Math.abs(p.top - o.top) <= gap;
+      if (sameRow) {
+        pushH = true;
+      } else {
+        const hClear = (oCX >= pCX) ? (pR + gap - o.left) : (oR + gap - p.left);
+        const vClear = (oCY >= pCY) ? (pB + gap - o.top) : (oB + gap - p.top);
+        pushH = hClear <= vClear;
+      }
     } else {
       pushH = Math.abs(oCX - pCX) >= Math.abs(oCY - pCY);
     }
 
-    // For cascade pushes, determine left/right (or up/down) relative to the
-    // MOVER, not the cascade pusher. This prevents widgets pushed to the same
-    // position from bouncing back toward the mover.
     const dirRef = (pusherId === movedId) ? p : rects[movedId];
     const dirCX = dirRef.left + dirRef.width / 2;
     const dirCY = dirRef.top + dirRef.height / 2;
 
+    let candidate: WidgetRect;
     if (pushH) {
       if (oCX >= dirCX) {
-        rects[otherId] = { ...o, left: pR + gap };
+        candidate = { ...o, left: pR + gap };
       } else {
-        const candidateLeft = p.left - o.width - gap;
-        if (candidateLeft >= 0) {
-          rects[otherId] = { ...o, left: candidateLeft };
-        } else {
-          rects[otherId] = { ...o, left: pR + gap };
-        }
+        candidate = { ...o, left: p.left - o.width - gap };
       }
     } else {
       if (oCY >= dirCY) {
-        rects[otherId] = { ...o, top: pB + gap };
+        candidate = { ...o, top: pB + gap };
       } else {
-        const candidateTop = p.top - o.height - gap;
-        if (candidateTop >= 0) {
-          rects[otherId] = { ...o, top: candidateTop };
-        } else if (oCX >= dirCX) {
-          rects[otherId] = { ...o, left: pR + gap };
-        } else {
-          rects[otherId] = { ...o, left: p.left - o.width - gap };
-        }
+        candidate = { ...o, top: p.top - o.height - gap };
       }
     }
+
+    if (rectOverlapsLocked(candidate)) {
+      frozen.add(otherId);
+      return;
+    }
+    rects[otherId] = candidate;
   };
+
+  const frozen = new Set<string>();
 
   const queue: string[] = [movedId];
   const visited = new Set<string>();
@@ -97,9 +126,14 @@ export function runCanvasPushBfs(
       if (isLocked[otherId]) continue;
       if (!hasOverlap(pusherId, otherId)) continue;
 
+      const prevLeft = rects[otherId].left;
+      const prevTop = rects[otherId].top;
       pushAway(pusherId, otherId);
-      visited.delete(otherId);
-      queue.push(otherId);
+      const moved = rects[otherId].left !== prevLeft || rects[otherId].top !== prevTop;
+      if (moved) {
+        visited.delete(otherId);
+        queue.push(otherId);
+      }
     }
   }
 
@@ -116,18 +150,29 @@ export function runCanvasPushBfs(
     if (!anyFixed) break;
   }
 
-  const lockedIds = ids.filter(id => isLocked[id]);
-  if (lockedIds.length > 0) {
-    let resolved = false;
-    for (let pass = 0; pass < ids.length * 2 && !resolved; pass++) {
-      resolved = true;
-      for (const lid of lockedIds) {
-        for (const wid of ids) {
-          if (wid === lid || isLocked[wid]) continue;
-          if (!hasOverlap(lid, wid)) continue;
-          pushAway(lid, wid);
-          resolved = false;
-        }
+  // Frozen-widget wall: if the mover still overlaps any widget that was
+  // blocked by a locked element, push the mover back to clear it.
+  for (const fid of frozen) {
+    if (!hasOverlap(movedId, fid)) continue;
+    const m = rects[movedId];
+    const o = rects[fid];
+    const mCX = m.left + m.width / 2;
+    const oCX = o.left + o.width / 2;
+
+    const sameRow = Math.abs(m.top - o.top) <= gap;
+    if (sameRow) {
+      if (mCX >= oCX) {
+        rects[movedId] = { ...m, left: o.left + o.width + gap };
+      } else {
+        rects[movedId] = { ...m, left: o.left - m.width - gap };
+      }
+    } else {
+      const mCY = m.top + m.height / 2;
+      const oCY = o.top + o.height / 2;
+      if (mCY >= oCY) {
+        rects[movedId] = { ...m, top: o.top + o.height + gap };
+      } else {
+        rects[movedId] = { ...m, top: o.top - m.height - gap };
       }
     }
   }
