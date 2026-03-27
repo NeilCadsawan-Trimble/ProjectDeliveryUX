@@ -20,7 +20,10 @@ import { ModusProgressComponent } from '../../components/modus-progress.componen
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
-import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
+import { EmptyStateComponent } from './components/empty-state.component';
+import { CollapsibleSubnavComponent } from './components/collapsible-subnav.component';
+import { ItemDetailViewComponent, type StatusOption } from './components/item-detail-view.component';
+import { WidgetFrameComponent } from './components/widget-frame.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
 
 import { Subscription } from 'rxjs';
@@ -29,6 +32,8 @@ import { WidgetLayoutService } from '../../shell/services/widget-layout.service'
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
+import { SubpageTileCanvas, type TileRect, type TileDetailView } from '../../shell/services/subpage-tile-canvas';
 import { AiService, type AiChatMessage } from '../../services/ai.service';
 import {
   type ProjectDashboardData,
@@ -37,14 +42,66 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, RFIS, SUBMITTALS, type AiMessage, type Rfi, type Submittal, type RfiStatus, type SubmittalStatus } from '../../data/dashboard-data';
+import { PROJECTS, RFIS, SUBMITTALS, type AiMessage, type Rfi, type Submittal } from '../../data/dashboard-data';
+import { ALL_DRAWINGS_BY_PROJECT } from '../../data/drawings-data';
+import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 
-type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals';
-type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submittal };
+type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals';
+const STATUS_OPTIONS: StatusOption[] = [
+  { value: 'open', label: 'Open', dotClass: 'bg-primary' },
+  { value: 'overdue', label: 'Overdue', dotClass: 'bg-destructive' },
+  { value: 'upcoming', label: 'Upcoming', dotClass: 'bg-warning' },
+  { value: 'closed', label: 'Closed', dotClass: 'bg-success' },
+];
+
+const ASSIGNEE_OPTIONS: string[] = [
+  'Sarah Chen',
+  'James Carter',
+  'Priya Nair',
+  'Tom Evans',
+  'Lena Brooks',
+  'Mike Osei',
+  'Daniel Park',
+  'Rachel Kim',
+  'Marcus Webb',
+  'Olivia Grant',
+];
+
+const RECORDS_PAGE_DESCRIPTIONS: Record<string, string> = {
+  'daily-reports': 'View and manage daily field reports including weather, workforce, equipment, and work performed.',
+  'rfis': 'Track Requests for Information between project stakeholders.',
+  'issues': 'Document and resolve project issues and non-conformances.',
+  'field-work-directives': 'Manage field directives for changes to scope or work procedures.',
+  'submittals': 'Review and approve submittals for materials, shop drawings, and product data.',
+  'action-items': 'Track assigned action items and their completion status.',
+  'check-list': 'Use standardized checklists for quality control and inspections.',
+  'drawing-sets': 'Manage and distribute official drawing sets and revisions.',
+  'meeting-minutes': 'Record and distribute meeting minutes from project meetings.',
+  'notices-to-comply': 'Issue and track compliance notices for regulatory or contractual requirements.',
+  'punch-items': 'Document and track punch list items for project closeout.',
+  'safety-notices': 'Distribute safety notices and track acknowledgments.',
+  'specification-sets': 'Manage project specification documents and revisions.',
+  'submittal-packages': 'Organize submittals into packages for batch review and approval.',
+  'transmittals': 'Track formal document transmittals between project parties.',
+};
+
+const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
+  'budget': 'View and manage the project budget, cost codes, and allocated funds.',
+  'purchase-orders': 'Create and track purchase orders for materials and services.',
+  'contracts': 'Manage prime contracts, subcontracts, and contract documents.',
+  'potential-change-orders': 'Track potential change orders before formal approval.',
+  'subcontract-change-orders': 'Manage change orders issued to subcontractors.',
+  'applications-for-payment': 'Submit and review payment applications and progress billing.',
+  'change-order-requests': 'Process and approve change order requests from stakeholders.',
+  'contract-invoices': 'Track invoices against contract line items and retainage.',
+  'cost-forecasts': 'Project future costs and compare against budget allocations.',
+  'general-invoices': 'Manage non-contract invoices and miscellaneous project expenses.',
+  'prime-contract-change-orders': 'Track change orders on the prime contract with the owner.',
+};
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, AiIconComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetLockToggleComponent, AiIconComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, WidgetFrameComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -76,114 +133,952 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
         </radialGradient>
       </defs>
     </svg>
-    <ng-template #dashboardContent>
-      @if (detailView()) {
+    <ng-template #childPageSubnav let-config>
+      <div class="bg-card border-default rounded-lg mb-6">
+        <div class="flex items-center justify-between px-4 py-2 gap-4">
+          <div class="flex items-center gap-2 flex-1 max-w-xs">
+            <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
+              <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
+              <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
+                [placeholder]="config.searchPlaceholder" [value]="subnavSearch()" (input)="subnavSearch.set($any($event.target).value)" />
+            </div>
+            <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
+              role="button" tabindex="0" aria-label="Filter">
+              <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            @for (btn of config.actions; track btn.icon) {
+              <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                role="button" tabindex="0" [attr.aria-label]="btn.label">
+                <i class="modus-icons text-base" aria-hidden="true">{{ btn.icon }}</i>
+              </div>
+            }
+            <div class="flex items-center bg-secondary rounded ml-1">
+              @for (toggle of config.viewToggles; track toggle.value) {
+                <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150"
+                  [class]="subnavViewMode() === toggle.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground'"
+                  role="button" tabindex="0" [attr.aria-label]="toggle.label"
+                  (click)="subnavViewMode.set(toggle.value)">
+                  <i class="modus-icons text-base" aria-hidden="true">{{ toggle.icon }}</i>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #detailContent>
+      @if (!detailHasSubNav() || isMobile()) {
         <div class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
           role="button" tabindex="0"
           (click)="clearDetailView()"
           (keydown.enter)="clearDetailView()"
         >
           <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">Back to Dashboard</div>
+          <div class="text-sm font-medium">{{ detailBackLabel() }}</div>
         </div>
-        @if (detailRfi(); as rfi) {
-          <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
-              <div class="flex items-center gap-4">
-                <div class="w-11 h-11 rounded-lg flex items-center justify-center" [class]="rfiStatusDot(rfi.status)">
-                  <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">clipboard</i>
-                </div>
-                <div>
-                  <div class="text-xl font-semibold text-foreground">{{ rfi.number }}</div>
-                  <div class="text-sm text-foreground-60">Request for Information</div>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="w-2.5 h-2.5 rounded-full" [class]="rfiStatusDot(rfi.status)"></div>
-                <div class="text-sm font-medium text-foreground">{{ rfiStatusText(rfi.status) }}</div>
-              </div>
-            </div>
-            <div class="px-6 py-6 flex flex-col gap-6">
-              <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Subject</div>
-                <div class="text-base text-foreground">{{ rfi.subject }}</div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Project</div>
-                  <div class="text-base text-foreground">{{ rfi.project }}</div>
-                </div>
-                <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Assignee</div>
-                  <div class="text-base text-foreground">{{ rfi.assignee }}</div>
-                </div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Due Date</div>
-                  <div class="text-base text-foreground">{{ rfi.dueDate }}</div>
-                </div>
-                <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Status</div>
-                  <div class="flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 rounded-full" [class]="rfiStatusDot(rfi.status)"></div>
-                    <div class="text-base font-medium text-foreground">{{ rfiStatusText(rfi.status) }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        }
-        @if (detailSubmittal(); as sub) {
-          <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
-              <div class="flex items-center gap-4">
-                <div class="w-11 h-11 rounded-lg flex items-center justify-center" [class]="submittalStatusDot(sub.status)">
-                  <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">document</i>
-                </div>
-                <div>
-                  <div class="text-xl font-semibold text-foreground">{{ sub.number }}</div>
-                  <div class="text-sm text-foreground-60">Submittal</div>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="w-2.5 h-2.5 rounded-full" [class]="submittalStatusDot(sub.status)"></div>
-                <div class="text-sm font-medium text-foreground">{{ submittalStatusText(sub.status) }}</div>
-              </div>
-            </div>
-            <div class="px-6 py-6 flex flex-col gap-6">
-              <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Subject</div>
-                <div class="text-base text-foreground">{{ sub.subject }}</div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Project</div>
-                  <div class="text-base text-foreground">{{ sub.project }}</div>
-                </div>
-                <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Assignee</div>
-                  <div class="text-base text-foreground">{{ sub.assignee }}</div>
-                </div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Due Date</div>
-                  <div class="text-base text-foreground">{{ sub.dueDate }}</div>
-                </div>
-                <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Status</div>
-                  <div class="flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 rounded-full" [class]="submittalStatusDot(sub.status)"></div>
-                    <div class="text-base font-medium text-foreground">{{ submittalStatusText(sub.status) }}</div>
-                  </div>
-                </div>
-              </div>
+      }
+      <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
+      @if (detailRfi(); as rfi) {
+        <app-item-detail-view
+          icon="clipboard"
+          typeLabel="Request for Information"
+          [number]="rfi.number"
+          [subject]="rfi.subject"
+          [question]="rfi.question"
+          [assignee]="rfi.assignee"
+          [assigneeOptions]="ASSIGNEE_OPTIONS"
+          (assigneeChange)="onDetailAssigneeChange($event)"
+          field1Label="Created By"
+          [field1Value]="rfi.askedBy"
+          field3Label="Created On"
+          [field3Value]="rfi.askedOn"
+          field4Label="Due Date"
+          [field4Value]="rfi.dueDate"
+          [field4ShowStatus]="false"
+          [currentStatus]="rfi.status"
+          [statusOptions]="STATUS_OPTIONS"
+          [statusDotClass]="itemStatusDot(rfi.status)"
+          [statusText]="capitalizeStatus(rfi.status)"
+          (statusChange)="onDetailStatusChange($event)"
+          (dueDateChange)="onDetailDueDateChange($event)"
+        />
+      }
+      @if (detailSubmittal(); as sub) {
+        <app-item-detail-view
+          icon="document"
+          typeLabel="Submittal"
+          [number]="sub.number"
+          [subject]="sub.subject"
+          [assignee]="sub.assignee"
+          [assigneeOptions]="ASSIGNEE_OPTIONS"
+          (assigneeChange)="onDetailAssigneeChange($event)"
+          [field1Value]="sub.project"
+          [field3Value]="sub.dueDate"
+          [field3DateEditable]="true"
+          [currentStatus]="sub.status"
+          [statusOptions]="STATUS_OPTIONS"
+          [statusDotClass]="itemStatusDot(sub.status)"
+          [statusText]="capitalizeStatus(sub.status)"
+          (statusChange)="onDetailStatusChange($event)"
+          (dueDateChange)="onDetailDueDateChange($event)"
+        />
+      }
+    </ng-template>
+
+    <ng-template #dashboardContent>
+      @if (detailView()) {
+        @if (detailHasSubNav() && !isMobile()) {
+          <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
+            @if (activeNavItem() === 'records') {
+              <app-collapsible-subnav
+                icon="clipboard"
+                title="Records"
+                [items]="recordsSubNavItems"
+                [activeItem]="activeRecordsPage()"
+                [collapsed]="sideSubNavCollapsed()"
+                [canvasMode]="isCanvas()"
+                (itemSelect)="onDetailSideSubnavSelect($event)"
+                (collapsedChange)="sideSubNavCollapsed.set($event)"
+              />
+            }
+            @if (activeNavItem() === 'financials') {
+              <app-collapsible-subnav
+                icon="bar_graph"
+                title="Financials"
+                [items]="financialsSubNavItems"
+                [activeItem]="activeFinancialsPage()"
+                [collapsed]="sideSubNavCollapsed()"
+                [canvasMode]="isCanvas()"
+                (itemSelect)="onDetailSideSubnavSelect($event)"
+                (collapsedChange)="sideSubNavCollapsed.set($event)"
+              />
+            }
+            <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
+              <ng-container [ngTemplateOutlet]="detailContent" />
             </div>
           </div>
+        } @else {
+          <ng-container [ngTemplateOutlet]="detailContent" />
         }
       } @else {
-        <!-- Overview Row -->
+      @switch (activeNavItem()) {
+      @case ('drawings') {
+        @if (isSubpageCanvasActive()) {
+          <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()">
+            <!-- Locked: Section Subnav (toolbar) -->
+            <div class="absolute"
+              [style.top.px]="0"
+              [style.left.px]="0"
+              [style.width.px]="1280"
+              [style.height.px]="56"
+            >
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['drawings'] }" />
+            </div>
+            <!-- Locked: Title -->
+            <div class="absolute flex items-center justify-between"
+              [style.top.px]="72"
+              [style.left.px]="0"
+              [style.width.px]="1280"
+              [style.height.px]="40"
+            >
+              <div class="text-2xl font-bold text-foreground">Drawings ({{ drawingTiles().length }})</div>
+            </div>
+            <!-- Locked: List widget (list view mode) -->
+            @if (subnavViewMode() === 'list') {
+              <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col"
+                [style.top.px]="tilePos()['tc-list']?.top ?? 128"
+                [style.left.px]="tilePos()['tc-list']?.left ?? 0"
+                [style.width.px]="tilePos()['tc-list']?.width ?? 1280"
+                [style.height.px]="tilePos()['tc-list']?.height ?? 500"
+                [style.z-index]="1"
+              >
+                <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-2.5 border-bottom-default bg-muted flex-shrink-0">
+                  <div class="w-4"></div>
+                  <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide">Name</div>
+                  <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide">Description</div>
+                  <div class="text-xs font-medium text-foreground-60 uppercase tracking-wide">Revision</div>
+                  <div class="text-xs font-medium text-foreground-60 uppercase tracking-wide">Date</div>
+                  <div class="w-6"></div>
+                </div>
+                <div class="overflow-y-auto flex-1">
+                  @for (drawing of drawingTiles(); track drawing.id) {
+                    <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150">
+                      <input type="checkbox" class="accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" (click)="$event.stopPropagation()" />
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded bg-secondary overflow-hidden flex-shrink-0">
+                          <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
+                        </div>
+                        <div class="text-sm font-medium text-foreground truncate">{{ drawing.title }}</div>
+                      </div>
+                      <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
+                      <div class="text-xs font-medium text-foreground whitespace-nowrap">{{ drawing.revision }}</div>
+                      <div class="text-xs text-foreground-60 whitespace-nowrap">{{ drawing.date }}</div>
+                      <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
+                        role="button" tabindex="0" aria-label="More options">
+                        <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+            <!-- Drawing tiles as widgets (hidden in list mode) -->
+            @if (subnavViewMode() !== 'list') {
+              @for (drawing of drawingTiles(); track drawing.id) {
+                <div class="absolute"
+                  [attr.data-tile-id]="'tile-drawing-' + drawing.id"
+                  [style.top.px]="tilePos()['tile-drawing-' + drawing.id]?.top ?? 0"
+                  [style.left.px]="tilePos()['tile-drawing-' + drawing.id]?.left ?? 0"
+                  [style.width.px]="tilePos()['tile-drawing-' + drawing.id]?.width ?? 380"
+                  [style.height.px]="tilePos()['tile-drawing-' + drawing.id]?.height ?? 280"
+                  [style.z-index]="tileZ()['tile-drawing-' + drawing.id] ?? 0"
+                  [class.opacity-30]="tileMoveTargetId() === 'tile-drawing-' + drawing.id"
+                  (mousedown)="selectTileWidget('tile-drawing-' + drawing.id)"
+                >
+                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                    [class.border-default]="selectedWidgetId() !== 'tile-drawing-' + drawing.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-drawing-' + drawing.id">
+                    <div class="flex items-center justify-between px-3 py-2 cursor-move select-none flex-shrink-0 border-bottom-default"
+                      (mousedown)="tileCanvas.onTileMouseDown('tile-drawing-' + drawing.id, $event)">
+                      <div class="flex items-start gap-2 min-w-0 flex-1">
+                        <div class="min-w-0 flex-1">
+                          <div class="text-sm font-semibold text-foreground truncate">{{ drawing.title }}</div>
+                          <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
+                        </div>
+                      </div>
+                      <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
+                        role="button" tabindex="0" aria-label="More options" (mousedown)="$event.stopPropagation()">
+                        <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
+                      </div>
+                    </div>
+                    <div class="px-3 flex-1 py-2 overflow-hidden" (mousedown)="$event.stopPropagation()">
+                      <div class="bg-secondary rounded overflow-hidden h-full">
+                        <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between px-3 py-2 flex-shrink-0">
+                      <div class="text-xs font-medium text-foreground">{{ drawing.revision }}</div>
+                      <div class="text-xs text-foreground-60">{{ drawing.date }}</div>
+                    </div>
+                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+                      (mousedown)="tileCanvas.onTileResizeMouseDown('tile-drawing-' + drawing.id, $event)">
+                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        } @else {
+        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['drawings'] }" />
+        <div class="flex flex-col gap-6">
+          <div class="flex items-center justify-between">
+            <div class="text-2xl font-bold text-foreground">Drawings ({{ drawingTiles().length }})</div>
+          </div>
+          @if (subnavViewMode() === 'grid') {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              @for (drawing of drawingTiles(); track drawing.id) {
+                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col cursor-pointer hover:shadow-lg transition-shadow duration-200">
+                  <div class="flex items-start justify-between px-3 pt-3 pb-2">
+                    <div class="flex items-start gap-2 min-w-0 flex-1">
+                      <input type="checkbox" class="mt-1 accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" />
+                      <div class="min-w-0 flex-1">
+                        <div class="text-sm font-semibold text-foreground truncate">{{ drawing.title }}</div>
+                        <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
+                      role="button" tabindex="0" aria-label="More options">
+                      <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
+                    </div>
+                  </div>
+                  <div class="px-3 flex-1">
+                    <div class="bg-secondary rounded overflow-hidden aspect-[4/3]">
+                      <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between px-3 py-3">
+                    <div class="text-xs font-medium text-foreground">{{ drawing.revision }}</div>
+                    <div class="text-xs text-foreground-60">{{ drawing.date }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="bg-card border-default rounded-lg overflow-hidden">
+              <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-2.5 border-bottom-default bg-muted">
+                <div class="w-4"></div>
+                <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide">Name</div>
+                <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide">Description</div>
+                <div class="text-xs font-medium text-foreground-60 uppercase tracking-wide">Revision</div>
+                <div class="text-xs font-medium text-foreground-60 uppercase tracking-wide">Date</div>
+                <div class="w-6"></div>
+              </div>
+              @for (drawing of drawingTiles(); track drawing.id) {
+                <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150">
+                  <input type="checkbox" class="accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" />
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded bg-secondary overflow-hidden flex-shrink-0">
+                      <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="text-sm font-medium text-foreground truncate">{{ drawing.title }}</div>
+                  </div>
+                  <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
+                  <div class="text-xs font-medium text-foreground whitespace-nowrap">{{ drawing.revision }}</div>
+                  <div class="text-xs text-foreground-60 whitespace-nowrap">{{ drawing.date }}</div>
+                  <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
+                    role="button" tabindex="0" aria-label="More options">
+                    <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        }
+      }
+      @case ('models') {
+        @if (isSubpageCanvasActive()) {
+          <div class="relative overflow-visible" [style.min-height.px]="400">
+            <div class="absolute" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['models'] }" />
+            </div>
+            <div class="absolute flex items-center" [style.top.px]="72" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
+              <div class="text-2xl font-bold text-foreground">Models</div>
+            </div>
+            <div class="absolute" [style.top.px]="128" [style.left.px]="0">
+              <app-empty-state icon="package" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
+            </div>
+          </div>
+        } @else {
+        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['models'] }" />
+        <div class="flex flex-col gap-6">
+          <div class="flex items-center justify-between">
+            <div class="text-2xl font-bold text-foreground">Models</div>
+          </div>
+          <app-empty-state icon="package" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
+        </div>
+        }
+      }
+      @case ('records') {
+        @if (isSubpageCanvasActive()) {
+          <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()" #tileGrid>
+            <!-- Locked: Side Subnav -->
+            <div class="absolute overflow-visible"
+              [style.top.px]="tilePos()['tc-subnav']?.top ?? 0"
+              [style.left.px]="tilePos()['tc-subnav']?.left ?? 0"
+              [style.width.px]="tilePos()['tc-subnav']?.width ?? 224"
+              [style.height.px]="tilePos()['tc-subnav']?.height ?? 600"
+            >
+              <app-collapsible-subnav
+                icon="clipboard"
+                title="Records"
+                [items]="recordsSubNavItems"
+                [activeItem]="activeRecordsPage()"
+                [collapsed]="sideSubNavCollapsed()"
+                [canvasMode]="true"
+                (itemSelect)="activeRecordsPage.set($event)"
+                (collapsedChange)="sideSubNavCollapsed.set($event)"
+              />
+            </div>
+            <!-- Locked: Section Subnav (toolbar) -->
+            <div class="absolute"
+              [style.top.px]="tilePos()['tc-toolbar']?.top ?? 0"
+              [style.left.px]="tilePos()['tc-toolbar']?.left ?? 240"
+              [style.width.px]="tilePos()['tc-toolbar']?.width ?? 1040"
+              [style.height.px]="tilePos()['tc-toolbar']?.height ?? 56"
+            >
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
+            </div>
+            <!-- Locked: Title -->
+            <div class="absolute flex items-center justify-between"
+              [style.top.px]="tilePos()['tc-title']?.top ?? 72"
+              [style.left.px]="tilePos()['tc-title']?.left ?? 240"
+              [style.width.px]="tilePos()['tc-title']?.width ?? 1040"
+              [style.height.px]="tilePos()['tc-title']?.height ?? 40"
+            >
+              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }</div>
+            </div>
+            <!-- Locked: List widget (list view mode) -->
+            @if (subnavViewMode() === 'list') {
+              <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col"
+                [style.top.px]="tilePos()['tc-list']?.top ?? 128"
+                [style.left.px]="tilePos()['tc-list']?.left ?? 240"
+                [style.width.px]="tilePos()['tc-list']?.width ?? 1040"
+                [style.height.px]="tilePos()['tc-list']?.height ?? 500"
+                [style.z-index]="1"
+              >
+                @if (activeRecordsPage() === 'rfis') {
+                  <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                    <div>RFI #</div>
+                    <div>Subject</div>
+                    <div>Assignee</div>
+                    <div>Due Date</div>
+                    <div>Status</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1">
+                    @for (rfi of projectRfis(); track rfi.id) {
+                      <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                        [class.bg-primary-20]="!!tileDetailViews()['tile-rfi-' + rfi.id]"
+                        tabindex="0" (click)="navigateToRfiFromTile(rfi, 'tile-rfi-' + rfi.id)" (keydown.enter)="navigateToRfiFromTile(rfi, 'tile-rfi-' + rfi.id)">
+                        <div class="text-sm font-medium text-primary">{{ rfi.number }}</div>
+                        <div class="text-sm text-foreground truncate">{{ rfi.subject }}</div>
+                        <div class="text-sm text-foreground-60 truncate">{{ rfi.assignee }}</div>
+                        <div class="text-sm text-foreground-60">{{ rfi.dueDate }}</div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
+                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else if (activeRecordsPage() === 'submittals') {
+                  <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                    <div>SUB #</div>
+                    <div>Subject</div>
+                    <div>Assignee</div>
+                    <div>Due Date</div>
+                    <div>Status</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1">
+                    @for (sub of projectSubmittals(); track sub.id) {
+                      <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                        [class.bg-primary-20]="!!tileDetailViews()['tile-sub-' + sub.id]"
+                        tabindex="0" (click)="navigateToSubFromTile(sub, 'tile-sub-' + sub.id)" (keydown.enter)="navigateToSubFromTile(sub, 'tile-sub-' + sub.id)">
+                        <div class="text-sm font-medium text-primary">{{ sub.number }}</div>
+                        <div class="text-sm text-foreground truncate">{{ sub.subject }}</div>
+                        <div class="text-sm text-foreground-60 truncate">{{ sub.assignee }}</div>
+                        <div class="text-sm text-foreground-60">{{ sub.dueDate }}</div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
+                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="flex flex-col items-center justify-center flex-1 text-foreground-40 py-10">
+                    <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
+                    <div class="text-sm">Select a record type from the sidebar</div>
+                  </div>
+                }
+              </div>
+            }
+            <!-- RFI tiles as widgets -->
+            @if (activeRecordsPage() === 'rfis') {
+              @for (rfi of projectRfis(); track rfi.id) {
+                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-rfi-' + rfi.id]) {
+                <div
+                  [class]="'absolute' + (hasTileDetails() && tileMoveTargetId() !== 'tile-rfi-' + rfi.id ? ' widget-detail-transition' : '')"
+                  [attr.data-tile-id]="'tile-rfi-' + rfi.id"
+                  [style.top.px]="tilePos()['tile-rfi-' + rfi.id]?.top ?? 0"
+                  [style.left.px]="tilePos()['tile-rfi-' + rfi.id]?.left ?? 0"
+                  [style.width.px]="tilePos()['tile-rfi-' + rfi.id]?.width ?? 380"
+                  [style.height.px]="tilePos()['tile-rfi-' + rfi.id]?.height ?? 220"
+                  [style.z-index]="tileDetailViews()['tile-rfi-' + rfi.id] ? 9999 : (tileZ()['tile-rfi-' + rfi.id] ?? 0)"
+                  [class.opacity-30]="tileMoveTargetId() === 'tile-rfi-' + rfi.id"
+                  (mousedown)="selectTileWidget('tile-rfi-' + rfi.id); tileDetailViews()['tile-rfi-' + rfi.id] ? $event.stopPropagation() : null"
+                >
+                @if (tileDetailViews()['tile-rfi-' + rfi.id]; as detail) {
+                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
+                    [class.border-default]="selectedWidgetId() !== 'tile-rfi-' + rfi.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-rfi-' + rfi.id">
+                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-rfi-' + rfi.id)">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="itemStatusDot($any(detail).item.status)">
+                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">clipboard</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.number }}</div>
+                      </div>
+                      <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="relative">
+                          <div class="flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer hover:bg-muted transition-colors duration-150"
+                            (click)="toggleTileHeaderStatus('tile-rfi-' + rfi.id, $event)"
+                            (mousedown)="$event.stopPropagation()">
+                            <div class="w-2 h-2 rounded-full" [class]="itemStatusDot($any(detail).item.status)"></div>
+                            <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
+                            <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
+                          </div>
+                          @if (tileHeaderStatusOpen() === 'tile-rfi-' + rfi.id) {
+                            <div class="absolute top-full right-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[160px] py-1"
+                              role="listbox" (mousedown)="$event.stopPropagation()">
+                              @for (opt of STATUS_OPTIONS; track opt.value) {
+                                <div class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted transition-colors duration-150"
+                                  role="option" [attr.aria-selected]="opt.value === $any(detail).item.status"
+                                  (click)="onTileHeaderStatusSelect('tile-rfi-' + rfi.id, opt.value, $event)">
+                                  <div class="w-2 h-2 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
+                                  <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
+                                  @if (opt.value === $any(detail).item.status) {
+                                    <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="closeTileDetail('tile-rfi-' + rfi.id)" aria-label="Close detail">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-5">
+                      <app-item-detail-view
+                        [hideHeader]="true"
+                        icon="clipboard" typeLabel="Request for Information"
+                        [number]="$any(detail).item.number" [subject]="$any(detail).item.subject"
+                        [question]="$any(detail).item.question" [assignee]="$any(detail).item.assignee"
+                        [assigneeOptions]="ASSIGNEE_OPTIONS"
+                        (assigneeChange)="onTileDetailAssigneeChange('tile-rfi-' + rfi.id, $event)"
+                        field1Label="Created By" [field1Value]="$any(detail).item.askedBy"
+                        field3Label="Created On" [field3Value]="$any(detail).item.askedOn"
+                        field4Label="Due Date" [field4Value]="$any(detail).item.dueDate" [field4ShowStatus]="false"
+                        [currentStatus]="$any(detail).item.status" [statusOptions]="STATUS_OPTIONS"
+                        [statusDotClass]="itemStatusDot($any(detail).item.status)"
+                        [statusText]="capitalizeStatus($any(detail).item.status)"
+                        (statusChange)="onTileDetailStatusChange('tile-rfi-' + rfi.id, $event)"
+                        (dueDateChange)="onTileDetailDueDateChange('tile-rfi-' + rfi.id, $event)"
+                      />
+                    </div>
+                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+                      (mousedown)="onTileDetailResizeMouseDown($event, 'tile-rfi-' + rfi.id)">
+                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                    [class.border-default]="selectedWidgetId() !== 'tile-rfi-' + rfi.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-rfi-' + rfi.id">
+                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="tileCanvas.onTileMouseDown('tile-rfi-' + rfi.id, $event)">
+                      <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="itemStatusDot(rfi.status)">
+                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">clipboard</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground">{{ rfi.number }}</div>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
+                        <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
+                      </div>
+                    </div>
+                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0" (click)="navigateToRfiFromTile(rfi, 'tile-rfi-' + rfi.id)" (keydown.enter)="navigateToRfiFromTile(rfi, 'tile-rfi-' + rfi.id)" (mousedown)="$event.stopPropagation()">
+                      <div class="text-sm text-foreground line-clamp-2">{{ rfi.subject }}</div>
+                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
+                        <div class="flex items-center gap-1.5">
+                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
+                          <div>{{ rfi.assignee }}</div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                          <div>{{ rfi.dueDate }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+                      (mousedown)="tileCanvas.onTileResizeMouseDown('tile-rfi-' + rfi.id, $event)">
+                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
+                    </div>
+                  </div>
+                }
+                </div>
+                }
+              }
+            }
+            <!-- Submittal tiles as widgets -->
+            @if (activeRecordsPage() === 'submittals') {
+              @for (sub of projectSubmittals(); track sub.id) {
+                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-sub-' + sub.id]) {
+                <div
+                  [class]="'absolute' + (hasTileDetails() && tileMoveTargetId() !== 'tile-sub-' + sub.id ? ' widget-detail-transition' : '')"
+                  [attr.data-tile-id]="'tile-sub-' + sub.id"
+                  [style.top.px]="tilePos()['tile-sub-' + sub.id]?.top ?? 0"
+                  [style.left.px]="tilePos()['tile-sub-' + sub.id]?.left ?? 0"
+                  [style.width.px]="tilePos()['tile-sub-' + sub.id]?.width ?? 380"
+                  [style.height.px]="tilePos()['tile-sub-' + sub.id]?.height ?? 220"
+                  [style.z-index]="tileDetailViews()['tile-sub-' + sub.id] ? 9999 : (tileZ()['tile-sub-' + sub.id] ?? 0)"
+                  [class.opacity-30]="tileMoveTargetId() === 'tile-sub-' + sub.id"
+                  (mousedown)="selectTileWidget('tile-sub-' + sub.id); tileDetailViews()['tile-sub-' + sub.id] ? $event.stopPropagation() : null"
+                >
+                @if (tileDetailViews()['tile-sub-' + sub.id]; as detail) {
+                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
+                    [class.border-default]="selectedWidgetId() !== 'tile-sub-' + sub.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-sub-' + sub.id">
+                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-sub-' + sub.id)">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="itemStatusDot($any(detail).item.status)">
+                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">document</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.number }}</div>
+                      </div>
+                      <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="relative">
+                          <div class="flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer hover:bg-muted transition-colors duration-150"
+                            (click)="toggleTileHeaderStatus('tile-sub-' + sub.id, $event)"
+                            (mousedown)="$event.stopPropagation()">
+                            <div class="w-2 h-2 rounded-full" [class]="itemStatusDot($any(detail).item.status)"></div>
+                            <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
+                            <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
+                          </div>
+                          @if (tileHeaderStatusOpen() === 'tile-sub-' + sub.id) {
+                            <div class="absolute top-full right-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[160px] py-1"
+                              role="listbox" (mousedown)="$event.stopPropagation()">
+                              @for (opt of STATUS_OPTIONS; track opt.value) {
+                                <div class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted transition-colors duration-150"
+                                  role="option" [attr.aria-selected]="opt.value === $any(detail).item.status"
+                                  (click)="onTileHeaderStatusSelect('tile-sub-' + sub.id, opt.value, $event)">
+                                  <div class="w-2 h-2 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
+                                  <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
+                                  @if (opt.value === $any(detail).item.status) {
+                                    <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="closeTileDetail('tile-sub-' + sub.id)" aria-label="Close detail">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-5">
+                      <app-item-detail-view
+                        [hideHeader]="true"
+                        icon="document" typeLabel="Submittal"
+                        [number]="$any(detail).item.number" [subject]="$any(detail).item.subject"
+                        [assignee]="$any(detail).item.assignee"
+                        [assigneeOptions]="ASSIGNEE_OPTIONS"
+                        (assigneeChange)="onTileDetailAssigneeChange('tile-sub-' + sub.id, $event)"
+                        [field1Value]="$any(detail).item.project"
+                        [field3Value]="$any(detail).item.dueDate" [field3DateEditable]="true"
+                        [currentStatus]="$any(detail).item.status" [statusOptions]="STATUS_OPTIONS"
+                        [statusDotClass]="itemStatusDot($any(detail).item.status)"
+                        [statusText]="capitalizeStatus($any(detail).item.status)"
+                        (statusChange)="onTileDetailStatusChange('tile-sub-' + sub.id, $event)"
+                        (dueDateChange)="onTileDetailDueDateChange('tile-sub-' + sub.id, $event)"
+                      />
+                    </div>
+                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+                      (mousedown)="onTileDetailResizeMouseDown($event, 'tile-sub-' + sub.id)">
+                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                    [class.border-default]="selectedWidgetId() !== 'tile-sub-' + sub.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-sub-' + sub.id">
+                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="tileCanvas.onTileMouseDown('tile-sub-' + sub.id, $event)">
+                      <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="itemStatusDot(sub.status)">
+                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">document</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground">{{ sub.number }}</div>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
+                        <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
+                      </div>
+                    </div>
+                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0" (click)="navigateToSubFromTile(sub, 'tile-sub-' + sub.id)" (keydown.enter)="navigateToSubFromTile(sub, 'tile-sub-' + sub.id)" (mousedown)="$event.stopPropagation()">
+                      <div class="text-sm text-foreground line-clamp-2">{{ sub.subject }}</div>
+                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
+                        <div class="flex items-center gap-1.5">
+                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
+                          <div>{{ sub.assignee }}</div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                          <div>{{ sub.dueDate }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+                      (mousedown)="tileCanvas.onTileResizeMouseDown('tile-sub-' + sub.id, $event)">
+                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
+                    </div>
+                  </div>
+                }
+                </div>
+                }
+              }
+            }
+            @if (activeRecordsPage() !== 'rfis' && activeRecordsPage() !== 'submittals') {
+              <div class="absolute"
+                [style.top.px]="tilePos()['tc-title']?.top ? (tilePos()['tc-title'].top + tilePos()['tc-title'].height + 16) : 128"
+                [style.left.px]="tilePos()['tc-toolbar']?.left ?? 240"
+              >
+                <app-empty-state icon="clipboard" [title]="activeRecordsPageLabel()" [description]="activeRecordsPageDescription()" />
+              </div>
+            }
+          </div>
+        } @else {
+        <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
+          @if (!isMobile()) {
+            <app-collapsible-subnav
+              icon="clipboard"
+              title="Records"
+              [items]="recordsSubNavItems"
+              [activeItem]="activeRecordsPage()"
+              [collapsed]="sideSubNavCollapsed()"
+              [canvasMode]="isCanvas()"
+              (itemSelect)="activeRecordsPage.set($event)"
+              (collapsedChange)="sideSubNavCollapsed.set($event)"
+            />
+          }
+          <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
+            <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
+            <div class="flex items-center justify-between">
+              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }</div>
+            </div>
+            @if (activeRecordsPage() === 'rfis') {
+              @if (subnavViewMode() === 'grid') {
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  @for (rfi of projectRfis(); track rfi.id) {
+                    <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0" (click)="navigateToRfi(rfi)" (keydown.enter)="navigateToRfi(rfi)">
+                      <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
+                        <div class="flex items-center gap-3">
+                          <div class="w-9 h-9 rounded-lg flex items-center justify-center" [class]="itemStatusDot(rfi.status)">
+                            <i class="modus-icons text-lg text-primary-foreground" aria-hidden="true">clipboard</i>
+                          </div>
+                          <div class="text-base font-semibold text-foreground">{{ rfi.number }}</div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
+                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
+                        </div>
+                      </div>
+                      <div class="px-5 py-4 flex flex-col gap-3">
+                        <div class="text-sm text-foreground line-clamp-2">{{ rfi.subject }}</div>
+                        <div class="flex items-center justify-between text-xs text-foreground-60">
+                          <div class="flex items-center gap-1.5">
+                            <i class="modus-icons text-sm" aria-hidden="true">person</i>
+                            <div>{{ rfi.assignee }}</div>
+                          </div>
+                          <div class="flex items-center gap-1.5">
+                            <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                            <div>{{ rfi.dueDate }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  } @empty {
+                    <app-empty-state extraClass="col-span-full" icon="clipboard" title="No RFIs" description="No Requests for Information found for this project." />
+                  }
+                </div>
+              } @else {
+                <div class="bg-card border-default rounded-lg overflow-hidden">
+                  <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+                    <div>RFI #</div>
+                    <div>Subject</div>
+                    <div>Assignee</div>
+                    <div>Due Date</div>
+                    <div>Status</div>
+                  </div>
+                  @for (rfi of projectRfis(); track rfi.id) {
+                    <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                      tabindex="0" (click)="navigateToRfi(rfi)" (keydown.enter)="navigateToRfi(rfi)">
+                      <div class="text-sm font-medium text-primary">{{ rfi.number }}</div>
+                      <div class="text-sm text-foreground truncate">{{ rfi.subject }}</div>
+                      <div class="text-sm text-foreground-60 truncate">{{ rfi.assignee }}</div>
+                      <div class="text-sm text-foreground-60">{{ rfi.dueDate }}</div>
+                      <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
+                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
+                      <div class="text-sm">No RFIs for this project</div>
+                    </div>
+                  }
+                </div>
+              }
+            } @else if (activeRecordsPage() === 'submittals') {
+              @if (subnavViewMode() === 'grid') {
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  @for (sub of projectSubmittals(); track sub.id) {
+                    <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0" (click)="navigateToSubmittal(sub)" (keydown.enter)="navigateToSubmittal(sub)">
+                      <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
+                        <div class="flex items-center gap-3">
+                          <div class="w-9 h-9 rounded-lg flex items-center justify-center" [class]="itemStatusDot(sub.status)">
+                            <i class="modus-icons text-lg text-primary-foreground" aria-hidden="true">document</i>
+                          </div>
+                          <div class="text-base font-semibold text-foreground">{{ sub.number }}</div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
+                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
+                        </div>
+                      </div>
+                      <div class="px-5 py-4 flex flex-col gap-3">
+                        <div class="text-sm text-foreground line-clamp-2">{{ sub.subject }}</div>
+                        <div class="flex items-center justify-between text-xs text-foreground-60">
+                          <div class="flex items-center gap-1.5">
+                            <i class="modus-icons text-sm" aria-hidden="true">person</i>
+                            <div>{{ sub.assignee }}</div>
+                          </div>
+                          <div class="flex items-center gap-1.5">
+                            <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                            <div>{{ sub.dueDate }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  } @empty {
+                    <app-empty-state extraClass="col-span-full" icon="document" title="No Submittals" description="No Submittals found for this project." />
+                  }
+                </div>
+              } @else {
+                <div class="bg-card border-default rounded-lg overflow-hidden">
+                  <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+                    <div>SUB #</div>
+                    <div>Subject</div>
+                    <div>Assignee</div>
+                    <div>Due Date</div>
+                    <div>Status</div>
+                  </div>
+                  @for (sub of projectSubmittals(); track sub.id) {
+                    <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                      tabindex="0" (click)="navigateToSubmittal(sub)" (keydown.enter)="navigateToSubmittal(sub)">
+                      <div class="text-sm font-medium text-primary">{{ sub.number }}</div>
+                      <div class="text-sm text-foreground truncate">{{ sub.subject }}</div>
+                      <div class="text-sm text-foreground-60 truncate">{{ sub.assignee }}</div>
+                      <div class="text-sm text-foreground-60">{{ sub.dueDate }}</div>
+                      <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
+                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
+                      <div class="text-sm">No Submittals for this project</div>
+                    </div>
+                  }
+                </div>
+              }
+            } @else {
+              <app-empty-state icon="clipboard" [title]="activeRecordsPageLabel()" [description]="activeRecordsPageDescription()" />
+            }
+          </div>
+        </div>
+        }
+      }
+      @case ('field-captures') {
+        @if (isSubpageCanvasActive()) {
+          <div class="relative overflow-visible" [style.min-height.px]="400">
+            <div class="absolute" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['fieldCaptures'] }" />
+            </div>
+            <div class="absolute flex items-center" [style.top.px]="72" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
+              <div class="text-2xl font-bold text-foreground">Field Captures</div>
+            </div>
+            <div class="absolute" [style.top.px]="128" [style.left.px]="0">
+              <app-empty-state icon="camera" title="Field Captures" description="Browse photos, 360 captures, and site documentation from the field." />
+            </div>
+          </div>
+        } @else {
+        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['fieldCaptures'] }" />
+        <div class="flex flex-col gap-6">
+          <div class="flex items-center justify-between">
+            <div class="text-2xl font-bold text-foreground">Field Captures</div>
+          </div>
+          <app-empty-state icon="camera" title="Field Captures" description="Browse photos, 360 captures, and site documentation from the field." />
+        </div>
+        }
+      }
+      @case ('financials') {
+        @if (isSubpageCanvasActive()) {
+          <div class="relative overflow-visible" [style.min-height.px]="600">
+            <!-- Locked: Side Subnav -->
+            <div class="absolute overflow-visible"
+              [style.top.px]="0" [style.left.px]="0"
+              [style.width.px]="224" [style.height.px]="600"
+            >
+              <app-collapsible-subnav
+                icon="bar_graph"
+                title="Financials"
+                [items]="financialsSubNavItems"
+                [activeItem]="activeFinancialsPage()"
+                [collapsed]="sideSubNavCollapsed()"
+                [canvasMode]="true"
+                (itemSelect)="activeFinancialsPage.set($event)"
+                (collapsedChange)="sideSubNavCollapsed.set($event)"
+              />
+            </div>
+            <!-- Locked: Section Subnav (toolbar) -->
+            <div class="absolute" [style.top.px]="0" [style.left.px]="240" [style.width.px]="1040" [style.height.px]="56">
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
+            </div>
+            <!-- Locked: Title -->
+            <div class="absolute flex items-center justify-between" [style.top.px]="72" [style.left.px]="240" [style.width.px]="1040" [style.height.px]="40">
+              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}</div>
+            </div>
+            <div class="absolute" [style.top.px]="128" [style.left.px]="240">
+              <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
+            </div>
+          </div>
+        } @else {
+        <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
+          @if (!isMobile()) {
+            <app-collapsible-subnav
+              icon="bar_graph"
+              title="Financials"
+              [items]="financialsSubNavItems"
+              [activeItem]="activeFinancialsPage()"
+              [collapsed]="sideSubNavCollapsed()"
+              [canvasMode]="isCanvas()"
+              (itemSelect)="activeFinancialsPage.set($event)"
+              (collapsedChange)="sideSubNavCollapsed.set($event)"
+            />
+          }
+          <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
+            <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
+            <div class="flex items-center justify-between">
+              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}</div>
+            </div>
+            <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
+          </div>
+        </div>
+        }
+      }
+      @case ('files') {
+        @if (isSubpageCanvasActive()) {
+          <div class="relative overflow-visible" [style.min-height.px]="400">
+            <div class="absolute" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['files'] }" />
+            </div>
+            <div class="absolute flex items-center" [style.top.px]="72" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
+              <div class="text-2xl font-bold text-foreground">Files</div>
+            </div>
+            <div class="absolute" [style.top.px]="128" [style.left.px]="0">
+              <app-empty-state icon="folder_closed" title="Project Files" description="Manage project documents, shared files, and folder structures." />
+            </div>
+          </div>
+        } @else {
+        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['files'] }" />
+        <div class="flex flex-col gap-6">
+          <div class="flex items-center justify-between">
+            <div class="text-2xl font-bold text-foreground">Files</div>
+          </div>
+          <app-empty-state icon="folder_closed" title="Project Files" description="Manage project documents, shared files, and folder structures." />
+        </div>
+        }
+      }
+      @default {
+        @if (!isCanvas()) {
+        <div class="flex items-center justify-between mb-6">
+          <div class="text-2xl font-bold text-foreground">Dashboard</div>
+        </div>
         <div #pageHeader class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           @for (stat of summaryStats(); track stat.label) {
             <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
@@ -195,6 +1090,7 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
             </div>
           }
         </div>
+        }
 
         <!-- Widget grid -->
         <div
@@ -203,30 +1099,130 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
           [style.min-height.px]="!isMobile() ? desktopGridMinHeight() : null"
           #widgetGrid
         >
+          @if (isCanvas()) {
+            <div
+              class="absolute overflow-hidden"
+              [class.widget-detail-transition]="hasCanvasDetails()"
+              [attr.data-widget-id]="'projHeader'"
+              [style.top.px]="wTops()['projHeader']"
+              [style.left.px]="wLefts()['projHeader']"
+              [style.width.px]="wPixelWidths()['projHeader']"
+              [style.height.px]="wHeights()['projHeader']"
+              [style.z-index]="wZIndices()['projHeader'] ?? 0"
+            >
+              <div class="flex items-center justify-between mb-4">
+                <div class="text-2xl font-bold text-foreground">Dashboard</div>
+              </div>
+              <div class="grid grid-cols-4 gap-3">
+                @for (stat of summaryStats(); track stat.label) {
+                  <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+                    <div class="text-2xs text-foreground-40 uppercase tracking-wide">{{ stat.label }}</div>
+                    <div class="text-2xl font-bold text-foreground">{{ stat.value }}</div>
+                    @if (stat.subtext) {
+                      <div class="text-xs" [class]="stat.subtextClass || 'text-foreground-60'">{{ stat.subtext }}</div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
           @for (wId of widgets; track wId) {
             <div
-              [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden'"
+              [class]="(canvasDetailViews()[wId] ? 'absolute' : (isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden')) + (hasCanvasDetails() && canvasInteractingId() !== wId ? ' widget-detail-transition' : '')"
               [attr.data-widget-id]="wId"
               [style.top.px]="wTops()[wId]"
               [style.left.px]="!isMobile() ? wLefts()[wId] : null"
               [style.width.px]="!isMobile() ? wPixelWidths()[wId] : null"
               [style.height.px]="wHeights()[wId]"
-              [style.z-index]="wZIndices()[wId] ?? 0"
+              [style.z-index]="canvasDetailViews()[wId] ? 9999 : (wZIndices()[wId] ?? 0)"
+              (mousedown)="canvasDetailViews()[wId] ? $event.stopPropagation() : null"
             >
+            @if (canvasDetailViews()[wId]; as detail) {
+              <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full border-primary shadow-2xl">
+                <div
+                  class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                  (mousedown)="onCanvasDetailHeaderMouseDown($event, wId)"
+                >
+                  <div class="flex items-center gap-2 text-foreground-60 cursor-pointer hover:text-foreground transition-colors duration-150"
+                    (click)="closeCanvasDetail(wId)"
+                    (keydown.enter)="closeCanvasDetail(wId)"
+                  >
+                    <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
+                    <div class="text-sm font-medium">{{ detailBackLabel() }}</div>
+                  </div>
+                  <div
+                    class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                    (click)="closeCanvasDetail(wId)"
+                    aria-label="Close detail"
+                  >
+                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                  </div>
+                </div>
+                <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detail.type === 'rfi' ? 'rfi-detail' : 'submittal-detail'] }" />
+                <div class="flex-1 overflow-y-auto p-5">
+                  @if (detail.type === 'rfi') {
+                    <app-item-detail-view
+                      icon="clipboard"
+                      typeLabel="Request for Information"
+                      [number]="detail.item.number"
+                      [subject]="detail.item.subject"
+                      [question]="$any(detail.item).question"
+                      [assignee]="detail.item.assignee"
+                      [assigneeOptions]="ASSIGNEE_OPTIONS"
+                      (assigneeChange)="onCanvasDetailAssigneeChange(wId, $event)"
+                      field1Label="Created By"
+                      [field1Value]="$any(detail.item).askedBy"
+                      field3Label="Created On"
+                      [field3Value]="$any(detail.item).askedOn"
+                      field4Label="Due Date"
+                      [field4Value]="detail.item.dueDate"
+                      [field4ShowStatus]="false"
+                      [currentStatus]="detail.item.status"
+                      [statusOptions]="STATUS_OPTIONS"
+                      [statusDotClass]="itemStatusDot(detail.item.status)"
+                      [statusText]="capitalizeStatus(detail.item.status)"
+                      (statusChange)="onCanvasDetailStatusChange(wId, $event)"
+                      (dueDateChange)="onCanvasDetailDueDateChange(wId, $event)"
+                    />
+                  }
+                  @if (detail.type === 'submittal') {
+                    <app-item-detail-view
+                      icon="document"
+                      typeLabel="Submittal"
+                      [number]="detail.item.number"
+                      [subject]="detail.item.subject"
+                      [assignee]="detail.item.assignee"
+                      [assigneeOptions]="ASSIGNEE_OPTIONS"
+                      (assigneeChange)="onCanvasDetailAssigneeChange(wId, $event)"
+                      [field1Value]="$any(detail.item).project"
+                      [field3Value]="detail.item.dueDate"
+                      [field3DateEditable]="true"
+                      [currentStatus]="detail.item.status"
+                      [statusOptions]="STATUS_OPTIONS"
+                      [statusDotClass]="itemStatusDot(detail.item.status)"
+                      [statusText]="capitalizeStatus(detail.item.status)"
+                      (statusChange)="onCanvasDetailStatusChange(wId, $event)"
+                      (dueDateChange)="onCanvasDetailDueDateChange(wId, $event)"
+                    />
+                  }
+                </div>
+                <div
+                  class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+                  (mousedown)="onCanvasDetailResizeMouseDown($event, wId)"
+                >
+                  <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
+                </div>
+              </div>
+            } @else {
               <div class="relative h-full" [class.opacity-30]="moveTargetId() === wId">
                 <widget-lock-toggle [locked]="wLocked()[wId]" (toggle)="toggleWidgetLock(wId)" />
 
               @switch (wId) {
                 @case ('milestones') {
-              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
-                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">flag</i>
-                    <div class="text-base font-semibold text-foreground">Milestones</div>
-                  </div>
-                  <div class="text-xs text-foreground-60">{{ completedMilestones() }}/{{ milestones().length }} Complete</div>
-                </div>
+              <app-widget-frame icon="flag" title="Milestones" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <div headerMeta class="text-xs text-foreground-60">{{ completedMilestones() }}/{{ milestones().length }} Complete</div>
                 <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
                   @for (ms of milestones(); track ms.id) {
                     <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
@@ -261,21 +1257,14 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                     </div>
                   }
                 </div>
-
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
-              </div>
+              </app-widget-frame>
                 }
 
                 @case ('tasks') {
-              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
-                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">clipboard</i>
-                    <div class="text-base font-semibold text-foreground">Key Tasks</div>
-                  </div>
-                  <div class="text-xs text-foreground-60">{{ openTaskCount() }} Open</div>
-                </div>
+              <app-widget-frame icon="clipboard" title="Key Tasks" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <div headerMeta class="text-xs text-foreground-60">{{ openTaskCount() }} Open</div>
                 <div class="p-4 flex flex-col gap-2 overflow-y-auto flex-1">
                   @for (task of tasks(); track task.id) {
                     <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
@@ -286,33 +1275,26 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                         <div class="text-sm text-foreground truncate">{{ task.title }}</div>
                         <div class="text-xs text-foreground-40">{{ task.assignee }} · {{ task.dueDate }}</div>
                       </div>
-                      <modus-badge [color]="priorityBadgeColor(task.priority)" variant="filled" size="sm">
+                      <modus-badge [color]="severityBadgeColor(task.priority)" variant="filled" size="sm">
                         {{ task.priority | titlecase }}
                       </modus-badge>
                     </div>
                   }
                 </div>
-
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
-              </div>
+              </app-widget-frame>
                 }
 
                 @case ('risks') {
-              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
-                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                    <i class="modus-icons text-lg text-warning" aria-hidden="true">warning</i>
-                    <div class="text-base font-semibold text-foreground">Risks</div>
-                  </div>
-                  <div class="text-xs text-foreground-60">{{ risks().length }} Identified</div>
-                </div>
+              <app-widget-frame icon="warning" title="Risks" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <div headerMeta class="text-xs text-foreground-60">{{ risks().length }} Identified</div>
                 <div class="p-4 flex flex-col gap-2 overflow-y-auto flex-1">
                   @for (risk of risks(); track risk.id) {
                     <div class="p-3 bg-background border-default rounded-lg flex flex-col gap-2">
                       <div class="flex items-center justify-between">
                         <div class="text-sm font-medium text-foreground">{{ risk.title }}</div>
-                        <modus-badge [color]="riskBadgeColor(risk.severity)" variant="filled" size="sm">
+                        <modus-badge [color]="severityBadgeColor(risk.severity)" variant="filled" size="sm">
                           {{ risk.severity | titlecase }}
                         </modus-badge>
                       </div>
@@ -325,26 +1307,19 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                     </div>
                   }
                 </div>
-
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
-              </div>
+              </app-widget-frame>
                 }
 
                 @case ('rfis') {
-              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
-                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">clipboard</i>
-                    <div class="text-base font-semibold text-foreground">RFIs</div>
-                    @if (rfiOverdueCount() > 0) {
-                      <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                        <div class="text-xs font-medium text-destructive">{{ rfiOverdueCount() }} overdue</div>
-                      </div>
-                    }
+              <app-widget-frame icon="clipboard" title="RFIs" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                @if (rfiOverdueCount() > 0) {
+                  <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                    <div class="text-xs font-medium text-destructive">{{ rfiOverdueCount() }} overdue</div>
                   </div>
-                  <div class="text-xs text-foreground-60">{{ projectRfis().length }} Total</div>
-                </div>
+                }
+                <div headerMeta class="text-xs text-foreground-60">{{ projectRfis().length }} Total</div>
                 <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
                   <div role="columnheader">RFI #</div>
                   <div role="columnheader">Subject</div>
@@ -353,13 +1328,13 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                 </div>
                 <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
                   @for (rfi of projectRfis(); track rfi.id) {
-                    <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToRfi(rfi)" (keydown.enter)="navigateToRfi(rfi)" (mousedown)="$event.stopPropagation()">
+                    <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToRfi(rfi, wId)" (keydown.enter)="navigateToRfi(rfi, wId)" (mousedown)="$event.stopPropagation()">
                       <div class="text-sm font-medium text-primary" role="cell">{{ rfi.number }}</div>
                       <div class="text-sm text-foreground truncate" role="cell">{{ rfi.subject }}</div>
                       <div class="text-sm text-foreground-60" role="cell">{{ rfi.dueDate }}</div>
                       <div class="flex items-center gap-1.5" role="cell">
-                        <div class="w-2 h-2 rounded-full" [class]="rfiStatusDot(rfi.status)"></div>
-                        <div class="text-xs font-medium text-foreground-60">{{ rfiStatusText(rfi.status) }}</div>
+                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
+                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
                       </div>
                     </div>
                   } @empty {
@@ -369,25 +1344,19 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                     </div>
                   }
                 </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
-              </div>
+              </app-widget-frame>
                 }
 
                 @case ('submittals') {
-              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
-                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">document</i>
-                    <div class="text-base font-semibold text-foreground">Submittals</div>
-                    @if (submittalOverdueCount() > 0) {
-                      <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                        <div class="text-xs font-medium text-destructive">{{ submittalOverdueCount() }} overdue</div>
-                      </div>
-                    }
+              <app-widget-frame icon="document" title="Submittals" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                @if (submittalOverdueCount() > 0) {
+                  <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                    <div class="text-xs font-medium text-destructive">{{ submittalOverdueCount() }} overdue</div>
                   </div>
-                  <div class="text-xs text-foreground-60">{{ projectSubmittals().length }} Total</div>
-                </div>
+                }
+                <div headerMeta class="text-xs text-foreground-60">{{ projectSubmittals().length }} Total</div>
                 <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
                   <div role="columnheader">SUB #</div>
                   <div role="columnheader">Subject</div>
@@ -396,13 +1365,13 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                 </div>
                 <div class="overflow-y-auto flex-1" role="table" aria-label="Submittals" aria-live="polite">
                   @for (sub of projectSubmittals(); track sub.id) {
-                    <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToSubmittal(sub)" (keydown.enter)="navigateToSubmittal(sub)" (mousedown)="$event.stopPropagation()">
+                    <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToSubmittal(sub, wId)" (keydown.enter)="navigateToSubmittal(sub, wId)" (mousedown)="$event.stopPropagation()">
                       <div class="text-sm font-medium text-primary" role="cell">{{ sub.number }}</div>
                       <div class="text-sm text-foreground truncate" role="cell">{{ sub.subject }}</div>
                       <div class="text-sm text-foreground-60" role="cell">{{ sub.dueDate }}</div>
                       <div class="flex items-center gap-1.5" role="cell">
-                        <div class="w-2 h-2 rounded-full" [class]="submittalStatusDot(sub.status)"></div>
-                        <div class="text-xs font-medium text-foreground-60">{{ submittalStatusText(sub.status) }}</div>
+                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
+                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
                       </div>
                     </div>
                   } @empty {
@@ -412,75 +1381,37 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                     </div>
                   }
                 </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
-              </div>
+              </app-widget-frame>
                 }
 
                 @case ('drawing') {
-              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
-                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">floorplan</i>
-                    <div class="text-base font-semibold text-foreground">Drawing</div>
-                  </div>
-                  <div class="text-xs text-foreground-60">{{ latestDrawing().version }}</div>
-                </div>
-                <div class="overflow-y-auto flex-1 cursor-pointer hover:opacity-90 transition-opacity duration-150" role="button" tabindex="0" [attr.aria-label]="'Open drawing: ' + latestDrawing().name">
+              <app-widget-frame icon="floorplan" title="Latest Drawing" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <div headerMeta class="text-xs text-foreground-60">{{ latestDrawing().version }}</div>
+                <div class="overflow-y-auto flex-1 cursor-pointer hover:opacity-90 transition-opacity duration-150" role="button" tabindex="0"
+                  [attr.aria-label]="'Open drawing: ' + newestDrawingTile().title"
+                  (click)="selectNavItem('drawings')"
+                  (keydown.enter)="selectNavItem('drawings')">
                   <div class="relative w-full aspect-[4/3] bg-muted overflow-hidden">
-                    <svg class="w-full h-full" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      @for (i of gridLines; track i) {
-                        <line [attr.x1]="i * 20" y1="0" [attr.x2]="i * 20" y2="300" class="floorplan-grid" />
-                        <line x1="0" [attr.y1]="i * 20" x2="400" [attr.y2]="i * 20" class="floorplan-grid" />
-                      }
-                      <rect x="40" y="30" width="320" height="240" class="floorplan-wall" />
-                      <rect x="60" y="60" width="16" height="60" class="floorplan-rack" />
-                      <rect x="90" y="60" width="16" height="60" class="floorplan-rack" />
-                      <rect x="120" y="60" width="16" height="60" class="floorplan-rack" />
-                      <rect x="150" y="60" width="16" height="60" class="floorplan-rack" />
-                      <rect x="180" y="60" width="16" height="60" class="floorplan-rack" />
-                      <rect x="60" y="160" width="16" height="60" class="floorplan-rack" />
-                      <rect x="90" y="160" width="16" height="60" class="floorplan-rack" />
-                      <rect x="120" y="160" width="16" height="60" class="floorplan-rack" />
-                      <rect x="150" y="160" width="16" height="60" class="floorplan-rack" />
-                      <rect x="180" y="160" width="16" height="60" class="floorplan-rack" />
-                      <rect x="240" y="50" width="100" height="40" rx="4" class="floorplan-utility" />
-                      <rect x="240" y="110" width="100" height="40" rx="4" class="floorplan-utility" />
-                      <rect x="240" y="170" width="100" height="40" rx="4" class="floorplan-utility" />
-                      <text x="130" y="145" class="floorplan-label">Server Racks</text>
-                      <text x="290" y="240" class="floorplan-label">HVAC</text>
-                      <line x1="40" y1="200" x2="40" y2="240" class="floorplan-door" />
-                      <line x1="40" y1="280" x2="360" y2="280" class="floorplan-dim" />
-                      <text x="200" y="295" class="floorplan-dim-text">24.4m</text>
-                    </svg>
-                    <div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-success text-success-foreground text-2xs font-semibold">Current</div>
+                    <img [src]="newestDrawingTile().thumbnail" [alt]="newestDrawingTile().title" class="w-full h-full object-cover" />
+                    <div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-success text-success-foreground text-2xs font-semibold">{{ newestDrawingTile().revision }}</div>
                   </div>
                   <div class="px-4 py-3 flex flex-col gap-1">
-                    <div class="text-sm font-medium text-foreground truncate">{{ latestDrawing().name }}</div>
+                    <div class="text-sm font-medium text-foreground truncate">{{ newestDrawingTile().title }}</div>
                     <div class="flex items-center justify-between">
-                      <div class="text-xs text-foreground-60">{{ latestDrawing().updatedBy }}</div>
-                      <div class="text-xs text-foreground-40">{{ latestDrawing().updatedAt }}</div>
-                    </div>
-                    <div class="flex items-center gap-2 mt-1">
-                      <div class="flex items-center gap-1"><i class="modus-icons text-2xs text-foreground-40" aria-hidden="true">history</i><div class="text-2xs text-foreground-40">{{ latestDrawing().revisionCount }} revisions</div></div>
-                      <div class="flex items-center gap-1"><i class="modus-icons text-2xs text-foreground-40" aria-hidden="true">file</i><div class="text-2xs text-foreground-40">{{ latestDrawing().fileSize }}</div></div>
+                      <div class="text-xs text-foreground-60 truncate">{{ newestDrawingTile().subtitle }}</div>
+                      <div class="text-xs text-foreground-40 flex-shrink-0 ml-2">{{ newestDrawingTile().date }}</div>
                     </div>
                   </div>
                 </div>
-
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
-              </div>
+              </app-widget-frame>
                 }
 
                 @case ('budget') {
-              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
-                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">bar_graph</i>
-                    <div class="text-base font-semibold text-foreground">Budget</div>
-                  </div>
-                </div>
+              <app-widget-frame icon="bar_graph" title="Budget" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1">
                   <div class="flex items-baseline justify-between">
                     <div class="text-3xl font-bold text-foreground">{{ budgetUsed() }}</div>
@@ -501,21 +1432,14 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                     <div class="text-xs text-foreground">{{ budgetHealthy() ? 'Budget on track' : 'Budget critical' }} -- {{ budgetRemaining() }} remaining</div>
                   </div>
                 </div>
-
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
-              </div>
+              </app-widget-frame>
                 }
 
                 @case ('team') {
-              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
-                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">people_group</i>
-                    <div class="text-base font-semibold text-foreground">Team</div>
-                  </div>
-                  <div class="text-xs text-foreground-60">{{ team().length }} Members</div>
-                </div>
+              <app-widget-frame icon="people_group" title="Team" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <div headerMeta class="text-xs text-foreground-60">{{ team().length }} Members</div>
                 <div class="p-4 flex flex-col gap-2 overflow-y-auto flex-1">
                   @for (member of team(); track member.id) {
                     <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
@@ -533,20 +1457,13 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                     </div>
                   }
                 </div>
-
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
-              </div>
+              </app-widget-frame>
                 }
 
                 @case ('activity') {
-              <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== wId" [class.border-primary]="selectedWidgetId() === wId">
-                <div class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0" (mousedown)="onWidgetHeaderMouseDown(wId, $event)" (touchstart)="onWidgetHeaderTouchStart(wId, $event)">
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">history</i>
-                    <div class="text-base font-semibold text-foreground">Recent Activity</div>
-                  </div>
-                </div>
+              <app-widget-frame icon="history" title="Recent Activity" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
                   @for (entry of activity(); track entry.id) {
                     <div class="flex items-start gap-3">
@@ -561,16 +1478,18 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                     </div>
                   }
                 </div>
-
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)" />
-              </div>
+              </app-widget-frame>
                 }
               }
 
               </div>
+            }
             </div>
           }
+
           </div>
+      }
+      }
       }
     </ng-template>
 
@@ -906,7 +1825,7 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
         <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
-          <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
+          <div class="px-4 py-4 md:py-6 max-w-[1920px] mx-auto">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
         </div>
@@ -926,7 +1845,7 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
                 [attr.aria-label]="item.label"
               >
                 <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
-                @if (navExpanded()) {
+                @if (navExpanded() && !isMobile()) {
                   <div class="custom-side-nav-label">{{ item.label }}</div>
                 }
               </div>
@@ -940,13 +1859,73 @@ type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submit
               aria-label="Settings"
             >
               <i class="modus-icons text-xl" aria-hidden="true">settings</i>
-              @if (navExpanded()) {
+              @if (navExpanded() && !isMobile()) {
                 <div class="custom-side-nav-label">Settings</div>
               }
             </div>
           </div>
         </div>
       }
+
+      @if (isMobile() && navExpanded() && hasSubNav()) {
+        <div class="mobile-side-subnav">
+          @switch (activeNavItem()) {
+            @case ('records') {
+              <div class="flex items-center gap-2 px-4 py-3 flex-shrink-0">
+                <i class="modus-icons text-base text-primary" aria-hidden="true">clipboard</i>
+                <div class="text-sm font-semibold text-primary">Records</div>
+              </div>
+              <div class="flex-1 overflow-y-auto min-h-0">
+                @for (item of recordsSubNavItems; track item.value) {
+                  <div
+                    class="py-2.5 text-sm cursor-pointer transition-colors duration-150"
+                    [class.bg-primary]="activeRecordsPage() === item.value"
+                    [class.text-primary-foreground]="activeRecordsPage() === item.value"
+                    [class.font-medium]="activeRecordsPage() === item.value"
+                    [class.rounded-md]="activeRecordsPage() === item.value"
+                    [class.mx-2]="activeRecordsPage() === item.value"
+                    [class.px-2]="activeRecordsPage() === item.value"
+                    [class.px-4]="activeRecordsPage() !== item.value"
+                    [class.text-foreground]="activeRecordsPage() !== item.value"
+                    [class.hover:bg-muted]="activeRecordsPage() !== item.value"
+                    role="button" tabindex="0"
+                    (click)="selectRecordsSubPage(item.value)"
+                    (keydown.enter)="selectRecordsSubPage(item.value)">
+                    {{ item.label }}
+                  </div>
+                }
+              </div>
+            }
+            @case ('financials') {
+              <div class="flex items-center gap-2 px-4 py-3 flex-shrink-0">
+                <i class="modus-icons text-base text-primary" aria-hidden="true">bar_graph</i>
+                <div class="text-sm font-semibold text-primary">Financials</div>
+              </div>
+              <div class="flex-1 overflow-y-auto min-h-0">
+                @for (item of financialsSubNavItems; track item.value) {
+                  <div
+                    class="py-2.5 text-sm cursor-pointer transition-colors duration-150"
+                    [class.bg-primary]="activeFinancialsPage() === item.value"
+                    [class.text-primary-foreground]="activeFinancialsPage() === item.value"
+                    [class.font-medium]="activeFinancialsPage() === item.value"
+                    [class.rounded-md]="activeFinancialsPage() === item.value"
+                    [class.mx-2]="activeFinancialsPage() === item.value"
+                    [class.px-2]="activeFinancialsPage() === item.value"
+                    [class.px-4]="activeFinancialsPage() !== item.value"
+                    [class.text-foreground]="activeFinancialsPage() !== item.value"
+                    [class.hover:bg-muted]="activeFinancialsPage() !== item.value"
+                    role="button" tabindex="0"
+                    (click)="selectFinancialsSubPage(item.value)"
+                    (keydown.enter)="selectFinancialsSubPage(item.value)">
+                    {{ item.label }}
+                </div>
+              }
+              </div>
+            }
+          }
+        </div>
+      }
+
       @if (navExpanded()) {
         <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
       }
@@ -1116,32 +2095,55 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly projectData = input.required<ProjectDashboardData>();
   readonly projectId = input<number>(1);
 
+  private static readonly PROJ_HEADER_HEIGHT = 140;
+  private static readonly PROJ_HEADER_OFFSET = ProjectDashboardComponent.PROJ_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
+
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'budget', 'team', 'activity'],
+    widgets: ['projHeader', 'milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'budget', 'team', 'activity'],
     layoutStorageKey: () => `project-${this.projectId()}-v2`,
-    canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v2`,
-    defaultColStarts: { milestones: 1, tasks: 1, risks: 1, rfis: 1, submittals: 1, drawing: 12, budget: 12, team: 12, activity: 12 },
-    defaultColSpans: { milestones: 11, tasks: 11, risks: 11, rfis: 11, submittals: 11, drawing: 5, budget: 5, team: 5, activity: 5 },
-    defaultTops: { milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, budget: 436, team: 902, activity: 1318 },
-    defaultHeights: { milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, budget: 450, team: 400, activity: 350 },
-    defaultLefts: { milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
-    defaultPixelWidths: { milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
-    canvasDefaultLefts: { milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
-    canvasDefaultPixelWidths: { milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
-    canvasDefaultTops: { milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, budget: 436, team: 902, activity: 1318 },
-    canvasDefaultHeights: { milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, budget: 450, team: 400, activity: 350 },
+    canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v3`,
+    defaultColStarts: { projHeader: 1, milestones: 1, tasks: 1, risks: 1, rfis: 1, submittals: 1, drawing: 12, budget: 12, team: 12, activity: 12 },
+    defaultColSpans: { projHeader: 16, milestones: 11, tasks: 11, risks: 11, rfis: 11, submittals: 11, drawing: 5, budget: 5, team: 5, activity: 5 },
+    defaultTops: { projHeader: 0, milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, budget: 436, team: 902, activity: 1318 },
+    defaultHeights: { projHeader: 0, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, budget: 450, team: 400, activity: 350 },
+    defaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
+    defaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
+    canvasDefaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
+    canvasDefaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
+    canvasDefaultTops: {
+      projHeader: 0,
+      milestones: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
+      tasks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 536,
+      risks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 952,
+      rfis: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1318,
+      submittals: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1658,
+      drawing: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
+      budget: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 436,
+      team: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 902,
+      activity: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1318,
+    },
+    canvasDefaultHeights: { projHeader: ProjectDashboardComponent.PROJ_HEADER_HEIGHT, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, budget: 450, team: 400, activity: 350 },
     minColSpan: 4,
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: true,
     onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
   }, inject(WidgetLayoutService));
 
-  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
+  private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
+    this.engine.destroy();
+    this.aiStreamSub?.unsubscribe();
+  });
+  private readonly _lockProjHeader = (() => {
+    this.engine.widgetLocked.update(l => ({ ...l, projHeader: true }));
+  })();
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
     if (tick > 0) {
-      untracked(() => this.engine.resetToDefaults());
+      untracked(() => {
+        this.engine.resetToDefaults();
+        this.engine.widgetLocked.update(l => ({ ...l, projHeader: true }));
+      });
     }
   });
 
@@ -1187,6 +2189,158 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly mobileGridHeight = computed(() => this.engine.mobileGridHeight());
   readonly desktopGridMinHeight = this.engine.canvasGridMinHeight;
 
+  // --- Subpage tile canvas (tiles become widgets in canvas mode) ---
+  private static readonly TILE_SUBNAV_WIDTH = 224;
+  private static readonly TILE_TOOLBAR_HEIGHT = 56;
+  private static readonly TILE_TITLE_HEIGHT = 40;
+  private static readonly TILE_CHROME_GAP = 16;
+  private static readonly TILE_CONTENT_TOP = ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT + ProjectDashboardComponent.TILE_TITLE_HEIGHT + ProjectDashboardComponent.TILE_CHROME_GAP * 2;
+  private static readonly TILE_CONTENT_LEFT = ProjectDashboardComponent.TILE_SUBNAV_WIDTH + ProjectDashboardComponent.TILE_CHROME_GAP;
+
+  readonly tileCanvas = new SubpageTileCanvas({
+    storageKey: () => `tile-canvas:project-${this.projectId()}:${this.activeNavItem()}:${this.activeSubpage()}:v1`,
+    lockedIds: ['tc-subnav', 'tc-toolbar', 'tc-title', 'tc-list'],
+    tileWidth: 380,
+    tileHeight: 220,
+    columns: 3,
+    gap: 16,
+    offsetTop: ProjectDashboardComponent.TILE_CONTENT_TOP,
+    offsetLeft: ProjectDashboardComponent.TILE_CONTENT_LEFT,
+    detailWidth: 800,
+    detailHeight: 1000,
+  });
+
+  readonly activeSubpage = computed(() => {
+    const nav = this.activeNavItem();
+    if (nav === 'records') return this.activeRecordsPage();
+    if (nav === 'financials') return this.activeFinancialsPage();
+    return nav;
+  });
+
+  readonly isSubpageCanvasActive = computed(() => {
+    if (!this.isCanvas()) return false;
+    const nav = this.activeNavItem();
+    return nav !== 'dashboard';
+  });
+
+  readonly subpageTileIds = computed<string[]>(() => {
+    const nav = this.activeNavItem();
+    if (nav === 'drawings') return this.drawingTiles().map(d => `tile-drawing-${d.id}`);
+    if (nav === 'records') {
+      const sub = this.activeRecordsPage();
+      if (sub === 'rfis') return this.projectRfis().map(r => `tile-rfi-${r.id}`);
+      if (sub === 'submittals') return this.projectSubmittals().map(s => `tile-sub-${s.id}`);
+    }
+    return [];
+  });
+
+  readonly tilePos = this.tileCanvas.positions;
+  readonly tileZ = this.tileCanvas.zIndices;
+  readonly tileLocked = this.tileCanvas.locked;
+  readonly tileMoveTargetId = this.tileCanvas.moveTargetId;
+  readonly tileCanvasMinHeight = this.tileCanvas.canvasMinHeight;
+  readonly tileDetailViews = this.tileCanvas.detailViews;
+  readonly hasTileDetails = this.tileCanvas.hasDetails;
+  readonly tileInteractingId = signal<string | null>(null);
+  readonly tileHeaderStatusOpen = signal<string | null>(null);
+
+  toggleTileHeaderStatus(tileId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.tileHeaderStatusOpen.update(v => v === tileId ? null : tileId);
+  }
+
+  onTileHeaderStatusSelect(tileId: string, newStatus: string, event: MouseEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.tileHeaderStatusOpen.set(null);
+    this.onTileDetailStatusChange(tileId, newStatus);
+  }
+
+  navigateToRfiFromTile(rfi: Rfi, tileId: string): void {
+    this.navigateToItemFromTile('rfi', rfi, tileId);
+  }
+
+  navigateToSubFromTile(sub: Submittal, tileId: string): void {
+    this.navigateToItemFromTile('submittal', sub, tileId);
+  }
+
+  private navigateToItemFromTile(type: 'rfi' | 'submittal', item: Rfi | Submittal, tileId: string): void {
+    this.tileCanvas.openDetail(tileId, { type, item } as TileDetailView);
+    this.widgetFocusService.selectWidget(tileId);
+  }
+
+  selectTileWidget(tileId: string): void {
+    this.widgetFocusService.selectWidget(tileId);
+  }
+
+  closeTileDetail(tileId: string): void {
+    this.tileCanvas.closeDetail(tileId);
+  }
+
+  onTileDetailHeaderMouseDown(event: MouseEvent, tileId: string): void {
+    event.preventDefault();
+    this.tileInteractingId.set(tileId);
+    this.widgetFocusService.selectWidget(tileId);
+    this.tileCanvas.onTileMouseDown(tileId, event);
+  }
+
+  onTileDetailResizeMouseDown(event: MouseEvent, tileId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.tileInteractingId.set(tileId);
+    this.tileCanvas.onTileResizeMouseDown(tileId, event);
+  }
+
+  updateTileDetailField(tileId: string, field: string, value: string): void {
+    const current = this.tileDetailViews()[tileId];
+    if (!current) return;
+    const updated = { ...(current.item as Record<string, unknown>), [field]: value };
+    this.tileCanvas.updateDetailItem(tileId, updated);
+  }
+
+  onTileDetailStatusChange(tileId: string, newStatus: string): void { this.updateTileDetailField(tileId, 'status', newStatus); }
+  onTileDetailAssigneeChange(tileId: string, newAssignee: string): void { this.updateTileDetailField(tileId, 'assignee', newAssignee); }
+  onTileDetailDueDateChange(tileId: string, newDate: string): void { this.updateTileDetailField(tileId, 'dueDate', newDate); }
+
+  private readonly _tileCanvasEffect = effect(() => {
+    if (!this.isSubpageCanvasActive()) return;
+    const tileIds = this.subpageTileIds();
+    const nav = this.activeNavItem();
+    const viewMode = this.subnavViewMode();
+    const hasSideNav = nav === 'records' || nav === 'financials';
+    const contentLeft = hasSideNav ? ProjectDashboardComponent.TILE_CONTENT_LEFT : 0;
+    const contentWidth = hasSideNav ? 1040 : 1280;
+
+    const lockedRects: Record<string, TileRect> = {
+      'tc-toolbar': { top: 0, left: contentLeft, width: contentWidth, height: ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT },
+      'tc-title': { top: ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT + ProjectDashboardComponent.TILE_CHROME_GAP, left: contentLeft, width: contentWidth, height: ProjectDashboardComponent.TILE_TITLE_HEIGHT },
+    };
+
+    if (hasSideNav) {
+      lockedRects['tc-subnav'] = { top: 0, left: 0, width: ProjectDashboardComponent.TILE_SUBNAV_WIDTH, height: 600 };
+    }
+
+    if (viewMode === 'list') {
+      const itemCount = tileIds.length;
+      const listHeight = Math.min(40 + itemCount * 45, 600);
+      lockedRects['tc-list'] = {
+        top: ProjectDashboardComponent.TILE_CONTENT_TOP,
+        left: contentLeft,
+        width: contentWidth,
+        height: listHeight,
+      };
+    }
+
+    untracked(() => {
+      this.tileCanvas.config.offsetLeft = contentLeft;
+      this.tileCanvas.config.offsetTop = viewMode === 'list'
+        ? ProjectDashboardComponent.TILE_CONTENT_TOP + Math.min(40 + tileIds.length * 45, 600) + this.tileCanvas.config.gap
+        : ProjectDashboardComponent.TILE_CONTENT_TOP;
+      this.tileCanvas.setTiles(tileIds, lockedRects);
+    });
+  });
+
   readonly isPanReady = signal(false);
   readonly isPanning = signal(false);
   readonly panOffsetX = signal(0);
@@ -1199,19 +2353,50 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly navExpanded = signal(false);
   readonly activeNavItem = signal<string>('dashboard');
   readonly resetMenuOpen = signal(false);
+  readonly hasSubNav = computed(() => {
+    const page = this.activeNavItem();
+    return page === 'records' || page === 'financials';
+  });
 
-  readonly sideNavItems = [
-    { value: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { value: 'milestones', label: 'Milestones', icon: 'flag' },
-    { value: 'tasks', label: 'Tasks', icon: 'clipboard' },
-    { value: 'risks', label: 'Risks', icon: 'warning' },
-    { value: 'rfis', label: 'RFIs', icon: 'clipboard' },
-    { value: 'submittals', label: 'Submittals', icon: 'document' },
-    { value: 'drawing', label: 'Drawings', icon: 'floorplan' },
-    { value: 'budget', label: 'Budget', icon: 'bar_graph' },
-    { value: 'team', label: 'Team', icon: 'people_group' },
-    { value: 'activity', label: 'Activity', icon: 'history' },
-  ];
+  readonly detailHasSubNav = computed(() => {
+    if (!this.detailView()) return false;
+    const page = this.activeNavItem();
+    return page === 'records' || page === 'financials';
+  });
+
+  readonly sideNavItems = SIDE_NAV_ITEMS;
+
+  readonly subnavSearch = signal('');
+  readonly subnavViewMode = signal<string>('grid');
+
+  readonly recordsSubNavItems = RECORDS_SUB_NAV_ITEMS;
+  readonly sideSubNavCollapsed = signal(false);
+  readonly activeRecordsPage = signal('daily-reports');
+  readonly activeRecordsPageLabel = computed(() => {
+    const item = this.recordsSubNavItems.find(i => i.value === this.activeRecordsPage());
+    return item?.label ?? 'Daily Reports';
+  });
+  readonly activeRecordsPageDescription = computed(() =>
+    RECORDS_PAGE_DESCRIPTIONS[this.activeRecordsPage()] ?? ''
+  );
+
+  readonly financialsSubNavItems = FINANCIALS_SUB_NAV_ITEMS;
+  readonly activeFinancialsPage = signal('budget');
+  readonly activeFinancialsPageLabel = computed(() => {
+    const item = this.financialsSubNavItems.find(i => i.value === this.activeFinancialsPage());
+    return item?.label ?? 'Budget';
+  });
+  readonly activeFinancialsPageDescription = computed(() =>
+    FINANCIALS_PAGE_DESCRIPTIONS[this.activeFinancialsPage()] ?? ''
+  );
+
+  readonly drawingTiles = computed(() =>
+    ALL_DRAWINGS_BY_PROJECT[this.projectId()] ?? ALL_DRAWINGS_BY_PROJECT[1]
+  );
+
+  readonly newestDrawingTile = computed(() => this.drawingTiles()[0]);
+
+  readonly subnavConfigs = SUBNAV_CONFIGS;
 
   private readonly gridRef = viewChild<ElementRef>('widgetGrid');
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
@@ -1310,7 +2495,12 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     return d?.type === 'submittal' ? d.item : null;
   });
 
-  readonly gridLines = Array.from({ length: 21 }, (_, i) => i);
+  readonly detailSubnavKey = computed(() => {
+    const d = this.detailView();
+    if (d?.type === 'rfi') return 'rfi-detail';
+    if (d?.type === 'submittal') return 'submittal-detail';
+    return 'rfi-detail';
+  });
 
   statusBadgeColor(): ModusBadgeColor {
     const map: Record<ProjectStatus, ModusBadgeColor> = {
@@ -1332,76 +2522,228 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     return map[status];
   }
 
-  priorityBadgeColor(priority: TaskPriority): ModusBadgeColor {
-    const map: Record<TaskPriority, ModusBadgeColor> = {
-      high: 'danger',
-      medium: 'warning',
-      low: 'secondary',
-    };
-    return map[priority];
+  private static readonly SEVERITY_BADGE: Record<string, ModusBadgeColor> = { high: 'danger', medium: 'warning', low: 'secondary' };
+  private static readonly STATUS_DOT: Record<string, string> = { open: 'bg-primary', overdue: 'bg-destructive', upcoming: 'bg-warning', closed: 'bg-success' };
+
+  severityBadgeColor(level: string): ModusBadgeColor {
+    return ProjectDashboardComponent.SEVERITY_BADGE[level] ?? 'secondary';
   }
 
-  riskBadgeColor(severity: RiskSeverity): ModusBadgeColor {
-    const map: Record<RiskSeverity, ModusBadgeColor> = {
-      high: 'danger',
-      medium: 'warning',
-      low: 'secondary',
-    };
-    return map[severity];
+  itemStatusDot(status: string): string {
+    return ProjectDashboardComponent.STATUS_DOT[status] ?? 'bg-muted';
   }
 
-  rfiStatusDot(status: RfiStatus): string {
-    const map: Record<RfiStatus, string> = { open: 'bg-primary', overdue: 'bg-destructive', upcoming: 'bg-warning', closed: 'bg-success' };
-    return map[status];
-  }
-
-  rfiStatusText(status: RfiStatus): string {
+  capitalizeStatus(status: string): string {
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
-  submittalStatusDot(status: SubmittalStatus): string {
-    const map: Record<SubmittalStatus, string> = { open: 'bg-primary', overdue: 'bg-destructive', upcoming: 'bg-warning', closed: 'bg-success' };
-    return map[status];
+  navigateToRfi(rfi: Rfi, sourceWidgetId?: string): void {
+    this.navigateToDetail('rfi', rfi, sourceWidgetId);
   }
 
-  submittalStatusText(status: SubmittalStatus): string {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+  navigateToSubmittal(sub: Submittal, sourceWidgetId?: string): void {
+    this.navigateToDetail('submittal', sub, sourceWidgetId);
   }
 
-  navigateToRfi(rfi: Rfi): void {
-    this.detailView.set({ type: 'rfi', item: rfi });
-    this.activeNavItem.set('rfis');
+  private navigateToDetail(type: 'rfi' | 'submittal', item: Rfi | Submittal, sourceWidgetId?: string): void {
+    if (this.isCanvas() && sourceWidgetId) {
+      this.openCanvasDetail(sourceWidgetId, { type, item } as DetailView);
+      return;
+    }
+    this.detailSourceLabel.set(this.currentPageLabel());
+    this.detailView.set({ type, item } as DetailView);
+    this.pushDetailUrl(type, item.id);
   }
 
-  navigateToSubmittal(sub: Submittal): void {
-    this.detailView.set({ type: 'submittal', item: sub });
-    this.activeNavItem.set('submittals');
+  private openCanvasDetail(sourceWidgetId: string, detail: DetailView): void {
+    this._detailMgr.openDetail(sourceWidgetId, detail, this.engine);
   }
+
+  readonly STATUS_OPTIONS = STATUS_OPTIONS;
+  readonly ASSIGNEE_OPTIONS = ASSIGNEE_OPTIONS;
 
   clearDetailView(): void {
+    const fromRoute = this.detailFromRoute();
+    if (fromRoute) {
+      this.detailFromRoute.set('');
+      this.detailSourceLabel.set('');
+      this.detailView.set(null);
+      this.router.navigate([this.resolveFromPath(fromRoute)]);
+      return;
+    }
     this.detailView.set(null);
-    this.activeNavItem.set('dashboard');
+    this.detailSourceLabel.set('');
+    this.replaceUrlWithoutDetail();
   }
+
+  updateDetailField(field: string, value: string): void {
+    const current = this.detailView();
+    if (!current) return;
+    const updated = { ...current.item, [field]: value };
+    this.detailView.set({ ...current, item: updated } as DetailView);
+  }
+
+  onDetailStatusChange(newStatus: string): void { this.updateDetailField('status', newStatus); }
+  onDetailAssigneeChange(newAssignee: string): void { this.updateDetailField('assignee', newAssignee); }
+  onDetailDueDateChange(newDate: string): void { this.updateDetailField('dueDate', newDate); }
+
+  private pushDetailUrl(type: string, id: string): void {
+    const params = new URLSearchParams();
+    params.set('view', type);
+    params.set('id', id);
+    const nav = this.activeNavItem();
+    if (nav && nav !== 'dashboard') {
+      params.set('page', nav);
+      if (nav === 'records') params.set('subpage', this.activeRecordsPage());
+      else if (nav === 'financials') params.set('subpage', this.activeFinancialsPage());
+    }
+    window.history.pushState({ detailType: type, detailId: id }, '', window.location.pathname + '?' + params.toString());
+  }
+
+  private resolveFromLabel(from: string): string {
+    const labels: Record<string, string> = {
+      home: 'Home',
+      projects: 'Projects',
+      financials: 'Financials',
+    };
+    return labels[from] ?? 'Home';
+  }
+
+  private resolveFromPath(from: string): string {
+    const paths: Record<string, string> = {
+      home: '/',
+      projects: '/projects',
+      financials: '/financials',
+    };
+    return paths[from] ?? '/';
+  }
+
+  private replaceUrlWithoutDetail(): void {
+    const nav = this.activeNavItem();
+    if (nav && nav !== 'dashboard') {
+      const params = new URLSearchParams();
+      params.set('page', nav);
+      if (nav === 'records') params.set('subpage', this.activeRecordsPage());
+      else if (nav === 'financials') params.set('subpage', this.activeFinancialsPage());
+      window.history.replaceState({}, '', window.location.pathname + '?' + params.toString());
+    } else {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }
+
+  readonly detailSourceLabel = signal('');
+  readonly detailFromRoute = signal('');
+
+  private readonly _detailMgr = new CanvasDetailManager();
+  readonly canvasDetailViews = this._detailMgr.canvasDetailViews;
+  readonly hasCanvasDetails = this._detailMgr.hasCanvasDetails;
+  readonly canvasInteractingId = this._detailMgr.canvasInteractingId;
+
+  onCanvasDetailHeaderMouseDown(event: MouseEvent, widgetId: string): void {
+    this._detailMgr.headerMouseDown(event, widgetId, this.engine);
+  }
+
+  onCanvasDetailResizeMouseDown(event: MouseEvent, widgetId: string): void {
+    this._detailMgr.resizeMouseDown(event, widgetId, this.engine);
+  }
+
+  closeCanvasDetail(widgetId: string): void {
+    this._detailMgr.closeDetail(widgetId, this.engine, this.widgets);
+  }
+
+  onCanvasDetailStatusChange(widgetId: string, newStatus: string): void {
+    this._detailMgr.updateField(widgetId, 'status', newStatus);
+  }
+
+  onCanvasDetailAssigneeChange(widgetId: string, newAssignee: string): void {
+    this._detailMgr.updateField(widgetId, 'assignee', newAssignee);
+  }
+
+  onCanvasDetailDueDateChange(widgetId: string, newDate: string): void {
+    this._detailMgr.updateField(widgetId, 'dueDate', newDate);
+  }
+
+  readonly currentPageLabel = computed(() => {
+    const nav = this.activeNavItem();
+    if (nav === 'records') return this.activeRecordsPageLabel();
+    if (nav === 'financials') return this.activeFinancialsPageLabel();
+    const item = this.sideNavItems.find(i => i.value === nav);
+    if (item) return item.label;
+    return 'Dashboard';
+  });
+
+  readonly detailBackLabel = computed(() => {
+    const source = this.detailSourceLabel();
+    if (source) return 'Back to ' + source;
+    return 'Back to ' + this.currentPageLabel();
+  });
 
   ngOnInit(): void {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
     const id = params.get('id');
+    const page = params.get('page');
+    const from = params.get('from');
+
+    this.restorePageContext(params);
+
+    if (view && id) {
+      if (from) {
+        this.detailFromRoute.set(from);
+        this.detailSourceLabel.set(this.resolveFromLabel(from));
+      }
+      if (view === 'rfi') {
+        const rfi = RFIS.find(r => r.id === id);
+        if (rfi) this.detailView.set({ type: 'rfi', item: rfi });
+      } else if (view === 'submittal') {
+        const submittal = SUBMITTALS.find(s => s.id === id);
+        if (submittal) this.detailView.set({ type: 'submittal', item: submittal });
+      }
+    } else if (page) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    this.popStateHandler = () => this.onPopState();
+    window.addEventListener('popstate', this.popStateHandler);
+    this.destroyRef.onDestroy(() => window.removeEventListener('popstate', this.popStateHandler!));
+  }
+
+  private popStateHandler: (() => void) | null = null;
+
+  private onPopState(): void {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    const id = params.get('id');
+
     if (view && id) {
       if (view === 'rfi') {
         const rfi = RFIS.find(r => r.id === id);
-        if (rfi) {
-          this.detailView.set({ type: 'rfi', item: rfi });
-          this.activeNavItem.set('rfis');
-        }
+        if (rfi) { this.detailView.set({ type: 'rfi', item: rfi }); return; }
       } else if (view === 'submittal') {
-        const submittal = SUBMITTALS.find(s => s.id === id);
-        if (submittal) {
-          this.detailView.set({ type: 'submittal', item: submittal });
-          this.activeNavItem.set('submittals');
-        }
+        const sub = SUBMITTALS.find(s => s.id === id);
+        if (sub) { this.detailView.set({ type: 'submittal', item: sub }); return; }
       }
-      window.history.replaceState({}, '', window.location.pathname);
+    }
+    this.detailView.set(null);
+    this.restorePageContext(params);
+  }
+
+  private restorePageContext(params: URLSearchParams): void {
+    const page = params.get('page');
+    if (!page) return;
+    const validPages = this.sideNavItems.map(i => i.value);
+    if (validPages.includes(page)) {
+      this.activeNavItem.set(page);
+    }
+    const subpage = params.get('subpage');
+    if (subpage) {
+      if (page === 'records') {
+        const validSubPages = this.recordsSubNavItems.map(i => i.value);
+        if (validSubPages.includes(subpage)) this.activeRecordsPage.set(subpage);
+      } else if (page === 'financials') {
+        const validSubPages = this.financialsSubNavItems.map(i => i.value);
+        if (validSubPages.includes(subpage)) this.activeFinancialsPage.set(subpage);
+      }
     }
   }
 
@@ -1419,7 +2761,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
     if (!navbarWc) return;
 
+    let attempts = 0;
     const tryAttach = () => {
+      if (++attempts > 50) return;
       const btn = navbarWc.querySelector('.navbar-menu-btn, [data-testid="main-menu-btn"], button[aria-label="Main menu"]');
       if (btn) {
         this.hamburgerBtn = btn as HTMLElement;
@@ -1434,9 +2778,11 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     tryAttach();
   }
 
+  private fixNavbarLayoutAttempts = 0;
   private fixNavbarLayout(): void {
     const toolbar = this.elementRef.nativeElement.querySelector('modus-wc-toolbar');
     if (!toolbar?.shadowRoot) {
+      if (++this.fixNavbarLayoutAttempts > 50) return;
       setTimeout(() => this.fixNavbarLayout(), 100);
       return;
     }
@@ -1461,7 +2807,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   private reorderNavbarEnd(): void {
     const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
     if (!navbarWc) return;
+    let attempts = 0;
     const tryReorder = () => {
+      if (++attempts > 50) return;
       const shadow = navbarWc.shadowRoot;
       if (!shadow) { requestAnimationFrame(tryReorder); return; }
       const endDiv = shadow.querySelector('div[slot="end"]') as HTMLElement | null;
@@ -1500,7 +2848,18 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
 
   navigateToProject(slug: string): void {
     this.projectSelectorOpen.set(false);
-    this.router.navigate(['/project', slug]);
+    const currentPage = this.activeNavItem();
+    if (currentPage && currentPage !== 'dashboard') {
+      const qp: Record<string, string> = { page: currentPage };
+      if (currentPage === 'records') {
+        qp['subpage'] = this.activeRecordsPage();
+      } else if (currentPage === 'financials') {
+        qp['subpage'] = this.activeFinancialsPage();
+      }
+      this.router.navigate(['/project', slug], { queryParams: qp });
+    } else {
+      this.router.navigate(['/project', slug]);
+    }
   }
 
   statusDotClass(status: ProjectStatus): string {
@@ -1517,15 +2876,25 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.detailView.set(null);
     this.activeNavItem.set(value);
     this.navExpanded.set(false);
-    if (value === 'dashboard') {
-      const contentEl = document.getElementById('main-content');
-      if (contentEl) contentEl.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    const widgetEl = this.elementRef.nativeElement.querySelector(`[data-widget-id="${value}"]`);
-    if (widgetEl) {
-      widgetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  }
+
+  selectRecordsSubPage(value: string): void {
+    this.activeRecordsPage.set(value);
+    this.navExpanded.set(false);
+  }
+
+  selectFinancialsSubPage(value: string): void {
+    this.activeFinancialsPage.set(value);
+    this.navExpanded.set(false);
+  }
+
+  onDetailSideSubnavSelect(value: string): void {
+    this.detailView.set(null);
+    this.detailSourceLabel.set('');
+    const nav = this.activeNavItem();
+    if (nav === 'records') this.activeRecordsPage.set(value);
+    if (nav === 'financials') this.activeFinancialsPage.set(value);
+    this.replaceUrlWithoutDetail();
   }
 
   onWidgetHeaderMouseDown(id: ProjectWidgetId, event: MouseEvent): void {
@@ -1556,12 +2925,21 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       this.panOffsetY.set(this._panStartOffsetY + dy);
       return;
     }
+    if (this.tileCanvas.isInteracting) {
+      this.tileCanvas.onDocumentMouseMove(event);
+      return;
+    }
     this.engine.onDocumentMouseMove(event);
   }
 
   onDocumentMouseUp(): void {
     if (this.isPanning()) {
       this.isPanning.set(false);
+      return;
+    }
+    if (this.tileCanvas.isInteracting) {
+      this.tileCanvas.onDocumentMouseUp();
+      this.tileInteractingId.set(null);
       return;
     }
     this.engine.onDocumentMouseUp();
@@ -1649,7 +3027,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     const insideAiPanel = !!target.closest('modus-utility-panel');
-    if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !insideAiPanel) {
+    if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !target.closest('[data-tile-id]') && !insideAiPanel) {
       this.widgetFocusService.clearSelection();
     }
     if (this.resetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.canvas-reset-flyout')) {
@@ -1660,6 +3038,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     }
     if (this.projectSelectorOpen() && !target.closest('[role="listbox"]') && !target.closest('[aria-expanded]')) {
       this.projectSelectorOpen.set(false);
+    }
+    if (this.tileHeaderStatusOpen() && !target.closest('[role="listbox"]') && !target.closest('[role="option"]')) {
+      this.tileHeaderStatusOpen.set(null);
     }
   }
 

@@ -513,7 +513,10 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly elementRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly _abortCtrl = new AbortController();
-  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this._abortCtrl.abort());
+  private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
+    this._abortCtrl.abort();
+    this.aiStreamSub?.unsubscribe();
+  });
 
   readonly appTitle = input('Dashboard');
   readonly userCard = input<INavbarUserCard>({ name: 'User', email: 'user@example.com' });
@@ -959,7 +962,9 @@ export class DashboardShellComponent implements AfterViewInit {
   private reorderNavbarEnd(): void {
     const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
     if (!navbarWc) return;
+    let attempts = 0;
     const tryReorder = () => {
+      if (++attempts > 50) return;
       const shadow = navbarWc.shadowRoot;
       if (!shadow) { requestAnimationFrame(tryReorder); return; }
       const endDiv = shadow.querySelector('div[slot="end"]') as HTMLElement | null;
@@ -979,7 +984,9 @@ export class DashboardShellComponent implements AfterViewInit {
   private attachHamburgerListener(): void {
     const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
     if (!navbarWc) return;
+    let attempts = 0;
     const tryAttach = () => {
+      if (++attempts > 50) return;
       const btn =
         navbarWc.querySelector('button[aria-label="Main menu"]') ??
         navbarWc.shadowRoot?.querySelector('button[aria-label="Main menu"]') ??

@@ -3,7 +3,7 @@ import type { ModusBadgeColor } from '../components/modus-badge.component';
 export type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 export type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 export type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-export type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'finBudgetByProject';
+export type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeHeader' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'projsHeader' | 'finHeader' | 'finBudgetByProject';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
@@ -13,6 +13,9 @@ export interface Rfi {
   id: string;
   number: string;
   subject: string;
+  question: string;
+  askedBy: string;
+  askedOn: string;
   project: string;
   assignee: string;
   status: RfiStatus;
@@ -141,16 +144,16 @@ export const TIME_OFF_REQUESTS = [
 ];
 
 export const RFIS: Rfi[] = [
-  { id: '1', number: 'RFI-001', subject: 'Cloud provider SLA clarification', project: 'Cloud Infrastructure Migration', assignee: 'Sarah Chen', status: 'open', dueDate: 'Mar 12' },
-  { id: '2', number: 'RFI-002', subject: 'Navigation flow accessibility review', project: 'Mobile App Redesign', assignee: 'James Carter', status: 'overdue', dueDate: 'Feb 28' },
-  { id: '3', number: 'RFI-003', subject: 'Data migration rollback strategy', project: 'ERP System Upgrade', assignee: 'Priya Nair', status: 'open', dueDate: 'Mar 15' },
-  { id: '4', number: 'RFI-004', subject: 'Dashboard KPI data source confirmation', project: 'Data Analytics Platform', assignee: 'Tom Evans', status: 'upcoming', dueDate: 'Mar 20' },
-  { id: '5', number: 'RFI-005', subject: 'SSO integration scope', project: 'Customer Portal v3', assignee: 'Lena Brooks', status: 'closed', dueDate: 'Feb 15' },
-  { id: '6', number: 'RFI-006', subject: 'Compliance framework selection', project: 'Security & Compliance Audit', assignee: 'Mike Osei', status: 'overdue', dueDate: 'Mar 1' },
-  { id: '7', number: 'RFI-007', subject: 'Rate limiting policy approval', project: 'API Gateway Modernization', assignee: 'Sarah Chen', status: 'closed', dueDate: 'Feb 10' },
-  { id: '8', number: 'RFI-008', subject: 'Model versioning approach', project: 'ML Model Deployment Pipeline', assignee: 'Priya Nair', status: 'upcoming', dueDate: 'Mar 22' },
-  { id: '9', number: 'RFI-009', subject: 'Load balancer configuration specs', project: 'Cloud Infrastructure Migration', assignee: 'James Carter', status: 'open', dueDate: 'Mar 18' },
-  { id: '10', number: 'RFI-010', subject: 'Legacy module deprecation timeline', project: 'ERP System Upgrade', assignee: 'Tom Evans', status: 'closed', dueDate: 'Jan 30' },
+  { id: '1', number: 'RFI-001', subject: 'Cloud provider SLA clarification', question: 'Can the cloud provider confirm guaranteed uptime percentages and penalty terms for SLA breaches during the migration period?', askedBy: 'Daniel Park', askedOn: 'Feb 24, 2026', project: 'Cloud Infrastructure Migration', assignee: 'Sarah Chen', status: 'open', dueDate: 'Mar 12, 2026' },
+  { id: '2', number: 'RFI-002', subject: 'Navigation flow accessibility review', question: 'Has the updated navigation flow been evaluated against WCAG 2.1 AA standards, and are there any outstanding screen-reader compatibility issues?', askedBy: 'Rachel Kim', askedOn: 'Feb 12, 2026', project: 'Mobile App Redesign', assignee: 'James Carter', status: 'overdue', dueDate: 'Feb 28, 2026' },
+  { id: '3', number: 'RFI-003', subject: 'Data migration rollback strategy', question: 'What is the proposed rollback procedure if data corruption or schema mismatches are detected after the initial migration batch completes?', askedBy: 'Marcus Webb', askedOn: 'Mar 1, 2026', project: 'ERP System Upgrade', assignee: 'Priya Nair', status: 'open', dueDate: 'Mar 15, 2026' },
+  { id: '4', number: 'RFI-004', subject: 'Dashboard KPI data source confirmation', question: 'Which upstream data sources will feed each KPI metric on the executive dashboard, and what is the expected refresh interval for each?', askedBy: 'Olivia Grant', askedOn: 'Mar 5, 2026', project: 'Data Analytics Platform', assignee: 'Tom Evans', status: 'upcoming', dueDate: 'Mar 20, 2026' },
+  { id: '5', number: 'RFI-005', subject: 'SSO integration scope', question: 'Will the SSO integration support both SAML 2.0 and OIDC protocols, and should session management include cross-domain single logout?', askedBy: 'Nathan Ruiz', askedOn: 'Jan 28, 2026', project: 'Customer Portal v3', assignee: 'Lena Brooks', status: 'closed', dueDate: 'Feb 15, 2026' },
+  { id: '6', number: 'RFI-006', subject: 'Compliance framework selection', question: 'Should the audit scope align with SOC 2 Type II, ISO 27001, or both, and are there additional industry-specific regulations that must be addressed?', askedBy: 'Angela Torres', askedOn: 'Feb 14, 2026', project: 'Security & Compliance Audit', assignee: 'Mike Osei', status: 'overdue', dueDate: 'Mar 1, 2026' },
+  { id: '7', number: 'RFI-007', subject: 'Rate limiting policy approval', question: 'What are the approved rate-limit thresholds per API consumer tier, and should burst allowances be included for premium-tier clients?', askedBy: 'Kevin Zhao', askedOn: 'Jan 22, 2026', project: 'API Gateway Modernization', assignee: 'Sarah Chen', status: 'closed', dueDate: 'Feb 10, 2026' },
+  { id: '8', number: 'RFI-008', subject: 'Model versioning approach', question: 'Should model artifacts follow semantic versioning with immutable registry storage, or is a branch-based promotion workflow preferred for staging-to-production?', askedBy: 'Samira Patel', askedOn: 'Mar 8, 2026', project: 'ML Model Deployment Pipeline', assignee: 'Priya Nair', status: 'upcoming', dueDate: 'Mar 22, 2026' },
+  { id: '9', number: 'RFI-009', subject: 'Load balancer configuration specs', question: 'What health-check intervals, connection draining timeouts, and SSL termination requirements should be configured on the new load balancer instances?', askedBy: 'Chris Delgado', askedOn: 'Mar 3, 2026', project: 'Cloud Infrastructure Migration', assignee: 'James Carter', status: 'open', dueDate: 'Mar 18, 2026' },
+  { id: '10', number: 'RFI-010', subject: 'Legacy module deprecation timeline', question: 'What is the agreed deprecation schedule for each legacy module, and which downstream systems require adapter updates before decommissioning?', askedBy: 'Laura Hoffman', askedOn: 'Jan 10, 2026', project: 'ERP System Upgrade', assignee: 'Tom Evans', status: 'closed', dueDate: 'Jan 30, 2026' },
 ];
 
 export const SUBMITTALS: Submittal[] = [

@@ -16,8 +16,11 @@ import { WidgetLayoutService } from '../../shell/services/widget-layout.service'
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
+import { ItemDetailViewComponent, type StatusOption } from '../project-dashboard/components/item-detail-view.component';
+import { SUBNAV_CONFIGS } from '../project-dashboard/project-dashboard.config';
 import type {
   DashboardWidgetId,
   GridPage,
@@ -39,7 +42,7 @@ import {
 
 @Component({
   selector: 'app-home-page',
-  imports: [WidgetLockToggleComponent, WidgetResizeHandleComponent],
+  imports: [WidgetLockToggleComponent, WidgetResizeHandleComponent, ItemDetailViewComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -48,6 +51,7 @@ import {
   },
   template: `
     <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
+      @if (!isCanvasMode()) {
       <div #pageHeader>
       <div class="flex items-start justify-between mb-6">
         <div>
@@ -89,6 +93,7 @@ import {
         </div>
       </div>
       </div>
+      }
 
       <div
         [class]="isCanvasMode() ? 'relative overflow-visible' : 'relative'"
@@ -96,16 +101,179 @@ import {
         [style.min-height.px]="!isMobile() ? canvasGridMinHeight() : null"
         #homeWidgetGrid
       >
+        @if (isCanvasMode()) {
+          <div
+            class="absolute overflow-hidden"
+            [class.widget-detail-transition]="hasCanvasDetails()"
+            [attr.data-widget-id]="'homeHeader'"
+            [style.top.px]="widgetTops()['homeHeader']"
+            [style.left.px]="widgetLefts()['homeHeader']"
+            [style.width.px]="widgetPixelWidths()['homeHeader']"
+            [style.height.px]="widgetHeights()['homeHeader']"
+            [style.z-index]="widgetZIndices()['homeHeader'] ?? 0"
+          >
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Alex</div>
+                <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" role="link" tabindex="0" aria-label="Active Projects: {{ totalProjects() }}" (click)="navigateToProjects()" (keydown.enter)="navigateToProjects()">
+                <div class="w-12 h-12 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
+                  <i class="modus-icons text-2xl text-primary" aria-hidden="true">briefcase</i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-2xl font-bold text-foreground">{{ totalProjects() }}</div>
+                  <div class="text-sm text-foreground-60">Active Projects</div>
+                </div>
+                <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
+              </div>
+              <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" role="link" tabindex="0" aria-label="Open Estimates: {{ openEstimatesCount() }}" (click)="navigateToProjects()" (keydown.enter)="navigateToProjects()">
+                <div class="w-12 h-12 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
+                  <i class="modus-icons text-2xl text-warning" aria-hidden="true">description</i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-2xl font-bold text-foreground">{{ openEstimatesCount() }}</div>
+                  <div class="text-sm text-foreground-60">Open Estimates</div>
+                </div>
+                <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
+              </div>
+              <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" role="link" tabindex="0" aria-label="Estimate Pipeline: {{ totalEstimateValue() }}" (click)="navigateToFinancials()" (keydown.enter)="navigateToFinancials()">
+                <div class="w-12 h-12 rounded-xl bg-success-20 flex items-center justify-center flex-shrink-0">
+                  <i class="modus-icons text-2xl text-success" aria-hidden="true">bar_graph</i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-2xl font-bold text-foreground">{{ totalEstimateValue() }}</div>
+                  <div class="text-sm text-foreground-60">Estimate Pipeline</div>
+                </div>
+                <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
+              </div>
+            </div>
+          </div>
+        }
         @for (widgetId of homeWidgets; track widgetId) {
           <div
-            [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden'"
+            [class]="(canvasDetailViews()[widgetId] ? 'absolute' : (isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden')) + (hasCanvasDetails() && canvasInteractingId() !== widgetId ? ' widget-detail-transition' : '')"
             [attr.data-widget-id]="widgetId"
             [style.top.px]="widgetTops()[widgetId]"
             [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
             [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
             [style.height.px]="widgetHeights()[widgetId]"
-            [style.z-index]="widgetZIndices()[widgetId] ?? 0"
+            [style.z-index]="canvasDetailViews()[widgetId] ? 9999 : (widgetZIndices()[widgetId] ?? 0)"
+            (mousedown)="canvasDetailViews()[widgetId] ? $event.stopPropagation() : null"
           >
+          @if (canvasDetailViews()[widgetId]; as detail) {
+            <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full border-primary shadow-2xl">
+              <div
+                class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                (mousedown)="onCanvasDetailHeaderMouseDown($event, widgetId)"
+              >
+                <div class="flex items-center gap-2 text-foreground-60 cursor-pointer hover:text-foreground transition-colors duration-150"
+                  (click)="closeCanvasDetail(widgetId)"
+                  (keydown.enter)="closeCanvasDetail(widgetId)"
+                >
+                  <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
+                  <div class="text-sm font-medium">Back to Home</div>
+                </div>
+                <div
+                  class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                  (click)="closeCanvasDetail(widgetId)"
+                  aria-label="Close detail"
+                >
+                  <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                </div>
+              </div>
+              @if (subnavConfigs[detail.type === 'rfi' ? 'rfi-detail' : 'submittal-detail']; as snConfig) {
+                <div class="bg-card border-bottom-default flex-shrink-0">
+                  <div class="flex items-center justify-between px-4 py-2 gap-4">
+                    <div class="flex items-center gap-2 flex-1 max-w-xs">
+                      <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
+                        <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
+                        <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
+                          [placeholder]="snConfig.searchPlaceholder" [value]="detailSubnavSearch()" (input)="detailSubnavSearch.set($any($event.target).value)" />
+                      </div>
+                      <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
+                        role="button" tabindex="0" aria-label="Filter">
+                        <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      @for (btn of snConfig.actions; track btn.icon) {
+                        <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                          role="button" tabindex="0" [attr.aria-label]="btn.label">
+                          <i class="modus-icons text-base" aria-hidden="true">{{ btn.icon }}</i>
+                        </div>
+                      }
+                      <div class="flex items-center bg-secondary rounded ml-1">
+                        @for (toggle of snConfig.viewToggles; track toggle.value) {
+                          <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150"
+                            [class]="detailSubnavViewMode() === toggle.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground'"
+                            role="button" tabindex="0" [attr.aria-label]="toggle.label"
+                            (click)="detailSubnavViewMode.set(toggle.value)">
+                            <i class="modus-icons text-base" aria-hidden="true">{{ toggle.icon }}</i>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+              <div class="flex-1 overflow-y-auto p-5">
+                @if (detail.type === 'rfi') {
+                  <app-item-detail-view
+                    icon="clipboard"
+                    typeLabel="Request for Information"
+                    [number]="detail.item.number"
+                    [subject]="detail.item.subject"
+                    [question]="$any(detail.item).question"
+                    [assignee]="detail.item.assignee"
+                    [assigneeOptions]="ASSIGNEE_OPTIONS"
+                    (assigneeChange)="onCanvasDetailAssigneeChange(widgetId, $event)"
+                    field1Label="Created By"
+                    [field1Value]="$any(detail.item).askedBy"
+                    field3Label="Created On"
+                    [field3Value]="$any(detail.item).askedOn"
+                    field4Label="Due Date"
+                    [field4Value]="detail.item.dueDate"
+                    [field4ShowStatus]="false"
+                    [currentStatus]="detail.item.status"
+                    [statusOptions]="STATUS_OPTIONS"
+                    [statusDotClass]="rfiStatusColor(detail.item.status)"
+                    [statusText]="rfiStatusLabel(detail.item.status)"
+                    (statusChange)="onCanvasDetailStatusChange(widgetId, $event)"
+                    (dueDateChange)="onCanvasDetailDueDateChange(widgetId, $event)"
+                  />
+                }
+                @if (detail.type === 'submittal') {
+                  <app-item-detail-view
+                    icon="document"
+                    typeLabel="Submittal"
+                    [number]="detail.item.number"
+                    [subject]="detail.item.subject"
+                    [assignee]="detail.item.assignee"
+                    [assigneeOptions]="ASSIGNEE_OPTIONS"
+                    (assigneeChange)="onCanvasDetailAssigneeChange(widgetId, $event)"
+                    [field1Value]="$any(detail.item).project"
+                    [field3Value]="detail.item.dueDate"
+                    [field3DateEditable]="true"
+                    [currentStatus]="detail.item.status"
+                    [statusOptions]="STATUS_OPTIONS"
+                    [statusDotClass]="submittalStatusColor(detail.item.status)"
+                    [statusText]="submittalStatusLabel(detail.item.status)"
+                    (statusChange)="onCanvasDetailStatusChange(widgetId, $event)"
+                    (dueDateChange)="onCanvasDetailDueDateChange(widgetId, $event)"
+                  />
+                }
+              </div>
+              <div
+                class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+                (mousedown)="onCanvasDetailResizeMouseDown($event, widgetId)"
+              >
+                <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
+              </div>
+            </div>
+          } @else {
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
 
@@ -745,8 +913,10 @@ import {
               }
 
             </div>
+          }
           </div>
         }
+
       </div>
     </div>
 
@@ -758,20 +928,29 @@ export class HomePageComponent implements AfterViewInit {
   private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
+  private static readonly HEADER_HEIGHT = 190;
+  private static readonly HEADER_OFFSET = HomePageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
+
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals'],
+    widgets: ['homeHeader', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals'],
     layoutStorageKey: 'dashboard-home-v2',
-    canvasStorageKey: 'canvas-layout:dashboard-home:v6',
-    defaultColStarts: { homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1 },
-    defaultColSpans: { homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 16 },
-    defaultTops: { homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356 },
-    defaultHeights: { homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
-    defaultLefts: { homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
-    defaultPixelWidths: { homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
-    canvasDefaultLefts: { homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
-    canvasDefaultPixelWidths: { homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
-    canvasDefaultTops: { homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356 },
-    canvasDefaultHeights: { homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
+    canvasStorageKey: 'canvas-layout:dashboard-home:v7',
+    defaultColStarts: { homeHeader: 1, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1 },
+    defaultColSpans: { homeHeader: 16, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 16 },
+    defaultTops: { homeHeader: 0, homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356 },
+    defaultHeights: { homeHeader: 0, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
+    defaultLefts: { homeHeader: 0, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
+    defaultPixelWidths: { homeHeader: 1280, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
+    canvasDefaultLefts: { homeHeader: 0, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
+    canvasDefaultPixelWidths: { homeHeader: 1280, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
+    canvasDefaultTops: {
+      homeHeader: 0,
+      homeRfis: HomePageComponent.HEADER_OFFSET,
+      homeSubmittals: HomePageComponent.HEADER_OFFSET,
+      homeTimeOff: HomePageComponent.HEADER_OFFSET,
+      homeCalendar: HomePageComponent.HEADER_OFFSET + 356,
+    },
+    canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
     minColSpan: 4,
     canvasGridMinHeightOffset: 100,
     savesDesktopOnMobile: true,
@@ -780,11 +959,17 @@ export class HomePageComponent implements AfterViewInit {
   }, inject(WidgetLayoutService));
 
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
+  private readonly _lockHeader = (() => {
+    this.engine.widgetLocked.update(l => ({ ...l, homeHeader: true }));
+  })();
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
     if (tick > 0) {
-      untracked(() => this.engine.resetToDefaults());
+      untracked(() => {
+        this.engine.resetToDefaults();
+        this.engine.widgetLocked.update(l => ({ ...l, homeHeader: true }));
+      });
     }
   });
 
@@ -1072,15 +1257,19 @@ export class HomePageComponent implements AfterViewInit {
   expandTimeOffMobile(filter: 'all' | 'Pending' | 'Approved' | 'Denied'): void {
     this.timeOffActiveFilter.set(filter);
     this.timeOffMobileExpanded.set(true);
-    this.applyMobileHeights();
-    this.engine.compactAll();
+    if (this.isMobile()) {
+      this.applyMobileHeights();
+      this.engine.compactAll();
+    }
   }
 
   collapseTimeOffMobile(): void {
     this.timeOffMobileExpanded.set(false);
     this.timeOffActiveFilter.set('all');
-    this.applyMobileHeights();
-    this.engine.compactAll();
+    if (this.isMobile()) {
+      this.applyMobileHeights();
+      this.engine.compactAll();
+    }
   }
 
   private readonly _apptTypeColor: Record<ApptType, string> = {
@@ -1237,15 +1426,19 @@ export class HomePageComponent implements AfterViewInit {
   expandRfiMobile(filter: RfiStatus | 'all'): void {
     this.rfiActiveFilter.set(filter);
     this.rfiMobileExpanded.set(true);
-    this.applyMobileHeights();
-    this.engine.compactAll();
+    if (this.isMobile()) {
+      this.applyMobileHeights();
+      this.engine.compactAll();
+    }
   }
 
   collapseRfiMobile(): void {
     this.rfiMobileExpanded.set(false);
     this.rfiActiveFilter.set('all');
-    this.applyMobileHeights();
-    this.engine.compactAll();
+    if (this.isMobile()) {
+      this.applyMobileHeights();
+      this.engine.compactAll();
+    }
   }
 
   readonly rfiCounts = computed(() => ({
@@ -1282,16 +1475,24 @@ export class HomePageComponent implements AfterViewInit {
   }
 
   openRfiDetail(rfi: Rfi): void {
+    if (this.isCanvasMode()) {
+      this.openCanvasDetail('homeRfis', { type: 'rfi', item: rfi });
+      return;
+    }
     const slug = this.findProjectSlug(rfi.project);
     if (slug) {
-      this.router.navigate(['/project', slug], { queryParams: { view: 'rfi', id: rfi.id } });
+      this.router.navigate(['/project', slug], { queryParams: { view: 'rfi', id: rfi.id, from: 'home' } });
     }
   }
 
   openSubmittalDetail(sub: Submittal): void {
+    if (this.isCanvasMode()) {
+      this.openCanvasDetail('homeSubmittals', { type: 'submittal', item: sub });
+      return;
+    }
     const slug = this.findProjectSlug(sub.project);
     if (slug) {
-      this.router.navigate(['/project', slug], { queryParams: { view: 'submittal', id: sub.id } });
+      this.router.navigate(['/project', slug], { queryParams: { view: 'submittal', id: sub.id, from: 'home' } });
     }
   }
 
@@ -1312,15 +1513,19 @@ export class HomePageComponent implements AfterViewInit {
   expandSubmittalMobile(filter: SubmittalStatus | 'all'): void {
     this.submittalActiveFilter.set(filter);
     this.submittalMobileExpanded.set(true);
-    this.applyMobileHeights();
-    this.engine.compactAll();
+    if (this.isMobile()) {
+      this.applyMobileHeights();
+      this.engine.compactAll();
+    }
   }
 
   collapseSubmittalMobile(): void {
     this.submittalMobileExpanded.set(false);
     this.submittalActiveFilter.set('all');
-    this.applyMobileHeights();
-    this.engine.compactAll();
+    if (this.isMobile()) {
+      this.applyMobileHeights();
+      this.engine.compactAll();
+    }
   }
 
   readonly submittalCounts = computed(() => ({
@@ -1357,5 +1562,53 @@ export class HomePageComponent implements AfterViewInit {
 
   navigateToFinancials(): void {
     this.router.navigate(['/financials']);
+  }
+
+  readonly STATUS_OPTIONS: StatusOption[] = [
+    { value: 'open', label: 'Open', dotClass: 'bg-primary' },
+    { value: 'overdue', label: 'Overdue', dotClass: 'bg-destructive' },
+    { value: 'upcoming', label: 'Upcoming', dotClass: 'bg-warning' },
+    { value: 'closed', label: 'Closed', dotClass: 'bg-success' },
+  ];
+
+  readonly ASSIGNEE_OPTIONS: string[] = [
+    'Sarah Chen', 'James Carter', 'Priya Nair', 'Tom Evans', 'Lena Brooks',
+    'Mike Osei', 'Daniel Park', 'Rachel Kim', 'Marcus Webb', 'Olivia Grant',
+  ];
+
+  private readonly _detailMgr = new CanvasDetailManager();
+  readonly canvasDetailViews = this._detailMgr.canvasDetailViews;
+  readonly hasCanvasDetails = this._detailMgr.hasCanvasDetails;
+  readonly canvasInteractingId = this._detailMgr.canvasInteractingId;
+  readonly subnavConfigs = SUBNAV_CONFIGS;
+  readonly detailSubnavSearch = signal('');
+  readonly detailSubnavViewMode = signal<string>('details');
+
+  private openCanvasDetail(sourceWidgetId: string, detail: DetailView): void {
+    this._detailMgr.openDetail(sourceWidgetId, detail, this.engine);
+  }
+
+  onCanvasDetailHeaderMouseDown(event: MouseEvent, widgetId: string): void {
+    this._detailMgr.headerMouseDown(event, widgetId, this.engine);
+  }
+
+  onCanvasDetailResizeMouseDown(event: MouseEvent, widgetId: string): void {
+    this._detailMgr.resizeMouseDown(event, widgetId, this.engine);
+  }
+
+  closeCanvasDetail(widgetId: string): void {
+    this._detailMgr.closeDetail(widgetId, this.engine, this.homeWidgets);
+  }
+
+  onCanvasDetailStatusChange(widgetId: string, newStatus: string): void {
+    this._detailMgr.updateField(widgetId, 'status', newStatus);
+  }
+
+  onCanvasDetailAssigneeChange(widgetId: string, newAssignee: string): void {
+    this._detailMgr.updateField(widgetId, 'assignee', newAssignee);
+  }
+
+  onCanvasDetailDueDateChange(widgetId: string, newDate: string): void {
+    this._detailMgr.updateField(widgetId, 'dueDate', newDate);
   }
 }

@@ -8,15 +8,21 @@ const SRC = readFileSync(
   resolve(__dir, '../../src/app/pages/project-dashboard/project-dashboard.component.ts'),
   'utf-8',
 );
+const WIDGET_FRAME_SRC = readFileSync(
+  resolve(__dir, '../../src/app/pages/project-dashboard/components/widget-frame.component.ts'),
+  'utf-8',
+);
 
 describe('ProjectDashboardComponent (template regression)', () => {
   describe('resize handles', () => {
-    it('has widget-resize-handle components', () => {
-      expect(SRC).toContain('<widget-resize-handle');
+    it('uses WidgetFrameComponent which contains widget-resize-handle', () => {
+      expect(SRC).toContain('<app-widget-frame');
+      expect(WIDGET_FRAME_SRC).toContain('<widget-resize-handle');
     });
 
     it('does not have left position resize handles', () => {
       expect(SRC).not.toContain('position="left"');
+      expect(WIDGET_FRAME_SRC).not.toContain('position="left"');
     });
   });
 

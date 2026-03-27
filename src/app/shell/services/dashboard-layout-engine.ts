@@ -1,5 +1,6 @@
 import { signal, computed, type WritableSignal, type Signal } from '@angular/core';
 import type { WidgetLayoutService } from './widget-layout.service';
+import { runCanvasPushBfs, type WidgetRect } from './canvas-push';
 
 export interface DashboardLayoutConfig {
   widgets: string[];
@@ -406,18 +407,18 @@ export class DashboardLayoutEngine {
   }
 
   resetToDefaults(): void {
-    this.widgetTops.set({ ...this.config.defaultTops });
-    this.widgetHeights.set({ ...this.config.defaultHeights });
-    this.widgetColStarts.set({ ...this.config.defaultColStarts });
-    this.widgetColSpans.set({ ...this.config.defaultColSpans });
-    this.widgetLefts.set({ ...this.config.defaultLefts });
-    this.widgetPixelWidths.set({ ...this.config.defaultPixelWidths });
-    this.syncPixelWidthsFromCols();
-
     if (this.isCanvasMode()) {
+      this.applyCanvasDefaults();
       localStorage.removeItem(this.canvasKey);
       this.persistCanvasLayout();
     } else {
+      this.widgetTops.set({ ...this.config.defaultTops });
+      this.widgetHeights.set({ ...this.config.defaultHeights });
+      this.widgetColStarts.set({ ...this.config.defaultColStarts });
+      this.widgetColSpans.set({ ...this.config.defaultColSpans });
+      this.widgetLefts.set({ ...this.config.defaultLefts });
+      this.widgetPixelWidths.set({ ...this.config.defaultPixelWidths });
+      this.syncPixelWidthsFromCols();
       this.persistLayout();
     }
   }
@@ -824,73 +825,25 @@ export class DashboardLayoutEngine {
    * pushing A causes it to overlap B, B gets pushed too.
    */
   private resolveCanvasPush(movedId: string, widgets: string[]): void {
-    const gap = DashboardLayoutEngine.GAP_PX;
     const tops = { ...this.widgetTops() };
     const lefts = { ...this.widgetLefts() };
     const heights = this.widgetHeights();
     const widths = this.widgetPixelWidths();
+    const locked = this.widgetLocked();
 
-    const hasOverlap = (a: string, b: string): boolean => {
-      const hO = Math.min(lefts[a] + widths[a], lefts[b] + widths[b]) - Math.max(lefts[a], lefts[b]);
-      const vO = Math.min(tops[a] + heights[a], tops[b] + heights[b]) - Math.max(tops[a], tops[b]);
-      return hO > 0 && vO > 0;
-    };
-
-    const queue: string[] = [movedId];
-    const visited = new Set<string>();
-    let safety = 0;
-    const maxSafety = widgets.length * 4;
-
-    while (queue.length > 0 && safety++ < maxSafety) {
-      const pusherId = queue.shift()!;
-      if (visited.has(pusherId)) continue;
-      visited.add(pusherId);
-
-      const pL = lefts[pusherId];
-      const pT = tops[pusherId];
-      const pR = pL + widths[pusherId];
-      const pB = pT + heights[pusherId];
-
-      const locked = this.widgetLocked();
-      for (const otherId of widgets) {
-        if (otherId === pusherId) continue;
-        if (locked[otherId]) continue;
-        if (!hasOverlap(pusherId, otherId)) continue;
-
-        const oL = lefts[otherId];
-        const oT = tops[otherId];
-        const oR = oL + widths[otherId];
-        const oB = oT + heights[otherId];
-
-        const pushRight = pR + gap - oL;
-        const pushLeft = oR + gap - pL;
-        const pushDown = pB + gap - oT;
-        const pushUp = oB + gap - pT;
-
-        const minH = Math.min(pushRight, pushLeft);
-        const minV = Math.min(pushDown, pushUp);
-
-        if (minH <= minV) {
-          if (pushRight <= pushLeft) {
-            lefts[otherId] = pR + gap;
-          } else {
-            lefts[otherId] = pL - widths[otherId] - gap;
-          }
-        } else {
-          if (pushDown <= pushUp) {
-            tops[otherId] = pB + gap;
-          } else {
-            tops[otherId] = pT - heights[otherId] - gap;
-          }
-        }
-
-        visited.delete(otherId);
-        queue.push(otherId);
-      }
+    const rects: Record<string, WidgetRect> = {};
+    for (const id of widgets) {
+      rects[id] = { left: lefts[id], top: tops[id], width: widths[id], height: heights[id] };
     }
 
-    const topsChanged = widgets.some((id) => tops[id] !== this.widgetTops()[id]);
-    const leftsChanged = widgets.some((id) => lefts[id] !== this.widgetLefts()[id]);
+    runCanvasPushBfs(movedId, rects, locked, DashboardLayoutEngine.GAP_PX);
+
+    let topsChanged = false;
+    let leftsChanged = false;
+    for (const id of widgets) {
+      if (rects[id].top !== tops[id]) { tops[id] = rects[id].top; topsChanged = true; }
+      if (rects[id].left !== lefts[id]) { lefts[id] = rects[id].left; leftsChanged = true; }
+    }
 
     if (topsChanged) this.widgetTops.set(tops);
     if (leftsChanged) this.widgetLefts.set(lefts);
@@ -1090,6 +1043,12 @@ export class DashboardLayoutEngine {
     this.widgetPixelWidths.set(widths);
   }
 
+  pushFromWidget(widgetId: string): void {
+    if (this.isCanvasMode()) {
+      this.resolveCanvasPush(widgetId, this.config.widgets);
+    }
+  }
+
   compactAll(): void {
     const gap = DashboardLayoutEngine.GAP_PX;
     const tops = { ...this.widgetTops() };
@@ -1102,6 +1061,7 @@ export class DashboardLayoutEngine {
       const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
       let y = 0;
       for (const id of sorted) {
+        if (heights[id] <= 0) continue;
         if (!lockedState[id]) tops[id] = y;
         y = tops[id] + heights[id] + gap;
       }
@@ -1150,6 +1110,7 @@ export class DashboardLayoutEngine {
 
     let y = 0;
     for (const id of this.config.widgets) {
+      if (heights[id] <= 0) continue;
       tops[id] = y;
       colStarts[id] = 1;
       colSpans[id] = 16;
@@ -1338,6 +1299,7 @@ export class DashboardLayoutEngine {
   }
 
   private cleanupCanvasOverlaps(): void {
+    if (!this.isCanvasMode()) return;
     const gap = DashboardLayoutEngine.GAP_PX;
     const widgets = this.config.widgets;
     const origTops = this.widgetTops();
