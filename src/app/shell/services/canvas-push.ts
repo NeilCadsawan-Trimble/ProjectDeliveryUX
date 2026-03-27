@@ -33,25 +33,50 @@ export function runCanvasPushBfs(
     const p = rects[pusherId];
     const o = rects[otherId];
     const pR = p.left + p.width, pB = p.top + p.height;
-    const oR = o.left + o.width, oB = o.top + o.height;
-
-    const hPen = Math.min(pR, oR) - Math.max(p.left, o.left) + gap;
-    const vPen = Math.min(pB, oB) - Math.max(p.top, o.top) + gap;
 
     const pCX = (p.left + pR) / 2, pCY = (p.top + pB) / 2;
-    const oCX = (o.left + oR) / 2, oCY = (o.top + oB) / 2;
+    const oCX = o.left + o.width / 2;
+    const oCY = o.top + o.height / 2;
 
-    if (hPen <= vPen) {
-      if (oCX >= pCX) {
+    let pushH: boolean;
+    if (pusherId === movedId) {
+      const clearR = pR + gap - o.left;
+      const clearD = pB + gap - o.top;
+      pushH = clearR <= clearD;
+    } else {
+      pushH = Math.abs(oCX - pCX) >= Math.abs(oCY - pCY);
+    }
+
+    // For cascade pushes, determine left/right (or up/down) relative to the
+    // MOVER, not the cascade pusher. This prevents widgets pushed to the same
+    // position from bouncing back toward the mover.
+    const dirRef = (pusherId === movedId) ? p : rects[movedId];
+    const dirCX = dirRef.left + dirRef.width / 2;
+    const dirCY = dirRef.top + dirRef.height / 2;
+
+    if (pushH) {
+      if (oCX >= dirCX) {
         rects[otherId] = { ...o, left: pR + gap };
       } else {
-        rects[otherId] = { ...o, left: p.left - o.width - gap };
+        const candidateLeft = p.left - o.width - gap;
+        if (candidateLeft >= 0) {
+          rects[otherId] = { ...o, left: candidateLeft };
+        } else {
+          rects[otherId] = { ...o, left: pR + gap };
+        }
       }
     } else {
-      if (oCY >= pCY) {
+      if (oCY >= dirCY) {
         rects[otherId] = { ...o, top: pB + gap };
       } else {
-        rects[otherId] = { ...o, top: Math.max(0, p.top - o.height - gap) };
+        const candidateTop = p.top - o.height - gap;
+        if (candidateTop >= 0) {
+          rects[otherId] = { ...o, top: candidateTop };
+        } else if (oCX >= dirCX) {
+          rects[otherId] = { ...o, left: pR + gap };
+        } else {
+          rects[otherId] = { ...o, left: p.left - o.width - gap };
+        }
       }
     }
   };
@@ -68,6 +93,7 @@ export function runCanvasPushBfs(
 
     for (const otherId of ids) {
       if (otherId === pusherId) continue;
+      if (otherId === movedId) continue;
       if (isLocked[otherId]) continue;
       if (!hasOverlap(pusherId, otherId)) continue;
 
@@ -75,6 +101,19 @@ export function runCanvasPushBfs(
       visited.delete(otherId);
       queue.push(otherId);
     }
+  }
+
+  // Post-BFS: cascade pushes can shove a widget back into the mover.
+  // Re-push any non-locked widget that still overlaps with the mover.
+  for (let pass = 0; pass < ids.length * 2; pass++) {
+    let anyFixed = false;
+    for (const otherId of ids) {
+      if (otherId === movedId || isLocked[otherId]) continue;
+      if (!hasOverlap(movedId, otherId)) continue;
+      pushAway(movedId, otherId);
+      anyFixed = true;
+    }
+    if (!anyFixed) break;
   }
 
   const lockedIds = ids.filter(id => isLocked[id]);
