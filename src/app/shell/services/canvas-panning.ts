@@ -41,9 +41,23 @@ export class CanvasPanning {
   }
 
   onCanvasWheel(event: WheelEvent): void {
+    if (this._isInsideScrollable(event.target as HTMLElement | null)) return;
     event.preventDefault();
     this.panOffsetX.update(x => x - event.deltaX);
     this.panOffsetY.update(y => y - event.deltaY);
+  }
+
+  private _isInsideScrollable(el: HTMLElement | null): boolean {
+    while (el) {
+      const style = getComputedStyle(el);
+      const overflowY = style.overflowY;
+      if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+        return true;
+      }
+      if (el.hasAttribute('data-widget-id')) break;
+      el = el.parentElement;
+    }
+    return false;
   }
 
   /** Returns true if this handler consumed the mouse-move (i.e. panning is active). */

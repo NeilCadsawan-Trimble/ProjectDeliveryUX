@@ -1317,8 +1317,8 @@ export class HomePageComponent implements AfterViewInit {
     focus: 'bg-secondary text-foreground-60 border-muted',
   };
 
-  private readonly CAL_FIRST_HOUR = 8;
-  private readonly CAL_LAST_HOUR = 18;
+  private readonly CAL_FIRST_HOUR = 0;
+  private readonly CAL_LAST_HOUR = 24;
   readonly calendarHours = Array.from(
     { length: this.CAL_LAST_HOUR - this.CAL_FIRST_HOUR },
     (_, i) => i + this.CAL_FIRST_HOUR
