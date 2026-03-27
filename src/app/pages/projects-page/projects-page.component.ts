@@ -52,6 +52,7 @@ import {
   template: `
     <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
 
+      @if (!isCanvasMode()) {
       <!-- Page header -->
       <div #pageHeader class="flex items-start justify-between mb-6">
         <div>
@@ -62,6 +63,7 @@ import {
           <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
         </div>
       </div>
+      }
 
       <!-- Widget area -->
       <div
@@ -70,6 +72,28 @@ import {
         [style.min-height.px]="!isMobile() ? canvasGridMinHeight() : null"
         #widgetGrid
       >
+
+        @if (isCanvasMode()) {
+        <div
+          class="absolute overflow-hidden"
+          [attr.data-widget-id]="'projsHeader'"
+          [style.top.px]="widgetTops()['projsHeader']"
+          [style.left.px]="widgetLefts()['projsHeader']"
+          [style.width.px]="widgetPixelWidths()['projsHeader']"
+          [style.height.px]="widgetHeights()['projsHeader']"
+          [style.z-index]="widgetZIndices()['projsHeader'] ?? 0"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
+              <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0 mt-1">
+              <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
+            </div>
+          </div>
+        </div>
+        }
 
         @for (widgetId of projectWidgets; track widgetId) {
 
@@ -365,18 +389,29 @@ export class ProjectsPageComponent implements AfterViewInit {
   private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
+  private static readonly HEADER_HEIGHT = 60;
+  private static readonly HEADER_OFFSET = ProjectsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
+
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['projects', 'openEstimates', 'recentActivity', 'needsAttention'],
+    widgets: ['projsHeader', 'projects', 'openEstimates', 'recentActivity', 'needsAttention'],
     layoutStorageKey: 'dashboard-projects',
-    canvasStorageKey: 'canvas-layout:dashboard-projects:v1',
-    defaultColStarts: { projects: 1, openEstimates: 1, recentActivity: 1, needsAttention: 13 },
-    defaultColSpans: { projects: 16, openEstimates: 16, recentActivity: 12, needsAttention: 4 },
-    defaultTops: { projects: 0, openEstimates: 784, recentActivity: 1320, needsAttention: 1320 },
-    defaultHeights: { projects: 768, openEstimates: 520, recentActivity: 420, needsAttention: 420 },
-    defaultLefts: { projects: 0, openEstimates: 0, recentActivity: 0, needsAttention: 972 },
-    defaultPixelWidths: { projects: 1280, openEstimates: 1280, recentActivity: 956, needsAttention: 308 },
-    canvasDefaultLefts: { projects: 0, openEstimates: 0, recentActivity: 0, needsAttention: 972 },
-    canvasDefaultPixelWidths: { projects: 1280, openEstimates: 1280, recentActivity: 956, needsAttention: 308 },
+    canvasStorageKey: 'canvas-layout:dashboard-projects:v2',
+    defaultColStarts: { projsHeader: 1, projects: 1, openEstimates: 1, recentActivity: 1, needsAttention: 13 },
+    defaultColSpans: { projsHeader: 16, projects: 16, openEstimates: 16, recentActivity: 12, needsAttention: 4 },
+    defaultTops: { projsHeader: 0, projects: 0, openEstimates: 784, recentActivity: 1320, needsAttention: 1320 },
+    defaultHeights: { projsHeader: 0, projects: 768, openEstimates: 520, recentActivity: 420, needsAttention: 420 },
+    defaultLefts: { projsHeader: 0, projects: 0, openEstimates: 0, recentActivity: 0, needsAttention: 972 },
+    defaultPixelWidths: { projsHeader: 1280, projects: 1280, openEstimates: 1280, recentActivity: 956, needsAttention: 308 },
+    canvasDefaultLefts: { projsHeader: 0, projects: 0, openEstimates: 0, recentActivity: 0, needsAttention: 972 },
+    canvasDefaultPixelWidths: { projsHeader: 1280, projects: 1280, openEstimates: 1280, recentActivity: 956, needsAttention: 308 },
+    canvasDefaultTops: {
+      projsHeader: 0,
+      projects: ProjectsPageComponent.HEADER_OFFSET,
+      openEstimates: ProjectsPageComponent.HEADER_OFFSET + 784,
+      recentActivity: ProjectsPageComponent.HEADER_OFFSET + 1320,
+      needsAttention: ProjectsPageComponent.HEADER_OFFSET + 1320,
+    },
+    canvasDefaultHeights: { projsHeader: ProjectsPageComponent.HEADER_HEIGHT, projects: 768, openEstimates: 520, recentActivity: 420, needsAttention: 420 },
     minColSpan: 4,
     widgetMinColSpans: { needsAttention: 3 },
     canvasGridMinHeightOffset: 200,
@@ -384,12 +419,19 @@ export class ProjectsPageComponent implements AfterViewInit {
     onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
   }, inject(WidgetLayoutService));
 
+  private readonly _lockHeader = (() => {
+    this.engine.widgetLocked.update(l => ({ ...l, projsHeader: true }));
+  })();
+
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
     if (tick > 0) {
-      untracked(() => this.engine.resetToDefaults());
+      untracked(() => {
+        this.engine.resetToDefaults();
+        this.engine.widgetLocked.update(l => ({ ...l, projsHeader: true }));
+      });
     }
   });
 

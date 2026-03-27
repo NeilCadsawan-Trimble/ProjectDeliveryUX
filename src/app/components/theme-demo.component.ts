@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModusButtonComponent } from './modus-button.component';
 import { ModusAlertComponent } from './modus-alert.component';
@@ -61,7 +61,7 @@ import type {
  */
 @Component({
   selector: 'app-theme-demo',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     ModusAccordionComponent,
@@ -1171,7 +1171,9 @@ export class ThemeDemoComponent implements OnInit {
     avatarAlt: 'User avatar',
   };
 
-  constructor(private themeService: ThemeService) {
+  private readonly themeService = inject(ThemeService);
+
+  constructor() {
     // Use effect to react to theme changes
     effect(() => {
       const theme = this.themeService.theme();

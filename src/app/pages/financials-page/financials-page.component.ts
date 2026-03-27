@@ -33,6 +33,7 @@ import { PROJECTS, budgetProgressClass } from '../../data/dashboard-data';
   },
   template: `
     <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
+      @if (!isCanvasMode()) {
       <div #pageHeader>
       <!-- Page header -->
       <div class="flex items-start justify-between mb-6">
@@ -79,6 +80,7 @@ import { PROJECTS, budgetProgressClass } from '../../data/dashboard-data';
         </div>
       </div>
       </div>
+      }
 
       <!-- Widget area -->
       <div
@@ -87,6 +89,59 @@ import { PROJECTS, budgetProgressClass } from '../../data/dashboard-data';
         [style.min-height.px]="!isMobile() ? canvasGridMinHeight() : null"
         #financialsWidgetGrid
       >
+        @if (isCanvasMode()) {
+          <div
+            class="absolute overflow-hidden"
+            [attr.data-widget-id]="'finHeader'"
+            [style.top.px]="widgetTops()['finHeader']"
+            [style.left.px]="widgetLefts()['finHeader']"
+            [style.width.px]="widgetPixelWidths()['finHeader']"
+            [style.height.px]="widgetHeights()['finHeader']"
+            [style.z-index]="widgetZIndices()['finHeader'] ?? 0"
+          >
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials</div>
+                <div class="text-sm text-foreground-60 mt-1">Budget overview and cost tracking</div>
+              </div>
+              <div class="flex-shrink-0">
+                <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground-60">Total Budget</div>
+                  <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center">
+                    <i class="modus-icons text-lg text-primary" aria-hidden="true">payment_instant</i>
+                  </div>
+                </div>
+                <div class="text-4xl font-bold text-foreground">$3.7M</div>
+                <div class="text-xs text-foreground-60">Across {{ totalProjects() }} active projects</div>
+              </div>
+              <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground-60">Total Spent</div>
+                  <div class="w-9 h-9 rounded-lg bg-warning-20 flex items-center justify-center">
+                    <i class="modus-icons text-lg text-warning" aria-hidden="true">bar_graph_line</i>
+                  </div>
+                </div>
+                <div class="text-4xl font-bold text-foreground">$2.1M</div>
+                <div class="text-xs text-warning font-medium">57% of total budget consumed</div>
+              </div>
+              <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground-60">Remaining</div>
+                  <div class="w-9 h-9 rounded-lg bg-success-20 flex items-center justify-center">
+                    <i class="modus-icons text-lg text-success" aria-hidden="true">bar_graph</i>
+                  </div>
+                </div>
+                <div class="text-4xl font-bold text-success">$1.6M</div>
+                <div class="text-xs text-success font-medium">43% remaining budget</div>
+              </div>
+            </div>
+          </div>
+        }
         @for (widgetId of financialsWidgets; track widgetId) {
           <div
             [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden'"
@@ -162,30 +217,45 @@ export class FinancialsPageComponent implements AfterViewInit {
   private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
+  private static readonly HEADER_HEIGHT = 190;
+  private static readonly HEADER_OFFSET = FinancialsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
+
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['finBudgetByProject'],
+    widgets: ['finHeader', 'finBudgetByProject'],
     layoutStorageKey: 'dashboard-financials',
-    canvasStorageKey: 'canvas-layout:dashboard-financials:v1',
-    defaultColStarts: { finBudgetByProject: 1 },
-    defaultColSpans: { finBudgetByProject: 16 },
-    defaultTops: { finBudgetByProject: 0 },
-    defaultHeights: { finBudgetByProject: 520 },
-    defaultLefts: { finBudgetByProject: 0 },
-    defaultPixelWidths: { finBudgetByProject: 1280 },
-    canvasDefaultLefts: { finBudgetByProject: 0 },
-    canvasDefaultPixelWidths: { finBudgetByProject: 1280 },
+    canvasStorageKey: 'canvas-layout:dashboard-financials:v2',
+    defaultColStarts: { finHeader: 1, finBudgetByProject: 1 },
+    defaultColSpans: { finHeader: 16, finBudgetByProject: 16 },
+    defaultTops: { finHeader: 0, finBudgetByProject: 0 },
+    defaultHeights: { finHeader: 0, finBudgetByProject: 520 },
+    defaultLefts: { finHeader: 0, finBudgetByProject: 0 },
+    defaultPixelWidths: { finHeader: 1280, finBudgetByProject: 1280 },
+    canvasDefaultLefts: { finHeader: 0, finBudgetByProject: 0 },
+    canvasDefaultPixelWidths: { finHeader: 1280, finBudgetByProject: 1280 },
+    canvasDefaultTops: {
+      finHeader: 0,
+      finBudgetByProject: FinancialsPageComponent.HEADER_OFFSET,
+    },
+    canvasDefaultHeights: { finHeader: FinancialsPageComponent.HEADER_HEIGHT, finBudgetByProject: 520 },
     minColSpan: 1,
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: false,
     onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
   }, inject(WidgetLayoutService));
 
+  private readonly _lockHeader = (() => {
+    this.engine.widgetLocked.update(l => ({ ...l, finHeader: true }));
+  })();
+
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
     if (tick > 0) {
-      untracked(() => this.engine.resetToDefaults());
+      untracked(() => {
+        this.engine.resetToDefaults();
+        this.engine.widgetLocked.update(l => ({ ...l, finHeader: true }));
+      });
     }
   });
 

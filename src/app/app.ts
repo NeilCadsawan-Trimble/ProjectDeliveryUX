@@ -29,7 +29,7 @@ import { ALL_WIDGETS } from './data/widget-registrations';
   imports: [RouterOutlet, DevPanelComponent],
   template: `
     <router-outlet />
-    @if (devPanelService.isEnabled()) {
+    @defer (when devPanelService.isEnabled()) {
       <app-dev-panel />
     }
   `,

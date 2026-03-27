@@ -1,0 +1,47 @@
+---
+description: Short-term memory for the current 24-hour session window. Records interactions, decisions, and context from today. At the start of a new day, consolidate meaningful entries into longterm-memory.mdc, then reset this file.
+alwaysApply: true
+---
+
+# Short-Term Memory
+
+**Current window**: Mar 26, 2026
+
+> **Lifecycle**:
+> 1. During each session, append interactions below under the current date.
+> 2. When the date in "Current window" is older than today, **consolidate first**:
+>    - Move any lasting decisions, preferences, or patterns into `longterm-memory.mdc` under the appropriate section.
+>    - Add the session to the Chat Session History table in `longterm-memory.mdc`.
+>    - Clear everything below the `---` separator in this file and update "Current window" to today's date.
+> 3. Only keep entries that are relevant to the *current* working day below.
+
+---
+
+## Today's Sessions
+
+### Session 5 (Mar 26)
+- **Topic**: Memory system setup + detail view navigation fix
+- **What happened**:
+  1. Created `shortterm-memory.mdc` to track daily interactions.
+  2. Fixed detail view navigation in `ProjectDashboardComponent` so clicking RFIs/Submittals from child pages (Records, Dashboard widgets, etc.) replaces the main content with a detail page and the "Back" button returns to the correct source page.
+  3. Added unique URLs for every detail item. Clicking an RFI/Submittal pushes a URL like `?view=rfi&id=rfi-1&page=records&subpage=rfis`. URLs are shareable/bookmarkable. Browser back/forward works via `popstate` listener.
+- **Decisions**:
+  - Short-term memory file lives at `.cursor/rules/shortterm-memory.mdc` with `alwaysApply: true`.
+  - Detail view is now a top-level `@if` in `dashboardContent` template, shown above the `@switch` for child pages.
+  - `navigateToRfi`/`navigateToSubmittal` no longer change `activeNavItem` -- they only set `detailView` + push URL state.
+  - `clearDetailView` clears `detailView` signal and replaces URL (preserving page context). User stays on the same page they came from.
+  - `detailBackLabel` computed signal provides context-aware back label (e.g., "Back to RFIs", "Back to Dashboard").
+  - URL scheme: `?view=rfi&id=<id>` plus optional `&page=<nav>&subpage=<sub>` for page context. Uses `pushState`/`replaceState` for history. `popstate` listener handles browser back/forward.
+
+## Active Context
+
+- Detail view feature with unique URLs is complete and passing all tests (59 static, type-check).
+- Pre-existing SVG color lint violations remain (AI icon gradients) -- not related to changes.
+
+## Pending Items
+
+- (none)
+
+## Scratch Notes
+
+- (none)
