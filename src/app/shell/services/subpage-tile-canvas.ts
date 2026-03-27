@@ -1,5 +1,6 @@
 import { signal, computed, type WritableSignal, type Signal } from '@angular/core';
 import { runCanvasPushBfs } from './canvas-push';
+import type { CanvasItemHost } from './canvas-item-host';
 
 export interface TileRect {
   top: number;
@@ -30,7 +31,7 @@ export interface TileDetailView {
  * Manages a canvas of absolutely-positioned tile widgets with BFS push-squeeze
  * collision resolution and multi-detail widget expansion.
  */
-export class SubpageTileCanvas {
+export class SubpageTileCanvas implements CanvasItemHost {
   static readonly CANVAS_STEP = 81;
 
   readonly positions: WritableSignal<Record<string, TileRect>>;

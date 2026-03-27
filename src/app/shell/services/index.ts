@@ -7,3 +7,7 @@ export { ThemeService } from './theme.service';
 export type { ThemeName, ThemeMode, ThemeConfig } from './theme.service';
 export { WidgetFocusService } from './widget-focus.service';
 export type { WidgetNameEntry, WidgetRegistration } from './widget-focus.service';
+export { AiPanelController } from './ai-panel-controller';
+export type { AiMessage, AiPanelConfig, AiContextBuilder } from './ai-panel-controller';
+export { CanvasPanning } from './canvas-panning';
+export type { CanvasItemHost } from './canvas-item-host';

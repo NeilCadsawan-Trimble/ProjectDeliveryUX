@@ -4,8 +4,8 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
   computed,
-  effect,
   signal,
   inject,
   input,
@@ -14,13 +14,14 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
-import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { AiIconComponent } from '../components/ai-icon.component';
-import { Subscription } from 'rxjs';
+import { AiAssistantPanelComponent } from '../components/ai-assistant-panel.component';
 import { ThemeService } from '../services/theme.service';
 import { CanvasResetService } from '../services/canvas-reset.service';
 import { WidgetFocusService } from '../services/widget-focus.service';
-import { AiService, type AiChatMessage } from '../../services/ai.service';
+import { AiService } from '../../services/ai.service';
+import { AiPanelController } from '../services/ai-panel-controller';
+import { CanvasPanning } from '../services/canvas-panning';
 import {
   PROJECTS, ESTIMATES, ACTIVITIES, ATTENTION_ITEMS,
   TIME_OFF_REQUESTS, RFIS, SUBMITTALS, CALENDAR_APPOINTMENTS,
@@ -33,12 +34,7 @@ export interface ShellNavItem {
   route?: string;
 }
 
-export interface AiMessage {
-  id: number;
-  role: 'user' | 'assistant';
-  text: string;
-  streaming?: boolean;
-}
+export type { AiMessage } from '../services/ai-panel-controller';
 
 export type AiResponseFn = (input: string) => string | Promise<string>;
 
@@ -46,8 +42,8 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
   selector: 'app-dashboard-shell',
   imports: [
     ModusNavbarComponent,
-    ModusUtilityPanelComponent,
     AiIconComponent,
+    AiAssistantPanelComponent,
     RouterOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,14 +51,14 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     class: 'block',
     '[class.h-screen]': '!isCanvas()',
     '[class.overflow-hidden]': '!isCanvas()',
-    '[class.canvas-pan-ready]': 'isPanReady()',
-    '[class.canvas-panning]': 'isPanning()',
+    '[class.canvas-pan-ready]': 'panning.isPanReady()',
+    '[class.canvas-panning]': 'panning.isPanning()',
     '(window:keydown.escape)': 'onEscapeKey()',
     '(document:click)': 'onDocumentClick($event)',
-    '(window:keydown)': 'onKeyDown($event)',
-    '(window:keyup)': 'onKeyUp($event)',
-    '(document:mousemove)': 'onPanMouseMove($event)',
-    '(document:mouseup)': 'onPanMouseUp()',
+    '(window:keydown)': 'panning.onKeyDown($event)',
+    '(window:keyup)': 'panning.onKeyUp($event)',
+    '(document:mousemove)': 'panning.handleMouseMove($event)',
+    '(document:mouseup)': 'panning.handleMouseUp()',
   },
   template: `
     <svg aria-hidden="true" class="svg-defs-hidden">
@@ -82,7 +78,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
 
     @if (isCanvas()) {
-      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="onPanMouseDown($event)" (wheel)="onCanvasWheel($event)">
+      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="panning.onPanMouseDown($event)" (wheel)="panning.onCanvasWheel($event)">
 
         <div class="canvas-navbar">
           <modus-navbar
@@ -93,7 +89,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             (searchClick)="searchInputOpen.set(!searchInputOpen())"
             (searchInputOpenChange)="searchInputOpen.set($event)"
             (trimbleLogoClick)="navigateHome()"
-            (aiClick)="toggleAiPanel()"
+            (aiClick)="ai.toggle()"
             (mainMenuOpenChange)="onMainMenuToggle($event)"
           >
             <div slot="start" class="flex items-center gap-3">
@@ -105,8 +101,8 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
                 aria-label="AI assistant"
-                (click)="toggleAiPanel()"
-                (keydown.enter)="toggleAiPanel()"
+                (click)="ai.toggle()"
+                (keydown.enter)="ai.toggle()"
                 tabindex="0"
               >
                 <ai-icon variant="nav" [isDark]="isDark()" />
@@ -200,7 +196,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         }
 
         <div class="canvas-content" role="main" id="main-content" tabindex="-1"
-          [style.transform]="(panOffsetX() || panOffsetY()) ? 'translate(' + panOffsetX() + 'px,' + panOffsetY() + 'px)' : null">
+          [style.transform]="(panning.panOffsetX() || panning.panOffsetY()) ? 'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px)' : null">
           <router-outlet />
         </div>
 
@@ -215,7 +211,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             (searchClick)="searchInputOpen.set(!searchInputOpen())"
             (searchInputOpenChange)="searchInputOpen.set($event)"
             (trimbleLogoClick)="navigateHome()"
-            (aiClick)="toggleAiPanel()"
+            (aiClick)="ai.toggle()"
             (mainMenuOpenChange)="onMainMenuToggle($event)"
           >
             <div slot="start" class="flex items-center gap-3">
@@ -227,8 +223,8 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
                 aria-label="AI assistant"
-                (click)="toggleAiPanel()"
-                (keydown.enter)="toggleAiPanel()"
+                (click)="ai.toggle()"
+                (keydown.enter)="ai.toggle()"
                 tabindex="0"
               >
                 <ai-icon variant="nav" [isDark]="isDark()" />
@@ -376,135 +372,11 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       </div>
     }
 
-    <modus-utility-panel
-      [expanded]="aiPanelOpen()"
-      className="fixed-utility-panel"
-      position="right"
-      panelWidth="380px"
-      ariaLabel="AI Assistant"
-    >
-      <div slot="header" class="flex items-center justify-between w-full">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-            <ai-icon variant="solid-white" size="sm" />
-          </div>
-          <div class="min-w-0">
-            <div class="text-base font-semibold text-foreground truncate">{{ widgetFocusService.aiAssistantTitle() }}</div>
-            <div class="text-xs text-foreground-60 truncate">{{ widgetFocusService.aiAssistantSubtitle() }}</div>
-          </div>
-        </div>
-        <div
-          class="w-7 h-7 flex items-center justify-center rounded cursor-pointer hover:bg-muted transition-colors duration-150"
-          (click)="toggleAiPanel()"
-          role="button"
-          aria-label="Close AI Assistant"
-        >
-          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
-        </div>
-      </div>
-
-      <div slot="body" class="flex flex-col h-full min-h-0">
-        @if (aiMessages().length === 0 && !aiThinking()) {
-          <div class="flex flex-col items-center gap-4 px-4 pt-6 pb-2">
-            <div class="w-14 h-14 rounded-full bg-primary-20 flex items-center justify-center">
-              <ai-icon variant="solid-colored" size="lg" />
-            </div>
-            <div class="text-center">
-              <div class="text-base font-semibold text-foreground">How can I help?</div>
-              <div class="text-sm text-foreground-60 mt-1">{{ aiWelcomeText() }}</div>
-            </div>
-            <div class="flex flex-col gap-2 w-full mt-2">
-              @for (suggestion of aiSuggestions(); track suggestion) {
-                <div
-                  class="px-4 py-2.5 rounded-lg border-default bg-card text-sm text-foreground cursor-pointer hover:bg-muted transition-colors duration-150 text-left"
-                  (click)="selectAiSuggestion(suggestion)"
-                  role="button"
-                  tabindex="0"
-                  [attr.aria-label]="'Ask: ' + suggestion"
-                  (keydown.enter)="selectAiSuggestion(suggestion)"
-                  (keydown.space)="$event.preventDefault(); selectAiSuggestion(suggestion)"
-                >
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">chevron_right</i>
-                    <div>{{ suggestion }}</div>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        }
-
-        @if (aiMessages().length > 0) {
-          <div class="flex flex-col gap-3 px-4 py-4 overflow-y-auto flex-1" aria-live="polite" role="log" aria-label="Chat messages">
-            @for (msg of aiMessages(); track msg.id) {
-              @if (msg.role === 'user') {
-                <div class="flex justify-end">
-                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-sm bg-primary text-primary-foreground text-sm leading-relaxed">
-                    {{ msg.text }}
-                  </div>
-                </div>
-              } @else {
-                <div class="flex items-start gap-2">
-                  <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <ai-icon variant="solid-colored" size="xs" />
-                  </div>
-                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed">
-                    {{ msg.text }}
-                  </div>
-                </div>
-              }
-            }
-
-            @if (aiThinking()) {
-              <div class="flex items-start gap-2">
-                <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <ai-icon variant="solid-colored" size="xs" />
-                </div>
-                <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-card border-default">
-                  <div class="flex items-center gap-1">
-                    <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 0ms"></div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 150ms"></div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 300ms"></div>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        }
-      </div>
-
-      <div slot="footer" class="w-full overflow-hidden box-border min-h-[70px]">
-        <div class="flex items-end gap-2 px-2 pt-2 pb-1">
-          <textarea
-            class="flex-1 min-h-[36px] max-h-[80px] px-3 py-1.5 text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40"
-            [placeholder]="aiPlaceholder()"
-            rows="1"
-            [value]="aiInputText()"
-            (input)="aiInputText.set($any($event.target).value)"
-            (keydown)="handleAiKeydown($event)"
-            aria-label="Message input"
-          ></textarea>
-          <div
-            class="w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-150"
-            [class.bg-primary]="aiInputText().trim().length > 0 && !aiThinking()"
-            [class.bg-muted]="!aiInputText().trim().length || aiThinking()"
-            (click)="sendAiMessage()"
-            role="button"
-            aria-label="Send message"
-          >
-            <i
-              class="modus-icons text-sm"
-              [class.text-primary-foreground]="aiInputText().trim().length > 0 && !aiThinking()"
-              [class.text-foreground-40]="!aiInputText().trim().length || aiThinking()"
-              aria-hidden="true"
-            >send</i>
-          </div>
-        </div>
-        <div class="text-center pb-1">
-          <div class="text-2xs text-foreground-40 leading-tight">AI may make mistakes. Verify important info.</div>
-        </div>
-      </div>
-    </modus-utility-panel>
+    <ai-assistant-panel
+      [controller]="ai"
+      [welcomeText]="aiWelcomeText()"
+      [placeholder]="aiPlaceholder()"
+    />
   `,
 })
 export class DashboardShellComponent implements AfterViewInit {
@@ -512,10 +384,11 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly elementRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
   private readonly _abortCtrl = new AbortController();
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
     this._abortCtrl.abort();
-    this.aiStreamSub?.unsubscribe();
+    this.ai.destroy();
   });
 
   readonly appTitle = input('Dashboard');
@@ -555,14 +428,7 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
 
-  readonly isPanReady = signal(false);
-  readonly isPanning = signal(false);
-  readonly panOffsetX = signal(0);
-  readonly panOffsetY = signal(0);
-  private _panStartX = 0;
-  private _panStartY = 0;
-  private _panStartOffsetX = 0;
-  private _panStartOffsetY = 0;
+  readonly panning = new CanvasPanning(() => this.isCanvas());
 
   readonly activeNav = computed(() => {
     const url = this.currentUrl();
@@ -587,33 +453,20 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly widgetFocusService = inject(WidgetFocusService);
   private readonly aiService = inject(AiService);
 
-  readonly aiPanelOpen = signal(false);
-  readonly aiMessages = signal<AiMessage[]>([]);
-  readonly aiInputText = signal('');
-  readonly aiThinking = signal(false);
-  private aiMessageCounter = 0;
-  private aiStreamSub: Subscription | null = null;
-
-  readonly aiSuggestions = computed(() =>
-    this.widgetFocusService.aiSuggestions() ?? this.defaultAiSuggestions()
-  );
-
-  private readonly _clearMessagesOnWidgetChange = effect(() => {
-    this.widgetFocusService.selectedWidgetId();
-    this.aiStreamSub?.unsubscribe();
-    this.aiStreamSub = null;
-    this.aiMessages.set([]);
-    this.aiThinking.set(false);
+  readonly ai = new AiPanelController({
+    widgetFocusService: this.widgetFocusService,
+    aiService: this.aiService,
+    defaultSuggestions: this.defaultAiSuggestions,
+    contextBuilder: () => this.aiService.buildContext(this.getPageName(), {
+      projectData: this.buildDashboardContextData(this.getPageName()),
+    }),
+    injector: this.injector,
   });
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
   toggleDarkMode(): void {
     this.themeService.toggleMode();
-  }
-
-  toggleAiPanel(): void {
-    this.aiPanelOpen.update((v) => !v);
   }
 
   toggleMoreMenu(): void {
@@ -633,11 +486,11 @@ export class DashboardShellComponent implements AfterViewInit {
     this.desktopResetMenuOpen.set(false);
     if (action === 'view') {
       if (this.isCanvas()) {
-        this.resetCanvasView();
+        this.panning.resetView();
       }
     } else if (action === 'widgets') {
       if (this.isCanvas()) {
-        this.resetCanvasView();
+        this.panning.resetView();
       }
       this.canvasResetService.triggerResetWidgets();
     }
@@ -655,66 +508,6 @@ export class DashboardShellComponent implements AfterViewInit {
     }
   }
 
-  selectAiSuggestion(suggestion: string): void {
-    this.aiInputText.set(suggestion);
-    this.sendAiMessage();
-  }
-
-  handleAiKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      this.sendAiMessage();
-    }
-  }
-
-  sendAiMessage(): void {
-    const text = this.aiInputText().trim();
-    if (!text || this.aiThinking()) return;
-
-    this.aiStreamSub?.unsubscribe();
-
-    this.aiMessages.update((msgs) => [
-      ...msgs,
-      { id: ++this.aiMessageCounter, role: 'user', text },
-    ]);
-    this.aiInputText.set('');
-    this.aiThinking.set(true);
-
-    const assistantMsgId = ++this.aiMessageCounter;
-    this.aiMessages.update((msgs) => [
-      ...msgs,
-      { id: assistantMsgId, role: 'assistant', text: '', streaming: true },
-    ]);
-
-    const history: AiChatMessage[] = this.aiMessages()
-      .filter((m) => m.id !== assistantMsgId)
-      .map((m) => ({ role: m.role, content: m.text }));
-
-    const pageName = this.getPageName();
-    const context = this.aiService.buildContext(pageName, {
-      projectData: this.buildDashboardContextData(pageName),
-    });
-
-    this.aiStreamSub = this.aiService.sendMessage(text, history, context).subscribe({
-      next: (chunk) => {
-        this.aiMessages.update((msgs) =>
-          msgs.map((m) => m.id === assistantMsgId ? { ...m, text: m.text + chunk } : m),
-        );
-      },
-      error: () => {
-        this.aiMessages.update((msgs) =>
-          msgs.map((m) => m.id === assistantMsgId ? { ...m, text: m.text || 'Sorry, something went wrong. Please try again.', streaming: false } : m),
-        );
-        this.aiThinking.set(false);
-      },
-      complete: () => {
-        this.aiMessages.update((msgs) =>
-          msgs.map((m) => m.id === assistantMsgId ? { ...m, streaming: false } : m),
-        );
-        this.aiThinking.set(false);
-      },
-    });
-  }
 
   private getPageName(): string {
     const url = this.currentUrl();
@@ -852,58 +645,13 @@ export class DashboardShellComponent implements AfterViewInit {
       this.resetMenuOpen.set(false);
     } else if (this.moreMenuOpen()) {
       this.moreMenuOpen.set(false);
-    } else if (this.aiPanelOpen()) {
-      this.aiPanelOpen.set(false);
+    } else if (this.ai.panelOpen()) {
+      this.ai.close();
     } else if (this.navExpanded()) {
       this.navExpanded.set(false);
     }
   }
 
-  onKeyDown(event: KeyboardEvent): void {
-    if (event.code !== 'Space' || !this.isCanvas()) return;
-    const tag = (event.target as HTMLElement)?.tagName?.toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || (event.target as HTMLElement)?.isContentEditable) return;
-    event.preventDefault();
-    if (!event.repeat) this.isPanReady.set(true);
-  }
-
-  onKeyUp(event: KeyboardEvent): void {
-    if (event.code !== 'Space') return;
-    event.preventDefault();
-    this.isPanReady.set(false);
-    this.isPanning.set(false);
-  }
-
-  onPanMouseDown(event: MouseEvent): void {
-    if (!this.isPanReady()) return;
-    event.preventDefault();
-    this.isPanning.set(true);
-    this._panStartX = event.clientX;
-    this._panStartY = event.clientY;
-    this._panStartOffsetX = this.panOffsetX();
-    this._panStartOffsetY = this.panOffsetY();
-  }
-
-  onPanMouseMove(event: MouseEvent): void {
-    if (!this.isPanning()) return;
-    this.panOffsetX.set(this._panStartOffsetX + (event.clientX - this._panStartX));
-    this.panOffsetY.set(this._panStartOffsetY + (event.clientY - this._panStartY));
-  }
-
-  onPanMouseUp(): void {
-    if (this.isPanning()) this.isPanning.set(false);
-  }
-
-  onCanvasWheel(event: WheelEvent): void {
-    event.preventDefault();
-    this.panOffsetX.update((x) => x - event.deltaX);
-    this.panOffsetY.update((y) => y - event.deltaY);
-  }
-
-  resetCanvasView(): void {
-    this.panOffsetX.set(0);
-    this.panOffsetY.set(0);
-  }
 
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;

@@ -4,6 +4,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
   OnInit,
   computed,
   effect,
@@ -18,15 +19,14 @@ import { Router } from '@angular/router';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
-import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
+import { AiAssistantPanelComponent } from '../../shell/components/ai-assistant-panel.component';
 import { EmptyStateComponent } from './components/empty-state.component';
 import { CollapsibleSubnavComponent } from './components/collapsible-subnav.component';
 import { ItemDetailViewComponent, type StatusOption } from './components/item-detail-view.component';
 import { WidgetFrameComponent } from './components/widget-frame.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
 
-import { Subscription } from 'rxjs';
 import { ThemeService } from '../../shell/services/theme.service';
 import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
@@ -34,7 +34,9 @@ import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { SubpageTileCanvas, type TileRect, type TileDetailView } from '../../shell/services/subpage-tile-canvas';
-import { AiService, type AiChatMessage } from '../../services/ai.service';
+import { AiService } from '../../services/ai.service';
+import { AiPanelController } from '../../shell/services/ai-panel-controller';
+import { CanvasPanning } from '../../shell/services/canvas-panning';
 import {
   type ProjectDashboardData,
   type ProjectStatus,
@@ -42,7 +44,7 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, RFIS, SUBMITTALS, type AiMessage, type Rfi, type Submittal } from '../../data/dashboard-data';
+import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT } from '../../data/drawings-data';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 
@@ -101,22 +103,22 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetLockToggleComponent, AiIconComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, WidgetFrameComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, WidgetFrameComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
     '[class.h-screen]': '!isCanvas()',
     '[class.overflow-hidden]': '!isCanvas()',
-    '[class.canvas-pan-ready]': 'isPanReady()',
-    '[class.canvas-panning]': 'isPanning()',
+    '[class.canvas-pan-ready]': 'panning.isPanReady()',
+    '[class.canvas-panning]': 'panning.isPanning()',
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
     '(document:touchend)': 'onDocumentTouchEnd()',
     '(document:touchcancel)': 'onDocumentTouchEnd()',
     '(window:keydown.escape)': 'onEscapeKey()',
     '(document:click)': 'onDocumentClick($event)',
-    '(window:keydown)': 'onKeyDown($event)',
-    '(window:keyup)': 'onKeyUp($event)',
+    '(window:keydown)': 'panning.onKeyDown($event)',
+    '(window:keyup)': 'panning.onKeyUp($event)',
   },
   template: `
     <svg aria-hidden="true" class="svg-defs-hidden">
@@ -1474,7 +1476,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
     </ng-template>
 
     @if (isCanvas()) {
-      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="onPanMouseDown($event)" (wheel)="onCanvasWheel($event)">
+      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="panning.onPanMouseDown($event)" (wheel)="panning.onCanvasWheel($event)">
         <div class="canvas-navbar">
           <modus-navbar
             [userCard]="userCard"
@@ -1536,8 +1538,8 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
                 aria-label="AI assistant"
-                (click)="toggleAiPanel()"
-                (keydown.enter)="toggleAiPanel()"
+                (click)="ai.toggle()"
+                (keydown.enter)="ai.toggle()"
                 tabindex="0"
               >
                 <ai-icon variant="nav" [isDark]="isDark()" />
@@ -1629,7 +1631,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
         }
 
         <div class="canvas-content" role="main" id="main-content" tabindex="-1"
-          [style.transform]="(panOffsetX() || panOffsetY()) ? 'translate(' + panOffsetX() + 'px,' + panOffsetY() + 'px)' : null">
+          [style.transform]="(panning.panOffsetX() || panning.panOffsetY()) ? 'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px)' : null">
           <div class="py-6 max-w-screen-xl mx-auto">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
@@ -1700,8 +1702,8 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
             role="button"
             aria-label="AI assistant"
-            (click)="toggleAiPanel()"
-            (keydown.enter)="toggleAiPanel()"
+            (click)="ai.toggle()"
+            (keydown.enter)="ai.toggle()"
             tabindex="0"
           >
             @if (isDark()) {
@@ -1913,154 +1915,12 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
     </div>
     }
 
-    <!-- AI Assistant Panel -->
-    <modus-utility-panel
-      [expanded]="aiPanelOpen()"
-      className="fixed-utility-panel"
-      position="right"
-      panelWidth="380px"
-      ariaLabel="Trimble AI Assistant"
-    >
-      <div slot="header" class="flex items-center justify-between w-full">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-            <svg class="ai-icon-sm" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#fff"/>
-              <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#fff"/>
-              <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#fff"/>
-              <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="#fff"/>
-            </svg>
-          </div>
-          <div class="min-w-0">
-            <div class="text-base font-semibold text-foreground truncate">{{ widgetFocusService.aiAssistantTitle() }}</div>
-            <div class="text-xs text-foreground-60 truncate">{{ widgetFocusService.aiAssistantSubtitle() }}</div>
-          </div>
-        </div>
-        <div
-          class="w-7 h-7 flex items-center justify-center rounded cursor-pointer hover:bg-muted transition-colors duration-150"
-          (click)="toggleAiPanel()"
-          role="button"
-          aria-label="Close AI Assistant"
-        >
-          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
-        </div>
-      </div>
-
-      <div slot="body" class="flex flex-col h-full min-h-0">
-        @if (aiMessages().length === 0 && !aiThinking()) {
-          <div class="flex flex-col items-center gap-4 px-4 pt-6 pb-2">
-            <div class="w-14 h-14 rounded-full bg-primary-20 flex items-center justify-center">
-              <svg class="ai-icon-lg" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
-                <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
-              </svg>
-            </div>
-            <div class="text-center">
-              <div class="text-base font-semibold text-foreground">How can I help?</div>
-              <div class="text-sm text-foreground-60 mt-1">Ask me about this project, milestones, budget, or team status.</div>
-            </div>
-            <div class="flex flex-col gap-2 w-full mt-2">
-              @for (suggestion of aiSuggestions(); track suggestion) {
-                <div
-                  class="px-4 py-2.5 rounded-lg border-default bg-card text-sm text-foreground cursor-pointer hover:bg-muted transition-colors duration-150 text-left"
-                  (click)="selectAiSuggestion(suggestion)"
-                  role="button"
-                  tabindex="0"
-                  [attr.aria-label]="'Ask: ' + suggestion"
-                  (keydown.enter)="selectAiSuggestion(suggestion)"
-                  (keydown.space)="$event.preventDefault(); selectAiSuggestion(suggestion)"
-                >
-                  <div class="flex items-center gap-2">
-                    <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">chevron_right</i>
-                    <div>{{ suggestion }}</div>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        }
-
-        @if (aiMessages().length > 0) {
-          <div class="flex flex-col gap-3 px-4 py-4 overflow-y-auto flex-1" aria-live="polite" role="log" aria-label="Chat messages">
-            @for (msg of aiMessages(); track msg.id) {
-              @if (msg.role === 'user') {
-                <div class="flex justify-end">
-                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-sm bg-primary text-primary-foreground text-sm leading-relaxed">
-                    {{ msg.text }}
-                  </div>
-                </div>
-              } @else {
-                <div class="flex items-start gap-2">
-                  <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg class="ai-icon-xs" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                      <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
-                      <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                      <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
-                    </svg>
-                  </div>
-                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed">
-                    {{ msg.text }}
-                  </div>
-                </div>
-              }
-            }
-
-            @if (aiThinking()) {
-              <div class="flex items-start gap-2">
-                <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg class="ai-icon-xs" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                    <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
-                    <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                    <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-grad-light)"/>
-                  </svg>
-                </div>
-                <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-card border-default">
-                  <div class="flex items-center gap-1">
-                    <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 0ms"></div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 150ms"></div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 300ms"></div>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        }
-
-      </div>
-
-      <div slot="footer" class="w-full">
-        <div class="flex items-end gap-2 p-2">
-          <textarea
-            class="flex-1 min-h-[40px] max-h-[120px] px-3 py-2 text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40"
-            placeholder="Ask about this project..."
-            rows="1"
-            [value]="aiInputText()"
-            (input)="aiInputText.set($any($event.target).value)"
-            (keydown)="handleAiKeydown($event)"
-            aria-label="Message input"
-          ></textarea>
-          <div
-            class="w-9 h-9 flex-shrink-0 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-150"
-            [class.bg-primary]="aiInputText().trim().length > 0 && !aiThinking()"
-            [class.bg-muted]="!aiInputText().trim().length || aiThinking()"
-            (click)="sendAiMessage()"
-            role="button"
-            aria-label="Send message"
-          >
-            <i
-              class="modus-icons text-base"
-              [class.text-primary-foreground]="aiInputText().trim().length > 0 && !aiThinking()"
-              [class.text-foreground-40]="!aiInputText().trim().length || aiThinking()"
-              aria-hidden="true"
-            >send</i>
-          </div>
-        </div>
-      </div>
-    </modus-utility-panel>
+    <ai-assistant-panel
+      [controller]="ai"
+      welcomeText="Ask me about this project, milestones, budget, or team status."
+      placeholder="Ask about this project..."
+      [showDisclaimer]="false"
+    />
   `,
 })
 export class ProjectDashboardComponent implements OnInit, AfterViewInit {
@@ -2071,6 +1931,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly widgetFocusService = inject(WidgetFocusService);
   private readonly aiService = inject(AiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   readonly projectData = input.required<ProjectDashboardData>();
   readonly projectId = input<number>(1);
@@ -2111,7 +1972,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
 
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
     this.engine.destroy();
-    this.aiStreamSub?.unsubscribe();
+    this.ai.destroy();
   });
   private readonly _lockProjHeader = (() => {
     this.engine.widgetLocked.update(l => ({ ...l, projHeader: true }));
@@ -2342,14 +2203,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     untracked(() => this.widgetFocusService.registerWidgets(regs));
   });
 
-  readonly isPanReady = signal(false);
-  readonly isPanning = signal(false);
-  readonly panOffsetX = signal(0);
-  readonly panOffsetY = signal(0);
-  private _panStartX = 0;
-  private _panStartY = 0;
-  private _panStartOffsetX = 0;
-  private _panStartOffsetY = 0;
+  readonly panning = new CanvasPanning(() => this.isCanvas());
   readonly searchInputOpen = signal(false);
   readonly navExpanded = signal(false);
   readonly activeNavItem = signal<string>('dashboard');
@@ -2923,13 +2777,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   onDocumentMouseMove(event: MouseEvent): void {
-    if (this.isPanning()) {
-      const dx = event.clientX - this._panStartX;
-      const dy = event.clientY - this._panStartY;
-      this.panOffsetX.set(this._panStartOffsetX + dx);
-      this.panOffsetY.set(this._panStartOffsetY + dy);
-      return;
-    }
+    if (this.panning.handleMouseMove(event)) return;
     if (this.tileCanvas.isInteracting) {
       this.tileCanvas.onDocumentMouseMove(event);
       return;
@@ -2938,10 +2786,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   onDocumentMouseUp(): void {
-    if (this.isPanning()) {
-      this.isPanning.set(false);
-      return;
-    }
+    if (this.panning.handleMouseUp()) return;
     if (this.tileCanvas.isInteracting) {
       this.tileCanvas.onDocumentMouseUp();
       this.tileInteractingId.set(null);
@@ -2951,44 +2796,26 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   onDocumentTouchEnd(): void {
-    if (this.isPanning()) {
-      this.isPanning.set(false);
-      return;
-    }
+    if (this.panning.handleMouseUp()) return;
     this.engine.onDocumentTouchEnd();
   }
 
 
-  // AI Assistant
-  readonly aiPanelOpen = signal(false);
-  readonly aiMessages = signal<AiMessage[]>([]);
-  readonly aiInputText = signal('');
-  readonly aiThinking = signal(false);
-  private aiMessageCounter = 0;
-  private aiStreamSub: Subscription | null = null;
-
-  private readonly defaultAiSuggestions = [
-    'What are the biggest risks right now?',
-    'Summarize migration progress',
-    'Which tasks are overdue?',
-    'How is the budget tracking?',
-  ];
-
-  readonly aiSuggestions = computed(() =>
-    this.widgetFocusService.aiSuggestions() ?? this.defaultAiSuggestions
-  );
-
-  private readonly _clearMessagesOnWidgetChange = effect(() => {
-    this.widgetFocusService.selectedWidgetId();
-    this.aiStreamSub?.unsubscribe();
-    this.aiStreamSub = null;
-    this.aiMessages.set([]);
-    this.aiThinking.set(false);
+  readonly ai = new AiPanelController({
+    widgetFocusService: this.widgetFocusService,
+    aiService: this.aiService,
+    defaultSuggestions: [
+      'What are the biggest risks right now?',
+      'Summarize migration progress',
+      'Which tasks are overdue?',
+      'How is the budget tracking?',
+    ],
+    contextBuilder: () => this.aiService.buildContext('project-dashboard', {
+      projectName: this.projectName(),
+      projectData: this.buildProjectContextData(),
+    }),
+    injector: this.injector,
   });
-
-  toggleAiPanel(): void {
-    this.aiPanelOpen.update(v => !v);
-  }
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
@@ -3022,8 +2849,8 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       this.resetMenuOpen.set(false);
     } else if (this.moreMenuOpen()) {
       this.moreMenuOpen.set(false);
-    } else if (this.aiPanelOpen()) {
-      this.aiPanelOpen.set(false);
+    } else if (this.ai.panelOpen()) {
+      this.ai.close();
     } else if (this.navExpanded()) {
       this.navExpanded.set(false);
     }
@@ -3056,118 +2883,19 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   resetMenuAction(action: 'view' | 'widgets'): void {
     this.resetMenuOpen.set(false);
     if (action === 'view') {
-      this.resetCanvasView();
+      this.panning.resetView();
     } else if (action === 'widgets') {
-      this.resetCanvasView();
+      this.panning.resetView();
       this.resetWidgetsToDefaults();
     }
-  }
-
-  resetCanvasView(): void {
-    this.panOffsetX.set(0);
-    this.panOffsetY.set(0);
   }
 
   private resetWidgetsToDefaults(): void {
     this.engine.resetToDefaults();
   }
 
-  onKeyDown(event: KeyboardEvent): void {
-    if (event.code !== 'Space' || !this.isCanvas()) return;
-    const tag = (event.target as HTMLElement)?.tagName?.toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || (event.target as HTMLElement)?.isContentEditable) return;
-    event.preventDefault();
-    if (!event.repeat) {
-      this.isPanReady.set(true);
-    }
-  }
-
-  onKeyUp(event: KeyboardEvent): void {
-    if (event.code !== 'Space') return;
-    event.preventDefault();
-    this.isPanReady.set(false);
-    this.isPanning.set(false);
-  }
-
-  onPanMouseDown(event: MouseEvent): void {
-    if (!this.isPanReady()) return;
-    event.preventDefault();
-    this.isPanning.set(true);
-    this._panStartX = event.clientX;
-    this._panStartY = event.clientY;
-    this._panStartOffsetX = this.panOffsetX();
-    this._panStartOffsetY = this.panOffsetY();
-  }
-
-  onCanvasWheel(event: WheelEvent): void {
-    event.preventDefault();
-    this.panOffsetX.update((x) => x - event.deltaX);
-    this.panOffsetY.update((y) => y - event.deltaY);
-  }
-
   toggleDarkMode(): void {
     this.themeService.toggleMode();
-  }
-
-  selectAiSuggestion(suggestion: string): void {
-    this.aiInputText.set(suggestion);
-    this.sendAiMessage();
-  }
-
-  sendAiMessage(): void {
-    const text = this.aiInputText().trim();
-    if (!text || this.aiThinking()) return;
-
-    this.aiStreamSub?.unsubscribe();
-
-    this.aiMessages.update(msgs => [
-      ...msgs,
-      { id: ++this.aiMessageCounter, role: 'user', text },
-    ]);
-    this.aiInputText.set('');
-    this.aiThinking.set(true);
-
-    const assistantMsgId = ++this.aiMessageCounter;
-    this.aiMessages.update(msgs => [
-      ...msgs,
-      { id: assistantMsgId, role: 'assistant', text: '', streaming: true },
-    ]);
-
-    const history: AiChatMessage[] = this.aiMessages()
-      .filter(m => m.id !== assistantMsgId)
-      .map(m => ({ role: m.role, content: m.text }));
-
-    const context = this.aiService.buildContext('project-dashboard', {
-      projectName: this.projectName(),
-      projectData: this.buildProjectContextData(),
-    });
-
-    this.aiStreamSub = this.aiService.sendMessage(text, history, context).subscribe({
-      next: (chunk) => {
-        this.aiMessages.update(msgs =>
-          msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text + chunk } : m),
-        );
-      },
-      error: () => {
-        this.aiMessages.update(msgs =>
-          msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text || 'Sorry, something went wrong. Please try again.', streaming: false } : m),
-        );
-        this.aiThinking.set(false);
-      },
-      complete: () => {
-        this.aiMessages.update(msgs =>
-          msgs.map(m => m.id === assistantMsgId ? { ...m, streaming: false } : m),
-        );
-        this.aiThinking.set(false);
-      },
-    });
-  }
-
-  handleAiKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      this.sendAiMessage();
-    }
   }
 
   private buildProjectContextData(): string {
