@@ -21,11 +21,13 @@ import { WidgetResizeHandleComponent } from '../../../shell/components/widget-re
         <ng-content select="[headerMeta]" />
       </div>
       <ng-content />
-      <widget-resize-handle
-        [isMobile]="isMobile()"
-        (resizeStart)="resizeStart.emit($event)"
-        (resizeTouchStart)="resizeTouchStart.emit($event)"
-      />
+      @if (resizable()) {
+        <widget-resize-handle
+          [isMobile]="isMobile()"
+          (resizeStart)="resizeStart.emit($event)"
+          (resizeTouchStart)="resizeTouchStart.emit($event)"
+        />
+      }
     </div>
   `,
 })
@@ -35,6 +37,7 @@ export class WidgetFrameComponent {
   readonly iconClass = input<string>('text-primary');
   readonly isSelected = input<boolean>(false);
   readonly isMobile = input<boolean>(false);
+  readonly resizable = input<boolean>(true);
 
   readonly headerMouseDown = output<MouseEvent>();
   readonly headerTouchStart = output<TouchEvent>();

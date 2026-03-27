@@ -384,13 +384,13 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       ariaLabel="AI Assistant"
     >
       <div slot="header" class="flex items-center justify-between w-full">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 min-w-0">
           <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
             <ai-icon variant="solid-white" size="sm" />
           </div>
-          <div>
-            <div class="text-base font-semibold text-foreground">{{ widgetFocusService.aiAssistantTitle() }}</div>
-            <div class="text-xs text-foreground-60">{{ widgetFocusService.aiAssistantSubtitle() }}</div>
+          <div class="min-w-0">
+            <div class="text-base font-semibold text-foreground truncate">{{ widgetFocusService.aiAssistantTitle() }}</div>
+            <div class="text-xs text-foreground-60 truncate">{{ widgetFocusService.aiAssistantSubtitle() }}</div>
           </div>
         </div>
         <div

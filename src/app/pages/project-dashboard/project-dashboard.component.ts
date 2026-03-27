@@ -363,10 +363,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                       <div class="text-xs font-medium text-foreground">{{ drawing.revision }}</div>
                       <div class="text-xs text-foreground-60">{{ drawing.date }}</div>
                     </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="tileCanvas.onTileResizeMouseDown('tile-drawing-' + drawing.id, $event)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
-                    </div>
                   </div>
                 </div>
               }
@@ -644,10 +640,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                         (dueDateChange)="onTileDetailDueDateChange('tile-rfi-' + rfi.id, $event)"
                       />
                     </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="onTileDetailResizeMouseDown($event, 'tile-rfi-' + rfi.id)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
-                    </div>
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
@@ -678,10 +670,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                           <div>{{ rfi.dueDate }}</div>
                         </div>
                       </div>
-                    </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="tileCanvas.onTileResizeMouseDown('tile-rfi-' + rfi.id, $event)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
                     </div>
                   </div>
                 }
@@ -765,10 +753,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                         (dueDateChange)="onTileDetailDueDateChange('tile-sub-' + sub.id, $event)"
                       />
                     </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="onTileDetailResizeMouseDown($event, 'tile-sub-' + sub.id)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
-                    </div>
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
@@ -799,10 +783,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                           <div>{{ sub.dueDate }}</div>
                         </div>
                       </div>
-                    </div>
-                    <div class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                      (mousedown)="tileCanvas.onTileResizeMouseDown('tile-sub-' + sub.id, $event)">
-                      <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
                     </div>
                   </div>
                 }
@@ -1942,7 +1922,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
       ariaLabel="Trimble AI Assistant"
     >
       <div slot="header" class="flex items-center justify-between w-full">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 min-w-0">
           <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
             <svg class="ai-icon-sm" viewBox="0 0 887 982" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#fff"/>
@@ -1951,9 +1931,9 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="#fff"/>
             </svg>
           </div>
-          <div>
-            <div class="text-base font-semibold text-foreground">{{ widgetFocusService.aiAssistantTitle() }}</div>
-            <div class="text-xs text-foreground-60">{{ widgetFocusService.aiAssistantSubtitle() }}</div>
+          <div class="min-w-0">
+            <div class="text-base font-semibold text-foreground truncate">{{ widgetFocusService.aiAssistantTitle() }}</div>
+            <div class="text-xs text-foreground-60 truncate">{{ widgetFocusService.aiAssistantSubtitle() }}</div>
           </div>
         </div>
         <div
@@ -2285,13 +2265,6 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.tileCanvas.onTileMouseDown(tileId, event);
   }
 
-  onTileDetailResizeMouseDown(event: MouseEvent, tileId: string): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.tileInteractingId.set(tileId);
-    this.tileCanvas.onTileResizeMouseDown(tileId, event);
-  }
-
   updateTileDetailField(tileId: string, field: string, value: string): void {
     const current = this.tileDetailViews()[tileId];
     if (!current) return;
@@ -2339,6 +2312,34 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
         : ProjectDashboardComponent.TILE_CONTENT_TOP;
       this.tileCanvas.setTiles(tileIds, lockedRects);
     });
+  });
+
+  private readonly _registerTileWidgetsEffect = effect(() => {
+    const drawings = this.drawingTiles();
+    const rfis = this.projectRfis();
+    const subs = this.projectSubmittals();
+
+    const regs: Record<string, { name: string; suggestions: string[] }> = {};
+    for (const d of drawings) {
+      regs[`tile-drawing-${d.id}`] = {
+        name: d.title,
+        suggestions: [`Show details for ${d.title}`, `What revision is ${d.title}?`, 'Compare drawing revisions'],
+      };
+    }
+    for (const r of rfis) {
+      regs[`tile-rfi-${r.id}`] = {
+        name: `${r.number}: ${r.subject}`,
+        suggestions: [`What is the status of ${r.number}?`, `Who is assigned to ${r.number}?`, `When is ${r.number} due?`],
+      };
+    }
+    for (const s of subs) {
+      regs[`tile-sub-${s.id}`] = {
+        name: `${s.number}: ${s.subject}`,
+        suggestions: [`What is the status of ${s.number}?`, `Who is assigned to ${s.number}?`, `When is ${s.number} due?`],
+      };
+    }
+
+    untracked(() => this.widgetFocusService.registerWidgets(regs));
   });
 
   readonly isPanReady = signal(false);
