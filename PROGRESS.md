@@ -3,8 +3,8 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: March 24, 2026
-**Total Commits**: 93
+**Last Updated**: March 27, 2026
+**Total Commits**: 97+
 
 ---
 
@@ -159,7 +159,7 @@ Features and improvements not yet started.
 
 ### AI Assistant
 - [x] Backend AI service integration (current panel is static suggestions)
-- [ ] Context-aware widget suggestions based on real project data
+- [~] Context-aware widget suggestions based on real project data
 
 ### Testing
 - [ ] E2E tests with Playwright (configured but minimal coverage)
@@ -191,6 +191,7 @@ Features and improvements not yet started.
 | Area | File | Tests |
 |------|------|-------|
 | Layout engine | `dashboard-layout-engine.spec.ts` | Push-squeeze (right/left), squeeze before push, far-end squeeze, resize min-width |
+| Canvas BFS push | `canvas-push.spec.ts` | 16 tests: basic push, cascade direction, mover immunity, post-BFS cleanup, locked widgets, off-screen clamping, axis selection, real-world detail expansion |
 | Widget layout | `widget-layout.service.spec.ts` | Save/load layout persistence |
 | Canvas reset | `canvas-reset.service.spec.ts` | Reset trigger signal |
 
@@ -200,7 +201,6 @@ Features and improvements not yet started.
 - Visual regression (no screenshot baseline)
 - Theme switching verification (manual only)
 - Mobile-specific behavior (touch drag, reflow)
-- Widget interaction sequences (drag then resize, multi-widget collision)
 
 ---
 
@@ -212,6 +212,9 @@ Features and improvements not yet started.
 | Mar 23 | [GitHub and Vercel](0b841993-1534-43b7-8fa6-b99bd77e5e30) | First GitHub push, Vercel deploy, rendering fixes |
 | Mar 23 | [Layout and deployment](b90d3dde-b222-49be-9649-3bc611187ed1) | Desktop resize rules, canvas collision, Vercel linking, project selector |
 | Mar 24 | [Engine refinement](bc28969b-5fd7-49fc-907e-894008a53ccc) | Push-squeeze algorithm, regression testing, collision priority, theming, skills |
+| Mar 25 | [Canvas compact mode](8807b645-9b9a-4f2d-b223-80e249dd101f) | Compact mode revert on canvas resize |
+| Mar 26 | [Memory and detail views](b3ea14f9-5bd7-453f-8329-20bad1e7cc3a) | Short-term memory, detail view navigation, URL state |
+| Mar 26-27 | [Canvas push and tests](6387a8f3-f2de-4dae-933b-eeec94687608) | Canvas detail expansion, BFS push refactoring, cascade direction fix, unit tests |
 
 ---
 
@@ -220,6 +223,9 @@ Features and improvements not yet started.
 | File | Purpose |
 |------|---------|
 | `src/app/shell/services/dashboard-layout-engine.ts` | Core layout engine (drag, resize, push-squeeze, collision) |
+| `src/app/shell/services/canvas-push.ts` | BFS push algorithm for canvas mode collision resolution |
+| `src/app/shell/services/canvas-detail-manager.ts` | Canvas detail overlay management (shared by home + project) |
+| `src/app/shell/services/subpage-tile-canvas.ts` | Tile-based canvas for project subpages |
 | `src/app/shell/layout/dashboard-shell.component.ts` | Shared shell (navbar, sidenav, AI panel, document click) |
 | `src/app/shell/services/widget-focus.service.ts` | Widget selection state for AI panel |
 | `src/app/shell/services/widget-layout.service.ts` | Widget layout persistence (sessionStorage) |

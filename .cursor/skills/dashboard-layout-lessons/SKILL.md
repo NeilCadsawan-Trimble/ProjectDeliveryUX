@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas navbar/sidenav CSS, widget selection/deselection, or overflow behavior. Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, or overflow behavior. Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -178,12 +178,209 @@ onDocumentClick(event: MouseEvent): void {
 
 `target.closest('[data-widget-id]')` returns null for clicks on the grid background, navbar, sidebar, or AI panel. Clicks inside widgets (including headers, content, resize handles) all bubble through a `data-widget-id` ancestor.
 
+## 6. Canvas BFS Push Algorithm
+
+**File:** `src/app/shell/services/canvas-push.ts` -- `runCanvasPushBfs`
+
+This is the collision resolution algorithm for canvas mode (infinite canvas). It is **separate** from the desktop push-squeeze algorithm in section 1. It uses BFS to propagate pushes through overlapping widgets.
+
+### Three-phase structure
+
+1. **BFS phase** -- Starting from `movedId`, push all overlapping non-locked widgets outward. Each pushed widget is re-queued so its new position can cascade to further widgets.
+2. **Post-BFS cleanup** -- Cascade pushes can shove a widget back into the mover. Iterate over all widgets and re-push any that still overlap with `movedId`.
+3. **Locked widget resolution** -- Locked widgets are immovable. After BFS, push any non-locked widget that overlaps with a locked widget.
+
+### Critical: cascade direction must reference the MOVER
+
+**This bug broke canvas mode 3 times.** When widget A (the mover) pushes B and C to the same position (e.g., both to `left=816`), a cascade push from C tries to push B. If the push direction is determined relative to C's center, B may be pushed *left* (back toward A), trapping it behind the mover.
+
+The fix: for cascade pushes, determine left/right (or up/down) direction relative to the **mover's** center, not the cascade pusher's center:
+
+```typescript
+// dirRef = the mover for cascade pushes, the pusher for initial pushes
+const dirRef = (pusherId === movedId) ? p : rects[movedId];
+const dirCX = dirRef.left + dirRef.width / 2;
+
+if (pushH) {
+  if (oCX >= dirCX) {
+    // Push right (away from mover)
+    rects[otherId] = { ...o, left: pR + gap };
+  } else {
+    // Push left (away from mover)
+    const candidateLeft = p.left - o.width - gap;
+    rects[otherId] = candidateLeft >= 0
+      ? { ...o, left: candidateLeft }
+      : { ...o, left: pR + gap };  // fallback to right if off-screen
+  }
+}
+```
+
+### Critical: mover immunity in BFS
+
+The mover must never be pushed by other widgets during BFS. Without this guard, cascade pushes can displace the expanding widget itself:
+
+```typescript
+for (const otherId of ids) {
+  if (otherId === pusherId) continue;
+  if (otherId === movedId) continue;  // CRITICAL: mover is never pushed
+  if (isLocked[otherId]) continue;
+  // ...
+}
+```
+
+### Critical: dual-heuristic axis selection
+
+The axis choice (push horizontally vs vertically) uses different heuristics depending on who is pushing:
+
+- **Initial push** (from mover): Compare clearance distances. `clearR = pRight + gap - o.left` vs `clearD = pBottom + gap - o.top`. Pick the axis requiring less movement.
+- **Cascade push** (from another widget): Compare center-to-center distances. `|oCX - pCX|` vs `|oCY - pCY|`. Pick the axis with greater separation.
+
+Mixing these up causes widgets to be pushed in the wrong direction. The initial push uses clearance because the mover may have expanded asymmetrically (wide but not tall). The cascade push uses center distance because the pusher is already at its final position.
+
+### Off-screen clamping fallbacks
+
+When a left push would produce `candidateLeft < 0`, fall back to pushing right. When an upward push would produce `candidateTop < 0`, fall back to horizontal push (right if `oCX >= dirCX`, left otherwise). Never push a widget off-screen.
+
+### Overlap detection includes gap
+
+The `hasOverlap` function includes the gap in its AABB check. Two widgets separated by less than `gap` are considered overlapping:
+
+```typescript
+const hasOverlap = (a: string, b: string): boolean => {
+  const ar = rects[a], br = rects[b];
+  return ar.left < br.left + br.width + gap && br.left < ar.left + ar.width + gap
+      && ar.top < br.top + br.height + gap && br.top < ar.top + ar.height + gap;
+};
+```
+
+### Regression tests
+
+16 unit tests in `canvas-push.spec.ts` cover:
+- Basic push (single overlap, vertical push, gap enforcement)
+- Mover immunity
+- Cascade direction (outward cascade, same-position cascade, direction relative to mover)
+- Post-BFS cleanup
+- Locked widgets
+- Off-screen clamping fallbacks
+- Axis selection (clearance vs center-distance)
+- Real-world home page detail expansion scenario
+
+## 7. Canvas Detail Manager
+
+**File:** `src/app/shell/services/canvas-detail-manager.ts`
+
+Manages the expansion of a regular widget into a detail view (e.g., clicking an RFI widget to see full RFI details) in canvas mode. Shared between `home-page` and `project-dashboard` via the `CanvasDetailEngine` interface.
+
+### Double requestAnimationFrame for size updates
+
+When opening a detail, the widget's dimensions must be updated *after* Angular has rendered the current state. A single `requestAnimationFrame` is not enough because Angular's change detection may not have flushed yet. Use a double rAF:
+
+```typescript
+openDetail(sourceWidgetId: string, detail: DetailView, engine: CanvasDetailEngine): void {
+  // 1. Save baseline and original rect
+  // 2. Add detail view to signal
+  this.canvasDetailViews.update(v => ({ ...v, [sourceWidgetId]: detail }));
+
+  // 3. Double rAF: first rAF queues after current frame, second rAF
+  //    runs after Angular has processed the detail view addition
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      engine.widgetPixelWidths.update(w => ({ ...w, [sourceWidgetId]: DETAIL_WIDTH }));
+      engine.widgetHeights.update(h => ({ ...h, [sourceWidgetId]: DETAIL_HEIGHT }));
+      engine.pushFromWidget(sourceWidgetId);
+    });
+  });
+}
+```
+
+Without the double rAF, `pushFromWidget` reads stale dimensions and pushes incorrectly.
+
+### Baseline snapshot pattern
+
+Before expanding any detail, snapshot the entire layout. On close, restore all non-detail, non-locked widgets to their baseline positions. This prevents layout drift when multiple details are opened and closed in sequence:
+
+```typescript
+if (!this._baselineSnapshot) {
+  this._baselineSnapshot = {
+    tops: { ...engine.widgetTops() },
+    lefts: { ...engine.widgetLefts() },
+    widths: { ...engine.widgetPixelWidths() },
+    heights: { ...engine.widgetHeights() },
+  };
+}
+```
+
+The baseline is cleared only when the last detail widget is closed (`remainingIds.length === 0`).
+
+### CanvasDetailEngine interface
+
+Both `DashboardLayoutEngine` (home page) and `SubpageTileCanvas` (project pages) expose the same interface so `CanvasDetailManager` can operate on either:
+
+```typescript
+export interface CanvasDetailEngine {
+  widgetTops: WritableSignal<Record<string, number>>;
+  widgetLefts: WritableSignal<Record<string, number>>;
+  widgetPixelWidths: WritableSignal<Record<string, number>>;
+  widgetHeights: WritableSignal<Record<string, number>>;
+  widgetLocked: () => Record<string, boolean>;
+  pushFromWidget: (widgetId: string) => void;
+}
+```
+
+### Close timing
+
+Detail close uses `setTimeout(fn, TRANSITION_MS)` (350ms) to wait for CSS transitions before restoring layout. This prevents visual jarring where widgets snap to baseline positions before the closing animation finishes.
+
+## 8. Subpage Tile Canvas
+
+**File:** `src/app/shell/services/subpage-tile-canvas.ts`
+
+A self-contained canvas manager for project subpages (RFIs, Submittals, Drawings, etc.) where each item is a tile.
+
+### Locked widgets
+
+Some tiles are immovable (e.g., a list view widget). Locked tiles are tracked in a signal and excluded from BFS push:
+
+```typescript
+this.locked = signal<Record<string, boolean>>(
+  config.lockedIds.reduce((acc, id) => ({ ...acc, [id]: true }), {})
+);
+```
+
+Locked tiles can still *push* other tiles (via the locked-widget resolution pass in `runCanvasPushBfs`), but they are never displaced.
+
+### Config-driven tile layout
+
+Tile positions are computed from a grid config: `columns`, `tileWidth`, `tileHeight`, `gap`, `offsetTop`, `offsetLeft`. New tiles are placed in row-major order. Existing positions are preserved from `sessionStorage`:
+
+```typescript
+if (existing[id] && !lockedRects[id]) {
+  next[id] = existing[id];  // preserve saved position
+} else if (!lockedRects[id]) {
+  const col = idx % columns;
+  const row = Math.floor(idx / columns);
+  next[id] = {
+    top: offsetTop + row * (tileHeight + gap),
+    left: offsetLeft + col * (tileWidth + gap),
+    width: tileWidth,
+    height: tileHeight,
+  };
+}
+```
+
+### Detail expansion reuses BFS push
+
+`SubpageTileCanvas.openDetail` follows the same double-rAF pattern as `CanvasDetailManager.openDetail`, then calls `resolveCanvasPush` which delegates to `runCanvasPushBfs`. This keeps all push logic in one place.
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
 |---------|------------|-----------|
-| Push-squeeze algorithm | `src/app/shell/services/dashboard-layout-engine.ts` | `dashboard-layout-engine.spec.ts` |
-| Collision priority | same as above | same as above |
+| Push-squeeze algorithm (desktop) | `dashboard-layout-engine.ts` | `dashboard-layout-engine.spec.ts` |
+| Collision priority (desktop) | same as above | same as above |
+| Canvas BFS push algorithm | `canvas-push.ts` | `canvas-push.spec.ts` |
+| Canvas detail manager | `canvas-detail-manager.ts` | (tested via canvas-push integration) |
+| Subpage tile canvas | `subpage-tile-canvas.ts` | (tested via canvas-push integration) |
 | Canvas navbar overflow | `src/styles.css` | `tests/static/styles.spec.ts` |
 | Side nav dark background | `src/styles.css` | (visual, test all 6 themes) |
 | Widget deselection | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` |
