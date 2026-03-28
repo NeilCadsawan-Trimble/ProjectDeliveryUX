@@ -20,6 +20,7 @@ import { CanvasDetailManager, type DetailView } from '../../shell/services/canva
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { ItemDetailViewComponent, type StatusOption } from '../project-dashboard/components/item-detail-view.component';
+import { PdfViewerComponent } from '../project-dashboard/components/pdf-viewer.component';
 import { SUBNAV_CONFIGS } from '../project-dashboard/project-dashboard.config';
 import type {
   DashboardWidgetId,
@@ -39,10 +40,11 @@ import {
   TIME_OFF_REQUESTS,
   CALENDAR_APPOINTMENTS,
 } from '../../data/dashboard-data';
+import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 
 @Component({
   selector: 'app-home-page',
-  imports: [WidgetLockToggleComponent, WidgetResizeHandleComponent, ItemDetailViewComponent],
+  imports: [WidgetLockToggleComponent, WidgetResizeHandleComponent, ItemDetailViewComponent, PdfViewerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -165,6 +167,7 @@ import {
             (mousedown)="canvasDetailViews()[widgetId] ? selectDetailWidget(widgetId, $event) : null"
           >
           @if (canvasDetailViews()[widgetId]; as detail) {
+            @if (detail.type === 'rfi' || detail.type === 'submittal') {
             <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
               [class.border-default]="selectedWidgetId() !== widgetId"
               [class.border-primary]="selectedWidgetId() === widgetId">
@@ -303,6 +306,46 @@ import {
                 <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
               </div>
             </div>
+            }
+            @if (detail.type === 'drawing') {
+            <div #drawingDetailEl class="bg-card rounded-lg overflow-hidden flex flex-col h-full"
+              [class.border-default]="selectedWidgetId() !== widgetId"
+              [class.border-primary]="selectedWidgetId() === widgetId">
+              <div
+                class="flex items-center justify-between px-4 py-3 border-bottom-default cursor-move select-none flex-shrink-0"
+                (mousedown)="onCanvasDetailHeaderMouseDown($event, widgetId)"
+              >
+                <div class="flex items-center gap-3 min-w-0">
+                  <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">image</i>
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold text-foreground truncate">{{ detail.item.title }}</div>
+                    <div class="text-xs text-foreground-40">{{ detail.item.revision }} &middot; {{ detail.item.date }}</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0">
+                  <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                    (click)="closeCanvasDetail(widgetId)" aria-label="Close detail">
+                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 min-h-0 overflow-hidden">
+                @if (detail.item.file && detail.item.file.endsWith('.pdf')) {
+                  <app-pdf-viewer [src]="detail.item.file" />
+                } @else {
+                  <div class="h-full bg-secondary flex items-center justify-center">
+                    <img [src]="detail.item.thumbnail" [alt]="detail.item.title" class="max-w-full max-h-full object-contain" />
+                  </div>
+                }
+              </div>
+              <div
+                class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+                (mousedown)="onCanvasDetailResizeMouseDown($event, widgetId)"
+              >
+                <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
+              </div>
+            </div>
+            }
           } @else {
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
@@ -941,6 +984,51 @@ import {
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 />
               }
+              @else if (widgetId === 'homeDrawings') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">image</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Recent Drawings</div>
+                      <div class="text-xs text-foreground-40">{{ recentDrawings().length }} projects</div>
+                    </div>
+                  </div>
+
+                  <div class="flex-1 overflow-y-auto" role="list" aria-label="Recent drawings by project">
+                    @for (entry of recentDrawings(); track entry.projectId) {
+                      <div
+                        class="flex items-center gap-3 px-5 py-3 border-bottom-default last:border-b-0 hover:bg-muted transition-colors duration-150 cursor-pointer"
+                        role="listitem"
+                        (mousedown)="$event.stopPropagation()"
+                        (touchstart)="$event.stopPropagation()"
+                        (click)="openDrawingDetail(entry.projectId, entry.drawing)"
+                      >
+                        <div class="w-10 h-10 rounded-md bg-muted flex-shrink-0 overflow-hidden">
+                          <img [src]="entry.drawing.thumbnail" [alt]="entry.drawing.title" class="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm font-medium text-foreground truncate">{{ entry.drawing.title }}</div>
+                          <div class="text-xs text-foreground-60 truncate">{{ entry.projectName }}</div>
+                        </div>
+                        <div class="flex-shrink-0 text-right">
+                          <div class="text-xs font-medium text-foreground-80">{{ entry.drawing.revision }}</div>
+                          <div class="text-xs text-foreground-40">{{ entry.drawing.date }}</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                />
+              }
 
             </div>
           }
@@ -962,25 +1050,26 @@ export class HomePageComponent implements AfterViewInit {
   private static readonly HEADER_OFFSET = HomePageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['homeHeader', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals'],
-    layoutStorageKey: 'dashboard-home-v2',
-    canvasStorageKey: 'canvas-layout:dashboard-home:v7',
-    defaultColStarts: { homeHeader: 1, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1 },
-    defaultColSpans: { homeHeader: 16, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 16 },
-    defaultTops: { homeHeader: 0, homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356 },
-    defaultHeights: { homeHeader: 0, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
-    defaultLefts: { homeHeader: 0, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
-    defaultPixelWidths: { homeHeader: 1280, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
-    canvasDefaultLefts: { homeHeader: 0, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
-    canvasDefaultPixelWidths: { homeHeader: 1280, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
+    widgets: ['homeHeader', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings'],
+    layoutStorageKey: 'dashboard-home-v3',
+    canvasStorageKey: 'canvas-layout:dashboard-home:v8',
+    defaultColStarts: { homeHeader: 1, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11 },
+    defaultColSpans: { homeHeader: 16, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6 },
+    defaultTops: { homeHeader: 0, homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356, homeDrawings: 356 },
+    defaultHeights: { homeHeader: 0, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580, homeDrawings: 580 },
+    defaultLefts: { homeHeader: 0, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810 },
+    defaultPixelWidths: { homeHeader: 1280, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470 },
+    canvasDefaultLefts: { homeHeader: 0, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810 },
+    canvasDefaultPixelWidths: { homeHeader: 1280, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470 },
     canvasDefaultTops: {
       homeHeader: 0,
       homeRfis: HomePageComponent.HEADER_OFFSET,
       homeSubmittals: HomePageComponent.HEADER_OFFSET,
       homeTimeOff: HomePageComponent.HEADER_OFFSET,
       homeCalendar: HomePageComponent.HEADER_OFFSET + 356,
+      homeDrawings: HomePageComponent.HEADER_OFFSET + 356,
     },
-    canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
+    canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580, homeDrawings: 580 },
     minColSpan: 4,
     canvasGridMinHeightOffset: 100,
     savesDesktopOnMobile: true,
@@ -1043,11 +1132,34 @@ export class HomePageComponent implements AfterViewInit {
     return `$${total}`;
   });
 
-  readonly homeWidgets: DashboardWidgetId[] = ['homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals'];
+  readonly recentDrawings = computed(() => {
+    const results: { projectId: number; projectName: string; drawing: DrawingTile }[] = [];
+    for (const project of PROJECTS) {
+      const drawings = ALL_DRAWINGS_BY_PROJECT[project.id];
+      if (drawings?.length) {
+        results.push({ projectId: project.id, projectName: project.name, drawing: drawings[0] });
+      }
+    }
+    return results;
+  });
+
+  readonly homeWidgets: DashboardWidgetId[] = ['homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');
+  private readonly drawingDetailRef = viewChild<ElementRef>('drawingDetailEl');
+
+  private readonly _drawingWheelEffect = effect(() => {
+    const el = this.drawingDetailRef()?.nativeElement as HTMLElement | undefined;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    this.destroyRef.onDestroy(() => el.removeEventListener('wheel', handler));
+  });
 
   mobileGridHeight(_grid: GridPage): number {
     return this.engine.mobileGridHeight();
@@ -1144,6 +1256,7 @@ export class HomePageComponent implements AfterViewInit {
       this.timeOffMobileExpanded(),
       this.filteredTimeOff().length
     );
+    heights['homeDrawings'] = 56 + this.recentDrawings().length * 64 + 16;
     this.widgetHeights.set(heights);
   }
 
@@ -1601,6 +1714,17 @@ export class HomePageComponent implements AfterViewInit {
     this.router.navigate(['/financials']);
   }
 
+  openDrawingDetail(projectId: number, drawing: DrawingTile): void {
+    if (this.isCanvasMode()) {
+      this.openCanvasDetail('homeDrawings', { type: 'drawing', item: drawing });
+      return;
+    }
+    const project = PROJECTS.find(p => p.id === projectId);
+    if (project) {
+      this.router.navigate(['/projects', project.slug], { queryParams: { page: 'drawings' } });
+    }
+  }
+
   readonly STATUS_OPTIONS: StatusOption[] = [
     { value: 'open', label: 'Open', dotClass: 'bg-primary' },
     { value: 'overdue', label: 'Overdue', dotClass: 'bg-destructive' },
@@ -1641,7 +1765,8 @@ export class HomePageComponent implements AfterViewInit {
   }
 
   private openCanvasDetail(sourceWidgetId: string, detail: DetailView): void {
-    this._detailMgr.openDetail(sourceWidgetId, detail, this.engine);
+    const size = detail.type === 'drawing' ? { width: 1024, height: 768 } : undefined;
+    this._detailMgr.openDetail(sourceWidgetId, detail, this.engine, size);
   }
 
   selectDetailWidget(widgetId: string, event: MouseEvent): void {

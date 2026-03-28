@@ -3,13 +3,14 @@ export interface DrawingTile {
   title: string;
   subtitle: string;
   thumbnail: string;
+  file?: string;
   revision: string;
   date: string;
 }
 
 export const ALL_DRAWINGS_BY_PROJECT: Record<number, DrawingTile[]> = {
   1: [
-    { id: 'drw-1', title: 'Level 1 - Floor Plan', subtitle: 'Architectural floor plan showing wall layouts, door swings, and room dimensions for the ground level', thumbnail: '/assets/drawings/drawing-5.webp', revision: 'Rev 04', date: 'Mar 21, 2026' },
+    { id: 'drw-1', title: 'Level 1 - Floor Plan', subtitle: 'Architectural floor plan showing wall layouts, door swings, and room dimensions for the ground level', thumbnail: '/assets/drawings/1195.png', file: '/assets/drawings/sample.pdf', revision: 'Rev 04', date: 'Mar 21, 2026' },
     { id: 'drw-2', title: 'Level 2 - Fire Protection', subtitle: 'MEP fire suppression sprinkler heads, standpipes, and alarm pull station locations', thumbnail: '/assets/drawings/drawing-10.webp', revision: 'Rev 03', date: 'Mar 18, 2026' },
     { id: 'drw-3', title: 'Level 3 - HVAC Layout', subtitle: 'Mechanical ductwork routing, VAV box locations, and thermostat zone assignments', thumbnail: '/assets/drawings/drawing-9.webp', revision: 'Rev 05', date: 'Mar 14, 2026' },
     { id: 'drw-4', title: 'Level 1 - Furniture Layout', subtitle: 'Interior design plan with workstation clusters, conference rooms, and break area furnishings', thumbnail: '/assets/drawings/drawing-11.webp', revision: 'Rev 02', date: 'Mar 10, 2026' },

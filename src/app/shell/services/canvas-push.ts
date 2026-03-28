@@ -68,18 +68,18 @@ export function runCanvasPushBfs(
     const oCX = o.left + o.width / 2;
     const oCY = o.top + o.height / 2;
 
+    const sameRow = Math.abs(p.top - o.top) <= gap;
     let pushH: boolean;
-    if (pusherId === movedId) {
-      const sameRow = Math.abs(p.top - o.top) <= gap;
-      if (sameRow) {
-        pushH = true;
-      } else {
-        const hClear = (oCX >= pCX) ? (pR + gap - o.left) : (oR + gap - p.left);
-        const vClear = (oCY >= pCY) ? (pB + gap - o.top) : (oB + gap - p.top);
-        pushH = hClear <= vClear;
-      }
+    if (sameRow) {
+      pushH = true;
+    } else if (pusherId === movedId) {
+      const hClear = (oCX >= pCX) ? (pR + gap - o.left) : (oR + gap - p.left);
+      const vClear = (oCY >= pCY) ? (pB + gap - o.top) : (oB + gap - p.top);
+      pushH = hClear <= vClear;
     } else {
-      pushH = Math.abs(oCX - pCX) >= Math.abs(oCY - pCY);
+      const hClear = (oCX >= pCX) ? (pR + gap - o.left) : (oR + gap - p.left);
+      const vClear = (oCY >= pCY) ? (pB + gap - o.top) : (oB + gap - p.top);
+      pushH = hClear <= vClear;
     }
 
     const dirRef = (pusherId === movedId) ? p : rects[movedId];
@@ -146,6 +146,31 @@ export function runCanvasPushBfs(
       if (!hasOverlap(movedId, otherId)) continue;
       pushAway(movedId, otherId);
       anyFixed = true;
+    }
+    if (!anyFixed) break;
+  }
+
+  // All-pairs cleanup: resolve any remaining overlaps between non-mover
+  // widgets that the BFS cascade missed (e.g. a pushed detail widget
+  // landing on top of a home widget without cascading the push).
+  for (let pass = 0; pass < ids.length * 3; pass++) {
+    let anyFixed = false;
+    for (const aId of ids) {
+      if (isLocked[aId]) continue;
+      for (const bId of ids) {
+        if (bId === aId || isLocked[bId]) continue;
+        if (!hasOverlap(aId, bId)) continue;
+        const aSize = rects[aId].width * rects[aId].height;
+        const bSize = rects[bId].width * rects[bId].height;
+        const pusherId = aSize >= bSize ? aId : bId;
+        const targetId = pusherId === aId ? bId : aId;
+        if (targetId === movedId) continue;
+        const prev = { ...rects[targetId] };
+        pushAway(pusherId, targetId);
+        if (rects[targetId].left !== prev.left || rects[targetId].top !== prev.top) {
+          anyFixed = true;
+        }
+      }
     }
     if (!anyFixed) break;
   }
