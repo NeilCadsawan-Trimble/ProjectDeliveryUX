@@ -64,7 +64,7 @@ async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: 
       }
 
       @if (nativePercent() !== null && zoom() !== 1) {
-        <div class="absolute bottom-3 right-3 flex items-center gap-2 bg-card border-default rounded-lg px-3 py-1.5 shadow-lg">
+        <div class="absolute bottom-3 right-3 flex items-center gap-2 bg-card border-default rounded-lg px-3 py-1.5 shadow-toolbar">
           <div class="text-xs text-foreground-60 font-medium">{{ nativePercent() }}%</div>
           <div class="w-7 h-7 rounded flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
             role="button" tabindex="0" aria-label="Reset zoom" (click)="resetZoom()">
@@ -137,6 +137,30 @@ export class PdfViewerComponent {
     this._rerenderTimer = setTimeout(() => this._renderAtCurrentZoom(z), 200);
   });
 
+  private _resizeObserver: ResizeObserver | null = null;
+
+  private readonly _resizeEffect = effect(() => {
+    const container = this.containerRef()?.nativeElement;
+    if (!container) return;
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this.loading() || !this._pdfPage || this.zoom() !== 1) return;
+      const { w, h } = this._pageSize();
+      const cW = container.clientWidth;
+      const cH = container.clientHeight;
+      if (cW <= 0 || cH <= 0) return;
+      const newFit = Math.min(cW / w, cH / h);
+      if (Math.abs(newFit - this.fitScale()) < 0.001) return;
+      this.fitScale.set(newFit);
+      const canvas = this.canvasRef()?.nativeElement;
+      if (canvas && this._pdfPage) {
+        this._renderPage(this._pdfPage, canvas, newFit, 1);
+      }
+    });
+    this._resizeObserver.observe(container);
+    this.destroyRef.onDestroy(() => this._resizeObserver?.disconnect());
+  });
+
   private readonly _wheelEffect = effect(() => {
     const el = this.containerRef()?.nativeElement;
     if (!el) return;
@@ -177,8 +201,22 @@ export class PdfViewerComponent {
         return;
       }
 
-      const containerW = container.clientWidth;
-      const containerH = container.clientHeight;
+      let containerW = container.clientWidth;
+      let containerH = container.clientHeight;
+      if (containerW <= 0 || containerH <= 0) {
+        await new Promise<void>(resolve => {
+          const ro = new ResizeObserver(() => {
+            if (container.clientWidth > 0 && container.clientHeight > 0) {
+              ro.disconnect();
+              resolve();
+            }
+          });
+          ro.observe(container);
+        });
+        containerW = container.clientWidth;
+        containerH = container.clientHeight;
+      }
+
       const fitScaleVal = Math.min(containerW / baseViewport.width, containerH / baseViewport.height);
       this.fitScale.set(fitScaleVal);
 

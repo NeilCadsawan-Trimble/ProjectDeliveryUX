@@ -72,6 +72,11 @@ Consult this file before asking the user a question. If the answer is here, act 
 - **Lint checks** (`npm run lint:all`): Colors, borders, opacity, icons, icon names, inline styles.
 - **Type checking** (`npm run type-check`): Strict TypeScript validation.
 
+### Git Identity
+- **Author name**: `NeilCadsawan-Trimble` (local config for this repo).
+- **Author email**: `neil_cadsawan@trimble.com` (local config for this repo).
+- **GitHub account**: `NeilCadsawan-Trimble`. All pushes/PRs under this account.
+
 ### Deployment
 - **Vercel**: Connected to GitHub repo. Auto-deploys on push.
 - **Node version**: Set via `NODE_VERSION` env var in Vercel.
