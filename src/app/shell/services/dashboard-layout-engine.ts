@@ -171,6 +171,14 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     return typeof k === 'function' ? k() : k;
   }
 
+  private get desktopDefaultsKey(): string {
+    return `${this.layoutKey}__customDefaults`;
+  }
+
+  private get canvasDefaultsKey(): string {
+    return `${this.canvasKey}__customDefaults`;
+  }
+
   private get activeGridEl(): HTMLElement | undefined {
     return this.gridElAccessor();
   }
@@ -413,18 +421,98 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
   resetToDefaults(): void {
     if (this.isCanvasMode()) {
-      this.applyCanvasDefaults();
+      const saved = this._loadCustomCanvasDefaults();
+      if (saved) {
+        const tops = { ...this.widgetTops() };
+        const heights = { ...this.widgetHeights() };
+        const lefts = { ...this.widgetLefts() };
+        const widths = { ...this.widgetPixelWidths() };
+        for (const id of this.config.widgets) {
+          if (saved['tops']?.[id] != null) tops[id] = saved['tops'][id];
+          if (saved['heights']?.[id] != null) heights[id] = saved['heights'][id];
+          if (saved['lefts']?.[id] != null) lefts[id] = saved['lefts'][id];
+          if (saved['widths']?.[id] != null) widths[id] = saved['widths'][id];
+        }
+        this.widgetTops.set(tops);
+        this.widgetHeights.set(heights);
+        this.widgetLefts.set(lefts);
+        this.widgetPixelWidths.set(widths);
+      } else {
+        this.applyCanvasDefaults();
+      }
       localStorage.removeItem(this.canvasKey);
       this.persistCanvasLayout();
     } else {
-      this.widgetTops.set({ ...this.config.defaultTops });
-      this.widgetHeights.set({ ...this.config.defaultHeights });
-      this.widgetColStarts.set({ ...this.config.defaultColStarts });
-      this.widgetColSpans.set({ ...this.config.defaultColSpans });
-      this.widgetLefts.set({ ...this.config.defaultLefts });
-      this.widgetPixelWidths.set({ ...this.config.defaultPixelWidths });
+      const saved = this._loadCustomDesktopDefaults();
+      if (saved) {
+        this.widgetTops.set({ ...this.config.defaultTops, ...saved.tops });
+        this.widgetHeights.set({ ...this.config.defaultHeights, ...saved.heights });
+        this.widgetColStarts.set({ ...this.config.defaultColStarts, ...saved.colStarts });
+        this.widgetColSpans.set({ ...this.config.defaultColSpans, ...saved.colSpans });
+        this.widgetLefts.set({ ...this.config.defaultLefts, ...saved.lefts });
+        this.widgetPixelWidths.set({ ...this.config.defaultPixelWidths, ...saved.widths });
+      } else {
+        this.widgetTops.set({ ...this.config.defaultTops });
+        this.widgetHeights.set({ ...this.config.defaultHeights });
+        this.widgetColStarts.set({ ...this.config.defaultColStarts });
+        this.widgetColSpans.set({ ...this.config.defaultColSpans });
+        this.widgetLefts.set({ ...this.config.defaultLefts });
+        this.widgetPixelWidths.set({ ...this.config.defaultPixelWidths });
+      }
       this.syncPixelWidthsFromCols();
       this.persistLayout();
+    }
+  }
+
+  saveAsDefaultLayout(): void {
+    if (this.isCanvasMode()) {
+      const layout: Record<string, Record<string, number>> = {
+        tops: {}, heights: {}, lefts: {}, widths: {},
+      };
+      for (const id of this.config.widgets) {
+        layout['tops'][id] = this.widgetTops()[id];
+        layout['heights'][id] = this.widgetHeights()[id];
+        layout['lefts'][id] = this.widgetLefts()[id];
+        layout['widths'][id] = this.widgetPixelWidths()[id];
+      }
+      try {
+        localStorage.setItem(this.canvasDefaultsKey, JSON.stringify(layout));
+      } catch { /* quota exceeded */ }
+    } else {
+      const snapshot: LayoutSnapshot = {
+        tops: {}, heights: {}, colStarts: {}, colSpans: {}, lefts: {}, widths: {},
+      };
+      for (const id of this.config.widgets) {
+        snapshot.tops[id] = this.widgetTops()[id];
+        snapshot.heights[id] = this.widgetHeights()[id];
+        snapshot.colStarts[id] = this.widgetColStarts()[id];
+        snapshot.colSpans[id] = this.widgetColSpans()[id];
+        snapshot.lefts[id] = this.widgetLefts()[id];
+        snapshot.widths[id] = this.widgetPixelWidths()[id];
+      }
+      try {
+        localStorage.setItem(this.desktopDefaultsKey, JSON.stringify(snapshot));
+      } catch { /* quota exceeded */ }
+    }
+  }
+
+  private _loadCustomCanvasDefaults(): Record<string, Record<string, number>> | null {
+    try {
+      const raw = localStorage.getItem(this.canvasDefaultsKey);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  private _loadCustomDesktopDefaults(): LayoutSnapshot | null {
+    try {
+      const raw = localStorage.getItem(this.desktopDefaultsKey);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
     }
   }
 

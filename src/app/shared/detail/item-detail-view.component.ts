@@ -1,10 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
-
-export interface StatusOption {
-  value: string;
-  label: string;
-  dotClass: string;
-}
+import type { StatusOption } from '../../data/dashboard-item-status';
+export type { StatusOption } from '../../data/dashboard-item-status';
 
 @Component({
   selector: 'app-item-detail-view',

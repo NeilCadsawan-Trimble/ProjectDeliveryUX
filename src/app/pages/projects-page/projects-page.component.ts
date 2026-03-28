@@ -435,6 +435,13 @@ export class ProjectsPageComponent implements AfterViewInit {
     }
   });
 
+  private readonly _saveDefaultsEffect = effect(() => {
+    const tick = this.canvasResetService.saveDefaultsTick();
+    if (tick > 0) {
+      untracked(() => this.engine.saveAsDefaultLayout());
+    }
+  });
+
   readonly isMobile = this.engine.isMobile;
   readonly isCanvasMode = this.engine.isCanvasMode;
   readonly widgetColStarts = this.engine.widgetColStarts;

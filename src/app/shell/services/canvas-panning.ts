@@ -57,7 +57,12 @@ export class CanvasPanning {
   private _isInsideWidget(el: HTMLElement | null): boolean {
     while (el) {
       if (el.hasAttribute('data-widget-id')) return true;
+      if (el.hasAttribute('data-tile-id')) return true;
+      if (el.hasAttribute('data-no-pan')) return true;
       if (el.classList.contains('canvas-navbar') || el.classList.contains('canvas-side-nav')) return true;
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select' || tag === 'textarea') return true;
+      if (el.getAttribute('role') === 'button' || el.getAttribute('role') === 'option' || el.getAttribute('role') === 'listbox') return true;
       el = el.parentElement;
     }
     return false;

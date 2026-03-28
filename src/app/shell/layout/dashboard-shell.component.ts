@@ -145,20 +145,23 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
           <div class="mt-auto border-top-default">
             <div class="relative">
               <div
-                class="custom-side-nav-item"
+                class="custom-side-nav-item relative"
                 (click)="toggleResetMenu(); $event.stopPropagation()"
-                title="Reset options"
+                title="Layout options"
                 role="button"
-                aria-label="Reset options"
+                aria-label="Layout options"
                 [attr.aria-expanded]="resetMenuOpen()"
               >
                 <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
                 @if (navExpanded()) {
-                  <div class="custom-side-nav-label">Reset</div>
+                  <div class="custom-side-nav-label">Layout</div>
                 }
+                <svg class="absolute bottom-1 right-1 w-1.5 h-1.5 text-foreground-40" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true">
+                  <path d="M6 0V6H0L6 0Z"/>
+                </svg>
               </div>
               @if (resetMenuOpen()) {
-                <div class="canvas-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                <div class="canvas-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[210px] py-1">
                   <div
                     class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
                     role="menuitem"
@@ -174,6 +177,14 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   >
                     <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
                     <div class="text-sm">Reset Layout</div>
+                  </div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="resetMenuAction('save-defaults'); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
+                    <div class="text-sm">Save as Default Layout</div>
                   </div>
                 </div>
               }
@@ -326,20 +337,23 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             <div class="mt-auto border-top-default">
               <div class="relative">
                 <div
-                  class="custom-side-nav-item"
+                  class="custom-side-nav-item relative"
                   (click)="toggleDesktopResetMenu(); $event.stopPropagation()"
-                  title="Reset options"
+                  title="Layout options"
                   role="button"
-                  aria-label="Reset options"
+                  aria-label="Layout options"
                   [attr.aria-expanded]="desktopResetMenuOpen()"
                 >
                   <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
                   @if (navExpanded()) {
-                    <div class="custom-side-nav-label">Reset</div>
+                    <div class="custom-side-nav-label">Layout</div>
                   }
+                  <svg class="absolute bottom-1 right-1 w-1.5 h-1.5 text-foreground-40" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true">
+                    <path d="M6 0V6H0L6 0Z"/>
+                  </svg>
                 </div>
                 @if (desktopResetMenuOpen()) {
-                  <div class="desktop-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                  <div class="desktop-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[210px] py-1">
                     <div
                       class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
                       role="menuitem"
@@ -347,6 +361,14 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     >
                       <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
                       <div class="text-sm">Reset Layout</div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                      role="menuitem"
+                      (click)="resetMenuAction('save-defaults'); $event.stopPropagation()"
+                    >
+                      <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
+                      <div class="text-sm">Save as Default Layout</div>
                     </div>
                   </div>
                 }
@@ -501,7 +523,7 @@ export class DashboardShellComponent implements AfterViewInit {
     this.desktopResetMenuOpen.update((v) => !v);
   }
 
-  resetMenuAction(action: 'view' | 'widgets'): void {
+  resetMenuAction(action: 'view' | 'widgets' | 'save-defaults'): void {
     this.resetMenuOpen.set(false);
     this.desktopResetMenuOpen.set(false);
     if (action === 'view') {
@@ -513,6 +535,8 @@ export class DashboardShellComponent implements AfterViewInit {
         this.panning.resetView();
       }
       this.canvasResetService.triggerResetWidgets();
+    } else if (action === 'save-defaults') {
+      this.canvasResetService.triggerSaveDefaults();
     }
   }
 
@@ -679,10 +703,10 @@ export class DashboardShellComponent implements AfterViewInit {
     if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !insideAiPanel) {
       this.widgetFocusService.clearSelection();
     }
-    if (this.resetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.canvas-reset-flyout')) {
+    if (this.resetMenuOpen() && !target.closest('[aria-label="Layout options"]') && !target.closest('.canvas-reset-flyout')) {
       this.resetMenuOpen.set(false);
     }
-    if (this.desktopResetMenuOpen() && !target.closest('[aria-label="Reset options"]') && !target.closest('.desktop-reset-flyout')) {
+    if (this.desktopResetMenuOpen() && !target.closest('[aria-label="Layout options"]') && !target.closest('.desktop-reset-flyout')) {
       this.desktopResetMenuOpen.set(false);
     }
     if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
