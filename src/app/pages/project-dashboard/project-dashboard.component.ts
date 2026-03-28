@@ -2121,7 +2121,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly desktopGridMinHeight = this.engine.canvasGridMinHeight;
 
   // --- Subpage tile canvas (tiles become widgets in canvas mode) ---
-  private static readonly TILE_SUBNAV_EXPANDED = 224;
+  private static readonly TILE_SUBNAV_EXPANDED = 227;
   private static readonly TILE_SUBNAV_COLLAPSED = 32;
   private static readonly TILE_TOOLBAR_HEIGHT = 56;
   private static readonly TILE_TITLE_HEIGHT = 40;
@@ -2140,7 +2140,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   );
 
   readonly tileCanvas = new SubpageTileCanvas({
-    storageKey: () => `tile-canvas:project-${this.projectId()}:${this.activeNavItem()}:${this.activeSubpage()}:v1`,
+    storageKey: () => `tile-canvas:project-${this.projectId()}:${this.activeNavItem()}:${this.activeSubpage()}:v2`,
     lockedIds: ['tc-subnav', 'tc-toolbar', 'tc-title', 'tc-list'],
     tileWidth: 308,
     tileHeight: 260,
@@ -2148,7 +2148,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     gap: 16,
     offsetTop: ProjectDashboardComponent.TILE_CONTENT_TOP,
     offsetLeft: ProjectDashboardComponent.TILE_SUBNAV_EXPANDED + ProjectDashboardComponent.TILE_CHROME_GAP,
-    detailWidth: 800,
+    detailWidth: 875,
     detailHeight: 1000,
   });
 

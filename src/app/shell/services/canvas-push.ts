@@ -36,6 +36,7 @@ export function runCanvasPushBfs(
   rects: Record<string, WidgetRect>,
   isLocked: Record<string, boolean>,
   gap: number,
+  opts?: { skipMoverPushback?: boolean },
 ): void {
   const ids = Object.keys(rects);
 
@@ -64,27 +65,21 @@ export function runCanvasPushBfs(
     const pR = p.left + p.width, pB = p.top + p.height;
     const oR = o.left + o.width, oB = o.top + o.height;
 
-    const pCX = (p.left + pR) / 2, pCY = (p.top + pB) / 2;
+    const pCX = (p.left + pR) / 2;
     const oCX = o.left + o.width / 2;
-    const oCY = o.top + o.height / 2;
 
     const sameRow = Math.abs(p.top - o.top) <= gap;
     let pushH: boolean;
     if (sameRow) {
       pushH = true;
-    } else if (pusherId === movedId) {
-      const hClear = (oCX >= pCX) ? (pR + gap - o.left) : (oR + gap - p.left);
-      const vClear = (oCY >= pCY) ? (pB + gap - o.top) : (oB + gap - p.top);
-      pushH = hClear <= vClear;
     } else {
-      const hClear = (oCX >= pCX) ? (pR + gap - o.left) : (oR + gap - p.left);
-      const vClear = (oCY >= pCY) ? (pB + gap - o.top) : (oB + gap - p.top);
-      pushH = hClear <= vClear;
+      const hPen = Math.min(pR, oR) - Math.max(p.left, o.left);
+      const vPen = Math.min(pB, oB) - Math.max(p.top, o.top);
+      pushH = hPen <= vPen;
     }
 
     const dirRef = (pusherId === movedId) ? p : rects[movedId];
     const dirCX = dirRef.left + dirRef.width / 2;
-    const dirCY = dirRef.top + dirRef.height / 2;
 
     let candidate: WidgetRect;
     if (pushH) {
@@ -94,7 +89,7 @@ export function runCanvasPushBfs(
         candidate = { ...o, left: p.left - o.width - gap };
       }
     } else {
-      if (oCY >= dirCY) {
+      if (o.top >= p.top) {
         candidate = { ...o, top: pB + gap };
       } else {
         candidate = { ...o, top: p.top - o.height - gap };
@@ -177,6 +172,8 @@ export function runCanvasPushBfs(
 
   // Frozen-widget wall: if the mover still overlaps any widget that was
   // blocked by a locked element, push the mover back to clear it.
+  // Skipped for detail expansion where the mover must stay in place.
+  if (opts?.skipMoverPushback) return;
   for (const fid of frozen) {
     if (!hasOverlap(movedId, fid)) continue;
     const m = rects[movedId];
