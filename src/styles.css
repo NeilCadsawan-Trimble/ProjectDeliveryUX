@@ -462,6 +462,15 @@
   background-color: var(--error);
 }
 
+/* Floating toolbar shadow */
+.shadow-toolbar {
+  box-shadow: 0 4px 16px rgba(36, 35, 45, 0.18), 0 1px 4px rgba(36, 35, 45, 0.12);
+}
+
+.shadow-bottom {
+  box-shadow: 0 4px 8px rgba(36, 35, 45, 0.12);
+}
+
 /* Opacity utilities for design system colors */
 /* Text opacity utilities */
 .text-foreground-80 {
@@ -1657,6 +1666,12 @@ modus-wc-navbar .main-menu {
     height: 100vh;
     overflow: hidden;
     background: var(--background);
+    cursor: grab;
+  }
+
+  .canvas-host [data-widget-id] {
+    user-select: auto;
+    cursor: default;
   }
 
   /* Dot-grid background to reinforce the infinite-canvas feel */

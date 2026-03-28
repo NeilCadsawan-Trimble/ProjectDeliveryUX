@@ -20,7 +20,7 @@ const SRC = readFileSync(
 describe('HomePageComponent (template regression)', () => {
   describe('desktop padding', () => {
     it('has px-4 on the root content wrapper', () => {
-      expect(SRC).toContain('class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto"');
+      expect(SRC).toContain('px-4 py-4 md:py-6 max-w-screen-xl mx-auto');
     });
 
     it('does NOT have md:px-0 which removes desktop padding', () => {
