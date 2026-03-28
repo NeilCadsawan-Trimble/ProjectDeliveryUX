@@ -166,16 +166,30 @@ export class PdfViewerComponent {
     if (!el) return;
     const handler = (event: WheelEvent) => {
       event.preventDefault();
+      const oldZoom = this.zoom();
+      let newZoom: number;
+
       if (event.shiftKey) {
         const fs = this.fitScale();
         const step = fs > 0 ? 0.01 / fs : 0.01;
         const scrollDelta = event.deltaY || event.deltaX;
         const dir = scrollDelta > 0 ? -1 : 1;
-        this.zoom.update(z => Math.min(this.maxZoom(), Math.max(0.25, z + dir * step)));
+        newZoom = Math.min(this.maxZoom(), Math.max(0.25, oldZoom + dir * step));
       } else {
         const delta = event.deltaY > 0 ? -0.1 : 0.1;
-        this.zoom.update(z => Math.min(this.maxZoom(), Math.max(0.25, z + delta * z)));
+        newZoom = Math.min(this.maxZoom(), Math.max(0.25, oldZoom + delta * oldZoom));
       }
+
+      if (newZoom === oldZoom) return;
+
+      const rect = el.getBoundingClientRect();
+      const cursorRelX = event.clientX - rect.left - rect.width / 2;
+      const cursorRelY = event.clientY - rect.top - rect.height / 2;
+      const ratio = newZoom / oldZoom;
+
+      this.panX.update(px => cursorRelX + (px - cursorRelX) * ratio);
+      this.panY.update(py => cursorRelY + (py - cursorRelY) * ratio);
+      this.zoom.set(newZoom);
     };
     el.addEventListener('wheel', handler, { passive: false });
     this.destroyRef.onDestroy(() => el.removeEventListener('wheel', handler));
