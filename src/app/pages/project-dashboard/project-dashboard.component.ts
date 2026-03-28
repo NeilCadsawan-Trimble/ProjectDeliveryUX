@@ -25,6 +25,7 @@ import { EmptyStateComponent } from './components/empty-state.component';
 import { CollapsibleSubnavComponent } from './components/collapsible-subnav.component';
 import { ItemDetailViewComponent, type StatusOption } from './components/item-detail-view.component';
 import { WidgetFrameComponent } from './components/widget-frame.component';
+import { PdfViewerComponent } from './components/pdf-viewer.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
 
 import { ThemeService } from '../../shell/services/theme.service';
@@ -45,7 +46,7 @@ import {
   type RiskSeverity,
 } from '../../data/project-data';
 import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal } from '../../data/dashboard-data';
-import { ALL_DRAWINGS_BY_PROJECT } from '../../data/drawings-data';
+import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 
 type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals';
@@ -103,7 +104,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, WidgetFrameComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, WidgetFrameComponent, PdfViewerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -150,6 +151,19 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             </div>
           </div>
           <div class="flex items-center gap-1">
+            @if (activeNavItem() === 'drawings' && subnavViewMode() === 'grid' && !isCanvas() && !detailView()) {
+              <div class="flex items-center gap-2 mr-2">
+                <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">zoom_out</i>
+                <input type="range" min="0.5" max="2" step="0.1"
+                  class="tile-zoom-slider"
+                  [value]="drawingTileZoom()"
+                  (input)="drawingTileZoom.set(+$any($event.target).value)"
+                  aria-label="Tile size"
+                />
+                <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">zoom_in</i>
+              </div>
+              <div class="w-px h-5 bg-foreground-20 mr-1"></div>
+            }
             @for (btn of config.actions; track btn.icon) {
               <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
                 role="button" tabindex="0" [attr.aria-label]="btn.label">
@@ -159,9 +173,9 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             <div class="flex items-center bg-secondary rounded ml-1">
               @for (toggle of config.viewToggles; track toggle.value) {
                 <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150"
-                  [class]="subnavViewMode() === toggle.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground'"
+                  [class]="toggle.value === 'zoom-in' || toggle.value === 'zoom-out' ? 'text-foreground-60 hover:text-foreground hover:bg-muted active:bg-primary active:text-primary-foreground' : (subnavViewMode() === toggle.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground')"
                   role="button" tabindex="0" [attr.aria-label]="toggle.label"
-                  (click)="subnavViewMode.set(toggle.value)">
+                  (click)="handleSubnavToggle(toggle.value)">
                   <i class="modus-icons text-base" aria-hidden="true">{{ toggle.icon }}</i>
                 </div>
               }
@@ -172,61 +186,101 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
     </ng-template>
 
     <ng-template #detailContent>
-      @if (!detailHasSubNav() || isMobile()) {
-        <div class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
-          role="button" tabindex="0"
-          (click)="clearDetailView()"
-          (keydown.enter)="clearDetailView()"
-        >
-          <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">{{ detailBackLabel() }}</div>
+      <div [class]="isCanvasDrawingDetail() ? 'canvas-detail-constrained' : ''">
+        @if ((!detailHasSubNav() || isMobile()) && !detailDrawing()) {
+          <div class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
+            role="button" tabindex="0"
+            (click)="clearDetailView()"
+            (keydown.enter)="clearDetailView()"
+          >
+            <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
+            <div class="text-sm font-medium">{{ detailBackLabel() }}</div>
+          </div>
+        }
+        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
+        @if (detailRfi(); as rfi) {
+          <app-item-detail-view
+            icon="clipboard"
+            typeLabel="Request for Information"
+            [number]="rfi.number"
+            [subject]="rfi.subject"
+            [question]="rfi.question"
+            [assignee]="rfi.assignee"
+            [assigneeOptions]="ASSIGNEE_OPTIONS"
+            (assigneeChange)="onDetailAssigneeChange($event)"
+            field1Label="Created By"
+            [field1Value]="rfi.askedBy"
+            field3Label="Created On"
+            [field3Value]="rfi.askedOn"
+            field4Label="Due Date"
+            [field4Value]="rfi.dueDate"
+            [field4ShowStatus]="false"
+            [currentStatus]="rfi.status"
+            [statusOptions]="STATUS_OPTIONS"
+            [statusDotClass]="itemStatusDot(rfi.status)"
+            [statusText]="capitalizeStatus(rfi.status)"
+            (statusChange)="onDetailStatusChange($event)"
+            (dueDateChange)="onDetailDueDateChange($event)"
+          />
+        }
+        @if (detailSubmittal(); as sub) {
+          <app-item-detail-view
+            icon="document"
+            typeLabel="Submittal"
+            [number]="sub.number"
+            [subject]="sub.subject"
+            [assignee]="sub.assignee"
+            [assigneeOptions]="ASSIGNEE_OPTIONS"
+            (assigneeChange)="onDetailAssigneeChange($event)"
+            [field1Value]="sub.project"
+            [field3Value]="sub.dueDate"
+            [field3DateEditable]="true"
+            [currentStatus]="sub.status"
+            [statusOptions]="STATUS_OPTIONS"
+            [statusDotClass]="itemStatusDot(sub.status)"
+            [statusText]="capitalizeStatus(sub.status)"
+            (statusChange)="onDetailStatusChange($event)"
+            (dueDateChange)="onDetailDueDateChange($event)"
+          />
+        }
+      </div>
+      @if (detailDrawing(); as drawing) {
+        <div class="flex flex-col flex-1 min-h-0">
+          @if (drawing.file && drawing.file.endsWith('.pdf')) {
+            <div class="bg-card border-default rounded-lg overflow-hidden flex-1 min-h-0">
+              <app-pdf-viewer #pdfViewer [src]="drawing.file" />
+            </div>
+          } @else {
+            <div class="bg-card border-default rounded-lg overflow-hidden relative flex-1 min-h-0">
+              <div class="bg-secondary overflow-hidden h-full"
+                #drawingViewer
+                [class.cursor-grab]="drawingZoom() > 1 && !_drawingPanning"
+                [class.cursor-grabbing]="_drawingPanning"
+                (mousedown)="onDrawingMouseDown($event)"
+                (mousemove)="onDrawingMouseMove($event)"
+                (mouseup)="onDrawingMouseUp()"
+                (mouseleave)="onDrawingMouseUp()"
+              >
+                <img [src]="drawing.thumbnail" [alt]="drawing.title"
+                  class="w-full h-full object-contain pointer-events-none select-none"
+                  [style.transform]="'scale(' + drawingZoom() + ') translate(' + drawingPanX() / drawingZoom() + 'px, ' + drawingPanY() / drawingZoom() + 'px)'"
+                  [style.transform-origin]="'center center'"
+                  draggable="false"
+                  (load)="onDrawingImageLoad($event)"
+                />
+              </div>
+              @if (drawingZoom() !== 1) {
+                <div class="absolute bottom-3 right-3 flex items-center gap-2 bg-card border-default rounded-lg px-3 py-1.5 shadow-lg">
+                  <div class="text-xs text-foreground-60 font-medium">{{ drawingNativePercent() }}%</div>
+                  <div class="w-7 h-7 rounded flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                    role="button" tabindex="0" aria-label="Reset zoom" (click)="resetDrawingZoom()">
+                    <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">refresh</i>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
-      }
-      <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
-      @if (detailRfi(); as rfi) {
-        <app-item-detail-view
-          icon="clipboard"
-          typeLabel="Request for Information"
-          [number]="rfi.number"
-          [subject]="rfi.subject"
-          [question]="rfi.question"
-          [assignee]="rfi.assignee"
-          [assigneeOptions]="ASSIGNEE_OPTIONS"
-          (assigneeChange)="onDetailAssigneeChange($event)"
-          field1Label="Created By"
-          [field1Value]="rfi.askedBy"
-          field3Label="Created On"
-          [field3Value]="rfi.askedOn"
-          field4Label="Due Date"
-          [field4Value]="rfi.dueDate"
-          [field4ShowStatus]="false"
-          [currentStatus]="rfi.status"
-          [statusOptions]="STATUS_OPTIONS"
-          [statusDotClass]="itemStatusDot(rfi.status)"
-          [statusText]="capitalizeStatus(rfi.status)"
-          (statusChange)="onDetailStatusChange($event)"
-          (dueDateChange)="onDetailDueDateChange($event)"
-        />
-      }
-      @if (detailSubmittal(); as sub) {
-        <app-item-detail-view
-          icon="document"
-          typeLabel="Submittal"
-          [number]="sub.number"
-          [subject]="sub.subject"
-          [assignee]="sub.assignee"
-          [assigneeOptions]="ASSIGNEE_OPTIONS"
-          (assigneeChange)="onDetailAssigneeChange($event)"
-          [field1Value]="sub.project"
-          [field3Value]="sub.dueDate"
-          [field3DateEditable]="true"
-          [currentStatus]="sub.status"
-          [statusOptions]="STATUS_OPTIONS"
-          [statusDotClass]="itemStatusDot(sub.status)"
-          [statusText]="capitalizeStatus(sub.status)"
-          (statusChange)="onDetailStatusChange($event)"
-          (dueDateChange)="onDetailDueDateChange($event)"
-        />
       }
     </ng-template>
 
@@ -307,7 +361,8 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 </div>
                 <div class="overflow-y-auto flex-1">
                   @for (drawing of drawingTiles(); track drawing.id) {
-                    <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150">
+                    <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
+                      tabindex="0" (click)="navigateToDrawingDetail(drawing)" (keydown.enter)="navigateToDrawingDetail(drawing)">
                       <input type="checkbox" class="accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" (click)="$event.stopPropagation()" />
                       <div class="flex items-center gap-3 min-w-0">
                         <div class="w-10 h-10 rounded bg-secondary overflow-hidden flex-shrink-0">
@@ -319,7 +374,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                       <div class="text-xs font-medium text-foreground whitespace-nowrap">{{ drawing.revision }}</div>
                       <div class="text-xs text-foreground-60 whitespace-nowrap">{{ drawing.date }}</div>
                       <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
-                        role="button" tabindex="0" aria-label="More options">
+                        role="button" tabindex="0" aria-label="More options" (click)="$event.stopPropagation()">
                         <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
                       </div>
                     </div>
@@ -334,8 +389,8 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                   [attr.data-tile-id]="'tile-drawing-' + drawing.id"
                   [style.top.px]="tilePos()['tile-drawing-' + drawing.id]?.top ?? 0"
                   [style.left.px]="tilePos()['tile-drawing-' + drawing.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-drawing-' + drawing.id]?.width ?? 380"
-                  [style.height.px]="tilePos()['tile-drawing-' + drawing.id]?.height ?? 280"
+                  [style.width.px]="tilePos()['tile-drawing-' + drawing.id]?.width ?? 308"
+                  [style.height.px]="tilePos()['tile-drawing-' + drawing.id]?.height ?? 260"
                   [style.z-index]="tileZ()['tile-drawing-' + drawing.id] ?? 0"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-drawing-' + drawing.id"
                   (mousedown)="selectTileWidget('tile-drawing-' + drawing.id)"
@@ -343,9 +398,10 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
                     [class.border-default]="selectedWidgetId() !== 'tile-drawing-' + drawing.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-drawing-' + drawing.id">
-                    <div class="flex items-center justify-between px-3 py-2 cursor-move select-none flex-shrink-0 border-bottom-default"
+                    <div class="flex items-start justify-between px-3 pt-3 pb-2 cursor-move select-none flex-shrink-0"
                       (mousedown)="tileCanvas.onTileMouseDown('tile-drawing-' + drawing.id, $event)">
                       <div class="flex items-start gap-2 min-w-0 flex-1">
+                        <input type="checkbox" class="mt-1 accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()" />
                         <div class="min-w-0 flex-1">
                           <div class="text-sm font-semibold text-foreground truncate">{{ drawing.title }}</div>
                           <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
@@ -356,12 +412,12 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                         <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
                       </div>
                     </div>
-                    <div class="px-3 flex-1 py-2 overflow-hidden" (mousedown)="$event.stopPropagation()">
-                      <div class="bg-secondary rounded overflow-hidden h-full">
+                    <div class="px-3 flex-1 cursor-pointer" (mousedown)="$event.stopPropagation()" (click)="navigateToDrawingDetail(drawing)">
+                      <div class="bg-secondary rounded overflow-hidden aspect-[16/9]">
                         <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
                       </div>
                     </div>
-                    <div class="flex items-center justify-between px-3 py-2 flex-shrink-0">
+                    <div class="flex items-center justify-between px-3 py-3 flex-shrink-0">
                       <div class="text-xs font-medium text-foreground">{{ drawing.revision }}</div>
                       <div class="text-xs text-foreground-60">{{ drawing.date }}</div>
                     </div>
@@ -377,19 +433,20 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             <div class="text-2xl font-bold text-foreground">Drawings ({{ drawingTiles().length }})</div>
           </div>
           @if (subnavViewMode() === 'grid') {
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div class="grid gap-4" [style.grid-template-columns]="drawingTileGridStyle()">
               @for (drawing of drawingTiles(); track drawing.id) {
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col cursor-pointer hover:shadow-lg transition-shadow duration-200">
+                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col cursor-pointer hover:shadow-lg transition-shadow duration-200"
+                  tabindex="0" (click)="navigateToDrawingDetail(drawing)" (keydown.enter)="navigateToDrawingDetail(drawing)">
                   <div class="flex items-start justify-between px-3 pt-3 pb-2">
                     <div class="flex items-start gap-2 min-w-0 flex-1">
-                      <input type="checkbox" class="mt-1 accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" />
+                      <input type="checkbox" class="mt-1 accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" (click)="$event.stopPropagation()" />
                       <div class="min-w-0 flex-1">
                         <div class="text-sm font-semibold text-foreground truncate">{{ drawing.title }}</div>
                         <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
                       </div>
                     </div>
                     <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
-                      role="button" tabindex="0" aria-label="More options">
+                      role="button" tabindex="0" aria-label="More options" (click)="$event.stopPropagation()">
                       <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
                     </div>
                   </div>
@@ -416,8 +473,9 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 <div class="w-6"></div>
               </div>
               @for (drawing of drawingTiles(); track drawing.id) {
-                <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150">
-                  <input type="checkbox" class="accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" />
+                <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
+                  tabindex="0" (click)="navigateToDrawingDetail(drawing)" (keydown.enter)="navigateToDrawingDetail(drawing)">
+                  <input type="checkbox" class="accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" (click)="$event.stopPropagation()" />
                   <div class="flex items-center gap-3 min-w-0">
                     <div class="w-10 h-10 rounded bg-secondary overflow-hidden flex-shrink-0">
                       <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
@@ -428,7 +486,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                   <div class="text-xs font-medium text-foreground whitespace-nowrap">{{ drawing.revision }}</div>
                   <div class="text-xs text-foreground-60 whitespace-nowrap">{{ drawing.date }}</div>
                   <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
-                    role="button" tabindex="0" aria-label="More options">
+                    role="button" tabindex="0" aria-label="More options" (click)="$event.stopPropagation()">
                     <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
                   </div>
                 </div>
@@ -574,7 +632,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                   [attr.data-tile-id]="'tile-rfi-' + rfi.id"
                   [style.top.px]="tilePos()['tile-rfi-' + rfi.id]?.top ?? 0"
                   [style.left.px]="tilePos()['tile-rfi-' + rfi.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-rfi-' + rfi.id]?.width ?? 380"
+                  [style.width.px]="tilePos()['tile-rfi-' + rfi.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-rfi-' + rfi.id]?.height ?? 220"
                   [style.z-index]="tileDetailViews()['tile-rfi-' + rfi.id] ? 9999 : (tileZ()['tile-rfi-' + rfi.id] ?? 0)"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-rfi-' + rfi.id"
@@ -688,7 +746,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                   [attr.data-tile-id]="'tile-sub-' + sub.id"
                   [style.top.px]="tilePos()['tile-sub-' + sub.id]?.top ?? 0"
                   [style.left.px]="tilePos()['tile-sub-' + sub.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-sub-' + sub.id]?.width ?? 380"
+                  [style.width.px]="tilePos()['tile-sub-' + sub.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-sub-' + sub.id]?.height ?? 220"
                   [style.z-index]="tileDetailViews()['tile-sub-' + sub.id] ? 9999 : (tileZ()['tile-sub-' + sub.id] ?? 0)"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-sub-' + sub.id"
@@ -1140,7 +1198,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                     <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
                   </div>
                 </div>
-                <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detail.type === 'rfi' ? 'rfi-detail' : 'submittal-detail'] }" />
+                <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detail.type === 'rfi' ? 'rfi-detail' : detail.type === 'drawing' ? 'drawing-detail' : 'submittal-detail'] }" />
                 <div class="flex-1 overflow-y-auto p-5">
                   @if (detail.type === 'rfi') {
                     <app-item-detail-view
@@ -1186,6 +1244,23 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                       (statusChange)="onCanvasDetailStatusChange(wId, $event)"
                       (dueDateChange)="onCanvasDetailDueDateChange(wId, $event)"
                     />
+                  }
+                  @if (detail.type === 'drawing') {
+                    <div class="flex flex-col gap-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center flex-shrink-0">
+                          <i class="modus-icons text-lg text-primary" aria-hidden="true">floorplan</i>
+                        </div>
+                        <div class="min-w-0">
+                          <div class="text-lg font-semibold text-foreground truncate">{{ $any(detail.item).title }}</div>
+                          <div class="text-sm text-foreground-60">{{ $any(detail.item).revision }} &middot; {{ $any(detail.item).date }}</div>
+                        </div>
+                      </div>
+                      <div class="bg-secondary rounded-lg overflow-hidden flex items-center justify-center p-4" style="min-height: 300px">
+                        <img [src]="$any(detail.item).thumbnail" [alt]="$any(detail.item).title" class="max-w-full max-h-[60vh] object-contain rounded" />
+                      </div>
+                      <div class="text-sm text-foreground-60">{{ $any(detail.item).subtitle }}</div>
+                    </div>
                   }
                 </div>
                 <div
@@ -1476,7 +1551,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
     </ng-template>
 
     @if (isCanvas()) {
-      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="panning.onPanMouseDown($event)" (wheel)="panning.onCanvasWheel($event)">
+      <div class="canvas-host bg-background text-foreground canvas-mode" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
         <div class="canvas-navbar">
           <modus-navbar
             [userCard]="userCard"
@@ -1630,7 +1705,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
           <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
         }
 
-        <div class="canvas-content" role="main" id="main-content" tabindex="-1"
+        <div class="canvas-content" [class.canvas-drawing-detail]="isCanvasDrawingDetail()" role="main" id="main-content" tabindex="-1"
           [style.transform]="(panning.panOffsetX() || panning.panOffsetY()) ? 'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px)' : null">
           <div class="py-6 max-w-screen-xl mx-auto">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
@@ -1807,7 +1882,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
         <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
-          <div class="px-4 py-4 md:py-6 max-w-[1920px] mx-auto">
+          <div [class]="detailDrawing() ? 'p-4 max-w-[1920px] mx-auto flex flex-col h-full' : 'px-4 py-4 md:py-6 max-w-[1920px] mx-auto'">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
         </div>
@@ -2041,9 +2116,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly tileCanvas = new SubpageTileCanvas({
     storageKey: () => `tile-canvas:project-${this.projectId()}:${this.activeNavItem()}:${this.activeSubpage()}:v1`,
     lockedIds: ['tc-subnav', 'tc-toolbar', 'tc-title', 'tc-list'],
-    tileWidth: 380,
-    tileHeight: 220,
-    columns: 3,
+    tileWidth: 308,
+    tileHeight: 260,
+    columns: 4,
     gap: 16,
     offsetTop: ProjectDashboardComponent.TILE_CONTENT_TOP,
     offsetLeft: ProjectDashboardComponent.TILE_CONTENT_LEFT,
@@ -2204,6 +2279,24 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   });
 
   readonly panning = new CanvasPanning(() => this.isCanvas());
+
+  private _canvasWheelEl: HTMLElement | null = null;
+  private _canvasWheelHandler: ((e: WheelEvent) => void) | null = null;
+  private readonly _canvasWheelEffect = effect(() => {
+    const el = this.canvasHostRef()?.nativeElement as HTMLElement | undefined;
+    if (this._canvasWheelEl && this._canvasWheelHandler) {
+      this._canvasWheelEl.removeEventListener('wheel', this._canvasWheelHandler);
+      this._canvasWheelEl = null;
+      this._canvasWheelHandler = null;
+    }
+    if (!el) return;
+    const handler = (e: WheelEvent) => this.panning.onCanvasWheel(e);
+    el.addEventListener('wheel', handler, { passive: false });
+    this._canvasWheelEl = el;
+    this._canvasWheelHandler = handler;
+    this.destroyRef.onDestroy(() => el.removeEventListener('wheel', handler));
+  });
+
   readonly searchInputOpen = signal(false);
   readonly navExpanded = signal(false);
   readonly activeNavItem = signal<string>('dashboard');
@@ -2255,6 +2348,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
 
   private readonly gridRef = viewChild<ElementRef>('widgetGrid');
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
+  private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
 
   readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'budget', 'team', 'activity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
@@ -2350,10 +2444,118 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     return d?.type === 'submittal' ? d.item : null;
   });
 
+  readonly detailDrawing = computed(() => {
+    const d = this.detailView();
+    return d?.type === 'drawing' ? d.item : null;
+  });
+
+  readonly isCanvasDrawingDetail = computed(() => this.isCanvas() && !!this.detailDrawing());
+
+  readonly drawingTileZoom = signal(1);
+  readonly drawingTileGridStyle = computed(() => {
+    const minW = Math.round(280 * this.drawingTileZoom());
+    return `repeat(auto-fill, minmax(${Math.max(150, Math.min(600, minW))}px, 1fr))`;
+  });
+
+  readonly drawingZoom = signal(1);
+  readonly drawingPanX = signal(0);
+  readonly drawingPanY = signal(0);
+  readonly drawingFitScale = signal(1);
+  _drawingPanning = false;
+  private _drawingPanStartX = 0;
+  private _drawingPanStartY = 0;
+  private _drawingPanStartOffX = 0;
+  private _drawingPanStartOffY = 0;
+
+  readonly drawingNativePercent = computed(() =>
+    Math.round(this.drawingFitScale() * this.drawingZoom() * 100)
+  );
+
+  onDrawingImageLoad(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    const container = this.drawingViewerRef()?.nativeElement as HTMLElement | undefined;
+    if (!img || !container) return;
+    const scaleX = container.clientWidth / img.naturalWidth;
+    const scaleY = container.clientHeight / img.naturalHeight;
+    this.drawingFitScale.set(Math.min(scaleX, scaleY));
+  }
+
+  private readonly pdfViewerRef = viewChild<PdfViewerComponent>('pdfViewer');
+  private readonly drawingViewerRef = viewChild<ElementRef>('drawingViewer');
+  private readonly _drawingWheelEffect = effect(() => {
+    const el = this.drawingViewerRef()?.nativeElement as HTMLElement | undefined;
+    if (!el) return;
+    const handler = (event: WheelEvent) => {
+      event.preventDefault();
+      if (event.shiftKey) {
+        const fitScale = this.drawingFitScale();
+        const step = fitScale > 0 ? 0.01 / fitScale : 0.01;
+        const scrollDelta = event.deltaY || event.deltaX;
+        const dir = scrollDelta > 0 ? -1 : 1;
+        this.drawingZoom.update(z => Math.min(10, Math.max(0.25, z + dir * step)));
+      } else {
+        const delta = event.deltaY > 0 ? -0.1 : 0.1;
+        this.drawingZoom.update(z => Math.min(10, Math.max(0.25, z + delta * z)));
+      }
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    this.destroyRef.onDestroy(() => el.removeEventListener('wheel', handler));
+  });
+
+  onDrawingMouseDown(event: MouseEvent): void {
+    if (this.drawingZoom() <= 1) return;
+    event.preventDefault();
+    this._drawingPanning = true;
+    this._drawingPanStartX = event.clientX;
+    this._drawingPanStartY = event.clientY;
+    this._drawingPanStartOffX = this.drawingPanX();
+    this._drawingPanStartOffY = this.drawingPanY();
+  }
+
+  onDrawingMouseMove(event: MouseEvent): void {
+    if (!this._drawingPanning) return;
+    this.drawingPanX.set(this._drawingPanStartOffX + (event.clientX - this._drawingPanStartX));
+    this.drawingPanY.set(this._drawingPanStartOffY + (event.clientY - this._drawingPanStartY));
+  }
+
+  onDrawingMouseUp(): void {
+    this._drawingPanning = false;
+  }
+
+  handleSubnavToggle(value: string): void {
+    if (value === 'zoom-in') {
+      const pdfViewer = this.pdfViewerRef();
+      if (pdfViewer) {
+        pdfViewer.zoomIn();
+      } else {
+        this.drawingZoom.update(z => Math.min(10, z * 1.25));
+      }
+      return;
+    }
+    if (value === 'zoom-out') {
+      const pdfViewer = this.pdfViewerRef();
+      if (pdfViewer) {
+        pdfViewer.zoomOut();
+      } else {
+        this.drawingZoom.update(z => Math.max(0.25, z / 1.25));
+      }
+      return;
+    }
+    this.subnavViewMode.set(value);
+  }
+
+  resetDrawingZoom(): void {
+    this.drawingZoom.set(1);
+    this.drawingPanX.set(0);
+    this.drawingPanY.set(0);
+    this.drawingFitScale.set(1);
+  }
+
   readonly detailSubnavKey = computed(() => {
     const d = this.detailView();
     if (d?.type === 'rfi') return 'rfi-detail';
     if (d?.type === 'submittal') return 'submittal-detail';
+    if (d?.type === 'drawing') return 'drawing-detail';
     return 'rfi-detail';
   });
 
@@ -2400,6 +2602,12 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.navigateToDetail('submittal', sub, sourceWidgetId);
   }
 
+  navigateToDrawingDetail(drawing: DrawingTile): void {
+    this.detailSourceLabel.set('Drawings');
+    this.detailView.set({ type: 'drawing', item: drawing });
+    this.pushDetailUrl('drawing', drawing.id);
+  }
+
   private navigateToDetail(type: 'rfi' | 'submittal', item: Rfi | Submittal, sourceWidgetId?: string): void {
     if (this.isCanvas() && sourceWidgetId) {
       this.openCanvasDetail(sourceWidgetId, { type, item } as DetailView);
@@ -2418,6 +2626,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly ASSIGNEE_OPTIONS = ASSIGNEE_OPTIONS;
 
   clearDetailView(): void {
+    this.resetDrawingZoom();
     const fromRoute = this.detailFromRoute();
     if (fromRoute) {
       this.detailFromRoute.set('');
@@ -2557,6 +2766,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       } else if (view === 'submittal') {
         const submittal = SUBMITTALS.find(s => s.id === id);
         if (submittal) this.detailView.set({ type: 'submittal', item: submittal });
+      } else if (view === 'drawing') {
+        const drawing = this.drawingTiles().find(d => d.id === id);
+        if (drawing) this.detailView.set({ type: 'drawing', item: drawing });
       }
     } else if (page) {
       window.history.replaceState({}, '', window.location.pathname);
@@ -2581,6 +2793,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       } else if (view === 'submittal') {
         const sub = SUBMITTALS.find(s => s.id === id);
         if (sub) { this.detailView.set({ type: 'submittal', item: sub }); return; }
+      } else if (view === 'drawing') {
+        const drawing = this.drawingTiles().find(d => d.id === id);
+        if (drawing) { this.detailView.set({ type: 'drawing', item: drawing }); return; }
       }
     }
     this.detailView.set(null);

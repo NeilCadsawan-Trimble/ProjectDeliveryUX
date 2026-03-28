@@ -6,9 +6,11 @@ import {
   ElementRef,
   Injector,
   computed,
+  effect,
   signal,
   inject,
   input,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -78,7 +80,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
 
     @if (isCanvas()) {
-      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="panning.onPanMouseDown($event)" (wheel)="panning.onCanvasWheel($event)">
+      <div class="canvas-host bg-background text-foreground canvas-mode" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
 
         <div class="canvas-navbar">
           <modus-navbar
@@ -429,6 +431,24 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
 
   readonly panning = new CanvasPanning(() => this.isCanvas());
+  private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
+
+  private _canvasWheelEl: HTMLElement | null = null;
+  private _canvasWheelHandler: ((e: WheelEvent) => void) | null = null;
+  private readonly _canvasWheelEffect = effect(() => {
+    const el = this.canvasHostRef()?.nativeElement as HTMLElement | undefined;
+    if (this._canvasWheelEl && this._canvasWheelHandler) {
+      this._canvasWheelEl.removeEventListener('wheel', this._canvasWheelHandler);
+      this._canvasWheelEl = null;
+      this._canvasWheelHandler = null;
+    }
+    if (!el) return;
+    const handler = (e: WheelEvent) => this.panning.onCanvasWheel(e);
+    el.addEventListener('wheel', handler, { passive: false });
+    this._canvasWheelEl = el;
+    this._canvasWheelHandler = handler;
+    this.destroyRef.onDestroy(() => el.removeEventListener('wheel', handler));
+  });
 
   readonly activeNav = computed(() => {
     const url = this.currentUrl();

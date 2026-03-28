@@ -1,7 +1,8 @@
 import { signal, computed, type WritableSignal } from '@angular/core';
 import type { Rfi, Submittal, RfiStatus, SubmittalStatus } from '../../data/dashboard-data';
+import type { DrawingTile } from '../../data/drawings-data';
 
-export type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submittal };
+export type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submittal } | { type: 'drawing'; item: DrawingTile };
 
 export interface LayoutSnapshot {
   tops: Record<string, number>;
@@ -22,6 +23,8 @@ export interface CanvasDetailEngine {
 const DETAIL_WIDTH = 800;
 const DETAIL_HEIGHT = 1000;
 const TRANSITION_MS = 350;
+const SNAP_GAP = 16;
+const SNAP_H_STEP = 81;
 
 /**
  * Manages canvas detail overlays -- opening RFI/Submittal details on top of
@@ -49,6 +52,7 @@ export class CanvasDetailManager {
     sourceWidgetId: string,
     detail: DetailView,
     engine: CanvasDetailEngine,
+    size?: { width: number; height: number },
   ): void {
     if (!this._baselineSnapshot) {
       this._baselineSnapshot = {
@@ -67,10 +71,13 @@ export class CanvasDetailManager {
     };
     this.canvasDetailViews.update(v => ({ ...v, [sourceWidgetId]: detail }));
 
+    const targetW = size?.width ?? DETAIL_WIDTH;
+    const targetH = size?.height ?? DETAIL_HEIGHT;
+
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        engine.widgetPixelWidths.update(w => ({ ...w, [sourceWidgetId]: DETAIL_WIDTH }));
-        engine.widgetHeights.update(h => ({ ...h, [sourceWidgetId]: DETAIL_HEIGHT }));
+        engine.widgetPixelWidths.update(w => ({ ...w, [sourceWidgetId]: targetW }));
+        engine.widgetHeights.update(h => ({ ...h, [sourceWidgetId]: targetH }));
         engine.pushFromWidget(sourceWidgetId);
       });
     });
@@ -87,8 +94,13 @@ export class CanvasDetailManager {
     this.canvasInteractingId.set(widgetId);
 
     const onMove = (e: MouseEvent) => {
-      engine.widgetTops.update(t => ({ ...t, [widgetId]: startTop + (e.clientY - startY) }));
-      engine.widgetLefts.update(l => ({ ...l, [widgetId]: startLeft + (e.clientX - startX) }));
+      const rawTop = startTop + (e.clientY - startY);
+      const rawLeft = startLeft + (e.clientX - startX);
+      const newTop = Math.round(rawTop / SNAP_GAP) * SNAP_GAP;
+      const newLeft = Math.round(rawLeft / SNAP_H_STEP) * SNAP_H_STEP;
+      engine.widgetTops.update(t => ({ ...t, [widgetId]: newTop }));
+      engine.widgetLefts.update(l => ({ ...l, [widgetId]: newLeft }));
+      engine.pushFromWidget(widgetId);
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
@@ -111,8 +123,13 @@ export class CanvasDetailManager {
     this.canvasInteractingId.set(widgetId);
 
     const onMove = (e: MouseEvent) => {
-      engine.widgetPixelWidths.update(w => ({ ...w, [widgetId]: Math.max(400, startW + (e.clientX - startX)) }));
-      engine.widgetHeights.update(h => ({ ...h, [widgetId]: Math.max(300, startH + (e.clientY - startY)) }));
+      const rawW = Math.max(400, startW + (e.clientX - startX));
+      const rawH = Math.max(300, startH + (e.clientY - startY));
+      const newW = Math.round((rawW + SNAP_GAP) / SNAP_H_STEP) * SNAP_H_STEP - SNAP_GAP;
+      const newH = Math.round(rawH / SNAP_GAP) * SNAP_GAP;
+      engine.widgetPixelWidths.update(w => ({ ...w, [widgetId]: Math.max(400, newW) }));
+      engine.widgetHeights.update(h => ({ ...h, [widgetId]: Math.max(300, newH) }));
+      engine.pushFromWidget(widgetId);
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);

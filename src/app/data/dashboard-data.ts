@@ -3,7 +3,7 @@ import type { ModusBadgeColor } from '../components/modus-badge.component';
 export type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 export type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 export type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-export type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeHeader' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'projsHeader' | 'finHeader' | 'finBudgetByProject';
+export type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeHeader' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'homeDrawings' | 'projsHeader' | 'finHeader' | 'finBudgetByProject';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';

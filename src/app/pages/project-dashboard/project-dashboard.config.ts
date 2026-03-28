@@ -159,4 +159,16 @@ export const SUBNAV_CONFIGS: Record<string, SubnavConfig> = {
       { icon: 'history', label: 'Activity', value: 'activity' },
     ],
   },
+  'drawing-detail': {
+    searchPlaceholder: 'Search in drawing...',
+    actions: [
+      { icon: 'download', label: 'Download' },
+      { icon: 'printer', label: 'Print' },
+      { icon: 'share', label: 'Share' },
+    ],
+    viewToggles: [
+      { icon: 'zoom_in', label: 'Zoom in', value: 'zoom-in' },
+      { icon: 'zoom_out', label: 'Zoom out', value: 'zoom-out' },
+    ],
+  },
 };
