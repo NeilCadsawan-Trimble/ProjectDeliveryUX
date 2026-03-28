@@ -9,7 +9,9 @@ export interface WidgetRect {
  * BFS-based canvas push algorithm. Resolves overlaps by pushing widgets apart.
  *
  * Axis selection for the initial push from the mover:
- *   1. Same-row widgets (tops within gap) always push horizontally.
+ *   1. Same-row widgets (tops within gap) push horizontally, unless
+ *      the widgets are vertically stacked (same left and width within
+ *      tolerance), in which case they push vertically.
  *   2. Otherwise, side-aware clearance picks the axis with less penetration
  *      measured from the side where the target sits.
  * Cascade pushes use center-to-center distance for axis selection.
@@ -18,13 +20,13 @@ export interface WidgetRect {
  * the push cascade continues smoothly regardless of position in the
  * coordinate system — no clamping, no direction reversal, no jumping.
  *
- * Locked widget handling: pushes that would land a widget on top of a
- * locked widget are silently discarded — the widget stays put (is
- * "frozen") rather than jumping around the locked element.
- *
- * When a frozen widget still overlaps the mover after BFS, the mover
- * is pushed back to clear the frozen widget, as if the frozen widget
- * were itself a wall. This stops the drag at the locked boundary.
+ * Locked widget handling: when a push would place a widget on top of a
+ * locked widget, that widget is "frozen" at its current position. A
+ * backward cascade then compresses the push chain against the frozen
+ * boundary: each widget that overlaps a frozen (or locked) widget is
+ * pushed to exactly `gap` distance from it and itself becomes a wall.
+ * The cascade continues until the mover is pushed back, stopping the
+ * drag at the locked boundary with all gaps at exactly `gap` px.
  *
  * @param movedId   The widget that was just moved/resized (push source).
  * @param rects     Mutable map of widget id -> rect. Updated in place.
@@ -59,19 +61,23 @@ export function runCanvasPushBfs(
     return false;
   };
 
+  const frozen = new Set<string>();
+  let canFreeze = true;
+
   const pushAway = (pusherId: string, otherId: string): void => {
     const p = rects[pusherId];
     const o = rects[otherId];
     const pR = p.left + p.width, pB = p.top + p.height;
     const oR = o.left + o.width, oB = o.top + o.height;
 
-    const pCX = (p.left + pR) / 2;
     const oCX = o.left + o.width / 2;
 
     const sameRow = Math.abs(p.top - o.top) <= gap;
     let pushH: boolean;
     if (sameRow) {
-      pushH = true;
+      const stacked = Math.abs(p.left - o.left) <= gap
+                   && Math.abs(p.width - o.width) <= gap * 2;
+      pushH = !stacked;
     } else {
       const hPen = Math.min(pR, oR) - Math.max(p.left, o.left);
       const vPen = Math.min(pB, oB) - Math.max(p.top, o.top);
@@ -83,27 +89,21 @@ export function runCanvasPushBfs(
 
     let candidate: WidgetRect;
     if (pushH) {
-      if (oCX >= dirCX) {
-        candidate = { ...o, left: pR + gap };
-      } else {
-        candidate = { ...o, left: p.left - o.width - gap };
-      }
+      candidate = oCX >= dirCX
+        ? { ...o, left: pR + gap }
+        : { ...o, left: p.left - o.width - gap };
     } else {
-      if (o.top >= p.top) {
-        candidate = { ...o, top: pB + gap };
-      } else {
-        candidate = { ...o, top: p.top - o.height - gap };
-      }
+      candidate = o.top >= p.top
+        ? { ...o, top: pB + gap }
+        : { ...o, top: p.top - o.height - gap };
     }
 
     if (rectOverlapsLocked(candidate)) {
-      frozen.add(otherId);
+      if (canFreeze) frozen.add(otherId);
       return;
     }
     rects[otherId] = candidate;
   };
-
-  const frozen = new Set<string>();
 
   const queue: string[] = [movedId];
   const visited = new Set<string>();
@@ -146,8 +146,9 @@ export function runCanvasPushBfs(
   }
 
   // All-pairs cleanup: resolve any remaining overlaps between non-mover
-  // widgets that the BFS cascade missed (e.g. a pushed detail widget
-  // landing on top of a home widget without cascading the push).
+  // widgets that the BFS cascade missed. Freezing is disabled here to
+  // avoid incorrect direction-based freezing of intermediate widgets.
+  canFreeze = false;
   for (let pass = 0; pass < ids.length * 3; pass++) {
     let anyFixed = false;
     for (const aId of ids) {
@@ -170,32 +171,44 @@ export function runCanvasPushBfs(
     if (!anyFixed) break;
   }
 
-  // Frozen-widget wall: if the mover still overlaps any widget that was
-  // blocked by a locked element, push the mover back to clear it.
-  // Skipped for detail expansion where the mover must stay in place.
   if (opts?.skipMoverPushback) return;
-  for (const fid of frozen) {
-    if (!hasOverlap(movedId, fid)) continue;
-    const m = rects[movedId];
-    const o = rects[fid];
-    const mCX = m.left + m.width / 2;
-    const oCX = o.left + o.width / 2;
 
-    const sameRow = Math.abs(m.top - o.top) <= gap;
-    if (sameRow) {
-      if (mCX >= oCX) {
-        rects[movedId] = { ...m, left: o.left + o.width + gap };
-      } else {
-        rects[movedId] = { ...m, left: o.left - m.width - gap };
+  // Frozen-widget wall cascade: frozen and locked widgets act as immovable
+  // walls. Any widget overlapping a wall is pushed to exactly gap distance
+  // from it and itself becomes a wall, cascading backward to the mover.
+  if (frozen.size > 0) {
+    const walls = new Set<string>();
+    for (const id of ids) {
+      if (isLocked[id] || frozen.has(id)) walls.add(id);
+    }
+
+    for (let pass = 0; pass < ids.length * 3; pass++) {
+      let anyFixed = false;
+      for (const wallId of [...walls]) {
+        for (const otherId of ids) {
+          if (otherId === wallId || walls.has(otherId)) continue;
+          if (!hasOverlap(otherId, wallId)) continue;
+          const m = rects[otherId];
+          const o = rects[wallId];
+          const sameRow = Math.abs(m.top - o.top) <= gap;
+          const stacked = Math.abs(m.left - o.left) <= gap
+                       && Math.abs(m.width - o.width) <= gap * 2;
+          if (sameRow && !stacked) {
+            const mCX = m.left + m.width / 2;
+            const oCX = o.left + o.width / 2;
+            if (mCX >= oCX) rects[otherId] = { ...m, left: o.left + o.width + gap };
+            else rects[otherId] = { ...m, left: o.left - m.width - gap };
+          } else {
+            const mCY = m.top + m.height / 2;
+            const oCY = o.top + o.height / 2;
+            if (mCY >= oCY) rects[otherId] = { ...m, top: o.top + o.height + gap };
+            else rects[otherId] = { ...m, top: o.top - m.height - gap };
+          }
+          if (otherId !== movedId) walls.add(otherId);
+          anyFixed = true;
+        }
       }
-    } else {
-      const mCY = m.top + m.height / 2;
-      const oCY = o.top + o.height / 2;
-      if (mCY >= oCY) {
-        rects[movedId] = { ...m, top: o.top + o.height + gap };
-      } else {
-        rects[movedId] = { ...m, top: o.top - m.height - gap };
-      }
+      if (!anyFixed) break;
     }
   }
 }

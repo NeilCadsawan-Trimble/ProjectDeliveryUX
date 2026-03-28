@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ProjectDashboardComponent } from '../../project-dashboard/project-dashboard.component';
-import { API_GATEWAY_PROJECT } from '../../../data/project-data';
+import { SUNSET_RIDGE_PROJECT } from '../../../data/project-data';
 
 @Component({
   selector: 'app-api-gateway-modernization-page',
@@ -9,5 +9,5 @@ import { API_GATEWAY_PROJECT } from '../../../data/project-data';
   template: `<app-project-dashboard [projectData]="projectData" [projectId]="7" />`,
 })
 export class ApiGatewayModernizationPageComponent {
-  readonly projectData = API_GATEWAY_PROJECT;
+  readonly projectData = SUNSET_RIDGE_PROJECT;
 }

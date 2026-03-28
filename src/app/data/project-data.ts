@@ -93,7 +93,7 @@ export interface ProjectDashboardData {
 
 export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
   1: {
-    name: 'Cloud Infrastructure Migration',
+    name: 'Riverside Office Complex',
     status: 'On Track',
     summaryStats: [
       { label: 'Schedule', value: '72%', subtext: 'On track', subtextClass: 'text-success' },
@@ -143,15 +143,16 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     budgetTotal: '$800K',
     budgetPct: 68,
     budgetBreakdown: [
-      { label: 'Labor', amount: '$320K', pct: 59, colorClass: 'bg-primary' },
-      { label: 'Infrastructure', amount: '$144K', pct: 26, colorClass: 'bg-success' },
-      { label: 'Licensing', amount: '$56K', pct: 10, colorClass: 'bg-warning' },
-      { label: 'Other', amount: '$24K', pct: 5, colorClass: 'bg-secondary' },
+      { label: 'Labor', amount: '$228K', pct: 42, colorClass: 'bg-primary' },
+      { label: 'Materials', amount: '$131K', pct: 24, colorClass: 'bg-success' },
+      { label: 'Equipment', amount: '$98K', pct: 18, colorClass: 'bg-warning' },
+      { label: 'Subcontractors', amount: '$54K', pct: 10, colorClass: 'bg-secondary' },
+      { label: 'Overhead', amount: '$33K', pct: 6, colorClass: 'bg-foreground-40' },
     ],
   },
 
   2: {
-    name: 'Mobile App Redesign',
+    name: 'Harbor View Condominiums',
     status: 'At Risk',
     summaryStats: [
       { label: 'Schedule', value: '45%', subtext: 'At risk', subtextClass: 'text-warning' },
@@ -199,15 +200,16 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     budgetTotal: '$300K',
     budgetPct: 82,
     budgetBreakdown: [
-      { label: 'Labor', amount: '$180K', pct: 73, colorClass: 'bg-primary' },
-      { label: 'Design Tools', amount: '$30K', pct: 12, colorClass: 'bg-success' },
-      { label: 'Testing', amount: '$24K', pct: 10, colorClass: 'bg-warning' },
-      { label: 'Other', amount: '$12K', pct: 5, colorClass: 'bg-secondary' },
+      { label: 'Labor', amount: '$118K', pct: 48, colorClass: 'bg-primary' },
+      { label: 'Materials', amount: '$44K', pct: 18, colorClass: 'bg-success' },
+      { label: 'Equipment', amount: '$30K', pct: 12, colorClass: 'bg-warning' },
+      { label: 'Subcontractors', amount: '$37K', pct: 15, colorClass: 'bg-secondary' },
+      { label: 'Overhead', amount: '$17K', pct: 7, colorClass: 'bg-foreground-40' },
     ],
   },
 
   3: {
-    name: 'ERP System Upgrade',
+    name: 'Downtown Transit Hub',
     status: 'Overdue',
     summaryStats: [
       { label: 'Schedule', value: '60%', subtext: 'Overdue', subtextClass: 'text-destructive font-medium' },
@@ -258,15 +260,16 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     budgetTotal: '$900K',
     budgetPct: 95,
     budgetBreakdown: [
-      { label: 'Labor', amount: '$420K', pct: 49, colorClass: 'bg-primary' },
-      { label: 'Licensing', amount: '$250K', pct: 29, colorClass: 'bg-warning' },
-      { label: 'Consulting', amount: '$135K', pct: 16, colorClass: 'bg-success' },
-      { label: 'Other', amount: '$50K', pct: 6, colorClass: 'bg-secondary' },
+      { label: 'Labor', amount: '$325K', pct: 38, colorClass: 'bg-primary' },
+      { label: 'Materials', amount: '$214K', pct: 25, colorClass: 'bg-success' },
+      { label: 'Equipment', amount: '$128K', pct: 15, colorClass: 'bg-warning' },
+      { label: 'Subcontractors', amount: '$137K', pct: 16, colorClass: 'bg-secondary' },
+      { label: 'Overhead', amount: '$51K', pct: 6, colorClass: 'bg-foreground-40' },
     ],
   },
 
   4: {
-    name: 'Data Analytics Platform',
+    name: 'Lakeside Medical Center',
     status: 'On Track',
     summaryStats: [
       { label: 'Schedule', value: '35%', subtext: 'On track', subtextClass: 'text-success' },
@@ -315,15 +318,16 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     budgetTotal: '$500K',
     budgetPct: 30,
     budgetBreakdown: [
-      { label: 'Labor', amount: '$95K', pct: 63, colorClass: 'bg-primary' },
-      { label: 'Infrastructure', amount: '$35K', pct: 23, colorClass: 'bg-success' },
-      { label: 'Licensing', amount: '$15K', pct: 10, colorClass: 'bg-warning' },
-      { label: 'Other', amount: '$5K', pct: 4, colorClass: 'bg-secondary' },
+      { label: 'Labor', amount: '$68K', pct: 45, colorClass: 'bg-primary' },
+      { label: 'Materials', amount: '$33K', pct: 22, colorClass: 'bg-success' },
+      { label: 'Equipment', amount: '$24K', pct: 16, colorClass: 'bg-warning' },
+      { label: 'Subcontractors', amount: '$15K', pct: 10, colorClass: 'bg-secondary' },
+      { label: 'Overhead', amount: '$10K', pct: 7, colorClass: 'bg-foreground-40' },
     ],
   },
 
   5: {
-    name: 'Customer Portal v3',
+    name: 'Westfield Shopping Center',
     status: 'Planning',
     summaryStats: [
       { label: 'Schedule', value: '12%', subtext: 'Planning', subtextClass: 'text-foreground-60' },
@@ -367,14 +371,16 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     budgetTotal: '$350K',
     budgetPct: 8,
     budgetBreakdown: [
-      { label: 'Labor', amount: '$18K', pct: 75, colorClass: 'bg-primary' },
-      { label: 'Research', amount: '$4K', pct: 17, colorClass: 'bg-success' },
-      { label: 'Other', amount: '$2K', pct: 8, colorClass: 'bg-secondary' },
+      { label: 'Labor', amount: '$12K', pct: 50, colorClass: 'bg-primary' },
+      { label: 'Materials', amount: '$4K', pct: 17, colorClass: 'bg-success' },
+      { label: 'Equipment', amount: '$2K', pct: 8, colorClass: 'bg-warning' },
+      { label: 'Subcontractors', amount: '$4K', pct: 17, colorClass: 'bg-secondary' },
+      { label: 'Overhead', amount: '$2K', pct: 8, colorClass: 'bg-foreground-40' },
     ],
   },
 
   6: {
-    name: 'Security & Compliance Audit',
+    name: 'Metro Bridge Rehabilitation',
     status: 'On Track',
     summaryStats: [
       { label: 'Schedule', value: '88%', subtext: 'On track', subtextClass: 'text-success' },
@@ -420,15 +426,16 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     budgetTotal: '$150K',
     budgetPct: 72,
     budgetBreakdown: [
-      { label: 'Labor', amount: '$72K', pct: 67, colorClass: 'bg-primary' },
-      { label: 'Tools', amount: '$22K', pct: 20, colorClass: 'bg-success' },
-      { label: 'External Audit', amount: '$10K', pct: 9, colorClass: 'bg-warning' },
-      { label: 'Other', amount: '$4K', pct: 4, colorClass: 'bg-secondary' },
+      { label: 'Labor', amount: '$48K', pct: 44, colorClass: 'bg-primary' },
+      { label: 'Materials', amount: '$20K', pct: 19, colorClass: 'bg-success' },
+      { label: 'Equipment', amount: '$15K', pct: 14, colorClass: 'bg-warning' },
+      { label: 'Subcontractors', amount: '$18K', pct: 17, colorClass: 'bg-secondary' },
+      { label: 'Overhead', amount: '$7K', pct: 6, colorClass: 'bg-foreground-40' },
     ],
   },
 
   7: {
-    name: 'API Gateway Modernization',
+    name: 'Sunset Ridge Apartments',
     status: 'Overdue',
     summaryStats: [
       { label: 'Schedule', value: '30%', subtext: 'Overdue', subtextClass: 'text-destructive font-medium' },
@@ -474,14 +481,16 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     budgetTotal: '$200K',
     budgetPct: 55,
     budgetBreakdown: [
-      { label: 'Labor', amount: '$85K', pct: 77, colorClass: 'bg-primary' },
-      { label: 'Infrastructure', amount: '$18K', pct: 16, colorClass: 'bg-success' },
-      { label: 'Other', amount: '$7K', pct: 7, colorClass: 'bg-secondary' },
+      { label: 'Labor', amount: '$51K', pct: 46, colorClass: 'bg-primary' },
+      { label: 'Materials', amount: '$22K', pct: 20, colorClass: 'bg-success' },
+      { label: 'Equipment', amount: '$17K', pct: 15, colorClass: 'bg-warning' },
+      { label: 'Subcontractors', amount: '$13K', pct: 12, colorClass: 'bg-secondary' },
+      { label: 'Overhead', amount: '$7K', pct: 7, colorClass: 'bg-foreground-40' },
     ],
   },
 
   8: {
-    name: 'ML Model Deployment Pipeline',
+    name: 'Industrial Park Warehouse',
     status: 'On Track',
     summaryStats: [
       { label: 'Schedule', value: '20%', subtext: 'On track', subtextClass: 'text-success' },
@@ -524,24 +533,25 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 4, actorInitials: 'DL', text: 'Set up Kubernetes namespace for ML workloads', timeAgo: '5 hrs ago', icon: 'check_circle' },
       { id: 5, actorInitials: 'TE', text: 'Created Grafana dashboard templates for model metrics', timeAgo: 'Yesterday', icon: 'dashboard' },
     ],
-    latestDrawing: { id: 1, name: 'ML Pipeline Architecture', type: 'architecture', version: 'v1.5', isLatest: true, updatedBy: 'Priya Nair', updatedAt: 'Mar 7, 2026', revisionCount: 5, fileSize: '2.9 MB' },
+    latestDrawing: { id: 1, name: 'Warehouse Floor Plan', type: 'architecture', version: 'v1.5', isLatest: true, updatedBy: 'Priya Nair', updatedAt: 'Mar 7, 2026', revisionCount: 5, fileSize: '2.9 MB' },
     budgetUsed: '$90K',
     budgetTotal: '$500K',
     budgetPct: 18,
     budgetBreakdown: [
-      { label: 'Labor', amount: '$55K', pct: 61, colorClass: 'bg-primary' },
-      { label: 'Infrastructure', amount: '$25K', pct: 28, colorClass: 'bg-success' },
-      { label: 'Licensing', amount: '$8K', pct: 9, colorClass: 'bg-warning' },
-      { label: 'Other', amount: '$2K', pct: 2, colorClass: 'bg-secondary' },
+      { label: 'Labor', amount: '$39K', pct: 43, colorClass: 'bg-primary' },
+      { label: 'Materials', amount: '$20K', pct: 22, colorClass: 'bg-success' },
+      { label: 'Equipment', amount: '$16K', pct: 18, colorClass: 'bg-warning' },
+      { label: 'Subcontractors', amount: '$9K', pct: 10, colorClass: 'bg-secondary' },
+      { label: 'Overhead', amount: '$6K', pct: 7, colorClass: 'bg-foreground-40' },
     ],
   },
 };
 
-export const CLOUD_INFRA_PROJECT = PROJECT_DATA[1];
-export const MOBILE_APP_PROJECT = PROJECT_DATA[2];
-export const ERP_UPGRADE_PROJECT = PROJECT_DATA[3];
-export const DATA_ANALYTICS_PROJECT = PROJECT_DATA[4];
-export const CUSTOMER_PORTAL_PROJECT = PROJECT_DATA[5];
-export const SECURITY_AUDIT_PROJECT = PROJECT_DATA[6];
-export const API_GATEWAY_PROJECT = PROJECT_DATA[7];
-export const ML_PIPELINE_PROJECT = PROJECT_DATA[8];
+export const RIVERSIDE_OFFICE_PROJECT = PROJECT_DATA[1];
+export const HARBOR_VIEW_PROJECT = PROJECT_DATA[2];
+export const TRANSIT_HUB_PROJECT = PROJECT_DATA[3];
+export const LAKESIDE_MEDICAL_PROJECT = PROJECT_DATA[4];
+export const WESTFIELD_SHOPPING_PROJECT = PROJECT_DATA[5];
+export const METRO_BRIDGE_PROJECT = PROJECT_DATA[6];
+export const SUNSET_RIDGE_PROJECT = PROJECT_DATA[7];
+export const INDUSTRIAL_PARK_PROJECT = PROJECT_DATA[8];

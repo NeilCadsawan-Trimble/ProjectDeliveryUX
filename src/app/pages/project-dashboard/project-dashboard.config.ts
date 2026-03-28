@@ -141,11 +141,10 @@ export const SUBNAV_CONFIGS: Record<string, SubnavConfig> = {
       { icon: 'edit_mode', label: 'Edit' },
       { icon: 'printer', label: 'Print' },
       { icon: 'share', label: 'Share' },
+      { icon: 'document', label: 'Details' },
+      { icon: 'history', label: 'Activity' },
     ],
-    viewToggles: [
-      { icon: 'document', label: 'Details', value: 'details' },
-      { icon: 'history', label: 'Activity', value: 'activity' },
-    ],
+    viewToggles: [],
   },
   'submittal-detail': {
     searchPlaceholder: 'Search in submittal...',
@@ -153,11 +152,10 @@ export const SUBNAV_CONFIGS: Record<string, SubnavConfig> = {
       { icon: 'edit_mode', label: 'Edit' },
       { icon: 'printer', label: 'Print' },
       { icon: 'download', label: 'Download' },
+      { icon: 'document', label: 'Details' },
+      { icon: 'history', label: 'Activity' },
     ],
-    viewToggles: [
-      { icon: 'document', label: 'Details', value: 'details' },
-      { icon: 'history', label: 'Activity', value: 'activity' },
-    ],
+    viewToggles: [],
   },
   'drawing-detail': {
     searchPlaceholder: 'Search in drawing...',

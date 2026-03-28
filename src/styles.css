@@ -1969,3 +1969,60 @@ modus-wc-utility-panel .modus-wc-utility-panel-footer {
 .tile-zoom-slider::-moz-range-thumb:hover {
   transform: scale(1.3);
 }
+
+.chart-gradient-start {
+  stop-color: var(--primary);
+  stop-opacity: 0.25;
+}
+.chart-gradient-end {
+  stop-color: var(--primary);
+  stop-opacity: 0.02;
+}
+.chart-line {
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.chart-dot {
+  fill: var(--primary);
+  stroke: var(--card);
+  stroke-width: 2;
+}
+.chart-grid-line {
+  stroke: var(--border);
+  stroke-width: 0.5;
+  stroke-dasharray: 4 4;
+}
+.chart-high-line {
+  stroke: var(--success);
+  stroke-width: 1;
+  stroke-dasharray: 6 3;
+  opacity: 0.6;
+}
+.chart-low-line {
+  stroke: var(--destructive);
+  stroke-width: 1;
+  stroke-dasharray: 6 3;
+  opacity: 0.6;
+}
+.chart-crosshair {
+  stroke: var(--foreground);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.4;
+}
+.chart-hover-dot {
+  fill: var(--primary);
+  stroke: var(--card);
+  stroke-width: 2.5;
+}
+.pf-gradient-gain-start { stop-color: var(--success); stop-opacity: 0.35; }
+.pf-gradient-gain-end { stop-color: var(--success); stop-opacity: 0.02; }
+.pf-gradient-fade-start { stop-color: var(--destructive); stop-opacity: 0.35; }
+.pf-gradient-fade-end { stop-color: var(--destructive); stop-opacity: 0.02; }
+.pf-line-gain { stroke: var(--success); stroke-width: 2; fill: none; }
+.pf-line-fade { stroke: var(--destructive); stroke-width: 2; fill: none; }
+.pf-baseline { stroke: var(--foreground); stroke-width: 1; stroke-dasharray: 6 4; opacity: 0.35; }
+.pf-dot-gain { fill: var(--success); stroke: var(--card); stroke-width: 2; }
+.pf-dot-fade { fill: var(--destructive); stroke: var(--card); stroke-width: 2; }

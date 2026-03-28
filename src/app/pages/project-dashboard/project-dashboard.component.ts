@@ -158,16 +158,18 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 <i class="modus-icons text-base" aria-hidden="true">{{ btn.icon }}</i>
               </div>
             }
-            <div class="flex items-center bg-secondary rounded ml-1">
-              @for (toggle of config.viewToggles; track toggle.value) {
-                <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150"
-                  [class]="toggle.value === 'zoom-in' || toggle.value === 'zoom-out' ? 'text-foreground-60 hover:text-foreground hover:bg-muted active:bg-primary active:text-primary-foreground' : (subnavViewMode() === toggle.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground')"
-                  role="button" tabindex="0" [attr.aria-label]="toggle.label"
-                  (click)="handleSubnavToggle(toggle.value)">
-                  <i class="modus-icons text-base" aria-hidden="true">{{ toggle.icon }}</i>
-                </div>
-              }
-            </div>
+            @if (config.viewToggles.length > 0) {
+              <div class="flex items-center bg-secondary rounded ml-1">
+                @for (toggle of config.viewToggles; track toggle.value) {
+                  <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150"
+                    [class]="toggle.value === 'zoom-in' || toggle.value === 'zoom-out' ? 'text-foreground-60 hover:text-foreground hover:bg-muted active:bg-primary active:text-primary-foreground' : (subnavViewMode() === toggle.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground')"
+                    role="button" tabindex="0" [attr.aria-label]="toggle.label"
+                    (click)="handleSubnavToggle(toggle.value)">
+                    <i class="modus-icons text-base" aria-hidden="true">{{ toggle.icon }}</i>
+                  </div>
+                }
+              </div>
+            }
           </div>
         </div>
       </div>
@@ -1469,10 +1471,18 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                     <div class="text-sm text-foreground-60">of {{ budgetTotal() }}</div>
                   </div>
                   <modus-progress [value]="budgetPct()" [max]="100" [className]="budgetHealthy() ? 'progress-primary' : 'progress-danger'" />
+                  <div class="flex w-full h-3 rounded-full overflow-hidden">
+                    @for (item of budgetBreakdown(); track item.label) {
+                      <div class="{{ item.colorClass }}" [style.width.%]="item.pct"></div>
+                    }
+                  </div>
                   <div class="grid grid-cols-2 gap-3">
                     @for (item of budgetBreakdown(); track item.label) {
                       <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
-                        <div class="text-2xs text-foreground-40 uppercase tracking-wide">{{ item.label }}</div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full {{ item.colorClass }} flex-shrink-0"></div>
+                          <div class="text-2xs text-foreground-40 uppercase tracking-wide">{{ item.label }}</div>
+                        </div>
                         <div class="text-sm font-semibold text-foreground">{{ item.amount }}</div>
                         <div class="text-2xs text-foreground-60">{{ item.pct }}% of spend</div>
                       </div>
