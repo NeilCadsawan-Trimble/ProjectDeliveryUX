@@ -20,6 +20,8 @@ export interface TileCanvasConfig {
   offsetLeft: number;
   detailWidth?: number;
   detailHeight?: number;
+  tileSizeOverrides?: Record<string, { width: number; height: number; columns?: number }>;
+  heightOnlyResizeIds?: Set<string>;
 }
 
 export interface TileDetailView {
@@ -116,26 +118,83 @@ export class SubpageTileCanvas implements CanvasItemHost {
       next[id] = rect;
     }
 
-    const { tileWidth, tileHeight, columns, gap, offsetTop, offsetLeft } = this.config;
-    let idx = 0;
-    for (const id of tileIds) {
-      if (existing[id] && !lockedRects[id]) {
-        next[id] = existing[id];
-      } else if (!lockedRects[id]) {
-        const col = idx % columns;
-        const row = Math.floor(idx / columns);
-        next[id] = {
-          top: offsetTop + row * (tileHeight + gap),
-          left: offsetLeft + col * (tileWidth + gap),
-          width: tileWidth,
-          height: tileHeight,
-        };
+    const { tileWidth, tileHeight, columns, gap, offsetTop, offsetLeft, tileSizeOverrides } = this.config;
+
+    if (tileSizeOverrides && Object.keys(tileSizeOverrides).length > 0) {
+      this._layoutWithOverrides(tileIds, lockedRects, existing, next, tileSizeOverrides);
+    } else {
+      let idx = 0;
+      for (const id of tileIds) {
+        if (existing[id] && !lockedRects[id]) {
+          next[id] = existing[id];
+        } else if (!lockedRects[id]) {
+          const col = idx % columns;
+          const row = Math.floor(idx / columns);
+          next[id] = {
+            top: offsetTop + row * (tileHeight + gap),
+            left: offsetLeft + col * (tileWidth + gap),
+            width: tileWidth,
+            height: tileHeight,
+          };
+        }
+        if (!lockedRects[id]) idx++;
       }
-      if (!lockedRects[id]) idx++;
     }
 
     this.positions.set(next);
     this.persistLayout();
+  }
+
+  private _layoutWithOverrides(
+    tileIds: string[],
+    lockedRects: Record<string, TileRect>,
+    existing: Record<string, TileRect>,
+    next: Record<string, TileRect>,
+    overrides: Record<string, { width: number; height: number; columns?: number }>,
+  ): void {
+    const { tileWidth, tileHeight, columns, gap, offsetTop, offsetLeft } = this.config;
+    let curTop = offsetTop;
+    let rowLeft = offsetLeft;
+    let rowMaxH = 0;
+    let rowColsUsed = 0;
+
+    for (const id of tileIds) {
+      if (lockedRects[id]) continue;
+      if (existing[id]) {
+        next[id] = existing[id];
+        continue;
+      }
+
+      const ov = overrides[id];
+      const w = ov?.width ?? tileWidth;
+      const h = ov?.height ?? tileHeight;
+      const spanCols = ov?.columns ?? 1;
+
+      if (spanCols >= columns || rowColsUsed + spanCols > columns) {
+        if (rowColsUsed > 0) {
+          curTop += rowMaxH + gap;
+          rowLeft = offsetLeft;
+          rowMaxH = 0;
+          rowColsUsed = 0;
+        }
+        next[id] = { top: curTop, left: offsetLeft, width: w, height: h };
+        if (spanCols >= columns) {
+          curTop += h + gap;
+          rowLeft = offsetLeft;
+          rowMaxH = 0;
+          rowColsUsed = 0;
+        } else {
+          rowLeft = offsetLeft + w + gap;
+          rowMaxH = h;
+          rowColsUsed = spanCols;
+        }
+      } else {
+        next[id] = { top: curTop, left: rowLeft, width: w, height: h };
+        rowLeft += w + gap;
+        rowMaxH = Math.max(rowMaxH, h);
+        rowColsUsed += spanCols;
+      }
+    }
   }
 
   onTileMouseDown(id: string, event: MouseEvent): void {
@@ -394,15 +453,27 @@ export class SubpageTileCanvas implements CanvasItemHost {
 
   private handleResize(event: MouseEvent): void {
     const id = this._resizeTarget!;
-    const dx = event.clientX - this._resizeStartX;
+    const step = SubpageTileCanvas.CANVAS_STEP;
+    const gap = this.config.gap;
     const dy = event.clientY - this._resizeStartY;
-    const newW = Math.max(200, this._resizeStartW + dx);
-    const newH = Math.max(100, this._resizeStartH + dy);
+    const rawH = this._resizeStartH + dy;
+    const newH = Math.max(gap * 6, Math.round(rawH / gap) * gap);
 
-    this.positions.update(p => ({
-      ...p,
-      [id]: { ...p[id], width: newW, height: newH },
-    }));
+    const heightOnly = this.config.heightOnlyResizeIds?.has(id);
+    if (heightOnly) {
+      this.positions.update(p => ({
+        ...p,
+        [id]: { ...p[id], height: newH },
+      }));
+    } else {
+      const dx = event.clientX - this._resizeStartX;
+      const rawW = this._resizeStartW + dx;
+      const newW = Math.max(step * 2, Math.round(rawW / step) * step);
+      this.positions.update(p => ({
+        ...p,
+        [id]: { ...p[id], width: newW, height: newH },
+      }));
+    }
     this.resolveCanvasPush(id);
   }
 
