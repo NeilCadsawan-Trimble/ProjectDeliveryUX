@@ -183,7 +183,7 @@ describe('runCanvasPushBfs', () => {
 
       expect(rects['locked'].left).toBe(350);
       expect(rects['unlocked'].left).toBe(100);
-      // Mover is pushed back to clear the frozen widget
+      expect(rects['unlocked'].top).toBe(0);
       expect(rects['mover'].left).toBeLessThanOrEqual(100 - 300 - GAP);
     });
 
@@ -198,6 +198,65 @@ describe('runCanvasPushBfs', () => {
       expect(rects['locked'].left).toBe(500);
       expect(rects['unlocked'].left).toBe(200 + GAP);
       expect(noOverlap(rects, GAP, 'unlocked', 'locked')).toBe(true);
+    });
+
+    it('cascade through locked wall: widgets compress to gap distance', () => {
+      // Mover pushes middle, middle pushes target, target blocked by locked.
+      // Target stays frozen (can't reach locked). Middle compresses to gap
+      // distance from target. Mover pushed back to gap from middle.
+      const rects: Record<string, WidgetRect> = {
+        mover:  { left: 0,   top: 0, width: 400, height: 200 },
+        middle: { left: 200, top: 0, width: 200, height: 200 },
+        target: { left: 450, top: 0, width: 200, height: 200 },
+        locked: { left: 700, top: 0, width: 200, height: 200 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].left).toBe(700);
+      expect(rects['target'].left).toBe(450);
+      expect(rects['target'].top).toBe(0);
+      // middle compresses to gap distance from target
+      expect(rects['middle'].left).toBe(450 - 200 - GAP);
+      expect(rects['middle'].top).toBe(0);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('3-widget cascade through locked wall: compress, no jumping', () => {
+      // Financials scenario: drag widget A into B, B pushes C,
+      // C blocked by locked D. C stays frozen at 650, B compresses
+      // to gap distance from C, mover pushed back to gap from B.
+      const rects: Record<string, WidgetRect> = {
+        mover:   { left: 0,   top: 0,   width: 600, height: 400 },
+        widgetB: { left: 300, top: 0,   width: 300, height: 300 },
+        widgetC: { left: 650, top: 0,   width: 300, height: 300 },
+        locked:  { left: 1000, top: 0,  width: 300, height: 300 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].left).toBe(1000);
+      expect(rects['widgetC'].left).toBe(650);
+      // widgetB compresses to gap distance from widgetC
+      expect(rects['widgetB'].left).toBe(650 - 300 - GAP);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('mover pushed back when blocked widget is not on same row', () => {
+      // Locked widgets block the pushed widget. Mover pushed back.
+      const rects: Record<string, WidgetRect> = {
+        mover:    { left: 0,   top: 0,   width: 300, height: 300 },
+        trapped:  { left: 200, top: 200, width: 200, height: 200 },
+        lockedR:  { left: 500, top: 100, width: 300, height: 300 },
+        lockedB:  { left: 100, top: 500, width: 300, height: 300 },
+      };
+      runCanvasPushBfs('mover', rects, { lockedR: true, lockedB: true }, GAP);
+
+      expect(rects['lockedR'].left).toBe(500);
+      expect(rects['lockedR'].top).toBe(100);
+      expect(rects['lockedB'].left).toBe(100);
+      expect(rects['lockedB'].top).toBe(500);
+      expect(rects['trapped'].left).toBe(200);
+      expect(rects['trapped'].top).toBe(200);
+      assertNoPairwiseOverlap(rects, GAP);
     });
   });
 
@@ -402,6 +461,38 @@ describe('runCanvasPushBfs', () => {
 
       expect(rects['homeCalendar'].top).toBeGreaterThanOrEqual(222 + 1000 + GAP);
 
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('financials page: dragging revenueChart down into budgetByProject pushes it away', () => {
+      const rects: Record<string, WidgetRect> = {
+        finHeader:          { left: 0, top: 0,    width: 1280, height: 160 },
+        finRevenueChart:    { left: 0, top: 400,  width: 1280, height: 380 },
+        finBudgetByProject: { left: 0, top: 572,  width: 1280, height: 520 },
+        finJobCosts:        { left: 0, top: 1108, width: 1280, height: 580 },
+      };
+      const locked: Record<string, boolean> = { finHeader: true };
+
+      runCanvasPushBfs('finRevenueChart', rects, locked, GAP);
+
+      expect(rects['finHeader'].top).toBe(0);
+      expect(rects['finHeader'].left).toBe(0);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('financials page: near-same-row full-width widgets push vertically, not horizontally', () => {
+      const rects: Record<string, WidgetRect> = {
+        finHeader:          { left: 0, top: 0,    width: 1280, height: 160 },
+        finRevenueChart:    { left: 0, top: 556,  width: 1280, height: 380 },
+        finBudgetByProject: { left: 0, top: 572,  width: 1280, height: 520 },
+        finJobCosts:        { left: 0, top: 1108, width: 1280, height: 580 },
+      };
+      const locked: Record<string, boolean> = { finHeader: true };
+
+      runCanvasPushBfs('finRevenueChart', rects, locked, GAP);
+
+      expect(rects['finBudgetByProject'].left).toBe(0);
+      expect(rects['finBudgetByProject'].top).toBeGreaterThanOrEqual(556 + 380 + GAP);
       assertNoPairwiseOverlap(rects, GAP);
     });
 

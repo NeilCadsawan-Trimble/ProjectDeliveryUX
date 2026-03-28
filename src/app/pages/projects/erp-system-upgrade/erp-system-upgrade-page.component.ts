@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ProjectDashboardComponent } from '../../project-dashboard/project-dashboard.component';
-import { ERP_UPGRADE_PROJECT } from '../../../data/project-data';
+import { TRANSIT_HUB_PROJECT } from '../../../data/project-data';
 
 @Component({
   selector: 'app-erp-system-upgrade-page',
@@ -9,5 +9,5 @@ import { ERP_UPGRADE_PROJECT } from '../../../data/project-data';
   template: `<app-project-dashboard [projectData]="projectData" [projectId]="3" />`,
 })
 export class ErpSystemUpgradePageComponent {
-  readonly projectData = ERP_UPGRADE_PROJECT;
+  readonly projectData = TRANSIT_HUB_PROJECT;
 }

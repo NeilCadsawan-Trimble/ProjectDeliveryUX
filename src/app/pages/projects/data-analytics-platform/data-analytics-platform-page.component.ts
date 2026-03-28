@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ProjectDashboardComponent } from '../../project-dashboard/project-dashboard.component';
-import { DATA_ANALYTICS_PROJECT } from '../../../data/project-data';
+import { LAKESIDE_MEDICAL_PROJECT } from '../../../data/project-data';
 
 @Component({
   selector: 'app-data-analytics-platform-page',
@@ -9,5 +9,5 @@ import { DATA_ANALYTICS_PROJECT } from '../../../data/project-data';
   template: `<app-project-dashboard [projectData]="projectData" [projectId]="4" />`,
 })
 export class DataAnalyticsPlatformPageComponent {
-  readonly projectData = DATA_ANALYTICS_PROJECT;
+  readonly projectData = LAKESIDE_MEDICAL_PROJECT;
 }

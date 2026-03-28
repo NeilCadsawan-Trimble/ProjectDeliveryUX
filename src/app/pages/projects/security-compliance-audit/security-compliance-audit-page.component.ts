@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ProjectDashboardComponent } from '../../project-dashboard/project-dashboard.component';
-import { SECURITY_AUDIT_PROJECT } from '../../../data/project-data';
+import { METRO_BRIDGE_PROJECT } from '../../../data/project-data';
 
 @Component({
   selector: 'app-security-compliance-audit-page',
@@ -9,5 +9,5 @@ import { SECURITY_AUDIT_PROJECT } from '../../../data/project-data';
   template: `<app-project-dashboard [projectData]="projectData" [projectId]="6" />`,
 })
 export class SecurityComplianceAuditPageComponent {
-  readonly projectData = SECURITY_AUDIT_PROJECT;
+  readonly projectData = METRO_BRIDGE_PROJECT;
 }

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ProjectDashboardComponent } from '../../project-dashboard/project-dashboard.component';
-import { MOBILE_APP_PROJECT } from '../../../data/project-data';
+import { HARBOR_VIEW_PROJECT } from '../../../data/project-data';
 
 @Component({
   selector: 'app-mobile-app-redesign-page',
@@ -9,5 +9,5 @@ import { MOBILE_APP_PROJECT } from '../../../data/project-data';
   template: `<app-project-dashboard [projectData]="projectData" [projectId]="2" />`,
 })
 export class MobileAppRedesignPageComponent {
-  readonly projectData = MOBILE_APP_PROJECT;
+  readonly projectData = HARBOR_VIEW_PROJECT;
 }

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ProjectDashboardComponent } from '../../project-dashboard/project-dashboard.component';
-import { CUSTOMER_PORTAL_PROJECT } from '../../../data/project-data';
+import { WESTFIELD_SHOPPING_PROJECT } from '../../../data/project-data';
 
 @Component({
   selector: 'app-customer-portal-v3-page',
@@ -9,5 +9,5 @@ import { CUSTOMER_PORTAL_PROJECT } from '../../../data/project-data';
   template: `<app-project-dashboard [projectData]="projectData" [projectId]="5" />`,
 })
 export class CustomerPortalV3PageComponent {
-  readonly projectData = CUSTOMER_PORTAL_PROJECT;
+  readonly projectData = WESTFIELD_SHOPPING_PROJECT;
 }
