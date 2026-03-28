@@ -12,13 +12,12 @@ import {
 } from '@angular/core';
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
 
+const PDFJS_CDN = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38';
+
 async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: PDFPageProxy }> {
   const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-  ).toString();
-  const doc = await pdfjsLib.getDocument({ url, cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/cmaps/', cMapPacked: true }).promise;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN}/build/pdf.worker.min.mjs`;
+  const doc = await pdfjsLib.getDocument({ url, cMapUrl: `${PDFJS_CDN}/cmaps/`, cMapPacked: true }).promise;
   const page = await doc.getPage(1);
   return { doc, page };
 }
