@@ -280,20 +280,17 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                     <div class="text-xs text-foreground-40">{{ detail.item.revision }} &middot; {{ detail.item.date }}</div>
                   </div>
                 </div>
-                <div class="flex items-center gap-1 flex-shrink-0">
-                  @if (drawingEditMode()) {
-                    <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer transition-colors duration-150 bg-primary text-primary-foreground"
-                      (click)="toggleDrawingEditMode()" (mousedown)="$event.stopPropagation()"
-                      aria-label="Switch to View mode">
-                      <i class="modus-icons text-base" aria-hidden="true">edit_mode</i>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <div class="flex items-center gap-1.5 cursor-pointer" (click)="toggleDrawingEditMode()" (mousedown)="$event.stopPropagation()"
+                    [attr.aria-label]="drawingEditMode() ? 'Switch to View mode' : 'Switch to Edit mode'" role="switch" [attr.aria-checked]="drawingEditMode()">
+                    <div class="text-2xs font-medium" [class.text-foreground-40]="drawingEditMode()" [class.text-foreground-60]="!drawingEditMode()">View</div>
+                    <div class="relative w-8 h-[18px] rounded-full transition-colors duration-200"
+                      [class.bg-primary]="drawingEditMode()" [class.bg-secondary]="!drawingEditMode()">
+                      <div class="absolute top-[2px] w-[14px] h-[14px] rounded-full bg-card shadow-sm transition-all duration-200"
+                        [style.left.px]="drawingEditMode() ? 16 : 2"></div>
                     </div>
-                  } @else {
-                    <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer transition-colors duration-150 hover:bg-muted text-foreground-60"
-                      (click)="toggleDrawingEditMode()" (mousedown)="$event.stopPropagation()"
-                      aria-label="Switch to Edit mode">
-                      <i class="modus-icons text-base" aria-hidden="true">visibility_on</i>
-                    </div>
-                  }
+                    <div class="text-2xs font-medium" [class.text-primary]="drawingEditMode()" [class.text-foreground-40]="!drawingEditMode()">Edit</div>
+                  </div>
                   <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                     (click)="closeCanvasDetail(widgetId)" (mousedown)="$event.stopPropagation()" aria-label="Close detail">
                     <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>

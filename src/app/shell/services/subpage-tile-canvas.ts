@@ -217,7 +217,7 @@ export class SubpageTileCanvas implements CanvasItemHost {
     this._originalRects[tileId] = { ...current };
     this.detailViews.update(v => ({ ...v, [tileId]: detail }));
 
-    const detailW = this.config.detailWidth ?? 800;
+    const detailW = this.config.detailWidth ?? 875;
     const detailH = this.config.detailHeight ?? 1000;
 
     requestAnimationFrame(() => {
@@ -226,7 +226,7 @@ export class SubpageTileCanvas implements CanvasItemHost {
           ...p,
           [tileId]: { ...p[tileId], width: detailW, height: detailH },
         }));
-        this.resolveCanvasPush(tileId);
+        this.resolveCanvasPush(tileId, { skipMoverPushback: true });
         this.persistLayout();
       });
     });
@@ -256,18 +256,30 @@ export class SubpageTileCanvas implements CanvasItemHost {
       if (baseline) {
         const locked = this.locked();
         const pos = { ...this.positions() };
+        const detailW = this.config.detailWidth ?? 875;
+        const detailH = this.config.detailHeight ?? 1000;
 
         for (const wid of Object.keys(pos)) {
-          if (locked[wid] || remainingIds.includes(wid)) continue;
+          if (locked[wid]) continue;
           if (baseline[wid]) {
-            pos[wid] = { ...baseline[wid] };
+            if (remainingIds.includes(wid)) {
+              pos[wid] = {
+                top: baseline[wid].top,
+                left: baseline[wid].left,
+                width: detailW,
+                height: detailH,
+              };
+              this._originalRects[wid] = { ...baseline[wid] };
+            } else {
+              pos[wid] = { ...baseline[wid] };
+            }
           }
         }
         this.positions.set(pos);
       }
 
       for (const detailId of remainingIds) {
-        this.resolveCanvasPush(detailId);
+        this.resolveCanvasPush(detailId, { skipMoverPushback: true });
       }
 
       if (remainingIds.length === 0) {
@@ -292,10 +304,10 @@ export class SubpageTileCanvas implements CanvasItemHost {
     this.persistLayout();
   }
 
-  private resolveCanvasPush(movedId: string): void {
+  private resolveCanvasPush(movedId: string, opts?: { skipMoverPushback?: boolean }): void {
     const pos = { ...this.positions() };
     const locked = this.locked();
-    runCanvasPushBfs(movedId, pos, locked, this.config.gap);
+    runCanvasPushBfs(movedId, pos, locked, this.config.gap, opts);
     this.positions.set(pos);
   }
 

@@ -6,8 +6,7 @@ import type { NavItem } from '../project-dashboard.config';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex-shrink-0 bg-secondary flex flex-col transition-all duration-200 overflow-hidden"
-      [class.w-56]="!collapsed()"
-      [class.w-8]="collapsed()"
+      [style.width.px]="collapsed() ? 32 : 227"
       [class.rounded-r-lg]="!canvasMode()"
       [class.rounded-lg]="canvasMode()">
       <div class="flex items-center py-3 flex-shrink-0"

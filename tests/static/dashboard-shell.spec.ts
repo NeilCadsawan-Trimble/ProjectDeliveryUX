@@ -90,6 +90,24 @@ describe('DashboardShellComponent (regression)', () => {
     it('calls canvasResetService.triggerResetWidgets', () => {
       expect(SRC).toContain('triggerResetWidgets');
     });
+
+    it('calls canvasResetService.triggerSaveDefaults for save-defaults action', () => {
+      expect(SRC).toContain('triggerSaveDefaults');
+    });
+  });
+
+  describe('Save as Default Layout', () => {
+    it('has Save as Default Layout menu item', () => {
+      expect(SRC).toContain('Save as Default Layout');
+    });
+
+    it('has save_disk icon for save defaults option', () => {
+      expect(SRC).toContain('save_disk');
+    });
+
+    it('uses Layout options aria-label', () => {
+      expect(SRC).toContain('aria-label="Layout options"');
+    });
   });
 });
 
@@ -105,6 +123,25 @@ describe('DashboardLayoutEngine (regression)', () => {
 
     it('has clampAgainstLocked method for resize clamping', () => {
       expect(ENGINE_SRC).toContain('clampAgainstLocked');
+    });
+  });
+
+  describe('save as default layout', () => {
+    it('has saveAsDefaultLayout method', () => {
+      expect(ENGINE_SRC).toContain('saveAsDefaultLayout');
+    });
+
+    it('has desktopDefaultsKey getter', () => {
+      expect(ENGINE_SRC).toContain('desktopDefaultsKey');
+    });
+
+    it('has canvasDefaultsKey getter', () => {
+      expect(ENGINE_SRC).toContain('canvasDefaultsKey');
+    });
+
+    it('resetToDefaults checks for custom saved defaults before fallback', () => {
+      expect(ENGINE_SRC).toContain('_loadCustomCanvasDefaults');
+      expect(ENGINE_SRC).toContain('_loadCustomDesktopDefaults');
     });
   });
 });

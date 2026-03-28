@@ -72,4 +72,38 @@ describe('ProjectDashboardComponent (template regression)', () => {
       expect(SRC).toContain('_detailMgr.shouldTransition(');
     });
   });
+
+  describe('dynamic subnav collapse', () => {
+    it('has tileSubnavWidth computed signal', () => {
+      expect(SRC).toContain('tileSubnavWidth');
+    });
+
+    it('has tileContentLeft computed signal', () => {
+      expect(SRC).toContain('tileContentLeft');
+    });
+
+    it('has tileContentWidth computed signal', () => {
+      expect(SRC).toContain('tileContentWidth');
+    });
+
+    it('uses TILE_SUBNAV_EXPANDED and TILE_SUBNAV_COLLAPSED constants', () => {
+      expect(SRC).toContain('TILE_SUBNAV_EXPANDED');
+      expect(SRC).toContain('TILE_SUBNAV_COLLAPSED');
+    });
+
+    it('shifts non-locked tiles by delta when subnav collapses', () => {
+      expect(SRC).toContain('deltaX');
+      expect(SRC).toContain('rect.left + deltaX');
+    });
+  });
+
+  describe('save as default layout', () => {
+    it('calls engine.saveAsDefaultLayout', () => {
+      expect(SRC).toContain('saveAsDefaultLayout');
+    });
+
+    it('has Save as Default Layout menu item', () => {
+      expect(SRC).toContain('Save as Default Layout');
+    });
+  });
 });
