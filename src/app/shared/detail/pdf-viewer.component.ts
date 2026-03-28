@@ -14,10 +14,11 @@ import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
 
 async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: PDFPageProxy }> {
   const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-  // @ts-expect-error worker side-effect import has no types
-  await import('pdfjs-dist/build/pdf.worker.min.mjs');
-  const doc = await pdfjsLib.getDocument(url).promise;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString();
+  const doc = await pdfjsLib.getDocument({ url, cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/cmaps/', cMapPacked: true }).promise;
   const page = await doc.getPage(1);
   return { doc, page };
 }
@@ -40,6 +41,7 @@ async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: 
         <canvas
           #pdfCanvas
           class="pointer-events-none select-none"
+          style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;"
           [style.transform]="canvasTransform()"
           [style.transform-origin]="'center center'"
         ></canvas>
@@ -95,9 +97,11 @@ export class PdfViewerComponent {
     const fs = this.fitScale();
     if (fs <= 0) return 10;
     const dpr = window.devicePixelRatio || 1;
+    const qb = PdfViewerComponent._isSafari() ? 1.5 : 1;
     const { w, h } = this._pageSize();
-    const dimCap = 32768 / (Math.max(w, h) * fs * dpr);
-    const areaCap = Math.sqrt(268_435_456 / (w * h)) / (fs * dpr);
+    const maxDim = PdfViewerComponent._isSafari() ? 16384 : 32768;
+    const dimCap = maxDim / (Math.max(w, h) * fs * dpr * qb);
+    const areaCap = Math.sqrt(268_435_456 / (w * h)) / (fs * dpr * qb);
     const nativeCap = 10 / fs;
     return Math.max(1, Math.min(nativeCap, dimCap, areaCap));
   });
@@ -110,6 +114,7 @@ export class PdfViewerComponent {
 
   readonly canvasTransform = computed(() => {
     const z = this.zoom();
+    if (z === 1 && this.panX() === 0 && this.panY() === 0) return 'none';
     const px = this.panX() / z;
     const py = this.panY() / z;
     return `scale(${z}) translate(${px}px, ${py}px)`;
@@ -252,20 +257,35 @@ export class PdfViewerComponent {
     this._activeRenderTask?.cancel();
 
     const dpr = window.devicePixelRatio || 1;
-    const renderScale = fitScaleVal * targetZoom * dpr;
+    const qualityBoost = PdfViewerComponent._isSafari() ? 1.5 : 1;
+    const renderScale = fitScaleVal * targetZoom * dpr * qualityBoost;
     const viewport = page.getViewport({ scale: renderScale });
 
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    canvas.style.width = `${viewport.width / (targetZoom * dpr)}px`;
-    canvas.style.height = `${viewport.height / (targetZoom * dpr)}px`;
+    const pixelW = Math.round(viewport.width);
+    const pixelH = Math.round(viewport.height);
+    canvas.width = pixelW;
+    canvas.height = pixelH;
 
-    const ctx = canvas.getContext('2d')!;
+    const cssW = pixelW / (targetZoom * dpr * qualityBoost);
+    const cssH = pixelH / (targetZoom * dpr * qualityBoost);
+    canvas.style.width = `${cssW}px`;
+    canvas.style.height = `${cssH}px`;
+
+    const ctx = canvas.getContext('2d', { alpha: false })!;
     const task = page.render({ canvasContext: ctx, viewport });
     this._activeRenderTask = task;
 
     await task.promise;
     this._activeRenderTask = null;
+  }
+
+  private static _safariDetected: boolean | null = null;
+  private static _isSafari(): boolean {
+    if (PdfViewerComponent._safariDetected === null) {
+      const ua = navigator.userAgent;
+      PdfViewerComponent._safariDetected = /Safari/.test(ua) && !/Chrome/.test(ua);
+    }
+    return PdfViewerComponent._safariDetected;
   }
 
   private async _renderAtCurrentZoom(targetZoom: number): Promise<void> {

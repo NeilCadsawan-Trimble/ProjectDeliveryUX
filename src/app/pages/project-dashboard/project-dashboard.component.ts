@@ -20,6 +20,7 @@ import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modu
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
+import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { AiAssistantPanelComponent } from '../../shell/components/ai-assistant-panel.component';
 import { EmptyStateComponent } from './components/empty-state.component';
 import { CollapsibleSubnavComponent } from './components/collapsible-subnav.component';
@@ -52,7 +53,7 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal } from '../../data/dashboard-data';
+import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 
@@ -92,7 +93,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, WidgetResizeHandleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -1034,7 +1035,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
       }
       @case ('financials') {
         @if (isSubpageCanvasActive()) {
-          <div class="relative overflow-visible" [style.min-height.px]="600">
+          <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()">
             <!-- Locked: Side Subnav -->
             <div class="absolute overflow-visible transition-all duration-200"
               [style.top.px]="0" [style.left.px]="0"
@@ -1047,21 +1048,84 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 [activeItem]="activeFinancialsPage()"
                 [collapsed]="sideSubNavCollapsed()"
                 [canvasMode]="true"
-                (itemSelect)="activeFinancialsPage.set($event)"
+                (itemSelect)="selectFinancialsSubPage($event)"
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
               />
             </div>
             <!-- Locked: Section Subnav (toolbar) -->
-            <div class="absolute transition-all duration-200" [style.top.px]="0" [style.left.px]="tileContentLeft()" [style.width.px]="tileContentWidth()" [style.height.px]="56">
+            <div class="absolute transition-all duration-200" [style.top.px]="tilePos()['tc-toolbar']?.top ?? 0" [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileContentLeft()" [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileContentWidth()" [style.height.px]="56">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
             </div>
             <!-- Locked: Title -->
-            <div class="absolute flex items-center justify-between transition-all duration-200" [style.top.px]="72" [style.left.px]="tileContentLeft()" [style.width.px]="tileContentWidth()" [style.height.px]="40">
+            @if (!subledgerCategory()) {
+            <div class="absolute flex items-center justify-between transition-all duration-200" [style.top.px]="tilePos()['tc-title']?.top ?? 72" [style.left.px]="tilePos()['tc-title']?.left ?? tileContentLeft()" [style.width.px]="tilePos()['tc-title']?.width ?? tileContentWidth()" [style.height.px]="40">
               <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}</div>
             </div>
-            <div class="absolute transition-all duration-200" [style.top.px]="128" [style.left.px]="tileContentLeft()">
-              <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
-            </div>
+            }
+            @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
+              @if (subledgerCategory()) {
+                <!-- Locked: Subledger header + KPIs -->
+                <div class="absolute transition-all duration-200"
+                  [style.top.px]="tilePos()['tc-subledger-header']?.top ?? 68"
+                  [style.left.px]="tilePos()['tc-subledger-header']?.left ?? tileContentLeft()"
+                  [style.width.px]="tilePos()['tc-subledger-header']?.width ?? tileContentWidth()">
+                  <ng-container [ngTemplateOutlet]="subledgerHeaderKpis" />
+                </div>
+                <!-- Resizable: Transaction Ledger -->
+                <div class="absolute bg-card border-default rounded-lg"
+                  data-widget-id="tile-subledger-ledger"
+                  [style.top.px]="tilePos()['tile-subledger-ledger']?.top"
+                  [style.left.px]="tilePos()['tile-subledger-ledger']?.left"
+                  [style.width.px]="tilePos()['tile-subledger-ledger']?.width"
+                  [style.height.px]="tilePos()['tile-subledger-ledger']?.height"
+                  [style.z-index]="tileZ()['tile-subledger-ledger'] ?? 0">
+                  <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
+                    <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
+                    <div class="text-base font-semibold text-foreground">Transaction Ledger</div>
+                    <div class="text-xs text-foreground-40 ml-auto">{{ subledgerTransactions().length }} entries</div>
+                  </div>
+                  <div class="absolute left-0 right-0 bottom-0 overflow-y-auto" style="top: 53px">
+                    <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />
+                  </div>
+                  <widget-resize-handle position="right" (resizeStart)="onSubledgerLedgerResizeStart($event)" />
+                </div>
+              } @else {
+                <!-- Locked: Budget KPIs -->
+                <div class="absolute transition-all duration-200"
+                  [style.top.px]="tilePos()['tile-budget-kpis']?.top"
+                  [style.left.px]="tilePos()['tile-budget-kpis']?.left"
+                  [style.width.px]="tilePos()['tile-budget-kpis']?.width"
+                  [style.height.px]="tilePos()['tile-budget-kpis']?.height">
+                  <ng-container [ngTemplateOutlet]="budgetKpisRaw" [ngTemplateOutletContext]="{ jcP: jcProject }" />
+                </div>
+                @for (btId of budgetTileIds; track btId) {
+                  <div class="absolute overflow-hidden"
+                    [attr.data-widget-id]="btId"
+                    [style.top.px]="tilePos()[btId]?.top"
+                    [style.left.px]="tilePos()[btId]?.left"
+                    [style.width.px]="tilePos()[btId]?.width"
+                    [style.height.px]="tilePos()[btId]?.height"
+                    [style.z-index]="tileZ()[btId] ?? 0"
+                    [class.opacity-30]="tileMoveTargetId() === btId">
+                    @switch (btId) {
+                      @case ('tile-budget-breakdown') {
+                        <ng-container [ngTemplateOutlet]="budgetBreakdownContent" [ngTemplateOutletContext]="{ jcP: jcProject }" />
+                      }
+                      @case ('tile-budget-profitfade') {
+                        <ng-container [ngTemplateOutlet]="budgetProfitFadeContent" [ngTemplateOutletContext]="{ jcP: jcProject }" />
+                      }
+                      @case ('tile-budget-costsummary') {
+                        <ng-container [ngTemplateOutlet]="budgetCostSummaryContent" [ngTemplateOutletContext]="{ jcP: jcProject }" />
+                      }
+                    }
+                  </div>
+                }
+              }
+            } @else {
+              <div class="absolute transition-all duration-200" [style.top.px]="128" [style.left.px]="tileContentLeft()" [style.width.px]="tileContentWidth()">
+                <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
+              </div>
+            }
           </div>
         } @else {
         <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
@@ -1073,16 +1137,22 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               [activeItem]="activeFinancialsPage()"
               [collapsed]="sideSubNavCollapsed()"
               [canvasMode]="isCanvas()"
-              (itemSelect)="activeFinancialsPage.set($event)"
+              (itemSelect)="selectFinancialsSubPage($event)"
               (collapsedChange)="sideSubNavCollapsed.set($event)"
             />
           }
-          <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
+          <div class="flex-1 flex flex-col min-w-0 md:pl-4" [class]="subledgerCategory() ? 'gap-3' : 'gap-6'">
             <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
-            <div class="flex items-center justify-between">
-              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}</div>
-            </div>
-            <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
+            @if (!subledgerCategory()) {
+              <div class="flex items-center justify-between">
+                <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}</div>
+              </div>
+            }
+            @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
+              <ng-container [ngTemplateOutlet]="budgetDetailContent" />
+            } @else {
+              <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
+            }
           </div>
         </div>
         }
@@ -1465,7 +1535,11 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               <app-widget-frame icon="bar_graph" title="Budget" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1">
+                <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1 cursor-pointer"
+                  (click)="navigateToBudgetPage(); $event.stopPropagation()"
+                  (keydown.enter)="navigateToBudgetPage()"
+                  (mousedown)="$event.stopPropagation()"
+                  role="button" tabindex="0">
                   <div class="flex items-baseline justify-between">
                     <div class="text-3xl font-bold text-foreground">{{ budgetUsed() }}</div>
                     <div class="text-sm text-foreground-60">of {{ budgetTotal() }}</div>
@@ -2014,6 +2088,553 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
       placeholder="Ask about this project..."
       [showDisclaimer]="false"
     />
+
+    <ng-template #budgetDetailContent>
+      @if (projectJobCost(); as jcP) {
+        @if (subledgerCategory(); as slCat) {
+          <ng-container [ngTemplateOutlet]="subledgerHeaderKpis" />
+          <ng-container [ngTemplateOutlet]="subledgerLedgerRaw" />
+        } @else {
+        <ng-container [ngTemplateOutlet]="budgetKpisRaw" [ngTemplateOutletContext]="{ jcP: jcP }" />
+        <ng-container [ngTemplateOutlet]="budgetBreakdownRaw" [ngTemplateOutletContext]="{ jcP: jcP }" />
+        <ng-container [ngTemplateOutlet]="budgetProfitFadeRaw" [ngTemplateOutletContext]="{ jcP: jcP }" />
+        <ng-container [ngTemplateOutlet]="budgetCostSummaryRaw" [ngTemplateOutletContext]="{ jcP: jcP }" />
+        }
+      }
+    </ng-template>
+
+    <ng-template #subledgerHeaderKpis>
+      @if (subledgerCategory(); as slCat) {
+        <div class="flex items-center gap-3 mb-6" (mousedown)="$event.stopPropagation()">
+          <div
+            class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center cursor-pointer hover:bg-secondary transition-colors duration-150"
+            (click)="closeSubledger()"
+            role="button" tabindex="0"
+            aria-label="Back to Budget"
+          >
+            <i class="modus-icons text-base text-foreground" aria-hidden="true">arrow_left</i>
+          </div>
+          <div class="flex items-center gap-3 relative">
+            <div class="w-3 h-3 rounded-full {{ subledgerColorClass() }} flex-shrink-0"></div>
+            <div class="flex items-center gap-2 cursor-pointer select-none"
+              role="button" tabindex="0"
+              (click)="subledgerDropdownOpen.set(!subledgerDropdownOpen())"
+              (keydown.enter)="subledgerDropdownOpen.set(!subledgerDropdownOpen())">
+              <div class="text-2xl font-bold text-foreground">{{ slCat }} Subledger</div>
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">{{ subledgerDropdownOpen() ? 'expand_less' : 'expand_more' }}</i>
+            </div>
+            @if (subledgerDropdownOpen()) {
+              <div class="absolute top-full left-0 mt-2 bg-card border-default rounded-lg shadow-lg overflow-hidden z-50 min-w-[200px]">
+                @for (cat of subledgerCategoryOptions(); track cat) {
+                  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted transition-colors duration-150"
+                    [class.bg-primary-20]="cat === slCat"
+                    role="option" tabindex="0"
+                    [attr.aria-selected]="cat === slCat"
+                    (click)="switchSubledger(cat)"
+                    (keydown.enter)="switchSubledger(cat)">
+                    <div class="w-2.5 h-2.5 rounded-full {{ getCategoryColor(cat) }} flex-shrink-0"></div>
+                    <div class="text-sm font-medium text-foreground">{{ cat }}</div>
+                    @if (cat === slCat) {
+                      <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-2">
+            <div class="text-sm text-foreground-60">Total {{ slCat }} Cost</div>
+            <div class="text-3xl font-bold text-foreground">{{ formatJobCost(subledgerTotal()) }}</div>
+          </div>
+          <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-2">
+            <div class="text-sm text-foreground-60">Transactions</div>
+            <div class="text-3xl font-bold text-foreground">{{ subledgerTransactions().length }}</div>
+          </div>
+          <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-2">
+            <div class="text-sm text-foreground-60">Date Range</div>
+            <div class="text-lg font-bold text-foreground">{{ subledgerDateRange() }}</div>
+          </div>
+        </div>
+      }
+    </ng-template>
+
+    <ng-template #subledgerLedgerRaw>
+      @if (subledgerCategory(); as slCat) {
+        <div class="bg-card border-default rounded-lg overflow-hidden">
+          <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
+            <div class="text-base font-semibold text-foreground">Transaction Ledger</div>
+            <div class="text-xs text-foreground-40 ml-auto">{{ subledgerTransactions().length }} entries</div>
+          </div>
+          <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />
+        </div>
+      }
+    </ng-template>
+
+    <ng-template #subledgerLedgerTableRows>
+      <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+        <div role="columnheader">Date</div>
+        <div role="columnheader">Description</div>
+        <div role="columnheader">Vendor</div>
+        <div role="columnheader">Ref</div>
+        <div class="text-right" role="columnheader">Amount</div>
+        <div class="text-right" role="columnheader">Running</div>
+      </div>
+      <div role="table" aria-label="Subledger transactions">
+        @for (tx of subledgerTransactions(); track tx.id) {
+          <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+            <div class="text-sm text-foreground-60" role="cell">{{ tx.date }}</div>
+            <div class="text-sm text-foreground" role="cell">{{ tx.description }}</div>
+            <div class="text-sm text-foreground-60" role="cell">{{ tx.vendor }}</div>
+            <div class="text-xs text-foreground-40 font-mono" role="cell">{{ tx.reference }}</div>
+            <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(tx.amount) }}</div>
+            <div class="text-sm text-foreground-60 text-right" role="cell">{{ formatJobCost(tx.runningTotal) }}</div>
+          </div>
+        }
+        <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 bg-muted items-center" role="row">
+          <div class="text-sm font-bold text-foreground" role="cell"></div>
+          <div class="text-sm font-bold text-foreground" role="cell">Total</div>
+          <div role="cell"></div>
+          <div role="cell"></div>
+          <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(subledgerTotal()) }}</div>
+          <div role="cell"></div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #budgetKpisRaw let-jcP="jcP">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-primary-20 flex items-center justify-center">
+              <i class="modus-icons text-base text-primary" aria-hidden="true">payment_instant</i>
+            </div>
+            <div class="text-sm font-medium text-foreground-60">Total Budget</div>
+          </div>
+          <div class="text-3xl font-bold text-foreground">{{ jcP.budgetTotal }}</div>
+        </div>
+        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-warning-20 flex items-center justify-center">
+              <i class="modus-icons text-base text-warning" aria-hidden="true">bar_graph_line</i>
+            </div>
+            <div class="text-sm font-medium text-foreground-60">Total Spent</div>
+          </div>
+          <div class="text-3xl font-bold text-foreground">{{ jcP.budgetUsed }}</div>
+          <div class="text-xs {{ jcP.budgetPct >= 90 ? 'text-destructive' : jcP.budgetPct >= 75 ? 'text-warning' : 'text-success' }} font-medium">{{ jcP.budgetPct }}% of budget</div>
+        </div>
+        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-success-20 flex items-center justify-center">
+              <i class="modus-icons text-base text-success" aria-hidden="true">bar_graph</i>
+            </div>
+            <div class="text-sm font-medium text-foreground-60">Remaining</div>
+          </div>
+          <div class="text-3xl font-bold text-success">{{ formatJobCost(jcBudgetInfo().remaining) }}</div>
+          <div class="text-xs text-success font-medium">{{ 100 - jcP.budgetPct }}% remaining</div>
+        </div>
+        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+              <i class="modus-icons text-base text-foreground-60" aria-hidden="true">gauge</i>
+            </div>
+            <div class="text-sm font-medium text-foreground-60">Budget Health</div>
+          </div>
+          <div class="w-full mt-1">
+            <modus-progress [value]="jcP.budgetPct" [max]="100" [className]="budgetProgressClass(jcP.budgetPct)" />
+          </div>
+          <div class="text-xs text-foreground-60">{{ jcP.budgetUsed }} of {{ jcP.budgetTotal }} used</div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #budgetBreakdownRaw let-jcP="jcP">
+      <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
+        <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
+          <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph</i>
+          <div class="text-base font-semibold text-foreground">Cost Breakdown</div>
+        </div>
+        <div class="px-5 py-5 flex flex-col gap-5">
+          <div class="flex flex-col gap-2">
+            <div class="flex w-full h-5 rounded-full overflow-hidden">
+              @for (cat of jcDetailCategories(); track cat.label) {
+                <div class="{{ cat.colorClass }}" [style.width.%]="cat.pctOfSpend"></div>
+              }
+            </div>
+            <div class="flex items-center justify-between text-2xs text-foreground-40">
+              <div>0%</div>
+              <div>{{ formatJobCost(jcBudgetInfo().spent) }} total spend</div>
+              <div>100%</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            @for (cat of jcDetailCategories(); track cat.label) {
+              <div class="flex flex-col gap-3 p-4 bg-background border-default rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+                role="button" tabindex="0"
+                (click)="openSubledger(cat.label)"
+                (keydown.enter)="openSubledger(cat.label)"
+                (mousedown)="$event.stopPropagation()">
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                  <div class="text-xs text-foreground-60 uppercase tracking-wide font-semibold">{{ cat.label }}</div>
+                </div>
+                <div class="text-2xl font-bold text-foreground">{{ formatJobCost(cat.amount) }}</div>
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="text-foreground-60">% of spend</div>
+                    <div class="font-semibold text-foreground">{{ cat.pctOfSpend }}%</div>
+                  </div>
+                  <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfSpend"></div>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="text-foreground-60">% of budget</div>
+                    <div class="font-semibold text-foreground">{{ cat.pctOfBudget }}%</div>
+                  </div>
+                  <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfBudget"></div>
+                  </div>
+                </div>
+                <div class="border-top-default pt-2 mt-1">
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="text-foreground-40">Portfolio avg</div>
+                    <div class="text-foreground-60">{{ cat.portfolioAvgPct }}%</div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #budgetProfitFadeRaw let-jcP="jcP">
+      @if (jcProfitFadeData(); as pf) {
+      <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
+        <div class="flex items-center justify-between px-5 py-4 border-bottom-default">
+          <div class="flex items-center gap-2">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">trending_up</i>
+            <div class="text-base font-semibold text-foreground">Profit Fade / Gain</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="px-2.5 py-1 rounded-full text-xs font-semibold {{ pf.isFade ? 'bg-destructive-20 text-destructive' : 'bg-success-20 text-success' }}">
+              {{ pf.isFade ? 'Fade' : 'Gain' }} {{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%
+            </div>
+          </div>
+        </div>
+        <div class="px-5 py-5 flex flex-col gap-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
+              <div class="text-xs text-foreground-40 uppercase tracking-wide">Original Estimate</div>
+              <div class="text-2xl font-bold text-foreground">{{ pf.originalMargin }}%</div>
+              <div class="text-xs text-foreground-60">Bid margin</div>
+            </div>
+            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
+              <div class="text-xs text-foreground-40 uppercase tracking-wide">Current Projected</div>
+              <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.currentMargin }}%</div>
+              <div class="text-xs text-foreground-60">Based on costs to date</div>
+            </div>
+            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
+              <div class="text-xs text-foreground-40 uppercase tracking-wide">{{ pf.isFade ? 'Profit Fade' : 'Profit Gain' }}</div>
+              <div class="flex items-center gap-2">
+                <i class="modus-icons text-lg {{ pf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ pf.isFade ? 'trending_down' : 'trending_up' }}</i>
+                <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%</div>
+              </div>
+              <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
+            </div>
+          </div>
+          <div class="relative" style="padding-left:36px;padding-bottom:20px">
+            <svg class="w-full" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none" style="height:160px">
+              <defs>
+                <linearGradient [attr.id]="'pfGradProjRaw' + projectId()" x1="0" y1="0" x2="0" y2="1">
+                  @if (jcProfitFadeData()?.isFade) {
+                    <stop offset="0%" class="pf-gradient-fade-end" />
+                    <stop offset="100%" class="pf-gradient-fade-start" />
+                  } @else {
+                    <stop offset="0%" class="pf-gradient-gain-start" />
+                    <stop offset="100%" class="pf-gradient-gain-end" />
+                  }
+                </linearGradient>
+              </defs>
+              @for (line of jcPfGridLines(); track line.y) {
+                <line [attr.x1]="0" [attr.y1]="line.y" [attr.x2]="jcPfW" [attr.y2]="line.y" class="chart-grid-line" />
+              }
+              <line [attr.x1]="jcPfPadX" [attr.y1]="jcPfBaselineY()" [attr.x2]="jcPfW - jcPfPadX" [attr.y2]="jcPfBaselineY()" class="pf-baseline" />
+              <path [attr.d]="jcPfAreaPath()" [attr.fill]="'url(#pfGradProjRaw' + projectId() + ')'" />
+              <path [attr.d]="jcPfLinePath()" [class]="pf.isFade ? 'pf-line-fade' : 'pf-line-gain'" />
+              @for (pt of jcPfChartPoints(); track pt.x) {
+                <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5" [class]="pf.isFade ? 'pf-dot-fade' : 'pf-dot-gain'" />
+              }
+            </svg>
+            <div class="absolute bottom-0 left-9 right-0 text-2xs text-foreground-40" style="position:relative">
+              @for (lbl of jcPfMonthLabels(); track lbl.pct) {
+                <div class="absolute" [style.left.%]="lbl.pct" style="transform:translateX(-50%)">{{ lbl.text }}</div>
+              }
+            </div>
+            <div class="absolute top-0 left-0 bottom-5 flex flex-col justify-between text-2xs text-foreground-40">
+              @for (line of jcPfGridLines(); track line.y) {
+                <div>{{ line.label }}</div>
+              }
+            </div>
+            <div class="absolute text-2xs font-medium text-foreground-60" style="right:4px" [style.top.px]="jcPfBaselineY() - 14">
+              Est. {{ pf.originalMargin }}%
+            </div>
+          </div>
+          <div class="flex flex-col gap-3">
+            <div class="text-sm font-semibold text-foreground">Fade / Gain by Category</div>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+              @for (cf of jcPfCategoryFade(); track cf.label) {
+                <div class="flex flex-col gap-2 p-3 bg-background border-default rounded-lg">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-2.5 h-2.5 rounded-full {{ cf.colorClass }} flex-shrink-0"></div>
+                    <div class="text-xs text-foreground-60 font-medium">{{ cf.label }}</div>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <i class="modus-icons text-sm {{ cf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ cf.isFade ? 'trending_down' : 'trending_up' }}</i>
+                    <div class="text-sm font-bold {{ cf.isFade ? 'text-destructive' : 'text-success' }}">{{ cf.isFade ? '' : '+' }}{{ cf.fadeAmount }}%</div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </ng-template>
+
+    <ng-template #budgetCostSummaryRaw let-jcP="jcP">
+      <div class="bg-card border-default rounded-lg overflow-hidden">
+        <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
+          <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
+          <div class="text-base font-semibold text-foreground">Cost Summary</div>
+        </div>
+        <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+          <div role="columnheader">Category</div>
+          <div class="text-right" role="columnheader">Amount</div>
+          <div class="text-right" role="columnheader">% of Spend</div>
+          <div class="text-right" role="columnheader">% of Budget</div>
+        </div>
+        <div role="table" aria-label="Cost summary">
+          @for (cat of jcDetailCategories(); track cat.label) {
+            <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+              role="row" tabindex="0"
+              (click)="openSubledger(cat.label)"
+              (keydown.enter)="openSubledger(cat.label)"
+              (mousedown)="$event.stopPropagation()">
+              <div class="flex items-center gap-2" role="cell">
+                <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
+                <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
+              </div>
+              <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</div>
+              <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</div>
+              <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</div>
+            </div>
+          }
+          <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted items-center" role="row">
+            <div class="text-sm font-bold text-foreground" role="cell">Total</div>
+            <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
+            <div class="text-sm font-bold text-foreground text-right" role="cell">100%</div>
+            <div class="text-sm font-bold text-foreground text-right" role="cell">{{ jcP.budgetPct }}%</div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #budgetBreakdownContent let-jcP="jcP">
+      <app-widget-frame icon="bar_graph" title="Cost Breakdown"
+        [isSelected]="selectedWidgetId() === 'tile-budget-breakdown'" [isMobile]="isMobile()"
+        (headerMouseDown)="onBudgetTileMouseDown('tile-budget-breakdown', $event)"
+        (resizeStart)="onBudgetTileResizeStart('tile-budget-breakdown', $event)">
+        <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1">
+          <div class="flex flex-col gap-2">
+            <div class="flex w-full h-5 rounded-full overflow-hidden">
+              @for (cat of jcDetailCategories(); track cat.label) {
+                <div class="{{ cat.colorClass }}" [style.width.%]="cat.pctOfSpend"></div>
+              }
+            </div>
+            <div class="flex items-center justify-between text-2xs text-foreground-40">
+              <div>0%</div>
+              <div>{{ formatJobCost(jcBudgetInfo().spent) }} total spend</div>
+              <div>100%</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            @for (cat of jcDetailCategories(); track cat.label) {
+              <div class="flex flex-col gap-3 p-4 bg-background border-default rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+                role="button" tabindex="0"
+                (click)="openSubledger(cat.label)"
+                (keydown.enter)="openSubledger(cat.label)"
+                (mousedown)="$event.stopPropagation()">
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                  <div class="text-xs text-foreground-60 uppercase tracking-wide font-semibold">{{ cat.label }}</div>
+                </div>
+                <div class="text-2xl font-bold text-foreground">{{ formatJobCost(cat.amount) }}</div>
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="text-foreground-60">% of spend</div>
+                    <div class="font-semibold text-foreground">{{ cat.pctOfSpend }}%</div>
+                  </div>
+                  <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfSpend"></div>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="text-foreground-60">% of budget</div>
+                    <div class="font-semibold text-foreground">{{ cat.pctOfBudget }}%</div>
+                  </div>
+                  <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfBudget"></div>
+                  </div>
+                </div>
+                <div class="border-top-default pt-2 mt-1">
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="text-foreground-40">Portfolio avg</div>
+                    <div class="text-foreground-60">{{ cat.portfolioAvgPct }}%</div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </app-widget-frame>
+    </ng-template>
+
+    <ng-template #budgetProfitFadeContent let-jcP="jcP">
+      @if (jcProfitFadeData(); as pf) {
+      <app-widget-frame icon="trending_up" title="Profit Fade / Gain"
+        [isSelected]="selectedWidgetId() === 'tile-budget-profitfade'" [isMobile]="isMobile()"
+        (headerMouseDown)="onBudgetTileMouseDown('tile-budget-profitfade', $event)"
+        (resizeStart)="onBudgetTileResizeStart('tile-budget-profitfade', $event)">
+        <div class="px-2.5 py-1 rounded-full text-xs font-semibold {{ pf.isFade ? 'bg-destructive-20 text-destructive' : 'bg-success-20 text-success' }}" headerMeta>
+          {{ pf.isFade ? 'Fade' : 'Gain' }} {{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%
+        </div>
+        <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
+              <div class="text-xs text-foreground-40 uppercase tracking-wide">Original Estimate</div>
+              <div class="text-2xl font-bold text-foreground">{{ pf.originalMargin }}%</div>
+              <div class="text-xs text-foreground-60">Bid margin</div>
+            </div>
+            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
+              <div class="text-xs text-foreground-40 uppercase tracking-wide">Current Projected</div>
+              <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.currentMargin }}%</div>
+              <div class="text-xs text-foreground-60">Based on costs to date</div>
+            </div>
+            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
+              <div class="text-xs text-foreground-40 uppercase tracking-wide">{{ pf.isFade ? 'Profit Fade' : 'Profit Gain' }}</div>
+              <div class="flex items-center gap-2">
+                <i class="modus-icons text-lg {{ pf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ pf.isFade ? 'trending_down' : 'trending_up' }}</i>
+                <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%</div>
+              </div>
+              <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
+            </div>
+          </div>
+          <div class="relative" style="padding-left:36px;padding-bottom:20px">
+            <svg class="w-full" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none" style="height:160px">
+              <defs>
+                <linearGradient [attr.id]="'pfGradProj' + projectId()" x1="0" y1="0" x2="0" y2="1">
+                  @if (jcProfitFadeData()?.isFade) {
+                    <stop offset="0%" class="pf-gradient-fade-end" />
+                    <stop offset="100%" class="pf-gradient-fade-start" />
+                  } @else {
+                    <stop offset="0%" class="pf-gradient-gain-start" />
+                    <stop offset="100%" class="pf-gradient-gain-end" />
+                  }
+                </linearGradient>
+              </defs>
+              @for (line of jcPfGridLines(); track line.y) {
+                <line [attr.x1]="0" [attr.y1]="line.y" [attr.x2]="jcPfW" [attr.y2]="line.y" class="chart-grid-line" />
+              }
+              <line [attr.x1]="jcPfPadX" [attr.y1]="jcPfBaselineY()" [attr.x2]="jcPfW - jcPfPadX" [attr.y2]="jcPfBaselineY()" class="pf-baseline" />
+              <path [attr.d]="jcPfAreaPath()" [attr.fill]="'url(#pfGradProj' + projectId() + ')'" />
+              <path [attr.d]="jcPfLinePath()" [class]="pf.isFade ? 'pf-line-fade' : 'pf-line-gain'" />
+              @for (pt of jcPfChartPoints(); track pt.x) {
+                <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5" [class]="pf.isFade ? 'pf-dot-fade' : 'pf-dot-gain'" />
+              }
+            </svg>
+            <div class="absolute bottom-0 left-9 right-0 text-2xs text-foreground-40" style="position:relative">
+              @for (lbl of jcPfMonthLabels(); track lbl.pct) {
+                <div class="absolute" [style.left.%]="lbl.pct" style="transform:translateX(-50%)">{{ lbl.text }}</div>
+              }
+            </div>
+            <div class="absolute top-0 left-0 bottom-5 flex flex-col justify-between text-2xs text-foreground-40">
+              @for (line of jcPfGridLines(); track line.y) {
+                <div>{{ line.label }}</div>
+              }
+            </div>
+            <div class="absolute text-2xs font-medium text-foreground-60" style="right:4px" [style.top.px]="jcPfBaselineY() - 14">
+              Est. {{ pf.originalMargin }}%
+            </div>
+          </div>
+          <div class="flex flex-col gap-3">
+            <div class="text-sm font-semibold text-foreground">Fade / Gain by Category</div>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+              @for (cf of jcPfCategoryFade(); track cf.label) {
+                <div class="flex flex-col gap-2 p-3 bg-background border-default rounded-lg">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-2.5 h-2.5 rounded-full {{ cf.colorClass }} flex-shrink-0"></div>
+                    <div class="text-xs text-foreground-60 font-medium">{{ cf.label }}</div>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <i class="modus-icons text-sm {{ cf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ cf.isFade ? 'trending_down' : 'trending_up' }}</i>
+                    <div class="text-sm font-bold {{ cf.isFade ? 'text-destructive' : 'text-success' }}">{{ cf.isFade ? '' : '+' }}{{ cf.fadeAmount }}%</div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </app-widget-frame>
+      }
+    </ng-template>
+
+    <ng-template #budgetCostSummaryContent let-jcP="jcP">
+      <app-widget-frame icon="list" title="Cost Summary"
+        [isSelected]="selectedWidgetId() === 'tile-budget-costsummary'" [isMobile]="isMobile()"
+        (headerMouseDown)="onBudgetTileMouseDown('tile-budget-costsummary', $event)"
+        (resizeStart)="onBudgetTileResizeStart('tile-budget-costsummary', $event)">
+        <div class="overflow-y-auto flex-1">
+          <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+            <div role="columnheader">Category</div>
+            <div class="text-right" role="columnheader">Amount</div>
+            <div class="text-right" role="columnheader">% of Spend</div>
+            <div class="text-right" role="columnheader">% of Budget</div>
+          </div>
+          <div role="table" aria-label="Cost summary">
+            @for (cat of jcDetailCategories(); track cat.label) {
+              <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                role="row" tabindex="0"
+                (click)="openSubledger(cat.label)"
+                (keydown.enter)="openSubledger(cat.label)"
+                (mousedown)="$event.stopPropagation()">
+                <div class="flex items-center gap-2" role="cell">
+                  <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                  <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
+                  <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
+                </div>
+                <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</div>
+                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</div>
+                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</div>
+              </div>
+            }
+            <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted items-center" role="row">
+              <div class="text-sm font-bold text-foreground" role="cell">Total</div>
+              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
+              <div class="text-sm font-bold text-foreground text-right" role="cell">100%</div>
+              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ jcP.budgetPct }}%</div>
+            </div>
+          </div>
+        </div>
+      </app-widget-frame>
+    </ng-template>
   `,
 })
 export class ProjectDashboardComponent implements OnInit, AfterViewInit {
@@ -2175,6 +2796,8 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     return nav !== 'dashboard';
   });
 
+  readonly budgetTileIds: string[] = ['tile-budget-breakdown', 'tile-budget-profitfade', 'tile-budget-costsummary'];
+
   readonly subpageTileIds = computed<string[]>(() => {
     const nav = this.activeNavItem();
     if (nav === 'drawings') return this.drawingTiles().map(d => `tile-drawing-${d.id}`);
@@ -2182,6 +2805,13 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       const sub = this.activeRecordsPage();
       if (sub === 'rfis') return this.projectRfis().map(r => `tile-rfi-${r.id}`);
       if (sub === 'submittals') return this.projectSubmittals().map(s => `tile-sub-${s.id}`);
+    }
+    if (nav === 'financials') {
+      const sub = this.activeFinancialsPage();
+      if (sub === 'budget' && this.projectJobCost()) {
+        if (this.subledgerCategory()) return ['tile-subledger-ledger'];
+        return this.budgetTileIds;
+      }
     }
     return [];
   });
@@ -2306,6 +2936,35 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       this.tileCanvas.config.offsetTop = viewMode === 'list'
         ? ProjectDashboardComponent.TILE_CONTENT_TOP + Math.min(40 + tileIds.length * 45, 600) + this.tileCanvas.config.gap
         : ProjectDashboardComponent.TILE_CONTENT_TOP;
+
+      const isSubledger = nav === 'financials' && this.activeFinancialsPage() === 'budget' && !!this.subledgerCategory();
+      const isBudget = nav === 'financials' && this.activeFinancialsPage() === 'budget' && !this.subledgerCategory();
+
+      if (isSubledger) {
+        const headerTop = ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT + ProjectDashboardComponent.TILE_CHROME_GAP;
+        const headerH = 180;
+        lockedRects['tc-subledger-header'] = { top: headerTop, left: contentLeft, width: contentWidth, height: headerH };
+        this.tileCanvas.config.offsetTop = headerTop + headerH + ProjectDashboardComponent.TILE_CHROME_GAP;
+        this.tileCanvas.config.tileSizeOverrides = {
+          'tile-subledger-ledger': { width: contentWidth, height: 600, columns: 4 },
+        };
+        this.tileCanvas.config.heightOnlyResizeIds = new Set(['tile-subledger-ledger']);
+      } else if (isBudget) {
+        const kpiTop = ProjectDashboardComponent.TILE_CONTENT_TOP;
+        const kpiH = 150;
+        lockedRects['tile-budget-kpis'] = { top: kpiTop, left: contentLeft, width: contentWidth, height: kpiH };
+        this.tileCanvas.config.offsetTop = kpiTop + kpiH + 16;
+        const halfW = Math.floor((contentWidth - 16) / 2);
+        this.tileCanvas.config.tileSizeOverrides = {
+          'tile-budget-breakdown':   { width: contentWidth, height: 500, columns: 4 },
+          'tile-budget-profitfade':  { width: halfW, height: 600, columns: 2 },
+          'tile-budget-costsummary': { width: halfW, height: 600, columns: 2 },
+        };
+      } else {
+        this.tileCanvas.config.tileSizeOverrides = undefined;
+        this.tileCanvas.config.heightOnlyResizeIds = undefined;
+      }
+
       this.tileCanvas.setTiles(tileIds, lockedRects);
     });
   });
@@ -2334,6 +2993,10 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
         suggestions: [`What is the status of ${s.number}?`, `Who is assigned to ${s.number}?`, `When is ${s.number} due?`],
       };
     }
+
+    regs['tile-budget-breakdown'] = { name: 'Cost Breakdown', suggestions: ['Which cost category is largest?', 'Show cost distribution'] };
+    regs['tile-budget-profitfade'] = { name: 'Profit Fade / Gain', suggestions: ['Is the project on budget?', 'Show profit trend'] };
+    regs['tile-budget-costsummary'] = { name: 'Cost Summary', suggestions: ['Summarize costs by category', 'Compare spend to budget'] };
 
     untracked(() => this.widgetFocusService.registerWidgets(regs));
   });
@@ -2397,6 +3060,230 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly activeFinancialsPageDescription = computed(() =>
     FINANCIALS_PAGE_DESCRIPTIONS[this.activeFinancialsPage()] ?? ''
   );
+
+  readonly budgetProgressClass = budgetProgressClass;
+
+  readonly projectJobCost = computed<ProjectJobCost | null>(() => {
+    const costs = getProjectJobCosts();
+    return costs.find(c => c.projectId === this.projectId()) ?? null;
+  });
+
+  readonly jcDetailCategories = computed(() => {
+    const p = this.projectJobCost();
+    if (!p) return [];
+    const totalSpend = JOB_COST_CATEGORIES.reduce((sum, cat) => sum + p.costs[cat], 0);
+    const summary = getJobCostSummary();
+    return JOB_COST_CATEGORIES.map(cat => {
+      const amount = p.costs[cat];
+      const pctOfSpend = totalSpend > 0 ? Math.round((amount / totalSpend) * 100) : 0;
+      const budgetTotal = parseFloat(p.budgetTotal.replace(/[^0-9.]/g, '')) * (p.budgetTotal.includes('M') ? 1_000_000 : p.budgetTotal.includes('K') ? 1_000 : 1);
+      const pctOfBudget = budgetTotal > 0 ? Math.round((amount / budgetTotal) * 100) : 0;
+      const portfolioAvg = summary.categories.find(c => c.label === cat)?.pct ?? 0;
+      return {
+        label: cat,
+        amount,
+        pctOfSpend,
+        pctOfBudget,
+        portfolioAvgPct: portfolioAvg,
+        colorClass: CATEGORY_COLORS[cat],
+      };
+    });
+  });
+
+  readonly jcBudgetInfo = computed(() => {
+    const p = this.projectJobCost();
+    if (!p) return { total: 0, spent: 0, remaining: 0, pct: 0 };
+    const totalSpend = JOB_COST_CATEGORIES.reduce((sum, cat) => sum + p.costs[cat], 0);
+    const budgetTotal = parseFloat(p.budgetTotal.replace(/[^0-9.]/g, '')) * (p.budgetTotal.includes('M') ? 1_000_000 : p.budgetTotal.includes('K') ? 1_000 : 1);
+    return { total: budgetTotal, spent: totalSpend, remaining: budgetTotal - totalSpend, pct: p.budgetPct };
+  });
+
+  readonly jcPfW = 500;
+  readonly jcPfH = 160;
+  readonly jcPfPadX = 10;
+  readonly jcPfPadY = 10;
+
+  readonly jcProfitFadeData = computed(() => {
+    const p = this.projectJobCost();
+    if (!p) return null;
+    const seed = p.projectId * 7 + 3;
+    const rng = (i: number) => {
+      const x = Math.sin(seed * 9301 + i * 4973) * 49297;
+      return x - Math.floor(x);
+    };
+    const originalMargin = 15 + (seed % 8);
+    const budgetPressure = p.budgetPct > 80 ? -1 : p.budgetPct > 65 ? -0.3 : 0.5;
+    const monthCount = Math.min(12, Math.max(6, Math.floor(p.budgetPct / 10) + 2));
+    const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+    const points: { month: string; margin: number }[] = [];
+    let margin = originalMargin;
+    for (let i = 0; i < monthCount; i++) {
+      const jitter = (rng(i) - 0.45) * 2.5;
+      const drift = budgetPressure * 0.6;
+      margin = margin + drift + jitter;
+      margin = Math.max(0, Math.min(35, margin));
+      points.push({ month: months[i % months.length], margin: Math.round(margin * 10) / 10 });
+    }
+    const currentMargin = points[points.length - 1].margin;
+    const fadeGain = Math.round((currentMargin - originalMargin) * 10) / 10;
+    return { originalMargin, currentMargin, fadeGain, isFade: fadeGain < 0, points };
+  });
+
+  readonly jcPfChartPoints = computed(() => {
+    const d = this.jcProfitFadeData();
+    if (!d || d.points.length === 0) return [];
+    const all = [d.originalMargin, ...d.points.map(p => p.margin)];
+    const maxV = Math.max(...all) + 2;
+    const minV = Math.min(...all) - 2;
+    const range = maxV - minV || 1;
+    const w = this.jcPfW - this.jcPfPadX * 2;
+    const h = this.jcPfH - this.jcPfPadY * 2;
+    return d.points.map((p, i) => ({
+      x: this.jcPfPadX + (d.points.length > 1 ? (i / (d.points.length - 1)) * w : w / 2),
+      y: this.jcPfPadY + h - ((p.margin - minV) / range) * h,
+    }));
+  });
+
+  readonly jcPfBaselineY = computed(() => {
+    const d = this.jcProfitFadeData();
+    if (!d || d.points.length === 0) return this.jcPfH / 2;
+    const all = [d.originalMargin, ...d.points.map(p => p.margin)];
+    const maxV = Math.max(...all) + 2;
+    const minV = Math.min(...all) - 2;
+    const range = maxV - minV || 1;
+    const h = this.jcPfH - this.jcPfPadY * 2;
+    return this.jcPfPadY + h - ((d.originalMargin - minV) / range) * h;
+  });
+
+  readonly jcPfLinePath = computed(() => {
+    const pts = this.jcPfChartPoints();
+    if (pts.length === 0) return '';
+    return pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  });
+
+  readonly jcPfAreaPath = computed(() => {
+    const pts = this.jcPfChartPoints();
+    const baseY = this.jcPfBaselineY();
+    if (pts.length === 0) return '';
+    const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+    return `${line} L${pts[pts.length - 1].x},${baseY} L${pts[0].x},${baseY} Z`;
+  });
+
+  readonly jcPfGridLines = computed(() => {
+    const d = this.jcProfitFadeData();
+    if (!d || d.points.length === 0) return [];
+    const all = [d.originalMargin, ...d.points.map(p => p.margin)];
+    const maxV = Math.max(...all) + 2;
+    const minV = Math.min(...all) - 2;
+    const range = maxV - minV || 1;
+    const h = this.jcPfH - this.jcPfPadY * 2;
+    const steps = 4;
+    const lines: { y: number; label: string }[] = [];
+    for (let i = 0; i <= steps; i++) {
+      const val = minV + (range * (steps - i)) / steps;
+      lines.push({ y: this.jcPfPadY + (i / steps) * h, label: `${val.toFixed(0)}%` });
+    }
+    return lines;
+  });
+
+  readonly jcPfMonthLabels = computed(() => {
+    const d = this.jcProfitFadeData();
+    if (!d || d.points.length === 0) return [];
+    return d.points.map((p, i) => ({
+      text: p.month,
+      pct: d.points.length > 1 ? (i / (d.points.length - 1)) * 100 : 50,
+    }));
+  });
+
+  readonly jcPfCategoryFade = computed(() => {
+    const p = this.projectJobCost();
+    const d = this.jcProfitFadeData();
+    if (!p || !d) return [];
+    const seed = p.projectId * 13 + 5;
+    const rng = (i: number) => {
+      const x = Math.sin(seed * 7919 + i * 6271) * 39979;
+      return x - Math.floor(x);
+    };
+    const totalFade = d.fadeGain;
+    const weights = JOB_COST_CATEGORIES.map((_, i) => 0.5 + rng(i));
+    const wSum = weights.reduce((a, b) => a + b, 0);
+    return JOB_COST_CATEGORIES.map((cat, i) => {
+      const share = (weights[i] / wSum) * totalFade;
+      return {
+        label: cat,
+        colorClass: CATEGORY_COLORS[cat],
+        fadeAmount: Math.round(share * 10) / 10,
+        isFade: share < 0,
+      };
+    });
+  });
+
+  formatJobCost(value: number): string {
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
+    return `$${value}`;
+  }
+
+  readonly subledgerCategory = signal<JobCostCategory | null>(null);
+
+  readonly subledgerColorClass = computed(() => {
+    const cat = this.subledgerCategory();
+    return cat ? CATEGORY_COLORS[cat] : '';
+  });
+
+  readonly subledgerTransactions = computed(() => {
+    const cat = this.subledgerCategory();
+    if (!cat) return [];
+    return getSubledger(this.projectId(), cat);
+  });
+
+  readonly subledgerTotal = computed(() => {
+    const txs = this.subledgerTransactions();
+    return txs.length > 0 ? txs[txs.length - 1].runningTotal : 0;
+  });
+
+  readonly subledgerDateRange = computed(() => {
+    const txs = this.subledgerTransactions();
+    if (txs.length === 0) return '';
+    return `${txs[0].date} to ${txs[txs.length - 1].date}`;
+  });
+
+  readonly subledgerDropdownOpen = signal(false);
+  readonly subledgerCategoryOptions = computed(() => [...JOB_COST_CATEGORIES]);
+
+  getCategoryColor(cat: string): string {
+    return CATEGORY_COLORS[cat as JobCostCategory] ?? '';
+  }
+
+  onBudgetTileMouseDown(id: string, event: MouseEvent): void {
+    this.widgetFocusService.selectWidget(id);
+    this.tileCanvas.onTileMouseDown(id, event);
+  }
+
+  onBudgetTileResizeStart(id: string, event: MouseEvent): void {
+    this.tileCanvas.onTileResizeMouseDown(id, event);
+  }
+
+  onSubledgerLedgerResizeStart(event: MouseEvent): void {
+    this.tileCanvas.onTileResizeMouseDown('tile-subledger-ledger', event);
+  }
+
+  closeSubledger(): void {
+    this.subledgerCategory.set(null);
+    this.pushPageUrl();
+  }
+
+  openSubledger(category: string): void {
+    this.subledgerCategory.set(category as JobCostCategory);
+    this.subledgerDropdownOpen.set(false);
+    this.pushPageUrl();
+  }
+
+  switchSubledger(category: string): void {
+    this.subledgerCategory.set(category as JobCostCategory);
+    this.subledgerDropdownOpen.set(false);
+    this.pushPageUrl();
+  }
 
   readonly drawingTiles = computed(() =>
     ALL_DRAWINGS_BY_PROJECT[this.projectId()] ?? ALL_DRAWINGS_BY_PROJECT[1]
@@ -2777,16 +3664,30 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   private replaceUrlWithoutDetail(): void {
+    const url = this.buildPageUrl();
+    window.history.replaceState({}, '', url);
+  }
+
+  private buildPageUrl(): string {
     const nav = this.activeNavItem();
     if (nav && nav !== 'dashboard') {
       const params = new URLSearchParams();
       params.set('page', nav);
       if (nav === 'records') params.set('subpage', this.activeRecordsPage());
-      else if (nav === 'financials') params.set('subpage', this.activeFinancialsPage());
-      window.history.replaceState({}, '', window.location.pathname + '?' + params.toString());
-    } else {
-      window.history.replaceState({}, '', window.location.pathname);
+      else if (nav === 'financials') {
+        params.set('subpage', this.activeFinancialsPage());
+        const slCat = this.subledgerCategory();
+        if (slCat && this.activeFinancialsPage() === 'budget') {
+          params.set('subledger', slCat);
+        }
+      }
+      return window.location.pathname + '?' + params.toString();
     }
+    return window.location.pathname;
+  }
+
+  private pushPageUrl(): void {
+    window.history.pushState({}, '', this.buildPageUrl());
   }
 
   readonly detailSourceLabel = signal('');
@@ -2864,8 +3765,6 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
         const drawing = this.drawingTiles().find(d => d.id === id);
         if (drawing) this.detailView.set({ type: 'drawing', item: drawing });
       }
-    } else if (page) {
-      window.history.replaceState({}, '', window.location.pathname);
     }
 
     this.popStateHandler = () => this.onPopState();
@@ -2912,6 +3811,15 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
         const validSubPages = this.financialsSubNavItems.map(i => i.value);
         if (validSubPages.includes(subpage)) this.activeFinancialsPage.set(subpage);
       }
+    }
+    const subledger = params.get('subledger');
+    if (subledger && page === 'financials' && subpage === 'budget') {
+      const validCategories = JOB_COST_CATEGORIES as readonly string[];
+      if (validCategories.includes(subledger)) {
+        this.subledgerCategory.set(subledger as JobCostCategory);
+      }
+    } else {
+      this.subledgerCategory.set(null);
     }
   }
 
@@ -3042,18 +3950,33 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
 
   selectNavItem(value: string): void {
     this.detailView.set(null);
+    this.subledgerCategory.set(null);
     this.activeNavItem.set(value);
     this.navExpanded.set(false);
+    this.pushPageUrl();
+  }
+
+  navigateToBudgetPage(): void {
+    this.detailView.set(null);
+    this.subledgerCategory.set(null);
+    this.activeNavItem.set('financials');
+    this.activeFinancialsPage.set('budget');
+    this.navExpanded.set(false);
+    this.pushPageUrl();
   }
 
   selectRecordsSubPage(value: string): void {
     this.activeRecordsPage.set(value);
+    this.subledgerCategory.set(null);
     this.navExpanded.set(false);
+    this.pushPageUrl();
   }
 
   selectFinancialsSubPage(value: string): void {
     this.activeFinancialsPage.set(value);
+    this.subledgerCategory.set(null);
     this.navExpanded.set(false);
+    this.pushPageUrl();
   }
 
   onDetailSideSubnavSelect(value: string): void {
@@ -3182,6 +4105,13 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     }
     if (this.tileHeaderStatusOpen() && !target.closest('[role="listbox"]') && !target.closest('[role="option"]')) {
       this.tileHeaderStatusOpen.set(null);
+    }
+    if (this.subledgerDropdownOpen() && !target.closest('[role="option"]') && !target.closest('[aria-label="Back to Budget"]')?.parentElement?.querySelector('[role="option"]')) {
+      const clickedDropdownTrigger = target.closest('.select-none');
+      const clickedDropdownOption = target.closest('[role="option"]');
+      if (!clickedDropdownTrigger && !clickedDropdownOption) {
+        this.subledgerDropdownOpen.set(false);
+      }
     }
   }
 

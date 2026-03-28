@@ -635,3 +635,88 @@ export function getJobCostSummary(): { categories: JobCostCategorySummary[]; gra
   }));
   return { categories, grandTotal };
 }
+
+export interface SubledgerTransaction {
+  id: string;
+  date: string;
+  description: string;
+  vendor: string;
+  reference: string;
+  amount: number;
+  runningTotal: number;
+}
+
+const VENDOR_POOLS: Record<JobCostCategory, string[]> = {
+  Labor: ['Apex Staffing', 'BuildForce LLC', 'ProCrew Solutions', 'Iron Workers Local 63', 'Master Electricians Inc', 'Allied Plumbing Co', 'Summit Labor Group', 'Pacific Workforce'],
+  Materials: ['Trimble Supply Co', 'BlueScope Steel', 'Summit Concrete', 'Pacific Lumber', 'Atlas Hardware', 'BuildRight Materials', 'CoreSteel Distributors', 'Cascade Rebar'],
+  Equipment: ['United Rentals', 'Sunbelt Rentals', 'Hertz Equipment', 'Caterpillar Dealer', 'Komatsu West', 'Crane Solutions Inc', 'Heavy Lift Co', 'ProEquip Rentals'],
+  Subcontractors: ['Meridian Electric', 'Cascade Plumbing', 'Summit HVAC', 'Pacific Drywall', 'Precision Glazing', 'Atlas Roofing Co', 'Foundation Specialists', 'Metro Paving'],
+  Overhead: ['Trimble Insurance', 'City Permits Office', 'SafeWork Inspections', 'Project Controls LLC', 'EnviroTest Labs', 'Legal & Compliance Co', 'Bond Surety Inc', 'Site Security Corp'],
+};
+
+const DESC_POOLS: Record<JobCostCategory, string[]> = {
+  Labor: ['Weekly payroll', 'Overtime hours', 'Foreman wages', 'Apprentice hours', 'Safety training labor', 'Crew mobilization', 'Night shift premium', 'Holiday pay differential'],
+  Materials: ['Structural steel delivery', 'Concrete pour batch', 'Rebar shipment', 'Lumber package', 'Electrical conduit', 'Plumbing fixtures', 'Insulation materials', 'Drywall sheets'],
+  Equipment: ['Crane rental - monthly', 'Excavator rental', 'Concrete pump rental', 'Scaffolding lease', 'Generator rental', 'Forklift rental', 'Compressor rental', 'Aerial lift rental'],
+  Subcontractors: ['Progress payment', 'Milestone completion', 'Change order work', 'Punch list items', 'Specialty installation', 'System commissioning', 'Final inspection prep', 'Warranty work'],
+  Overhead: ['Monthly insurance premium', 'Permit fees', 'Safety inspection', 'Project management fee', 'Environmental testing', 'Legal review', 'Bond premium', 'Site security service'],
+};
+
+function buildSubledger(projectId: number, category: JobCostCategory, totalAmount: number): SubledgerTransaction[] {
+  const seed = projectId * 31 + JOB_COST_CATEGORIES.indexOf(category) * 17;
+  const rng = (i: number) => {
+    const x = Math.sin(seed * 9301 + i * 4973) * 49297;
+    return x - Math.floor(x);
+  };
+
+  const txCount = 12 + Math.floor(rng(0) * 18);
+  const vendors = VENDOR_POOLS[category];
+  const descs = DESC_POOLS[category];
+
+  const rawWeights = Array.from({ length: txCount }, (_, i) => 0.3 + rng(i + 100) * 1.4);
+  const wSum = rawWeights.reduce((a, b) => a + b, 0);
+
+  const startDate = new Date(2025, 2 + Math.floor(rng(200) * 3), 1 + Math.floor(rng(201) * 15));
+  const endDate = new Date(2026, 1 + Math.floor(rng(202) * 2), 1 + Math.floor(rng(203) * 25));
+  const span = endDate.getTime() - startDate.getTime();
+
+  const txs: SubledgerTransaction[] = [];
+  let running = 0;
+  let remaining = totalAmount;
+
+  for (let i = 0; i < txCount; i++) {
+    const isLast = i === txCount - 1;
+    const raw = isLast ? remaining : Math.round((rawWeights[i] / wSum) * totalAmount);
+    const amount = Math.min(raw, remaining);
+    remaining -= amount;
+    running += amount;
+
+    const t = (i + rng(i + 300) * 0.5) / txCount;
+    const date = new Date(startDate.getTime() + t * span);
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+    txs.push({
+      id: `${projectId}-${category}-${i}`,
+      date: dateStr,
+      description: descs[Math.floor(rng(i + 400) * descs.length)],
+      vendor: vendors[Math.floor(rng(i + 500) * vendors.length)],
+      reference: `${category.substring(0, 3).toUpperCase()}-${String(projectId).padStart(2, '0')}-${String(i + 1).padStart(3, '0')}`,
+      amount,
+      runningTotal: running,
+    });
+  }
+
+  return txs;
+}
+
+const _subledgerCache: Record<string, SubledgerTransaction[]> = {};
+export function getSubledger(projectId: number, category: JobCostCategory): SubledgerTransaction[] {
+  const key = `${projectId}:${category}`;
+  if (!_subledgerCache[key]) {
+    const costs = getProjectJobCosts();
+    const project = costs.find(p => p.projectId === projectId);
+    const total = project ? project.costs[category] : 0;
+    _subledgerCache[key] = buildSubledger(projectId, category, total);
+  }
+  return _subledgerCache[key];
+}
