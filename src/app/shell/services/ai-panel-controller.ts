@@ -1,4 +1,5 @@
 import { Injector, Signal, computed, effect, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AiService, type AiChatMessage, type AiContext, type LocalResponder } from '../../services/ai.service';
 import { WidgetFocusService } from './widget-focus.service';
@@ -16,6 +17,7 @@ export type AiContextBuilder = () => AiContext;
 export interface AiPanelConfig {
   widgetFocusService: WidgetFocusService;
   aiService: AiService;
+  router: Router;
   defaultSuggestions: string[] | Signal<string[]>;
   contextBuilder: AiContextBuilder;
   localResponder?: () => LocalResponder | undefined;
@@ -39,6 +41,7 @@ export class AiPanelController {
 
   private readonly widgetFocusService: WidgetFocusService;
   private readonly aiService: AiService;
+  private readonly router: Router;
   private readonly contextBuilder: AiContextBuilder;
   private readonly localResponderFn?: () => LocalResponder | undefined;
   private readonly actionsProviderFn?: () => AgentAction[];
@@ -46,6 +49,7 @@ export class AiPanelController {
   constructor(config: AiPanelConfig) {
     this.widgetFocusService = config.widgetFocusService;
     this.aiService = config.aiService;
+    this.router = config.router;
     this.contextBuilder = config.contextBuilder;
     this.localResponderFn = config.localResponder;
     this.actionsProviderFn = config.actionsProvider;
@@ -175,6 +179,18 @@ export class AiPanelController {
       { id: ++this.messageCounter, role: 'assistant', text: result },
     ]);
     this.saveConversation();
+
+    if (action.route) {
+      const [path, query] = action.route.split('?');
+      const queryParams: Record<string, string> = {};
+      if (query) {
+        for (const pair of query.split('&')) {
+          const [k, v] = pair.split('=');
+          if (k) queryParams[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
+        }
+      }
+      this.router.navigate([path || '/'], { queryParams });
+    }
   }
 
   clearConversation(): void {

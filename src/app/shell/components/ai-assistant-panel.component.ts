@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input } from '@angular/core';
+import { Router } from '@angular/router';
+import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { AiIconComponent } from './ai-icon.component';
 import { AiPanelController } from '../services/ai-panel-controller';
@@ -114,8 +116,9 @@ import type { AgentAction } from '../../data/widget-agents';
                   <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <ai-icon variant="solid-colored" size="xs" />
                   </div>
-                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed whitespace-pre-wrap"
+                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed whitespace-pre-wrap ai-msg-body"
                     [innerHTML]="renderMessage(msg.text)"
+                    (click)="onMessageClick($event)"
                   ></div>
                 </div>
               }
@@ -192,6 +195,9 @@ import type { AgentAction } from '../../data/widget-agents';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AiAssistantPanelComponent {
+  private readonly router = inject(Router);
+  private readonly sanitizer = inject(DomSanitizer);
+
   readonly controller = input.required<AiPanelController>();
   readonly welcomeText = input('Ask me anything about this page.');
   readonly placeholder = input('Type a message...');
@@ -201,7 +207,33 @@ export class AiAssistantPanelComponent {
     this.controller().executeAction(action);
   }
 
-  renderMessage(text: string): string {
+  onMessageClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (!anchor) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const href = anchor.getAttribute('href');
+    if (!href) return;
+
+    if (href.startsWith('/') || href.startsWith('?')) {
+      const [path, query] = href.split('?');
+      const queryParams: Record<string, string> = {};
+      if (query) {
+        for (const pair of query.split('&')) {
+          const [k, v] = pair.split('=');
+          if (k) queryParams[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
+        }
+      }
+      this.router.navigate([path || '/'], { queryParams });
+    } else {
+      window.open(href, '_blank', 'noopener');
+    }
+  }
+
+  renderMessage(text: string): SafeHtml {
     if (!text) return '';
     let escaped = text
       .replace(/&/g, '&amp;')
@@ -215,9 +247,9 @@ export class AiAssistantPanelComponent {
 
     escaped = escaped.replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" class="text-primary underline hover:text-primary-80 cursor-pointer">$1</a>'
+      '<a href="$2" class="text-primary underline hover:text-primary-80 cursor-pointer" data-ai-link>$1</a>'
     );
 
-    return escaped;
+    return this.sanitizer.bypassSecurityTrustHtml(escaped);
   }
 }

@@ -514,6 +514,7 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly ai = new AiPanelController({
     widgetFocusService: this.widgetFocusService,
     aiService: this.aiService,
+    router: this.router,
     defaultSuggestions: computed(() => {
       const page = this.getPageName();
       const widgetId = this.widgetFocusService.selectedWidgetId();
