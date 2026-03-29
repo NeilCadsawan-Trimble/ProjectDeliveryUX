@@ -12,6 +12,10 @@ const WIDGET_FRAME_SRC = readFileSync(
   resolve(__dir, '../../src/app/pages/project-dashboard/components/widget-frame.component.ts'),
   'utf-8',
 );
+const TILE_CANVAS_SRC = readFileSync(
+  resolve(__dir, '../../src/app/shell/services/subpage-tile-canvas.ts'),
+  'utf-8',
+);
 
 describe('ProjectDashboardComponent (template regression)', () => {
   describe('resize handles', () => {
@@ -104,6 +108,50 @@ describe('ProjectDashboardComponent (template regression)', () => {
 
     it('has Save as Default Layout menu item', () => {
       expect(SRC).toContain('Save as Default Layout');
+    });
+  });
+
+  describe('tile detail expansion (canvas)', () => {
+    it('has FromTile navigation methods for all expandable sub-page types', () => {
+      expect(SRC).toContain('navigateToRfiFromTile');
+      expect(SRC).toContain('navigateToDailyReportFromTile');
+      expect(SRC).toContain('navigateToPunchItemFromTile');
+      expect(SRC).toContain('navigateToInspectionFromTile');
+      expect(SRC).toContain('navigateToChangeOrderFromTile');
+    });
+
+    it('has closeTileDetail method for closing expanded tiles', () => {
+      expect(SRC).toContain('closeTileDetail');
+    });
+
+    it('has onTileDetailHeaderMouseDown for dragging expanded tiles', () => {
+      expect(SRC).toContain('onTileDetailHeaderMouseDown');
+    });
+
+    it('template references tileDetailViews() for conditional detail rendering', () => {
+      const matches = SRC.match(/tileDetailViews\(\)/g) ?? [];
+      expect(matches.length).toBeGreaterThanOrEqual(10);
+    });
+
+    it('boosts z-index to 9999 for expanded detail tiles', () => {
+      expect(SRC).toContain('9999');
+    });
+
+    it('highlights active list rows with bg-primary-20', () => {
+      const matches = SRC.match(/bg-primary-20.*tileDetailViews/g) ?? [];
+      expect(matches.length).toBeGreaterThanOrEqual(4);
+    });
+  });
+
+  describe('TileDetailView type completeness', () => {
+    it('includes all six entity types in the union', () => {
+      for (const type of ['rfi', 'submittal', 'dailyReport', 'punchItem', 'inspection', 'changeOrder']) {
+        expect(TILE_CANVAS_SRC).toContain(`'${type}'`);
+      }
+    });
+
+    it('has openDetail method', () => {
+      expect(TILE_CANVAS_SRC).toContain('openDetail(');
     });
   });
 });
