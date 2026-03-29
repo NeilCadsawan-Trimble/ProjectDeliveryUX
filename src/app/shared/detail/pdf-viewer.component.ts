@@ -29,13 +29,17 @@ async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: 
     <div class="relative w-full h-full">
       <div
         #container
-        class="w-full h-full overflow-hidden bg-secondary flex items-center justify-center"
+        class="w-full h-full overflow-hidden bg-secondary flex items-center justify-center touch-none"
         [class.cursor-grab]="zoom() > 1 && !isPanning"
         [class.cursor-grabbing]="isPanning"
         (mousedown)="onMouseDown($event)"
         (mousemove)="onMouseMove($event)"
         (mouseup)="onMouseUp()"
         (mouseleave)="onMouseUp()"
+        (touchstart)="onTouchStart($event)"
+        (touchmove)="onTouchMove($event)"
+        (touchend)="onTouchEnd()"
+        (touchcancel)="onTouchEnd()"
       >
         <canvas
           #pdfCanvas
@@ -124,6 +128,14 @@ export class PdfViewerComponent {
   private _panStartY = 0;
   private _panStartOffX = 0;
   private _panStartOffY = 0;
+
+  private _touchCount = 0;
+  private _pinchStartDist = 0;
+  private _pinchStartZoom = 1;
+  private _pinchMidX = 0;
+  private _pinchMidY = 0;
+  private _lastTapTime = 0;
+
   private _pdfDoc: PDFDocumentProxy | null = null;
   private _pdfPage: PDFPageProxy | null = null;
   private _activeRenderTask: RenderTask | null = null;
@@ -163,6 +175,14 @@ export class PdfViewerComponent {
     });
     this._resizeObserver.observe(container);
     this.destroyRef.onDestroy(() => this._resizeObserver?.disconnect());
+  });
+
+  private readonly _touchPreventEffect = effect(() => {
+    const el = this.containerRef()?.nativeElement;
+    if (!el) return;
+    const handler = (e: TouchEvent) => { if (e.touches.length > 1) e.preventDefault(); };
+    el.addEventListener('touchmove', handler, { passive: false });
+    this.destroyRef.onDestroy(() => el.removeEventListener('touchmove', handler));
   });
 
   private readonly _wheelEffect = effect(() => {
@@ -317,6 +337,98 @@ export class PdfViewerComponent {
 
   onMouseUp(): void {
     this.isPanning = false;
+  }
+
+  onTouchStart(event: TouchEvent): void {
+    this._touchCount = event.touches.length;
+
+    if (event.touches.length === 1) {
+      const now = Date.now();
+      const touch = event.touches[0];
+
+      if (now - this._lastTapTime < 300) {
+        event.preventDefault();
+        this._handleDoubleTap(touch);
+        this._lastTapTime = 0;
+        return;
+      }
+      this._lastTapTime = now;
+
+      if (this.zoom() <= 1) return;
+      event.preventDefault();
+      this.isPanning = true;
+      this._panStartX = touch.clientX;
+      this._panStartY = touch.clientY;
+      this._panStartOffX = this.panX();
+      this._panStartOffY = this.panY();
+    }
+
+    if (event.touches.length === 2) {
+      event.preventDefault();
+      this.isPanning = false;
+      const [t0, t1] = [event.touches[0], event.touches[1]];
+      this._pinchStartDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      this._pinchStartZoom = this.zoom();
+
+      const el = this.containerRef()?.nativeElement;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        this._pinchMidX = (t0.clientX + t1.clientX) / 2 - rect.left - rect.width / 2;
+        this._pinchMidY = (t0.clientY + t1.clientY) / 2 - rect.top - rect.height / 2;
+      }
+      this._panStartOffX = this.panX();
+      this._panStartOffY = this.panY();
+    }
+  }
+
+  onTouchMove(event: TouchEvent): void {
+    if (event.touches.length === 1 && this.isPanning) {
+      event.preventDefault();
+      const touch = event.touches[0];
+      this.panX.set(this._panStartOffX + (touch.clientX - this._panStartX));
+      this.panY.set(this._panStartOffY + (touch.clientY - this._panStartY));
+    }
+
+    if (event.touches.length === 2) {
+      event.preventDefault();
+      const [t0, t1] = [event.touches[0], event.touches[1]];
+      const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      const scale = dist / this._pinchStartDist;
+      const oldZoom = this.zoom();
+      const newZoom = Math.min(this.maxZoom(), Math.max(0.5, this._pinchStartZoom * scale));
+
+      if (newZoom !== oldZoom) {
+        const ratio = newZoom / this._pinchStartZoom;
+        this.panX.set(this._pinchMidX + (this._panStartOffX - this._pinchMidX) * ratio);
+        this.panY.set(this._pinchMidY + (this._panStartOffY - this._pinchMidY) * ratio);
+        this.zoom.set(newZoom);
+      }
+    }
+  }
+
+  onTouchEnd(): void {
+    this.isPanning = false;
+    this._touchCount = 0;
+  }
+
+  private _handleDoubleTap(touch: Touch): void {
+    const el = this.containerRef()?.nativeElement;
+    if (!el) return;
+
+    if (this.zoom() > 1) {
+      this.resetZoom();
+      return;
+    }
+
+    const targetZoom = 2.5;
+    const rect = el.getBoundingClientRect();
+    const tapX = touch.clientX - rect.left - rect.width / 2;
+    const tapY = touch.clientY - rect.top - rect.height / 2;
+    const ratio = targetZoom / this.zoom();
+
+    this.panX.set(tapX - tapX * ratio);
+    this.panY.set(tapY - tapY * ratio);
+    this.zoom.set(Math.min(this.maxZoom(), targetZoom));
   }
 
   zoomIn(): void {

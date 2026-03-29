@@ -1,10 +1,13 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 
 export class CanvasPanning {
   readonly isPanReady = signal(false);
   readonly isPanning = signal(false);
   readonly panOffsetX = signal(0);
   readonly panOffsetY = signal(0);
+  readonly disabled = signal(false);
+  readonly locked = signal(false);
+  readonly panBlocked = computed(() => this.disabled() || this.locked());
 
   private _panStartX = 0;
   private _panStartY = 0;
@@ -13,7 +16,12 @@ export class CanvasPanning {
 
   constructor(private readonly isCanvasFn: () => boolean) {}
 
+  toggleLock(): void {
+    this.locked.update(v => !v);
+  }
+
   onKeyDown(event: KeyboardEvent): void {
+    if (this.panBlocked()) return;
     if (event.code !== 'Space' || !this.isCanvasFn()) return;
     const tag = (event.target as HTMLElement)?.tagName?.toLowerCase();
     if (tag === 'input' || tag === 'textarea' || (event.target as HTMLElement)?.isContentEditable) return;
@@ -31,6 +39,7 @@ export class CanvasPanning {
   }
 
   onPanMouseDown(event: MouseEvent): void {
+    if (this.panBlocked()) return;
     if (this.isPanReady()) {
       event.preventDefault();
       this._startPan(event);
@@ -69,6 +78,7 @@ export class CanvasPanning {
   }
 
   onCanvasWheel(event: WheelEvent): void {
+    if (this.panBlocked()) return;
     if (this._isInsideScrollable(event.target as HTMLElement | null)) return;
     if (this._isInsideDetailView(event.target as HTMLElement | null)) return;
     event.preventDefault();

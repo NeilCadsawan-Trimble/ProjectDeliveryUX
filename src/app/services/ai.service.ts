@@ -8,12 +8,15 @@ export interface AiContext {
   widgetName?: string;
   projectName?: string;
   projectData?: string;
+  agentPrompt?: string;
 }
 
 export interface AiChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+export type LocalResponder = (query: string) => string;
 
 @Injectable({
   providedIn: 'root',
@@ -25,6 +28,7 @@ export class AiService {
     userText: string,
     conversationHistory: AiChatMessage[],
     context?: AiContext,
+    localResponder?: LocalResponder,
   ): Observable<string> {
     return new Observable<string>((subscriber) => {
       const abortController = new AbortController();
@@ -36,9 +40,14 @@ export class AiService {
 
       const contextString = this.buildContextString(context);
 
-      this.streamResponse(messages, contextString, abortController.signal, subscriber)
+      this.streamResponse(messages, contextString, context?.agentPrompt, abortController.signal, subscriber)
         .catch((err) => {
-          if (err.name !== 'AbortError') {
+          if (err.name === 'AbortError') return;
+
+          if (localResponder && this.isNetworkError(err)) {
+            subscriber.next(localResponder(userText));
+            subscriber.complete();
+          } else {
             subscriber.error(err);
           }
         });
@@ -68,16 +77,23 @@ export class AiService {
     return parts.join('\n');
   }
 
+  private isNetworkError(err: unknown): boolean {
+    if (err instanceof TypeError && (err.message.includes('fetch') || err.message.includes('network'))) return true;
+    if (err instanceof DOMException && err.name === 'NetworkError') return true;
+    return false;
+  }
+
   private async streamResponse(
     messages: AiChatMessage[],
     context: string,
+    agentPrompt: string | undefined,
     signal: AbortSignal,
     subscriber: { next: (value: string) => void; complete: () => void; error: (err: unknown) => void },
   ): Promise<void> {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, context }),
+      body: JSON.stringify({ messages, context, agentPrompt }),
       signal,
     });
 

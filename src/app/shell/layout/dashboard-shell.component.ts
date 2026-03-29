@@ -27,7 +27,10 @@ import { CanvasPanning } from '../services/canvas-panning';
 import {
   PROJECTS, ESTIMATES, ACTIVITIES, ATTENTION_ITEMS,
   TIME_OFF_REQUESTS, RFIS, SUBMITTALS, CALENDAR_APPOINTMENTS,
+  CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS,
+  INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE,
 } from '../../data/dashboard-data';
+import { getAgent, type AgentDataState } from '../../data/widget-agents';
 
 export interface ShellNavItem {
   value: string;
@@ -53,8 +56,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     class: 'block',
     '[class.h-screen]': '!isCanvas()',
     '[class.overflow-hidden]': '!isCanvas()',
-    '[class.canvas-pan-ready]': 'panning.isPanReady()',
-    '[class.canvas-panning]': 'panning.isPanning()',
+    '[class.canvas-pan-ready]': 'panning.isPanReady() && !panning.panBlocked()',
+    '[class.canvas-panning]': 'panning.isPanning() && !panning.panBlocked()',
+    '[class.canvas-locked]': 'panning.panBlocked()',
     '(window:keydown.escape)': 'onEscapeKey()',
     '(document:click)': 'onDocumentClick($event)',
     '(window:keydown)': 'panning.onKeyDown($event)',
@@ -153,6 +157,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 [attr.aria-expanded]="resetMenuOpen()"
               >
                 <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                @if (panning.locked()) {
+                  <i class="modus-icons absolute top-1 right-1 text-2xs text-primary" aria-hidden="true">lock</i>
+                }
                 @if (navExpanded()) {
                   <div class="custom-side-nav-label">Layout</div>
                 }
@@ -162,6 +169,15 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               </div>
               @if (resetMenuOpen()) {
                 <div class="canvas-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[210px] py-1">
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="panning.toggleLock(); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" [class]="panning.locked() ? 'text-primary' : 'text-foreground'" aria-hidden="true">{{ panning.locked() ? 'lock' : 'lock_open' }}</i>
+                    <div class="text-sm" [class]="panning.locked() ? 'text-primary font-medium' : 'text-foreground'">{{ panning.locked() ? 'Canvas Locked' : 'Canvas Unlocked' }}</div>
+                  </div>
+                  <div class="border-bottom-default my-1"></div>
                   <div
                     class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
                     role="menuitem"
@@ -498,10 +514,29 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly ai = new AiPanelController({
     widgetFocusService: this.widgetFocusService,
     aiService: this.aiService,
-    defaultSuggestions: this.defaultAiSuggestions,
-    contextBuilder: () => this.aiService.buildContext(this.getPageName(), {
-      projectData: this.buildDashboardContextData(this.getPageName()),
+    defaultSuggestions: computed(() => {
+      const page = this.getPageName();
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const agent = getAgent(widgetId, page);
+      return agent.suggestions;
     }),
+    contextBuilder: () => {
+      const page = this.getPageName();
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const agent = getAgent(widgetId, page);
+      const state = this.buildAgentDataState();
+      return this.aiService.buildContext(page, {
+        projectData: agent.buildContext(state),
+        agentPrompt: agent.systemPrompt,
+      });
+    },
+    localResponder: () => {
+      const page = this.getPageName();
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const agent = getAgent(widgetId, page);
+      const state = this.buildAgentDataState();
+      return (query: string) => agent.localRespond(query, state);
+    },
     injector: this.injector,
   });
 
@@ -560,102 +595,25 @@ export class DashboardShellComponent implements AfterViewInit {
     return 'home';
   }
 
-  private buildDashboardContextData(page: string): string {
-    const parts: string[] = [];
-    const focusedWidget = this.widgetFocusService.selectedWidgetId();
-
-    if (page === 'home') {
-      switch (focusedWidget) {
-        case 'homeTimeOff':
-          parts.push('Time off requests:');
-          for (const r of TIME_OFF_REQUESTS) {
-            parts.push(`  ${r.name}: ${r.type}, ${r.startDate}-${r.endDate} (${r.days} day(s)), status: ${r.status}`);
-          }
-          break;
-        case 'homeCalendar': {
-          parts.push('Upcoming calendar:');
-          const upcoming = CALENDAR_APPOINTMENTS.slice(0, 10);
-          for (const a of upcoming) {
-            const d = a.date;
-            parts.push(`  ${a.title}: ${d.toLocaleDateString()}, ${a.startHour}:${String(a.startMin).padStart(2, '0')}-${a.endHour}:${String(a.endMin).padStart(2, '0')}, type: ${a.type}`);
-          }
-          break;
-        }
-        case 'homeRfis':
-          parts.push(`RFIs: ${RFIS.length} total`);
-          for (const r of RFIS) {
-            parts.push(`  ${r.number}: ${r.subject}, project: ${r.project}, assignee: ${r.assignee}, status: ${r.status}, due: ${r.dueDate}`);
-          }
-          break;
-        case 'homeSubmittals':
-          parts.push(`Submittals: ${SUBMITTALS.length} total`);
-          for (const s of SUBMITTALS) {
-            parts.push(`  ${s.number}: ${s.subject}, project: ${s.project}, assignee: ${s.assignee}, status: ${s.status}, due: ${s.dueDate}`);
-          }
-          break;
-        default:
-          parts.push(`${PROJECTS.length} projects, ${ESTIMATES.length} open estimates`);
-          const atRisk = PROJECTS.filter(p => p.status === 'At Risk').length;
-          const overdue = PROJECTS.filter(p => p.status === 'Overdue').length;
-          if (atRisk > 0) parts.push(`${atRisk} project(s) at risk`);
-          if (overdue > 0) parts.push(`${overdue} project(s) overdue`);
-          break;
-      }
-    } else if (page === 'projects') {
-      switch (focusedWidget) {
-        case 'projects':
-          parts.push('All projects:');
-          for (const p of PROJECTS) {
-            parts.push(`  ${p.name}: ${p.status}, ${p.progress}% complete, budget ${p.budgetUsed}/${p.budgetTotal} (${p.budgetPct}%), due ${p.dueDate}, owner: ${p.owner}`);
-          }
-          break;
-        case 'openEstimates':
-          parts.push('Open estimates:');
-          for (const e of ESTIMATES) {
-            parts.push(`  ${e.id}: ${e.project}, ${e.value} (${e.type}), status: ${e.status}, requested by ${e.requestedBy}, due ${e.dueDate}, ${e.daysLeft} days left`);
-          }
-          break;
-        case 'recentActivity':
-          parts.push('Recent activity:');
-          for (const a of ACTIVITIES) {
-            parts.push(`  ${a.text} (${a.timeAgo})`);
-          }
-          break;
-        case 'needsAttention':
-          parts.push('Items needing attention:');
-          for (const item of ATTENTION_ITEMS) {
-            parts.push(`  ${item.title}: ${item.subtitle}`);
-          }
-          break;
-        default:
-          parts.push(`${PROJECTS.length} projects, ${ESTIMATES.length} open estimates`);
-          parts.push(`${ATTENTION_ITEMS.length} items need attention`);
-          break;
-      }
-    } else if (page === 'financials') {
-      switch (focusedWidget) {
-        case 'finBudgetByProject':
-          parts.push('Budget by project:');
-          for (const p of PROJECTS) {
-            parts.push(`  ${p.name}: ${p.budgetUsed} of ${p.budgetTotal} (${p.budgetPct}%), client: ${p.client}`);
-          }
-          break;
-        default: {
-          const totalUsed = PROJECTS.reduce((sum, p) => {
-            const val = parseFloat(p.budgetUsed.replace(/[$K]/g, '')) * 1000;
-            return sum + val;
-          }, 0);
-          const totalBudget = PROJECTS.reduce((sum, p) => {
-            const val = parseFloat(p.budgetTotal.replace(/[$K]/g, '')) * 1000;
-            return sum + val;
-          }, 0);
-          parts.push(`Total budget across ${PROJECTS.length} projects: $${Math.round(totalUsed / 1000)}K used of $${Math.round(totalBudget / 1000)}K`);
-          break;
-        }
-      }
-    }
-
-    return parts.join('\n');
+  private buildAgentDataState(): AgentDataState {
+    return {
+      projects: PROJECTS,
+      estimates: ESTIMATES,
+      activities: ACTIVITIES,
+      attentionItems: ATTENTION_ITEMS,
+      timeOffRequests: TIME_OFF_REQUESTS,
+      rfis: RFIS,
+      submittals: SUBMITTALS,
+      calendar: CALENDAR_APPOINTMENTS,
+      changeOrders: CHANGE_ORDERS,
+      dailyReports: DAILY_REPORTS,
+      weatherForecast: WEATHER_FORECAST,
+      projectAttentionItems: PROJECT_ATTENTION_ITEMS,
+      inspections: INSPECTIONS,
+      punchListItems: PUNCH_LIST_ITEMS,
+      projectRevenue: PROJECT_REVENUE,
+      currentPage: this.getPageName(),
+    };
   }
 
   navigateHome(): void {

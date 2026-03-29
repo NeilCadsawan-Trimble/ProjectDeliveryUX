@@ -25,7 +25,7 @@ loadEnv();
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-20250514';
-const MAX_TOKENS = 1024;
+const MAX_TOKENS = 2048;
 
 const SYSTEM_PROMPT = `You are Trimble AI, a project delivery assistant for construction and infrastructure projects. You help project managers understand status, risks, budgets, schedules, and team allocation.
 
@@ -73,10 +73,10 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const { messages, context } = parsed;
-  const systemPrompt = context
-    ? `${SYSTEM_PROMPT}\n\nCurrent context:\n${context}`
-    : SYSTEM_PROMPT;
+  const { messages, context, agentPrompt } = parsed;
+  let systemPrompt = SYSTEM_PROMPT;
+  if (agentPrompt) systemPrompt = `${agentPrompt}\n\n${systemPrompt}`;
+  if (context) systemPrompt = `${systemPrompt}\n\nCurrent context:\n${context}`;
 
   const anthropicBody = {
     model: MODEL,

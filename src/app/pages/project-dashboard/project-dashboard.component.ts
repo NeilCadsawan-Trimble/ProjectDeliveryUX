@@ -25,8 +25,12 @@ import { AiAssistantPanelComponent } from '../../shell/components/ai-assistant-p
 import { EmptyStateComponent } from './components/empty-state.component';
 import { CollapsibleSubnavComponent } from './components/collapsible-subnav.component';
 import { ItemDetailViewComponent } from '../../shared/detail/item-detail-view.component';
+import { RecordsSubpagesComponent } from './components/records-subpages.component';
+import { FinancialsSubpagesComponent } from './components/financials-subpages.component';
+import { RecordDetailViewsComponent } from './components/record-detail-views.component';
 import {
   STATUS_OPTIONS,
+  PUNCH_STATUS_OPTIONS,
   ASSIGNEE_OPTIONS,
   itemStatusDot as getStatusDot,
   capitalizeStatus as getCapitalizedStatus,
@@ -53,8 +57,9 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction } from '../../data/dashboard-data';
+import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
+import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 
 type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals';
@@ -71,6 +76,7 @@ const RECORDS_PAGE_DESCRIPTIONS: Record<string, string> = {
   'meeting-minutes': 'Record and distribute meeting minutes from project meetings.',
   'notices-to-comply': 'Issue and track compliance notices for regulatory or contractual requirements.',
   'punch-items': 'Document and track punch list items for project closeout.',
+  'inspections': 'Track inspections, results, and follow-up actions for quality assurance.',
   'safety-notices': 'Distribute safety notices and track acknowledgments.',
   'specification-sets': 'Manage project specification documents and revisions.',
   'submittal-packages': 'Organize submittals into packages for batch review and approval.',
@@ -93,14 +99,15 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, WidgetResizeHandleComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
     '[class.h-screen]': '!isCanvas()',
     '[class.overflow-hidden]': '!isCanvas()',
-    '[class.canvas-pan-ready]': 'panning.isPanReady()',
-    '[class.canvas-panning]': 'panning.isPanning()',
+    '[class.canvas-pan-ready]': 'panning.isPanReady() && !panning.panBlocked()',
+    '[class.canvas-panning]': 'panning.isPanning() && !panning.panBlocked()',
+    '[class.canvas-locked]': 'panning.panBlocked()',
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
     '(document:touchend)': 'onDocumentTouchEnd()',
@@ -234,6 +241,14 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             (dueDateChange)="onDetailDueDateChange($event)"
           />
         }
+        <app-record-detail-views
+          [dailyReport]="detailDailyReport()"
+          [inspection]="detailInspection()"
+          [punchItem]="detailPunchItem()"
+          [changeOrder]="detailChangeOrder()"
+          (statusChange)="onDetailStatusChange($event)"
+          (assigneeChange)="onDetailAssigneeChange($event)"
+        />
       </div>
       @if (detailDrawing(); as drawing) {
         <div class="flex flex-col flex-1 min-h-0" data-detail-view>
@@ -553,7 +568,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               [style.width.px]="tilePos()['tc-title']?.width ?? tileContentWidth()"
               [style.height.px]="tilePos()['tc-title']?.height ?? 40"
             >
-              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }</div>
+              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
             </div>
             <!-- Locked: List widget (list view mode) -->
             @if (subnavViewMode() === 'list') {
@@ -847,7 +862,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
               }
             }
-            @if (activeRecordsPage() !== 'rfis' && activeRecordsPage() !== 'submittals') {
+            @if (!recordsSubPageHasContent()) {
               <div class="absolute transition-all duration-200"
                 [style.top.px]="tilePos()['tc-title']?.top ? (tilePos()['tc-title'].top + tilePos()['tc-title'].height + 16) : 128"
                 [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileContentLeft()"
@@ -873,7 +888,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
           <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
             <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
             <div class="flex items-center justify-between">
-              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }</div>
+              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
             </div>
             @if (activeRecordsPage() === 'rfis') {
               @if (subnavViewMode() === 'grid') {
@@ -1003,6 +1018,19 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                   }
                 </div>
               }
+            } @else if (activeRecordsPage() === 'daily-reports' || activeRecordsPage() === 'punch-items' || activeRecordsPage() === 'inspections' || activeRecordsPage() === 'action-items') {
+              <app-records-subpages
+                [activePage]="activeRecordsPage()"
+                [viewMode]="subnavViewMode()"
+                [dailyReports]="projectDailyReports()"
+                [punchItems]="projectPunchItems()"
+                [inspections]="projectInspections()"
+                [actionItems]="projectAttentionItems()"
+                [weatherForecast]="weatherForecast"
+                (dailyReportClick)="navigateToDailyReport($event)"
+                (punchItemClick)="navigateToPunchItem($event)"
+                (inspectionClick)="navigateToInspection($event)"
+              />
             } @else {
               <app-empty-state icon="clipboard" [title]="activeRecordsPageLabel()" [description]="activeRecordsPageDescription()" />
             }
@@ -1059,7 +1087,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             <!-- Locked: Title -->
             @if (!subledgerCategory()) {
             <div class="absolute flex items-center justify-between transition-all duration-200" [style.top.px]="tilePos()['tc-title']?.top ?? 72" [style.left.px]="tilePos()['tc-title']?.left ?? tileContentLeft()" [style.width.px]="tilePos()['tc-title']?.width ?? tileContentWidth()" [style.height.px]="40">
-              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}</div>
+              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-orders') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'revenue') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }</div>
             </div>
             }
             @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
@@ -1121,7 +1149,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                   </div>
                 }
               }
-            } @else {
+            } @else if (!financialsSubPageHasContent()) {
               <div class="absolute transition-all duration-200" [style.top.px]="128" [style.left.px]="tileContentLeft()" [style.width.px]="tileContentWidth()">
                 <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
               </div>
@@ -1145,11 +1173,21 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
             @if (!subledgerCategory()) {
               <div class="flex items-center justify-between">
-                <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}</div>
+                <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-orders') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'revenue') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }</div>
               </div>
             }
             @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
               <ng-container [ngTemplateOutlet]="budgetDetailContent" />
+            } @else if (activeFinancialsPage() === 'change-order-requests' || activeFinancialsPage() === 'applications-for-payment' || activeFinancialsPage() === 'cost-forecasts') {
+              <app-financials-subpages
+                [activePage]="activeFinancialsPage()"
+                [viewMode]="subnavViewMode()"
+                [changeOrders]="projectChangeOrders()"
+                [revenueData]="projectRevenueData()"
+                [budgetHistory]="projectBudgetHistory()"
+                [lastBudgetPoint]="lastBudgetPoint()"
+                (changeOrderClick)="navigateToChangeOrder($event)"
+              />
             } @else {
               <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
             }
@@ -1741,6 +1779,9 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 [attr.aria-expanded]="detailDrawing() ? null : resetMenuOpen()"
               >
                 <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                @if (panning.locked()) {
+                  <i class="modus-icons absolute top-1 right-1 text-2xs text-primary" aria-hidden="true">lock</i>
+                }
                 @if (navExpanded()) {
                   <div class="custom-side-nav-label">Layout</div>
                 }
@@ -1752,6 +1793,15 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               </div>
               @if (resetMenuOpen() && !detailDrawing()) {
                 <div class="canvas-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[210px] py-1">
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="panning.toggleLock(); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" [class]="panning.locked() ? 'text-primary' : 'text-foreground'" aria-hidden="true">{{ panning.locked() ? 'lock' : 'lock_open' }}</i>
+                    <div class="text-sm" [class]="panning.locked() ? 'text-primary font-medium' : 'text-foreground'">{{ panning.locked() ? 'Canvas Locked' : 'Canvas Unlocked' }}</div>
+                  </div>
+                  <div class="border-bottom-default my-1"></div>
                   <div
                     class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
                     role="menuitem"
@@ -3061,6 +3111,19 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     FINANCIALS_PAGE_DESCRIPTIONS[this.activeFinancialsPage()] ?? ''
   );
 
+  readonly weatherForecast = WEATHER_FORECAST;
+
+  private static readonly RECORDS_PAGES_WITH_CONTENT = new Set(['rfis', 'submittals', 'daily-reports', 'punch-items', 'inspections', 'action-items']);
+  private static readonly FINANCIALS_PAGES_WITH_CONTENT = new Set(['budget', 'change-order-requests', 'applications-for-payment', 'cost-forecasts']);
+
+  readonly recordsSubPageHasContent = computed(() =>
+    ProjectDashboardComponent.RECORDS_PAGES_WITH_CONTENT.has(this.activeRecordsPage())
+  );
+
+  readonly financialsSubPageHasContent = computed(() =>
+    ProjectDashboardComponent.FINANCIALS_PAGES_WITH_CONTENT.has(this.activeFinancialsPage())
+  );
+
   readonly budgetProgressClass = budgetProgressClass;
 
   readonly projectJobCost = computed<ProjectJobCost | null>(() => {
@@ -3276,12 +3339,14 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   openSubledger(category: string): void {
     this.subledgerCategory.set(category as JobCostCategory);
     this.subledgerDropdownOpen.set(false);
+    if (this.isCanvas()) this.panning.resetView();
     this.pushPageUrl();
   }
 
   switchSubledger(category: string): void {
     this.subledgerCategory.set(category as JobCostCategory);
     this.subledgerDropdownOpen.set(false);
+    if (this.isCanvas()) this.panning.resetView();
     this.pushPageUrl();
   }
 
@@ -3379,6 +3444,39 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.projectSubmittals().filter(s => s.status === 'overdue').length
   );
 
+  readonly projectDailyReports = computed(() =>
+    DAILY_REPORTS.filter(r => r.projectId === this.projectId())
+  );
+
+  readonly projectInspections = computed(() =>
+    INSPECTIONS.filter(i => i.projectId === this.projectId())
+  );
+
+  readonly projectPunchItems = computed(() =>
+    PUNCH_LIST_ITEMS.filter(p => p.projectId === this.projectId())
+  );
+
+  readonly projectAttentionItems = computed(() =>
+    PROJECT_ATTENTION_ITEMS.filter(a => a.projectId === this.projectId())
+  );
+
+  readonly projectChangeOrders = computed(() =>
+    CHANGE_ORDERS.filter(c => c.projectId === this.projectId())
+  );
+
+  readonly projectRevenueData = computed(() =>
+    PROJECT_REVENUE.filter(r => r.projectId === this.projectId())
+  );
+
+  readonly projectBudgetHistory = computed(() =>
+    BUDGET_HISTORY_BY_PROJECT[this.projectId()] ?? []
+  );
+
+  readonly lastBudgetPoint = computed(() => {
+    const h = this.projectBudgetHistory();
+    return h.length > 0 ? h[h.length - 1] : null;
+  });
+
   readonly detailView = signal<DetailView | null>(null);
 
   readonly detailRfi = computed(() => {
@@ -3396,7 +3494,33 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     return d?.type === 'drawing' ? d.item : null;
   });
 
+  readonly detailDailyReport = computed(() => {
+    const d = this.detailView();
+    return d?.type === 'dailyReport' ? d.item : null;
+  });
+
+  readonly detailInspection = computed(() => {
+    const d = this.detailView();
+    return d?.type === 'inspection' ? d.item : null;
+  });
+
+  readonly detailPunchItem = computed(() => {
+    const d = this.detailView();
+    return d?.type === 'punchItem' ? d.item : null;
+  });
+
+  readonly detailChangeOrder = computed(() => {
+    const d = this.detailView();
+    return d?.type === 'changeOrder' ? d.item : null;
+  });
+
   readonly isCanvasDrawingDetail = computed(() => this.isCanvas() && !!this.detailDrawing());
+
+  private readonly _lockCanvasPanEffect = effect(() => {
+    const locked = this.isCanvasDrawingDetail()
+      || (this.isCanvas() && !!this.subledgerCategory());
+    this.panning.disabled.set(locked);
+  });
 
   readonly activeDrawingTool = signal('');
 
@@ -3530,6 +3654,10 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     if (d?.type === 'rfi') return 'rfi-detail';
     if (d?.type === 'submittal') return 'submittal-detail';
     if (d?.type === 'drawing') return 'drawing-detail';
+    if (d?.type === 'dailyReport') return 'daily-report-detail';
+    if (d?.type === 'inspection') return 'inspection-detail';
+    if (d?.type === 'punchItem') return 'punch-item-detail';
+    if (d?.type === 'changeOrder') return 'change-order-detail';
     return 'rfi-detail';
   });
 
@@ -3575,6 +3703,56 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.navigateToDetail('submittal', sub, sourceWidgetId);
   }
 
+  navigateToDailyReport(report: DailyReport): void {
+    this.detailSourceLabel.set(this.currentPageLabel());
+    this.detailView.set({ type: 'dailyReport', item: report });
+    this.pushDetailUrl('dailyReport', report.id);
+  }
+
+  navigateToInspection(inspection: Inspection): void {
+    this.detailSourceLabel.set(this.currentPageLabel());
+    this.detailView.set({ type: 'inspection', item: inspection });
+    this.pushDetailUrl('inspection', inspection.id);
+  }
+
+  navigateToPunchItem(item: PunchListItem): void {
+    this.detailSourceLabel.set(this.currentPageLabel());
+    this.detailView.set({ type: 'punchItem', item });
+    this.pushDetailUrl('punchItem', item.id);
+  }
+
+  navigateToChangeOrder(co: ChangeOrder): void {
+    this.detailSourceLabel.set(this.currentPageLabel());
+    this.detailView.set({ type: 'changeOrder', item: co });
+    this.pushDetailUrl('changeOrder', co.id);
+  }
+
+  inspectionResultBadge(result: InspectionResult): ModusBadgeColor {
+    const map: Record<InspectionResult, ModusBadgeColor> = { pass: 'success', fail: 'danger', conditional: 'warning', pending: 'secondary' };
+    return map[result] ?? 'secondary';
+  }
+
+  changeOrderStatusBadge(status: ChangeOrderStatus): ModusBadgeColor {
+    const map: Record<ChangeOrderStatus, ModusBadgeColor> = { approved: 'success', pending: 'warning', rejected: 'danger' };
+    return map[status] ?? 'secondary';
+  }
+
+  punchPriorityBadge(priority: string): ModusBadgeColor {
+    const map: Record<string, ModusBadgeColor> = { high: 'danger', medium: 'warning', low: 'secondary' };
+    return map[priority] ?? 'secondary';
+  }
+
+  weatherIcon(condition: string): string {
+    const map: Record<string, string> = { 'sunny': 'wb_sunny', 'partly-cloudy': 'cloud', 'cloudy': 'cloud', 'rain': 'water', 'thunderstorm': 'flash_on', 'snow': 'ac_unit' };
+    return map[condition] ?? 'cloud';
+  }
+
+  formatCurrency(amount: number): string {
+    if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
+    if (amount >= 1_000) return `$${Math.round(amount / 1_000)}K`;
+    return `$${amount.toLocaleString()}`;
+  }
+
   openLatestDrawing(): void {
     this.selectNavItem('drawings');
     const drawing = this.newestDrawingTile();
@@ -3604,6 +3782,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   readonly STATUS_OPTIONS = STATUS_OPTIONS;
+  readonly PUNCH_STATUS_OPTIONS = PUNCH_STATUS_OPTIONS;
   readonly ASSIGNEE_OPTIONS = ASSIGNEE_OPTIONS;
 
   clearDetailView(): void {
@@ -3764,6 +3943,18 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       } else if (view === 'drawing') {
         const drawing = this.drawingTiles().find(d => d.id === id);
         if (drawing) this.detailView.set({ type: 'drawing', item: drawing });
+      } else if (view === 'dailyReport') {
+        const report = DAILY_REPORTS.find(r => r.id === id);
+        if (report) this.detailView.set({ type: 'dailyReport', item: report });
+      } else if (view === 'inspection') {
+        const insp = INSPECTIONS.find(i => i.id === id);
+        if (insp) this.detailView.set({ type: 'inspection', item: insp });
+      } else if (view === 'punchItem') {
+        const punch = PUNCH_LIST_ITEMS.find(p => p.id === id);
+        if (punch) this.detailView.set({ type: 'punchItem', item: punch });
+      } else if (view === 'changeOrder') {
+        const co = CHANGE_ORDERS.find(c => c.id === id);
+        if (co) this.detailView.set({ type: 'changeOrder', item: co });
       }
     }
 
@@ -3789,6 +3980,18 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       } else if (view === 'drawing') {
         const drawing = this.drawingTiles().find(d => d.id === id);
         if (drawing) { this.detailView.set({ type: 'drawing', item: drawing }); return; }
+      } else if (view === 'dailyReport') {
+        const report = DAILY_REPORTS.find(r => r.id === id);
+        if (report) { this.detailView.set({ type: 'dailyReport', item: report }); return; }
+      } else if (view === 'inspection') {
+        const insp = INSPECTIONS.find(i => i.id === id);
+        if (insp) { this.detailView.set({ type: 'inspection', item: insp }); return; }
+      } else if (view === 'punchItem') {
+        const punch = PUNCH_LIST_ITEMS.find(p => p.id === id);
+        if (punch) { this.detailView.set({ type: 'punchItem', item: punch }); return; }
+      } else if (view === 'changeOrder') {
+        const co = CHANGE_ORDERS.find(c => c.id === id);
+        if (co) { this.detailView.set({ type: 'changeOrder', item: co }); return; }
       }
     }
     this.detailView.set(null);
@@ -4036,16 +4239,30 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly ai = new AiPanelController({
     widgetFocusService: this.widgetFocusService,
     aiService: this.aiService,
-    defaultSuggestions: [
-      'What are the biggest risks right now?',
-      'Summarize migration progress',
-      'Which tasks are overdue?',
-      'How is the budget tracking?',
-    ],
-    contextBuilder: () => this.aiService.buildContext('project-dashboard', {
-      projectName: this.projectName(),
-      projectData: this.buildProjectContextData(),
+    defaultSuggestions: computed(() => {
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const subContext = this.getSubPageAgentContext();
+      const agent = getAgent(widgetId, 'project-dashboard', subContext);
+      return agent.suggestions;
     }),
+    contextBuilder: () => {
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const subContext = this.getSubPageAgentContext();
+      const agent = getAgent(widgetId, 'project-dashboard', subContext);
+      const state = this.buildAgentDataState();
+      return this.aiService.buildContext('project-dashboard', {
+        projectName: this.projectName(),
+        projectData: agent.buildContext(state),
+        agentPrompt: agent.systemPrompt,
+      });
+    },
+    localResponder: () => {
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const subContext = this.getSubPageAgentContext();
+      const agent = getAgent(widgetId, 'project-dashboard', subContext);
+      const state = this.buildAgentDataState();
+      return (query: string) => agent.localRespond(query, state);
+    },
     injector: this.injector,
   });
 
@@ -4139,79 +4356,93 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.themeService.toggleMode();
   }
 
-  private buildProjectContextData(): string {
-    const parts: string[] = [];
-    parts.push(`Project: ${this.projectName()}`);
-    parts.push(`Status: ${this.projectStatus()}`);
+  private getSubPageAgentContext(): string | undefined {
+    const dv = this.detailView();
+    if (dv?.type === 'rfi') return 'rfiDetail';
+    if (dv?.type === 'submittal') return 'submittalDetail';
+    if (dv?.type === 'dailyReport') return 'dailyReportDetail';
+    if (dv?.type === 'inspection') return 'inspectionDetail';
+    if (dv?.type === 'punchItem') return 'punchItemDetail';
+    if (dv?.type === 'changeOrder') return 'changeOrderDetail';
+    if (this.detailDrawing()) return 'drawingDetail';
 
-    const focusedWidget = this.widgetFocusService.selectedWidgetId();
-
-    switch (focusedWidget) {
-      case 'budget':
-        parts.push(`Budget: ${this.budgetUsed()} of ${this.budgetTotal()} (${this.budgetPct()}%)`);
-        parts.push(`Budget health: ${this.budgetHealthy() ? 'On track' : 'Critical'}`);
-        parts.push(`Remaining: ${this.budgetRemaining()}`);
-        for (const item of this.budgetBreakdown()) {
-          parts.push(`  ${item.label}: ${item.amount} (${item.pct}%)`);
-        }
-        break;
-
-      case 'milestones':
-        parts.push(`Milestones: ${this.completedMilestones()} of ${this.milestones().length} completed`);
-        for (const ms of this.milestones()) {
-          parts.push(`  ${ms.name}: ${ms.status}, due ${ms.dueDate}, ${ms.progress}% done`);
-        }
-        break;
-
-      case 'tasks':
-        parts.push(`Tasks: ${this.openTaskCount()} open of ${this.tasks().length} total`);
-        for (const t of this.tasks()) {
-          parts.push(`  ${t.title}: ${t.status}, priority ${t.priority}, assigned to ${t.assignee}, due ${t.dueDate}`);
-        }
-        break;
-
-      case 'risks':
-        parts.push(`Risks: ${this.risks().length} total`);
-        for (const r of this.risks()) {
-          parts.push(`  ${r.title}: severity ${r.severity}, impact: ${r.impact}, mitigation: ${r.mitigation}`);
-        }
-        break;
-
-      case 'team':
-        parts.push(`Team: ${this.team().length} members`);
-        for (const t of this.team()) {
-          parts.push(`  ${t.name} (${t.role}): ${t.tasksCompleted}/${t.tasksTotal} tasks done, ${t.availability}% available`);
-        }
-        break;
-
-      case 'activity':
-        parts.push(`Recent activity:`);
-        for (const a of this.activity()) {
-          parts.push(`  ${a.text} (${a.timeAgo})`);
-        }
-        break;
-
-      case 'drawing':
-        const d = this.latestDrawing();
-        parts.push(`Latest drawing: ${d.name}`);
-        parts.push(`  Version: ${d.version}, type: ${d.type}, updated by ${d.updatedBy} on ${d.updatedAt}`);
-        parts.push(`  Revisions: ${d.revisionCount}, file size: ${d.fileSize}`);
-        break;
-
-      default:
-        parts.push(`Budget: ${this.budgetUsed()} of ${this.budgetTotal()} (${this.budgetPct()}%)`);
-        parts.push(`Budget health: ${this.budgetHealthy() ? 'On track' : 'Critical'}`);
-        parts.push(`Milestones: ${this.completedMilestones()} of ${this.milestones().length} completed`);
-        parts.push(`Open tasks: ${this.openTaskCount()}`);
-        const highRisks = this.risks().filter(r => r.severity === 'high');
-        if (highRisks.length > 0) {
-          parts.push(`High risks: ${highRisks.map(r => r.title).join(', ')}`);
-        }
-        parts.push(`Team: ${this.team().map(t => `${t.name} (${t.role})`).join('; ')}`);
-        break;
+    const nav = this.activeNavItem();
+    if (nav === 'records') {
+      const sub = this.activeRecordsPage();
+      if (sub === 'rfis') return 'recordsRfis';
+      if (sub === 'submittals') return 'recordsSubmittals';
+      if (sub === 'daily-reports') return 'recordsDailyReports';
+      if (sub === 'punch-items') return 'recordsPunchItems';
+      if (sub === 'inspections') return 'recordsInspections';
+      if (sub === 'action-items') return 'recordsActionItems';
     }
+    if (nav === 'financials') {
+      if (this.subledgerCategory()) return 'financialsSubledger';
+      const sub = this.activeFinancialsPage();
+      if (sub === 'change-orders') return 'financialsChangeOrders';
+      if (sub === 'revenue') return 'financialsRevenue';
+      if (sub === 'cost-forecasts') return 'financialsCostForecasts';
+      return 'financialsBudget';
+    }
+    if (nav === 'drawings') return 'drawingsPage';
+    return undefined;
+  }
 
-    return parts.join('\n');
+  private buildAgentDataState(): AgentDataState {
+    const jcCats = this.jcDetailCategories().map(c => ({
+      label: c.label,
+      amount: `$${Math.round(c.amount / 1000)}K`,
+      pctSpend: c.pctOfSpend,
+      pctBudget: c.pctOfBudget,
+    }));
+
+    const slCat = this.subledgerCategory() ?? '';
+    const txns = this.subledgerTransactions().map(t => ({
+      date: t.date,
+      description: t.description,
+      vendor: t.vendor,
+      amount: t.amount,
+      category: slCat,
+    }));
+
+    const projId = this.projectId();
+    return {
+      projectName: this.projectName(),
+      projectStatus: this.projectStatus(),
+      budgetUsed: this.budgetUsed(),
+      budgetTotal: this.budgetTotal(),
+      budgetPct: this.budgetPct(),
+      budgetRemaining: this.budgetRemaining(),
+      budgetHealthy: this.budgetHealthy(),
+      budgetBreakdown: this.budgetBreakdown(),
+      milestones: this.milestones(),
+      completedMilestones: this.completedMilestones(),
+      tasks: this.tasks(),
+      openTaskCount: this.openTaskCount(),
+      risks: this.risks(),
+      team: this.team(),
+      projectActivity: this.activity(),
+      latestDrawing: this.latestDrawing(),
+      drawings: this.drawingTiles(),
+      rfis: this.projectRfis(),
+      submittals: this.projectSubmittals(),
+      jobCostCategories: jcCats,
+      subledgerCategory: this.subledgerCategory() ?? undefined,
+      subledgerTransactions: txns,
+      changeOrders: CHANGE_ORDERS.filter(co => co.projectId === projId),
+      dailyReports: DAILY_REPORTS.filter(dr => dr.projectId === projId),
+      weatherForecast: WEATHER_FORECAST,
+      projectAttentionItems: PROJECT_ATTENTION_ITEMS.filter(a => a.projectId === projId),
+      budgetHistory: BUDGET_HISTORY_BY_PROJECT[projId] ?? [],
+      inspections: INSPECTIONS.filter(i => i.projectId === projId),
+      punchListItems: PUNCH_LIST_ITEMS.filter(p => p.projectId === projId),
+      projectRevenue: PROJECT_REVENUE.filter(r => r.projectId === projId),
+      detailRfi: this.detailRfi() ?? undefined,
+      detailSubmittal: this.detailSubmittal() ?? undefined,
+      detailDrawing: this.detailDrawing() ?? undefined,
+      currentPage: 'project-dashboard',
+      currentSubPage: this.activeNavItem(),
+    };
   }
 
 }
