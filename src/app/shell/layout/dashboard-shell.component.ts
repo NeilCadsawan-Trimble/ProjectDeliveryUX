@@ -24,11 +24,12 @@ import { WidgetFocusService } from '../services/widget-focus.service';
 import { AiService } from '../../services/ai.service';
 import { AiPanelController } from '../services/ai-panel-controller';
 import { CanvasPanning } from '../services/canvas-panning';
+import { NavigationHistoryService } from '../services/navigation-history.service';
 import {
   PROJECTS, ESTIMATES, ACTIVITIES, ATTENTION_ITEMS,
   TIME_OFF_REQUESTS, RFIS, SUBMITTALS, CALENDAR_APPOINTMENTS,
   CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS,
-  INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE,
+  INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, getProjectJobCosts,
 } from '../../data/dashboard-data';
 import { getAgent, getSuggestions, type AgentDataState } from '../../data/widget-agents';
 
@@ -98,9 +99,56 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             (aiClick)="ai.toggle()"
             (mainMenuOpenChange)="onMainMenuToggle($event)"
           >
-            <div slot="start" class="flex items-center gap-3">
+            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               <div class="w-px h-5 bg-foreground-20"></div>
-              <div class="text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
+              @if (navHistory.shellBackButton()) {
+                <div
+                  class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
+                  (click)="navHistory.shellBackButton()?.action()"
+                  role="button"
+                  tabindex="0"
+                  (keydown.enter)="navHistory.shellBackButton()?.action()"
+                >
+                  <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
+                  <div class="text-sm">Back</div>
+                </div>
+                <div class="w-px h-5 bg-foreground-20"></div>
+              }
+              @if (navHistory.shellTitleOverride(); as titleOv) {
+                <div class="relative min-w-0 flex-1">
+                  <div
+                    class="flex items-center gap-1 cursor-pointer select-none"
+                    role="button"
+                    [attr.aria-expanded]="shellSelectorOpen()"
+                    (click)="shellSelectorOpen.set(!shellSelectorOpen()); $event.stopPropagation()"
+                    (keydown.enter)="shellSelectorOpen.set(!shellSelectorOpen()); $event.stopPropagation()"
+                    tabindex="0"
+                  >
+                    <div class="text-2xl font-semibold text-foreground tracking-wide truncate" [title]="titleOv.text">{{ titleOv.text }}</div>
+                    <i class="modus-icons text-base text-foreground-60 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="shellSelectorOpen()" aria-hidden="true">expand_more</i>
+                  </div>
+                  @if (shellSelectorOpen()) {
+                    <div class="absolute top-full left-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[260px] max-w-[340px] py-1 max-h-[320px] overflow-y-auto" role="listbox" aria-label="Switch project">
+                      @for (item of titleOv.items; track item.id) {
+                        <div
+                          class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                          role="option"
+                          (click)="selectShellTitleItem(item.id); $event.stopPropagation()"
+                        >
+                          <div class="flex flex-col min-w-0">
+                            <div class="text-sm font-medium text-foreground truncate">{{ item.label }}</div>
+                            @if (item.sublabel) {
+                              <div class="text-xs text-foreground-60 truncate">{{ item.sublabel }}</div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
+              }
             </div>
             <div slot="end" class="flex items-center gap-1">
               <div
@@ -243,9 +291,56 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             (aiClick)="ai.toggle()"
             (mainMenuOpenChange)="onMainMenuToggle($event)"
           >
-            <div slot="start" class="flex items-center gap-3">
+            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               <div class="w-px h-5 bg-foreground-20"></div>
-              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
+              @if (navHistory.shellBackButton()) {
+                <div
+                  class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
+                  (click)="navHistory.shellBackButton()?.action()"
+                  role="button"
+                  tabindex="0"
+                  (keydown.enter)="navHistory.shellBackButton()?.action()"
+                >
+                  <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
+                  <div class="text-sm hidden md:block">Back</div>
+                </div>
+                <div class="w-px h-5 bg-foreground-20"></div>
+              }
+              @if (navHistory.shellTitleOverride(); as titleOv) {
+                <div class="relative min-w-0 flex-1">
+                  <div
+                    class="flex items-center gap-1 cursor-pointer select-none"
+                    role="button"
+                    [attr.aria-expanded]="shellSelectorOpen()"
+                    (click)="shellSelectorOpen.set(!shellSelectorOpen()); $event.stopPropagation()"
+                    (keydown.enter)="shellSelectorOpen.set(!shellSelectorOpen()); $event.stopPropagation()"
+                    tabindex="0"
+                  >
+                    <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="titleOv.text">{{ titleOv.text }}</div>
+                    <i class="modus-icons text-base text-foreground-60 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="shellSelectorOpen()" aria-hidden="true">expand_more</i>
+                  </div>
+                  @if (shellSelectorOpen()) {
+                    <div class="absolute top-full left-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[260px] max-w-[340px] py-1 max-h-[320px] overflow-y-auto" role="listbox" aria-label="Switch project">
+                      @for (item of titleOv.items; track item.id) {
+                        <div
+                          class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                          role="option"
+                          (click)="selectShellTitleItem(item.id); $event.stopPropagation()"
+                        >
+                          <div class="flex flex-col min-w-0">
+                            <div class="text-sm font-medium text-foreground truncate">{{ item.label }}</div>
+                            @if (item.sublabel) {
+                              <div class="text-xs text-foreground-60 truncate">{{ item.sublabel }}</div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
+              }
             </div>
             <div slot="end" class="flex items-center gap-1">
               <div
@@ -506,9 +601,11 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly moreMenuOpen = signal(false);
   readonly resetMenuOpen = signal(false);
   readonly desktopResetMenuOpen = signal(false);
+  readonly shellSelectorOpen = signal(false);
 
   private readonly canvasResetService = inject(CanvasResetService);
   readonly widgetFocusService = inject(WidgetFocusService);
+  readonly navHistory = inject(NavigationHistoryService);
   private readonly aiService = inject(AiService);
 
   readonly ai = new AiPanelController({
@@ -567,6 +664,12 @@ export class DashboardShellComponent implements AfterViewInit {
     this.desktopResetMenuOpen.update((v) => !v);
   }
 
+  selectShellTitleItem(id: number): void {
+    this.shellSelectorOpen.set(false);
+    const titleOv = this.navHistory.shellTitleOverride();
+    if (titleOv) titleOv.onSelect(id);
+  }
+
   resetMenuAction(action: 'view' | 'widgets' | 'save-defaults'): void {
     this.resetMenuOpen.set(false);
     this.desktopResetMenuOpen.set(false);
@@ -600,12 +703,14 @@ export class DashboardShellComponent implements AfterViewInit {
   private getPageName(): string {
     const url = this.currentUrl();
     if (url.startsWith('/projects')) return 'projects';
+    if (url.startsWith('/financials/job-costs/')) return 'financials-job-cost-detail';
     if (url.startsWith('/financials')) return 'financials';
     return 'home';
   }
 
   private buildAgentDataState(): AgentDataState {
-    return {
+    const page = this.getPageName();
+    const state: AgentDataState = {
       projects: PROJECTS,
       estimates: ESTIMATES,
       activities: ACTIVITIES,
@@ -621,8 +726,18 @@ export class DashboardShellComponent implements AfterViewInit {
       inspections: INSPECTIONS,
       punchListItems: PUNCH_LIST_ITEMS,
       projectRevenue: PROJECT_REVENUE,
-      currentPage: this.getPageName(),
+      currentPage: page,
     };
+    if (page === 'financials-job-cost-detail') {
+      const url = this.currentUrl();
+      const slug = url.replace('/financials/job-costs/', '').split('?')[0];
+      const proj = PROJECTS.find(p => p.slug === slug);
+      if (proj) {
+        state.jobCostDetailProject = getProjectJobCosts().find(p => p.projectId === proj.id) ?? undefined;
+        state.projectName = proj.name;
+      }
+    }
+    return state;
   }
 
   navigateHome(): void {
@@ -652,7 +767,9 @@ export class DashboardShellComponent implements AfterViewInit {
   }
 
   onEscapeKey(): void {
-    if (this.resetMenuOpen()) {
+    if (this.shellSelectorOpen()) {
+      this.shellSelectorOpen.set(false);
+    } else if (this.resetMenuOpen()) {
       this.resetMenuOpen.set(false);
     } else if (this.moreMenuOpen()) {
       this.moreMenuOpen.set(false);
@@ -678,6 +795,9 @@ export class DashboardShellComponent implements AfterViewInit {
     }
     if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);
+    }
+    if (this.shellSelectorOpen() && !target.closest('[role="listbox"]') && !target.closest('[aria-expanded]')) {
+      this.shellSelectorOpen.set(false);
     }
   }
 

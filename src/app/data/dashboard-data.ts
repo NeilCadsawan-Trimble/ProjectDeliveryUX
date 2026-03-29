@@ -4,7 +4,7 @@ import { PROJECT_DATA, type BudgetBreakdown } from './project-data';
 export type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 export type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 export type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-export type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeHeader' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'homeDrawings' | 'projsHeader' | 'finHeader' | 'finBudgetByProject' | 'finRevenueChart' | 'finJobCosts';
+export type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeHeader' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'homeDrawings' | 'homeUrgentNeeds' | 'homeWeather' | 'projsHeader' | 'finHeader' | 'finBudgetByProject' | 'finRevenueChart' | 'finJobCosts';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
@@ -60,6 +60,8 @@ export interface Project {
   budgetTotal: string;
   latestDrawingName: string;
   latestDrawingVersion: string;
+  city: string;
+  state: string;
 }
 
 export interface Estimate {
@@ -93,14 +95,14 @@ export interface AiMessage {
 }
 
 export const PROJECTS: Project[] = [
-  { id: 1, slug: 'riverside-office-complex', name: 'Riverside Office Complex', client: 'Trimble Internal', ownerInitials: 'SC', owner: 'Sarah Chen', status: 'On Track', dueDate: 'Mar 15, 2026', progress: 72, budgetPct: 68, budgetUsed: '$544K', budgetTotal: '$800K', latestDrawingName: 'Office Tower - Floor 3 Layout', latestDrawingVersion: 'v3.2' },
-  { id: 2, slug: 'harbor-view-condominiums', name: 'Harbor View Condominiums', client: 'Apex Corp', ownerInitials: 'JC', owner: 'James Carter', status: 'At Risk', dueDate: 'Mar 28, 2026', progress: 45, budgetPct: 82, budgetUsed: '$246K', budgetTotal: '$300K', latestDrawingName: 'Unit Type B Floor Plan', latestDrawingVersion: 'v2.4' },
-  { id: 3, slug: 'downtown-transit-hub', name: 'Downtown Transit Hub', client: 'GlobalTech Ltd', ownerInitials: 'PN', owner: 'Priya Nair', status: 'Overdue', dueDate: 'Feb 20, 2026', progress: 60, budgetPct: 95, budgetUsed: '$855K', budgetTotal: '$900K', latestDrawingName: 'Platform Canopy Elevation', latestDrawingVersion: 'v4.1' },
-  { id: 4, slug: 'lakeside-medical-center', name: 'Lakeside Medical Center', client: 'NexGen Analytics', ownerInitials: 'TE', owner: 'Tom Evans', status: 'On Track', dueDate: 'Apr 10, 2026', progress: 35, budgetPct: 30, budgetUsed: '$150K', budgetTotal: '$500K', latestDrawingName: 'HVAC Mechanical Plan - L2', latestDrawingVersion: 'v2.0' },
-  { id: 5, slug: 'westfield-shopping-center', name: 'Westfield Shopping Center', client: 'Brightline Co', ownerInitials: 'LB', owner: 'Lena Brooks', status: 'Planning', dueDate: 'Apr 30, 2026', progress: 12, budgetPct: 8, budgetUsed: '$24K', budgetTotal: '$350K', latestDrawingName: 'Site Plan & Grading', latestDrawingVersion: 'v1.2' },
-  { id: 6, slug: 'metro-bridge-rehabilitation', name: 'Metro Bridge Rehabilitation', client: 'Trimble Internal', ownerInitials: 'MO', owner: 'Mike Osei', status: 'On Track', dueDate: 'Mar 5, 2026', progress: 88, budgetPct: 72, budgetUsed: '$108K', budgetTotal: '$150K', latestDrawingName: 'Bridge Deck Cross Section', latestDrawingVersion: 'v2.3' },
-  { id: 7, slug: 'sunset-ridge-apartments', name: 'Sunset Ridge Apartments', client: 'CoreSystems Inc', ownerInitials: 'SC', owner: 'Sarah Chen', status: 'Overdue', dueDate: 'Feb 14, 2026', progress: 30, budgetPct: 55, budgetUsed: '$110K', budgetTotal: '$200K', latestDrawingName: 'Building A Foundation Plan', latestDrawingVersion: 'v3.0' },
-  { id: 8, slug: 'industrial-park-warehouse', name: 'Industrial Park Warehouse', client: 'DataDrive AI', ownerInitials: 'PN', owner: 'Priya Nair', status: 'On Track', dueDate: 'May 20, 2026', progress: 20, budgetPct: 18, budgetUsed: '$90K', budgetTotal: '$500K', latestDrawingName: 'Warehouse Floor Plan', latestDrawingVersion: 'v1.5' },
+  { id: 1, slug: 'riverside-office-complex', name: 'Riverside Office Complex', client: 'Trimble Internal', ownerInitials: 'SC', owner: 'Sarah Chen', status: 'On Track', dueDate: 'Mar 15, 2026', progress: 72, budgetPct: 68, budgetUsed: '$544K', budgetTotal: '$800K', latestDrawingName: 'Office Tower - Floor 3 Layout', latestDrawingVersion: 'v3.2', city: 'Portland', state: 'OR' },
+  { id: 2, slug: 'harbor-view-condominiums', name: 'Harbor View Condominiums', client: 'Apex Corp', ownerInitials: 'JC', owner: 'James Carter', status: 'At Risk', dueDate: 'Mar 28, 2026', progress: 45, budgetPct: 82, budgetUsed: '$246K', budgetTotal: '$300K', latestDrawingName: 'Unit Type B Floor Plan', latestDrawingVersion: 'v2.4', city: 'San Francisco', state: 'CA' },
+  { id: 3, slug: 'downtown-transit-hub', name: 'Downtown Transit Hub', client: 'GlobalTech Ltd', ownerInitials: 'PN', owner: 'Priya Nair', status: 'Overdue', dueDate: 'Feb 20, 2026', progress: 60, budgetPct: 95, budgetUsed: '$855K', budgetTotal: '$900K', latestDrawingName: 'Platform Canopy Elevation', latestDrawingVersion: 'v4.1', city: 'Seattle', state: 'WA' },
+  { id: 4, slug: 'lakeside-medical-center', name: 'Lakeside Medical Center', client: 'NexGen Analytics', ownerInitials: 'TE', owner: 'Tom Evans', status: 'On Track', dueDate: 'Apr 10, 2026', progress: 35, budgetPct: 30, budgetUsed: '$150K', budgetTotal: '$500K', latestDrawingName: 'HVAC Mechanical Plan - L2', latestDrawingVersion: 'v2.0', city: 'Bend', state: 'OR' },
+  { id: 5, slug: 'westfield-shopping-center', name: 'Westfield Shopping Center', client: 'Brightline Co', ownerInitials: 'LB', owner: 'Lena Brooks', status: 'Planning', dueDate: 'Apr 30, 2026', progress: 12, budgetPct: 8, budgetUsed: '$24K', budgetTotal: '$350K', latestDrawingName: 'Site Plan & Grading', latestDrawingVersion: 'v1.2', city: 'Sacramento', state: 'CA' },
+  { id: 6, slug: 'metro-bridge-rehabilitation', name: 'Metro Bridge Rehabilitation', client: 'Trimble Internal', ownerInitials: 'MO', owner: 'Mike Osei', status: 'On Track', dueDate: 'Mar 5, 2026', progress: 88, budgetPct: 72, budgetUsed: '$108K', budgetTotal: '$150K', latestDrawingName: 'Bridge Deck Cross Section', latestDrawingVersion: 'v2.3', city: 'Tacoma', state: 'WA' },
+  { id: 7, slug: 'sunset-ridge-apartments', name: 'Sunset Ridge Apartments', client: 'CoreSystems Inc', ownerInitials: 'SC', owner: 'Sarah Chen', status: 'Overdue', dueDate: 'Feb 14, 2026', progress: 30, budgetPct: 55, budgetUsed: '$110K', budgetTotal: '$200K', latestDrawingName: 'Building A Foundation Plan', latestDrawingVersion: 'v3.0', city: 'Eugene', state: 'OR' },
+  { id: 8, slug: 'industrial-park-warehouse', name: 'Industrial Park Warehouse', client: 'DataDrive AI', ownerInitials: 'PN', owner: 'Priya Nair', status: 'On Track', dueDate: 'May 20, 2026', progress: 20, budgetPct: 18, budgetUsed: '$90K', budgetTotal: '$500K', latestDrawingName: 'Warehouse Floor Plan', latestDrawingVersion: 'v1.5', city: 'Redding', state: 'CA' },
 ];
 
 export const ESTIMATES: Estimate[] = [
@@ -666,6 +668,133 @@ export const WEATHER_FORECAST: WeatherForecast[] = [
   { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 65, lowF: 44, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
 ];
 
+export interface ProjectWeather {
+  projectId: number;
+  city: string;
+  state: string;
+  current: {
+    condition: WeatherCondition;
+    tempF: number;
+    feelsLikeF: number;
+    humidity: number;
+    windMph: number;
+    windDir: string;
+    uvIndex: number;
+  };
+  forecast: WeatherForecast[];
+}
+
+const PROJECT_WEATHER_DATA: ProjectWeather[] = [
+  {
+    projectId: 1, city: 'Portland', state: 'OR',
+    current: { condition: 'partly-cloudy', tempF: 54, feelsLikeF: 51, humidity: 68, windMph: 11, windDir: 'SW', uvIndex: 3 },
+    forecast: [
+      { date: 'Mar 27', day: 'Fri', condition: 'partly-cloudy', highF: 58, lowF: 42, precipPct: 20, windMph: 11, workImpact: 'none', note: '' },
+      { date: 'Mar 28', day: 'Sat', condition: 'rain', highF: 52, lowF: 40, precipPct: 75, windMph: 16, workImpact: 'minor', note: 'Steady rain through midday. Interior work only in AM.' },
+      { date: 'Mar 29', day: 'Sun', condition: 'rain', highF: 50, lowF: 38, precipPct: 85, windMph: 22, workImpact: 'major', note: 'Heavy rain and wind. Suspend crane operations.' },
+      { date: 'Mar 30', day: 'Mon', condition: 'cloudy', highF: 53, lowF: 39, precipPct: 40, windMph: 14, workImpact: 'minor', note: 'Showers tapering. Afternoon exterior possible.' },
+      { date: 'Mar 31', day: 'Tue', condition: 'partly-cloudy', highF: 57, lowF: 41, precipPct: 15, windMph: 9, workImpact: 'none', note: '' },
+      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 62, lowF: 44, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
+      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 65, lowF: 45, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+    ],
+  },
+  {
+    projectId: 2, city: 'San Francisco', state: 'CA',
+    current: { condition: 'cloudy', tempF: 58, feelsLikeF: 55, humidity: 72, windMph: 18, windDir: 'W', uvIndex: 4 },
+    forecast: [
+      { date: 'Mar 27', day: 'Fri', condition: 'cloudy', highF: 61, lowF: 50, precipPct: 25, windMph: 18, workImpact: 'none', note: '' },
+      { date: 'Mar 28', day: 'Sat', condition: 'partly-cloudy', highF: 63, lowF: 51, precipPct: 10, windMph: 15, workImpact: 'none', note: '' },
+      { date: 'Mar 29', day: 'Sun', condition: 'rain', highF: 57, lowF: 49, precipPct: 70, windMph: 22, workImpact: 'major', note: 'Atmospheric river arriving. No exterior work. High wind advisory.' },
+      { date: 'Mar 30', day: 'Mon', condition: 'rain', highF: 55, lowF: 48, precipPct: 80, windMph: 25, workImpact: 'major', note: 'Continued heavy rain. Flooding possible at grade level.' },
+      { date: 'Mar 31', day: 'Tue', condition: 'cloudy', highF: 59, lowF: 49, precipPct: 35, windMph: 14, workImpact: 'minor', note: 'Rain tapering. Exterior afternoon OK with caution.' },
+      { date: 'Apr 1', day: 'Wed', condition: 'partly-cloudy', highF: 64, lowF: 52, precipPct: 10, windMph: 10, workImpact: 'none', note: '' },
+      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 67, lowF: 53, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
+    ],
+  },
+  {
+    projectId: 3, city: 'Seattle', state: 'WA',
+    current: { condition: 'rain', tempF: 48, feelsLikeF: 43, humidity: 82, windMph: 14, windDir: 'S', uvIndex: 1 },
+    forecast: [
+      { date: 'Mar 27', day: 'Fri', condition: 'rain', highF: 51, lowF: 40, precipPct: 70, windMph: 14, workImpact: 'minor', note: 'Light steady rain. Exterior work with precautions.' },
+      { date: 'Mar 28', day: 'Sat', condition: 'rain', highF: 49, lowF: 38, precipPct: 80, windMph: 20, workImpact: 'major', note: 'Heavy rain with gusts to 30 mph. No crane or elevated work.' },
+      { date: 'Mar 29', day: 'Sun', condition: 'cloudy', highF: 50, lowF: 39, precipPct: 45, windMph: 12, workImpact: 'minor', note: 'Scattered showers. Ground saturated.' },
+      { date: 'Mar 30', day: 'Mon', condition: 'partly-cloudy', highF: 54, lowF: 41, precipPct: 20, windMph: 9, workImpact: 'none', note: '' },
+      { date: 'Mar 31', day: 'Tue', condition: 'sunny', highF: 58, lowF: 42, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
+      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 61, lowF: 44, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { date: 'Apr 2', day: 'Thu', condition: 'partly-cloudy', highF: 59, lowF: 43, precipPct: 15, windMph: 10, workImpact: 'none', note: '' },
+    ],
+  },
+  {
+    projectId: 4, city: 'Bend', state: 'OR',
+    current: { condition: 'sunny', tempF: 46, feelsLikeF: 42, humidity: 38, windMph: 8, windDir: 'NW', uvIndex: 5 },
+    forecast: [
+      { date: 'Mar 27', day: 'Fri', condition: 'sunny', highF: 52, lowF: 28, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
+      { date: 'Mar 28', day: 'Sat', condition: 'sunny', highF: 55, lowF: 30, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { date: 'Mar 29', day: 'Sun', condition: 'partly-cloudy', highF: 50, lowF: 29, precipPct: 15, windMph: 10, workImpact: 'none', note: '' },
+      { date: 'Mar 30', day: 'Mon', condition: 'cloudy', highF: 47, lowF: 27, precipPct: 30, windMph: 12, workImpact: 'none', note: '' },
+      { date: 'Mar 31', day: 'Tue', condition: 'snow', highF: 38, lowF: 24, precipPct: 60, windMph: 15, workImpact: 'major', note: 'Snow likely. Freezing temps -- no concrete pours. Roads may be affected.' },
+      { date: 'Apr 1', day: 'Wed', condition: 'partly-cloudy', highF: 45, lowF: 26, precipPct: 20, windMph: 9, workImpact: 'minor', note: 'Clearing but cold. Watch for ice on scaffolding.' },
+      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 54, lowF: 30, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
+    ],
+  },
+  {
+    projectId: 5, city: 'Sacramento', state: 'CA',
+    current: { condition: 'sunny', tempF: 68, feelsLikeF: 68, humidity: 42, windMph: 6, windDir: 'NW', uvIndex: 6 },
+    forecast: [
+      { date: 'Mar 27', day: 'Fri', condition: 'sunny', highF: 72, lowF: 48, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { date: 'Mar 28', day: 'Sat', condition: 'sunny', highF: 74, lowF: 49, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+      { date: 'Mar 29', day: 'Sun', condition: 'partly-cloudy', highF: 70, lowF: 47, precipPct: 10, windMph: 8, workImpact: 'none', note: '' },
+      { date: 'Mar 30', day: 'Mon', condition: 'rain', highF: 62, lowF: 46, precipPct: 65, windMph: 14, workImpact: 'minor', note: 'Rain expected by midday. Cover grading work.' },
+      { date: 'Mar 31', day: 'Tue', condition: 'cloudy', highF: 64, lowF: 47, precipPct: 30, windMph: 10, workImpact: 'none', note: '' },
+      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 71, lowF: 49, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 75, lowF: 50, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+    ],
+  },
+  {
+    projectId: 6, city: 'Tacoma', state: 'WA',
+    current: { condition: 'cloudy', tempF: 50, feelsLikeF: 46, humidity: 76, windMph: 12, windDir: 'S', uvIndex: 2 },
+    forecast: [
+      { date: 'Mar 27', day: 'Fri', condition: 'cloudy', highF: 53, lowF: 41, precipPct: 35, windMph: 12, workImpact: 'none', note: '' },
+      { date: 'Mar 28', day: 'Sat', condition: 'rain', highF: 50, lowF: 39, precipPct: 75, windMph: 18, workImpact: 'minor', note: 'Steady rain. Bridge deck work suspended.' },
+      { date: 'Mar 29', day: 'Sun', condition: 'rain', highF: 48, lowF: 38, precipPct: 80, windMph: 24, workImpact: 'major', note: 'Heavy rain and high wind. Suspend all bridge operations.' },
+      { date: 'Mar 30', day: 'Mon', condition: 'partly-cloudy', highF: 52, lowF: 40, precipPct: 25, windMph: 11, workImpact: 'none', note: '' },
+      { date: 'Mar 31', day: 'Tue', condition: 'sunny', highF: 56, lowF: 42, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
+      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 60, lowF: 44, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { date: 'Apr 2', day: 'Thu', condition: 'partly-cloudy', highF: 58, lowF: 43, precipPct: 15, windMph: 9, workImpact: 'none', note: '' },
+    ],
+  },
+  {
+    projectId: 7, city: 'Eugene', state: 'OR',
+    current: { condition: 'partly-cloudy', tempF: 52, feelsLikeF: 49, humidity: 64, windMph: 9, windDir: 'SW', uvIndex: 3 },
+    forecast: [
+      { date: 'Mar 27', day: 'Fri', condition: 'partly-cloudy', highF: 56, lowF: 38, precipPct: 20, windMph: 9, workImpact: 'none', note: '' },
+      { date: 'Mar 28', day: 'Sat', condition: 'rain', highF: 51, lowF: 37, precipPct: 70, windMph: 14, workImpact: 'minor', note: 'Rain from late morning. Cover foundation excavation.' },
+      { date: 'Mar 29', day: 'Sun', condition: 'rain', highF: 49, lowF: 36, precipPct: 80, windMph: 18, workImpact: 'major', note: 'Heavy rain. Ground too saturated for foundation work.' },
+      { date: 'Mar 30', day: 'Mon', condition: 'cloudy', highF: 52, lowF: 37, precipPct: 40, windMph: 11, workImpact: 'minor', note: 'Intermittent showers. Interior framing OK.' },
+      { date: 'Mar 31', day: 'Tue', condition: 'partly-cloudy', highF: 56, lowF: 39, precipPct: 15, windMph: 8, workImpact: 'none', note: '' },
+      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 61, lowF: 41, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 64, lowF: 43, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+    ],
+  },
+  {
+    projectId: 8, city: 'Redding', state: 'CA',
+    current: { condition: 'sunny', tempF: 72, feelsLikeF: 72, humidity: 35, windMph: 5, windDir: 'N', uvIndex: 7 },
+    forecast: [
+      { date: 'Mar 27', day: 'Fri', condition: 'sunny', highF: 76, lowF: 46, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+      { date: 'Mar 28', day: 'Sat', condition: 'sunny', highF: 78, lowF: 47, precipPct: 5, windMph: 4, workImpact: 'none', note: '' },
+      { date: 'Mar 29', day: 'Sun', condition: 'partly-cloudy', highF: 74, lowF: 45, precipPct: 10, windMph: 7, workImpact: 'none', note: '' },
+      { date: 'Mar 30', day: 'Mon', condition: 'cloudy', highF: 68, lowF: 44, precipPct: 30, windMph: 10, workImpact: 'none', note: '' },
+      { date: 'Mar 31', day: 'Tue', condition: 'partly-cloudy', highF: 71, lowF: 45, precipPct: 15, windMph: 8, workImpact: 'none', note: '' },
+      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 77, lowF: 47, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 80, lowF: 48, precipPct: 5, windMph: 4, workImpact: 'none', note: '' },
+    ],
+  },
+];
+
+export function getProjectWeather(projectId: number): ProjectWeather | undefined {
+  return PROJECT_WEATHER_DATA.find(w => w.projectId === projectId);
+}
+
 export interface ProjectAttentionItem {
   id: string;
   projectId: number;
@@ -1001,4 +1130,189 @@ export function getSubledger(projectId: number, category: JobCostCategory): Subl
     _subledgerCache[key] = buildSubledger(projectId, category, total);
   }
   return _subledgerCache[key];
+}
+
+export type UrgentNeedCategory = 'rfi' | 'submittal' | 'budget' | 'schedule' | 'inspection' | 'safety' | 'change-order' | 'quality';
+
+export interface UrgentNeedItem {
+  id: string;
+  projectId: number;
+  projectName: string;
+  projectSlug: string;
+  title: string;
+  subtitle: string;
+  severity: 'critical' | 'warning' | 'info';
+  category: UrgentNeedCategory;
+  route: string;
+  queryParams: Record<string, string>;
+  financialsRoute?: string;
+}
+
+const CATEGORY_ICONS: Record<UrgentNeedCategory, string> = {
+  rfi: 'clipboard',
+  submittal: 'document',
+  budget: 'account_balance',
+  schedule: 'calendar',
+  inspection: 'shield',
+  safety: 'warning',
+  'change-order': 'swap_horiz',
+  quality: 'bug',
+};
+
+export function urgentNeedCategoryIcon(cat: UrgentNeedCategory): string {
+  return CATEGORY_ICONS[cat] ?? 'info';
+}
+
+const _projectSlugMap = new Map<number, { name: string; slug: string }>();
+function getProjectMeta(id: number): { name: string; slug: string } {
+  if (!_projectSlugMap.size) {
+    for (const p of PROJECTS) _projectSlugMap.set(p.id, { name: p.name, slug: p.slug });
+  }
+  return _projectSlugMap.get(id) ?? { name: 'Unknown', slug: '' };
+}
+
+let _urgentNeedsCache: UrgentNeedItem[] | null = null;
+
+export function buildUrgentNeeds(): UrgentNeedItem[] {
+  if (_urgentNeedsCache) return _urgentNeedsCache;
+
+  const seen = new Set<string>();
+  const items: UrgentNeedItem[] = [];
+
+  for (const pa of PROJECT_ATTENTION_ITEMS) {
+    const meta = getProjectMeta(pa.projectId);
+    const cat = (pa.category || 'schedule') as UrgentNeedCategory;
+    const pageGroup = ['rfi', 'submittal', 'inspection', 'safety', 'quality'].includes(cat) ? 'records' : (['budget', 'change-order'].includes(cat) ? 'financials' : 'dashboard');
+    const subpageMap: Record<string, string> = {
+      rfi: 'rfis', submittal: 'submittals', inspection: 'inspections',
+      budget: 'budget', 'change-order': 'change-orders',
+      safety: 'safety-notices', quality: 'punch-items',
+    };
+    const subpage = subpageMap[cat];
+
+    let qp: Record<string, string> = subpage ? { page: pageGroup, subpage } : { page: 'dashboard' };
+
+    const upperTitle = pa.title.toUpperCase();
+    const rfiMatch = upperTitle.match(/RFI-(\d+)/);
+    if (rfiMatch) {
+      const rfiId = String(parseInt(rfiMatch[1], 10));
+      const rfi = RFIS.find(r => r.id === rfiId);
+      if (rfi) qp = { view: 'rfi', id: rfiId, page: 'records', subpage: 'rfis' };
+      seen.add(`rfi-${rfiMatch[1]}`);
+    }
+    const subMatch = upperTitle.match(/SUB-(\d+)/);
+    if (subMatch) {
+      const subId = String(parseInt(subMatch[1], 10));
+      const sub = SUBMITTALS.find(s => s.id === subId);
+      if (sub) qp = { view: 'submittal', id: subId, page: 'records', subpage: 'submittals' };
+      seen.add(`sub-${subMatch[1]}`);
+    }
+    const coMatch = upperTitle.match(/CO-(\d+)/);
+    if (coMatch) {
+      const coId = `CO-${coMatch[1]}`;
+      const co = CHANGE_ORDERS.find(c => c.id === coId);
+      if (co) qp = { view: 'changeOrder', id: coId, page: 'financials', subpage: 'change-orders' };
+      seen.add(`co-${coMatch[1]}`);
+    }
+
+    const finRoute = (cat === 'budget' || cat === 'change-order') ? `/financials/job-costs/${meta.slug}` : undefined;
+
+    items.push({
+      id: pa.id,
+      projectId: pa.projectId,
+      projectName: meta.name,
+      projectSlug: meta.slug,
+      title: pa.title,
+      subtitle: pa.subtitle,
+      severity: pa.severity,
+      category: cat,
+      route: `/project/${meta.slug}`,
+      queryParams: qp,
+      financialsRoute: finRoute,
+    });
+  }
+
+  for (const rfi of RFIS) {
+    if (rfi.status !== 'overdue') continue;
+    if (seen.has(`rfi-${rfi.id}`)) continue;
+    const proj = PROJECTS.find(p => p.name === rfi.project);
+    if (!proj) continue;
+    items.push({
+      id: `rfi-${rfi.id}`,
+      projectId: proj.id,
+      projectName: proj.name,
+      projectSlug: proj.slug,
+      title: `${rfi.number} overdue`,
+      subtitle: `${rfi.subject} -- assigned to ${rfi.assignee}`,
+      severity: 'critical',
+      category: 'rfi',
+      route: `/project/${proj.slug}`,
+      queryParams: { view: 'rfi', id: rfi.id, page: 'records', subpage: 'rfis' },
+    });
+  }
+
+  for (const sub of SUBMITTALS) {
+    if (sub.status !== 'overdue') continue;
+    if (seen.has(`sub-${sub.id}`)) continue;
+    const proj = PROJECTS.find(p => p.name === sub.project);
+    if (!proj) continue;
+    items.push({
+      id: `sub-${sub.id}`,
+      projectId: proj.id,
+      projectName: proj.name,
+      projectSlug: proj.slug,
+      title: `${sub.number} overdue`,
+      subtitle: `${sub.subject} -- assigned to ${sub.assignee}`,
+      severity: 'critical',
+      category: 'submittal',
+      route: `/project/${proj.slug}`,
+      queryParams: { view: 'submittal', id: sub.id, page: 'records', subpage: 'submittals' },
+    });
+  }
+
+  for (const co of CHANGE_ORDERS) {
+    if (co.status !== 'pending') continue;
+    if (seen.has(`co-${co.id.replace('CO-', '')}`)) continue;
+    const meta = getProjectMeta(co.projectId);
+    items.push({
+      id: `co-${co.id}`,
+      projectId: co.projectId,
+      projectName: meta.name,
+      projectSlug: meta.slug,
+      title: `${co.id} pending approval`,
+      subtitle: `${co.description} -- $${(co.amount / 1000).toFixed(0)}K`,
+      severity: 'warning',
+      category: 'change-order',
+      route: `/project/${meta.slug}`,
+      queryParams: { page: 'financials', subpage: 'change-orders' },
+      financialsRoute: `/financials/job-costs/${meta.slug}`,
+    });
+  }
+
+  const budgetProjectIds = new Set(items.filter(i => i.category === 'budget').map(i => i.projectId));
+  for (const p of PROJECTS) {
+    if (budgetProjectIds.has(p.id)) continue;
+    if (p.budgetPct >= 75) {
+      const sev = p.budgetPct >= 90 ? 'critical' as const : 'warning' as const;
+      items.push({
+        id: `budget-auto-${p.id}`,
+        projectId: p.id,
+        projectName: p.name,
+        projectSlug: p.slug,
+        title: `Budget at ${p.budgetPct}%`,
+        subtitle: `${p.budgetUsed} of ${p.budgetTotal} used -- ${100 - p.budgetPct}% remaining`,
+        severity: sev,
+        category: 'budget',
+        route: `/project/${p.slug}`,
+        queryParams: { page: 'financials', subpage: 'budget' },
+        financialsRoute: `/financials/job-costs/${p.slug}`,
+      });
+    }
+  }
+
+  const severityOrder: Record<string, number> = { critical: 0, warning: 1, info: 2 };
+  items.sort((a, b) => (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9));
+
+  _urgentNeedsCache = items;
+  return items;
 }

@@ -1,4 +1,5 @@
-import type { Rfi, Submittal, CalendarAppointment, Project, Estimate, ActivityItem, ChangeOrder, DailyReport, WeatherForecast, ProjectAttentionItem, BudgetHistoryPoint, Inspection, PunchListItem, ProjectRevenue } from './dashboard-data';
+import type { Rfi, Submittal, CalendarAppointment, Project, Estimate, ActivityItem, ChangeOrder, DailyReport, WeatherForecast, ProjectAttentionItem, BudgetHistoryPoint, Inspection, PunchListItem, ProjectRevenue, UrgentNeedItem, ProjectJobCost, JobCostCategory, ProjectWeather } from './dashboard-data';
+import { buildUrgentNeeds, PROJECTS, JOB_COST_CATEGORIES, getProjectJobCosts, getProjectWeather } from './dashboard-data';
 import type { Milestone, TeamMember, Task, Risk, ActivityEntry, Drawing, BudgetBreakdown } from './project-data';
 import type { DrawingTile } from './drawings-data';
 
@@ -46,6 +47,8 @@ export interface AgentDataState {
   detailRfi?: Rfi;
   detailSubmittal?: Submittal;
   detailDrawing?: DrawingTile;
+
+  jobCostDetailProject?: ProjectJobCost;
 
   currentPage?: string;
   currentSubPage?: string;
@@ -308,7 +311,7 @@ const homeDefault: WidgetAgent = {
   },
   alerts: () => null,
   actions: () => [
-    { id: 'open-projects', label: 'Open Projects dashboard', execute: () => 'Opening Projects dashboard.', route: '/projects' },
+    { id: 'open-projects', label: 'Open Projects', execute: () => 'Opening Projects dashboard.', route: '/projects' },
     { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
     { id: 'refresh-attention', label: 'Refresh attention feed', execute: () => 'Refreshed items needing attention.' },
   ],
@@ -568,10 +571,20 @@ const finBudgetByProject: WidgetAgent = {
     const high = (s.projects ?? []).filter(p => p.budgetPct > 90).length;
     return high ? { level: 'critical', count: high, label: 'over 90% budget' } : null;
   },
-  actions: () => [
-    { id: 'export-budget', label: 'Export budget utilization', execute: () => 'Exported budget-by-project report.' },
-    { id: 'flag-review', label: 'Flag high-utilization projects', execute: () => 'Flagged projects over 80% for controller review.' },
-  ],
+  actions(s) {
+    const projects = s.projects ?? [];
+    const highUtil = projects.filter(p => p.budgetPct >= 80).slice(0, 3);
+    const jcActions: AgentAction[] = highUtil.map(p => ({
+      id: `open-jc-${p.id}`,
+      label: `Open ${p.name} job costs`,
+      execute: () => `Opening job costs for ${p.name}.`,
+      route: `/financials/job-costs/${p.slug}`,
+    }));
+    return [
+      { id: 'export-budget', label: 'Export budget utilization', execute: () => 'Exported budget-by-project report.' },
+      ...jcActions,
+    ];
+  },
   buildContext(s) {
     const projects = s.projects ?? [];
     const lines = projects.map(p => `  ${p.name}: ${p.budgetUsed} of ${p.budgetTotal} (${p.budgetPct}%), client: ${p.client}`);
@@ -610,10 +623,23 @@ const financialsDefault: WidgetAgent = {
     return null;
   },
   alerts: () => null,
-  actions: () => [
-    { id: 'open-revenue', label: 'Open revenue view', execute: () => 'Opening revenue breakdown.', route: '/financials' },
-    { id: 'open-change-orders', label: 'Open change orders', execute: () => 'Opening change orders.', route: '/financials' },
-  ],
+  actions(s) {
+    const overBudget = (s.projects ?? []).filter(p => p.budgetPct >= 80);
+    const topProject = overBudget.length ? overBudget[0] : (s.projects ?? [])[0];
+    const base: AgentAction[] = [
+      { id: 'open-revenue', label: 'Open revenue view', execute: () => 'Opening revenue breakdown.', route: '/financials' },
+      { id: 'open-change-orders', label: 'Open change orders', execute: () => 'Opening change orders.', route: '/financials' },
+    ];
+    if (topProject) {
+      base.push({
+        id: 'open-jc-top',
+        label: `Open ${topProject.name} job costs`,
+        execute: () => `Opening job costs for ${topProject.name}.`,
+        route: `/financials/job-costs/${topProject.slug}`,
+      });
+    }
+    return base;
+  },
   buildContext(s) {
     const projects = s.projects ?? [];
     const totalUsed = projects.reduce((sum, p) => sum + parseFloat(p.budgetUsed.replace(/[$K]/g, '')) * 1000, 0);
@@ -743,42 +769,72 @@ const tasksAgent: WidgetAgent = {
 
 const risksAgent: WidgetAgent = {
   id: 'risks',
-  name: 'Risks',
-  systemPrompt: 'You are a risk management specialist for construction projects. You assess risk severity, evaluate mitigation strategies, and advise on risk response plans.',
+  name: 'Risks & Urgent Needs',
+  systemPrompt: 'You are a risk management specialist for construction projects. You assess risk severity, evaluate mitigation strategies, advise on risk response plans, and track urgent needs that require immediate attention.',
   suggestions(s) {
+    const projId = s.projects?.[0]?.id;
+    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
     const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
-    return high
+    const base = high
       ? ['Show high-severity risks', 'What are the biggest risks right now?', 'What risk mitigations are in place?']
       : ['What are the biggest risks right now?', 'Summarize open risks', 'What risk mitigations are in place?'];
+    if (urgent.length) base.unshift('What urgent needs require action?');
+    return base.slice(0, 5);
   },
   insight(s) {
+    const projId = s.projects?.[0]?.id;
+    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
+    const critical = urgent.filter(n => n.severity === 'critical').length;
     const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
-    if (!high) return null;
-    return `${high} high-severity risk${high === 1 ? '' : 's'} open`;
+    const parts: string[] = [];
+    if (critical) parts.push(`${critical} critical urgent need${critical === 1 ? '' : 's'}`);
+    if (high) parts.push(`${high} high-severity risk${high === 1 ? '' : 's'}`);
+    return parts.length ? parts.join(', ') : null;
   },
   alerts(s) {
+    const projId = s.projects?.[0]?.id;
+    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
+    const critical = urgent.filter(n => n.severity === 'critical').length;
     const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
-    return high ? { level: 'warning', count: high, label: 'high severity' } : null;
+    const total = critical + high;
+    if (critical) return { level: 'critical', count: total, label: `${critical} critical` };
+    if (high) return { level: 'warning', count: total, label: 'high severity' };
+    return null;
   },
   actions: () => [
     { id: 'risk-workshop', label: 'Schedule risk review', execute: () => 'Scheduled risk review workshop.' },
     { id: 'update-mitigations', label: 'Request mitigation updates', execute: () => 'Requested mitigation plan updates from owners.' },
+    { id: 'escalate-urgent', label: 'Escalate urgent needs', execute: (st) => { const projId = st.projects?.[0]?.id; const n = projId ? buildUrgentNeeds().filter(i => i.projectId === projId && i.severity === 'critical').length : 0; return n ? `Escalated ${n} critical item(s).` : 'No critical items to escalate.'; } },
   ],
   buildContext(s) {
     const risks = s.risks ?? [];
-    const lines = risks.map(r => `  ${r.title}: severity ${r.severity}, impact: ${r.impact}, mitigation: ${r.mitigation}`);
-    return `Project: ${s.projectName}\nRisks (${risks.length}):\n${lines.join('\n')}`;
+    const projId = s.projects?.[0]?.id;
+    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
+    const riskLines = risks.map(r => `  ${r.title}: severity ${r.severity}, impact: ${r.impact}, mitigation: ${r.mitigation}`);
+    const urgentLines = urgent.map(u => `  [${u.severity.toUpperCase()}] ${u.title} -- ${u.subtitle} (${u.category})`);
+    return `Project: ${s.projectName}\nRisks (${risks.length}):\n${riskLines.join('\n')}\nUrgent Needs (${urgent.length}):\n${urgentLines.join('\n')}`;
   },
   localRespond(q, s) {
     const risks = s.risks ?? [];
+    const projId = s.projects?.[0]?.id;
+    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
+
+    if (kw(q, 'urgent', 'needs', 'action', 'attention')) {
+      if (!urgent.length) return 'No urgent needs flagged for this project.';
+      return urgent.map(u => `- [${u.severity}] **${u.title}**: ${u.subtitle}`).join('\n');
+    }
     if (kw(q, 'high', 'biggest', 'critical', 'severe')) {
-      const high = risks.filter(r => r.severity === 'high');
-      return high.length ? `${high.length} high-severity risk(s): ${high.map(r => `${r.title} -- ${r.impact}`).join('; ')}` : 'No high-severity risks.';
+      const highRisks = risks.filter(r => r.severity === 'high');
+      const criticalNeeds = urgent.filter(u => u.severity === 'critical');
+      const parts: string[] = [];
+      if (criticalNeeds.length) parts.push(`**Critical needs:** ${criticalNeeds.map(u => u.title).join(', ')}`);
+      if (highRisks.length) parts.push(`**High risks:** ${highRisks.map(r => `${r.title} -- ${r.impact}`).join('; ')}`);
+      return parts.length ? parts.join('\n\n') : 'No high-severity risks or critical needs.';
     }
     if (kw(q, 'mitigation', 'response', 'plan')) {
       return risks.map(r => `${r.title}: ${r.mitigation}`).join('; ') || 'No risks documented.';
     }
-    return `${risks.length} risks identified for ${s.projectName}. ${risks.filter(r => r.severity === 'high').length} are high severity. Ask about mitigations or specific risk areas.`;
+    return `${risks.length} risks and ${urgent.length} urgent needs for ${s.projectName}. ${risks.filter(r => r.severity === 'high').length} high-severity risks, ${urgent.filter(u => u.severity === 'critical').length} critical needs. Ask about specific items.`;
   },
 };
 
@@ -1710,6 +1766,96 @@ const financialsCostForecasts: WidgetAgent = {
   },
 };
 
+const financialsJobCostDetail: WidgetAgent = {
+  id: 'financialsJobCostDetail',
+  name: 'Job Cost Detail',
+  systemPrompt: 'You are a cost control analyst for a specific construction project. You have full visibility into this project\'s budget, cost categories (Labor, Materials, Equipment, Subcontractors, Overhead), spending patterns, and how they compare to the portfolio. You can help identify cost overruns, recommend cost-saving measures, and compare this project\'s spend profile to others.',
+  suggestions(s) {
+    const p = s.jobCostDetailProject;
+    if (!p) return ['Which cost category is the largest?', 'How does this budget compare to the portfolio?', 'Are there any cost overruns?'];
+    const cats = JOB_COST_CATEGORIES;
+    const totalSpend = cats.reduce((sum, cat) => sum + p.costs[cat], 0);
+    const topCat = cats.reduce((a, b) => p.costs[a] > p.costs[b] ? a : b);
+    const topPct = totalSpend > 0 ? Math.round((p.costs[topCat] / totalSpend) * 100) : 0;
+    return [
+      `Why is ${topCat} at ${topPct}% of spend?`,
+      `Is ${p.projectName} over budget?`,
+      'Compare cost categories to portfolio averages',
+      `What are the biggest cost drivers for ${p.projectName}?`,
+    ];
+  },
+  insight(s) {
+    const p = s.jobCostDetailProject;
+    if (!p) return null;
+    if (p.budgetPct >= 90) return `Budget critically high at ${p.budgetPct}% -- immediate review recommended`;
+    if (p.budgetPct >= 75) return `Budget utilization at ${p.budgetPct}% -- approaching threshold`;
+    return null;
+  },
+  alerts(s) {
+    const p = s.jobCostDetailProject;
+    if (!p) return null;
+    if (p.budgetPct >= 90) return { level: 'critical', count: 1, label: 'budget critical' };
+    if (p.budgetPct >= 75) return { level: 'warning', count: 1, label: 'budget high' };
+    return null;
+  },
+  actions(s) {
+    const allCosts = getProjectJobCosts();
+    const currentId = s.jobCostDetailProject?.projectId;
+    const others = allCosts.filter(p => p.projectId !== currentId).slice(0, 4);
+    const navActions: AgentAction[] = others.map(p => {
+      const proj = PROJECTS.find(pr => pr.id === p.projectId);
+      return {
+        id: `nav-jc-${p.projectId}`,
+        label: `Open ${p.projectName} job costs`,
+        execute: () => `Opening job costs for ${p.projectName}.`,
+        route: `/financials/job-costs/${proj?.slug ?? p.projectId}`,
+      };
+    });
+    return [
+      { id: 'back-financials', label: 'Back to Financials overview', execute: () => 'Returning to Financials.', route: '/financials' },
+      ...navActions,
+      { id: 'export-costs', label: 'Export cost breakdown', execute: () => 'Exported cost breakdown to CSV.' },
+    ];
+  },
+  buildContext(s) {
+    const p = s.jobCostDetailProject;
+    if (!p) return 'No project selected for job cost detail.';
+    const cats = JOB_COST_CATEGORIES;
+    const totalSpend = cats.reduce((sum, cat) => sum + p.costs[cat], 0);
+    const lines = cats.map(cat => {
+      const pctSpend = totalSpend > 0 ? Math.round((p.costs[cat] / totalSpend) * 100) : 0;
+      return `  ${cat}: $${Math.round(p.costs[cat] / 1000)}K (${pctSpend}% of spend)`;
+    });
+    return `Job Cost Detail -- ${p.projectName} (${p.client})\n  Budget: ${p.budgetUsed} of ${p.budgetTotal} (${p.budgetPct}%)\n  Total spend: $${Math.round(totalSpend / 1000)}K\n\nCost breakdown:\n${lines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const p = s.jobCostDetailProject;
+    if (!p) return 'No project is currently selected. Navigate to a project job cost page first.';
+    const cats = JOB_COST_CATEGORIES;
+    const totalSpend = cats.reduce((sum, cat) => sum + p.costs[cat], 0);
+    if (kw(q, 'budget', 'over', 'under', 'remaining')) {
+      const budgetTotal = parseFloat(p.budgetTotal.replace(/[^0-9.]/g, '')) * (p.budgetTotal.includes('M') ? 1_000_000 : p.budgetTotal.includes('K') ? 1_000 : 1);
+      const remaining = budgetTotal - totalSpend;
+      return `${p.projectName}: ${p.budgetUsed} spent of ${p.budgetTotal} (${p.budgetPct}%). Remaining: $${Math.round(remaining / 1000)}K (${100 - p.budgetPct}%). ${p.budgetPct >= 90 ? 'Critical -- immediate review needed.' : p.budgetPct >= 75 ? 'Approaching budget threshold.' : 'Within healthy range.'}`;
+    }
+    if (kw(q, 'compare', 'portfolio', 'average', 'other project')) {
+      const allCosts = getProjectJobCosts();
+      const portfolioTotal = allCosts.reduce((sum, pr) => sum + cats.reduce((s2, cat) => s2 + pr.costs[cat], 0), 0);
+      const avgBudgetPct = Math.round(allCosts.reduce((s2, pr) => s2 + pr.budgetPct, 0) / allCosts.length);
+      return `${p.projectName} budget utilization: ${p.budgetPct}% vs portfolio average: ${avgBudgetPct}%. Portfolio total spend: $${Math.round(portfolioTotal / 1000)}K across ${allCosts.length} projects.`;
+    }
+    if (kw(q, 'labor', 'material', 'equipment', 'subcontract', 'overhead', 'category', 'breakdown', 'driver', 'largest', 'biggest')) {
+      const sorted = [...cats].sort((a, b) => p.costs[b] - p.costs[a]);
+      const details = sorted.map(cat => {
+        const pctSpend = totalSpend > 0 ? Math.round((p.costs[cat] / totalSpend) * 100) : 0;
+        return `${cat}: $${Math.round(p.costs[cat] / 1000)}K (${pctSpend}%)`;
+      });
+      return `Cost breakdown for ${p.projectName}:\n${details.join('\n')}\nTotal: $${Math.round(totalSpend / 1000)}K`;
+    }
+    return `${p.projectName} job costs: ${p.budgetUsed} of ${p.budgetTotal} (${p.budgetPct}%). Total spend: $${Math.round(totalSpend / 1000)}K across ${cats.length} categories. Ask about specific categories, budget status, or portfolio comparisons.`;
+  },
+};
+
 const dailyReportDetail: WidgetAgent = {
   id: 'dailyReportDetail',
   name: 'Daily Report Detail',
@@ -1857,9 +2003,176 @@ const portfolioAgent: WidgetAgent = {
   },
 };
 
+const urgentNeedsAgent: WidgetAgent = {
+  id: 'homeUrgentNeeds',
+  name: 'Urgent Needs',
+  systemPrompt: 'You are a portfolio risk analyst monitoring urgent needs, overdue items, and critical alerts across all active construction projects. You prioritize by severity and business impact. You have full visibility into project budgets, job costs, change orders, and can link directly to financial detail pages for budget-related issues.',
+  suggestions: () => [
+    'What are the most critical items right now?',
+    'Which project has the most urgent needs?',
+    'Show me all overdue RFIs across projects',
+    'What budget alerts are active?',
+    'Which projects are over budget?',
+    'Show me all pending change orders',
+    'Summarize schedule risks',
+  ],
+  insight: () => {
+    const items = buildUrgentNeeds();
+    const critical = items.filter(i => i.severity === 'critical').length;
+    const budgetCritical = items.filter(i => i.severity === 'critical' && i.category === 'budget').length;
+    if (budgetCritical > 0 && critical >= 5) return `${critical} critical items including ${budgetCritical} budget alert(s) need attention`;
+    if (critical >= 5) return `${critical} critical items across the portfolio need attention`;
+    if (budgetCritical > 0) return `${budgetCritical} budget alert(s) flagged -- review job costs`;
+    if (critical > 0) return `${critical} critical item(s) flagged`;
+    return null;
+  },
+  alerts: () => {
+    const items = buildUrgentNeeds();
+    const critical = items.filter(i => i.severity === 'critical').length;
+    if (critical >= 5) return { level: 'critical' as const, count: critical, label: `${critical} critical` };
+    if (critical > 0) return { level: 'warning' as const, count: critical, label: `${critical} critical` };
+    return null;
+  },
+  actions: () => {
+    const items = buildUrgentNeeds();
+    const budgetItems = items.filter(i => (i.category === 'budget' || i.category === 'change-order') && i.financialsRoute);
+    const projectsWithBudgetIssues = [...new Map(budgetItems.map(i => [i.projectId, i])).values()].slice(0, 3);
+    const finActions: AgentAction[] = projectsWithBudgetIssues.map(i => ({
+      id: `open-jc-${i.projectId}`,
+      label: `Open ${i.projectName} job costs`,
+      execute: () => `Opening job costs for ${i.projectName}.`,
+      route: i.financialsRoute!,
+    }));
+    return [
+      { id: 'escalate-critical', label: 'Escalate all critical items', execute: () => { const n = items.filter(i => i.severity === 'critical').length; return n ? `Escalated ${n} critical item(s) to leadership.` : 'No critical items.'; } },
+      { id: 'export-needs', label: 'Export urgent needs report', execute: () => 'Exported urgent needs report.' },
+      { id: 'open-projects', label: 'Open Projects', execute: () => 'Opening Projects dashboard.', route: '/projects' },
+      { id: 'open-financials', label: 'Open Financials overview', execute: () => 'Opening Financials.', route: '/financials' },
+      ...finActions,
+    ];
+  },
+  buildContext() {
+    const items = buildUrgentNeeds();
+    const critical = items.filter(i => i.severity === 'critical');
+    const warnings = items.filter(i => i.severity === 'warning');
+    const info = items.filter(i => i.severity === 'info');
+    const budgetItems = items.filter(i => i.category === 'budget' || i.category === 'change-order');
+    const lines = items.map(i => `  [${i.severity.toUpperCase()}] ${i.projectName}: ${i.title} -- ${i.subtitle} (${i.category})${i.financialsRoute ? ' [financials: ' + i.financialsRoute + ']' : ''}`);
+    return `Urgent needs across portfolio: ${critical.length} critical, ${warnings.length} warnings, ${info.length} info. ${budgetItems.length} financial items (budget/change-order) with direct job cost links.\n${lines.join('\n')}`;
+  },
+  localRespond(q) {
+    const items = buildUrgentNeeds();
+    const critical = items.filter(i => i.severity === 'critical');
+    const warnings = items.filter(i => i.severity === 'warning');
+
+    if (kw(q, 'critical', 'most urgent', 'highest priority')) {
+      if (!critical.length) return 'No critical items right now.';
+      return `${critical.length} critical items:\n${critical.map(i => `- **${i.projectName}**: ${i.title}${i.financialsRoute ? ' ([View Job Costs](' + i.financialsRoute + '))' : ''}`).join('\n')}`;
+    }
+    if (kw(q, 'which project', 'most needs', 'worst')) {
+      const counts: Record<string, number> = {};
+      for (const i of items) counts[i.projectName] = (counts[i.projectName] ?? 0) + 1;
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      return sorted.map(([name, count]) => `**${name}**: ${count} item(s)`).join('\n');
+    }
+    if (kw(q, 'rfi')) {
+      const rfis = items.filter(i => i.category === 'rfi');
+      return rfis.length ? rfis.map(i => `- ${i.title} (${i.projectName})`).join('\n') : 'No RFI-related urgent needs.';
+    }
+    if (kw(q, 'budget', 'over budget', 'cost', 'job cost', 'financial')) {
+      const budget = items.filter(i => i.category === 'budget' || i.category === 'change-order');
+      if (!budget.length) return 'No budget or change-order alerts.';
+      const lines = budget.map(i => {
+        const link = i.financialsRoute ? ` ([View Job Costs](${i.financialsRoute}))` : '';
+        return `- **${i.projectName}**: ${i.title} -- ${i.subtitle}${link}`;
+      });
+      return `${budget.length} financial alert(s):\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'change order', 'CO-')) {
+      const cos = items.filter(i => i.category === 'change-order');
+      if (!cos.length) return 'No pending change orders.';
+      return `${cos.length} change order alert(s):\n${cos.map(i => `- **${i.projectName}**: ${i.title} -- ${i.subtitle}`).join('\n')}`;
+    }
+    if (kw(q, 'schedule')) {
+      const sched = items.filter(i => i.category === 'schedule');
+      return sched.length ? sched.map(i => `- **${i.projectName}**: ${i.title}`).join('\n') : 'No schedule risks flagged.';
+    }
+    return `Tracking ${items.length} urgent items: ${critical.length} critical, ${warnings.length} warnings. Includes ${items.filter(i => i.category === 'budget' || i.category === 'change-order').length} financial alert(s). Ask about budgets, change orders, RFIs, or specific projects.`;
+  },
+};
+
+const homeWeatherAgent: WidgetAgent = {
+  id: 'homeWeather',
+  name: 'Weather Outlook',
+  systemPrompt: 'You are a construction scheduling advisor monitoring weather conditions across all active project sites in Washington, Oregon, and Northern California. You help portfolio managers understand weather impacts on field operations and plan around adverse conditions.',
+  suggestions: () => [
+    'Which sites have weather delays this week?',
+    'Where is it safe to pour concrete?',
+    'Show me the 7-day outlook for all projects',
+    'Which projects should shift to interior work?',
+  ],
+  insight() {
+    const impacted = PROJECTS.map(p => ({ p, w: getProjectWeather(p.id) })).filter(({ w }) => w && w.forecast.some(f => f.workImpact !== 'none'));
+    const major = impacted.filter(({ w }) => w!.forecast.some(f => f.workImpact === 'major'));
+    if (major.length) return `${major.length} site${major.length !== 1 ? 's' : ''} facing work stoppages this week`;
+    if (impacted.length) return `${impacted.length} site${impacted.length !== 1 ? 's' : ''} with weather advisories`;
+    return null;
+  },
+  alerts() {
+    const major = PROJECTS.filter(p => { const w = getProjectWeather(p.id); return w && w.forecast.some(f => f.workImpact === 'major'); });
+    return major.length ? { level: 'warning' as const, count: major.length, label: 'sites with work stoppages' } : null;
+  },
+  actions: () => [
+    { id: 'alert-all-subs', label: 'Alert all subcontractors', execute: () => 'Sent weather lookahead to all subcontractors across impacted sites.' },
+    { id: 'export-weather', label: 'Export weather report', execute: () => 'Exported portfolio weather outlook PDF.' },
+  ],
+  buildContext() {
+    const lines = PROJECTS.map(p => {
+      const w = getProjectWeather(p.id);
+      if (!w) return `  ${p.name} (${p.city}, ${p.state}): No weather data`;
+      const impact = w.forecast.filter(f => f.workImpact !== 'none');
+      const impactStr = impact.length ? `${impact.length} impact day(s): ${impact.map(f => `${f.day} ${f.date} ${f.workImpact}`).join(', ')}` : 'no impact';
+      return `  ${p.name} (${p.city}, ${p.state}): ${w.current.tempF}F ${w.current.condition}, ${impactStr}`;
+    });
+    return `Portfolio weather outlook:\n${lines.join('\n')}`;
+  },
+  localRespond(q) {
+    const allWeather = PROJECTS.map(p => ({ p, w: getProjectWeather(p.id)! })).filter(({ w }) => !!w);
+    const impacted = allWeather.filter(({ w }) => w.forecast.some(f => f.workImpact !== 'none'));
+    const major = allWeather.filter(({ w }) => w.forecast.some(f => f.workImpact === 'major'));
+
+    if (kw(q, 'delay', 'stop', 'impact', 'suspend')) {
+      if (!impacted.length) return 'No weather-related work impacts expected at any site this week.';
+      return `${impacted.length} site(s) with weather impacts:\n${impacted.map(({ p, w }) => {
+        const days = w.forecast.filter(f => f.workImpact !== 'none');
+        return `- **${p.name}** (${p.city}): ${days.map(d => `${d.day} -- ${d.workImpact}${d.note ? ': ' + d.note : ''}`).join('; ')}`;
+      }).join('\n')}`;
+    }
+    if (kw(q, 'concrete', 'pour', 'safe')) {
+      const safe = allWeather.filter(({ w }) => !w.forecast.some(f => f.workImpact === 'major' || f.condition === 'rain' || f.condition === 'snow'));
+      return safe.length ? `Safe for concrete work at: ${safe.map(({ p, w }) => `**${p.name}** (${p.city}, ${w.current.tempF}F)`).join(', ')}` : 'Conditions are risky at all sites. Check individual forecasts before scheduling pours.';
+    }
+    if (kw(q, 'outlook', '7-day', 'forecast', 'all')) {
+      return allWeather.map(({ p, w }) => {
+        const impact = w.forecast.filter(f => f.workImpact !== 'none').length;
+        return `**${p.name}** (${p.city}): ${w.current.tempF}F ${w.current.condition}${impact ? ` -- ${impact} impact day(s)` : ' -- clear'}`;
+      }).join('\n');
+    }
+    if (kw(q, 'interior', 'indoor', 'shift')) {
+      if (!major.length) return 'No sites need to shift to interior-only work right now.';
+      return `Sites that should shift to interior work:\n${major.map(({ p, w }) => {
+        const days = w.forecast.filter(f => f.workImpact === 'major');
+        return `- **${p.name}** (${p.city}): ${days.map(d => `${d.day} ${d.date}`).join(', ')}`;
+      }).join('\n')}`;
+    }
+    const totalImpact = impacted.length;
+    return `Monitoring weather across ${allWeather.length} project sites. ${totalImpact} with impacts, ${major.length} with work stoppages. Ask about delays, concrete conditions, or the full 7-day outlook.`;
+  },
+};
+
 const ALL_AGENTS: Record<string, WidgetAgent> = {
   portfolio: portfolioAgent,
-  homeTimeOff, homeCalendar, homeRfis, homeSubmittals, homeDefault,
+  homeTimeOff, homeCalendar, homeRfis, homeSubmittals, homeDefault, homeUrgentNeeds: urgentNeedsAgent, homeWeather: homeWeatherAgent,
   projects: projectsWidget, openEstimates, recentActivity, needsAttention, projectsDefault,
   finBudgetByProject, financialsDefault, revenue: revenueAgent,
   milestones: milestonesAgent, tasks: tasksAgent, risks: risksAgent,
@@ -1870,7 +2183,7 @@ const ALL_AGENTS: Record<string, WidgetAgent> = {
   changeOrders: changeOrdersAgent, dailyReports: dailyReportsAgent,
   weather: weatherAgent, inspections: inspectionsAgent,
   recordsDailyReports, recordsPunchItems, recordsInspections, recordsActionItems,
-  financialsChangeOrders, financialsRevenue, financialsCostForecasts,
+  financialsChangeOrders, financialsRevenue, financialsCostForecasts, financialsJobCostDetail,
   dailyReportDetail, inspectionDetail, punchItemDetail, changeOrderDetail,
 };
 
@@ -1878,6 +2191,7 @@ const PAGE_DEFAULT_AGENTS: Record<string, string> = {
   home: 'homeDefault',
   projects: 'projectsDefault',
   financials: 'financialsDefault',
+  'financials-job-cost-detail': 'financialsJobCostDetail',
   'project-dashboard': 'projectDefault',
 };
 

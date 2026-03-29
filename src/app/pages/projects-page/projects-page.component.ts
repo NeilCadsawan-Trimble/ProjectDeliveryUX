@@ -26,6 +26,7 @@ import type {
   Project,
   Estimate,
   ActivityItem,
+  UrgentNeedItem,
 } from '../../data/dashboard-data';
 import {
   PROJECTS,
@@ -38,6 +39,9 @@ import {
   budgetPctColor,
   estimateBadgeColor,
   dueDateClass,
+  buildUrgentNeeds,
+  urgentNeedCategoryIcon,
+  getProjectJobCosts,
 } from '../../data/dashboard-data';
 
 @Component({
@@ -190,15 +194,65 @@ import {
                             </div>
                           </div>
                           <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
-                          <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
-                          <i class="modus-icons text-sm text-primary" aria-hidden="true">draft</i>
-                          <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project); $event.stopPropagation()">
-                            {{ project.latestDrawingName }}
+                          <div class="flex items-center justify-between">
+                            <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
+                            @if (getProjectAgent(project.id).budgetAlert) {
+                              <div
+                                class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary text-2xs font-medium cursor-pointer hover:bg-primary-40 transition-colors duration-150"
+                                (click)="navigateToJobCosts(project, $event)"
+                                role="link"
+                                [attr.aria-label]="'View ' + project.name + ' job costs'"
+                              >
+                                <i class="modus-icons text-2xs" aria-hidden="true">account_balance</i>
+                                Job Costs
+                              </div>
+                            }
                           </div>
-                          <div class="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</div>
                         </div>
+
+                        @if (getProjectAgent(project.id).criticalCount > 0 || getProjectAgent(project.id).warningCount > 0) {
+                          <div class="border-top-default pt-3 mt-1 flex flex-col gap-2">
+                            <div class="flex items-center justify-between">
+                              <div class="flex items-center gap-1.5">
+                                <i class="modus-icons text-sm text-warning" aria-hidden="true">warning</i>
+                                <div class="text-2xs font-semibold text-foreground-60 uppercase tracking-wide">Urgent Needs</div>
+                              </div>
+                              <div class="flex items-center gap-1.5">
+                                @if (getProjectAgent(project.id).criticalCount > 0) {
+                                  <div class="flex items-center px-1.5 py-0.5 rounded-full bg-destructive-20">
+                                    <div class="text-2xs font-medium text-destructive">{{ getProjectAgent(project.id).criticalCount }} critical</div>
+                                  </div>
+                                }
+                                @if (getProjectAgent(project.id).warningCount > 0) {
+                                  <div class="flex items-center px-1.5 py-0.5 rounded-full bg-warning-20">
+                                    <div class="text-2xs font-medium text-warning">{{ getProjectAgent(project.id).warningCount }} warning</div>
+                                  </div>
+                                }
+                              </div>
+                            </div>
+                            @if (getProjectAgent(project.id).topNeed; as topNeed) {
+                              <div class="flex items-start gap-2">
+                                <div class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
+                                  [class.bg-destructive]="topNeed.severity === 'critical'"
+                                  [class.bg-warning]="topNeed.severity === 'warning'"
+                                  [class.bg-primary]="topNeed.severity === 'info'"></div>
+                                <div class="flex-1 min-w-0">
+                                  <div class="text-2xs font-medium text-foreground truncate">{{ topNeed.title }}</div>
+                                  <div class="text-2xs text-foreground-40 truncate">{{ topNeed.subtitle }}</div>
+                                </div>
+                                <i class="modus-icons text-2xs text-foreground-40 flex-shrink-0 mt-0.5" aria-hidden="true">{{ urgentNeedCategoryIcon(topNeed.category) }}</i>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
+                            <i class="modus-icons text-sm text-primary" aria-hidden="true">draft</i>
+                            <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project); $event.stopPropagation()">
+                              {{ project.latestDrawingName }}
+                            </div>
+                            <div class="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</div>
+                          </div>
+                        }
                       </div>
                     </div>
                   }
@@ -504,6 +558,35 @@ export class ProjectsPageComponent implements AfterViewInit {
     return 'grid-cols-4';
   });
   private readonly _projectsResizeEffect = this.trackContainerWidth(this.projectsContainerRef, this.projectsContainerWidth);
+
+  readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
+
+  private readonly allUrgentNeeds = buildUrgentNeeds();
+  private readonly allJobCosts = getProjectJobCosts();
+
+  readonly projectAgentData = computed(() => {
+    const map = new Map<number, { urgentNeeds: UrgentNeedItem[]; criticalCount: number; warningCount: number; topNeed: UrgentNeedItem | null; budgetAlert: boolean; jobCostSpend: string | null }>();
+    for (const p of this.projects()) {
+      const needs = this.allUrgentNeeds.filter(n => n.projectId === p.id);
+      const critical = needs.filter(n => n.severity === 'critical');
+      const warning = needs.filter(n => n.severity === 'warning');
+      const topNeed = critical[0] ?? warning[0] ?? needs[0] ?? null;
+      const budgetAlert = needs.some(n => n.category === 'budget' || n.category === 'change-order');
+      const jc = this.allJobCosts.find(j => j.projectId === p.id);
+      const jobCostSpend = jc ? jc.budgetUsed : null;
+      map.set(p.id, { urgentNeeds: needs, criticalCount: critical.length, warningCount: warning.length, topNeed, budgetAlert, jobCostSpend });
+    }
+    return map;
+  });
+
+  getProjectAgent(projectId: number) {
+    return this.projectAgentData().get(projectId) ?? { urgentNeeds: [], criticalCount: 0, warningCount: 0, topNeed: null, budgetAlert: false, jobCostSpend: null };
+  }
+
+  navigateToJobCosts(project: Project, event: MouseEvent): void {
+    event.stopPropagation();
+    this.router.navigate(['/financials/job-costs', project.slug]);
+  }
 
   private trackContainerWidth(
     ref: ReturnType<typeof viewChild<ElementRef>>,
