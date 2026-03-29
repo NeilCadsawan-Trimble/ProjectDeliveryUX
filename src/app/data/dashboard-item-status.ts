@@ -11,6 +11,13 @@ export const STATUS_OPTIONS: StatusOption[] = [
   { value: 'closed', label: 'Closed', dotClass: 'bg-success' },
 ];
 
+export const PUNCH_STATUS_OPTIONS: StatusOption[] = [
+  { value: 'open', label: 'Open', dotClass: 'bg-primary' },
+  { value: 'in-progress', label: 'In Progress', dotClass: 'bg-warning' },
+  { value: 'completed', label: 'Completed', dotClass: 'bg-success' },
+  { value: 'verified', label: 'Verified', dotClass: 'bg-success' },
+];
+
 export const ASSIGNEE_OPTIONS: string[] = [
   'Sarah Chen',
   'James Carter',
@@ -29,6 +36,9 @@ const STATUS_DOT: Record<string, string> = {
   overdue: 'bg-destructive',
   upcoming: 'bg-warning',
   closed: 'bg-success',
+  'in-progress': 'bg-warning',
+  completed: 'bg-success',
+  verified: 'bg-success',
 };
 
 export function itemStatusDot(status: string): string {

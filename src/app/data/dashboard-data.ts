@@ -42,6 +42,7 @@ export interface CalendarAppointment {
   endHour: number;
   endMin: number;
   type: ApptType;
+  projectSlug?: string;
 }
 
 export interface Project {
@@ -171,6 +172,11 @@ export const SUBMITTALS: Submittal[] = [
   { id: '8', number: 'SUB-008', subject: 'Loading dock leveler specs', project: 'Industrial Park Warehouse', assignee: 'Priya Nair', status: 'upcoming', dueDate: 'Mar 25' },
   { id: '9', number: 'SUB-009', subject: 'Curtain wall mock-up report', project: 'Riverside Office Complex', assignee: 'James Carter', status: 'open', dueDate: 'Mar 19' },
   { id: '10', number: 'SUB-010', subject: 'Platform tile sample approval', project: 'Downtown Transit Hub', assignee: 'Tom Evans', status: 'closed', dueDate: 'Jan 28' },
+  { id: '11', number: 'SUB-011', subject: 'Roof membrane product data', project: 'Harbor View Condominiums', assignee: 'James Carter', status: 'overdue', dueDate: 'Mar 2' },
+  { id: '12', number: 'SUB-012', subject: 'Elevator cab finish selections', project: 'Riverside Office Complex', assignee: 'Sarah Chen', status: 'upcoming', dueDate: 'Mar 28' },
+  { id: '13', number: 'SUB-013', subject: 'Generator load bank test report', project: 'Lakeside Medical Center', assignee: 'Tom Evans', status: 'open', dueDate: 'Mar 18' },
+  { id: '14', number: 'SUB-014', subject: 'Epoxy floor coating samples', project: 'Industrial Park Warehouse', assignee: 'Priya Nair', status: 'overdue', dueDate: 'Mar 6' },
+  { id: '15', number: 'SUB-015', subject: 'Landscape irrigation shop drawings', project: 'Westfield Shopping Center', assignee: 'Lena Brooks', status: 'open', dueDate: 'Mar 20' },
 ];
 
 export const CALENDAR_APPOINTMENTS: CalendarAppointment[] = [
@@ -180,12 +186,12 @@ export const CALENDAR_APPOINTMENTS: CalendarAppointment[] = [
   { id: 2, title: 'Weekly Progress Review', date: new Date(2026, 2, 2), startHour: 10, startMin: 0, endHour: 11, endMin: 0, type: 'review' },
   { id: 3, title: 'Client Call — Acme Corp', date: new Date(2026, 2, 2), startHour: 14, startMin: 0, endHour: 14, endMin: 30, type: 'call' },
   { id: 4, title: 'Daily Standup', date: new Date(2026, 2, 3), startHour: 9, startMin: 0, endHour: 9, endMin: 30, type: 'meeting' },
-  { id: 5, title: 'Transit Hub Budget Review', date: new Date(2026, 2, 3), startHour: 10, startMin: 30, endHour: 11, endMin: 30, type: 'review' },
+  { id: 5, title: 'Transit Hub Budget Review', date: new Date(2026, 2, 3), startHour: 10, startMin: 30, endHour: 11, endMin: 30, type: 'review', projectSlug: 'downtown-transit-hub' },
   { id: 6, title: 'Focus: Progress Reports', date: new Date(2026, 2, 3), startHour: 14, startMin: 0, endHour: 16, endMin: 0, type: 'focus' },
   { id: 7, title: 'Daily Standup', date: new Date(2026, 2, 4), startHour: 9, startMin: 0, endHour: 9, endMin: 30, type: 'meeting' },
   { id: 8, title: 'Safety Coordination Meeting', date: new Date(2026, 2, 4), startHour: 13, startMin: 0, endHour: 14, endMin: 30, type: 'meeting' },
   { id: 9, title: 'Daily Standup', date: new Date(2026, 2, 5), startHour: 9, startMin: 0, endHour: 9, endMin: 30, type: 'meeting' },
-  { id: 10, title: 'Riverside Office Sync', date: new Date(2026, 2, 5), startHour: 10, startMin: 0, endHour: 11, endMin: 0, type: 'review' },
+  { id: 10, title: 'Riverside Office Sync', date: new Date(2026, 2, 5), startHour: 10, startMin: 0, endHour: 11, endMin: 0, type: 'review', projectSlug: 'riverside-office-complex' },
   { id: 11, title: 'Client Call — TechVista', date: new Date(2026, 2, 5), startHour: 14, startMin: 0, endHour: 14, endMin: 30, type: 'call' },
   { id: 12, title: 'Focus: Submittal Reviews', date: new Date(2026, 2, 5), startHour: 15, startMin: 0, endHour: 17, endMin: 0, type: 'focus' },
   { id: 13, title: 'Weekly Schedule Planning', date: new Date(2026, 2, 6), startHour: 9, startMin: 0, endHour: 10, endMin: 30, type: 'meeting' },
@@ -196,12 +202,12 @@ export const CALENDAR_APPOINTMENTS: CalendarAppointment[] = [
   { id: 17, title: 'Project Kickoff — Phase 2', date: new Date(2026, 2, 9), startHour: 10, startMin: 0, endHour: 11, endMin: 0, type: 'meeting' },
   { id: 18, title: 'Structural Design Review', date: new Date(2026, 2, 9), startHour: 15, startMin: 0, endHour: 16, endMin: 0, type: 'review' },
   { id: 19, title: 'All Hands Meeting', date: new Date(2026, 2, 10), startHour: 10, startMin: 0, endHour: 11, endMin: 0, type: 'meeting' },
-  { id: 20, title: 'Harbor View Check-in', date: new Date(2026, 2, 10), startHour: 14, startMin: 0, endHour: 14, endMin: 30, type: 'call' },
+  { id: 20, title: 'Harbor View Check-in', date: new Date(2026, 2, 10), startHour: 14, startMin: 0, endHour: 14, endMin: 30, type: 'call', projectSlug: 'harbor-view-condominiums' },
   { id: 21, title: 'Daily Standup', date: new Date(2026, 2, 11), startHour: 9, startMin: 0, endHour: 9, endMin: 30, type: 'meeting' },
   { id: 22, title: 'Vendor Demo — Concrete Supplier', date: new Date(2026, 2, 11), startHour: 11, startMin: 0, endHour: 12, endMin: 0, type: 'call' },
   { id: 23, title: 'Focus: Sunset Ridge Landscaping', date: new Date(2026, 2, 11), startHour: 13, startMin: 30, endHour: 16, endMin: 0, type: 'focus' },
   { id: 24, title: 'Daily Standup', date: new Date(2026, 2, 12), startHour: 9, startMin: 0, endHour: 9, endMin: 30, type: 'meeting' },
-  { id: 25, title: 'Bridge Rehabilitation Review', date: new Date(2026, 2, 12), startHour: 10, startMin: 0, endHour: 11, endMin: 30, type: 'review' },
+  { id: 25, title: 'Bridge Rehabilitation Review', date: new Date(2026, 2, 12), startHour: 10, startMin: 0, endHour: 11, endMin: 30, type: 'review', projectSlug: 'metro-bridge-rehabilitation' },
   { id: 26, title: 'EST-2026-051 Deadline', date: new Date(2026, 2, 12), startHour: 17, startMin: 0, endHour: 17, endMin: 30, type: 'deadline' },
   { id: 27, title: 'Daily Standup', date: new Date(2026, 2, 13), startHour: 9, startMin: 0, endHour: 9, endMin: 30, type: 'meeting' },
   { id: 28, title: 'Progress Walkthrough', date: new Date(2026, 2, 13), startHour: 14, startMin: 0, endHour: 15, endMin: 0, type: 'review' },
@@ -225,7 +231,7 @@ export const CALENDAR_APPOINTMENTS: CalendarAppointment[] = [
   { id: 44, title: 'Quarterly Business Review', date: new Date(2026, 2, 23), startHour: 10, startMin: 0, endHour: 11, endMin: 30, type: 'review' },
   { id: 45, title: 'Focus: Permit Applications', date: new Date(2026, 2, 23), startHour: 13, startMin: 0, endHour: 15, endMin: 0, type: 'focus' },
   { id: 46, title: 'Daily Standup', date: new Date(2026, 2, 24), startHour: 9, startMin: 0, endHour: 9, endMin: 30, type: 'meeting' },
-  { id: 47, title: 'Riverside Office Go/No-Go', date: new Date(2026, 2, 24), startHour: 10, startMin: 0, endHour: 11, endMin: 0, type: 'meeting' },
+  { id: 47, title: 'Riverside Office Go/No-Go', date: new Date(2026, 2, 24), startHour: 10, startMin: 0, endHour: 11, endMin: 0, type: 'meeting', projectSlug: 'riverside-office-complex' },
   { id: 48, title: 'Client Call — SkyBridge', date: new Date(2026, 2, 24), startHour: 14, startMin: 0, endHour: 14, endMin: 30, type: 'call' },
   { id: 49, title: 'Daily Standup', date: new Date(2026, 2, 25), startHour: 9, startMin: 0, endHour: 9, endMin: 30, type: 'meeting' },
   { id: 50, title: 'Inspection Walkthrough', date: new Date(2026, 2, 25), startHour: 10, startMin: 30, endHour: 12, endMin: 0, type: 'review' },
@@ -554,6 +560,282 @@ export function getRevenueSummary(range: RevenueTimeRange): { current: number; p
   const growthPct = Math.round(((t.current - t.previous) / t.previous) * 100);
   return { ...t, growthPct };
 }
+
+export interface ProjectRevenue {
+  projectId: number;
+  projectName: string;
+  contractValue: string;
+  invoiced: string;
+  collected: string;
+  outstanding: string;
+  retainage: string;
+  invoicedRaw: number;
+  collectedRaw: number;
+  outstandingRaw: number;
+  retainageRaw: number;
+}
+
+export const PROJECT_REVENUE: ProjectRevenue[] = [
+  { projectId: 1, projectName: 'Riverside Office Complex', contractValue: '$920K', invoiced: '$612K', collected: '$544K', outstanding: '$68K', retainage: '$46K', invoicedRaw: 612000, collectedRaw: 544000, outstandingRaw: 68000, retainageRaw: 46000 },
+  { projectId: 2, projectName: 'Harbor View Condominiums', contractValue: '$340K', invoiced: '$272K', collected: '$246K', outstanding: '$26K', retainage: '$17K', invoicedRaw: 272000, collectedRaw: 246000, outstandingRaw: 26000, retainageRaw: 17000 },
+  { projectId: 3, projectName: 'Downtown Transit Hub', contractValue: '$1.08M', invoiced: '$918K', collected: '$855K', outstanding: '$63K', retainage: '$54K', invoicedRaw: 918000, collectedRaw: 855000, outstandingRaw: 63000, retainageRaw: 54000 },
+  { projectId: 4, projectName: 'Lakeside Medical Center', contractValue: '$580K', invoiced: '$174K', collected: '$150K', outstanding: '$24K', retainage: '$29K', invoicedRaw: 174000, collectedRaw: 150000, outstandingRaw: 24000, retainageRaw: 29000 },
+  { projectId: 5, projectName: 'Westfield Shopping Center', contractValue: '$385K', invoiced: '$31K', collected: '$24K', outstanding: '$7K', retainage: '$4K', invoicedRaw: 31000, collectedRaw: 24000, outstandingRaw: 7000, retainageRaw: 4000 },
+  { projectId: 6, projectName: 'Metro Bridge Rehabilitation', contractValue: '$175K', invoiced: '$126K', collected: '$108K', outstanding: '$18K', retainage: '$9K', invoicedRaw: 126000, collectedRaw: 108000, outstandingRaw: 18000, retainageRaw: 9000 },
+  { projectId: 7, projectName: 'Sunset Ridge Apartments', contractValue: '$230K', invoiced: '$127K', collected: '$110K', outstanding: '$17K', retainage: '$12K', invoicedRaw: 127000, collectedRaw: 110000, outstandingRaw: 17000, retainageRaw: 12000 },
+  { projectId: 8, projectName: 'Industrial Park Warehouse', contractValue: '$575K', invoiced: '$104K', collected: '$90K', outstanding: '$14K', retainage: '$10K', invoicedRaw: 104000, collectedRaw: 90000, outstandingRaw: 14000, retainageRaw: 10000 },
+];
+
+export type ChangeOrderStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ChangeOrder {
+  id: string;
+  project: string;
+  projectId: number;
+  description: string;
+  amount: number;
+  status: ChangeOrderStatus;
+  requestedBy: string;
+  requestDate: string;
+  reason: string;
+}
+
+export const CHANGE_ORDERS: ChangeOrder[] = [
+  { id: 'CO-001', project: 'Riverside Office Complex', projectId: 1, description: 'Additional structural reinforcement at elevator shaft', amount: 42000, status: 'approved', requestedBy: 'Sarah Chen', requestDate: 'Feb 18, 2026', reason: 'Unforeseen soil condition requires deeper piers' },
+  { id: 'CO-002', project: 'Harbor View Condominiums', projectId: 2, description: 'Upgraded kitchen appliance package per owner request', amount: 18500, status: 'pending', requestedBy: 'James Carter', requestDate: 'Mar 5, 2026', reason: 'Client requested premium appliance tier' },
+  { id: 'CO-003', project: 'Downtown Transit Hub', projectId: 3, description: 'Extended working hours for critical path recovery', amount: 85000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 8, 2026', reason: 'Schedule recovery requires weekend and overtime shifts' },
+  { id: 'CO-004', project: 'Downtown Transit Hub', projectId: 3, description: 'Hazardous material abatement in platform area', amount: 37000, status: 'approved', requestedBy: 'Priya Nair', requestDate: 'Feb 10, 2026', reason: 'Unexpected asbestos found during demolition' },
+  { id: 'CO-005', project: 'Lakeside Medical Center', projectId: 4, description: 'Medical gas piping reroute around existing ductwork', amount: 15200, status: 'approved', requestedBy: 'Tom Evans', requestDate: 'Mar 1, 2026', reason: 'As-built conditions differ from survey drawings' },
+  { id: 'CO-006', project: 'Metro Bridge Rehabilitation', projectId: 6, description: 'Additional concrete testing and core sampling', amount: 8900, status: 'approved', requestedBy: 'Mike Osei', requestDate: 'Feb 22, 2026', reason: 'Engineer of record requires more test data' },
+  { id: 'CO-007', project: 'Sunset Ridge Apartments', projectId: 7, description: 'Redesigned parking layout per city review comments', amount: 22000, status: 'pending', requestedBy: 'Sarah Chen', requestDate: 'Mar 12, 2026', reason: 'City planning required ADA stall redistribution' },
+  { id: 'CO-008', project: 'Industrial Park Warehouse', projectId: 8, description: 'Fire suppression system upgrade to ESFR heads', amount: 31000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 15, 2026', reason: 'Insurance underwriter requires higher classification' },
+  { id: 'CO-009', project: 'Riverside Office Complex', projectId: 1, description: 'Owner-requested lobby finish upgrade', amount: 28000, status: 'rejected', requestedBy: 'Lena Brooks', requestDate: 'Jan 30, 2026', reason: 'Requested marble upgrade exceeds contingency budget' },
+  { id: 'CO-010', project: 'Westfield Shopping Center', projectId: 5, description: 'Added grease interceptor for food court tenant', amount: 12500, status: 'pending', requestedBy: 'Lena Brooks', requestDate: 'Mar 18, 2026', reason: 'New tenant lease requires grease trap not in original scope' },
+];
+
+export interface DailyReport {
+  id: string;
+  projectId: number;
+  project: string;
+  date: string;
+  author: string;
+  weather: string;
+  crewCount: number;
+  hoursWorked: number;
+  workPerformed: string;
+  issues: string;
+  safetyIncidents: number;
+}
+
+export const DAILY_REPORTS: DailyReport[] = [
+  { id: 'DR-001', projectId: 1, project: 'Riverside Office Complex', date: 'Mar 26, 2026', author: 'Sarah Chen', weather: 'Clear, 62F', crewCount: 24, hoursWorked: 192, workPerformed: 'Continued 3rd floor framing; installed elevator guide rails; poured level 2 topping slab', issues: 'Minor concrete delivery delay (45 min)', safetyIncidents: 0 },
+  { id: 'DR-002', projectId: 1, project: 'Riverside Office Complex', date: 'Mar 25, 2026', author: 'Sarah Chen', weather: 'Overcast, 58F', crewCount: 22, hoursWorked: 176, workPerformed: 'Set structural steel columns grid C-F; mechanical rough-in level 2 east wing', issues: 'None', safetyIncidents: 0 },
+  { id: 'DR-003', projectId: 3, project: 'Downtown Transit Hub', date: 'Mar 26, 2026', author: 'Priya Nair', weather: 'Rain, 52F', crewCount: 18, hoursWorked: 144, workPerformed: 'Platform canopy steel erection delayed by rain; continued interior finishes in concourse', issues: 'Rain stopped exterior work at 10:30 AM. Rescheduled crane lift to tomorrow.', safetyIncidents: 0 },
+  { id: 'DR-004', projectId: 4, project: 'Lakeside Medical Center', date: 'Mar 26, 2026', author: 'Tom Evans', weather: 'Partly cloudy, 65F', crewCount: 16, hoursWorked: 128, workPerformed: 'Medical gas piping rough-in level 2; electrical panel installation; fire alarm wiring zone C', issues: 'Awaiting fire marshal inspection for zone B approval', safetyIncidents: 0 },
+  { id: 'DR-005', projectId: 6, project: 'Metro Bridge Rehabilitation', date: 'Mar 26, 2026', author: 'Mike Osei', weather: 'Clear, 60F', crewCount: 12, hoursWorked: 96, workPerformed: 'Deck scarification complete spans 3-4; began rebar placement for overlay pour', issues: 'None', safetyIncidents: 0 },
+  { id: 'DR-006', projectId: 2, project: 'Harbor View Condominiums', date: 'Mar 26, 2026', author: 'James Carter', weather: 'Clear, 62F', crewCount: 14, hoursWorked: 112, workPerformed: 'Exterior sheathing building B; window installation units 201-208; MEP rough-in building A level 3', issues: 'Window manufacturer shipped wrong size for unit 206 -- reorder placed', safetyIncidents: 0 },
+  { id: 'DR-007', projectId: 8, project: 'Industrial Park Warehouse', date: 'Mar 26, 2026', author: 'Priya Nair', weather: 'Clear, 64F', crewCount: 20, hoursWorked: 160, workPerformed: 'Slab on grade pour zones 1-3; overhead door framing started; fire line underground tie-in', issues: 'None', safetyIncidents: 0 },
+  { id: 'DR-008', projectId: 7, project: 'Sunset Ridge Apartments', date: 'Mar 25, 2026', author: 'Sarah Chen', weather: 'Overcast, 55F', crewCount: 10, hoursWorked: 80, workPerformed: 'Foundation waterproofing building A; backfill and compaction east wall', issues: 'Compaction test failed first pass -- re-compacted and retested OK', safetyIncidents: 1 },
+  { id: 'DR-009', projectId: 5, project: 'Westfield Shopping Center', date: 'Mar 26, 2026', author: 'Lena Brooks', weather: 'Clear, 63F', crewCount: 8, hoursWorked: 64, workPerformed: 'Site clearing and grading lot B; survey staking for building pad; erosion control install', issues: 'Survey crew delayed 1 hour -- equipment calibration issue', safetyIncidents: 0 },
+  { id: 'DR-010', projectId: 5, project: 'Westfield Shopping Center', date: 'Mar 25, 2026', author: 'Lena Brooks', weather: 'Partly cloudy, 59F', crewCount: 6, hoursWorked: 48, workPerformed: 'Utility locate markings confirmed; began demolition of existing pavement section A', issues: 'None', safetyIncidents: 0 },
+  { id: 'DR-011', projectId: 4, project: 'Lakeside Medical Center', date: 'Mar 25, 2026', author: 'Tom Evans', weather: 'Clear, 63F', crewCount: 18, hoursWorked: 144, workPerformed: 'Electrical conduit run level 2 south wing; plumbing rough-in exam rooms 201-210; elevator shaft steel framing', issues: 'Elevator guide rail delivery delayed to Friday', safetyIncidents: 0 },
+  { id: 'DR-012', projectId: 6, project: 'Metro Bridge Rehabilitation', date: 'Mar 25, 2026', author: 'Mike Osei', weather: 'Overcast, 56F', crewCount: 10, hoursWorked: 80, workPerformed: 'Completed deck scarification spans 1-2; bearing pad installation south abutment', issues: 'Bearing pad shimming requires additional measurement', safetyIncidents: 0 },
+];
+
+export type WeatherCondition = 'sunny' | 'partly-cloudy' | 'cloudy' | 'rain' | 'thunderstorm' | 'snow';
+
+export interface WeatherForecast {
+  date: string;
+  day: string;
+  condition: WeatherCondition;
+  highF: number;
+  lowF: number;
+  precipPct: number;
+  windMph: number;
+  workImpact: 'none' | 'minor' | 'major';
+  note: string;
+}
+
+export const WEATHER_FORECAST: WeatherForecast[] = [
+  { date: 'Mar 27', day: 'Fri', condition: 'sunny', highF: 64, lowF: 45, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
+  { date: 'Mar 28', day: 'Sat', condition: 'partly-cloudy', highF: 61, lowF: 43, precipPct: 15, windMph: 12, workImpact: 'none', note: '' },
+  { date: 'Mar 29', day: 'Sun', condition: 'cloudy', highF: 56, lowF: 40, precipPct: 40, windMph: 15, workImpact: 'none', note: '' },
+  { date: 'Mar 30', day: 'Mon', condition: 'rain', highF: 52, lowF: 38, precipPct: 85, windMph: 22, workImpact: 'major', note: 'Heavy rain expected -- no concrete pours or exterior work. Crane operations suspended if gusts exceed 25 mph.' },
+  { date: 'Mar 31', day: 'Tue', condition: 'rain', highF: 50, lowF: 37, precipPct: 70, windMph: 18, workImpact: 'minor', note: 'Tapering showers through morning. Afternoon exterior work possible.' },
+  { date: 'Apr 1', day: 'Wed', condition: 'partly-cloudy', highF: 58, lowF: 41, precipPct: 20, windMph: 10, workImpact: 'none', note: 'Drying out. Resume all outdoor operations.' },
+  { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 65, lowF: 44, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
+];
+
+export interface ProjectAttentionItem {
+  id: string;
+  projectId: number;
+  title: string;
+  subtitle: string;
+  severity: 'critical' | 'warning' | 'info';
+  category: string;
+}
+
+export const PROJECT_ATTENTION_ITEMS: ProjectAttentionItem[] = [
+  { id: 'pa-1', projectId: 1, title: 'Cutover window approaching', subtitle: 'Production migration Wave 2 starts in 3 days -- team readiness check needed', severity: 'warning', category: 'schedule' },
+  { id: 'pa-2', projectId: 1, title: 'RFI-013 overdue 22 days', subtitle: 'Emergency generator placement -- blocking site work', severity: 'critical', category: 'rfi' },
+  { id: 'pa-3', projectId: 2, title: 'Budget at 82%', subtitle: 'Only $54K remaining with 55% of work left', severity: 'critical', category: 'budget' },
+  { id: 'pa-4', projectId: 2, title: 'RFI-002 overdue', subtitle: 'ADA compliance for common areas -- 27 days past due', severity: 'critical', category: 'rfi' },
+  { id: 'pa-5', projectId: 2, title: 'SUB-011 overdue', subtitle: 'Roof membrane product data -- holding up waterproofing', severity: 'warning', category: 'submittal' },
+  { id: 'pa-6', projectId: 3, title: 'Budget critical at 95%', subtitle: 'Only $45K remaining -- change request pending for $120K extension', severity: 'critical', category: 'budget' },
+  { id: 'pa-7', projectId: 3, title: '14 critical UAT defects', subtitle: 'Blocking go-live sign-off -- vendor escalation in progress', severity: 'critical', category: 'quality' },
+  { id: 'pa-8', projectId: 3, title: 'Project 21 days overdue', subtitle: 'Was due Feb 20 -- schedule recovery plan under review', severity: 'critical', category: 'schedule' },
+  { id: 'pa-9', projectId: 4, title: 'Fire marshal inspection pending', subtitle: 'Zone B approval needed before level 3 work can start', severity: 'warning', category: 'inspection' },
+  { id: 'pa-10', projectId: 6, title: 'SUB-006 overdue', subtitle: 'Bridge bearing pad samples -- 23 days past due, delaying deck work', severity: 'warning', category: 'submittal' },
+  { id: 'pa-11', projectId: 7, title: 'Project overdue since Feb 14', subtitle: '13 days late -- foundation waterproofing behind schedule', severity: 'critical', category: 'schedule' },
+  { id: 'pa-12', projectId: 7, title: 'Safety incident reported', subtitle: 'Worker slip during backfill compaction -- incident report filed', severity: 'warning', category: 'safety' },
+  { id: 'pa-13', projectId: 8, title: 'Fire suppression upgrade pending', subtitle: 'CO-008 awaiting approval -- $31K impact to budget', severity: 'warning', category: 'change-order' },
+  { id: 'pa-14', projectId: 5, title: 'Grease interceptor scope addition', subtitle: 'CO-010 pending -- new tenant requirement not in original scope', severity: 'info', category: 'change-order' },
+];
+
+export interface BudgetHistoryPoint {
+  month: string;
+  planned: number;
+  actual: number;
+  forecast: number;
+}
+
+export const BUDGET_HISTORY_BY_PROJECT: Record<number, BudgetHistoryPoint[]> = {
+  1: [
+    { month: 'Oct 2025', planned: 80000, actual: 72000, forecast: 72000 },
+    { month: 'Nov 2025', planned: 160000, actual: 155000, forecast: 155000 },
+    { month: 'Dec 2025', planned: 260000, actual: 278000, forecast: 278000 },
+    { month: 'Jan 2026', planned: 380000, actual: 395000, forecast: 395000 },
+    { month: 'Feb 2026', planned: 480000, actual: 502000, forecast: 502000 },
+    { month: 'Mar 2026', planned: 580000, actual: 544000, forecast: 590000 },
+    { month: 'Apr 2026', planned: 680000, actual: 0, forecast: 695000 },
+    { month: 'May 2026', planned: 800000, actual: 0, forecast: 820000 },
+  ],
+  2: [
+    { month: 'Nov 2025', planned: 30000, actual: 28000, forecast: 28000 },
+    { month: 'Dec 2025', planned: 75000, actual: 82000, forecast: 82000 },
+    { month: 'Jan 2026', planned: 130000, actual: 148000, forecast: 148000 },
+    { month: 'Feb 2026', planned: 200000, actual: 218000, forecast: 218000 },
+    { month: 'Mar 2026', planned: 250000, actual: 246000, forecast: 275000 },
+    { month: 'Apr 2026', planned: 300000, actual: 0, forecast: 320000 },
+  ],
+  3: [
+    { month: 'Aug 2025', planned: 90000, actual: 95000, forecast: 95000 },
+    { month: 'Sep 2025', planned: 200000, actual: 215000, forecast: 215000 },
+    { month: 'Oct 2025', planned: 330000, actual: 360000, forecast: 360000 },
+    { month: 'Nov 2025', planned: 470000, actual: 520000, forecast: 520000 },
+    { month: 'Dec 2025', planned: 600000, actual: 655000, forecast: 655000 },
+    { month: 'Jan 2026', planned: 720000, actual: 780000, forecast: 780000 },
+    { month: 'Feb 2026', planned: 830000, actual: 855000, forecast: 900000 },
+    { month: 'Mar 2026', planned: 900000, actual: 0, forecast: 960000 },
+  ],
+  4: [
+    { month: 'Jan 2026', planned: 40000, actual: 35000, forecast: 35000 },
+    { month: 'Feb 2026', planned: 100000, actual: 95000, forecast: 95000 },
+    { month: 'Mar 2026', planned: 170000, actual: 150000, forecast: 165000 },
+    { month: 'Apr 2026', planned: 260000, actual: 0, forecast: 250000 },
+    { month: 'May 2026', planned: 360000, actual: 0, forecast: 355000 },
+    { month: 'Jun 2026', planned: 500000, actual: 0, forecast: 490000 },
+  ],
+  5: [
+    { month: 'Feb 2026', planned: 10000, actual: 8000, forecast: 8000 },
+    { month: 'Mar 2026', planned: 30000, actual: 24000, forecast: 28000 },
+    { month: 'Apr 2026', planned: 70000, actual: 0, forecast: 65000 },
+    { month: 'May 2026', planned: 130000, actual: 0, forecast: 125000 },
+    { month: 'Jun 2026', planned: 200000, actual: 0, forecast: 195000 },
+    { month: 'Jul 2026', planned: 280000, actual: 0, forecast: 275000 },
+    { month: 'Aug 2026', planned: 350000, actual: 0, forecast: 350000 },
+  ],
+  6: [
+    { month: 'Sep 2025', planned: 15000, actual: 14000, forecast: 14000 },
+    { month: 'Oct 2025', planned: 35000, actual: 32000, forecast: 32000 },
+    { month: 'Nov 2025', planned: 55000, actual: 52000, forecast: 52000 },
+    { month: 'Dec 2025', planned: 75000, actual: 70000, forecast: 70000 },
+    { month: 'Jan 2026', planned: 95000, actual: 88000, forecast: 88000 },
+    { month: 'Feb 2026', planned: 120000, actual: 108000, forecast: 115000 },
+    { month: 'Mar 2026', planned: 150000, actual: 0, forecast: 142000 },
+  ],
+  7: [
+    { month: 'Oct 2025', planned: 20000, actual: 18000, forecast: 18000 },
+    { month: 'Nov 2025', planned: 45000, actual: 42000, forecast: 42000 },
+    { month: 'Dec 2025', planned: 75000, actual: 78000, forecast: 78000 },
+    { month: 'Jan 2026', planned: 110000, actual: 105000, forecast: 105000 },
+    { month: 'Feb 2026', planned: 150000, actual: 110000, forecast: 130000 },
+    { month: 'Mar 2026', planned: 200000, actual: 0, forecast: 155000 },
+  ],
+  8: [
+    { month: 'Jan 2026', planned: 30000, actual: 25000, forecast: 25000 },
+    { month: 'Feb 2026', planned: 65000, actual: 60000, forecast: 60000 },
+    { month: 'Mar 2026', planned: 110000, actual: 90000, forecast: 105000 },
+    { month: 'Apr 2026', planned: 170000, actual: 0, forecast: 165000 },
+    { month: 'May 2026', planned: 260000, actual: 0, forecast: 255000 },
+    { month: 'Jun 2026', planned: 360000, actual: 0, forecast: 355000 },
+    { month: 'Jul 2026', planned: 450000, actual: 0, forecast: 450000 },
+    { month: 'Aug 2026', planned: 500000, actual: 0, forecast: 500000 },
+  ],
+};
+
+export type InspectionResult = 'pass' | 'fail' | 'conditional' | 'pending';
+
+export interface Inspection {
+  id: string;
+  projectId: number;
+  project: string;
+  type: string;
+  date: string;
+  inspector: string;
+  result: InspectionResult;
+  notes: string;
+  followUp: string;
+}
+
+export const INSPECTIONS: Inspection[] = [
+  { id: 'INS-001', projectId: 1, project: 'Riverside Office Complex', type: 'Structural framing', date: 'Mar 24, 2026', inspector: 'City Building Dept', result: 'pass', notes: 'All connections and welds per approved shop drawings', followUp: '' },
+  { id: 'INS-002', projectId: 1, project: 'Riverside Office Complex', type: 'Fire stopping', date: 'Mar 20, 2026', inspector: 'Fire Marshal', result: 'conditional', notes: 'Three penetrations in stair shaft need UL-listed assembly', followUp: 'Corrections due by Mar 28' },
+  { id: 'INS-003', projectId: 3, project: 'Downtown Transit Hub', type: 'Concrete strength test', date: 'Mar 22, 2026', inspector: 'Materials Testing Lab', result: 'pass', notes: '28-day break test: 4,850 psi (spec: 4,000 psi)', followUp: '' },
+  { id: 'INS-004', projectId: 3, project: 'Downtown Transit Hub', type: 'ADA accessibility', date: 'Mar 18, 2026', inspector: 'Accessibility Consultant', result: 'fail', notes: 'Platform ramp grade at 8.8% exceeds 8.33% max. Two handrail extensions short.', followUp: 'Ramp regrading required before re-inspection' },
+  { id: 'INS-005', projectId: 4, project: 'Lakeside Medical Center', type: 'Underground plumbing', date: 'Mar 25, 2026', inspector: 'City Building Dept', result: 'pass', notes: 'Pressure test passed at 150 PSI for 2 hours, zero drop', followUp: '' },
+  { id: 'INS-006', projectId: 4, project: 'Lakeside Medical Center', type: 'Fire alarm zone B', date: 'Mar 21, 2026', inspector: 'Fire Marshal', result: 'pending', notes: 'Inspection scheduled. Awaiting fire marshal availability.', followUp: 'Tentatively scheduled Mar 28' },
+  { id: 'INS-007', projectId: 6, project: 'Metro Bridge Rehabilitation', type: 'Deck core sampling', date: 'Mar 23, 2026', inspector: 'Structural Engineering Firm', result: 'pass', notes: 'Core strengths adequate for overlay. No delamination detected.', followUp: '' },
+  { id: 'INS-008', projectId: 7, project: 'Sunset Ridge Apartments', type: 'Soil compaction', date: 'Mar 25, 2026', inspector: 'Geotechnical Lab', result: 'conditional', notes: 'First test 88% compaction (spec: 95%). Re-compacted and passed at 96%.', followUp: 'Re-test documented and approved' },
+  { id: 'INS-009', projectId: 8, project: 'Industrial Park Warehouse', type: 'Slab subgrade', date: 'Mar 26, 2026', inspector: 'Geotechnical Lab', result: 'pass', notes: 'Proctor test 97% compaction. Vapor barrier installed per spec.', followUp: '' },
+  { id: 'INS-010', projectId: 2, project: 'Harbor View Condominiums', type: 'Rough electrical', date: 'Mar 19, 2026', inspector: 'City Building Dept', result: 'pass', notes: 'All circuits tested, GFCI placement verified, panel schedules match', followUp: '' },
+  { id: 'INS-011', projectId: 5, project: 'Westfield Shopping Center', type: 'Erosion control', date: 'Mar 24, 2026', inspector: 'Environmental Compliance', result: 'pass', notes: 'Silt fencing and inlet protection installed per SWPPP. No deficiencies.', followUp: '' },
+  { id: 'INS-012', projectId: 5, project: 'Westfield Shopping Center', type: 'Demolition clearance', date: 'Mar 20, 2026', inspector: 'City Building Dept', result: 'conditional', notes: 'Existing utility stub-outs must be capped before additional demo proceeds', followUp: 'Capping due by Mar 28' },
+  { id: 'INS-013', projectId: 7, project: 'Sunset Ridge Apartments', type: 'Foundation rebar', date: 'Mar 22, 2026', inspector: 'City Building Dept', result: 'pass', notes: 'Rebar placement per structural drawings. Chairs and clearances acceptable.', followUp: '' },
+  { id: 'INS-014', projectId: 8, project: 'Industrial Park Warehouse', type: 'Underground fire line', date: 'Mar 21, 2026', inspector: 'Fire Marshal', result: 'pass', notes: 'Hydrostatic test passed. Backfill approved.', followUp: '' },
+  { id: 'INS-015', projectId: 2, project: 'Harbor View Condominiums', type: 'Sheathing & WRB', date: 'Mar 24, 2026', inspector: 'Third-party inspector', result: 'conditional', notes: 'WRB tape seams at 3 window openings need additional overlap', followUp: 'Corrections required before window install' },
+];
+
+export interface PunchListItem {
+  id: string;
+  projectId: number;
+  project: string;
+  location: string;
+  description: string;
+  assignee: string;
+  status: 'open' | 'in-progress' | 'completed' | 'verified';
+  priority: 'high' | 'medium' | 'low';
+  createdDate: string;
+}
+
+export const PUNCH_LIST_ITEMS: PunchListItem[] = [
+  { id: 'PL-001', projectId: 1, project: 'Riverside Office Complex', location: 'Level 2 - East Wing', description: 'Ceiling grid misaligned at column C-4', assignee: 'Pacific Drywall', status: 'open', priority: 'medium', createdDate: 'Mar 24, 2026' },
+  { id: 'PL-002', projectId: 1, project: 'Riverside Office Complex', location: 'Level 1 - Lobby', description: 'Floor tile grout color does not match approved sample', assignee: 'Metro Paving', status: 'open', priority: 'high', createdDate: 'Mar 22, 2026' },
+  { id: 'PL-003', projectId: 1, project: 'Riverside Office Complex', location: 'Roof', description: 'HVAC condensate drain not sloped to roof drain', assignee: 'Summit HVAC', status: 'in-progress', priority: 'high', createdDate: 'Mar 20, 2026' },
+  { id: 'PL-004', projectId: 6, project: 'Metro Bridge Rehabilitation', location: 'Span 2 - Bearing', description: 'Bearing pad shimming incomplete at south abutment', assignee: 'Foundation Specialists', status: 'in-progress', priority: 'high', createdDate: 'Mar 18, 2026' },
+  { id: 'PL-005', projectId: 6, project: 'Metro Bridge Rehabilitation', location: 'Deck surface', description: 'Expansion joint seal has 3mm gap exceeding tolerance', assignee: 'Atlas Roofing Co', status: 'open', priority: 'medium', createdDate: 'Mar 23, 2026' },
+  { id: 'PL-006', projectId: 3, project: 'Downtown Transit Hub', location: 'Concourse A', description: 'Paint touch-up needed on 6 column wraps', assignee: 'Pacific Drywall', status: 'completed', priority: 'low', createdDate: 'Mar 10, 2026' },
+  { id: 'PL-007', projectId: 3, project: 'Downtown Transit Hub', location: 'Platform 1', description: 'Tactile warning strip adhesion failing in two locations', assignee: 'Metro Paving', status: 'open', priority: 'high', createdDate: 'Mar 22, 2026' },
+  { id: 'PL-008', projectId: 2, project: 'Harbor View Condominiums', location: 'Building A - Unit 305', description: 'Cabinet door alignment off by 3mm on upper run', assignee: 'Pacific Drywall', status: 'open', priority: 'medium', createdDate: 'Mar 20, 2026' },
+  { id: 'PL-009', projectId: 2, project: 'Harbor View Condominiums', location: 'Building B - Exterior', description: 'Siding lap joint gap at NE corner exceeds spec', assignee: 'Atlas Roofing Co', status: 'in-progress', priority: 'high', createdDate: 'Mar 18, 2026' },
+  { id: 'PL-010', projectId: 4, project: 'Lakeside Medical Center', location: 'Level 1 - Corridor B', description: 'Fire-rated wall penetration unsealed at conduit pass-through', assignee: 'Meridian Electric', status: 'open', priority: 'high', createdDate: 'Mar 24, 2026' },
+  { id: 'PL-011', projectId: 4, project: 'Lakeside Medical Center', location: 'Level 2 - Exam Room 204', description: 'Medical gas outlet installed at wrong height', assignee: 'Cascade Plumbing', status: 'open', priority: 'medium', createdDate: 'Mar 25, 2026' },
+  { id: 'PL-012', projectId: 5, project: 'Westfield Shopping Center', location: 'Lot B - Grading', description: 'Storm drain inlet elevation 2 inches high per survey check', assignee: 'Metro Paving', status: 'open', priority: 'medium', createdDate: 'Mar 26, 2026' },
+  { id: 'PL-013', projectId: 7, project: 'Sunset Ridge Apartments', location: 'Building A - Foundation', description: 'Waterproofing membrane tear at footing corner', assignee: 'Foundation Specialists', status: 'in-progress', priority: 'high', createdDate: 'Mar 24, 2026' },
+  { id: 'PL-014', projectId: 7, project: 'Sunset Ridge Apartments', location: 'Site - East Retaining Wall', description: 'Drain tile outlet not connected to storm system', assignee: 'Cascade Plumbing', status: 'open', priority: 'medium', createdDate: 'Mar 23, 2026' },
+  { id: 'PL-015', projectId: 8, project: 'Industrial Park Warehouse', location: 'Zone 2 - Slab', description: 'Vapor barrier puncture at column base plate', assignee: 'Foundation Specialists', status: 'completed', priority: 'high', createdDate: 'Mar 25, 2026' },
+  { id: 'PL-016', projectId: 8, project: 'Industrial Park Warehouse', location: 'Overhead Door 3', description: 'Door frame anchor bolt spacing out of tolerance', assignee: 'Summit HVAC', status: 'open', priority: 'medium', createdDate: 'Mar 26, 2026' },
+];
 
 export const JOB_COST_CATEGORIES = ['Labor', 'Materials', 'Equipment', 'Subcontractors', 'Overhead'] as const;
 export type JobCostCategory = (typeof JOB_COST_CATEGORIES)[number];

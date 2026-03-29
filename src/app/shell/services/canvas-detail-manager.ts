@@ -1,8 +1,15 @@
 import { signal, computed, type WritableSignal } from '@angular/core';
-import type { Rfi, Submittal, RfiStatus, SubmittalStatus } from '../../data/dashboard-data';
+import type { Rfi, Submittal, RfiStatus, SubmittalStatus, DailyReport, Inspection, PunchListItem, ChangeOrder } from '../../data/dashboard-data';
 import type { DrawingTile } from '../../data/drawings-data';
 
-export type DetailView = { type: 'rfi'; item: Rfi } | { type: 'submittal'; item: Submittal } | { type: 'drawing'; item: DrawingTile };
+export type DetailView =
+  | { type: 'rfi'; item: Rfi }
+  | { type: 'submittal'; item: Submittal }
+  | { type: 'drawing'; item: DrawingTile }
+  | { type: 'dailyReport'; item: DailyReport }
+  | { type: 'inspection'; item: Inspection }
+  | { type: 'punchItem'; item: PunchListItem }
+  | { type: 'changeOrder'; item: ChangeOrder };
 
 export interface LayoutSnapshot {
   tops: Record<string, number>;

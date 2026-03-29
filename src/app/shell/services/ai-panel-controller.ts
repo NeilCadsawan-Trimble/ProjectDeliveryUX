@@ -1,6 +1,6 @@
 import { Injector, Signal, computed, effect, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { AiService, type AiChatMessage, type AiContext } from '../../services/ai.service';
+import { AiService, type AiChatMessage, type AiContext, type LocalResponder } from '../../services/ai.service';
 import { WidgetFocusService } from './widget-focus.service';
 
 export interface AiMessage {
@@ -17,6 +17,7 @@ export interface AiPanelConfig {
   aiService: AiService;
   defaultSuggestions: string[] | Signal<string[]>;
   contextBuilder: AiContextBuilder;
+  localResponder?: () => LocalResponder | undefined;
   injector: Injector;
 }
 
@@ -35,11 +36,13 @@ export class AiPanelController {
   private readonly widgetFocusService: WidgetFocusService;
   private readonly aiService: AiService;
   private readonly contextBuilder: AiContextBuilder;
+  private readonly localResponderFn?: () => LocalResponder | undefined;
 
   constructor(config: AiPanelConfig) {
     this.widgetFocusService = config.widgetFocusService;
     this.aiService = config.aiService;
     this.contextBuilder = config.contextBuilder;
+    this.localResponderFn = config.localResponder;
 
     this.title = this.widgetFocusService.aiAssistantTitle;
     this.subtitle = this.widgetFocusService.aiAssistantSubtitle;
@@ -105,8 +108,9 @@ export class AiPanelController {
       .map(m => ({ role: m.role, content: m.text }));
 
     const context = this.contextBuilder();
+    const localResponder = this.localResponderFn?.();
 
-    this.streamSub = this.aiService.sendMessage(text, history, context).subscribe({
+    this.streamSub = this.aiService.sendMessage(text, history, context, localResponder).subscribe({
       next: (chunk) => {
         this.messages.update(msgs =>
           msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text + chunk } : m),

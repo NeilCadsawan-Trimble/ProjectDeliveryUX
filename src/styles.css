@@ -1793,6 +1793,11 @@ modus-wc-navbar .main-menu {
   }
 }
 
+/* When canvas panning is locked, override the default grab cursor. */
+.canvas-locked .canvas-host {
+  cursor: default !important;
+}
+
 /* Spacebar-pan cursor states for infinite canvas.
    pointer-events:none on .canvas-content lets clicks pass through to .canvas-host
    so panning works, while keeping the navbar/sidenav interactive. */

@@ -37,6 +37,7 @@ export const RECORDS_SUB_NAV_ITEMS: NavItem[] = [
   { value: 'issues', label: 'Issues' },
   { value: 'field-work-directives', label: 'Field Work Directives' },
   { value: 'submittals', label: 'Submittals' },
+  { value: 'inspections', label: 'Inspections' },
   { value: 'action-items', label: 'Action Items' },
   { value: 'check-list', label: 'Check List' },
   { value: 'drawing-sets', label: 'Drawing Sets' },
@@ -168,5 +169,41 @@ export const SUBNAV_CONFIGS: Record<string, SubnavConfig> = {
       { icon: 'zoom_in', label: 'Zoom in', value: 'zoom-in' },
       { icon: 'zoom_out', label: 'Zoom out', value: 'zoom-out' },
     ],
+  },
+  'daily-report-detail': {
+    searchPlaceholder: 'Search in report...',
+    actions: [
+      { icon: 'printer', label: 'Print' },
+      { icon: 'share', label: 'Share' },
+      { icon: 'document', label: 'Details' },
+    ],
+    viewToggles: [],
+  },
+  'inspection-detail': {
+    searchPlaceholder: 'Search in inspection...',
+    actions: [
+      { icon: 'printer', label: 'Print' },
+      { icon: 'share', label: 'Share' },
+      { icon: 'document', label: 'Details' },
+    ],
+    viewToggles: [],
+  },
+  'punch-item-detail': {
+    searchPlaceholder: 'Search in punch item...',
+    actions: [
+      { icon: 'edit_mode', label: 'Edit' },
+      { icon: 'printer', label: 'Print' },
+      { icon: 'document', label: 'Details' },
+    ],
+    viewToggles: [],
+  },
+  'change-order-detail': {
+    searchPlaceholder: 'Search in change order...',
+    actions: [
+      { icon: 'edit_mode', label: 'Edit' },
+      { icon: 'printer', label: 'Print' },
+      { icon: 'document', label: 'Details' },
+    ],
+    viewToggles: [],
   },
 };
