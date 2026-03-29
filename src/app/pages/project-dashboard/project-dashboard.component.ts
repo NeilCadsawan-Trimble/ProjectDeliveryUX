@@ -58,7 +58,7 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition } from '../../data/dashboard-data';
+import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
@@ -87,7 +87,7 @@ const RECORDS_PAGE_DESCRIPTIONS: Record<string, string> = {
 const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
   'budget': 'View and manage the project budget, cost codes, and allocated funds.',
   'purchase-orders': 'Create and track purchase orders for materials and services.',
-  'contracts': 'Manage prime contracts, subcontracts, and contract documents.',
+  'contracts': 'Manage prime contracts, subcontracts, and contract documents. Track values, retainage, and linked change orders.',
   'potential-change-orders': 'Track potential change orders before formal approval.',
   'subcontract-change-orders': 'Manage change orders issued to subcontractors.',
   'applications-for-payment': 'Submit and review payment applications and progress billing.',
@@ -196,7 +196,9 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             <div class="text-sm font-medium">{{ detailBackLabel() }}</div>
           </div>
         }
-        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
+        <div class="transition-all duration-200" [style.margin-left.px]="detailHasSubNav() && !isMobile() && sideSubNavCollapsed() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
+        </div>
         @if (detailRfi(); as rfi) {
           <app-item-detail-view
             icon="clipboard"
@@ -247,8 +249,10 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
           [inspection]="detailInspection()"
           [punchItem]="detailPunchItem()"
           [changeOrder]="detailChangeOrder()"
+          [contract]="detailContract()"
           (statusChange)="onDetailStatusChange($event)"
           (assigneeChange)="onDetailAssigneeChange($event)"
+          (linkedCoClick)="onLinkedCoClick($event)"
         />
       </div>
       @if (detailDrawing(); as drawing) {
@@ -1557,7 +1561,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             <!-- Locked: Title -->
             @if (!subledgerCategory()) {
             <div class="absolute flex items-center justify-between transition-all duration-200" [style.top.px]="tilePos()['tc-title']?.top ?? 72" [style.left.px]="tilePos()['tc-title']?.left ?? tileContentLeft()" [style.width.px]="tilePos()['tc-title']?.width ?? tileContentWidth()" [style.height.px]="40">
-              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'applications-for-payment') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }</div>
+              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'applications-for-payment') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }</div>
             </div>
             }
             @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
@@ -1751,6 +1755,39 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                   </div>
                 }
               }
+            } @else if (activeFinancialsPage() === 'prime-contract-change-orders' || activeFinancialsPage() === 'potential-change-orders' || activeFinancialsPage() === 'subcontract-change-orders') {
+              <!-- CO type sub-pages: List view -->
+              <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
+                [style.top.px]="tilePos()['tc-list']?.top ?? 128"
+                [style.left.px]="tilePos()['tc-list']?.left ?? tileContentLeft()"
+                [style.width.px]="tilePos()['tc-list']?.width ?? tileContentWidth()"
+                [style.height.px]="tilePos()['tc-list']?.height ?? 500"
+                [style.z-index]="1">
+                <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                  <div>ID</div><div>Description</div><div>Amount</div><div>Status</div><div>Requested By</div><div>Date</div>
+                </div>
+                <div class="overflow-y-auto flex-1">
+                  @for (co of activeCoTypeList(); track co.id) {
+                    <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                      tabindex="0" (click)="navigateToChangeOrder(co)" (keydown.enter)="navigateToChangeOrder(co)">
+                      <div class="text-sm font-medium text-primary">{{ co.id }}</div>
+                      <div class="text-sm text-foreground truncate">{{ co.description }}</div>
+                      <div class="text-sm font-medium text-foreground">{{ formatCoAmount(co.amount) }}</div>
+                      <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full" [class]="changeOrderStatusDot(co.status)"></div>
+                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(co.status) }}</div>
+                      </div>
+                      <div class="text-sm text-foreground-60 truncate">{{ co.requestedBy }}</div>
+                      <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
+                    </div>
+                  } @empty {
+                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap_horizontal</i>
+                      <div class="text-sm">No change orders of this type</div>
+                    </div>
+                  }
+                </div>
+              </div>
             } @else if (activeFinancialsPage() === 'applications-for-payment') {
               <!-- Revenue KPI strip -->
               <div class="absolute transition-all duration-200"
@@ -1979,21 +2016,25 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             </div>
             @if (!subledgerCategory()) {
               <div class="flex items-center justify-between">
-                <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'applications-for-payment') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }</div>
+                <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'applications-for-payment') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }</div>
               </div>
             }
             @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
               <ng-container [ngTemplateOutlet]="budgetDetailContent" />
-            } @else if (activeFinancialsPage() === 'change-order-requests' || activeFinancialsPage() === 'applications-for-payment' || activeFinancialsPage() === 'cost-forecasts') {
+            } @else if (activeFinancialsPage() === 'change-order-requests' || activeFinancialsPage() === 'applications-for-payment' || activeFinancialsPage() === 'cost-forecasts' || activeFinancialsPage() === 'contracts') {
               <app-financials-subpages
                 [activePage]="activeFinancialsPage()"
                 [viewMode]="subnavViewMode()"
                 [changeOrders]="projectChangeOrders()"
+                [contracts]="projectContracts()"
                 [revenueData]="projectRevenueData()"
                 [budgetHistory]="projectBudgetHistory()"
                 [lastBudgetPoint]="lastBudgetPoint()"
                 (changeOrderClick)="navigateToChangeOrder($event)"
+                (contractClick)="navigateToContract($event)"
               />
+            } @else if (activeFinancialsPage() === 'prime-contract-change-orders' || activeFinancialsPage() === 'potential-change-orders' || activeFinancialsPage() === 'subcontract-change-orders') {
+              <ng-container [ngTemplateOutlet]="coTypeSubpage" />
             } @else {
               <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
             }
@@ -2229,6 +2270,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
                 @case ('tasks') {
               <app-widget-frame icon="clipboard" title="Key Tasks" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                [insight]="getWidgetInsight('tasks')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div headerMeta class="text-xs text-foreground-60">{{ openTaskCount() }} Open</div>
@@ -2479,23 +2521,86 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               <app-widget-frame icon="people_group" title="Team" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('team')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ team().length }} Members</div>
-                <div class="p-4 flex flex-col gap-2 overflow-y-auto flex-1">
-                  @for (member of team(); track member.id) {
-                    <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
-                      <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
-                        {{ member.initials }}
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <div class="text-sm font-medium text-foreground truncate">{{ member.name }}</div>
-                        <div class="text-xs text-foreground-60">{{ member.role }}</div>
-                      </div>
-                      <div class="text-right flex-shrink-0">
-                        <div class="text-xs text-foreground-80 font-medium">{{ member.tasksCompleted }}/{{ member.tasksTotal }}</div>
-                        <div class="text-2xs text-foreground-40">tasks</div>
-                      </div>
+                <div headerMeta class="flex items-center gap-2">
+                  <div class="text-xs text-foreground-60">{{ team().length }} Members</div>
+                  @if (projectStaffingConflicts().length) {
+                    <div class="flex items-center gap-1 px-2 py-0.5 rounded-full"
+                      [class.bg-destructive-20]="projectStaffingConflicts()[0].severity === 'critical'"
+                      [class.bg-warning-20]="projectStaffingConflicts()[0].severity !== 'critical'">
+                      <i class="modus-icons text-2xs" aria-hidden="true"
+                        [class.text-destructive]="projectStaffingConflicts()[0].severity === 'critical'"
+                        [class.text-warning]="projectStaffingConflicts()[0].severity !== 'critical'">warning</i>
+                      <div class="text-2xs font-medium"
+                        [class.text-destructive]="projectStaffingConflicts()[0].severity === 'critical'"
+                        [class.text-warning]="projectStaffingConflicts()[0].severity !== 'critical'">{{ projectStaffingConflicts().length }} staffing gap{{ projectStaffingConflicts().length === 1 ? '' : 's' }}</div>
                     </div>
                   }
+                </div>
+                <div class="flex flex-col overflow-y-auto flex-1">
+                  @if (projectStaffingConflicts().length) {
+                    <div class="px-4 pt-3 pb-2">
+                      @for (conflict of projectStaffingConflicts(); track conflict.week) {
+                        <div class="flex items-start gap-2 mb-2 px-3 py-2 rounded-lg"
+                          [class.bg-destructive-20]="conflict.severity === 'critical'"
+                          [class.bg-warning-20]="conflict.severity === 'warning'"
+                          [class.bg-primary-20]="conflict.severity === 'info'">
+                          <i class="modus-icons text-sm mt-0.5 flex-shrink-0" aria-hidden="true"
+                            [class.text-destructive]="conflict.severity === 'critical'"
+                            [class.text-warning]="conflict.severity === 'warning'"
+                            [class.text-primary]="conflict.severity === 'info'">warning</i>
+                          <div class="min-w-0">
+                            <div class="text-xs font-semibold text-foreground">{{ conflict.week }}</div>
+                            <div class="text-2xs text-foreground-60">{{ conflict.reason }}</div>
+                            <div class="text-2xs text-foreground-40 mt-0.5">{{ conflict.absentees.join(', ') }}</div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (projectTimeOffRequests().length) {
+                    <div class="px-4 pt-2 pb-1 flex items-center gap-1.5">
+                      <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">calendar</i>
+                      <div class="text-2xs font-semibold text-foreground-40 uppercase tracking-wide">Upcoming Time Off</div>
+                    </div>
+                    @for (req of projectTimeOffRequests().slice(0, 4); track req.id) {
+                      <div class="flex items-center gap-3 px-4 py-2">
+                        <div class="w-6 h-6 rounded-full bg-primary-20 text-primary text-2xs font-semibold flex items-center justify-center flex-shrink-0">{{ req.initials }}</div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-xs font-medium text-foreground truncate">{{ req.name }}</div>
+                          <div class="text-2xs text-foreground-40">{{ req.startDate }} - {{ req.endDate }} ({{ req.days }}d)</div>
+                        </div>
+                        <div class="text-2xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
+                          [class.bg-warning-20]="req.status === 'Pending'"
+                          [class.text-warning]="req.status === 'Pending'"
+                          [class.bg-success-20]="req.status === 'Approved'"
+                          [class.text-success]="req.status === 'Approved'">{{ req.status }}</div>
+                      </div>
+                    }
+                    @if (projectTimeOffRequests().length > 4) {
+                      <div class="px-4 py-1 text-2xs text-foreground-40">+{{ projectTimeOffRequests().length - 4 }} more</div>
+                    }
+                  }
+                  <div class="px-4 pt-2 pb-1 flex items-center gap-1.5">
+                    <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">people_group</i>
+                    <div class="text-2xs font-semibold text-foreground-40 uppercase tracking-wide">Team Members</div>
+                  </div>
+                  <div class="px-4 pb-4 flex flex-col gap-2">
+                    @for (member of team(); track member.id) {
+                      <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
+                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
+                          {{ member.initials }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm font-medium text-foreground truncate">{{ member.name }}</div>
+                          <div class="text-xs text-foreground-60">{{ member.role }}</div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                          <div class="text-xs text-foreground-80 font-medium">{{ member.tasksCompleted }}/{{ member.tasksTotal }}</div>
+                          <div class="text-2xs text-foreground-40">tasks</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
                 </div>
               </app-widget-frame>
                 }
@@ -3645,6 +3750,29 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
         </div>
       </app-widget-frame>
     </ng-template>
+
+    <ng-template #coTypeSubpage>
+      @if (activeCoTypeList().length > 0) {
+        <div class="bg-card border-default rounded-lg overflow-hidden">
+          <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>ID</div><div>Description</div><div>Amount</div><div>Status</div><div>Requested By</div><div>Date</div>
+          </div>
+          @for (co of activeCoTypeList(); track co.id) {
+            <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+              tabindex="0" (click)="navigateToChangeOrder(co)" (keydown.enter)="navigateToChangeOrder(co)">
+              <div class="text-sm font-medium text-primary">{{ co.id }}</div>
+              <div class="text-sm text-foreground truncate">{{ co.description }}</div>
+              <div class="text-sm font-medium text-foreground">{{ formatCoAmount(co.amount) }}</div>
+              <div><modus-badge [color]="coStatusBadge(co.status)">{{ capitalizeStatus(co.status) }}</modus-badge></div>
+              <div class="text-sm text-foreground-60 truncate">{{ co.requestedBy }}</div>
+              <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
+            </div>
+          }
+        </div>
+      } @else {
+        <app-empty-state icon="swap_horizontal" [title]="activeFinancialsPageLabel()" description="No change orders of this type for this project." />
+      }
+    </ng-template>
   `,
 })
 export class ProjectDashboardComponent implements OnInit, AfterViewInit {
@@ -3835,6 +3963,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
         return this.budgetTileIds;
       }
       if (sub === 'change-order-requests') return this.projectChangeOrders().map(c => `tile-co-${c.id}`);
+      if (sub === 'prime-contract-change-orders') return this.projectPrimeContractCOs().map(c => `tile-pco-${c.id}`);
+      if (sub === 'potential-change-orders') return this.projectPotentialCOs().map(c => `tile-pot-${c.id}`);
+      if (sub === 'subcontract-change-orders') return this.projectSubcontractCOs().map(c => `tile-sco-${c.id}`);
       if (sub === 'applications-for-payment') return this.projectRevenueData().map(r => `tile-rev-${r.projectId}`);
       if (sub === 'cost-forecasts') return this.projectBudgetHistory().map((_, i) => `tile-cf-${i}`);
     }
@@ -4151,7 +4282,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly weatherForecast = WEATHER_FORECAST;
 
   private static readonly RECORDS_PAGES_WITH_CONTENT = new Set(['rfis', 'submittals', 'daily-reports', 'punch-items', 'inspections', 'action-items']);
-  private static readonly FINANCIALS_PAGES_WITH_CONTENT = new Set(['budget', 'change-order-requests', 'applications-for-payment', 'cost-forecasts']);
+  private static readonly FINANCIALS_PAGES_WITH_CONTENT = new Set(['budget', 'change-order-requests', 'applications-for-payment', 'cost-forecasts', 'prime-contract-change-orders', 'potential-change-orders', 'subcontract-change-orders', 'contracts']);
 
   readonly recordsSubPageHasContent = computed(() =>
     ProjectDashboardComponent.RECORDS_PAGES_WITH_CONTENT.has(this.activeRecordsPage())
@@ -4442,26 +4573,16 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     return proj ? `${proj.city}, ${proj.state}` : '';
   });
 
-  weatherIcon(condition: WeatherCondition): string {
-    const map: Record<WeatherCondition, string> = {
-      sunny: 'wb_sunny', 'partly-cloudy': 'cloud', cloudy: 'cloud',
-      rain: 'water_drop', thunderstorm: 'flash_on', snow: 'ac_unit',
-    };
-    return map[condition] ?? 'cloud';
+  weatherIcon(condition: string): string {
+    return sharedWeatherIcon(condition);
   }
 
-  weatherIconColor(condition: WeatherCondition): string {
-    const map: Record<WeatherCondition, string> = {
-      sunny: 'text-warning', 'partly-cloudy': 'text-foreground-60', cloudy: 'text-foreground-40',
-      rain: 'text-primary', thunderstorm: 'text-destructive', snow: 'text-primary',
-    };
-    return map[condition] ?? 'text-foreground-60';
+  weatherIconColor(condition: string): string {
+    return sharedWeatherIconColor(condition);
   }
 
   workImpactBadge(impact: 'none' | 'minor' | 'major'): { cls: string; label: string } {
-    if (impact === 'major') return { cls: 'bg-destructive-20 text-destructive', label: 'Major impact' };
-    if (impact === 'minor') return { cls: 'bg-warning-20 text-warning', label: 'Minor impact' };
-    return { cls: 'bg-success-20 text-success', label: 'No impact' };
+    return sharedWorkImpactBadge(impact);
   }
 
   readonly risksSeverityFilter = signal<Set<string>>(new Set(['critical', 'warning', 'info']));
@@ -4512,6 +4633,8 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   readonly team = computed(() => this.projectData().team);
+  readonly projectTimeOffRequests = computed(() => getProjectTimeOff(this.projectId()));
+  readonly projectStaffingConflicts = computed(() => buildStaffingConflicts(this.projectId()));
   readonly activity = computed(() => this.projectData().activity);
   readonly latestDrawing = computed(() => this.projectData().latestDrawing);
   readonly budgetBreakdown = computed(() => this.projectData().budgetBreakdown);
@@ -4579,6 +4702,22 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     CHANGE_ORDERS.filter(c => c.projectId === this.projectId())
   );
 
+  readonly projectContracts = computed(() =>
+    CONTRACTS.filter(c => c.projectId === this.projectId())
+  );
+
+  readonly projectPrimeContractCOs = computed(() =>
+    CHANGE_ORDERS.filter(c => c.projectId === this.projectId() && c.coType === 'prime')
+  );
+
+  readonly projectPotentialCOs = computed(() =>
+    CHANGE_ORDERS.filter(c => c.projectId === this.projectId() && c.coType === 'potential')
+  );
+
+  readonly projectSubcontractCOs = computed(() =>
+    CHANGE_ORDERS.filter(c => c.projectId === this.projectId() && c.coType === 'subcontract')
+  );
+
   readonly projectRevenueData = computed(() =>
     PROJECT_REVENUE.filter(r => r.projectId === this.projectId())
   );
@@ -4627,6 +4766,11 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly detailChangeOrder = computed(() => {
     const d = this.detailView();
     return d?.type === 'changeOrder' ? d.item : null;
+  });
+
+  readonly detailContract = computed(() => {
+    const d = this.detailView();
+    return d?.type === 'contract' ? d.item : null;
   });
 
   readonly isCanvasDrawingDetail = computed(() => this.isCanvas() && !!this.detailDrawing());
@@ -4775,6 +4919,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     if (d?.type === 'inspection') return 'inspection-detail';
     if (d?.type === 'punchItem') return 'punch-item-detail';
     if (d?.type === 'changeOrder') return 'change-order-detail';
+    if (d?.type === 'contract') return 'contract-detail';
     return 'rfi-detail';
   });
 
@@ -4880,6 +5025,17 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.pushDetailUrl('changeOrder', co.id);
   }
 
+  navigateToContract(ct: Contract): void {
+    this.detailSourceLabel.set(this.currentPageLabel());
+    this.detailView.set({ type: 'contract', item: ct } as DetailView);
+    this.pushDetailUrl('contract', ct.id);
+  }
+
+  onLinkedCoClick(coId: string): void {
+    const co = CHANGE_ORDERS.find(c => c.id === coId);
+    if (co) this.navigateToChangeOrder(co);
+  }
+
   inspectionResultBadge(result: InspectionResult): ModusBadgeColor {
     const map: Record<InspectionResult, ModusBadgeColor> = { pass: 'success', fail: 'danger', conditional: 'warning', pending: 'secondary' };
     return map[result] ?? 'secondary';
@@ -4908,6 +5064,24 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   changeOrderStatusDot(status: ChangeOrderStatus): string {
     const map: Record<ChangeOrderStatus, string> = { approved: 'bg-success', pending: 'bg-warning', rejected: 'bg-destructive' };
     return map[status] ?? 'bg-secondary';
+  }
+
+  readonly activeCoTypeList = computed(() => {
+    const page = this.activeFinancialsPage();
+    if (page === 'prime-contract-change-orders') return this.projectPrimeContractCOs();
+    if (page === 'potential-change-orders') return this.projectPotentialCOs();
+    if (page === 'subcontract-change-orders') return this.projectSubcontractCOs();
+    return [];
+  });
+
+  coStatusBadge(status: ChangeOrderStatus): ModusBadgeColor {
+    return coBadgeColor(status);
+  }
+
+  formatCoAmount(value: number): string {
+    if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+    if (Math.abs(value) >= 1_000) return `$${Math.round(value / 1_000).toLocaleString()}K`;
+    return '$' + value.toLocaleString();
   }
 
   punchPriorityBadge(priority: string): ModusBadgeColor {
@@ -5476,7 +5650,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     const alerts: Record<string, AgentAlert | null> = {};
     const agentIds = ['recordsRfis', 'recordsSubmittals', 'recordsDailyReports', 'recordsInspections',
       'recordsPunchItems', 'recordsActionItems', 'financialsBudget', 'financialsChangeOrders',
-      'financialsRevenue', 'financialsCostForecasts', 'budgetAgent', 'tasksAgent', 'risksAgent'];
+      'financialsContracts', 'financialsRevenue', 'financialsCostForecasts', 'budgetAgent', 'tasksAgent', 'risksAgent'];
     for (const id of agentIds) {
       const agent = getAgent(id, 'project-dashboard');
       alerts[id] = agent.alerts?.(state) ?? null;
@@ -5513,6 +5687,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     const map: Record<string, string> = {
       'budget': 'financialsBudget',
       'change-orders': 'financialsChangeOrders',
+      'contracts': 'financialsContracts',
       'revenue': 'financialsRevenue',
       'cost-forecasts': 'financialsCostForecasts',
     };
@@ -5627,6 +5802,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     if (dv?.type === 'inspection') return 'inspectionDetail';
     if (dv?.type === 'punchItem') return 'punchItemDetail';
     if (dv?.type === 'changeOrder') return 'changeOrderDetail';
+    if (dv?.type === 'contract') return 'contractDetail';
     if (this.detailDrawing()) return 'drawingDetail';
 
     const nav = this.activeNavItem();
@@ -5643,6 +5819,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       if (this.subledgerCategory()) return 'financialsSubledger';
       const sub = this.activeFinancialsPage();
       if (sub === 'change-orders') return 'financialsChangeOrders';
+      if (sub === 'contracts') return 'financialsContracts';
       if (sub === 'revenue') return 'financialsRevenue';
       if (sub === 'cost-forecasts') return 'financialsCostForecasts';
       return 'financialsBudget';
@@ -5693,6 +5870,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       subledgerCategory: this.subledgerCategory() ?? undefined,
       subledgerTransactions: txns,
       changeOrders: CHANGE_ORDERS.filter(co => co.projectId === projId),
+      contracts: CONTRACTS.filter(ct => ct.projectId === projId),
       dailyReports: DAILY_REPORTS.filter(dr => dr.projectId === projId),
       weatherForecast: this.projectWeather()?.forecast ?? WEATHER_FORECAST,
       projectAttentionItems: PROJECT_ATTENTION_ITEMS.filter(a => a.projectId === projId),
@@ -5703,6 +5881,8 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       detailRfi: this.detailRfi() ?? undefined,
       detailSubmittal: this.detailSubmittal() ?? undefined,
       detailDrawing: this.detailDrawing() ?? undefined,
+      projectTimeOff: getProjectTimeOff(projId),
+      staffingConflicts: buildStaffingConflicts(projId),
       currentPage: 'project-dashboard',
       currentSubPage: this.activeNavItem(),
     };

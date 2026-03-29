@@ -57,6 +57,22 @@ export const routes: Routes = [
         title: 'Job Costs',
       },
       {
+        path: 'financials/estimates/:id',
+        loadComponent: () =>
+          import('./pages/estimate-detail/estimate-detail-page.component').then(
+            (m) => m.EstimateDetailPageComponent,
+          ),
+        title: 'Estimate Detail',
+      },
+      {
+        path: 'financials/change-orders/:id',
+        loadComponent: () =>
+          import('./pages/change-order-detail/change-order-detail-page.component').then(
+            (m) => m.ChangeOrderDetailPageComponent,
+          ),
+        title: 'Change Order Detail',
+      },
+      {
         path: 'rfi/:id',
         loadComponent: () =>
           import('./pages/rfi-detail/rfi-detail-page.component').then(

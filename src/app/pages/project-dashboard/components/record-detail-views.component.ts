@@ -9,13 +9,17 @@ import {
   capitalizeStatus as getCapitalizedStatus,
   type StatusOption,
 } from '../../../data/dashboard-item-status';
+import { weatherIcon as sharedWeatherIcon } from '../../../data/dashboard-data';
 import type {
   DailyReport,
   Inspection,
   PunchListItem,
   ChangeOrder,
+  Contract,
   InspectionResult,
   ChangeOrderStatus,
+  ContractStatus,
+  ContractType,
 } from '../../../data/dashboard-data';
 
 @Component({
@@ -135,6 +139,50 @@ import type {
         </div>
       </div>
     }
+    @if (contract(); as ct) {
+      <div class="flex flex-col gap-6">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-primary-20">
+            <i class="modus-icons text-xl text-primary" aria-hidden="true">{{ contractIcon(ct.contractType) }}</i>
+          </div>
+          <div class="flex-1">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide">{{ contractTypeLabel(ct.contractType) }} {{ ct.id }}</div>
+            <div class="text-xl font-bold text-foreground">{{ ct.title }}</div>
+          </div>
+          <modus-badge [color]="contractStatusBadge(ct.status)">{{ ct.status | titlecase }}</modus-badge>
+        </div>
+        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div><div class="text-xs text-foreground-60">Original Value</div><div class="text-lg font-bold text-foreground">{{ formatCurrency(ct.originalValue) }}</div></div>
+            <div><div class="text-xs text-foreground-60">Revised Value</div><div class="text-lg font-bold" [class]="ct.revisedValue > ct.originalValue ? 'text-warning' : 'text-foreground'">{{ formatCurrency(ct.revisedValue) }}</div></div>
+            <div><div class="text-xs text-foreground-60">Retainage</div><div class="text-sm font-medium text-foreground">{{ ct.retainage }}% ({{ formatCurrency(ct.revisedValue * ct.retainage / 100) }})</div></div>
+            <div><div class="text-xs text-foreground-60">Vendor</div><div class="text-sm font-medium text-foreground">{{ ct.vendor }}</div></div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 border-top-default pt-4">
+            <div><div class="text-xs text-foreground-60">Start Date</div><div class="text-sm text-foreground">{{ ct.startDate }}</div></div>
+            <div><div class="text-xs text-foreground-60">End Date</div><div class="text-sm text-foreground">{{ ct.endDate }}</div></div>
+            <div><div class="text-xs text-foreground-60">Project</div><div class="text-sm text-foreground">{{ ct.project }}</div></div>
+          </div>
+          <div class="border-top-default pt-4">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-2">Scope</div>
+            <div class="text-sm text-foreground">{{ ct.scope }}</div>
+          </div>
+          @if (ct.linkedChangeOrderIds.length > 0) {
+            <div class="border-top-default pt-4">
+              <div class="text-xs text-foreground-60 uppercase tracking-wide mb-2">Linked Change Orders ({{ ct.linkedChangeOrderIds.length }})</div>
+              <div class="flex flex-wrap gap-2">
+                @for (coId of ct.linkedChangeOrderIds; track coId) {
+                  <div class="bg-primary-20 text-primary text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer hover:bg-primary-40 transition-colors duration-150"
+                    tabindex="0" (click)="linkedCoClick.emit(coId)" (keydown.enter)="linkedCoClick.emit(coId)">
+                    <i class="modus-icons text-xs mr-1" aria-hidden="true">link</i>{{ coId }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
   `,
 })
 export class RecordDetailViewsComponent {
@@ -142,22 +190,17 @@ export class RecordDetailViewsComponent {
   readonly inspection = input<Inspection | null>(null);
   readonly punchItem = input<PunchListItem | null>(null);
   readonly changeOrder = input<ChangeOrder | null>(null);
+  readonly contract = input<Contract | null>(null);
 
   readonly statusChange = output<string>();
   readonly assigneeChange = output<string>();
+  readonly linkedCoClick = output<string>();
 
   readonly PUNCH_STATUS_OPTIONS = PUNCH_STATUS_OPTIONS;
   readonly ASSIGNEE_OPTIONS = ASSIGNEE_OPTIONS;
 
-  private static readonly WEATHER_ICON: Record<string, string> = {
-    sunny: 'wb_sunny', clear: 'wb_sunny', cloudy: 'cloud', overcast: 'cloud',
-    rain: 'water', rainy: 'water', storm: 'flash_on', thunderstorm: 'flash_on',
-    snow: 'ac_unit', snowy: 'ac_unit', fog: 'blur_on', foggy: 'blur_on',
-    'partly cloudy': 'cloud', windy: 'air', hot: 'wb_sunny',
-  };
-
   weatherIcon(condition: string): string {
-    return RecordDetailViewsComponent.WEATHER_ICON[condition.toLowerCase()] ?? 'cloud';
+    return sharedWeatherIcon(condition);
   }
 
   statusDot(status: string): string { return getStatusDot(status); }
@@ -174,6 +217,21 @@ export class RecordDetailViewsComponent {
     if (status === 'approved') return 'success';
     if (status === 'rejected') return 'danger';
     return 'warning';
+  }
+
+  contractStatusBadge(status: ContractStatus): ModusBadgeColor {
+    const map: Record<ContractStatus, ModusBadgeColor> = { active: 'success', closed: 'secondary', pending: 'warning', draft: 'tertiary' };
+    return map[status] ?? 'secondary';
+  }
+
+  contractTypeLabel(ct: ContractType): string {
+    const map: Record<ContractType, string> = { prime: 'Prime Contract', subcontract: 'Subcontract', 'purchase-order': 'Purchase Order' };
+    return map[ct];
+  }
+
+  contractIcon(ct: ContractType): string {
+    const map: Record<ContractType, string> = { prime: 'content_copy', subcontract: 'assignment', 'purchase-order': 'shopping_cart' };
+    return map[ct];
   }
 
   formatCurrency(value: number): string {

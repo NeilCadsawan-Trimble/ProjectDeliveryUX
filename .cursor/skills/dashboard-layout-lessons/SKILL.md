@@ -442,6 +442,63 @@ When a feature is added to ANY view mode, it must be added to ALL applicable vie
 
 This catches both errors at the static test level before any build is attempted.
 
+## 12. Shared Utility Functions -- Avoid Duplication Across Components
+
+**Files**: `src/app/data/dashboard-data.ts` (utilities), multiple consumer components
+
+### The bug (occurred during weather widget implementation)
+
+Weather icon mapping and color logic was duplicated across 4 files: `project-dashboard.component.ts`, `home-page.component.ts`, `records-subpages.component.ts`, and `record-detail-views.component.ts`. Each file had its own static map with slightly different entries. When a new condition was added in one file, the others didn't get updated.
+
+### The fix: centralize into `dashboard-data.ts`
+
+All helper functions that map data to display values (icons, colors, badges) must live in `src/app/data/dashboard-data.ts` and be imported by consumer components:
+
+```typescript
+// In dashboard-data.ts
+export function weatherIcon(condition: string): string {
+  return WEATHER_ICON_MAP[condition.toLowerCase()] ?? 'cloud';
+}
+
+export function weatherIconColor(condition: string): string {
+  return WEATHER_COLOR_MAP[condition.toLowerCase()] ?? 'text-foreground-60';
+}
+
+export function workImpactBadge(impact: 'none' | 'minor' | 'major'): { cls: string; label: string } { ... }
+```
+
+Components delegate to the shared function:
+
+```typescript
+// In component
+import { weatherIcon as sharedWeatherIcon } from '../../data/dashboard-data';
+
+weatherIcon(condition: string): string {
+  return sharedWeatherIcon(condition);
+}
+```
+
+### The rule
+
+When adding a mapping function (icon, color, badge, status text) that could apply to more than one component:
+
+1. Define it in `dashboard-data.ts` (or a dedicated utilities file)
+2. Export it as a named function
+3. In each component, create a thin delegate method that calls the shared function
+4. **Never** create a `private static readonly` map in multiple components for the same purpose
+
+### Existing shared utilities
+
+| Function | Purpose |
+|----------|---------|
+| `weatherIcon(condition)` | Maps weather condition string to Modus icon name |
+| `weatherIconColor(condition)` | Maps weather condition to Tailwind text color class |
+| `workImpactBadge(impact)` | Returns `{ cls, label }` for weather work impact badges |
+| `urgentNeedCategoryIcon(cat)` | Maps urgent need category to icon name |
+| `budgetProgressClass(pct)` | Returns Tailwind class for budget progress bar |
+| `getProjectWeather(projectId)` | Fetches weather data for a project |
+| `buildUrgentNeeds()` | Builds and caches the full urgent needs list |
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |

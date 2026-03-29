@@ -1,5 +1,5 @@
-import type { Rfi, Submittal, CalendarAppointment, Project, Estimate, ActivityItem, ChangeOrder, DailyReport, WeatherForecast, ProjectAttentionItem, BudgetHistoryPoint, Inspection, PunchListItem, ProjectRevenue, UrgentNeedItem, ProjectJobCost, JobCostCategory, ProjectWeather } from './dashboard-data';
-import { buildUrgentNeeds, PROJECTS, JOB_COST_CATEGORIES, getProjectJobCosts, getProjectWeather } from './dashboard-data';
+import type { Rfi, Submittal, CalendarAppointment, Project, Estimate, ActivityItem, ChangeOrder, DailyReport, WeatherForecast, ProjectAttentionItem, BudgetHistoryPoint, Inspection, PunchListItem, ProjectRevenue, UrgentNeedItem, ProjectJobCost, JobCostCategory, ProjectWeather, TimeOffRequest, StaffingConflict, Contract } from './dashboard-data';
+import { buildUrgentNeeds, PROJECTS, JOB_COST_CATEGORIES, getProjectJobCosts, getProjectWeather, getProjectTimeOff, buildStaffingConflicts, CONTRACTS, CHANGE_ORDERS as ALL_CHANGE_ORDERS } from './dashboard-data';
 import type { Milestone, TeamMember, Task, Risk, ActivityEntry, Drawing, BudgetBreakdown } from './project-data';
 import type { DrawingTile } from './drawings-data';
 
@@ -8,7 +8,9 @@ export interface AgentDataState {
   estimates?: Estimate[];
   activities?: ActivityItem[];
   attentionItems?: { title: string; subtitle: string }[];
-  timeOffRequests?: { name: string; type: string; startDate: string; endDate: string; days: number; status: string }[];
+  timeOffRequests?: TimeOffRequest[];
+  projectTimeOff?: TimeOffRequest[];
+  staffingConflicts?: StaffingConflict[];
   rfis?: Rfi[];
   submittals?: Submittal[];
   calendar?: CalendarAppointment[];
@@ -36,6 +38,7 @@ export interface AgentDataState {
   subledgerTransactions?: { date: string; description: string; vendor: string; amount: number; category: string }[];
 
   changeOrders?: ChangeOrder[];
+  contracts?: Contract[];
   dailyReports?: DailyReport[];
   weatherForecast?: WeatherForecast[];
   projectAttentionItems?: ProjectAttentionItem[];
@@ -110,43 +113,80 @@ function maxDaysPastDue(items: { dueDate: string }[]): number {
 const homeTimeOff: WidgetAgent = {
   id: 'homeTimeOff',
   name: 'Time Off Requests',
-  systemPrompt: 'You are an HR scheduling assistant for a construction company. You help managers understand upcoming absences, PTO conflicts, and team availability.',
+  systemPrompt: 'You are an HR scheduling assistant for a construction company. You help managers understand upcoming absences, PTO conflicts, staffing gaps across projects, and team availability.',
   suggestions(s) {
     const pending = (s.timeOffRequests ?? []).filter(r => r.status === 'Pending').length;
-    const base = ['Who is out this week?', 'Show upcoming PTO conflicts'];
-    return pending
-      ? [`How many time-off requests are pending? (${pending} pending)`, ...base]
-      : ['How many time-off requests are pending?', ...base];
+    const conflicts = buildStaffingConflicts();
+    const critical = conflicts.filter(c => c.severity === 'critical').length;
+    const base = ['Show staffing conflicts by project', 'Who is out this week?'];
+    if (critical) return [`${critical} critical staffing conflict${critical === 1 ? '' : 's'} detected`, ...base];
+    if (pending) return [`${pending} pending request${pending === 1 ? '' : 's'} to review`, ...base];
+    return ['Show upcoming PTO conflicts', ...base];
   },
   insight(s) {
+    const conflicts = buildStaffingConflicts();
+    const critical = conflicts.filter(c => c.severity === 'critical');
+    if (critical.length) return `${critical.length} project${critical.length === 1 ? '' : 's'} with critical staffing gaps`;
     const pending = (s.timeOffRequests ?? []).filter(r => r.status === 'Pending').length;
-    if (!pending) return null;
-    return `${pending} pending time-off request${pending === 1 ? '' : 's'} need review`;
+    if (pending) return `${pending} pending request${pending === 1 ? '' : 's'} need review`;
+    return null;
   },
-  alerts: () => null,
+  alerts() {
+    const conflicts = buildStaffingConflicts();
+    const critical = conflicts.filter(c => c.severity === 'critical').length;
+    if (critical) return { level: 'critical' as const, count: critical, label: 'staffing conflicts' };
+    const warnings = conflicts.filter(c => c.severity === 'warning').length;
+    if (warnings) return { level: 'warning' as const, count: warnings, label: 'reduced capacity' };
+    return null;
+  },
   actions: () => [
     { id: 'approve-all-pending', label: 'Approve all pending PTO', execute: (st) => {
       const n = (st.timeOffRequests ?? []).filter(r => r.status === 'Pending').length;
       return n ? `Approved ${n} pending time-off request(s).` : 'No pending requests to approve.';
     }},
-    { id: 'notify-managers', label: 'Notify managers of this week\'s absences', execute: () => 'Sent absence summary to project managers.' },
-    { id: 'export-schedule', label: 'Export team availability', execute: () => 'Exported availability calendar.' },
+    { id: 'notify-managers', label: 'Notify managers of staffing conflicts', execute: () => {
+      const conflicts = buildStaffingConflicts();
+      const critical = conflicts.filter(c => c.severity === 'critical');
+      return critical.length
+        ? `Sent staffing alerts to managers for ${critical.length} critical conflict(s): ${critical.map(c => `${c.projectName} (${c.week})`).join(', ')}`
+        : 'No critical conflicts -- sent routine absence summary.';
+    }},
+    { id: 'export-schedule', label: 'Export team availability', execute: () => 'Exported availability calendar with project-level staffing data.' },
   ],
   buildContext(s) {
-    if (!s.timeOffRequests?.length) return 'No time-off requests.';
-    const lines = s.timeOffRequests.map(r => `  ${r.name}: ${r.type}, ${r.startDate}-${r.endDate} (${r.days} day(s)), status: ${r.status}`);
-    return `Time off requests (${s.timeOffRequests.length}):\n${lines.join('\n')}`;
+    const reqs = s.timeOffRequests ?? [];
+    if (!reqs.length) return 'No time-off requests.';
+    const lines = reqs.map(r => `  ${r.name} (${r.projectName}): ${r.type}, ${r.startDate}-${r.endDate} (${r.days}d), ${r.status}`);
+    const conflicts = buildStaffingConflicts();
+    const conflictLines = conflicts.map(c => `  ${c.projectName} ${c.week}: ${c.absentCount}/${c.teamSize} out (${c.absentPct}%) -- ${c.severity} -- ${c.absentees.join(', ')}`);
+    return `Time off requests (${reqs.length}):\n${lines.join('\n')}\n\nStaffing conflicts (${conflicts.length}):\n${conflictLines.join('\n')}`;
   },
   localRespond(q, s) {
     const reqs = s.timeOffRequests ?? [];
+    if (kw(q, 'conflict', 'staffing', 'gap', 'issue', 'problem', 'risk')) {
+      const conflicts = buildStaffingConflicts();
+      if (!conflicts.length) return 'No staffing conflicts detected across projects.';
+      const critical = conflicts.filter(c => c.severity === 'critical');
+      const warning = conflicts.filter(c => c.severity === 'warning');
+      let resp = `Detected ${conflicts.length} staffing overlap${conflicts.length === 1 ? '' : 's'} across projects.`;
+      if (critical.length) resp += `\n\n**Critical (${critical.length}):**\n${critical.map(c => `- ${c.projectName}, ${c.week}: ${c.absentees.join(', ')} out (${c.absentPct}% of team)`).join('\n')}`;
+      if (warning.length) resp += `\n\n**Warning (${warning.length}):**\n${warning.map(c => `- ${c.projectName}, ${c.week}: ${c.absentees.join(', ')} out (${c.absentPct}% of team)`).join('\n')}`;
+      return resp;
+    }
     if (kw(q, 'pending', 'how many', 'count')) {
       const pending = reqs.filter(r => r.status === 'Pending');
-      return `There are ${pending.length} pending time-off requests out of ${reqs.length} total.`;
+      return `There are ${pending.length} pending time-off requests out of ${reqs.length} total across ${new Set(reqs.map(r => r.projectId)).size} projects.`;
     }
-    if (kw(q, 'who', 'out', 'absence')) {
-      return reqs.length ? `Current requests: ${reqs.map(r => `${r.name} (${r.type}, ${r.startDate}-${r.endDate})`).join('; ')}` : 'No time-off requests on file.';
+    if (kw(q, 'project')) {
+      const byProj = new Map<string, number>();
+      for (const r of reqs) byProj.set(r.projectName, (byProj.get(r.projectName) ?? 0) + 1);
+      return `Requests by project: ${[...byProj.entries()].map(([p, c]) => `${p}: ${c}`).join(', ')}`;
     }
-    return `I track ${reqs.length} time-off requests. Ask about pending requests, who is out, or scheduling conflicts.`;
+    if (kw(q, 'who', 'out', 'absence', 'week')) {
+      const active = reqs.filter(r => r.status !== 'Denied');
+      return active.length ? `Active requests: ${active.slice(0, 10).map(r => `${r.name} (${r.projectName}, ${r.startDate}-${r.endDate})`).join('; ')}${active.length > 10 ? ` ...and ${active.length - 10} more` : ''}` : 'No active time-off requests.';
+    }
+    return `Tracking ${reqs.length} time-off requests across ${new Set(reqs.map(r => r.projectId)).size} projects. Ask about staffing conflicts, pending requests, or project-level breakdowns.`;
   },
 };
 
@@ -305,7 +345,7 @@ const homeDefault: WidgetAgent = {
     const atRisk = projects.filter(p => p.status === 'At Risk').length;
     const overdueProj = projects.filter(p => p.status === 'Overdue').length;
     const overdueRfi = (s.rfis ?? []).filter(r => r.status === 'overdue').length;
-    if (atRisk || overdueProj) return `${atRisk} at risk, ${overdueProj} overdue project${overdueProj === 1 ? '' : 's'}`;
+    if (atRisk || overdueProj) return `${atRisk} project${atRisk === 1 ? '' : 's'} at risk, ${overdueProj} overdue project${overdueProj === 1 ? '' : 's'}`;
     if (overdueRfi) return `${overdueRfi} portfolio RFI(s) overdue`;
     return null;
   },
@@ -410,49 +450,98 @@ const projectsWidget: WidgetAgent = {
 const openEstimates: WidgetAgent = {
   id: 'openEstimates',
   name: 'Open Estimates',
-  systemPrompt: 'You are an estimating coordinator for construction projects. You track estimate pipelines, approval workflows, and help prioritize estimate reviews.',
+  systemPrompt: 'You are an estimating coordinator for a $5M construction company. You track the estimate pipeline (~$4M target), approval workflows, and help prioritize reviews to maintain healthy backlog coverage.',
   suggestions(s) {
-    const overdue = (s.estimates ?? []).filter(e => e.daysLeft < 0).length;
-    return overdue
-      ? ['Show overdue estimates', 'What is the total estimate pipeline value?', 'Which estimates need approval?']
-      : ['What is the total estimate pipeline value?', 'Which estimates need approval?', 'Show overdue estimates'];
+    const est = s.estimates ?? [];
+    const overdue = est.filter(e => e.daysLeft < 0).length;
+    const urgent = est.filter(e => e.daysLeft >= 0 && e.daysLeft <= 7 && e.status === 'Awaiting Approval').length;
+    if (overdue) return ['Show overdue estimates', 'What is my pipeline health?', 'Which estimates need approval this week?'];
+    if (urgent) return ['Which estimates need approval this week?', 'What is my pipeline health?', 'Break down estimates by status'];
+    return ['What is my pipeline health?', 'Break down estimates by status', 'Show estimate timeline'];
   },
   insight(s) {
-    const overdue = (s.estimates ?? []).filter(e => e.daysLeft < 0);
-    if (!overdue.length) return null;
-    return `${overdue.length} overdue estimate${overdue.length === 1 ? '' : 's'} in the pipeline`;
+    const est = s.estimates ?? [];
+    const overdue = est.filter(e => e.daysLeft < 0);
+    const thisWeek = est.filter(e => e.daysLeft >= 0 && e.daysLeft <= 7 && e.status === 'Awaiting Approval');
+    const total = est.reduce((sum, e) => sum + e.valueRaw, 0);
+    const pipelineM = (total / 1_000_000).toFixed(1);
+    if (overdue.length) {
+      const overdueVal = overdue.reduce((sum, e) => sum + e.valueRaw, 0);
+      return `$${(overdueVal / 1000).toFixed(0)}K across ${overdue.length} overdue -- $${pipelineM}M total pipeline`;
+    }
+    if (thisWeek.length) return `${thisWeek.length} approval${thisWeek.length === 1 ? '' : 's'} due this week -- $${pipelineM}M pipeline`;
+    return `$${pipelineM}M pipeline across ${est.length} open estimates`;
   },
   alerts(s) {
-    const overdue = (s.estimates ?? []).filter(e => e.daysLeft < 0).length;
-    return overdue ? { level: 'warning', count: overdue, label: 'overdue' } : null;
+    const est = s.estimates ?? [];
+    const overdue = est.filter(e => e.daysLeft < 0).length;
+    if (overdue) return { level: 'critical', count: overdue, label: 'overdue' };
+    const urgent = est.filter(e => e.daysLeft >= 0 && e.daysLeft <= 7 && e.status === 'Awaiting Approval').length;
+    return urgent ? { level: 'warning', count: urgent, label: 'due this week' } : null;
   },
-  actions: () => [
-    { id: 'chase-approvals', label: 'Chase estimate approvals', execute: (st) => {
-      const n = (st.estimates ?? []).filter(e => e.status === 'Awaiting Approval').length;
-      return n ? `Sent reminders for ${n} estimate(s) awaiting approval.` : 'No estimates awaiting approval.';
-    }},
-    { id: 'export-pipeline', label: 'Export pipeline', execute: () => 'Exported open estimates pipeline.' },
-  ],
+  actions: (s) => {
+    const est = s?.estimates ?? [];
+    const actions: AgentAction[] = [
+      { id: 'chase-approvals', label: 'Chase estimate approvals', execute: (st) => {
+        const awaiting = (st.estimates ?? []).filter(e => e.status === 'Awaiting Approval');
+        return awaiting.length ? `Sent reminders for ${awaiting.length} estimate(s) totaling $${(awaiting.reduce((s, e) => s + e.valueRaw, 0) / 1000).toFixed(0)}K awaiting approval.` : 'No estimates awaiting approval.';
+      }},
+      { id: 'export-pipeline', label: 'Export pipeline report', execute: () => 'Exported estimate pipeline report with status breakdown.' },
+    ];
+    const overdue = est.filter(e => e.daysLeft < 0);
+    if (overdue.length >= 2) {
+      actions.push({ id: 'escalate-overdue', label: 'Escalate overdue estimates', execute: () => `Escalated ${overdue.length} overdue estimates to senior management for review.` });
+    }
+    return actions;
+  },
   buildContext(s) {
-    const estimates = s.estimates ?? [];
-    const lines = estimates.map(e => `  ${e.id}: ${e.project}, ${e.value} (${e.type}), status: ${e.status}, requested by ${e.requestedBy}, due ${e.dueDate}, ${e.daysLeft} days left`);
-    return `Open estimates (${estimates.length}):\n${lines.join('\n')}`;
+    const est = s.estimates ?? [];
+    const total = est.reduce((sum, e) => sum + e.valueRaw, 0);
+    const byStatus = { draft: est.filter(e => e.status === 'Draft'), review: est.filter(e => e.status === 'Under Review'), awaiting: est.filter(e => e.status === 'Awaiting Approval') };
+    const overdue = est.filter(e => e.daysLeft < 0);
+    const lines = [
+      `Estimate pipeline: ${est.length} open, $${(total / 1_000_000).toFixed(2)}M total value`,
+      `Status breakdown: ${byStatus.draft.length} draft, ${byStatus.review.length} under review, ${byStatus.awaiting.length} awaiting approval`,
+      overdue.length ? `OVERDUE (${overdue.length}): ${overdue.map(e => `${e.id} ${e.project} ${e.value} (${Math.abs(e.daysLeft)}d overdue)`).join('; ')}` : 'No overdue estimates.',
+      '',
+      ...est.map(e => `  ${e.id}: ${e.project}, ${e.value} (${e.type}), status: ${e.status}, client: ${e.client}, by ${e.requestedBy}, due ${e.dueDate}, ${e.daysLeft}d left`),
+    ];
+    return lines.join('\n');
   },
   localRespond(q, s) {
-    const estimates = s.estimates ?? [];
+    const est = s.estimates ?? [];
+    const total = est.reduce((sum, e) => sum + e.valueRaw, 0);
     if (kw(q, 'overdue', 'late', 'past due')) {
-      const overdue = estimates.filter(e => e.daysLeft < 0);
-      return overdue.length ? `${overdue.length} overdue estimate(s): ${overdue.map(e => `${e.id} - ${e.project}`).join('; ')}` : 'No overdue estimates.';
+      const overdue = est.filter(e => e.daysLeft < 0);
+      if (!overdue.length) return 'No overdue estimates currently.';
+      const val = overdue.reduce((s, e) => s + e.valueRaw, 0);
+      return `${overdue.length} overdue estimate(s) totaling $${(val / 1000).toFixed(0)}K:\n${overdue.map(e => `- ${e.id}: ${e.project} (${e.value}) -- ${Math.abs(e.daysLeft)} days overdue, awaiting from ${e.requestedBy}`).join('\n')}`;
     }
-    if (kw(q, 'pipeline', 'total', 'value')) {
-      const total = estimates.reduce((sum, e) => sum + e.valueRaw, 0);
-      return `Total estimate pipeline: $${(total / 1000).toFixed(0)}K across ${estimates.length} open estimates.`;
+    if (kw(q, 'pipeline', 'health', 'coverage', 'backlog')) {
+      const ratio = ((total / 5_000_000) * 100).toFixed(0);
+      const overdue = est.filter(e => e.daysLeft < 0).length;
+      const drafts = est.filter(e => e.status === 'Draft').length;
+      return `Pipeline health: $${(total / 1_000_000).toFixed(2)}M across ${est.length} estimates (${ratio}% of $5M annual revenue).\n${overdue ? `Warning: ${overdue} overdue estimate(s) need immediate attention.\n` : ''}${drafts} in draft stage, ${est.filter(e => e.status === 'Under Review').length} under review, ${est.filter(e => e.status === 'Awaiting Approval').length} awaiting approval.`;
     }
-    if (kw(q, 'approval', 'awaiting')) {
-      const awaiting = estimates.filter(e => e.status === 'Awaiting Approval');
-      return awaiting.length ? `${awaiting.length} estimate(s) awaiting approval: ${awaiting.map(e => `${e.id} (${e.value})`).join(', ')}` : 'No estimates awaiting approval.';
+    if (kw(q, 'approval', 'awaiting', 'this week', 'urgent')) {
+      const awaiting = est.filter(e => e.status === 'Awaiting Approval');
+      const thisWeek = awaiting.filter(e => e.daysLeft >= 0 && e.daysLeft <= 7);
+      if (!awaiting.length) return 'No estimates awaiting approval.';
+      let resp = `${awaiting.length} estimate(s) awaiting approval ($${(awaiting.reduce((s, e) => s + e.valueRaw, 0) / 1000).toFixed(0)}K):`;
+      resp += awaiting.map(e => `\n- ${e.id}: ${e.project} (${e.value}) -- due ${e.dueDate}${e.daysLeft < 0 ? ' OVERDUE' : ''}`).join('');
+      if (thisWeek.length) resp += `\n\n${thisWeek.length} of these are due this week.`;
+      return resp;
     }
-    return `${estimates.length} open estimates in the pipeline. Ask about overdue items, approval status, or pipeline value.`;
+    if (kw(q, 'status', 'breakdown', 'summary')) {
+      const byStatus: Record<string, typeof est> = {};
+      for (const e of est) { (byStatus[e.status] ??= []).push(e); }
+      return Object.entries(byStatus).map(([status, items]) => `${status} (${items.length}): $${(items.reduce((s, e) => s + e.valueRaw, 0) / 1000).toFixed(0)}K\n${items.map(e => `  - ${e.id}: ${e.project} (${e.value})`).join('\n')}`).join('\n\n');
+    }
+    if (kw(q, 'timeline', 'schedule', 'due')) {
+      const sorted = [...est].sort((a, b) => a.daysLeft - b.daysLeft);
+      return `Estimate timeline (earliest due first):\n${sorted.map(e => `- ${e.dueDate}: ${e.id} ${e.project} (${e.value}) -- ${e.status}${e.daysLeft < 0 ? ' OVERDUE' : ''}`).join('\n')}`;
+    }
+    return `${est.length} open estimates totaling $${(total / 1_000_000).toFixed(2)}M. Ask about pipeline health, overdue items, approval status, or timeline.`;
   },
 };
 
@@ -967,38 +1056,78 @@ const budgetAgent: WidgetAgent = {
 const teamAgent: WidgetAgent = {
   id: 'team',
   name: 'Team',
-  systemPrompt: 'You are a resource management specialist for construction projects. You track team allocation, availability, workload distribution, and help optimize staffing.',
+  systemPrompt: 'You are a resource management specialist for construction projects. You track team allocation, availability, workload distribution, upcoming time off, and help identify staffing risks.',
   suggestions(s) {
-    const low = (s.team ?? []).filter(t => t.availability < 50).length;
-    return low
-      ? ['Show team availability', 'Who is assigned to this project?', 'Are there any resource conflicts?']
-      : ['Who is assigned to this project?', 'Show team availability', 'Are there any resource conflicts?'];
+    const pto = s.projectTimeOff ?? [];
+    const pending = pto.filter(r => r.status === 'Pending').length;
+    const conflicts = s.staffingConflicts ?? [];
+    const critical = conflicts.filter(c => c.severity === 'critical').length;
+    if (critical) return ['Show staffing conflicts from PTO', 'Who is assigned to this project?', 'Show team availability'];
+    if (pending) return [`${pending} pending PTO request${pending === 1 ? '' : 's'} on this project`, 'Who is assigned to this project?', 'Show team availability'];
+    return ['Who is assigned to this project?', 'Show upcoming time off', 'Show team availability'];
   },
   insight(s) {
+    const conflicts = s.staffingConflicts ?? [];
+    const critical = conflicts.filter(c => c.severity === 'critical');
+    if (critical.length) return `${critical.length} week${critical.length === 1 ? '' : 's'} with critical staffing gaps from PTO`;
+    const pto = s.projectTimeOff ?? [];
+    const upcoming = pto.filter(r => r.status !== 'Denied');
+    if (upcoming.length) return `${upcoming.length} upcoming time-off request${upcoming.length === 1 ? '' : 's'}`;
     const low = (s.team ?? []).filter(t => t.availability < 50);
-    if (!low.length) return null;
-    return `${low.length} member${low.length === 1 ? '' : 's'} under 50% availability`;
+    if (low.length) return `${low.length} member${low.length === 1 ? '' : 's'} under 50% availability`;
+    return null;
   },
-  alerts: () => null,
-  actions: () => [
-    { id: 'rebalance', label: 'Suggest workload rebalance', execute: () => 'Generated workload rebalance suggestions.' },
-    { id: 'request-backfill', label: 'Request backfill resource', execute: () => 'Submitted backfill resource request.' },
-  ],
+  alerts(s) {
+    const conflicts = s.staffingConflicts ?? [];
+    const critical = conflicts.filter(c => c.severity === 'critical').length;
+    if (critical) return { level: 'critical', count: critical, label: 'staffing gaps' };
+    const warnings = conflicts.filter(c => c.severity === 'warning').length;
+    if (warnings) return { level: 'warning', count: warnings, label: 'reduced capacity' };
+    return null;
+  },
+  actions(s) {
+    const actions: AgentAction[] = [
+      { id: 'rebalance', label: 'Suggest workload rebalance', execute: () => 'Generated workload rebalance suggestions.' },
+      { id: 'request-backfill', label: 'Request backfill resource', execute: () => 'Submitted backfill resource request.' },
+    ];
+    const conflicts = s.staffingConflicts ?? [];
+    if (conflicts.some(c => c.severity === 'critical')) {
+      actions.unshift({ id: 'escalate-staffing', label: 'Escalate staffing gaps to PMO', execute: () => {
+        const crit = conflicts.filter(c => c.severity === 'critical');
+        return `Escalated ${crit.length} critical staffing gap(s) to PMO: ${crit.map(c => `${c.week} (${c.absentees.join(', ')} out)`).join('; ')}`;
+      }});
+    }
+    return actions;
+  },
   buildContext(s) {
     const team = s.team ?? [];
-    const lines = team.map(t => `  ${t.name} (${t.role}): ${t.tasksCompleted}/${t.tasksTotal} tasks done, ${t.availability}% available`);
-    return `Project: ${s.projectName}\nTeam (${team.length} members):\n${lines.join('\n')}`;
+    const pto = s.projectTimeOff ?? [];
+    const conflicts = s.staffingConflicts ?? [];
+    const teamLines = team.map(t => `  ${t.name} (${t.role}): ${t.tasksCompleted}/${t.tasksTotal} tasks, ${t.availability}% available`);
+    const ptoLines = pto.map(r => `  ${r.name}: ${r.type}, ${r.startDate}-${r.endDate} (${r.days}d), ${r.status}`);
+    const conflictLines = conflicts.map(c => `  ${c.week}: ${c.absentCount}/${c.teamSize} out (${c.absentPct}%) [${c.severity}] -- ${c.absentees.join(', ')}`);
+    return `Project: ${s.projectName}\nTeam (${team.length}):\n${teamLines.join('\n')}\n\nTime Off (${pto.length}):\n${ptoLines.join('\n') || '  None'}\n\nStaffing Conflicts:\n${conflictLines.join('\n') || '  None'}`;
   },
   localRespond(q, s) {
     const team = s.team ?? [];
+    const pto = s.projectTimeOff ?? [];
+    const conflicts = s.staffingConflicts ?? [];
+    if (kw(q, 'conflict', 'staffing', 'gap', 'risk', 'issue')) {
+      if (!conflicts.length) return `No staffing conflicts detected for ${s.projectName}.`;
+      return `Staffing conflicts for ${s.projectName}:\n${conflicts.map(c => `- ${c.week}: ${c.absentees.join(', ')} out (${c.absentPct}% of team) -- ${c.reason}`).join('\n')}`;
+    }
+    if (kw(q, 'time off', 'pto', 'vacation', 'leave', 'absent')) {
+      if (!pto.length) return `No upcoming time-off requests for ${s.projectName}.`;
+      return `Time off for ${s.projectName} (${pto.length}):\n${pto.map(r => `- ${r.name}: ${r.type}, ${r.startDate}-${r.endDate} (${r.days}d) -- ${r.status}`).join('\n')}`;
+    }
     if (kw(q, 'who', 'assigned', 'member', 'list')) {
       return team.length ? `Team (${team.length}): ${team.map(t => `${t.name} (${t.role})`).join(', ')}` : 'No team data available.';
     }
     if (kw(q, 'availability', 'available', 'capacity')) {
       const low = team.filter(t => t.availability < 50);
-      return low.length ? `${low.length} team member(s) with low availability (<50%): ${low.map(t => `${t.name} (${t.availability}%)`).join(', ')}` : 'All team members have adequate availability.';
+      return low.length ? `${low.length} member(s) with low availability: ${low.map(t => `${t.name} (${t.availability}%)`).join(', ')}` : 'All team members have adequate availability.';
     }
-    return `${team.length} team members assigned to ${s.projectName}. Ask about availability, workload, or specific roles.`;
+    return `${team.length} team members on ${s.projectName}, ${pto.length} time-off requests. Ask about staffing conflicts, PTO, availability, or team roles.`;
   },
 };
 
@@ -1340,18 +1469,30 @@ const submittalDetail: WidgetAgent = {
 const changeOrdersAgent: WidgetAgent = {
   id: 'changeOrders',
   name: 'Change Orders',
-  systemPrompt: 'You are a change order management specialist for construction projects. You track pending approvals, financial impacts, and help evaluate change requests.',
+  systemPrompt: 'You are a change order management specialist for construction projects. You track Prime Contract COs, Potential COs, and Subcontract COs -- their pending approvals, financial impacts, and help evaluate change requests.',
   suggestions(s) {
-    const pending = (s.changeOrders ?? []).filter(co => co.status === 'pending').length;
+    const cos = s.changeOrders ?? [];
+    const pending = cos.filter(co => co.status === 'pending').length;
+    const prime = cos.filter(co => co.coType === 'prime').length;
+    const potential = cos.filter(co => co.coType === 'potential').length;
+    const sub = cos.filter(co => co.coType === 'subcontract').length;
     return pending
-      ? ['How many change orders are pending?', 'What is the total financial impact?', 'Which change orders are approved?']
-      : ['What is the total financial impact?', 'Which change orders are approved?', 'How many change orders are pending?'];
+      ? [`How many COs are pending? (${pending})`, `Break down by type: ${prime} prime, ${potential} potential, ${sub} subcontract`, 'What is the total financial exposure?']
+      : ['What is the total financial impact?', 'Show approved change orders', 'Break down by type'];
   },
   insight(s) {
-    const pending = (s.changeOrders ?? []).filter(co => co.status === 'pending');
+    const cos = s.changeOrders ?? [];
+    const pending = cos.filter(co => co.status === 'pending');
     if (!pending.length) return null;
     const total = pending.reduce((sum, co) => sum + co.amount, 0);
-    return `${pending.length} pending, $${total.toLocaleString()} awaiting approval`;
+    const prime = pending.filter(co => co.coType === 'prime').length;
+    const potential = pending.filter(co => co.coType === 'potential').length;
+    const sub = pending.filter(co => co.coType === 'subcontract').length;
+    const parts: string[] = [];
+    if (prime) parts.push(`${prime} prime`);
+    if (potential) parts.push(`${potential} potential`);
+    if (sub) parts.push(`${sub} subcontract`);
+    return `${pending.length} pending ($${total.toLocaleString()}): ${parts.join(', ')}`;
   },
   alerts: () => null,
   actions: () => [
@@ -1364,23 +1505,48 @@ const changeOrdersAgent: WidgetAgent = {
   buildContext(s) {
     const cos = s.changeOrders ?? [];
     if (!cos.length) return 'No change orders.';
-    const lines = cos.map(co => `  ${co.id}: ${co.description}, project: ${co.project}, $${co.amount.toLocaleString()}, status: ${co.status}, requested by ${co.requestedBy} on ${co.requestDate}\n    Reason: ${co.reason}`);
-    return `Change orders (${cos.length}):\n${lines.join('\n')}`;
+    const byType = (type: string) => cos.filter(co => co.coType === type);
+    const section = (label: string, list: typeof cos) => {
+      if (!list.length) return '';
+      const lines = list.map(co => `  ${co.id}: ${co.description}, project: ${co.project}, $${co.amount.toLocaleString()}, status: ${co.status}, requested by ${co.requestedBy} on ${co.requestDate}\n    Reason: ${co.reason}`);
+      return `\n${label} (${list.length}):\n${lines.join('\n')}`;
+    };
+    return `Change orders (${cos.length} total):${section('Prime Contract COs', byType('prime'))}${section('Potential COs', byType('potential'))}${section('Subcontract COs', byType('subcontract'))}`;
   },
   localRespond(q, s) {
     const cos = s.changeOrders ?? [];
     const pending = cos.filter(co => co.status === 'pending');
     const approved = cos.filter(co => co.status === 'approved');
     const totalPending = pending.reduce((sum, co) => sum + co.amount, 0);
+    if (kw(q, 'prime')) {
+      const prime = cos.filter(co => co.coType === 'prime');
+      const primePending = prime.filter(co => co.status === 'pending');
+      return `${prime.length} prime contract CO(s): ${primePending.length} pending ($${primePending.reduce((s2, co) => s2 + co.amount, 0).toLocaleString()}), ${prime.filter(co => co.status === 'approved').length} approved.`;
+    }
+    if (kw(q, 'potential')) {
+      const pot = cos.filter(co => co.coType === 'potential');
+      return `${pot.length} potential CO(s) totaling $${pot.reduce((s2, co) => s2 + co.amount, 0).toLocaleString()}. ${pot.filter(co => co.status === 'pending').length} still pending evaluation.`;
+    }
+    if (kw(q, 'subcontract', 'sub ')) {
+      const sub = cos.filter(co => co.coType === 'subcontract');
+      const subPending = sub.filter(co => co.status === 'pending');
+      return `${sub.length} subcontract CO(s): ${subPending.length} pending ($${subPending.reduce((s2, co) => s2 + co.amount, 0).toLocaleString()}), ${sub.filter(co => co.status === 'approved').length} approved.`;
+    }
     if (kw(q, 'pending', 'how many', 'awaiting')) {
       return `${pending.length} pending change order(s) totaling $${totalPending.toLocaleString()}: ${pending.map(co => `${co.id} ($${co.amount.toLocaleString()})`).join(', ')}`;
     }
-    if (kw(q, 'total', 'impact', 'financial', 'cost')) {
+    if (kw(q, 'total', 'impact', 'financial', 'cost', 'exposure')) {
       const total = cos.reduce((sum, co) => sum + co.amount, 0);
       return `Total change order value: $${total.toLocaleString()} across ${cos.length} orders. $${totalPending.toLocaleString()} pending approval.`;
     }
     if (kw(q, 'approved')) {
       return approved.length ? `${approved.length} approved change order(s): ${approved.map(co => `${co.id} ($${co.amount.toLocaleString()})`).join(', ')}` : 'No approved change orders.';
+    }
+    if (kw(q, 'type', 'breakdown', 'break down')) {
+      const prime = cos.filter(co => co.coType === 'prime');
+      const pot = cos.filter(co => co.coType === 'potential');
+      const sub = cos.filter(co => co.coType === 'subcontract');
+      return `${cos.length} total COs: ${prime.length} prime ($${prime.reduce((s2, co) => s2 + co.amount, 0).toLocaleString()}), ${pot.length} potential ($${pot.reduce((s2, co) => s2 + co.amount, 0).toLocaleString()}), ${sub.length} subcontract ($${sub.reduce((s2, co) => s2 + co.amount, 0).toLocaleString()}).`;
     }
     return `Tracking ${cos.length} change orders: ${pending.length} pending, ${approved.length} approved. Total pending value: $${totalPending.toLocaleString()}.`;
   },
@@ -1707,6 +1873,118 @@ const financialsChangeOrders: WidgetAgent = {
   localRespond(q, s) { return changeOrdersAgent.localRespond(q, s); },
 };
 
+const contractsAgent: WidgetAgent = {
+  id: 'financialsContracts',
+  name: 'Contracts',
+  systemPrompt: 'You are a contract management specialist for construction projects. You track prime contracts, subcontracts, and purchase orders -- their values, change order impacts, retainage, and vendor relationships.',
+  suggestions(s) {
+    const ctrs = s.contracts ?? [];
+    const subs = ctrs.filter(c => c.contractType === 'subcontract');
+    const pending = ctrs.filter(c => c.status === 'pending').length;
+    const totalRevised = ctrs.reduce((sum, c) => sum + c.revisedValue, 0);
+    return pending
+      ? [`How many contracts are pending? (${pending})`, `What is the total contract value? ($${(totalRevised / 1000).toFixed(0)}K)`, `How many subcontracts are active? (${subs.filter(c => c.status === 'active').length})`, 'Which contracts have linked change orders?']
+      : [`What is the total contract value?`, `Show all subcontracts (${subs.length})`, 'Which contracts have the most change order exposure?', 'Compare original vs revised values'];
+  },
+  insight(s) {
+    const ctrs = s.contracts ?? [];
+    if (!ctrs.length) return null;
+    const totalOriginal = ctrs.reduce((sum, c) => sum + c.originalValue, 0);
+    const totalRevised = ctrs.reduce((sum, c) => sum + c.revisedValue, 0);
+    const delta = totalRevised - totalOriginal;
+    if (delta <= 0) return null;
+    return `Contract growth: +$${(delta / 1000).toFixed(0)}K from ${ctrs.reduce((n, c) => n + c.linkedChangeOrderIds.length, 0)} linked COs`;
+  },
+  alerts(s) {
+    const ctrs = s.contracts ?? [];
+    const coLinked = ctrs.filter(c => c.linkedChangeOrderIds.length > 0);
+    const pendingCos = coLinked.reduce((n, c) => {
+      const cos = (s.changeOrders ?? []).filter(co => c.linkedChangeOrderIds.includes(co.id) && co.status === 'pending');
+      return n + cos.length;
+    }, 0);
+    return pendingCos ? { level: 'warning', count: pendingCos, label: 'pending COs on contracts' } : null;
+  },
+  actions: () => [
+    { id: 'export-contracts', label: 'Export contract register', execute: () => 'Exported contract register to spreadsheet.' },
+    { id: 'retainage-report', label: 'Generate retainage report', execute: (st) => {
+      const ctrs = st.contracts ?? [];
+      const totalRetainage = ctrs.reduce((sum, c) => sum + (c.revisedValue * c.retainage / 100), 0);
+      return `Retainage report: $${(totalRetainage / 1000).toFixed(0)}K held across ${ctrs.length} contracts.`;
+    }},
+  ],
+  buildContext(s) {
+    const ctrs = s.contracts ?? [];
+    if (!ctrs.length) return 'No contracts.';
+    const cos = s.changeOrders ?? [];
+    const section = (label: string, list: typeof ctrs) => {
+      if (!list.length) return '';
+      const lines = list.map(c => {
+        const linked = c.linkedChangeOrderIds.length ? ` | Linked COs: ${c.linkedChangeOrderIds.join(', ')}` : '';
+        const pendingCos = cos.filter(co => c.linkedChangeOrderIds.includes(co.id) && co.status === 'pending');
+        const pendingStr = pendingCos.length ? ` (${pendingCos.length} pending: $${pendingCos.reduce((n, co) => n + co.amount, 0).toLocaleString()})` : '';
+        return `  ${c.id}: ${c.title}\n    Vendor: ${c.vendor} | Original: $${c.originalValue.toLocaleString()} | Revised: $${c.revisedValue.toLocaleString()} | Status: ${c.status} | Retainage: ${c.retainage}%${linked}${pendingStr}`;
+      });
+      return `\n${label} (${list.length}):\n${lines.join('\n')}`;
+    };
+    return `Contracts (${ctrs.length} total):${section('Prime Contracts', ctrs.filter(c => c.contractType === 'prime'))}${section('Subcontracts', ctrs.filter(c => c.contractType === 'subcontract'))}${section('Purchase Orders', ctrs.filter(c => c.contractType === 'purchase-order'))}`;
+  },
+  localRespond(q, s) {
+    const ctrs = s.contracts ?? [];
+    const cos = s.changeOrders ?? [];
+    if (kw(q, 'prime')) {
+      const prime = ctrs.filter(c => c.contractType === 'prime');
+      const total = prime.reduce((sum, c) => sum + c.revisedValue, 0);
+      return `${prime.length} prime contract(s) totaling $${total.toLocaleString()}: ${prime.map(c => `${c.id} ($${c.revisedValue.toLocaleString()})`).join(', ')}`;
+    }
+    if (kw(q, 'subcontract', 'sub ')) {
+      const subs = ctrs.filter(c => c.contractType === 'subcontract');
+      const total = subs.reduce((sum, c) => sum + c.revisedValue, 0);
+      return `${subs.length} subcontract(s) totaling $${total.toLocaleString()}: ${subs.map(c => `${c.id} - ${c.vendor} ($${c.revisedValue.toLocaleString()})`).join(', ')}`;
+    }
+    if (kw(q, 'total', 'value', 'how much', 'worth')) {
+      const totalOriginal = ctrs.reduce((sum, c) => sum + c.originalValue, 0);
+      const totalRevised = ctrs.reduce((sum, c) => sum + c.revisedValue, 0);
+      return `Total original contract value: $${totalOriginal.toLocaleString()}. Total revised value: $${totalRevised.toLocaleString()} (+$${(totalRevised - totalOriginal).toLocaleString()} from change orders).`;
+    }
+    if (kw(q, 'change order', 'co ', 'linked', 'exposure')) {
+      const withCos = ctrs.filter(c => c.linkedChangeOrderIds.length > 0);
+      const lines = withCos.map(c => {
+        const linkedCos = cos.filter(co => c.linkedChangeOrderIds.includes(co.id));
+        const amount = linkedCos.reduce((sum, co) => sum + co.amount, 0);
+        return `${c.id}: ${linkedCos.length} CO(s) = $${amount.toLocaleString()}`;
+      });
+      return `${withCos.length} contracts with linked COs:\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'retainage')) {
+      const totalRetainage = ctrs.reduce((sum, c) => sum + (c.revisedValue * c.retainage / 100), 0);
+      return `Total retainage held: $${totalRetainage.toLocaleString()} across ${ctrs.length} contracts.`;
+    }
+    if (kw(q, 'pending', 'draft')) {
+      const pending = ctrs.filter(c => c.status === 'pending' || c.status === 'draft');
+      return pending.length ? `${pending.length} pending/draft contract(s): ${pending.map(c => `${c.id} - ${c.vendor}`).join(', ')}` : 'All contracts are active or closed.';
+    }
+    if (kw(q, 'vendor', 'who')) {
+      const vendors = [...new Set(ctrs.map(c => c.vendor))];
+      return `${vendors.length} unique vendor(s): ${vendors.join(', ')}`;
+    }
+    const totalOriginal = ctrs.reduce((sum, c) => sum + c.originalValue, 0);
+    const totalRevised = ctrs.reduce((sum, c) => sum + c.revisedValue, 0);
+    return `${ctrs.length} contracts: ${ctrs.filter(c => c.contractType === 'prime').length} prime, ${ctrs.filter(c => c.contractType === 'subcontract').length} subcontracts. Original: $${totalOriginal.toLocaleString()}, revised: $${totalRevised.toLocaleString()}.`;
+  },
+};
+
+const financialsContracts: WidgetAgent = {
+  id: 'financialsContracts',
+  name: 'Contracts (Financials)',
+  systemPrompt: 'You are a contract management specialist. You have access to all contracts for this project and can analyze values, change order impacts, retainage, and vendor relationships.',
+  suggestions: (st) => getSuggestions(contractsAgent, st),
+  insight: (st) => contractsAgent.insight?.(st) ?? null,
+  alerts: (st) => contractsAgent.alerts?.(st) ?? null,
+  actions: (st) => contractsAgent.actions?.(st) ?? [],
+  buildContext(s) { return contractsAgent.buildContext(s); },
+  localRespond(q, s) { return contractsAgent.localRespond(q, s); },
+};
+
 const financialsRevenue: WidgetAgent = {
   id: 'financialsRevenue',
   name: 'Revenue (Financials)',
@@ -1918,6 +2196,22 @@ const changeOrderDetail: WidgetAgent = {
   ],
   buildContext(s) { return changeOrdersAgent.buildContext(s); },
   localRespond(q, s) { return changeOrdersAgent.localRespond(q, s); },
+};
+
+const contractDetail: WidgetAgent = {
+  id: 'contractDetail',
+  name: 'Contract Detail',
+  systemPrompt: 'You are a contract review specialist examining a specific contract. Help analyze vendor relationships, change order impacts, retainage, and scope.',
+  suggestions: ['What change orders are linked?', 'What is the retainage amount?', 'How has the value changed from original?', 'Who is the vendor?'],
+  insight: () => null,
+  alerts: () => null,
+  actions: () => [
+    { id: 'amend-contract', label: 'Draft contract amendment', execute: () => 'Drafted contract amendment (demo).' },
+    { id: 'release-retainage', label: 'Process retainage release', execute: () => 'Submitted retainage release request.' },
+    { id: 'link-co', label: 'Link change order to contract', execute: () => 'Linked change order to contract.' },
+  ],
+  buildContext(s) { return contractsAgent.buildContext(s); },
+  localRespond(q, s) { return contractsAgent.localRespond(q, s); },
 };
 
 const portfolioAgent: WidgetAgent = {
@@ -2172,7 +2466,7 @@ const homeWeatherAgent: WidgetAgent = {
 
 const ALL_AGENTS: Record<string, WidgetAgent> = {
   portfolio: portfolioAgent,
-  homeTimeOff, homeCalendar, homeRfis, homeSubmittals, homeDefault, homeUrgentNeeds: urgentNeedsAgent, homeWeather: homeWeatherAgent,
+  homeTimeOff, homeCalendar, homeRfis, homeSubmittals, homeDefault, homeUrgentNeeds: urgentNeedsAgent, homeWeather: homeWeatherAgent, homeRecentActivity: recentActivity,
   projects: projectsWidget, openEstimates, recentActivity, needsAttention, projectsDefault,
   finBudgetByProject, financialsDefault, revenue: revenueAgent,
   milestones: milestonesAgent, tasks: tasksAgent, risks: risksAgent,
@@ -2183,8 +2477,9 @@ const ALL_AGENTS: Record<string, WidgetAgent> = {
   changeOrders: changeOrdersAgent, dailyReports: dailyReportsAgent,
   weather: weatherAgent, inspections: inspectionsAgent,
   recordsDailyReports, recordsPunchItems, recordsInspections, recordsActionItems,
-  financialsChangeOrders, financialsRevenue, financialsCostForecasts, financialsJobCostDetail,
-  dailyReportDetail, inspectionDetail, punchItemDetail, changeOrderDetail,
+  financialsChangeOrders, finChangeOrders: financialsChangeOrders, financialsRevenue, financialsCostForecasts, financialsJobCostDetail,
+  financialsContracts, contracts: contractsAgent,
+  dailyReportDetail, inspectionDetail, punchItemDetail, changeOrderDetail, contractDetail,
 };
 
 const PAGE_DEFAULT_AGENTS: Record<string, string> = {

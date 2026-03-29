@@ -35,9 +35,23 @@ alwaysApply: true
   - Collapsed subnav locked rect: 227px wide, 48px tall (header only). Expanded: 227px wide, 600px tall.
   - `onItemSelect` auto-collapses the subnav after selecting an item.
 
+### Session 8 (Mar 29)
+- **Topic**: Optimization, refactoring, PROGRESS.md update, skills update
+- **What happened**:
+  1. Analyzed codebase for optimization opportunities. Identified weather icon/color helpers duplicated across 4 files.
+  2. Consolidated shared utility functions into `dashboard-data.ts`: `weatherIcon()`, `weatherIconColor()`, `workImpactBadge()`. Removed duplicate static maps from `project-dashboard.component.ts`, `home-page.component.ts`, `records-subpages.component.ts`, `record-detail-views.component.ts`.
+  3. Updated `PROGRESS.md` with Phase 8 (18 items) covering agentic enhancements, AI navigation, financial deep-linking, smart home widgets, weather integration, and code quality. Test coverage updated to 184 static tests across 8 files.
+  4. Updated `dashboard-layout-lessons` skill with new section 12: shared utility functions pattern.
+  5. Created new `navigation-routing` skill covering dynamic back buttons, shell title overrides, route-based deep linking, agentic page wiring, and deep-linking from widgets.
+  6. Updated `agentic-widgets` skill with sections 9 (route-based actions) and 10 (domain-specific agents).
+- **Decisions**:
+  - All mapping functions (icon, color, badge) that appear in more than one component go in `dashboard-data.ts`.
+  - Components keep thin delegate methods that call the shared function (preserves template compatibility).
+
 ## Active Context
 
-- Collapsible subnav redesign complete and building clean.
+- On `dev` branch, synced with `main`.
+- Refactoring and skill updates complete. Build, type-check, and 184 static tests all pass.
 - Pre-existing SVG color lint violations remain (AI icon gradients) -- not related to changes.
 
 ## Pending Items
@@ -46,4 +60,6 @@ alwaysApply: true
 
 ## Scratch Notes
 
-- (none)
+- Total commits: 155+
+- Phase 8 added to PROGRESS.md: 18 new items, bringing total to 85/93 (91%)
+- New skill: `navigation-routing` at `.cursor/skills/navigation-routing/SKILL.md`

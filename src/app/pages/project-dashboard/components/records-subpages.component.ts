@@ -6,6 +6,7 @@ import {
   itemStatusDot as getStatusDot,
   capitalizeStatus as getCapitalizedStatus,
 } from '../../../data/dashboard-item-status';
+import { weatherIcon as sharedWeatherIcon } from '../../../data/dashboard-data';
 import type {
   DailyReport,
   Inspection,
@@ -250,19 +251,14 @@ export class RecordsSubpagesComponent {
   readonly punchItemClick = output<PunchListItem>();
   readonly inspectionClick = output<Inspection>();
 
-  private static readonly WEATHER_ICON: Record<string, string> = {
-    sunny: 'wb_sunny', clear: 'wb_sunny', cloudy: 'cloud', overcast: 'cloud',
-    rain: 'water', rainy: 'water', storm: 'flash_on', thunderstorm: 'flash_on',
-    snow: 'ac_unit', snowy: 'ac_unit', fog: 'blur_on', foggy: 'blur_on',
-    'partly cloudy': 'cloud', windy: 'air', hot: 'wb_sunny',
-  };
+
 
   private static readonly SEVERITY_BADGE: Record<string, ModusBadgeColor> = {
     high: 'danger', medium: 'warning', low: 'secondary', critical: 'danger', warning: 'warning', info: 'primary',
   };
 
   weatherIcon(condition: string): string {
-    return RecordsSubpagesComponent.WEATHER_ICON[condition.toLowerCase()] ?? 'cloud';
+    return sharedWeatherIcon(condition);
   }
 
   statusDot(status: string): string { return getStatusDot(status); }

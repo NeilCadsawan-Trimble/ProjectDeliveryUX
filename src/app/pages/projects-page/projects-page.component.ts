@@ -24,25 +24,19 @@ import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-eng
 import type {
   DashboardWidgetId,
   Project,
-  Estimate,
-  ActivityItem,
   UrgentNeedItem,
 } from '../../data/dashboard-data';
 import {
   PROJECTS,
-  ESTIMATES,
-  ACTIVITIES,
-  ATTENTION_ITEMS,
   statusBadgeColor,
   progressClass,
   budgetProgressClass,
   budgetPctColor,
-  estimateBadgeColor,
-  dueDateClass,
   buildUrgentNeeds,
   urgentNeedCategoryIcon,
   getProjectJobCosts,
 } from '../../data/dashboard-data';
+import { getAgent, type AgentDataState } from '../../data/widget-agents';
 
 @Component({
   selector: 'app-projects-page',
@@ -142,6 +136,12 @@ import {
                   </div>
                 </div>
               </div>
+              @if (projectsInsight()) {
+                <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                  <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                  <div class="text-xs text-foreground-60 truncate leading-none">{{ projectsInsight() }}</div>
+                </div>
+              }
               <div class="p-4 overflow-y-auto flex-1 min-h-0">
                 <div class="grid gap-3" [class]="projectsGridCols()">
                   @for (project of projects(); track project.id) {
@@ -265,166 +265,6 @@ import {
               />
             </div>
 
-            } @else if (widgetId === 'openEstimates') {
-            <!-- Open Estimates Widget -->
-            <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId" #estimatesContainer>
-              <div
-                class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-              >
-                <div class="flex items-center gap-2">
-                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                  <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">description</i>
-                  <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Open Estimates</div>
-                  <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
-                </div>
-              </div>
-              <div
-                role="row"
-                class="grid gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0"
-                [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
-              >
-                @if (!estimatesXXNarrow()) {
-                  <div role="columnheader">ID</div>
-                }
-                <div role="columnheader">Project / Client</div>
-                @if (!estimatesXNarrow()) {
-                  <div role="columnheader">Type</div>
-                }
-                @if (!estimatesUltraNarrow()) {
-                  <div role="columnheader">Value</div>
-                }
-                <div role="columnheader">Status</div>
-                @if (!estimatesNarrow()) {
-                  <div role="columnheader">Requested By</div>
-                }
-                <div role="columnheader">Due Date</div>
-              </div>
-              <div class="overflow-y-auto flex-1" role="table" aria-label="Open estimates">
-                @for (estimate of estimates(); track estimate.id) {
-                  <div
-                    role="row"
-                    class="grid gap-3 px-6 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150"
-                    [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
-                  >
-                    @if (!estimatesXXNarrow()) {
-                      <div role="cell" class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
-                    }
-                    <div role="cell">
-                      <div class="text-sm font-medium text-foreground truncate">{{ estimate.project }}</div>
-                      <div class="text-xs text-foreground-60 mt-0.5 truncate">{{ estimate.client }}</div>
-                    </div>
-                    @if (!estimatesXNarrow()) {
-                      <div role="cell">
-                        <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</div>
-                      </div>
-                    }
-                    @if (!estimatesUltraNarrow()) {
-                      <div role="cell" class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
-                    }
-                    <div role="cell">
-                      <modus-badge [color]="estimateBadgeColor(estimate.status)" variant="outlined" size="sm">
-                        {{ estimate.status }}
-                      </modus-badge>
-                    </div>
-                    @if (!estimatesNarrow()) {
-                      <div role="cell" class="flex items-center gap-2 min-w-0">
-                        <div class="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-xs font-semibold flex-shrink-0">
-                          {{ estimate.requestedByInitials }}
-                        </div>
-                        <div class="text-xs text-foreground-80 truncate">{{ estimate.requestedBy }}</div>
-                      </div>
-                    }
-                    <div role="cell">
-                      <div class="text-sm text-foreground-80">{{ estimate.dueDate }}</div>
-                      <div class="text-xs mt-0.5" [class]="dueDateClass(estimate.daysLeft)">
-                        @if (estimate.daysLeft < 0) {
-                          {{ -estimate.daysLeft }}d overdue
-                        } @else if (estimate.daysLeft === 0) {
-                          Due today
-                        } @else {
-                          {{ estimate.daysLeft }}d left
-                        }
-                      </div>
-                    </div>
-                  </div>
-                }
-              </div>
-              <widget-resize-handle
-                [isMobile]="isMobile()"
-                (resizeStart)="startWidgetResize('openEstimates', 'both', $event)"
-                (resizeTouchStart)="startWidgetResizeTouch('openEstimates', 'both', $event)"
-              />
-            </div>
-
-            } @else if (widgetId === 'recentActivity') {
-            <!-- Recent Activity Widget -->
-            <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-              <div
-                class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-              >
-                <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
-                <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Recent Activity</div>
-              </div>
-              <div class="overflow-y-auto flex-1">
-                @for (activity of activities; track activity.id) {
-                  <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
-                    <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <i class="modus-icons text-sm {{ activity.iconColor }}" aria-hidden="true">{{ activity.icon }}</i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <div class="text-sm text-foreground">
-                        <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
-                          {{ activity.actorInitials }}
-                        </div>
-                        {{ activity.text }}
-                      </div>
-                    </div>
-                    <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
-                  </div>
-                }
-              </div>
-              <widget-resize-handle
-                [isMobile]="isMobile()"
-                (resizeStart)="startWidgetResize('recentActivity', 'both', $event)"
-                (resizeTouchStart)="startWidgetResizeTouch('recentActivity', 'both', $event)"
-              />
-            </div>
-
-            } @else if (widgetId === 'needsAttention') {
-            <!-- Needs Attention Widget -->
-            <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-              <div
-                class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-              >
-                <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                <i class="modus-icons text-lg text-warning" aria-hidden="true">warning</i>
-                <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Needs Attention</div>
-              </div>
-              <div class="overflow-y-auto flex-1">
-                @for (item of attentionItems; track item.id) {
-                  <div class="flex items-start gap-3 px-6 py-4 border-bottom-default last:border-b-0">
-                    <div class="w-2 h-2 rounded-full flex-shrink-0 mt-2 {{ item.dotClass }}"></div>
-                    <div class="flex-1 min-w-0">
-                      <div class="text-sm font-medium text-foreground">{{ item.title }}</div>
-                      <div class="text-xs text-foreground-60 mt-0.5">{{ item.subtitle }}</div>
-                    </div>
-                  </div>
-                }
-              </div>
-              <widget-resize-handle
-                [isMobile]="isMobile()"
-                (resizeStart)="startWidgetResize('needsAttention', 'both', $event)"
-                (resizeTouchStart)="startWidgetResizeTouch('needsAttention', 'both', $event)"
-              />
-            </div>
-
             }
 
           </div>
@@ -447,27 +287,23 @@ export class ProjectsPageComponent implements AfterViewInit {
   private static readonly HEADER_OFFSET = ProjectsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['projsHeader', 'projects', 'openEstimates', 'recentActivity', 'needsAttention'],
-    layoutStorageKey: 'dashboard-projects',
-    canvasStorageKey: 'canvas-layout:dashboard-projects:v2',
-    defaultColStarts: { projsHeader: 1, projects: 1, openEstimates: 1, recentActivity: 1, needsAttention: 13 },
-    defaultColSpans: { projsHeader: 16, projects: 16, openEstimates: 16, recentActivity: 12, needsAttention: 4 },
-    defaultTops: { projsHeader: 0, projects: 0, openEstimates: 784, recentActivity: 1320, needsAttention: 1320 },
-    defaultHeights: { projsHeader: 0, projects: 768, openEstimates: 520, recentActivity: 420, needsAttention: 420 },
-    defaultLefts: { projsHeader: 0, projects: 0, openEstimates: 0, recentActivity: 0, needsAttention: 972 },
-    defaultPixelWidths: { projsHeader: 1280, projects: 1280, openEstimates: 1280, recentActivity: 956, needsAttention: 308 },
-    canvasDefaultLefts: { projsHeader: 0, projects: 0, openEstimates: 0, recentActivity: 0, needsAttention: 972 },
-    canvasDefaultPixelWidths: { projsHeader: 1280, projects: 1280, openEstimates: 1280, recentActivity: 956, needsAttention: 308 },
+    widgets: ['projsHeader', 'projects'],
+    layoutStorageKey: 'dashboard-projects:v4',
+    canvasStorageKey: 'canvas-layout:dashboard-projects:v5',
+    defaultColStarts: { projsHeader: 1, projects: 1 },
+    defaultColSpans: { projsHeader: 16, projects: 16 },
+    defaultTops: { projsHeader: 0, projects: 0 },
+    defaultHeights: { projsHeader: 0, projects: 768 },
+    defaultLefts: { projsHeader: 0, projects: 0 },
+    defaultPixelWidths: { projsHeader: 1280, projects: 1280 },
+    canvasDefaultLefts: { projsHeader: 0, projects: 0 },
+    canvasDefaultPixelWidths: { projsHeader: 1280, projects: 1280 },
     canvasDefaultTops: {
       projsHeader: 0,
       projects: ProjectsPageComponent.HEADER_OFFSET,
-      openEstimates: ProjectsPageComponent.HEADER_OFFSET + 784,
-      recentActivity: ProjectsPageComponent.HEADER_OFFSET + 1320,
-      needsAttention: ProjectsPageComponent.HEADER_OFFSET + 1320,
     },
-    canvasDefaultHeights: { projsHeader: ProjectsPageComponent.HEADER_HEIGHT, projects: 768, openEstimates: 520, recentActivity: 420, needsAttention: 420 },
+    canvasDefaultHeights: { projsHeader: ProjectsPageComponent.HEADER_HEIGHT, projects: 768 },
     minColSpan: 4,
-    widgetMinColSpans: { needsAttention: 3 },
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: true,
     onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
@@ -517,36 +353,11 @@ export class ProjectsPageComponent implements AfterViewInit {
   });
 
   readonly projects = signal<Project[]>(PROJECTS);
-  readonly estimates = signal<Estimate[]>(ESTIMATES);
-  readonly activities: ActivityItem[] = ACTIVITIES;
-  readonly attentionItems = ATTENTION_ITEMS;
 
   readonly totalProjects = computed(() => this.projects().length);
   readonly onTrackCount = computed(() => this.projects().filter((p) => p.status === 'On Track').length);
   readonly atRiskCount = computed(() => this.projects().filter((p) => p.status === 'At Risk').length);
   readonly overdueCount = computed(() => this.projects().filter((p) => p.status === 'Overdue').length);
-
-  private readonly estimatesContainerRef = viewChild<ElementRef>('estimatesContainer');
-  readonly estimatesContainerWidth = signal<number>(0);
-  readonly estimatesBreakpoint = computed<'wide' | 'narrow' | 'xNarrow' | 'xxNarrow' | 'ultraNarrow'>(() => {
-    const w = this.estimatesContainerWidth();
-    if (w > 0 && w <= 450) return 'ultraNarrow';
-    if (w > 0 && w <= 680) return 'xxNarrow';
-    if (w > 0 && w <= 760) return 'xNarrow';
-    if (w > 0 && w <= 1000) return 'narrow';
-    return 'wide';
-  });
-  readonly estimatesNarrow = computed(() => this.estimatesBreakpoint() !== 'wide');
-  readonly estimatesXNarrow = computed(() => {
-    const bp = this.estimatesBreakpoint();
-    return bp === 'xNarrow' || bp === 'xxNarrow' || bp === 'ultraNarrow';
-  });
-  readonly estimatesXXNarrow = computed(() => {
-    const bp = this.estimatesBreakpoint();
-    return bp === 'xxNarrow' || bp === 'ultraNarrow';
-  });
-  readonly estimatesUltraNarrow = computed(() => this.estimatesBreakpoint() === 'ultraNarrow');
-  private readonly _estimatesResizeEffect = this.trackContainerWidth(this.estimatesContainerRef, this.estimatesContainerWidth);
 
   private readonly projectsContainerRef = viewChild<ElementRef>('projectsContainer');
   readonly projectsContainerWidth = signal<number>(0);
@@ -619,15 +430,19 @@ export class ProjectsPageComponent implements AfterViewInit {
   readonly progressClass = progressClass;
   readonly budgetProgressClass = budgetProgressClass;
   readonly budgetPctColor = budgetPctColor;
-  readonly estimateBadgeColor = estimateBadgeColor;
-  readonly dueDateClass = dueDateClass;
+
+  private buildProjectsAgentState(): AgentDataState {
+    return { projects: PROJECTS, currentPage: 'projects' };
+  }
+  getProjectsWidgetInsight(widgetId: string): string | null {
+    const agent = getAgent(widgetId, 'projects');
+    return agent.insight?.(this.buildProjectsAgentState()) ?? null;
+  }
+  readonly projectsInsight = computed<string | null>(() => this.getProjectsWidgetInsight('projects'));
 
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
   readonly projectWidgets: DashboardWidgetId[] = [
     'projects',
-    'openEstimates',
-    'recentActivity',
-    'needsAttention',
   ];
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
