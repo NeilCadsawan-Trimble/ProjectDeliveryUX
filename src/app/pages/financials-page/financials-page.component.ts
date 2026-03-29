@@ -1,14 +1,11 @@
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
   computed,
   effect,
   inject,
   signal,
-  untracked,
   viewChild,
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -17,13 +14,11 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
-import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
-import { CanvasResetService } from '../../shell/services/canvas-reset.service';
-import { WidgetFocusService } from '../../shell/services/widget-focus.service';
-import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
+import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost, ChangeOrder, ChangeOrderType } from '../../data/dashboard-data';
-import { PROJECTS, ESTIMATES, budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS, CHANGE_ORDERS, coBadgeColor, coTypeLabel } from '../../data/dashboard-data';
+import { PROJECTS, ESTIMATES, budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS, CHANGE_ORDERS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 
 @Component({
@@ -851,13 +846,10 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
     }
   `,
 })
-export class FinancialsPageComponent implements AfterViewInit {
-  private readonly canvasResetService = inject(CanvasResetService);
-  private readonly widgetFocusService = inject(WidgetFocusService);
+export class FinancialsPageComponent extends DashboardPageBase {
   private readonly navHistory = inject(NavigationHistoryService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -883,68 +875,38 @@ export class FinancialsPageComponent implements AfterViewInit {
   private static readonly CO_OFFSET_DESKTOP = FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP + FinancialsPageComponent.JOB_COSTS_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly CO_OFFSET_CANVAS = FinancialsPageComponent.JOB_COSTS_OFFSET_CANVAS + FinancialsPageComponent.CO_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
-  private readonly engine = new DashboardLayoutEngine({
-    widgets: ['finHeader', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
-    layoutStorageKey: 'dashboard-financials:v5',
-    canvasStorageKey: 'canvas-layout:dashboard-financials:v6',
-    defaultColStarts: { finHeader: 1, finRevenueChart: 1, finOpenEstimates: 1, finBudgetByProject: 1, finJobCosts: 1, finChangeOrders: 1 },
-    defaultColSpans: { finHeader: 16, finRevenueChart: 16, finOpenEstimates: 16, finBudgetByProject: 16, finJobCosts: 16, finChangeOrders: 16 },
-    defaultTops: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP, finBudgetByProject: FinancialsPageComponent.BUDGET_OFFSET_DESKTOP, finJobCosts: FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP, finChangeOrders: FinancialsPageComponent.CO_OFFSET_DESKTOP },
-    defaultHeights: { finHeader: 0, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
-    defaultLefts: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
-    defaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
-    canvasDefaultLefts: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
-    canvasDefaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
-    canvasDefaultTops: {
-      finHeader: 0,
-      finRevenueChart: FinancialsPageComponent.HEADER_OFFSET,
-      finOpenEstimates: FinancialsPageComponent.REVENUE_OFFSET,
-      finBudgetByProject: FinancialsPageComponent.ESTIMATES_OFFSET_CANVAS,
-      finJobCosts: FinancialsPageComponent.BUDGET_OFFSET_CANVAS,
-      finChangeOrders: FinancialsPageComponent.CO_OFFSET_CANVAS,
-    },
-    canvasDefaultHeights: { finHeader: FinancialsPageComponent.HEADER_HEIGHT, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
-    minColSpan: 1,
-    canvasGridMinHeightOffset: 200,
-    savesDesktopOnMobile: false,
-    onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-  }, inject(WidgetLayoutService));
+  protected override getEngineConfig(): DashboardLayoutConfig {
+    return {
+      widgets: ['finHeader', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
+      layoutStorageKey: 'dashboard-financials:v5',
+      canvasStorageKey: 'canvas-layout:dashboard-financials:v6',
+      defaultColStarts: { finHeader: 1, finRevenueChart: 1, finOpenEstimates: 1, finBudgetByProject: 1, finJobCosts: 1, finChangeOrders: 1 },
+      defaultColSpans: { finHeader: 16, finRevenueChart: 16, finOpenEstimates: 16, finBudgetByProject: 16, finJobCosts: 16, finChangeOrders: 16 },
+      defaultTops: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP, finBudgetByProject: FinancialsPageComponent.BUDGET_OFFSET_DESKTOP, finJobCosts: FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP, finChangeOrders: FinancialsPageComponent.CO_OFFSET_DESKTOP },
+      defaultHeights: { finHeader: 0, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
+      defaultLefts: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
+      defaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
+      canvasDefaultLefts: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
+      canvasDefaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
+      canvasDefaultTops: {
+        finHeader: 0,
+        finRevenueChart: FinancialsPageComponent.HEADER_OFFSET,
+        finOpenEstimates: FinancialsPageComponent.REVENUE_OFFSET,
+        finBudgetByProject: FinancialsPageComponent.ESTIMATES_OFFSET_CANVAS,
+        finJobCosts: FinancialsPageComponent.BUDGET_OFFSET_CANVAS,
+        finChangeOrders: FinancialsPageComponent.CO_OFFSET_CANVAS,
+      },
+      canvasDefaultHeights: { finHeader: FinancialsPageComponent.HEADER_HEIGHT, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
+      minColSpan: 1,
+      canvasGridMinHeightOffset: 200,
+      savesDesktopOnMobile: false,
+      onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
+    };
+  }
 
-  private readonly _lockHeader = (() => {
+  protected override applyInitialHeaderLock(): void {
     this.engine.widgetLocked.update(l => ({ ...l, finHeader: true }));
-  })();
-
-  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
-
-  private readonly _resetWidgetsEffect = effect(() => {
-    const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0) {
-      untracked(() => {
-        this.engine.resetToDefaults();
-        this.engine.widgetLocked.update(l => ({ ...l, finHeader: true }));
-      });
-    }
-  });
-
-  private readonly _saveDefaultsEffect = effect(() => {
-    const tick = this.canvasResetService.saveDefaultsTick();
-    if (tick > 0) {
-      untracked(() => this.engine.saveAsDefaultLayout());
-    }
-  });
-
-  readonly isMobile = this.engine.isMobile;
-  readonly isCanvasMode = this.engine.isCanvasMode;
-  readonly widgetColStarts = this.engine.widgetColStarts;
-  readonly widgetColSpans = this.engine.widgetColSpans;
-  readonly widgetTops = this.engine.widgetTops;
-  readonly widgetHeights = this.engine.widgetHeights;
-  readonly widgetLefts = this.engine.widgetLefts;
-  readonly widgetPixelWidths = this.engine.widgetPixelWidths;
-  readonly widgetZIndices = this.engine.widgetZIndices;
-  readonly widgetLocked = this.engine.widgetLocked;
-  readonly moveTargetId = this.engine.moveTargetId;
-  readonly canvasGridMinHeight = this.engine.canvasGridMinHeight;
+  }
 
   readonly projects = signal<Project[]>(PROJECTS);
   readonly totalProjects = computed(() => this.projects().length);
@@ -1165,11 +1127,7 @@ export class FinancialsPageComponent implements AfterViewInit {
     this.hoverInfo.set(null);
   }
 
-  formatCurrency(value: number): string {
-    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
-    return `$${value}`;
-  }
+  formatCurrency(value: number): string { return sharedFormatCurrency(value); }
 
   formatCompact(value: number): string {
     if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -1179,6 +1137,14 @@ export class FinancialsPageComponent implements AfterViewInit {
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly financialsGridContainerRef = viewChild<ElementRef>('financialsWidgetGrid');
+
+  protected override resolveGridElement(): HTMLElement | undefined {
+    return this.financialsGridContainerRef()?.nativeElement as HTMLElement | undefined;
+  }
+
+  protected override resolveHeaderElement(): HTMLElement | undefined {
+    return this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
+  }
 
   readonly budgetProgressClass = budgetProgressClass;
 
@@ -1433,28 +1399,14 @@ export class FinancialsPageComponent implements AfterViewInit {
     this.engine.toggleWidgetLock(id);
   }
 
-  onDocumentMouseMove(event: MouseEvent): void {
-    this.engine.onDocumentMouseMove(event);
-  }
-
-  onDocumentMouseUp(): void {
-    this.engine.onDocumentMouseUp();
-  }
-
-  onDocumentTouchEnd(): void {
-    this.engine.onDocumentTouchEnd();
-  }
-
   private resolveSlugToProject(slug: string): ProjectJobCost | null {
     const proj = PROJECTS.find(p => p.slug === slug);
     if (!proj) return null;
     return this.projectJobCosts().find(p => p.projectId === proj.id) ?? null;
   }
 
-  ngAfterViewInit(): void {
-    this.engine.gridElAccessor = () => this.financialsGridContainerRef()?.nativeElement as HTMLElement | undefined;
-    this.engine.headerElAccessor = () => this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
-    this.engine.init();
+  override ngAfterViewInit(): void {
+    super.ngAfterViewInit();
 
     this.route.paramMap.subscribe(params => {
       const slug = params.get('slug');

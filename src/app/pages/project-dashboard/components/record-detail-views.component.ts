@@ -9,7 +9,15 @@ import {
   capitalizeStatus as getCapitalizedStatus,
   type StatusOption,
 } from '../../../data/dashboard-item-status';
-import { weatherIcon as sharedWeatherIcon } from '../../../data/dashboard-data';
+import {
+  weatherIcon as sharedWeatherIcon,
+  coBadgeColor,
+  contractStatusBadge as sharedContractStatusBadge,
+  contractTypeLabel as sharedContractTypeLabel,
+  contractTypeIcon,
+  inspectionResultBadge as sharedInspectionResultBadge,
+  formatCurrency as sharedFormatCurrency,
+} from '../../../data/dashboard-data';
 import type {
   DailyReport,
   Inspection,
@@ -206,37 +214,10 @@ export class RecordDetailViewsComponent {
   statusDot(status: string): string { return getStatusDot(status); }
   capitalize(status: string): string { return getCapitalizedStatus(status); }
 
-  inspectionResultBadge(result: InspectionResult): ModusBadgeColor {
-    if (result === 'pass') return 'success';
-    if (result === 'fail') return 'danger';
-    if (result === 'conditional') return 'warning';
-    return 'secondary';
-  }
-
-  changeOrderStatusBadge(status: ChangeOrderStatus): ModusBadgeColor {
-    if (status === 'approved') return 'success';
-    if (status === 'rejected') return 'danger';
-    return 'warning';
-  }
-
-  contractStatusBadge(status: ContractStatus): ModusBadgeColor {
-    const map: Record<ContractStatus, ModusBadgeColor> = { active: 'success', closed: 'secondary', pending: 'warning', draft: 'tertiary' };
-    return map[status] ?? 'secondary';
-  }
-
-  contractTypeLabel(ct: ContractType): string {
-    const map: Record<ContractType, string> = { prime: 'Prime Contract', subcontract: 'Subcontract', 'purchase-order': 'Purchase Order' };
-    return map[ct];
-  }
-
-  contractIcon(ct: ContractType): string {
-    const map: Record<ContractType, string> = { prime: 'content_copy', subcontract: 'assignment', 'purchase-order': 'shopping_cart' };
-    return map[ct];
-  }
-
-  formatCurrency(value: number): string {
-    if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (Math.abs(value) >= 1_000) return `$${Math.round(value / 1_000)}K`;
-    return `$${value.toLocaleString()}`;
-  }
+  inspectionResultBadge(result: InspectionResult): ModusBadgeColor { return sharedInspectionResultBadge(result); }
+  changeOrderStatusBadge(status: ChangeOrderStatus): ModusBadgeColor { return coBadgeColor(status); }
+  contractStatusBadge(status: ContractStatus): ModusBadgeColor { return sharedContractStatusBadge(status); }
+  contractTypeLabel(ct: ContractType): string { return sharedContractTypeLabel(ct); }
+  contractIcon(ct: ContractType): string { return contractTypeIcon(ct); }
+  formatCurrency(value: number): string { return sharedFormatCurrency(value); }
 }

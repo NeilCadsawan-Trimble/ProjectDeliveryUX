@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { ChangeOrder, ChangeOrderStatus, ChangeOrderType } from '../../data/dashboard-data';
-import { CHANGE_ORDERS, coBadgeColor, coTypeLabel, coTypeIcon } from '../../data/dashboard-data';
+import { CHANGE_ORDERS, coBadgeColor, coTypeLabel, coTypeIcon, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
 
 interface CostBreakdownItem {
   description: string;
@@ -262,11 +262,7 @@ export class ChangeOrderDetailPageComponent {
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
-  formatCurrency(value: number): string {
-    if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (Math.abs(value) >= 1_000) return `$${Math.round(value / 1_000).toLocaleString()}K`;
-    return '$' + value.toLocaleString();
-  }
+  formatCurrency(value: number): string { return sharedFormatCurrency(value); }
 
   goBack(): void {
     this.router.navigate(['/financials']);

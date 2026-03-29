@@ -146,16 +146,43 @@ Inside the tile wrapper, use `@if/@else`:
 
 - [ ] An empty state component renders when there are no items for the sub-page
 
+### 9. Desktop Grid/List View Toggle
+
+If the sub-page has a view mode toggle (grid/list), the **desktop template** must implement both paths:
+
+- [ ] `@if (viewMode() === 'grid')` renders tile cards in a `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3` layout
+- [ ] `@else` renders a table/list view
+- [ ] Both paths show the same data and have the same click handlers
+- [ ] The toolbar toggle icon matches the page type: `apps` for tile pages, `bar_graph` for chart/summary pages
+
+### 10. Canvas List View Gating
+
+Canvas list sections must only render in list mode to avoid overlapping tile cards:
+
+- [ ] Every canvas list section is wrapped in `@if (subnavViewMode() === 'list')`
+- [ ] Canvas tile sections are wrapped in `@if (subnavViewMode() !== 'list')` or equivalent gate
+
+### 11. Dynamic Toolbar Config for Financials
+
+Financials pages use two different toolbar configs depending on content type:
+
+- [ ] Tile-based pages (COs, Contracts) use `financials-tiles` config (with `apps` grid icon)
+- [ ] Chart/summary pages (Budget, Cost Forecasts) use `financials` config (with `bar_graph` chart icon)
+- [ ] New tile-based financials pages are added to `FINANCIALS_TILE_PAGES` set
+- [ ] `activeFinancialsSubnavConfig` computed property selects the correct config dynamically
+
 ## TileDetailView Type
 
 When adding a new tile type, update the `TileDetailView` interface in `subpage-tile-canvas.ts`:
 
 ```typescript
 export interface TileDetailView {
-  type: 'rfi' | 'submittal' | 'dailyReport' | 'punchItem' | 'inspection' | 'changeOrder' | 'newType';
+  type: 'rfi' | 'submittal' | 'dailyReport' | 'punchItem' | 'inspection' | 'changeOrder' | 'contract' | 'actionItem' | 'newType';
   item: unknown;
 }
 ```
+
+The static test in `project-dashboard.spec.ts` enforces that every type in the union is present. If you add a new type, also add it to the test's `TileDetailView type completeness` assertion.
 
 ## View Mode Cross-Reference
 
@@ -204,14 +231,60 @@ Every sub-page must work correctly in **all three modes**:
 ### DO NOT: Have different columns in desktop vs canvas list views
 Always scan the non-canvas component (e.g., `records-subpages.component.ts`) to verify column parity before finalizing a canvas list view.
 
+## Static Test Enforcement
+
+Advisory checklists alone are not sufficient. The static tests in `tests/static/project-dashboard.spec.ts` enforce canvas completeness at CI time. Any new sub-page that skips canvas mode will fail the build.
+
+### What the tests enforce
+
+| Test | What it checks |
+|------|----------------|
+| **Per-literal-prefix detail expansion** | `tileDetailViews()['tile-X-'` exists in template for every literal tile prefix |
+| **Per-literal-prefix closeTileDetail** | `closeTileDetail('tile-X-'` is wired for every literal tile prefix |
+| **Per-literal-prefix bg-primary-20** | List row highlighting pattern exists for every literal tile prefix |
+| **Per-literal-prefix z-index 9999** | Z-index boost pattern exists for every literal tile prefix |
+| **Dynamic CO prefix coverage** | `activeCoTilePrefix()` maps to `pco-`, `pot-`, `sco-` and is used for detail expansion, closeTileDetail, highlighting, and z-index |
+| **Template presence** | Every prefix (literal + dynamic) appears in `subpageTileIds` and has template references |
+| **TileDetailView type union** | Every entity type (`rfi`, `submittal`, ..., `contract`, `actionItem`) is in the type union |
+| **FromTile method existence** | `navigateToXFromTile` exists for every expandable entity type |
+| **Desktop grid/list parity** | Records and financials subpages with view toggles implement both grid (tile cards) and list (table) rendering |
+| **Canvas list view gating** | Canvas list sections gated by `subnavViewMode() === 'list'` to prevent overlap with tiles |
+| **Toolbar icon correctness** | `financials-tiles` config uses `apps` icon, `financials` uses `bar_graph`, and `activeFinancialsSubnavConfig` selects dynamically |
+| **FINANCIALS_TILE_PAGES** | All tile-based financials pages registered in the set that triggers `financials-tiles` toolbar config |
+
+### When adding a new sub-page
+
+1. Register the new tile prefix in `subpageTileIds`
+2. Add the new type to the `TileDetailView` union in `subpage-tile-canvas.ts`
+3. Add the new prefix to `LITERAL_EXPANDABLE` (or `DYNAMIC_CO_PREFIXES` if dynamic) in `project-dashboard.spec.ts`
+4. Add the `navigateToXFromTile` method name to the FromTile existence test
+5. If it is a financials tile-based page, add it to `FINANCIALS_TILE_PAGES`
+6. Ensure the desktop template has both `grid` and `list` rendering paths
+7. Ensure all canvas list sections are gated by `subnavViewMode() === 'list'`
+8. Run `npm run test:static` -- it will fail until you implement all canvas behaviors
+
+### Why this exists
+
+Three separate follow-up fix passes were needed because:
+
+- **Contracts**: Shipped with desktop-only view, no canvas tiles/list/detail at all
+- **Action Items**: Shipped with incomplete canvas tiles (no detail expansion, no `FromTile` handlers, no list row highlighting)
+- **Prime/Potential/Subcontract COs**: Shipped with canvas list using page navigation instead of in-canvas expansion, no row highlighting, no tile cards in grid mode
+- **Desktop tile view as list**: CO type sub-pages and Contracts showed a list even when grid/tile view was selected -- missing `subnavViewMode() === 'grid'` conditional in template
+- **Canvas list overlap**: Canvas lists for COs rendered in both grid and list mode, overlapping tile cards -- missing `subnavViewMode() === 'list'` gate
+- **Wrong toolbar icon**: Tile-based financials pages used `bar_graph` (chart) icon instead of `apps` (grid) icon -- needed dynamic config switching via `activeFinancialsSubnavConfig`
+
+These tests ensure such gaps are caught at build time, not in manual review.
+
 ## Verification
 
 After implementing a new sub-page, verify:
 
-1. **Card mode**: Click a tile card body -- it should expand into a detail widget, NOT navigate away
-2. **List mode**: Click a list row -- it should expand a detail widget AND highlight the row
-3. **Detail close**: Click the X button -- tile should collapse back to card size
-4. **Detail drag**: Drag the detail header -- tile should move on canvas
-5. **Column match**: Compare canvas list columns against desktop -- they must be identical
-6. **KPI match**: If desktop has KPIs, verify they appear in canvas mode too
-7. **All projects**: Verify across multiple projects, not just one
+1. **Static tests pass**: `npm run test:static` must pass with 0 failures
+2. **Card mode**: Click a tile card body -- it should expand into a detail widget, NOT navigate away
+3. **List mode**: Click a list row -- it should expand a detail widget AND highlight the row
+4. **Detail close**: Click the X button -- tile should collapse back to card size
+5. **Detail drag**: Drag the detail header -- tile should move on canvas
+6. **Column match**: Compare canvas list columns against desktop -- they must be identical
+7. **KPI match**: If desktop has KPIs, verify they appear in canvas mode too
+8. **All projects**: Verify across multiple projects, not just one

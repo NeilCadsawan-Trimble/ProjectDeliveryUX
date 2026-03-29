@@ -6,7 +6,11 @@ import {
   itemStatusDot as getStatusDot,
   capitalizeStatus as getCapitalizedStatus,
 } from '../../../data/dashboard-item-status';
-import { weatherIcon as sharedWeatherIcon } from '../../../data/dashboard-data';
+import {
+  weatherIcon as sharedWeatherIcon,
+  inspectionResultBadge as sharedInspectionResultBadge,
+  punchPriorityBadge as sharedPunchPriorityBadge,
+} from '../../../data/dashboard-data';
 import type {
   DailyReport,
   Inspection,
@@ -264,18 +268,8 @@ export class RecordsSubpagesComponent {
   statusDot(status: string): string { return getStatusDot(status); }
   capitalize(status: string): string { return getCapitalizedStatus(status); }
 
-  punchPriorityBadge(priority: string): ModusBadgeColor {
-    if (priority === 'high') return 'danger';
-    if (priority === 'medium') return 'warning';
-    return 'secondary';
-  }
-
-  inspectionResultBadge(result: InspectionResult): ModusBadgeColor {
-    if (result === 'pass') return 'success';
-    if (result === 'fail') return 'danger';
-    if (result === 'conditional') return 'warning';
-    return 'secondary';
-  }
+  punchPriorityBadge(priority: string): ModusBadgeColor { return sharedPunchPriorityBadge(priority); }
+  inspectionResultBadge(result: InspectionResult): ModusBadgeColor { return sharedInspectionResultBadge(result); }
 
   severityBadgeColor(level: string): ModusBadgeColor {
     return RecordsSubpagesComponent.SEVERITY_BADGE[level] ?? 'secondary';

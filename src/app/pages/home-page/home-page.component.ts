@@ -1,21 +1,16 @@
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
   computed,
   effect,
   signal,
   inject,
-  untracked,
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
-import { CanvasResetService } from '../../shell/services/canvas-reset.service';
-import { WidgetFocusService } from '../../shell/services/widget-focus.service';
-import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
+import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
@@ -60,6 +55,7 @@ import type { UrgentNeedItem, UrgentNeedCategory, ProjectWeather, WeatherConditi
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards.component';
+import { HomeWidgetFrameComponent } from './components/home-widget-frame.component';
 
 @Component({
   selector: 'app-home-page',
@@ -70,6 +66,7 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
     DrawingMarkupToolbarComponent,
     PdfViewerComponent,
     HomeKpiCardsComponent,
+    HomeWidgetFrameComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -1161,19 +1158,18 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                 />
               }
               @else if (widgetId === 'homeDrawings') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">image</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Recent Drawings</div>
-                      <div class="text-xs text-foreground-40">{{ recentDrawings().length }} projects</div>
-                    </div>
-                  </div>
+                <app-home-widget-frame
+                  [widgetId]="widgetId"
+                  [title]="'Recent Drawings'"
+                  [icon]="'image'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [titleMeta]="recentDrawings().length + ' projects'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
                   @if (drawingsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
@@ -1204,32 +1200,37 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       </div>
                     }
                   </div>
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
+                </app-home-widget-frame>
               }
 
               @else if (widgetId === 'homeWeather') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-3.5 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-warning" aria-hidden="true">wb_sunny</i>
-                      <div class="text-base font-semibold text-foreground">Weather Outlook</div>
-                      @if (weatherImpactProjects().length > 0) {
-                        <div class="flex items-center px-2 py-0.5 rounded-full" [class]="weatherImpactProjects()[0].majorDays > 0 ? 'bg-destructive-20' : 'bg-warning-20'">
-                          <div class="text-xs font-medium" [class]="weatherImpactProjects()[0].majorDays > 0 ? 'text-destructive' : 'text-warning'">{{ weatherImpactProjects().length }} impacted</div>
-                        </div>
-                      }
+                <app-home-widget-frame
+                  [widgetId]="widgetId"
+                  [title]="'Weather Outlook'"
+                  [icon]="'wb_sunny'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerRowClass]="'px-5 py-3.5'"
+                  [iconToneClass]="'text-warning'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  @if (weatherImpactProjects().length > 0) {
+                    <div
+                      data-home-widget-title-extra
+                      class="flex items-center px-2 py-0.5 rounded-full flex-shrink-0"
+                      [class]="weatherImpactProjects()[0].majorDays > 0 ? 'bg-destructive-20' : 'bg-warning-20'"
+                    >
+                      <div
+                        class="text-xs font-medium"
+                        [class]="weatherImpactProjects()[0].majorDays > 0 ? 'text-destructive' : 'text-warning'"
+                      >
+                        {{ weatherImpactProjects().length }} impacted
+                      </div>
                     </div>
-                  </div>
+                  }
                   @if (weatherInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
@@ -1300,13 +1301,7 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       }
                     }
                   </div>
-
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
+                </app-home-widget-frame>
               }
 
               @else if (widgetId === 'homeUrgentNeeds') {
@@ -1472,47 +1467,44 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                 />
 
               } @else if (widgetId === 'homeRecentActivity') {
-              <!-- Recent Project Activity Widget -->
-              <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                <div
-                  class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                  (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                  (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                >
-                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                  <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
-                  <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Recent Project Activity</div>
-                </div>
-                @if (recentActivityInsight()) {
-                  <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                    <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
-                    <div class="text-xs text-foreground-60 truncate leading-none">{{ recentActivityInsight() }}</div>
-                  </div>
-                }
-                <div class="overflow-y-auto flex-1">
-                  @for (activity of activities; track activity.id) {
-                    <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
-                      <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <i class="modus-icons text-sm {{ activity.iconColor }}" aria-hidden="true">{{ activity.icon }}</i>
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <div class="text-sm text-foreground">
-                          <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
-                            {{ activity.actorInitials }}
-                          </div>
-                          {{ activity.text }}
-                        </div>
-                      </div>
-                      <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
-                    </div>
-                  }
-                </div>
-                <widget-resize-handle
+                <app-home-widget-frame
+                  [widgetId]="widgetId"
+                  [title]="'Recent Project Activity'"
+                  [icon]="'history'"
+                  [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
+                  [headerRowClass]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
-              </div>
+                >
+                  @if (recentActivityInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ recentActivityInsight() }}</div>
+                    </div>
+                  }
+                  <div class="overflow-y-auto flex-1">
+                    @for (activity of activities; track activity.id) {
+                      <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
+                        <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <i class="modus-icons text-sm {{ activity.iconColor }}" aria-hidden="true">{{ activity.icon }}</i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm text-foreground">
+                            <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
+                              {{ activity.actorInitials }}
+                            </div>
+                            {{ activity.text }}
+                          </div>
+                        </div>
+                        <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
+                      </div>
+                    }
+                  </div>
+                </app-home-widget-frame>
               }
 
             </div>
@@ -1525,82 +1517,50 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
 
   `,
 })
-export class HomePageComponent implements AfterViewInit {
+export class HomePageComponent extends DashboardPageBase {
   private readonly router = inject(Router);
-  private readonly canvasResetService = inject(CanvasResetService);
-  private readonly widgetFocusService = inject(WidgetFocusService);
-  private readonly destroyRef = inject(DestroyRef);
 
   private static readonly HEADER_HEIGHT = 190;
   private static readonly HEADER_OFFSET = HomePageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   private static readonly ACTIVITY_ROW_TOP = 712 + 440 + 16;
 
-  private readonly engine = new DashboardLayoutEngine({
-    widgets: ['homeHeader', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
-    layoutStorageKey: 'dashboard-home-v6',
-    canvasStorageKey: 'canvas-layout:dashboard-home:v11',
-    defaultColStarts: { homeHeader: 1, homeUrgentNeeds: 1, homeWeather: 11, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11, homeRecentActivity: 1 },
-    defaultColSpans: { homeHeader: 16, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 16 },
-    defaultTops: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 0, homeRfis: 356, homeSubmittals: 356, homeTimeOff: 356, homeCalendar: 712, homeDrawings: 712, homeRecentActivity: HomePageComponent.ACTIVITY_ROW_TOP },
-    defaultHeights: { homeHeader: 0, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340, homeRecentActivity: 380 },
-    defaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
-    defaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470, homeRecentActivity: 1280 },
-    canvasDefaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
-    canvasDefaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470, homeRecentActivity: 1280 },
-    canvasDefaultTops: {
-      homeHeader: 0,
-      homeUrgentNeeds: HomePageComponent.HEADER_OFFSET,
-      homeWeather: HomePageComponent.HEADER_OFFSET,
-      homeTimeOff: HomePageComponent.HEADER_OFFSET + 356,
-      homeRfis: HomePageComponent.HEADER_OFFSET + 356,
-      homeSubmittals: HomePageComponent.HEADER_OFFSET + 356,
-      homeDrawings: HomePageComponent.HEADER_OFFSET + 712,
-      homeCalendar: HomePageComponent.HEADER_OFFSET + 712,
-      homeRecentActivity: HomePageComponent.HEADER_OFFSET + HomePageComponent.ACTIVITY_ROW_TOP,
-    },
-    canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340, homeRecentActivity: 380 },
-    minColSpan: 4,
-    canvasGridMinHeightOffset: 100,
-    savesDesktopOnMobile: true,
-    onBeforeMobileCompact: () => this.applyMobileHeights(),
-    onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-  }, inject(WidgetLayoutService));
+  protected override getEngineConfig(): DashboardLayoutConfig {
+    return {
+      widgets: ['homeHeader', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
+      layoutStorageKey: 'dashboard-home-v6',
+      canvasStorageKey: 'canvas-layout:dashboard-home:v11',
+      defaultColStarts: { homeHeader: 1, homeUrgentNeeds: 1, homeWeather: 11, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11, homeRecentActivity: 1 },
+      defaultColSpans: { homeHeader: 16, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 16 },
+      defaultTops: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 0, homeRfis: 356, homeSubmittals: 356, homeTimeOff: 356, homeCalendar: 712, homeDrawings: 712, homeRecentActivity: HomePageComponent.ACTIVITY_ROW_TOP },
+      defaultHeights: { homeHeader: 0, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340, homeRecentActivity: 380 },
+      defaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
+      defaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470, homeRecentActivity: 1280 },
+      canvasDefaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
+      canvasDefaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470, homeRecentActivity: 1280 },
+      canvasDefaultTops: {
+        homeHeader: 0,
+        homeUrgentNeeds: HomePageComponent.HEADER_OFFSET,
+        homeWeather: HomePageComponent.HEADER_OFFSET,
+        homeTimeOff: HomePageComponent.HEADER_OFFSET + 356,
+        homeRfis: HomePageComponent.HEADER_OFFSET + 356,
+        homeSubmittals: HomePageComponent.HEADER_OFFSET + 356,
+        homeDrawings: HomePageComponent.HEADER_OFFSET + 712,
+        homeCalendar: HomePageComponent.HEADER_OFFSET + 712,
+        homeRecentActivity: HomePageComponent.HEADER_OFFSET + HomePageComponent.ACTIVITY_ROW_TOP,
+      },
+      canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340, homeRecentActivity: 380 },
+      minColSpan: 4,
+      canvasGridMinHeightOffset: 100,
+      savesDesktopOnMobile: true,
+      onBeforeMobileCompact: () => this.applyMobileHeights(),
+      onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
+    };
+  }
 
-  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
-  private readonly _lockHeader = (() => {
+  protected override applyInitialHeaderLock(): void {
     this.engine.widgetLocked.update(l => ({ ...l, homeHeader: true }));
-  })();
-
-  private readonly _resetWidgetsEffect = effect(() => {
-    const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0) {
-      untracked(() => {
-        this.engine.resetToDefaults();
-        this.engine.widgetLocked.update(l => ({ ...l, homeHeader: true }));
-      });
-    }
-  });
-
-  private readonly _saveDefaultsEffect = effect(() => {
-    const tick = this.canvasResetService.saveDefaultsTick();
-    if (tick > 0) {
-      untracked(() => this.engine.saveAsDefaultLayout());
-    }
-  });
-
-  readonly isMobile = this.engine.isMobile;
-  readonly isCanvasMode = this.engine.isCanvasMode;
-  readonly widgetColStarts = this.engine.widgetColStarts;
-  readonly widgetColSpans = this.engine.widgetColSpans;
-  readonly widgetTops = this.engine.widgetTops;
-  readonly widgetHeights = this.engine.widgetHeights;
-  readonly widgetLefts = this.engine.widgetLefts;
-  readonly widgetPixelWidths = this.engine.widgetPixelWidths;
-  readonly widgetZIndices = this.engine.widgetZIndices;
-  readonly widgetLocked = this.engine.widgetLocked;
-  readonly moveTargetId = this.engine.moveTargetId;
-  readonly canvasGridMinHeight = this.engine.canvasGridMinHeight;
+  }
 
   readonly today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -1702,18 +1662,6 @@ export class HomePageComponent implements AfterViewInit {
     this.engine.toggleWidgetLock(id);
   }
 
-  onDocumentMouseMove(event: MouseEvent): void {
-    this.engine.onDocumentMouseMove(event);
-  }
-
-  onDocumentMouseUp(): void {
-    this.engine.onDocumentMouseUp();
-  }
-
-  onDocumentTouchEnd(): void {
-    this.engine.onDocumentTouchEnd();
-  }
-
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (this.canvasHeaderStatusOpen() && !target.closest('[role="listbox"]') && !target.closest('[role="option"]')) {
@@ -1777,10 +1725,12 @@ export class HomePageComponent implements AfterViewInit {
     this.widgetHeights.set(heights);
   }
 
-  ngAfterViewInit(): void {
-    this.engine.gridElAccessor = () => this.homeGridContainerRef()?.nativeElement as HTMLElement | undefined;
-    this.engine.headerElAccessor = () => this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
-    this.engine.init();
+  protected override resolveGridElement(): HTMLElement | undefined {
+    return this.homeGridContainerRef()?.nativeElement as HTMLElement | undefined;
+  }
+
+  protected override resolveHeaderElement(): HTMLElement | undefined {
+    return this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
   }
 
   readonly timeOffView = signal<'list' | 'calendar' | 'staffing'>('list');

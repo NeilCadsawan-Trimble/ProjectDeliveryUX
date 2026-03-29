@@ -4,7 +4,7 @@
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
 **Last Updated**: March 29, 2026
-**Total Commits**: 155+
+**Total Commits**: 165+
 
 ---
 
@@ -20,9 +20,11 @@
 | 6 | Layout Engine and Quality | Done | 12/12 |
 | 7 | AI Agents and Sub-Page Expansion | Done | 8/8 |
 | 8 | Agentic Enhancements and Cross-Cutting Features | Done | 18/18 |
-| 9 | Remaining Work | Not Started | 0/8 |
+| 9 | Contracts, Detail Fixes, and Consolidation | Done | 12/12 |
+| 10 | Optimization and Refactoring | Done | 7/7 |
+| 11 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 85/93 items (91%)
+**Completed**: 104/112 items (93%)
 
 ---
 
@@ -220,7 +222,70 @@ Agentic widget capabilities, smart home widgets, dynamic navigation, financial r
 
 ---
 
-## Phase 9: Remaining Work
+## Phase 9: Contracts, Detail Fixes, and Consolidation (Mar 29)
+
+Contracts entity integration, detail page layout fixes, shared utility consolidation, and skill documentation.
+
+### Contracts Integration (PR #29)
+- [x] Contract type, 22 contracts (8 prime + 14 subcontracts) with linked change orders
+- [x] Contracts financials subpage with KPI strip and grid/list views
+- [x] Contract detail view with linked change order navigation
+- [x] Contract agents wired into agentic system (subpage, detail, general)
+
+### Standalone Detail Pages (PR #29)
+- [x] Change order detail page with cost breakdown, history, and conditions (`/change-orders/:id`)
+- [x] Estimate detail page with line items and cost summary (`/estimates/:id`)
+
+### Layout and UX Fixes (PR #29)
+- [x] Detail page toolbar margin-left adjustment when side subnav is collapsed
+- [x] Collapsible subnav header/toolbar overlap resolved across all detail views
+
+### Code Quality and Shared Utilities (PR #29, #30)
+- [x] Consolidated `formatCurrency` into shared utility (removed from 6 files)
+- [x] Consolidated `inspectionResultBadge` into shared utility (removed from 3 files)
+- [x] Consolidated `punchPriorityBadge` into shared utility (removed from 2 files)
+- [x] Replaced 6 duplicate `changeOrderStatusBadge`/`contractStatusColor`/`contractIcon` implementations with shared `coBadgeColor`/`contractStatusBadge`/`contractTypeIcon` delegates
+
+### Skills and Documentation
+- [x] Created `navigation-routing` skill
+- [x] Updated `agentic-widgets` skill (sections 9-10: route-based actions, domain agents)
+- [x] Updated `dashboard-layout-lessons` skill (section 12: shared utilities, section 13: collapsed subnav toolbar overlap)
+
+**Key commits**: `952e75e` contracts + layout fixes, `[current]` shared utility consolidation
+**PRs**: #29, #30
+
+---
+
+## Phase 10: Optimization and Refactoring (Mar 29)
+
+Major codebase restructuring to improve maintainability, reduce file sizes, and eliminate duplication.
+
+### Data Layer Split
+- [x] Split `dashboard-data.ts` (1,640 lines) into `dashboard-data.types.ts` (338), `dashboard-data.seed.ts` (824), `dashboard-data.formatters.ts` (540) with barrel re-export
+- [x] Split `widget-agents.ts` (2,501 lines) into domain files under `widget-agents/`: `home-agents.ts` (471), `project-agents.ts` (901), `financials-agents.ts` (725), `portfolio-agents.ts` (344), `shared.ts` (132), `index.ts` (141)
+
+### Project Dashboard Decomposition
+- [x] Extracted inline template (4,014 lines) to `project-dashboard.component.html` -- component .ts file reduced from 6,278 to 2,020 lines
+- [x] Extracted 30 navigation methods + URL state management into `project-dashboard-navigation.service.ts` (427 lines)
+- [x] Created `CanvasTileShellComponent` (88 lines) to DRY up repeated tile wrapper blocks -- migrated 4 tile types as proof of concept
+
+### Shared Architecture
+- [x] Created `DashboardPageBase` abstract class (84 lines) consolidating shared engine boilerplate across project-dashboard, home-page, and financials-page
+- [x] Created `HomeWidgetFrameComponent` (73 lines) for shared widget chrome -- migrated 3 home widgets
+
+**Key metrics**:
+
+| File | Before | After |
+|------|-------:|------:|
+| `project-dashboard.component.ts` | 6,278 | 2,020 (+ 4,014 .html + 427 nav service) |
+| `dashboard-data.ts` | 1,640 | 3-line barrel (types 338 + seed 824 + formatters 540) |
+| `widget-agents.ts` | 2,501 | 1-line barrel (4 domain files + shared + index = 2,714 total) |
+
+**Tests**: 253 static tests, type-check, and build all passing.
+
+---
+
+## Phase 11: Remaining Work
 
 Features and improvements not yet started.
 
@@ -243,7 +308,7 @@ Features and improvements not yet started.
 
 ## Regression Test Coverage
 
-### Covered (Static Tests -- `tests/static/` -- 184 tests)
+### Covered (Static Tests -- `tests/static/` -- 253 tests)
 
 | Area | File | Tests |
 |------|------|-------|
@@ -251,10 +316,10 @@ Features and improvements not yet started.
 | Home page | `home-page.spec.ts` | 11 tests: widgets, urgent needs, weather outlook |
 | Projects page | `projects-page.spec.ts` | 6 structural tests |
 | Financials page | `financials-page.spec.ts` | 6 structural tests |
-| Project dashboard | `project-dashboard.spec.ts` | 25 tests: widgets, weather, tile detail, subnav, layout menu |
+| Project dashboard | `project-dashboard.spec.ts` | 93 tests: widgets, weather, tile detail, subnav, layout menu, per-prefix canvas completeness, grid/list parity, toolbar icons |
 | CSS regressions | `styles.spec.ts` | 10 tests: side nav overflow, reset flyout, canvas navbar |
 | Canvas panning | `canvas-panning.spec.ts` | 10 tests: spacebar panning, lock canvas |
-| Template safety | `template-safety.spec.ts` | 88 tests: arrow function prevention, private member access |
+| Template safety | `template-safety.spec.ts` | 89 tests: arrow function prevention, private member access |
 
 ### Covered (Unit Tests -- `src/app/shell/services/`)
 
@@ -286,6 +351,7 @@ Features and improvements not yet started.
 | Mar 26 | [Memory and detail views](b3ea14f9-5bd7-453f-8329-20bad1e7cc3a) | Short-term memory, detail view navigation, URL state |
 | Mar 26-27 | [Canvas push and tests](6387a8f3-f2de-4dae-933b-eeec94687608) | Canvas detail expansion, BFS push refactoring, cascade direction fix, unit tests, AI agents, sub-page expansion, refactoring |
 | Mar 27-29 | [Agentic and weather](6387a8f3-f2de-4dae-933b-eeec94687608) | Agentic widgets, AI navigation, urgent needs, financial routing, weather widgets, dynamic back button, refactoring |
+| Mar 29 | [Contracts and consolidation](76bc1c7e-999f-450e-9650-709afeb8457f) | Contracts integration, detail page layout fix, shared utility consolidation, skill updates, optimization and refactoring |
 
 ---
 
@@ -309,10 +375,22 @@ Features and improvements not yet started.
 | `src/app/pages/project-dashboard/components/records-subpages.component.ts` | Extracted Records sub-page views (daily reports, punch items, inspections, action items) |
 | `src/app/pages/project-dashboard/components/financials-subpages.component.ts` | Extracted Financials sub-page views (change orders, revenue, cost forecasts) |
 | `src/app/pages/project-dashboard/components/record-detail-views.component.ts` | Extracted record detail pages (daily report, inspection, punch item, change order) |
-| `src/app/data/widget-agents.ts` | AI widget agent definitions and context registry |
-| `src/app/data/dashboard-data.ts` | Shared data, weather utilities, urgent needs builder |
+| `src/app/data/widget-agents.ts` | Barrel re-export for AI widget agents |
+| `src/app/data/widget-agents/` | Domain-split agent files: home, project, financials, portfolio, shared |
+| `src/app/data/dashboard-data.ts` | Barrel re-export for dashboard data layer |
+| `src/app/data/dashboard-data.types.ts` | Type aliases and interfaces |
+| `src/app/data/dashboard-data.seed.ts` | Static/mock data arrays |
+| `src/app/data/dashboard-data.formatters.ts` | Shared utility functions (badge colors, formatters, builders) |
+| `src/app/shell/services/dashboard-page-base.ts` | Abstract base class for shared dashboard engine boilerplate |
+| `src/app/pages/project-dashboard/project-dashboard.component.html` | Extracted project dashboard template (4,014 lines) |
+| `src/app/pages/project-dashboard/project-dashboard-navigation.service.ts` | Navigation methods and URL state management |
+| `src/app/pages/project-dashboard/components/canvas-tile-shell.component.ts` | Reusable canvas tile wrapper component |
+| `src/app/pages/home-page/components/home-widget-frame.component.ts` | Reusable home widget chrome component |
 | `src/app/shell/services/navigation-history.service.ts` | Dynamic back button and shell title override |
 | `src/app/pages/project-dashboard/components/widget-frame.component.ts` | Reusable widget frame with insight badge |
 | `src/app/pages/project-dashboard/components/collapsible-subnav.component.ts` | Collapsible side subnav for canvas/desktop |
 | `src/styles.css` | Design system colors, side nav, canvas layout, custom utilities |
+| `src/app/pages/change-order-detail/change-order-detail-page.component.ts` | Standalone change order detail page |
+| `src/app/pages/estimate-detail/estimate-detail-page.component.ts` | Standalone estimate detail page |
 | `.cursor/skills/dashboard-layout-lessons/SKILL.md` | Hard-won patterns for layout engine and styling |
+| `.cursor/skills/navigation-routing/SKILL.md` | Navigation architecture and routing patterns |

@@ -1,0 +1,141 @@
+export type { AgentAction, AgentAlert, AgentDataState, WidgetAgent } from './shared';
+export { getSuggestions } from './shared';
+export { HOME_AGENTS } from './home-agents';
+export { PROJECT_AGENTS } from './project-agents';
+export { FINANCIALS_AGENTS } from './financials-agents';
+export { PORTFOLIO_AGENTS } from './portfolio-agents';
+
+import type { WidgetAgent } from './shared';
+import {
+  homeCalendar,
+  homeDefault,
+  homeRfis,
+  homeSubmittals,
+  homeTimeOff,
+  homeWeatherAgent,
+  urgentNeedsAgent,
+} from './home-agents';
+import {
+  budgetAgent,
+  changeOrdersAgent,
+  contractsAgent,
+  finBudgetByProject,
+  financialsBudget,
+  financialsChangeOrders,
+  financialsContracts,
+  financialsCostForecasts,
+  financialsDefault,
+  financialsJobCostDetail,
+  financialsRevenue,
+  financialsSubledger,
+  revenueAgent,
+  weatherAgent,
+} from './financials-agents';
+import {
+  activityAgent,
+  changeOrderDetail,
+  contractDetail,
+  dailyReportDetail,
+  dailyReportsAgent,
+  drawingAgent,
+  drawingDetail,
+  drawingsPage,
+  inspectionDetail,
+  inspectionsAgent,
+  milestonesAgent,
+  projectDefault,
+  punchItemDetail,
+  recordsActionItems,
+  recordsDailyReports,
+  recordsInspections,
+  recordsPunchItems,
+  recordsRfis,
+  recordsSubmittals,
+  rfiDetail,
+  risksAgent,
+  submittalDetail,
+  tasksAgent,
+  teamAgent,
+} from './project-agents';
+import {
+  needsAttention,
+  openEstimates,
+  portfolioAgent,
+  projectsDefault,
+  projectsWidget,
+  recentActivity,
+} from './portfolio-agents';
+
+const ALL_AGENTS: Record<string, WidgetAgent> = {
+  portfolio: portfolioAgent,
+  homeTimeOff,
+  homeCalendar,
+  homeRfis,
+  homeSubmittals,
+  homeDefault,
+  homeUrgentNeeds: urgentNeedsAgent,
+  homeWeather: homeWeatherAgent,
+  homeRecentActivity: recentActivity,
+  projects: projectsWidget,
+  openEstimates,
+  recentActivity,
+  needsAttention,
+  projectsDefault,
+  finBudgetByProject,
+  financialsDefault,
+  revenue: revenueAgent,
+  milestones: milestonesAgent,
+  tasks: tasksAgent,
+  risks: risksAgent,
+  drawing: drawingAgent,
+  budget: budgetAgent,
+  team: teamAgent,
+  activity: activityAgent,
+  projectDefault,
+  recordsRfis,
+  recordsSubmittals,
+  financialsBudget,
+  financialsSubledger,
+  drawingsPage,
+  drawingDetail,
+  rfiDetail,
+  submittalDetail,
+  changeOrders: changeOrdersAgent,
+  dailyReports: dailyReportsAgent,
+  weather: weatherAgent,
+  inspections: inspectionsAgent,
+  recordsDailyReports,
+  recordsPunchItems,
+  recordsInspections,
+  recordsActionItems,
+  financialsChangeOrders,
+  finChangeOrders: financialsChangeOrders,
+  financialsRevenue,
+  financialsCostForecasts,
+  financialsJobCostDetail,
+  financialsContracts,
+  contracts: contractsAgent,
+  dailyReportDetail,
+  inspectionDetail,
+  punchItemDetail,
+  changeOrderDetail,
+  contractDetail,
+};
+
+const PAGE_DEFAULT_AGENTS: Record<string, string> = {
+  home: 'homeDefault',
+  projects: 'projectsDefault',
+  financials: 'financialsDefault',
+  'financials-job-cost-detail': 'financialsJobCostDetail',
+  'project-dashboard': 'projectDefault',
+};
+
+export function getAgent(widgetId: string | null, page: string, subContext?: string): WidgetAgent {
+  if (subContext && ALL_AGENTS[subContext]) return ALL_AGENTS[subContext];
+  if (widgetId && ALL_AGENTS[widgetId]) return ALL_AGENTS[widgetId];
+  return ALL_AGENTS[PAGE_DEFAULT_AGENTS[page] ?? 'homeDefault'] ?? homeDefault;
+}
+
+export function getAllAgents(): Record<string, WidgetAgent> {
+  return ALL_AGENTS;
+}
