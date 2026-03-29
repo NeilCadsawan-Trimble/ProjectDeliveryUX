@@ -533,3 +533,72 @@ const portfolioAgent: WidgetAgent = {
 | Accessing `.suggestions` directly | Always use `getSuggestions(agent, state)` |
 | Actions that don't reflect current state | Conditionally include actions based on data |
 | Forgetting `saveConversation()` in error handler | Always save in both complete and error |
+| Action buttons without `route` for navigation | Include `route` on actions that open pages |
+| Navigation actions using `window.location` | Use `router.navigate()` via `route` property |
+
+## 9. Route-Based Actions
+
+Actions can navigate the user to a specific page using Angular Router.
+
+### AgentAction with Route
+
+```typescript
+export interface AgentAction {
+  id: string;
+  label: string;
+  execute: (s: AgentDataState) => string;
+  route?: string;  // Optional Angular route path
+}
+```
+
+**Agent side**:
+
+```typescript
+actions: (s) => [
+  {
+    id: 'open-projects',
+    label: 'Open Projects',
+    execute: () => 'Opening Projects dashboard...',
+    route: '/projects',
+  },
+],
+```
+
+**Controller** checks for `route` and calls `this.router.navigate([action.route])`.
+
+### Rules
+
+- Use `route` for navigation actions; omit for mutation actions
+- Keep labels short (3-4 words) -- they render as pills
+
+## 10. Domain-Specific Agents (Weather, Financials)
+
+Specialized agents for domain-specific widget types that aggregate cross-project data.
+
+### Weather Agent Pattern
+
+```typescript
+const homeWeatherAgent: WidgetAgent = {
+  id: 'homeWeather',
+  name: 'Weather Outlook',
+  systemPrompt: 'Construction scheduling advisor monitoring weather across all project sites...',
+  insight: () => {
+    const impacted = PROJECTS.filter(p =>
+      getProjectWeather(p.id)?.forecast.some(d => d.workImpact !== 'none'));
+    return impacted.length > 0
+      ? `${impacted.length} project${impacted.length !== 1 ? 's' : ''} with weather impacts`
+      : null;
+  },
+  buildContext: () =>
+    PROJECTS.map(p => {
+      const w = getProjectWeather(p.id);
+      return `${p.name} (${p.city}, ${p.state}): ${w?.current.condition}, ${w?.current.tempF}F`;
+    }).join('\n'),
+};
+```
+
+### Rules
+
+- Domain agents should aggregate data across all relevant projects
+- Use shared utilities (`getProjectWeather`, `buildUrgentNeeds`) to aggregate
+- Include navigation actions linking to related project dashboards

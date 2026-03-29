@@ -14,6 +14,7 @@ import {
 import { Router, ActivatedRoute } from '@angular/router';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
+import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
@@ -21,12 +22,13 @@ import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
-import type { DashboardWidgetId, Project, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost } from '../../data/dashboard-data';
-import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS } from '../../data/dashboard-data';
+import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost, ChangeOrder, ChangeOrderType } from '../../data/dashboard-data';
+import { PROJECTS, ESTIMATES, budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS, CHANGE_ORDERS, coBadgeColor, coTypeLabel } from '../../data/dashboard-data';
+import { getAgent, type AgentDataState } from '../../data/widget-agents';
 
 @Component({
   selector: 'app-financials-page',
-  imports: [ModusProgressComponent, ModusButtonComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent],
+  imports: [ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -45,7 +47,7 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
         </div>
 
         <!-- Budget overview row -->
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
           <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
             <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-lg bg-primary-20 flex items-center justify-center">
@@ -88,6 +90,14 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
             <div class="text-xs text-foreground-60">{{ project.budgetUsed }} of {{ project.budgetTotal }} used</div>
           </div>
         </div>
+        @if (jobCostKpiInsight()) {
+          <div class="flex items-center gap-1.5 px-5 py-2 mb-6 bg-card border-default rounded-lg">
+            <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+            <div class="text-xs text-foreground-60 truncate leading-none">{{ jobCostKpiInsight() }}</div>
+          </div>
+        } @else {
+          <div class="mb-2"></div>
+        }
 
         <!-- Cost breakdown card -->
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
@@ -307,7 +317,7 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
       </div>
 
       <!-- KPI cards -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
           <div class="flex items-center justify-between">
             <div class="text-sm font-medium text-foreground-60">Total Budget</div>
@@ -339,6 +349,14 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
           <div class="text-xs text-success font-medium">43% remaining budget</div>
         </div>
       </div>
+      @if (finKpiInsight()) {
+        <div class="flex items-center gap-1.5 px-5 py-2 mb-6 bg-card border-default rounded-lg">
+          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+          <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
+        </div>
+      } @else {
+        <div class="mb-2"></div>
+      }
       </div>
       }
 
@@ -397,6 +415,12 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
                 </div>
               </div>
             </div>
+            @if (finKpiInsight()) {
+              <div class="flex items-center gap-1.5 px-5 py-2 mt-3 bg-card border-default rounded-lg">
+                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
+              </div>
+            }
           </div>
         }
         @for (widgetId of financialsWidgets; track widgetId) {
@@ -425,7 +449,7 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph_line</i>
                       <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Revenue Over Time</div>
                     </div>
-                    <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()">
+                    <div class="flex items-center gap-2" (mousedown)="$event.stopPropagation()">
                       @for (range of timeRanges; track range) {
                         <div
                           class="px-2.5 py-1 rounded text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
@@ -441,6 +465,12 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
                       }
                     </div>
                   </div>
+                  @if (revenueInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ revenueInsight() }}</div>
+                    </div>
+                  }
 
                   <div class="flex-1 flex flex-col px-5 py-4 gap-3 min-h-0">
                     <div class="flex items-baseline gap-3">
@@ -522,6 +552,105 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
                 />
 
+              } @else if (widgetId === 'finOpenEstimates') {
+                <!-- Open Estimates Widget -->
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId" #estimatesContainer>
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">description</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Open Estimates</div>
+                      <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
+                    </div>
+                  </div>
+                  @if (estimatesInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ estimatesInsight() }}</div>
+                    </div>
+                  }
+                  <div
+                    role="row"
+                    class="grid gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0"
+                    [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
+                  >
+                    @if (!estimatesXXNarrow()) {
+                      <div role="columnheader">ID</div>
+                    }
+                    <div role="columnheader">Project / Client</div>
+                    @if (!estimatesXNarrow()) {
+                      <div role="columnheader">Type</div>
+                    }
+                    @if (!estimatesUltraNarrow()) {
+                      <div role="columnheader">Value</div>
+                    }
+                    <div role="columnheader">Status</div>
+                    @if (!estimatesNarrow()) {
+                      <div role="columnheader">Requested By</div>
+                    }
+                    <div role="columnheader">Due Date</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1" role="table" aria-label="Open estimates">
+                    @for (estimate of estimates(); track estimate.id) {
+                      <div
+                        role="row"
+                        class="grid gap-3 px-5 py-4 border-bottom-default items-center last:border-b-0 hover:bg-muted transition-colors duration-150 cursor-pointer"
+                        [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
+                        (click)="navigateToEstimate(estimate.id)"
+                      >
+                        @if (!estimatesXXNarrow()) {
+                          <div role="cell" class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
+                        }
+                        <div role="cell">
+                          <div class="text-sm font-medium text-foreground truncate">{{ estimate.project }}</div>
+                          <div class="text-xs text-foreground-60 mt-0.5 truncate">{{ estimate.client }}</div>
+                        </div>
+                        @if (!estimatesXNarrow()) {
+                          <div role="cell">
+                            <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</div>
+                          </div>
+                        }
+                        @if (!estimatesUltraNarrow()) {
+                          <div role="cell" class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
+                        }
+                        <div role="cell">
+                          <modus-badge [color]="estimateBadgeColor(estimate.status)" variant="outlined" size="sm">
+                            {{ estimate.status }}
+                          </modus-badge>
+                        </div>
+                        @if (!estimatesNarrow()) {
+                          <div role="cell" class="flex items-center gap-2 min-w-0">
+                            <div class="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-xs font-semibold flex-shrink-0">
+                              {{ estimate.requestedByInitials }}
+                            </div>
+                            <div class="text-xs text-foreground-80 truncate">{{ estimate.requestedBy }}</div>
+                          </div>
+                        }
+                        <div role="cell">
+                          <div class="text-sm text-foreground-80">{{ estimate.dueDate }}</div>
+                          <div class="text-xs mt-0.5" [class]="dueDateClass(estimate.daysLeft)">
+                            @if (estimate.daysLeft < 0) {
+                              {{ -estimate.daysLeft }}d overdue
+                            } @else if (estimate.daysLeft === 0) {
+                              Due today
+                            } @else {
+                              {{ estimate.daysLeft }}d left
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                />
               } @else if (widgetId === 'finBudgetByProject') {
                 <!-- Budget by Project Widget -->
                 <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
@@ -537,8 +666,13 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
                       <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Budget by Project</div>
                     </div>
                   </div>
+                  @if (budgetByProjectInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ budgetByProjectInsight() }}</div>
+                    </div>
+                  }
 
-                  <!-- Table header -->
                   <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
                     <div role="columnheader">Project</div>
                     <div role="columnheader">Client</div>
@@ -585,6 +719,12 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
                     </div>
                     <div class="text-sm text-foreground-60">{{ formatJobCost(jobCostSummary().grandTotal) }} total</div>
                   </div>
+                  @if (jobCostsInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ jobCostsInsight() }}</div>
+                    </div>
+                  }
 
                   <div class="overflow-y-auto flex-1">
                     <div class="px-5 py-4 flex flex-col gap-4">
@@ -634,6 +774,73 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
                 />
+              } @else if (widgetId === 'finChangeOrders') {
+                <!-- Change Orders Widget -->
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">swap_horizontal</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Change Orders</div>
+                      <modus-badge color="secondary" size="sm">{{ filteredChangeOrders().length }}</modus-badge>
+                    </div>
+                  </div>
+                  @if (changeOrdersInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ changeOrdersInsight() }}</div>
+                    </div>
+                  }
+
+                  <div class="flex items-center gap-1 px-5 py-3 border-bottom-default flex-shrink-0">
+                    @for (tab of coTabs; track tab.value) {
+                      <div
+                        class="px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors duration-150"
+                        [class]="activeCoTab() === tab.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:bg-muted'"
+                        (click)="activeCoTab.set(tab.value)"
+                      >{{ tab.label }} ({{ coTabCount(tab.value) }})</div>
+                    }
+                  </div>
+
+                  <div class="overflow-y-auto flex-1">
+                    <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+                      <div role="columnheader">ID</div>
+                      <div role="columnheader">Project</div>
+                      <div role="columnheader">Description</div>
+                      <div class="text-right" role="columnheader">Amount</div>
+                      <div role="columnheader">Status</div>
+                      <div role="columnheader">Date</div>
+                    </div>
+                    @for (co of filteredChangeOrders(); track co.id) {
+                      <div
+                        class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                        role="row"
+                        (click)="navigateToChangeOrder(co.id)"
+                      >
+                        <div class="text-sm font-medium text-primary" role="cell">{{ co.id }}</div>
+                        <div class="text-sm text-foreground truncate" role="cell">{{ co.project }}</div>
+                        <div class="text-sm text-foreground truncate" role="cell">{{ co.description }}</div>
+                        <div class="text-sm font-medium text-foreground text-right" role="cell">{{ formatCurrency(co.amount) }}</div>
+                        <div role="cell"><modus-badge [color]="coBadgeColor(co.status)" size="sm">{{ capitalizeFirst(co.status) }}</modus-badge></div>
+                        <div class="text-sm text-foreground-60" role="cell">{{ co.requestDate }}</div>
+                      </div>
+                    } @empty {
+                      <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                        <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap_horizontal</i>
+                        <div class="text-sm">No change orders in this category</div>
+                      </div>
+                    }
+                  </div>
+                </div>
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                />
               }
 
             </div>
@@ -663,30 +870,40 @@ export class FinancialsPageComponent implements AfterViewInit {
   private static readonly HEADER_OFFSET = FinancialsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly REVENUE_HEIGHT = 380;
   private static readonly REVENUE_OFFSET = FinancialsPageComponent.HEADER_OFFSET + FinancialsPageComponent.REVENUE_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ESTIMATES_HEIGHT = 520;
+  private static readonly ESTIMATES_OFFSET_DESKTOP = FinancialsPageComponent.REVENUE_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ESTIMATES_OFFSET_CANVAS = FinancialsPageComponent.REVENUE_OFFSET + FinancialsPageComponent.ESTIMATES_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly BUDGET_HEIGHT = 520;
-  private static readonly BUDGET_OFFSET_DESKTOP = FinancialsPageComponent.REVENUE_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly BUDGET_OFFSET_DESKTOP = FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP + FinancialsPageComponent.ESTIMATES_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly BUDGET_OFFSET_CANVAS = FinancialsPageComponent.ESTIMATES_OFFSET_CANVAS + FinancialsPageComponent.BUDGET_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly JOB_COSTS_HEIGHT = 580;
   private static readonly JOB_COSTS_OFFSET_DESKTOP = FinancialsPageComponent.BUDGET_OFFSET_DESKTOP + FinancialsPageComponent.BUDGET_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly BUDGET_OFFSET_CANVAS = FinancialsPageComponent.REVENUE_OFFSET + FinancialsPageComponent.BUDGET_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly JOB_COSTS_OFFSET_CANVAS = FinancialsPageComponent.BUDGET_OFFSET_CANVAS + FinancialsPageComponent.JOB_COSTS_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly CO_HEIGHT = 560;
+  private static readonly CO_OFFSET_DESKTOP = FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP + FinancialsPageComponent.JOB_COSTS_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly CO_OFFSET_CANVAS = FinancialsPageComponent.JOB_COSTS_OFFSET_CANVAS + FinancialsPageComponent.CO_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['finHeader', 'finRevenueChart', 'finBudgetByProject', 'finJobCosts'],
-    layoutStorageKey: 'dashboard-financials:v3',
-    canvasStorageKey: 'canvas-layout:dashboard-financials:v4',
-    defaultColStarts: { finHeader: 1, finRevenueChart: 1, finBudgetByProject: 1, finJobCosts: 1 },
-    defaultColSpans: { finHeader: 16, finRevenueChart: 16, finBudgetByProject: 16, finJobCosts: 16 },
-    defaultTops: { finHeader: 0, finRevenueChart: 0, finBudgetByProject: FinancialsPageComponent.BUDGET_OFFSET_DESKTOP, finJobCosts: FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP },
-    defaultHeights: { finHeader: 0, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: 580 },
-    defaultLefts: { finHeader: 0, finRevenueChart: 0, finBudgetByProject: 0, finJobCosts: 0 },
-    defaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finBudgetByProject: 1280, finJobCosts: 1280 },
-    canvasDefaultLefts: { finHeader: 0, finRevenueChart: 0, finBudgetByProject: 0, finJobCosts: 0 },
-    canvasDefaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finBudgetByProject: 1280, finJobCosts: 1280 },
+    widgets: ['finHeader', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
+    layoutStorageKey: 'dashboard-financials:v5',
+    canvasStorageKey: 'canvas-layout:dashboard-financials:v6',
+    defaultColStarts: { finHeader: 1, finRevenueChart: 1, finOpenEstimates: 1, finBudgetByProject: 1, finJobCosts: 1, finChangeOrders: 1 },
+    defaultColSpans: { finHeader: 16, finRevenueChart: 16, finOpenEstimates: 16, finBudgetByProject: 16, finJobCosts: 16, finChangeOrders: 16 },
+    defaultTops: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP, finBudgetByProject: FinancialsPageComponent.BUDGET_OFFSET_DESKTOP, finJobCosts: FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP, finChangeOrders: FinancialsPageComponent.CO_OFFSET_DESKTOP },
+    defaultHeights: { finHeader: 0, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
+    defaultLefts: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
+    defaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
+    canvasDefaultLefts: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
+    canvasDefaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
     canvasDefaultTops: {
       finHeader: 0,
       finRevenueChart: FinancialsPageComponent.HEADER_OFFSET,
-      finBudgetByProject: FinancialsPageComponent.REVENUE_OFFSET,
+      finOpenEstimates: FinancialsPageComponent.REVENUE_OFFSET,
+      finBudgetByProject: FinancialsPageComponent.ESTIMATES_OFFSET_CANVAS,
       finJobCosts: FinancialsPageComponent.BUDGET_OFFSET_CANVAS,
+      finChangeOrders: FinancialsPageComponent.CO_OFFSET_CANVAS,
     },
-    canvasDefaultHeights: { finHeader: FinancialsPageComponent.HEADER_HEIGHT, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: 580 },
+    canvasDefaultHeights: { finHeader: FinancialsPageComponent.HEADER_HEIGHT, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
     minColSpan: 1,
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: false,
@@ -732,7 +949,84 @@ export class FinancialsPageComponent implements AfterViewInit {
   readonly projects = signal<Project[]>(PROJECTS);
   readonly totalProjects = computed(() => this.projects().length);
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
-  readonly financialsWidgets: DashboardWidgetId[] = ['finRevenueChart', 'finBudgetByProject', 'finJobCosts'];
+  readonly financialsWidgets: DashboardWidgetId[] = ['finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
+
+  readonly estimates = signal<Estimate[]>(ESTIMATES);
+  readonly estimateBadgeColor = estimateBadgeColor;
+  readonly dueDateClass = dueDateClass;
+
+  private readonly estimatesContainerRef = viewChild<ElementRef>('estimatesContainer');
+  readonly estimatesContainerWidth = signal<number>(0);
+  readonly estimatesBreakpoint = computed<'wide' | 'narrow' | 'xNarrow' | 'xxNarrow' | 'ultraNarrow'>(() => {
+    const w = this.estimatesContainerWidth();
+    if (w > 0 && w <= 450) return 'ultraNarrow';
+    if (w > 0 && w <= 680) return 'xxNarrow';
+    if (w > 0 && w <= 760) return 'xNarrow';
+    if (w > 0 && w <= 1000) return 'narrow';
+    return 'wide';
+  });
+  readonly estimatesNarrow = computed(() => this.estimatesBreakpoint() !== 'wide');
+  readonly estimatesXNarrow = computed(() => {
+    const bp = this.estimatesBreakpoint();
+    return bp === 'xNarrow' || bp === 'xxNarrow' || bp === 'ultraNarrow';
+  });
+  readonly estimatesXXNarrow = computed(() => {
+    const bp = this.estimatesBreakpoint();
+    return bp === 'xxNarrow' || bp === 'ultraNarrow';
+  });
+  readonly estimatesUltraNarrow = computed(() => this.estimatesBreakpoint() === 'ultraNarrow');
+  private readonly _estimatesResizeEffect = this.trackContainerWidth(this.estimatesContainerRef, this.estimatesContainerWidth);
+
+  readonly coTabs: { label: string; value: ChangeOrderType | 'all' }[] = [
+    { label: 'All', value: 'all' },
+    { label: 'Prime Contract', value: 'prime' },
+    { label: 'Potential', value: 'potential' },
+    { label: 'Subcontract', value: 'subcontract' },
+  ];
+  readonly activeCoTab = signal<ChangeOrderType | 'all'>('all');
+  readonly filteredChangeOrders = computed(() => {
+    const tab = this.activeCoTab();
+    return tab === 'all' ? CHANGE_ORDERS : CHANGE_ORDERS.filter(co => co.coType === tab);
+  });
+  coTabCount(tab: ChangeOrderType | 'all'): number {
+    return tab === 'all' ? CHANGE_ORDERS.length : CHANGE_ORDERS.filter(co => co.coType === tab).length;
+  }
+  readonly coBadgeColor = coBadgeColor;
+  readonly coTypeLabel = coTypeLabel;
+
+  capitalizeFirst(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  navigateToChangeOrder(id: string): void {
+    this.router.navigate(['/financials/change-orders', id]);
+  }
+
+  private buildFinAgentState(): AgentDataState {
+    return { projects: PROJECTS, estimates: ESTIMATES, changeOrders: CHANGE_ORDERS, currentPage: 'financials' };
+  }
+
+  getFinWidgetInsight(widgetId: string): string | null {
+    const agentId = widgetId === 'finRevenueChart' ? 'revenue' : widgetId === 'finOpenEstimates' ? 'openEstimates' : widgetId === 'finChangeOrders' ? 'financialsChangeOrders' : widgetId;
+    const agent = getAgent(agentId, 'financials');
+    return agent.insight?.(this.buildFinAgentState()) ?? null;
+  }
+
+  readonly revenueInsight = computed<string | null>(() => this.getFinWidgetInsight('finRevenueChart'));
+  readonly estimatesInsight = computed<string | null>(() => this.getFinWidgetInsight('finOpenEstimates'));
+  readonly budgetByProjectInsight = computed<string | null>(() => this.getFinWidgetInsight('finBudgetByProject'));
+  readonly jobCostsInsight = computed<string | null>(() => this.getFinWidgetInsight('finJobCosts'));
+  readonly changeOrdersInsight = computed<string | null>(() => this.getFinWidgetInsight('finChangeOrders'));
+  readonly finKpiInsight = computed<string | null>(() => {
+    const agent = getAgent('financialsDefault', 'financials');
+    return agent.insight?.(this.buildFinAgentState()) ?? null;
+  });
+  readonly jobCostKpiInsight = computed<string | null>(() => {
+    const agent = getAgent('financialsJobCostDetail', 'financials-job-cost-detail');
+    const state = this.buildFinAgentState();
+    state.jobCostDetailProject = this.jobCostDetailProject() ?? undefined;
+    return agent.insight?.(state) ?? null;
+  });
 
   readonly timeRanges: RevenueTimeRange[] = ['1M', 'YTD', '1Y', '3Y', '5Y'];
   readonly selectedRange = signal<RevenueTimeRange>('1Y');
@@ -1088,6 +1382,29 @@ export class FinancialsPageComponent implements AfterViewInit {
     });
   }
 
+  private trackContainerWidth(
+    ref: ReturnType<typeof viewChild<ElementRef>>,
+    widthSignal: ReturnType<typeof signal<number>>,
+  ) {
+    let observer: ResizeObserver | null = null;
+    return effect(() => {
+      const el = ref()?.nativeElement as HTMLElement | undefined;
+      observer?.disconnect();
+      observer = null;
+      if (!el) {
+        widthSignal.set(0);
+        return;
+      }
+      widthSignal.set(el.offsetWidth);
+      const ro = new ResizeObserver((entries) => {
+        const w = entries[0]?.contentRect.width ?? el.offsetWidth;
+        widthSignal.set(w);
+      });
+      ro.observe(el);
+      observer = ro;
+    });
+  }
+
   mobileGridHeight(): number {
     return this.engine.mobileGridHeight();
   }
@@ -1106,6 +1423,10 @@ export class FinancialsPageComponent implements AfterViewInit {
 
   startWidgetResizeTouch(target: string, dir: 'h' | 'v' | 'both', event: TouchEvent, edge: 'left' | 'right' = 'right'): void {
     this.engine.startWidgetResizeTouch(target, dir, event, edge);
+  }
+
+  navigateToEstimate(id: string): void {
+    this.router.navigate(['/financials/estimates', id]);
   }
 
   toggleWidgetLock(id: string): void {

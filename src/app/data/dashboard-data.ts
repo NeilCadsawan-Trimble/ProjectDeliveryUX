@@ -4,7 +4,7 @@ import { PROJECT_DATA, type BudgetBreakdown } from './project-data';
 export type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 export type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 export type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-export type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeHeader' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'homeDrawings' | 'homeUrgentNeeds' | 'homeWeather' | 'projsHeader' | 'finHeader' | 'finBudgetByProject' | 'finRevenueChart' | 'finJobCosts';
+export type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeHeader' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'homeDrawings' | 'homeUrgentNeeds' | 'homeWeather' | 'homeRecentActivity' | 'projsHeader' | 'finHeader' | 'finBudgetByProject' | 'finRevenueChart' | 'finJobCosts' | 'finOpenEstimates' | 'finChangeOrders';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
@@ -106,18 +106,31 @@ export const PROJECTS: Project[] = [
 ];
 
 export const ESTIMATES: Estimate[] = [
-  { id: 'EST-2026-041', project: 'Riverside Office Phase 3', client: 'Trimble Internal', type: 'Fixed Price', value: '$320,000', valueRaw: 320000, status: 'Awaiting Approval', requestedBy: 'Sarah Chen', requestedByInitials: 'SC', dueDate: 'Mar 1, 2026', daysLeft: 2 },
-  { id: 'EST-2026-042', project: 'Harbor View Unit Interiors', client: 'Apex Corp', type: 'T&M', value: '$85,000', valueRaw: 85000, status: 'Under Review', requestedBy: 'James Carter', requestedByInitials: 'JC', dueDate: 'Mar 5, 2026', daysLeft: 6 },
-  { id: 'EST-2026-043', project: 'Transit Hub Post-Occupancy', client: 'GlobalTech Ltd', type: 'Retainer', value: '$45,000/mo', valueRaw: 45000, status: 'Draft', requestedBy: 'Priya Nair', requestedByInitials: 'PN', dueDate: 'Mar 10, 2026', daysLeft: 11 },
-  { id: 'EST-2026-044', project: 'Medical Center MEP Upgrades', client: 'NexGen Analytics', type: 'Milestone', value: '$220,000', valueRaw: 220000, status: 'Awaiting Approval', requestedBy: 'Tom Evans', requestedByInitials: 'TE', dueDate: 'Feb 28, 2026', daysLeft: 1 },
-  { id: 'EST-2026-045', project: 'Shopping Center Facade Renovation', client: 'Brightline Co', type: 'Fixed Price', value: '$175,000', valueRaw: 175000, status: 'Under Review', requestedBy: 'Lena Brooks', requestedByInitials: 'LB', dueDate: 'Mar 8, 2026', daysLeft: 9 },
-  { id: 'EST-2026-046', project: 'Bridge Deck Inspection', client: 'Trimble Internal', type: 'Fixed Price', value: '$38,000', valueRaw: 38000, status: 'Draft', requestedBy: 'Mike Osei', requestedByInitials: 'MO', dueDate: 'Mar 15, 2026', daysLeft: 16 },
-  { id: 'EST-2026-047', project: 'Sunset Ridge Landscaping', client: 'CoreSystems Inc', type: 'T&M', value: '$95,000', valueRaw: 95000, status: 'Awaiting Approval', requestedBy: 'Sarah Chen', requestedByInitials: 'SC', dueDate: 'Feb 25, 2026', daysLeft: -2 },
-  { id: 'EST-2026-048', project: 'Warehouse Loading Dock Expansion', client: 'DataDrive AI', type: 'Milestone', value: '$410,000', valueRaw: 410000, status: 'Under Review', requestedBy: 'Priya Nair', requestedByInitials: 'PN', dueDate: 'Mar 20, 2026', daysLeft: 21 },
-  { id: 'EST-2026-049', project: 'Site Safety Equipment Setup', client: 'Trimble Internal', type: 'Fixed Price', value: '$62,000', valueRaw: 62000, status: 'Draft', requestedBy: 'Tom Evans', requestedByInitials: 'TE', dueDate: 'Apr 1, 2026', daysLeft: 33 },
-  { id: 'EST-2026-050', project: 'Tenant Fit-Out Coordination', client: 'Brightline Co', type: 'T&M', value: '$130,000', valueRaw: 130000, status: 'Awaiting Approval', requestedBy: 'Lena Brooks', requestedByInitials: 'LB', dueDate: 'Mar 3, 2026', daysLeft: 4 },
-  { id: 'EST-2026-051', project: 'Parking Structure Repair', client: 'NexGen Analytics', type: 'Fixed Price', value: '$95,500', valueRaw: 95500, status: 'Under Review', requestedBy: 'James Carter', requestedByInitials: 'JC', dueDate: 'Mar 12, 2026', daysLeft: 13 },
-  { id: 'EST-2026-052', project: 'Structural Assessment Program', client: 'GlobalTech Ltd', type: 'Retainer', value: '$18,000/mo', valueRaw: 18000, status: 'Draft', requestedBy: 'Mike Osei', requestedByInitials: 'MO', dueDate: 'Apr 5, 2026', daysLeft: 37 },
+  // --- Overdue (3) ---
+  { id: 'EST-2026-047', project: 'Sunset Ridge Landscaping', client: 'CoreSystems Inc', type: 'T&M', value: '$95,000', valueRaw: 95000, status: 'Awaiting Approval', requestedBy: 'Sarah Chen', requestedByInitials: 'SC', dueDate: 'Feb 25, 2026', daysLeft: -30 },
+  { id: 'EST-2026-044', project: 'Medical Center MEP Upgrades', client: 'NexGen Analytics', type: 'Milestone', value: '$220,000', valueRaw: 220000, status: 'Awaiting Approval', requestedBy: 'Tom Evans', requestedByInitials: 'TE', dueDate: 'Feb 28, 2026', daysLeft: -27 },
+  { id: 'EST-2026-053', project: 'City Hall Annex HVAC Replacement', client: 'Trimble Internal', type: 'Fixed Price', value: '$185,000', valueRaw: 185000, status: 'Awaiting Approval', requestedBy: 'James Carter', requestedByInitials: 'JC', dueDate: 'Mar 10, 2026', daysLeft: -17 },
+  // --- Due this week (3) ---
+  { id: 'EST-2026-041', project: 'Riverside Office Phase 3', client: 'Trimble Internal', type: 'Fixed Price', value: '$320,000', valueRaw: 320000, status: 'Awaiting Approval', requestedBy: 'Sarah Chen', requestedByInitials: 'SC', dueDate: 'Mar 28, 2026', daysLeft: 1 },
+  { id: 'EST-2026-050', project: 'Tenant Fit-Out Coordination', client: 'Brightline Co', type: 'T&M', value: '$130,000', valueRaw: 130000, status: 'Awaiting Approval', requestedBy: 'Lena Brooks', requestedByInitials: 'LB', dueDate: 'Mar 30, 2026', daysLeft: 3 },
+  { id: 'EST-2026-054', project: 'Greenfield Industrial Park Grading', client: 'DataDrive AI', type: 'Fixed Price', value: '$275,000', valueRaw: 275000, status: 'Under Review', requestedBy: 'Priya Nair', requestedByInitials: 'PN', dueDate: 'Mar 31, 2026', daysLeft: 4 },
+  // --- Due next week (3) ---
+  { id: 'EST-2026-042', project: 'Harbor View Unit Interiors', client: 'Apex Corp', type: 'T&M', value: '$85,000', valueRaw: 85000, status: 'Under Review', requestedBy: 'James Carter', requestedByInitials: 'JC', dueDate: 'Apr 3, 2026', daysLeft: 7 },
+  { id: 'EST-2026-045', project: 'Shopping Center Facade Renovation', client: 'Brightline Co', type: 'Fixed Price', value: '$175,000', valueRaw: 175000, status: 'Under Review', requestedBy: 'Lena Brooks', requestedByInitials: 'LB', dueDate: 'Apr 5, 2026', daysLeft: 9 },
+  { id: 'EST-2026-055', project: 'Regional Airport Taxiway Repair', client: 'NexGen Analytics', type: 'Milestone', value: '$510,000', valueRaw: 510000, status: 'Under Review', requestedBy: 'Tom Evans', requestedByInitials: 'TE', dueDate: 'Apr 6, 2026', daysLeft: 10 },
+  // --- Due in 2-4 weeks (5) ---
+  { id: 'EST-2026-043', project: 'Transit Hub Post-Occupancy', client: 'GlobalTech Ltd', type: 'Retainer', value: '$45,000/mo', valueRaw: 45000, status: 'Draft', requestedBy: 'Priya Nair', requestedByInitials: 'PN', dueDate: 'Apr 10, 2026', daysLeft: 14 },
+  { id: 'EST-2026-046', project: 'Bridge Deck Inspection', client: 'Trimble Internal', type: 'Fixed Price', value: '$38,000', valueRaw: 38000, status: 'Draft', requestedBy: 'Mike Osei', requestedByInitials: 'MO', dueDate: 'Apr 12, 2026', daysLeft: 16 },
+  { id: 'EST-2026-048', project: 'Warehouse Loading Dock Expansion', client: 'DataDrive AI', type: 'Milestone', value: '$410,000', valueRaw: 410000, status: 'Under Review', requestedBy: 'Priya Nair', requestedByInitials: 'PN', dueDate: 'Apr 15, 2026', daysLeft: 19 },
+  { id: 'EST-2026-051', project: 'Parking Structure Repair', client: 'NexGen Analytics', type: 'Fixed Price', value: '$95,500', valueRaw: 95500, status: 'Under Review', requestedBy: 'James Carter', requestedByInitials: 'JC', dueDate: 'Apr 17, 2026', daysLeft: 21 },
+  { id: 'EST-2026-056', project: 'Oak Valley Elementary Addition', client: 'Apex Corp', type: 'Milestone', value: '$340,000', valueRaw: 340000, status: 'Draft', requestedBy: 'Sarah Chen', requestedByInitials: 'SC', dueDate: 'Apr 20, 2026', daysLeft: 24 },
+  // --- Due 4-6+ weeks out (6) ---
+  { id: 'EST-2026-049', project: 'Site Safety Equipment Setup', client: 'Trimble Internal', type: 'Fixed Price', value: '$62,000', valueRaw: 62000, status: 'Draft', requestedBy: 'Tom Evans', requestedByInitials: 'TE', dueDate: 'Apr 25, 2026', daysLeft: 29 },
+  { id: 'EST-2026-052', project: 'Structural Assessment Program', client: 'GlobalTech Ltd', type: 'Retainer', value: '$18,000/mo', valueRaw: 18000, status: 'Draft', requestedBy: 'Mike Osei', requestedByInitials: 'MO', dueDate: 'Apr 30, 2026', daysLeft: 34 },
+  { id: 'EST-2026-057', project: 'Lakeshore Drive Seawall Restoration', client: 'CoreSystems Inc', type: 'Fixed Price', value: '$425,000', valueRaw: 425000, status: 'Draft', requestedBy: 'Lena Brooks', requestedByInitials: 'LB', dueDate: 'May 4, 2026', daysLeft: 38 },
+  { id: 'EST-2026-058', project: 'Downtown Condo Lobby Remodel', client: 'Brightline Co', type: 'T&M', value: '$148,000', valueRaw: 148000, status: 'Draft', requestedBy: 'James Carter', requestedByInitials: 'JC', dueDate: 'May 8, 2026', daysLeft: 42 },
+  { id: 'EST-2026-059', project: 'County Courthouse ADA Retrofit', client: 'GlobalTech Ltd', type: 'Milestone', value: '$290,000', valueRaw: 290000, status: 'Under Review', requestedBy: 'Priya Nair', requestedByInitials: 'PN', dueDate: 'May 12, 2026', daysLeft: 46 },
+  { id: 'EST-2026-060', project: 'Solar Canopy Installation -- Fleet Yard', client: 'DataDrive AI', type: 'T&M', value: '$78,000', valueRaw: 78000, status: 'Draft', requestedBy: 'Mike Osei', requestedByInitials: 'MO', dueDate: 'May 15, 2026', daysLeft: 49 },
 ];
 
 export const ACTIVITIES: ActivityItem[] = [
@@ -138,14 +151,155 @@ export const ATTENTION_ITEMS = [
   { id: 6, title: 'Transit Hub inspection sign-off overdue', subtitle: 'Milestone was due Feb 20', dotClass: 'bg-warning' },
 ];
 
-export const TIME_OFF_REQUESTS = [
-  { id: 1, name: 'Sarah Chen', initials: 'SC', type: 'Vacation', startDate: 'Mar 10', endDate: 'Mar 14', days: 5, status: 'Pending' as const },
-  { id: 2, name: 'James Carter', initials: 'JC', type: 'Sick Leave', startDate: 'Mar 6', endDate: 'Mar 6', days: 1, status: 'Approved' as const },
-  { id: 3, name: 'Priya Nair', initials: 'PN', type: 'Vacation', startDate: 'Mar 17', endDate: 'Mar 21', days: 5, status: 'Pending' as const },
-  { id: 4, name: 'Tom Evans', initials: 'TE', type: 'Personal', startDate: 'Mar 8', endDate: 'Mar 8', days: 1, status: 'Approved' as const },
-  { id: 5, name: 'Lena Brooks', initials: 'LB', type: 'Vacation', startDate: 'Apr 1', endDate: 'Apr 4', days: 4, status: 'Pending' as const },
-  { id: 6, name: 'Mike Osei', initials: 'MO', type: 'Sick Leave', startDate: 'Mar 5', endDate: 'Mar 5', days: 1, status: 'Denied' as const },
+export interface TimeOffRequest {
+  id: number;
+  name: string;
+  initials: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  status: 'Pending' | 'Approved' | 'Denied';
+  projectId: number;
+  projectName: string;
+}
+
+export const TIME_OFF_REQUESTS: TimeOffRequest[] = [
+  // --- March 2026 ---
+  { id: 1, name: 'Sarah Chen', initials: 'SC', type: 'Vacation', startDate: 'Mar 2', endDate: 'Mar 6', days: 5, status: 'Approved', projectId: 1, projectName: 'Riverside Office Complex' },
+  { id: 2, name: 'James Carter', initials: 'JC', type: 'Sick Leave', startDate: 'Mar 3', endDate: 'Mar 3', days: 1, status: 'Approved', projectId: 2, projectName: 'Harbor View Condominiums' },
+  { id: 3, name: 'Nina Alvarez', initials: 'NA', type: 'Personal', startDate: 'Mar 4', endDate: 'Mar 4', days: 1, status: 'Approved', projectId: 3, projectName: 'Downtown Transit Hub' },
+  { id: 4, name: 'Derek Huang', initials: 'DH', type: 'Sick Leave', startDate: 'Mar 5', endDate: 'Mar 6', days: 2, status: 'Approved', projectId: 8, projectName: 'Industrial Park Warehouse' },
+  { id: 5, name: 'Tom Evans', initials: 'TE', type: 'Personal', startDate: 'Mar 6', endDate: 'Mar 6', days: 1, status: 'Approved', projectId: 4, projectName: 'Lakeside Medical Center' },
+  { id: 6, name: 'Priya Nair', initials: 'PN', type: 'Vacation', startDate: 'Mar 9', endDate: 'Mar 13', days: 5, status: 'Approved', projectId: 3, projectName: 'Downtown Transit Hub' },
+  { id: 7, name: 'Carlos Medina', initials: 'CM', type: 'Jury Duty', startDate: 'Mar 9', endDate: 'Mar 11', days: 3, status: 'Approved', projectId: 7, projectName: 'Sunset Ridge Apartments' },
+  { id: 8, name: 'Rachel Kim', initials: 'RK', type: 'Sick Leave', startDate: 'Mar 10', endDate: 'Mar 10', days: 1, status: 'Approved', projectId: 4, projectName: 'Lakeside Medical Center' },
+  { id: 9, name: 'Lena Brooks', initials: 'LB', type: 'Vacation', startDate: 'Mar 16', endDate: 'Mar 20', days: 5, status: 'Approved', projectId: 5, projectName: 'Westfield Shopping Center' },
+  { id: 10, name: 'Mike Osei', initials: 'MO', type: 'Sick Leave', startDate: 'Mar 12', endDate: 'Mar 12', days: 1, status: 'Denied', projectId: 6, projectName: 'Metro Bridge Rehabilitation' },
+  { id: 11, name: 'Aisha Patel', initials: 'AP', type: 'Vacation', startDate: 'Mar 16', endDate: 'Mar 18', days: 3, status: 'Approved', projectId: 1, projectName: 'Riverside Office Complex' },
+  { id: 12, name: 'Brian Novak', initials: 'BN', type: 'Bereavement', startDate: 'Mar 13', endDate: 'Mar 17', days: 3, status: 'Approved', projectId: 2, projectName: 'Harbor View Condominiums' },
+  { id: 13, name: 'Tanya Reeves', initials: 'TR', type: 'Vacation', startDate: 'Mar 23', endDate: 'Mar 27', days: 5, status: 'Pending', projectId: 3, projectName: 'Downtown Transit Hub' },
+  { id: 14, name: 'Jordan Blake', initials: 'JB', type: 'Personal', startDate: 'Mar 18', endDate: 'Mar 18', days: 1, status: 'Approved', projectId: 6, projectName: 'Metro Bridge Rehabilitation' },
+  { id: 15, name: 'Marcus Webb', initials: 'MW', type: 'Sick Leave', startDate: 'Mar 19', endDate: 'Mar 20', days: 2, status: 'Approved', projectId: 1, projectName: 'Riverside Office Complex' },
+  { id: 16, name: 'Olivia Grant', initials: 'OG', type: 'Vacation', startDate: 'Mar 23', endDate: 'Mar 25', days: 3, status: 'Approved', projectId: 4, projectName: 'Lakeside Medical Center' },
+  { id: 17, name: 'Kevin Zhao', initials: 'KZ', type: 'Personal', startDate: 'Mar 20', endDate: 'Mar 20', days: 1, status: 'Approved', projectId: 7, projectName: 'Sunset Ridge Apartments' },
+  { id: 18, name: 'Samira Patel', initials: 'SP', type: 'Vacation', startDate: 'Mar 30', endDate: 'Apr 3', days: 5, status: 'Pending', projectId: 8, projectName: 'Industrial Park Warehouse' },
+  { id: 19, name: 'Chris Delgado', initials: 'CD', type: 'Sick Leave', startDate: 'Mar 24', endDate: 'Mar 24', days: 1, status: 'Approved', projectId: 1, projectName: 'Riverside Office Complex' },
+  { id: 20, name: 'Laura Hoffman', initials: 'LH', type: 'Vacation', startDate: 'Mar 26', endDate: 'Mar 27', days: 2, status: 'Pending', projectId: 5, projectName: 'Westfield Shopping Center' },
+  { id: 21, name: 'Nathan Ruiz', initials: 'NR', type: 'Personal', startDate: 'Mar 25', endDate: 'Mar 25', days: 1, status: 'Approved', projectId: 2, projectName: 'Harbor View Condominiums' },
+  { id: 22, name: 'Felicity Dunn', initials: 'FD', type: 'Sick Leave', startDate: 'Mar 26', endDate: 'Mar 27', days: 2, status: 'Denied', projectId: 7, projectName: 'Sunset Ridge Apartments' },
+  { id: 23, name: 'Angela Torres', initials: 'AT', type: 'Vacation', startDate: 'Mar 30', endDate: 'Apr 1', days: 3, status: 'Pending', projectId: 6, projectName: 'Metro Bridge Rehabilitation' },
+  { id: 24, name: 'Daniel Park', initials: 'DP', type: 'Sick Leave', startDate: 'Mar 31', endDate: 'Mar 31', days: 1, status: 'Approved', projectId: 1, projectName: 'Riverside Office Complex' },
+  // --- April 2026 ---
+  { id: 25, name: 'Sarah Chen', initials: 'SC', type: 'Personal', startDate: 'Apr 3', endDate: 'Apr 3', days: 1, status: 'Pending', projectId: 7, projectName: 'Sunset Ridge Apartments' },
+  { id: 26, name: 'James Carter', initials: 'JC', type: 'Vacation', startDate: 'Apr 6', endDate: 'Apr 10', days: 5, status: 'Pending', projectId: 2, projectName: 'Harbor View Condominiums' },
+  { id: 27, name: 'Hakeem Washington', initials: 'HW', type: 'Vacation', startDate: 'Apr 6', endDate: 'Apr 8', days: 3, status: 'Approved', projectId: 3, projectName: 'Downtown Transit Hub' },
+  { id: 28, name: 'Derek Huang', initials: 'DH', type: 'Vacation', startDate: 'Apr 13', endDate: 'Apr 17', days: 5, status: 'Pending', projectId: 8, projectName: 'Industrial Park Warehouse' },
+  { id: 29, name: 'Priya Nair', initials: 'PN', type: 'Sick Leave', startDate: 'Apr 7', endDate: 'Apr 7', days: 1, status: 'Approved', projectId: 8, projectName: 'Industrial Park Warehouse' },
+  { id: 30, name: 'Nina Alvarez', initials: 'NA', type: 'Vacation', startDate: 'Apr 13', endDate: 'Apr 15', days: 3, status: 'Pending', projectId: 3, projectName: 'Downtown Transit Hub' },
+  { id: 31, name: 'Rachel Kim', initials: 'RK', type: 'Vacation', startDate: 'Apr 6', endDate: 'Apr 10', days: 5, status: 'Approved', projectId: 5, projectName: 'Westfield Shopping Center' },
+  { id: 32, name: 'Lena Brooks', initials: 'LB', type: 'Personal', startDate: 'Apr 9', endDate: 'Apr 9', days: 1, status: 'Approved', projectId: 3, projectName: 'Downtown Transit Hub' },
+  { id: 33, name: 'Aisha Patel', initials: 'AP', type: 'Sick Leave', startDate: 'Apr 10', endDate: 'Apr 10', days: 1, status: 'Approved', projectId: 1, projectName: 'Riverside Office Complex' },
+  { id: 34, name: 'Carlos Medina', initials: 'CM', type: 'Vacation', startDate: 'Apr 20', endDate: 'Apr 24', days: 5, status: 'Pending', projectId: 7, projectName: 'Sunset Ridge Apartments' },
+  { id: 35, name: 'Brian Novak', initials: 'BN', type: 'Personal', startDate: 'Apr 14', endDate: 'Apr 14', days: 1, status: 'Approved', projectId: 2, projectName: 'Harbor View Condominiums' },
+  { id: 36, name: 'Tom Evans', initials: 'TE', type: 'Vacation', startDate: 'Apr 20', endDate: 'Apr 22', days: 3, status: 'Pending', projectId: 4, projectName: 'Lakeside Medical Center' },
+  { id: 37, name: 'Jordan Blake', initials: 'JB', type: 'Sick Leave', startDate: 'Apr 15', endDate: 'Apr 16', days: 2, status: 'Approved', projectId: 6, projectName: 'Metro Bridge Rehabilitation' },
+  { id: 38, name: 'Tanya Reeves', initials: 'TR', type: 'Personal', startDate: 'Apr 17', endDate: 'Apr 17', days: 1, status: 'Approved', projectId: 3, projectName: 'Downtown Transit Hub' },
+  { id: 39, name: 'Marcus Webb', initials: 'MW', type: 'Vacation', startDate: 'Apr 20', endDate: 'Apr 24', days: 5, status: 'Pending', projectId: 1, projectName: 'Riverside Office Complex' },
+  { id: 40, name: 'Kevin Zhao', initials: 'KZ', type: 'Vacation', startDate: 'Apr 27', endDate: 'Apr 30', days: 4, status: 'Pending', projectId: 7, projectName: 'Sunset Ridge Apartments' },
+  { id: 41, name: 'Mike Osei', initials: 'MO', type: 'Vacation', startDate: 'Apr 22', endDate: 'Apr 24', days: 3, status: 'Denied', projectId: 6, projectName: 'Metro Bridge Rehabilitation' },
+  { id: 42, name: 'Olivia Grant', initials: 'OG', type: 'Sick Leave', startDate: 'Apr 21', endDate: 'Apr 21', days: 1, status: 'Approved', projectId: 4, projectName: 'Lakeside Medical Center' },
+  { id: 43, name: 'Felicity Dunn', initials: 'FD', type: 'Vacation', startDate: 'Apr 27', endDate: 'Apr 30', days: 4, status: 'Pending', projectId: 7, projectName: 'Sunset Ridge Apartments' },
+  { id: 44, name: 'Chris Delgado', initials: 'CD', type: 'Vacation', startDate: 'Apr 13', endDate: 'Apr 17', days: 5, status: 'Approved', projectId: 1, projectName: 'Riverside Office Complex' },
+  { id: 45, name: 'Laura Hoffman', initials: 'LH', type: 'Sick Leave', startDate: 'Apr 22', endDate: 'Apr 22', days: 1, status: 'Approved', projectId: 5, projectName: 'Westfield Shopping Center' },
+  { id: 46, name: 'Samira Patel', initials: 'SP', type: 'Personal', startDate: 'Apr 23', endDate: 'Apr 23', days: 1, status: 'Approved', projectId: 4, projectName: 'Lakeside Medical Center' },
+  { id: 47, name: 'Nathan Ruiz', initials: 'NR', type: 'Vacation', startDate: 'Apr 27', endDate: 'Apr 30', days: 4, status: 'Pending', projectId: 2, projectName: 'Harbor View Condominiums' },
+  { id: 48, name: 'Daniel Park', initials: 'DP', type: 'Vacation', startDate: 'Apr 6', endDate: 'Apr 8', days: 3, status: 'Approved', projectId: 1, projectName: 'Riverside Office Complex' },
+  { id: 49, name: 'Angela Torres', initials: 'AT', type: 'Sick Leave', startDate: 'Apr 28', endDate: 'Apr 28', days: 1, status: 'Pending', projectId: 6, projectName: 'Metro Bridge Rehabilitation' },
+  { id: 50, name: 'Hakeem Washington', initials: 'HW', type: 'Personal', startDate: 'Apr 24', endDate: 'Apr 24', days: 1, status: 'Approved', projectId: 3, projectName: 'Downtown Transit Hub' },
 ];
+
+export interface StaffingConflict {
+  projectId: number;
+  projectName: string;
+  week: string;
+  absentCount: number;
+  teamSize: number;
+  absentPct: number;
+  absentees: string[];
+  severity: 'critical' | 'warning' | 'info';
+  reason: string;
+}
+
+const PROJECT_TEAM_SIZES: Record<number, number> = { 1: 6, 2: 5, 3: 8, 4: 7, 5: 4, 6: 4, 7: 5, 8: 5 };
+
+function parseMonthDay(dateStr: string, year: number): Date {
+  const MONTHS: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+  const [mon, dayStr] = dateStr.split(' ');
+  return new Date(year, MONTHS[mon], parseInt(dayStr, 10));
+}
+
+export function getProjectTimeOff(projectId: number): TimeOffRequest[] {
+  return TIME_OFF_REQUESTS.filter(r => r.projectId === projectId && r.status !== 'Denied');
+}
+
+export function buildStaffingConflicts(projectId?: number): StaffingConflict[] {
+  const year = 2026;
+  const active = TIME_OFF_REQUESTS.filter(r => r.status !== 'Denied');
+  const byProject = new Map<number, TimeOffRequest[]>();
+  for (const r of active) {
+    if (projectId !== undefined && r.projectId !== projectId) continue;
+    const arr = byProject.get(r.projectId) ?? [];
+    arr.push(r);
+    byProject.set(r.projectId, arr);
+  }
+
+  const conflicts: StaffingConflict[] = [];
+  const weekStart = new Date(year, 2, 2); // Mar 2
+  const weekEnd = new Date(year, 3, 27); // Apr 27
+
+  for (const [projId, requests] of byProject.entries()) {
+    const proj = PROJECTS.find(p => p.id === projId);
+    if (!proj) continue;
+    const teamSize = PROJECT_TEAM_SIZES[projId] ?? 5;
+    const cur = new Date(weekStart);
+
+    while (cur <= weekEnd) {
+      const wkEnd = new Date(cur);
+      wkEnd.setDate(wkEnd.getDate() + 4);
+      const absentSet = new Set<string>();
+      for (const r of requests) {
+        const s = parseMonthDay(r.startDate, year);
+        const e = parseMonthDay(r.endDate, year);
+        if (s <= wkEnd && e >= cur) absentSet.add(r.name);
+      }
+      if (absentSet.size >= 2) {
+        const pct = Math.round((absentSet.size / teamSize) * 100);
+        let severity: StaffingConflict['severity'] = 'info';
+        let reason = `${absentSet.size} of ${teamSize} team members out`;
+        if (pct >= 50) { severity = 'critical'; reason = `${pct}% of team absent -- project at risk of delays`; }
+        else if (pct >= 30) { severity = 'warning'; reason = `${pct}% of team absent -- reduced capacity`; }
+        const mon = cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        conflicts.push({
+          projectId: projId,
+          projectName: proj.name,
+          week: `Week of ${mon}`,
+          absentCount: absentSet.size,
+          teamSize,
+          absentPct: pct,
+          absentees: [...absentSet],
+          severity,
+          reason,
+        });
+      }
+      cur.setDate(cur.getDate() + 7);
+    }
+  }
+  return conflicts.sort((a, b) => {
+    const sev = { critical: 0, warning: 1, info: 2 };
+    return sev[a.severity] - sev[b.severity] || b.absentPct - a.absentPct;
+  });
+}
 
 export const RFIS: Rfi[] = [
   { id: '1', number: 'RFI-001', subject: 'Foundation soil bearing capacity', question: 'Can the geotechnical engineer confirm the allowable soil bearing capacity at the northeast corner, and do we need additional test borings before footing design can proceed?', askedBy: 'Daniel Park', askedOn: 'Feb 24, 2026', project: 'Riverside Office Complex', assignee: 'Sarah Chen', status: 'open', dueDate: 'Mar 12, 2026' },
@@ -589,30 +743,143 @@ export const PROJECT_REVENUE: ProjectRevenue[] = [
 ];
 
 export type ChangeOrderStatus = 'pending' | 'approved' | 'rejected';
+export type ChangeOrderType = 'prime' | 'potential' | 'subcontract';
 
 export interface ChangeOrder {
   id: string;
   project: string;
   projectId: number;
+  coType: ChangeOrderType;
   description: string;
   amount: number;
   status: ChangeOrderStatus;
   requestedBy: string;
   requestDate: string;
   reason: string;
+  contractNumber?: string;
+  subcontractor?: string;
+  costCode?: string;
 }
 
+export function coBadgeColor(status: ChangeOrderStatus): ModusBadgeColor {
+  const map: Record<ChangeOrderStatus, ModusBadgeColor> = { pending: 'warning', approved: 'success', rejected: 'danger' };
+  return map[status];
+}
+
+export function coTypeLabel(coType: ChangeOrderType): string {
+  const map: Record<ChangeOrderType, string> = { prime: 'Prime Contract', potential: 'Potential', subcontract: 'Subcontract' };
+  return map[coType];
+}
+
+export function coTypeIcon(coType: ChangeOrderType): string {
+  const map: Record<ChangeOrderType, string> = { prime: 'content_copy', potential: 'pending_actions', subcontract: 'assignment' };
+  return map[coType];
+}
+
+export type ContractStatus = 'active' | 'closed' | 'pending' | 'draft';
+export type ContractType = 'prime' | 'subcontract' | 'purchase-order';
+
+export interface Contract {
+  id: string;
+  project: string;
+  projectId: number;
+  contractType: ContractType;
+  title: string;
+  vendor: string;
+  originalValue: number;
+  revisedValue: number;
+  status: ContractStatus;
+  startDate: string;
+  endDate: string;
+  scope: string;
+  retainage: number;
+  linkedChangeOrderIds: string[];
+}
+
+export function contractStatusBadge(status: ContractStatus): ModusBadgeColor {
+  const map: Record<ContractStatus, ModusBadgeColor> = { active: 'success', closed: 'secondary', pending: 'warning', draft: 'tertiary' };
+  return map[status] ?? 'secondary';
+}
+
+export function contractTypeLabel(ct: ContractType): string {
+  const map: Record<ContractType, string> = { prime: 'Prime Contract', subcontract: 'Subcontract', 'purchase-order': 'Purchase Order' };
+  return map[ct];
+}
+
+export function contractTypeIcon(ct: ContractType): string {
+  const map: Record<ContractType, string> = { prime: 'content_copy', subcontract: 'assignment', 'purchase-order': 'shopping_cart' };
+  return map[ct];
+}
+
+export const CONTRACTS: Contract[] = [
+  // --- Prime Contracts (8, one per project) ---
+  { id: 'PC-2026-001', project: 'Riverside Office Complex', projectId: 1, contractType: 'prime', title: 'Riverside Office Complex - General Construction', vendor: 'Owner: Trimble Internal', originalValue: 800000, revisedValue: 870000, status: 'active', startDate: 'Jan 5, 2026', endDate: 'Mar 15, 2026', scope: 'Full general construction including structural, MEP, and interiors', retainage: 10, linkedChangeOrderIds: ['PCO-001', 'PCO-010'] },
+  { id: 'PC-2026-002', project: 'Harbor View Condominiums', projectId: 2, contractType: 'prime', title: 'Harbor View Condominiums - Prime Agreement', vendor: 'Owner: Apex Corp', originalValue: 300000, revisedValue: 318500, status: 'active', startDate: 'Feb 1, 2026', endDate: 'Mar 28, 2026', scope: 'Multi-family residential construction -- 24 units across 2 buildings', retainage: 10, linkedChangeOrderIds: ['PCO-002'] },
+  { id: 'PC-2026-003', project: 'Downtown Transit Hub', projectId: 3, contractType: 'prime', title: 'Downtown Transit Hub - Prime Construction', vendor: 'Owner: GlobalTech Ltd', originalValue: 900000, revisedValue: 1022000, status: 'active', startDate: 'Nov 15, 2025', endDate: 'Feb 20, 2026', scope: 'Transit platform, concourse, and canopy construction', retainage: 5, linkedChangeOrderIds: ['PCO-003', 'PCO-004'] },
+  { id: 'PC-2026-004', project: 'Lakeside Medical Center', projectId: 4, contractType: 'prime', title: 'Lakeside Medical Center - Healthcare Facility', vendor: 'Owner: NexGen Analytics', originalValue: 500000, revisedValue: 515200, status: 'active', startDate: 'Jan 20, 2026', endDate: 'Apr 10, 2026', scope: 'Medical facility build-out including surgical wing and outpatient area', retainage: 10, linkedChangeOrderIds: ['PCO-005', 'PCO-011'] },
+  { id: 'PC-2026-005', project: 'Westfield Shopping Center', projectId: 5, contractType: 'prime', title: 'Westfield Shopping Center - Retail Development', vendor: 'Owner: Brightline Co', originalValue: 350000, revisedValue: 362500, status: 'active', startDate: 'Mar 1, 2026', endDate: 'Apr 30, 2026', scope: 'Retail center shell and core with tenant improvement allowances', retainage: 10, linkedChangeOrderIds: ['PCO-006'] },
+  { id: 'PC-2026-006', project: 'Metro Bridge Rehabilitation', projectId: 6, contractType: 'prime', title: 'Metro Bridge Rehabilitation - Infrastructure Repair', vendor: 'Owner: Trimble Internal', originalValue: 150000, revisedValue: 214000, status: 'active', startDate: 'Dec 1, 2025', endDate: 'Mar 5, 2026', scope: 'Bridge deck rehabilitation, bearing replacement, and walkway widening', retainage: 5, linkedChangeOrderIds: ['PCO-007'] },
+  { id: 'PC-2026-007', project: 'Sunset Ridge Apartments', projectId: 7, contractType: 'prime', title: 'Sunset Ridge Apartments - Residential Complex', vendor: 'Owner: CoreSystems Inc', originalValue: 200000, revisedValue: 222000, status: 'active', startDate: 'Jan 10, 2026', endDate: 'Feb 14, 2026', scope: 'Multi-building apartment complex with parking and landscaping', retainage: 10, linkedChangeOrderIds: ['PCO-008'] },
+  { id: 'PC-2026-008', project: 'Industrial Park Warehouse', projectId: 8, contractType: 'prime', title: 'Industrial Park Warehouse - Distribution Facility', vendor: 'Owner: DataDrive AI', originalValue: 500000, revisedValue: 531000, status: 'active', startDate: 'Feb 15, 2026', endDate: 'May 20, 2026', scope: 'Warehouse with loading docks, fire suppression, and office build-out', retainage: 10, linkedChangeOrderIds: ['PCO-009'] },
+  // --- Subcontracts (aligned with SCO vendors) ---
+  { id: 'SC-2026-001', project: 'Riverside Office Complex', projectId: 1, contractType: 'subcontract', title: 'Electrical Work -- Apex Electrical Inc.', vendor: 'Apex Electrical Inc.', originalValue: 120000, revisedValue: 134500, status: 'active', startDate: 'Jan 15, 2026', endDate: 'Mar 15, 2026', scope: 'Complete electrical rough-in, panel installation, and finish wiring', retainage: 10, linkedChangeOrderIds: ['SCO-001'] },
+  { id: 'SC-2026-002', project: 'Harbor View Condominiums', projectId: 2, contractType: 'subcontract', title: 'Drywall & Framing -- ProWall Drywall LLC', vendor: 'ProWall Drywall LLC', originalValue: 65000, revisedValue: 71800, status: 'active', startDate: 'Feb 10, 2026', endDate: 'Mar 28, 2026', scope: 'Interior framing, drywall installation, blocking, and finishing', retainage: 10, linkedChangeOrderIds: ['SCO-002'] },
+  { id: 'SC-2026-003', project: 'Downtown Transit Hub', projectId: 3, contractType: 'subcontract', title: 'Waterproofing -- WaterTight Systems', vendor: 'WaterTight Systems', originalValue: 85000, revisedValue: 113500, status: 'active', startDate: 'Dec 15, 2025', endDate: 'Feb 20, 2026', scope: 'Below-grade waterproofing, pit membranes, and deck coatings', retainage: 5, linkedChangeOrderIds: ['SCO-003'] },
+  { id: 'SC-2026-004', project: 'Lakeside Medical Center', projectId: 4, contractType: 'subcontract', title: 'HVAC Mechanical -- CoolAir Mechanical', vendor: 'CoolAir Mechanical', originalValue: 145000, revisedValue: 178000, status: 'active', startDate: 'Feb 1, 2026', endDate: 'Apr 10, 2026', scope: 'HVAC ductwork, air handling units, and controls for medical facility', retainage: 10, linkedChangeOrderIds: ['SCO-004'] },
+  { id: 'SC-2026-005', project: 'Westfield Shopping Center', projectId: 5, contractType: 'subcontract', title: 'Fire Protection -- FireGuard Solutions', vendor: 'FireGuard Solutions', originalValue: 48000, revisedValue: 59200, status: 'active', startDate: 'Mar 5, 2026', endDate: 'Apr 30, 2026', scope: 'Fire alarm, sprinkler system installation, and zone programming', retainage: 10, linkedChangeOrderIds: ['SCO-005'] },
+  { id: 'SC-2026-006', project: 'Metro Bridge Rehabilitation', projectId: 6, contractType: 'subcontract', title: 'Concrete Repair -- BridgeTech Concrete', vendor: 'BridgeTech Concrete', originalValue: 55000, revisedValue: 74000, status: 'active', startDate: 'Dec 10, 2025', endDate: 'Mar 5, 2026', scope: 'Deck scarification, epoxy injection, and concrete overlay', retainage: 5, linkedChangeOrderIds: ['SCO-006'] },
+  { id: 'SC-2026-007', project: 'Sunset Ridge Apartments', projectId: 7, contractType: 'subcontract', title: 'Plumbing -- PipeFit Plumbing Co.', vendor: 'PipeFit Plumbing Co.', originalValue: 72000, revisedValue: 89500, status: 'active', startDate: 'Jan 20, 2026', endDate: 'Feb 14, 2026', scope: 'Plumbing rough-in and finish for all residential units', retainage: 10, linkedChangeOrderIds: ['SCO-007'] },
+  { id: 'SC-2026-008', project: 'Industrial Park Warehouse', projectId: 8, contractType: 'subcontract', title: 'Structural Steel -- IronWorks Structural', vendor: 'IronWorks Structural', originalValue: 190000, revisedValue: 216000, status: 'active', startDate: 'Feb 20, 2026', endDate: 'May 20, 2026', scope: 'Steel joist, girder, and decking installation', retainage: 10, linkedChangeOrderIds: ['SCO-008'] },
+  { id: 'SC-2026-009', project: 'Riverside Office Complex', projectId: 1, contractType: 'subcontract', title: 'Elevator Installation -- VerticalRise Elevators', vendor: 'VerticalRise Elevators', originalValue: 95000, revisedValue: 104800, status: 'active', startDate: 'Feb 1, 2026', endDate: 'Mar 15, 2026', scope: 'Passenger elevator installation, cab finishes, and controls', retainage: 10, linkedChangeOrderIds: ['SCO-009'] },
+  { id: 'SC-2026-010', project: 'Downtown Transit Hub', projectId: 3, contractType: 'subcontract', title: 'Shoring & Excavation -- DeepFound Shoring Inc.', vendor: 'DeepFound Shoring Inc.', originalValue: 130000, revisedValue: 175000, status: 'active', startDate: 'Nov 20, 2025', endDate: 'Feb 20, 2026', scope: 'Temporary shoring, soldier piles, and lagging for platform excavation', retainage: 5, linkedChangeOrderIds: ['SCO-010'] },
+  { id: 'SC-2026-011', project: 'Lakeside Medical Center', projectId: 4, contractType: 'subcontract', title: 'Low-Voltage Systems -- MedConnect Systems', vendor: 'MedConnect Systems', originalValue: 78000, revisedValue: 99000, status: 'active', startDate: 'Feb 15, 2026', endDate: 'Apr 10, 2026', scope: 'Nurse call, intercom, and structured cabling throughout facility', retainage: 10, linkedChangeOrderIds: ['SCO-011'] },
+  { id: 'SC-2026-012', project: 'Harbor View Condominiums', projectId: 2, contractType: 'subcontract', title: 'Glazing & Windows -- GlazePro Windows', vendor: 'GlazePro Windows', originalValue: 88000, revisedValue: 96200, status: 'active', startDate: 'Feb 15, 2026', endDate: 'Mar 28, 2026', scope: 'Window and storefront installation including sealants', retainage: 10, linkedChangeOrderIds: ['SCO-012'] },
+  { id: 'SC-2026-013', project: 'Sunset Ridge Apartments', projectId: 7, contractType: 'subcontract', title: 'Landscape & Irrigation -- GreenScape Irrigation', vendor: 'GreenScape Irrigation', originalValue: 42000, revisedValue: 55500, status: 'pending', startDate: 'Mar 1, 2026', endDate: 'Apr 15, 2026', scope: 'Landscape irrigation, native planting, and hardscape', retainage: 10, linkedChangeOrderIds: ['SCO-013'] },
+  { id: 'SC-2026-014', project: 'Westfield Shopping Center', projectId: 5, contractType: 'subcontract', title: 'Storefront Glazing -- GlazePro Windows', vendor: 'GlazePro Windows', originalValue: 62000, revisedValue: 77800, status: 'active', startDate: 'Mar 10, 2026', endDate: 'Apr 30, 2026', scope: 'Storefront framing, automatic doors, and curtain wall segments', retainage: 10, linkedChangeOrderIds: ['SCO-014'] },
+];
+
 export const CHANGE_ORDERS: ChangeOrder[] = [
-  { id: 'CO-001', project: 'Riverside Office Complex', projectId: 1, description: 'Additional structural reinforcement at elevator shaft', amount: 42000, status: 'approved', requestedBy: 'Sarah Chen', requestDate: 'Feb 18, 2026', reason: 'Unforeseen soil condition requires deeper piers' },
-  { id: 'CO-002', project: 'Harbor View Condominiums', projectId: 2, description: 'Upgraded kitchen appliance package per owner request', amount: 18500, status: 'pending', requestedBy: 'James Carter', requestDate: 'Mar 5, 2026', reason: 'Client requested premium appliance tier' },
-  { id: 'CO-003', project: 'Downtown Transit Hub', projectId: 3, description: 'Extended working hours for critical path recovery', amount: 85000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 8, 2026', reason: 'Schedule recovery requires weekend and overtime shifts' },
-  { id: 'CO-004', project: 'Downtown Transit Hub', projectId: 3, description: 'Hazardous material abatement in platform area', amount: 37000, status: 'approved', requestedBy: 'Priya Nair', requestDate: 'Feb 10, 2026', reason: 'Unexpected asbestos found during demolition' },
-  { id: 'CO-005', project: 'Lakeside Medical Center', projectId: 4, description: 'Medical gas piping reroute around existing ductwork', amount: 15200, status: 'approved', requestedBy: 'Tom Evans', requestDate: 'Mar 1, 2026', reason: 'As-built conditions differ from survey drawings' },
-  { id: 'CO-006', project: 'Metro Bridge Rehabilitation', projectId: 6, description: 'Additional concrete testing and core sampling', amount: 8900, status: 'approved', requestedBy: 'Mike Osei', requestDate: 'Feb 22, 2026', reason: 'Engineer of record requires more test data' },
-  { id: 'CO-007', project: 'Sunset Ridge Apartments', projectId: 7, description: 'Redesigned parking layout per city review comments', amount: 22000, status: 'pending', requestedBy: 'Sarah Chen', requestDate: 'Mar 12, 2026', reason: 'City planning required ADA stall redistribution' },
-  { id: 'CO-008', project: 'Industrial Park Warehouse', projectId: 8, description: 'Fire suppression system upgrade to ESFR heads', amount: 31000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 15, 2026', reason: 'Insurance underwriter requires higher classification' },
-  { id: 'CO-009', project: 'Riverside Office Complex', projectId: 1, description: 'Owner-requested lobby finish upgrade', amount: 28000, status: 'rejected', requestedBy: 'Lena Brooks', requestDate: 'Jan 30, 2026', reason: 'Requested marble upgrade exceeds contingency budget' },
-  { id: 'CO-010', project: 'Westfield Shopping Center', projectId: 5, description: 'Added grease interceptor for food court tenant', amount: 12500, status: 'pending', requestedBy: 'Lena Brooks', requestDate: 'Mar 18, 2026', reason: 'New tenant lease requires grease trap not in original scope' },
+  // --- Prime Contract Change Orders (11) ---
+  { id: 'PCO-001', project: 'Riverside Office Complex', projectId: 1, coType: 'prime', description: 'Additional structural reinforcement at elevator shaft', amount: 42000, status: 'approved', requestedBy: 'Sarah Chen', requestDate: 'Feb 18, 2026', reason: 'Unforeseen soil condition requires deeper piers', contractNumber: 'PC-2026-001', costCode: '03-3100' },
+  { id: 'PCO-002', project: 'Harbor View Condominiums', projectId: 2, coType: 'prime', description: 'Upgraded kitchen appliance package per owner request', amount: 18500, status: 'pending', requestedBy: 'James Carter', requestDate: 'Mar 5, 2026', reason: 'Client requested premium appliance tier', contractNumber: 'PC-2026-002', costCode: '11-3100' },
+  { id: 'PCO-003', project: 'Downtown Transit Hub', projectId: 3, coType: 'prime', description: 'Extended working hours for critical path recovery', amount: 85000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 8, 2026', reason: 'Schedule recovery requires weekend and overtime shifts', contractNumber: 'PC-2026-003', costCode: '01-5400' },
+  { id: 'PCO-004', project: 'Downtown Transit Hub', projectId: 3, coType: 'prime', description: 'Hazardous material abatement in platform area', amount: 37000, status: 'approved', requestedBy: 'Priya Nair', requestDate: 'Feb 10, 2026', reason: 'Unexpected asbestos found during demolition', contractNumber: 'PC-2026-003', costCode: '02-8200' },
+  { id: 'PCO-005', project: 'Lakeside Medical Center', projectId: 4, coType: 'prime', description: 'Medical gas piping reroute around existing ductwork', amount: 15200, status: 'approved', requestedBy: 'Tom Evans', requestDate: 'Mar 1, 2026', reason: 'As-built conditions differ from survey drawings', contractNumber: 'PC-2026-004', costCode: '22-6300' },
+  { id: 'PCO-006', project: 'Westfield Shopping Center', projectId: 5, coType: 'prime', description: 'Added grease interceptor for food court tenant', amount: 12500, status: 'pending', requestedBy: 'Lena Brooks', requestDate: 'Mar 18, 2026', reason: 'New tenant lease requires grease trap not in original scope', contractNumber: 'PC-2026-005', costCode: '22-1500' },
+  { id: 'PCO-007', project: 'Metro Bridge Rehabilitation', projectId: 6, coType: 'prime', description: 'Widened pedestrian walkway per ADA compliance review', amount: 64000, status: 'approved', requestedBy: 'Mike Osei', requestDate: 'Feb 15, 2026', reason: 'ADA review required wider clear width on north approach', contractNumber: 'PC-2026-006', costCode: '03-3000' },
+  { id: 'PCO-008', project: 'Sunset Ridge Apartments', projectId: 7, coType: 'prime', description: 'Redesigned parking layout per city review comments', amount: 22000, status: 'pending', requestedBy: 'Sarah Chen', requestDate: 'Mar 12, 2026', reason: 'City planning required ADA stall redistribution', contractNumber: 'PC-2026-007', costCode: '32-1200' },
+  { id: 'PCO-009', project: 'Industrial Park Warehouse', projectId: 8, coType: 'prime', description: 'Fire suppression system upgrade to ESFR heads', amount: 31000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 15, 2026', reason: 'Insurance underwriter requires higher classification', contractNumber: 'PC-2026-008', costCode: '21-1300' },
+  { id: 'PCO-010', project: 'Riverside Office Complex', projectId: 1, coType: 'prime', description: 'Owner-requested lobby finish upgrade to marble', amount: 28000, status: 'rejected', requestedBy: 'Lena Brooks', requestDate: 'Jan 30, 2026', reason: 'Requested marble upgrade exceeds contingency budget', contractNumber: 'PC-2026-001', costCode: '09-3000' },
+  { id: 'PCO-011', project: 'Lakeside Medical Center', projectId: 4, coType: 'prime', description: 'Emergency generator capacity increase from 500kW to 750kW', amount: 92000, status: 'pending', requestedBy: 'Tom Evans', requestDate: 'Mar 20, 2026', reason: 'Updated hospital code requires additional life-safety load', contractNumber: 'PC-2026-004', costCode: '26-3200' },
+  // --- Potential Change Orders (13) ---
+  { id: 'POT-001', project: 'Riverside Office Complex', projectId: 1, coType: 'potential', description: 'Possible curtain wall redesign at west facade', amount: 58000, status: 'pending', requestedBy: 'Sarah Chen', requestDate: 'Mar 10, 2026', reason: 'Architect reviewing thermal performance reports', costCode: '08-4400' },
+  { id: 'POT-002', project: 'Harbor View Condominiums', projectId: 2, coType: 'potential', description: 'Additional balcony waterproofing layer', amount: 24000, status: 'pending', requestedBy: 'James Carter', requestDate: 'Mar 14, 2026', reason: 'Structural engineer flagged potential moisture ingress', costCode: '07-1600' },
+  { id: 'POT-003', project: 'Downtown Transit Hub', projectId: 3, coType: 'potential', description: 'Platform edge warning strip upgrade to tactile pavers', amount: 16500, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 16, 2026', reason: 'Accessibility consultant recommending enhanced warning system', costCode: '32-1700' },
+  { id: 'POT-004', project: 'Lakeside Medical Center', projectId: 4, coType: 'potential', description: 'Clean room air handling unit oversizing', amount: 47000, status: 'pending', requestedBy: 'Tom Evans', requestDate: 'Mar 18, 2026', reason: 'Pending infection control risk assessment results', costCode: '23-7400' },
+  { id: 'POT-005', project: 'Westfield Shopping Center', projectId: 5, coType: 'potential', description: 'Parking garage lighting upgrade to LED', amount: 35000, status: 'pending', requestedBy: 'Lena Brooks', requestDate: 'Mar 20, 2026', reason: 'Owner evaluating energy savings vs. upfront cost', costCode: '26-5600' },
+  { id: 'POT-006', project: 'Metro Bridge Rehabilitation', projectId: 6, coType: 'potential', description: 'Additional concrete testing and core sampling', amount: 8900, status: 'approved', requestedBy: 'Mike Osei', requestDate: 'Feb 22, 2026', reason: 'Engineer of record requires more test data', costCode: '03-0500' },
+  { id: 'POT-007', project: 'Sunset Ridge Apartments', projectId: 7, coType: 'potential', description: 'EV charging station pre-wire for 40 spaces', amount: 52000, status: 'pending', requestedBy: 'Sarah Chen', requestDate: 'Mar 22, 2026', reason: 'City council considering EV mandate effective 2027', costCode: '26-2700' },
+  { id: 'POT-008', project: 'Industrial Park Warehouse', projectId: 8, coType: 'potential', description: 'Roof-mounted solar panel structural reinforcement', amount: 38000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 19, 2026', reason: 'Owner exploring solar lease; needs structural assessment first', costCode: '05-1200' },
+  { id: 'POT-009', project: 'Riverside Office Complex', projectId: 1, coType: 'potential', description: 'Underground utility relocation at north entrance', amount: 29000, status: 'pending', requestedBy: 'Sarah Chen', requestDate: 'Mar 24, 2026', reason: 'Survey revealed abandoned conduit conflicting with new ductbank', costCode: '33-0500' },
+  { id: 'POT-010', project: 'Downtown Transit Hub', projectId: 3, coType: 'potential', description: 'Noise barrier wall height increase from 8ft to 12ft', amount: 41000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 25, 2026', reason: 'Community board noise complaint; acoustics study underway', costCode: '32-3100' },
+  { id: 'POT-011', project: 'Harbor View Condominiums', projectId: 2, coType: 'potential', description: 'Pool deck expansion and resurfacing', amount: 67000, status: 'pending', requestedBy: 'James Carter', requestDate: 'Mar 26, 2026', reason: 'HOA requesting larger pool amenity area', costCode: '13-1100' },
+  { id: 'POT-012', project: 'Westfield Shopping Center', projectId: 5, coType: 'potential', description: 'Facade signage structural backing upgrade', amount: 19500, status: 'pending', requestedBy: 'Lena Brooks', requestDate: 'Mar 21, 2026', reason: 'New anchor tenant sign exceeds original design wind load', costCode: '05-5000' },
+  { id: 'POT-013', project: 'Industrial Park Warehouse', projectId: 8, coType: 'potential', description: 'Truck court concrete thickness increase', amount: 22000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 23, 2026', reason: 'Tenant fleet includes heavier-than-specified vehicles', costCode: '03-3000' },
+  // --- Subcontract Change Orders (14) ---
+  { id: 'SCO-001', project: 'Riverside Office Complex', projectId: 1, coType: 'subcontract', description: 'Electrical panel relocation due to duct conflict', amount: 14500, status: 'approved', requestedBy: 'Tom Evans', requestDate: 'Feb 20, 2026', reason: 'MEP coordination revealed duct-panel clearance issue', subcontractor: 'Apex Electrical Inc.', costCode: '26-2400' },
+  { id: 'SCO-002', project: 'Harbor View Condominiums', projectId: 2, coType: 'subcontract', description: 'Additional drywall blocking for grab bars', amount: 6800, status: 'approved', requestedBy: 'James Carter', requestDate: 'Mar 2, 2026', reason: 'ADA units require additional backing per updated plans', subcontractor: 'ProWall Drywall LLC', costCode: '09-2100' },
+  { id: 'SCO-003', project: 'Downtown Transit Hub', projectId: 3, coType: 'subcontract', description: 'Escalator pit waterproofing membrane addition', amount: 28500, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 11, 2026', reason: 'Groundwater intrusion detected at escalator pit excavation', subcontractor: 'WaterTight Systems', costCode: '07-1000' },
+  { id: 'SCO-004', project: 'Lakeside Medical Center', projectId: 4, coType: 'subcontract', description: 'HVAC ductwork reroute in surgical wing', amount: 33000, status: 'pending', requestedBy: 'Tom Evans', requestDate: 'Mar 6, 2026', reason: 'Structural beam addition conflicts with original duct routing', subcontractor: 'CoolAir Mechanical', costCode: '23-3100' },
+  { id: 'SCO-005', project: 'Westfield Shopping Center', projectId: 5, coType: 'subcontract', description: 'Fire alarm system zone expansion for new tenant', amount: 11200, status: 'approved', requestedBy: 'Lena Brooks', requestDate: 'Mar 4, 2026', reason: 'New anchor tenant requires separate fire alarm zone', subcontractor: 'FireGuard Solutions', costCode: '28-3100' },
+  { id: 'SCO-006', project: 'Metro Bridge Rehabilitation', projectId: 6, coType: 'subcontract', description: 'Epoxy injection for deck crack repair', amount: 19000, status: 'approved', requestedBy: 'Mike Osei', requestDate: 'Feb 28, 2026', reason: 'Additional cracks found during surface preparation', subcontractor: 'BridgeTech Concrete', costCode: '03-0100' },
+  { id: 'SCO-007', project: 'Sunset Ridge Apartments', projectId: 7, coType: 'subcontract', description: 'Plumbing rough-in revision for unit layout change', amount: 17500, status: 'pending', requestedBy: 'Sarah Chen', requestDate: 'Mar 13, 2026', reason: 'Architect revised unit 3B floor plan after rough-in started', subcontractor: 'PipeFit Plumbing Co.', costCode: '22-1100' },
+  { id: 'SCO-008', project: 'Industrial Park Warehouse', projectId: 8, coType: 'subcontract', description: 'Steel joist substitution for longer span', amount: 26000, status: 'pending', requestedBy: 'Priya Nair', requestDate: 'Mar 17, 2026', reason: 'Owner increased clear-span requirement by 10 feet', subcontractor: 'IronWorks Structural', costCode: '05-2100' },
+  { id: 'SCO-009', project: 'Riverside Office Complex', projectId: 1, coType: 'subcontract', description: 'Elevator cab interior finish upgrade', amount: 9800, status: 'pending', requestedBy: 'Lena Brooks', requestDate: 'Mar 9, 2026', reason: 'Owner wants brushed stainless instead of painted steel', subcontractor: 'VerticalRise Elevators', costCode: '14-2000' },
+  { id: 'SCO-010', project: 'Downtown Transit Hub', projectId: 3, coType: 'subcontract', description: 'Temporary shoring extension for adjacent excavation', amount: 45000, status: 'approved', requestedBy: 'Priya Nair', requestDate: 'Feb 25, 2026', reason: 'Adjacent property excavation requires extended shoring duration', subcontractor: 'DeepFound Shoring Inc.', costCode: '31-5000' },
+  { id: 'SCO-011', project: 'Lakeside Medical Center', projectId: 4, coType: 'subcontract', description: 'Nurse call system wiring addition for 12 rooms', amount: 21000, status: 'pending', requestedBy: 'Tom Evans', requestDate: 'Mar 22, 2026', reason: 'Scope expanded to include outpatient wing rooms', subcontractor: 'MedConnect Systems', costCode: '27-5100' },
+  { id: 'SCO-012', project: 'Harbor View Condominiums', projectId: 2, coType: 'subcontract', description: 'Window sealant replacement at units 4A-4F', amount: 8200, status: 'approved', requestedBy: 'James Carter', requestDate: 'Mar 7, 2026', reason: 'Failed adhesion test on originally specified sealant', subcontractor: 'GlazePro Windows', costCode: '07-9200' },
+  { id: 'SCO-013', project: 'Sunset Ridge Apartments', projectId: 7, coType: 'subcontract', description: 'Landscape irrigation system revision for native plants', amount: 13500, status: 'pending', requestedBy: 'Sarah Chen', requestDate: 'Mar 24, 2026', reason: 'Owner switched to drought-tolerant plant palette', subcontractor: 'GreenScape Irrigation', costCode: '32-8400' },
+  { id: 'SCO-014', project: 'Westfield Shopping Center', projectId: 5, coType: 'subcontract', description: 'Storefront framing modification for wider entrance', amount: 15800, status: 'pending', requestedBy: 'Lena Brooks', requestDate: 'Mar 19, 2026', reason: 'ADA consultant requires wider automatic door clearance', subcontractor: 'GlazePro Windows', costCode: '08-4100' },
 ];
 
 export interface DailyReport {
@@ -793,6 +1060,40 @@ const PROJECT_WEATHER_DATA: ProjectWeather[] = [
 
 export function getProjectWeather(projectId: number): ProjectWeather | undefined {
   return PROJECT_WEATHER_DATA.find(w => w.projectId === projectId);
+}
+
+const WEATHER_ICON_MAP: Record<string, string> = {
+  sunny: 'wb_sunny', 'partly-cloudy': 'cloud', 'partly cloudy': 'cloud',
+  cloudy: 'cloud', overcast: 'cloud',
+  rain: 'water_drop', rainy: 'water_drop',
+  thunderstorm: 'flash_on', storm: 'flash_on',
+  snow: 'ac_unit', snowy: 'ac_unit',
+  windy: 'air', hot: 'wb_sunny',
+  clear: 'wb_sunny', fog: 'cloud',
+};
+
+const WEATHER_COLOR_MAP: Record<string, string> = {
+  sunny: 'text-warning', clear: 'text-warning', hot: 'text-warning',
+  'partly-cloudy': 'text-foreground-60', 'partly cloudy': 'text-foreground-60',
+  cloudy: 'text-foreground-40', overcast: 'text-foreground-40', fog: 'text-foreground-40',
+  rain: 'text-primary', rainy: 'text-primary',
+  thunderstorm: 'text-destructive', storm: 'text-destructive',
+  snow: 'text-primary', snowy: 'text-primary',
+  windy: 'text-foreground-60',
+};
+
+export function weatherIcon(condition: string): string {
+  return WEATHER_ICON_MAP[condition.toLowerCase()] ?? 'cloud';
+}
+
+export function weatherIconColor(condition: string): string {
+  return WEATHER_COLOR_MAP[condition.toLowerCase()] ?? 'text-foreground-60';
+}
+
+export function workImpactBadge(impact: 'none' | 'minor' | 'major'): { cls: string; label: string } {
+  if (impact === 'major') return { cls: 'bg-destructive-20 text-destructive', label: 'Major impact' };
+  if (impact === 'minor') return { cls: 'bg-warning-20 text-warning', label: 'Minor impact' };
+  return { cls: 'bg-success-20 text-success', label: 'No impact' };
 }
 
 export interface ProjectAttentionItem {

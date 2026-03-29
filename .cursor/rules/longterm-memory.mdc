@@ -22,6 +22,10 @@ Consult this file before asking the user a question. If the answer is here, act 
 - Only after all tests pass, commit and push.
 - After a successful push, this becomes the new regression baseline.
 
+### Workflow: Branch Management
+- NEVER switch to the `main` branch automatically. Always ask the user before checking out main.
+- The user prefers to stay on their current working branch (e.g., `dev`) unless explicitly told otherwise.
+
 ### Workflow: Implementation Plans
 - When given a plan file, do NOT edit the plan file itself.
 - Mark to-do items as in_progress as work begins.
@@ -135,4 +139,4 @@ These areas have broken multiple times. Extra care required:
 | 4 (Mar 24) | `bc28969b-5fd7-49fc-907e-894008a53ccc` | Push-squeeze, regression testing, collision priority, theming, skills, progress tracker |
 | 5 (Mar 25) | `8807b645-9b9a-4f2d-b223-80e249dd101f` | Canvas compact mode revert on resize |
 | 6 (Mar 26) | `b3ea14f9-5bd7-453f-8329-20bad1e7cc3a` | Short-term memory, detail view navigation, URL state |
-| 7 (Mar 26-27) | `6387a8f3-f2de-4dae-933b-eeec94687608` | Canvas detail expansion, BFS push refactoring, cascade direction fix, unit tests |
+| 7 (Mar 26-29) | `6387a8f3-f2de-4dae-933b-eeec94687608` | Canvas detail expansion, BFS push, AI agents, agentic widgets, urgent needs, financial routing, weather widgets, dynamic back button, skills, refactoring |

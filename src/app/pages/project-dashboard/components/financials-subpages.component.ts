@@ -4,9 +4,12 @@ import { ModusBadgeComponent, type ModusBadgeColor } from '../../../components/m
 import { EmptyStateComponent } from './empty-state.component';
 import type {
   ChangeOrder,
+  Contract,
   ProjectRevenue,
   BudgetHistoryPoint,
   ChangeOrderStatus,
+  ContractStatus,
+  ContractType,
 } from '../../../data/dashboard-data';
 
 type ViewMode = 'grid' | 'list';
@@ -104,6 +107,85 @@ type ViewMode = 'grid' | 'list';
           }
         </div>
       }
+      @case ('contracts') {
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+            <div class="text-xs text-foreground-60">Total Contracts</div>
+            <div class="text-lg font-bold text-foreground">{{ contracts().length }}</div>
+          </div>
+          <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+            <div class="text-xs text-foreground-60">Original Value</div>
+            <div class="text-lg font-bold text-foreground">{{ formatCurrency(contractOriginalTotal()) }}</div>
+          </div>
+          <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+            <div class="text-xs text-foreground-60">Revised Value</div>
+            <div class="text-lg font-bold text-foreground">{{ formatCurrency(contractRevisedTotal()) }}</div>
+          </div>
+          <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+            <div class="text-xs text-foreground-60">CO Growth</div>
+            <div class="text-lg font-bold" [class]="contractGrowth() > 0 ? 'text-warning' : 'text-success'">{{ contractGrowth() > 0 ? '+' : '' }}{{ formatCurrency(contractGrowth()) }}</div>
+          </div>
+        </div>
+        @if (viewMode() === 'grid') {
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @for (ct of contracts(); track ct.id) {
+              <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0" (click)="contractClick.emit(ct)" (keydown.enter)="contractClick.emit(ct)">
+                <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
+                  <div class="flex items-center gap-2">
+                    <i class="modus-icons text-base" aria-hidden="true" [class]="ct.contractType === 'prime' ? 'text-primary' : 'text-foreground-60'">{{ contractIcon(ct.contractType) }}</i>
+                    <div class="text-base font-semibold text-foreground">{{ ct.id }}</div>
+                  </div>
+                  <modus-badge [color]="contractStatusColor(ct.status)">{{ ct.status | titlecase }}</modus-badge>
+                </div>
+                <div class="px-5 py-4 flex flex-col gap-2">
+                  <div class="text-sm text-foreground line-clamp-2">{{ ct.title }}</div>
+                  <div class="text-xs text-foreground-60">{{ ct.vendor }}</div>
+                  <div class="flex items-center justify-between text-xs text-foreground-60">
+                    <div class="text-sm font-medium text-foreground">{{ formatCurrency(ct.revisedValue) }}</div>
+                    @if (ct.revisedValue > ct.originalValue) {
+                      <div class="text-warning">+{{ formatCurrency(ct.revisedValue - ct.originalValue) }}</div>
+                    }
+                  </div>
+                  @if (ct.linkedChangeOrderIds.length > 0) {
+                    <div class="flex items-center gap-1 text-xs text-primary">
+                      <i class="modus-icons text-xs" aria-hidden="true">link</i>
+                      {{ ct.linkedChangeOrderIds.length }} linked CO{{ ct.linkedChangeOrderIds.length > 1 ? 's' : '' }}
+                    </div>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <app-empty-state extraClass="col-span-full" icon="content_copy" title="No Contracts" description="No contracts found for this project." />
+            }
+          </div>
+        } @else {
+          <div class="bg-card border-default rounded-lg overflow-hidden">
+            <div class="grid grid-cols-[80px_1fr_120px_100px_100px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+              <div>ID</div><div>Title / Vendor</div><div>Type</div><div>Original</div><div>Revised</div><div>Status</div><div>COs</div>
+            </div>
+            @for (ct of contracts(); track ct.id) {
+              <div class="grid grid-cols-[80px_1fr_120px_100px_100px_80px_60px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                tabindex="0" (click)="contractClick.emit(ct)" (keydown.enter)="contractClick.emit(ct)">
+                <div class="text-sm font-medium text-primary">{{ ct.id }}</div>
+                <div class="flex flex-col gap-0.5 min-w-0">
+                  <div class="text-sm text-foreground truncate">{{ ct.title }}</div>
+                  <div class="text-xs text-foreground-60 truncate">{{ ct.vendor }}</div>
+                </div>
+                <div class="text-xs text-foreground-60">{{ contractTypeLabel(ct.contractType) }}</div>
+                <div class="text-sm text-foreground-60">{{ formatCurrency(ct.originalValue) }}</div>
+                <div class="text-sm font-medium text-foreground">{{ formatCurrency(ct.revisedValue) }}</div>
+                <div><modus-badge [color]="contractStatusColor(ct.status)">{{ ct.status | titlecase }}</modus-badge></div>
+                <div class="text-sm text-foreground-60 text-center">{{ ct.linkedChangeOrderIds.length }}</div>
+              </div>
+            } @empty {
+              <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                <i class="modus-icons text-3xl mb-2" aria-hidden="true">content_copy</i>
+                <div class="text-sm">No Contracts for this project</div>
+              </div>
+            }
+          </div>
+        }
+      }
       @case ('cost-forecasts') {
         @if (budgetHistory().length > 0) {
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
@@ -153,12 +235,33 @@ export class FinancialsSubpagesComponent {
   readonly activePage = input.required<string>();
   readonly viewMode = input.required<ViewMode>();
   readonly changeOrders = input<ChangeOrder[]>([]);
+  readonly contracts = input<Contract[]>([]);
   readonly revenueData = input<ProjectRevenue[]>([]);
   readonly budgetHistory = input<BudgetHistoryPoint[]>([]);
 
   readonly changeOrderClick = output<ChangeOrder>();
+  readonly contractClick = output<Contract>();
 
   readonly lastBudgetPoint = input<BudgetHistoryPoint | null>(null);
+
+  contractOriginalTotal(): number { return this.contracts().reduce((sum, c) => sum + c.originalValue, 0); }
+  contractRevisedTotal(): number { return this.contracts().reduce((sum, c) => sum + c.revisedValue, 0); }
+  contractGrowth(): number { return this.contractRevisedTotal() - this.contractOriginalTotal(); }
+
+  contractStatusColor(status: ContractStatus): ModusBadgeColor {
+    const map: Record<ContractStatus, ModusBadgeColor> = { active: 'success', closed: 'secondary', pending: 'warning', draft: 'tertiary' };
+    return map[status] ?? 'secondary';
+  }
+
+  contractTypeLabel(ct: ContractType): string {
+    const map: Record<ContractType, string> = { prime: 'Prime', subcontract: 'Subcontract', 'purchase-order': 'PO' };
+    return map[ct];
+  }
+
+  contractIcon(ct: ContractType): string {
+    const map: Record<ContractType, string> = { prime: 'content_copy', subcontract: 'assignment', 'purchase-order': 'shopping_cart' };
+    return map[ct];
+  }
 
   changeOrderStatusBadge(status: ChangeOrderStatus): ModusBadgeColor {
     if (status === 'approved') return 'success';

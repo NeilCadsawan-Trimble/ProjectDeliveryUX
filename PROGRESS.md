@@ -4,7 +4,7 @@
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
 **Last Updated**: March 29, 2026
-**Total Commits**: 100+
+**Total Commits**: 155+
 
 ---
 
@@ -19,9 +19,10 @@
 | 5 | Canvas Polish and Deployment | Done | 8/8 |
 | 6 | Layout Engine and Quality | Done | 12/12 |
 | 7 | AI Agents and Sub-Page Expansion | Done | 8/8 |
-| 8 | Remaining Work | Not Started | 0/8 |
+| 8 | Agentic Enhancements and Cross-Cutting Features | Done | 18/18 |
+| 9 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 67/75 items (89%)
+**Completed**: 85/93 items (91%)
 
 ---
 
@@ -178,7 +179,48 @@ AI widget agent architecture, data generation for all project sub-pages, and com
 
 ---
 
-## Phase 8: Remaining Work
+## Phase 8: Agentic Enhancements and Cross-Cutting Features (Mar 27--29)
+
+Agentic widget capabilities, smart home widgets, dynamic navigation, financial routing, weather integration, and code quality improvements.
+
+### Agentic Widget Capabilities (PR #26)
+- [x] Widget agents with insights, alerts, and quick actions per widget context
+- [x] Conversation memory and local fallback responders for offline demo
+- [x] Portfolio-level agent for cross-project analysis on Home dashboard
+- [x] AI assistant context-switching on page/widget navigation
+
+### AI Navigation and Routing (PRs #27, #28)
+- [x] AI assistant action buttons wired to Angular Router (route-based navigation)
+- [x] Markdown link rendering in AI messages with `DomSanitizer`
+- [x] Dynamic "Back" button in shared navbar (NavigationHistoryService)
+- [x] Project selector dropdown in Financials navbar for job cost detail pages
+
+### Financial Deep-Linking (PR #28)
+- [x] Unique URLs for all Financials job cost detail pages (`/financials/job-costs/:slug`)
+- [x] Shell title override for dynamic project selector in shared navbar
+- [x] Financials job cost pages wired into agentic system
+
+### Smart Home Widgets (PR #28)
+- [x] Urgent Needs widget: cross-project aggregation, severity/category/project filters, deep-linking to source items
+- [x] Weather Outlook widget: portfolio-wide weather conditions and work impact forecasting
+- [x] Agentic project tiles on Projects page with urgent needs and job cost links
+
+### Weather Integration (PR #28)
+- [x] Project locations assigned (8 cities across WA, OR, and Northern CA)
+- [x] Per-project weather widget on project dashboards with 7-day forecast and work impact indicators
+- [x] Home dashboard weather consolidation widget with impact highlighting
+
+### Code Quality and Refactoring
+- [x] Weather icon/color helpers consolidated into shared utility (`dashboard-data.ts`) -- removed duplication from 4 files
+- [x] Widget frame component extracted (`widget-frame.component.ts`)
+- [x] Collapsible subnav extracted (`collapsible-subnav.component.ts`)
+
+**Key commits**: `952e75e` agentic capabilities, `80681a1` AI navigation fix, `00f8208` weather + agentic enhancements
+**PRs**: #26, #27, #28
+
+---
+
+## Phase 9: Remaining Work
 
 Features and improvements not yet started.
 
@@ -201,16 +243,18 @@ Features and improvements not yet started.
 
 ## Regression Test Coverage
 
-### Covered (Static Tests -- `tests/static/`)
+### Covered (Static Tests -- `tests/static/` -- 184 tests)
 
 | Area | File | Tests |
 |------|------|-------|
-| Dashboard shell | `dashboard-shell.spec.ts` | Hamburger button, navExpanded signal, reset flyout, labels, reset action |
-| Home page | `home-page.spec.ts` | 10 structural tests |
+| Dashboard shell | `dashboard-shell.spec.ts` | 28 tests: hamburger, navExpanded, reset flyout, labels, dynamic back button |
+| Home page | `home-page.spec.ts` | 11 tests: widgets, urgent needs, weather outlook |
 | Projects page | `projects-page.spec.ts` | 6 structural tests |
 | Financials page | `financials-page.spec.ts` | 6 structural tests |
-| Project dashboard | `project-dashboard.spec.ts` | 17 structural tests |
-| CSS regressions | `styles.spec.ts` | Side nav overflow, reset flyout positioning, canvas navbar overflow/rounding |
+| Project dashboard | `project-dashboard.spec.ts` | 25 tests: widgets, weather, tile detail, subnav, layout menu |
+| CSS regressions | `styles.spec.ts` | 10 tests: side nav overflow, reset flyout, canvas navbar |
+| Canvas panning | `canvas-panning.spec.ts` | 10 tests: spacebar panning, lock canvas |
+| Template safety | `template-safety.spec.ts` | 88 tests: arrow function prevention, private member access |
 
 ### Covered (Unit Tests -- `src/app/shell/services/`)
 
@@ -241,6 +285,7 @@ Features and improvements not yet started.
 | Mar 25 | [Canvas compact mode](8807b645-9b9a-4f2d-b223-80e249dd101f) | Compact mode revert on canvas resize |
 | Mar 26 | [Memory and detail views](b3ea14f9-5bd7-453f-8329-20bad1e7cc3a) | Short-term memory, detail view navigation, URL state |
 | Mar 26-27 | [Canvas push and tests](6387a8f3-f2de-4dae-933b-eeec94687608) | Canvas detail expansion, BFS push refactoring, cascade direction fix, unit tests, AI agents, sub-page expansion, refactoring |
+| Mar 27-29 | [Agentic and weather](6387a8f3-f2de-4dae-933b-eeec94687608) | Agentic widgets, AI navigation, urgent needs, financial routing, weather widgets, dynamic back button, refactoring |
 
 ---
 
@@ -257,7 +302,7 @@ Features and improvements not yet started.
 | `src/app/shell/services/widget-layout.service.ts` | Widget layout persistence (sessionStorage) |
 | `src/app/shell/services/canvas-reset.service.ts` | Reset trigger signal |
 | `src/app/shell/services/theme.service.ts` | Theme switching and persistence |
-| `src/app/pages/home-page/home-page.component.ts` | Home dashboard (RFIs, Submittals, Calendar, Time Off) |
+| `src/app/pages/home-page/home-page.component.ts` | Home dashboard (RFIs, Submittals, Calendar, Time Off, Urgent Needs, Weather Outlook) |
 | `src/app/pages/projects-page/projects-page.component.ts` | Projects portfolio dashboard |
 | `src/app/pages/financials-page/financials-page.component.ts` | Financials dashboard |
 | `src/app/pages/project-dashboard/project-dashboard.component.ts` | Shared project detail dashboard (used by 8 project routes) |
@@ -265,5 +310,9 @@ Features and improvements not yet started.
 | `src/app/pages/project-dashboard/components/financials-subpages.component.ts` | Extracted Financials sub-page views (change orders, revenue, cost forecasts) |
 | `src/app/pages/project-dashboard/components/record-detail-views.component.ts` | Extracted record detail pages (daily report, inspection, punch item, change order) |
 | `src/app/data/widget-agents.ts` | AI widget agent definitions and context registry |
+| `src/app/data/dashboard-data.ts` | Shared data, weather utilities, urgent needs builder |
+| `src/app/shell/services/navigation-history.service.ts` | Dynamic back button and shell title override |
+| `src/app/pages/project-dashboard/components/widget-frame.component.ts` | Reusable widget frame with insight badge |
+| `src/app/pages/project-dashboard/components/collapsible-subnav.component.ts` | Collapsible side subnav for canvas/desktop |
 | `src/styles.css` | Design system colors, side nav, canvas layout, custom utilities |
 | `.cursor/skills/dashboard-layout-lessons/SKILL.md` | Hard-won patterns for layout engine and styling |

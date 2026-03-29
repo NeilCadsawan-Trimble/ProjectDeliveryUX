@@ -39,19 +39,25 @@ import type {
   CalendarAppointment,
   Rfi,
   Submittal,
+  ActivityItem,
 } from '../../data/dashboard-data';
 import {
   PROJECTS,
   ESTIMATES,
   RFIS,
   SUBMITTALS,
+  ACTIVITIES,
   TIME_OFF_REQUESTS,
   CALENDAR_APPOINTMENTS,
   buildUrgentNeeds,
   urgentNeedCategoryIcon,
   getProjectWeather,
+  weatherIcon,
+  weatherIconColor,
+  buildStaffingConflicts,
 } from '../../data/dashboard-data';
-import type { UrgentNeedItem, UrgentNeedCategory, ProjectWeather, WeatherCondition } from '../../data/dashboard-data';
+import type { UrgentNeedItem, UrgentNeedCategory, ProjectWeather, WeatherCondition, StaffingConflict } from '../../data/dashboard-data';
+import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards.component';
 
@@ -83,9 +89,17 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <app-home-kpi-cards [cards]="kpiCards()" (cardClick)="handleKpiCardClick($event)" />
       </div>
+      @if (homeKpiInsight()) {
+        <div class="flex items-center gap-1.5 px-5 py-2 mb-6 bg-card border-default rounded-lg">
+          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+          <div class="text-xs text-foreground-60 truncate leading-none">{{ homeKpiInsight() }}</div>
+        </div>
+      } @else {
+        <div class="mb-2"></div>
+      }
       </div>
       }
 
@@ -115,6 +129,12 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
             <div class="grid grid-cols-3 gap-4">
               <app-home-kpi-cards [cards]="kpiCards()" (cardClick)="handleKpiCardClick($event)" />
             </div>
+            @if (homeKpiInsight()) {
+              <div class="flex items-center gap-1.5 px-5 py-2 mt-3 bg-card border-default rounded-lg">
+                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                <div class="text-xs text-foreground-60 truncate leading-none">{{ homeKpiInsight() }}</div>
+              </div>
+            }
           </div>
         }
         @for (widgetId of homeWidgets; track widgetId) {
@@ -381,7 +401,12 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       }
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
                       <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Time Off</div>
-                      @if (pendingTimeOffCount() > 0) {
+                      @if (criticalStaffingConflicts().length) {
+                        <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive-20">
+                          <i class="modus-icons text-2xs text-destructive" aria-hidden="true">warning</i>
+                          <div class="text-xs font-medium text-destructive">{{ criticalStaffingConflicts().length }} conflict{{ criticalStaffingConflicts().length === 1 ? '' : 's' }}</div>
+                        </div>
+                      } @else if (pendingTimeOffCount() > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
                           <div class="text-xs font-medium text-warning">{{ pendingTimeOffCount() }} pending</div>
                         </div>
@@ -412,6 +437,22 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                         <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
                         <div
                           class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                          [class.bg-primary]="timeOffView() === 'staffing'"
+                          [class.text-primary-foreground]="timeOffView() === 'staffing'"
+                          [class.text-foreground-60]="timeOffView() !== 'staffing'"
+                          role="tab"
+                          tabindex="0"
+                          [attr.aria-selected]="timeOffView() === 'staffing'"
+                          (click)="timeOffView.set('staffing')"
+                          (keydown.enter)="timeOffView.set('staffing')"
+                          (keydown.space)="$event.preventDefault(); timeOffView.set('staffing')"
+                        >
+                          <i class="modus-icons text-sm" aria-hidden="true">people</i>
+                          <div>Staffing</div>
+                        </div>
+                        <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
+                        <div
+                          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
                           [class.bg-primary]="timeOffView() === 'calendar'"
                           [class.text-primary-foreground]="timeOffView() === 'calendar'"
                           [class.text-foreground-60]="timeOffView() !== 'calendar'"
@@ -428,6 +469,12 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       </div>
                     }
                   </div>
+                  @if (timeOffInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ timeOffInsight() }}</div>
+                    </div>
+                  }
 
                   @if (isTimeOffCompact() && !timeOffMobileExpanded()) {
                     <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
@@ -455,22 +502,46 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                     </div>
                   } @else {
                     @if (timeOffView() === 'list' || (isTimeOffCompact() && timeOffMobileExpanded())) {
+                      @if (criticalStaffingConflicts().length) {
+                        <div class="px-4 py-2 border-bottom-default flex flex-col gap-1.5">
+                          @for (conflict of criticalStaffingConflicts().slice(0, 3); track conflict.week + conflict.projectName) {
+                            <div class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors duration-150"
+                              [class.bg-destructive-20]="conflict.severity === 'critical'"
+                              [class.bg-warning-20]="conflict.severity === 'warning'"
+                              (click)="navigateToProject(conflict.projectId)"
+                              role="button" tabindex="0"
+                              (keydown.enter)="navigateToProject(conflict.projectId)"
+                              (keydown.space)="$event.preventDefault(); navigateToProject(conflict.projectId)">
+                              <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true"
+                                [class.text-destructive]="conflict.severity === 'critical'"
+                                [class.text-warning]="conflict.severity === 'warning'">warning</i>
+                              <div class="flex-1 min-w-0">
+                                <div class="text-xs font-semibold text-foreground truncate">{{ conflict.projectName }}</div>
+                                <div class="text-2xs text-foreground-60">{{ conflict.week }} -- {{ conflict.reason }}</div>
+                              </div>
+                              <i class="modus-icons text-xs text-foreground-40 flex-shrink-0" aria-hidden="true">chevron_right</i>
+                            </div>
+                          }
+                        </div>
+                      }
                       <div class="overflow-y-auto flex-1" role="table" aria-label="Time off requests">
-                        <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+                        <div class="grid grid-cols-[2fr_2fr_1fr_2fr_0.5fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
                           <div role="columnheader">Employee</div>
+                          <div role="columnheader">Project</div>
                           <div role="columnheader">Type</div>
                           <div role="columnheader">Dates</div>
                           <div role="columnheader">Days</div>
                           <div role="columnheader">Status</div>
                         </div>
                         @for (req of filteredTimeOff(); track req.id) {
-                          <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+                          <div class="grid grid-cols-[2fr_2fr_1fr_2fr_0.5fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
                             <div class="flex items-center gap-2" role="cell">
                               <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0" aria-hidden="true">
                                 {{ req.initials }}
                               </div>
                               <div class="text-sm font-medium text-foreground truncate">{{ req.name }}</div>
                             </div>
+                            <div class="text-xs text-foreground-60 truncate" role="cell">{{ req.projectName }}</div>
                             <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit" role="cell">{{ req.type }}</div>
                             <div class="text-sm text-foreground-80" role="cell">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
                             <div class="text-sm text-foreground-60" role="cell">{{ req.days }}d</div>
@@ -482,6 +553,87 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                                 {{ req.status }}
                               </div>
                             </div>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    @if (timeOffView() === 'staffing' && !isTimeOffCompact()) {
+                      <div class="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-3">
+                        <div class="grid grid-cols-4 gap-3">
+                          <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
+                            <div class="text-2xl font-bold text-foreground">{{ timeOffRequests.length }}</div>
+                            <div class="text-2xs text-foreground-60 text-center">Total Requests</div>
+                          </div>
+                          <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
+                            <div class="text-2xl font-bold" [class.text-warning]="pendingTimeOffCount() > 0" [class.text-foreground]="pendingTimeOffCount() === 0">{{ pendingTimeOffCount() }}</div>
+                            <div class="text-2xs text-foreground-60 text-center">Pending</div>
+                          </div>
+                          <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
+                            <div class="text-2xl font-bold text-foreground">{{ allStaffingConflicts().length }}</div>
+                            <div class="text-2xs text-foreground-60 text-center">Conflict Weeks</div>
+                          </div>
+                          <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
+                            <div class="text-2xl font-bold" [class.text-destructive]="criticalStaffingConflicts().length > 0" [class.text-foreground]="criticalStaffingConflicts().length === 0">{{ criticalStaffingConflicts().length }}</div>
+                            <div class="text-2xs text-foreground-60 text-center">At Risk</div>
+                          </div>
+                        </div>
+
+                        @for (proj of staffingByProject(); track proj.projectId) {
+                          <div
+                            class="rounded-lg p-3 flex flex-col gap-2 cursor-pointer hover:bg-muted transition-colors duration-150"
+                            [class.bg-destructive-20]="proj.worstWeek?.severity === 'critical'"
+                            [class.bg-warning-20]="proj.worstWeek?.severity === 'warning'"
+                            [class.bg-muted]="!proj.worstWeek || proj.worstWeek.severity === 'info'"
+                            (click)="navigateToProject(proj.projectId)"
+                            role="button" tabindex="0"
+                            (keydown.enter)="navigateToProject(proj.projectId)"
+                            (keydown.space)="$event.preventDefault(); navigateToProject(proj.projectId)"
+                          >
+                            <div class="flex items-center justify-between">
+                              <div class="flex items-center gap-2 min-w-0">
+                                <div class="text-sm font-semibold text-foreground truncate">{{ proj.projectName }}</div>
+                                @if (proj.worstWeek?.severity === 'critical') {
+                                  <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-destructive-20 flex-shrink-0">
+                                    <i class="modus-icons text-2xs text-destructive" aria-hidden="true">warning</i>
+                                    <div class="text-2xs font-medium text-destructive">Critical</div>
+                                  </div>
+                                } @else if (proj.worstWeek?.severity === 'warning') {
+                                  <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning-20 flex-shrink-0">
+                                    <i class="modus-icons text-2xs text-warning" aria-hidden="true">warning</i>
+                                    <div class="text-2xs font-medium text-warning">Reduced</div>
+                                  </div>
+                                }
+                              </div>
+                              <div class="flex items-center gap-3 flex-shrink-0">
+                                <div class="text-xs text-foreground-60">{{ proj.requestCount }} req</div>
+                                <div class="text-xs text-foreground-60">{{ proj.totalDaysOut }}d out</div>
+                                <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
+                              </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                              <div class="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                                <div
+                                  class="h-full rounded-full transition-all duration-300"
+                                  [class.bg-destructive]="proj.worstWeek?.severity === 'critical'"
+                                  [class.bg-warning]="proj.worstWeek?.severity === 'warning'"
+                                  [class.bg-success]="!proj.worstWeek || proj.worstWeek.severity === 'info'"
+                                  [style.width.%]="proj.worstWeek ? proj.worstWeek.absentPct : 0"
+                                ></div>
+                              </div>
+                              <div class="text-2xs text-foreground-60 w-10 text-right flex-shrink-0">
+                                @if (proj.worstWeek) {
+                                  {{ proj.worstWeek.absentPct }}%
+                                } @else {
+                                  0%
+                                }
+                              </div>
+                            </div>
+                            @if (proj.worstWeek) {
+                              <div class="text-2xs text-foreground-60">
+                                Peak: {{ proj.worstWeek.week }} -- {{ proj.worstWeek.absentCount }}/{{ proj.worstWeek.teamSize }} absent ({{ proj.worstWeek.absentees.join(', ') }})
+                              </div>
+                            }
                           </div>
                         }
                       </div>
@@ -604,6 +756,12 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       </div>
                     </div>
                   </div>
+                  @if (calendarInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ calendarInsight() }}</div>
+                    </div>
+                  }
 
                   <div class="flex flex-shrink-0 border-bottom-default" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                     <div class="w-12 flex-shrink-0"></div>
@@ -625,7 +783,7 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                     </div>
                   </div>
 
-                  <div class="flex overflow-y-auto flex-1">
+                  <div class="flex overflow-y-auto flex-1" #calendarScrollArea>
                     <div class="w-12 flex-shrink-0">
                       @for (hour of calendarHours; track hour) {
                         <div class="h-[60px] flex items-start justify-end pr-2 -mt-0">
@@ -740,6 +898,12 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       }
                     </div>
                   </div>
+                  @if (rfisInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ rfisInsight() }}</div>
+                    </div>
+                  }
 
                   @if (isRfiCompact() && !rfiMobileExpanded()) {
                     <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
@@ -884,6 +1048,12 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       }
                     </div>
                   </div>
+                  @if (submittalsInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ submittalsInsight() }}</div>
+                    </div>
+                  }
 
                   @if (isSubmittalCompact() && !submittalMobileExpanded()) {
                     <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
@@ -1004,6 +1174,12 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       <div class="text-xs text-foreground-40">{{ recentDrawings().length }} projects</div>
                     </div>
                   </div>
+                  @if (drawingsInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ drawingsInsight() }}</div>
+                    </div>
+                  }
 
                   <div class="flex-1 overflow-y-auto" role="list" aria-label="Recent drawings by project">
                     @for (entry of recentDrawings(); track entry.projectId) {
@@ -1047,8 +1223,6 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-warning" aria-hidden="true">wb_sunny</i>
                       <div class="text-base font-semibold text-foreground">Weather Outlook</div>
-                    </div>
-                    <div class="flex items-center gap-2">
                       @if (weatherImpactProjects().length > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full" [class]="weatherImpactProjects()[0].majorDays > 0 ? 'bg-destructive-20' : 'bg-warning-20'">
                           <div class="text-xs font-medium" [class]="weatherImpactProjects()[0].majorDays > 0 ? 'text-destructive' : 'text-warning'">{{ weatherImpactProjects().length }} impacted</div>
@@ -1056,6 +1230,12 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       }
                     </div>
                   </div>
+                  @if (weatherInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ weatherInsight() }}</div>
+                    </div>
+                  }
 
                   <div class="flex-1 overflow-y-auto min-h-0">
                     @if (weatherImpactProjects().length > 0) {
@@ -1121,14 +1301,6 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                     }
                   </div>
 
-                  <div class="flex items-center justify-between px-5 py-2.5 border-top-default bg-card flex-shrink-0">
-                    <div class="text-xs text-foreground-40">
-                      {{ allProjectWeather().length }} sites
-                    </div>
-                    <div class="text-xs text-foreground-40">
-                      {{ weatherImpactSummary() }}
-                    </div>
-                  </div>
                 </div>
                 <widget-resize-handle
                   [isMobile]="isMobile()"
@@ -1155,6 +1327,12 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                       }
                     </div>
                   </div>
+                  @if (urgentNeedsInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ urgentNeedsInsight() }}</div>
+                    </div>
+                  }
 
                   <div class="flex items-center gap-2 px-4 py-2.5 border-bottom-default flex-shrink-0 overflow-visible relative z-20">
                     <div class="flex items-center gap-1.5 flex-shrink-0">
@@ -1292,6 +1470,49 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 />
+
+              } @else if (widgetId === 'homeRecentActivity') {
+              <!-- Recent Project Activity Widget -->
+              <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div
+                  class="flex items-center gap-2 px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                  (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                >
+                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                  <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
+                  <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Recent Project Activity</div>
+                </div>
+                @if (recentActivityInsight()) {
+                  <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                    <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                    <div class="text-xs text-foreground-60 truncate leading-none">{{ recentActivityInsight() }}</div>
+                  </div>
+                }
+                <div class="overflow-y-auto flex-1">
+                  @for (activity of activities; track activity.id) {
+                    <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
+                      <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i class="modus-icons text-sm {{ activity.iconColor }}" aria-hidden="true">{{ activity.icon }}</i>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-sm text-foreground">
+                          <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
+                            {{ activity.actorInitials }}
+                          </div>
+                          {{ activity.text }}
+                        </div>
+                      </div>
+                      <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
+                    </div>
+                  }
+                </div>
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                />
+              </div>
               }
 
             </div>
@@ -1313,18 +1534,20 @@ export class HomePageComponent implements AfterViewInit {
   private static readonly HEADER_HEIGHT = 190;
   private static readonly HEADER_OFFSET = HomePageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
+  private static readonly ACTIVITY_ROW_TOP = 712 + 440 + 16;
+
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['homeHeader', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings'],
-    layoutStorageKey: 'dashboard-home-v5',
-    canvasStorageKey: 'canvas-layout:dashboard-home:v10',
-    defaultColStarts: { homeHeader: 1, homeUrgentNeeds: 1, homeWeather: 11, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11 },
-    defaultColSpans: { homeHeader: 16, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6 },
-    defaultTops: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 0, homeRfis: 356, homeSubmittals: 356, homeTimeOff: 356, homeCalendar: 712, homeDrawings: 712 },
-    defaultHeights: { homeHeader: 0, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340 },
-    defaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810 },
-    defaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470 },
-    canvasDefaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810 },
-    canvasDefaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470 },
+    widgets: ['homeHeader', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
+    layoutStorageKey: 'dashboard-home-v6',
+    canvasStorageKey: 'canvas-layout:dashboard-home:v11',
+    defaultColStarts: { homeHeader: 1, homeUrgentNeeds: 1, homeWeather: 11, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11, homeRecentActivity: 1 },
+    defaultColSpans: { homeHeader: 16, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 16 },
+    defaultTops: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 0, homeRfis: 356, homeSubmittals: 356, homeTimeOff: 356, homeCalendar: 712, homeDrawings: 712, homeRecentActivity: HomePageComponent.ACTIVITY_ROW_TOP },
+    defaultHeights: { homeHeader: 0, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340, homeRecentActivity: 380 },
+    defaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
+    defaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470, homeRecentActivity: 1280 },
+    canvasDefaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
+    canvasDefaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470, homeRecentActivity: 1280 },
     canvasDefaultTops: {
       homeHeader: 0,
       homeUrgentNeeds: HomePageComponent.HEADER_OFFSET,
@@ -1334,8 +1557,9 @@ export class HomePageComponent implements AfterViewInit {
       homeSubmittals: HomePageComponent.HEADER_OFFSET + 356,
       homeDrawings: HomePageComponent.HEADER_OFFSET + 712,
       homeCalendar: HomePageComponent.HEADER_OFFSET + 712,
+      homeRecentActivity: HomePageComponent.HEADER_OFFSET + HomePageComponent.ACTIVITY_ROW_TOP,
     },
-    canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340 },
+    canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340, homeRecentActivity: 380 },
     minColSpan: 4,
     canvasGridMinHeightOffset: 100,
     savesDesktopOnMobile: true,
@@ -1386,6 +1610,7 @@ export class HomePageComponent implements AfterViewInit {
   });
 
   readonly timeOffRequests = TIME_OFF_REQUESTS;
+  readonly activities: ActivityItem[] = ACTIVITIES;
   readonly rfis: Rfi[] = RFIS;
   readonly submittals: Submittal[] = SUBMITTALS;
   readonly calendarAppointments: CalendarAppointment[] = CALENDAR_APPOINTMENTS;
@@ -1422,12 +1647,25 @@ export class HomePageComponent implements AfterViewInit {
     return results;
   });
 
-  readonly homeWidgets: DashboardWidgetId[] = ['homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings'];
+  readonly homeWidgets: DashboardWidgetId[] = ['homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');
   private readonly drawingDetailRef = viewChild<ElementRef>('drawingDetailEl');
+  private readonly calendarScrollRef = viewChild<ElementRef>('calendarScrollArea');
+  private _calendarScrolled = false;
+  private readonly _scrollCalendarToNow = effect(() => {
+    const el = this.calendarScrollRef()?.nativeElement as HTMLElement | undefined;
+    if (!el || this._calendarScrolled) return;
+    this._calendarScrolled = true;
+    requestAnimationFrame(() => {
+      const now = new Date();
+      const nowPx = (now.getHours() * 60 + now.getMinutes());
+      const viewHeight = el.clientHeight;
+      el.scrollTop = Math.max(0, nowPx - viewHeight / 2);
+    });
+  });
 
   private readonly _drawingWheelEffect = effect(() => {
     const el = this.drawingDetailRef()?.nativeElement as HTMLElement | undefined;
@@ -1545,7 +1783,7 @@ export class HomePageComponent implements AfterViewInit {
     this.engine.init();
   }
 
-  readonly timeOffView = signal<'list' | 'calendar'>('list');
+  readonly timeOffView = signal<'list' | 'calendar' | 'staffing'>('list');
   readonly calendarYear = signal(2026);
   readonly calendarMonth = signal(2);
 
@@ -1815,28 +2053,86 @@ export class HomePageComponent implements AfterViewInit {
   });
 
   weatherConditionIcon(condition: WeatherCondition): string {
-    const map: Record<WeatherCondition, string> = {
-      sunny: 'wb_sunny', 'partly-cloudy': 'cloud', cloudy: 'cloud',
-      rain: 'water_drop', thunderstorm: 'flash_on', snow: 'ac_unit',
-    };
-    return map[condition] ?? 'cloud';
+    return weatherIcon(condition);
   }
 
   weatherConditionColor(condition: WeatherCondition): string {
-    const map: Record<WeatherCondition, string> = {
-      sunny: 'text-warning', 'partly-cloudy': 'text-foreground-60', cloudy: 'text-foreground-40',
-      rain: 'text-primary', thunderstorm: 'text-destructive', snow: 'text-primary',
-    };
-    return map[condition] ?? 'text-foreground-60';
+    return weatherIconColor(condition);
   }
 
-  navigateToProject(projectSlug: string): void {
-    this.router.navigate(['/projects', projectSlug]);
+  navigateToProject(slugOrId: string | number): void {
+    if (typeof slugOrId === 'number') {
+      const proj = PROJECTS.find(p => p.id === slugOrId);
+      if (proj) this.router.navigate(['/projects', proj.slug]);
+    } else {
+      this.router.navigate(['/projects', slugOrId]);
+    }
   }
 
   readonly pendingTimeOffCount = computed(() =>
     this.timeOffRequests.filter((r) => r.status === 'Pending').length
   );
+
+  readonly allStaffingConflicts = computed(() => buildStaffingConflicts());
+  readonly criticalStaffingConflicts = computed<StaffingConflict[]>(() =>
+    this.allStaffingConflicts().filter(c => c.severity === 'critical' || c.severity === 'warning')
+  );
+
+  private buildHomeAgentState(): AgentDataState {
+    return {
+      projects: PROJECTS,
+      estimates: ESTIMATES,
+      rfis: RFIS,
+      submittals: SUBMITTALS,
+      activities: ACTIVITIES,
+      calendar: CALENDAR_APPOINTMENTS,
+      timeOffRequests: TIME_OFF_REQUESTS,
+      currentPage: 'home',
+    };
+  }
+
+  getHomeWidgetInsight(widgetId: string): string | null {
+    const agent = getAgent(widgetId, 'home');
+    const state = this.buildHomeAgentState();
+    return agent.insight?.(state) ?? null;
+  }
+
+  readonly urgentNeedsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeUrgentNeeds'));
+  readonly weatherInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeWeather'));
+  readonly timeOffInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeTimeOff'));
+  readonly calendarInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeCalendar'));
+  readonly rfisInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeRfis'));
+  readonly submittalsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeSubmittals'));
+  readonly drawingsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeDrawings'));
+  readonly recentActivityInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeRecentActivity'));
+  readonly homeKpiInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeDefault'));
+
+  readonly staffingByProject = computed(() => {
+    const conflicts = this.allStaffingConflicts();
+    const active = this.timeOffRequests.filter(r => r.status !== 'Denied');
+    const projectMap = new Map<number, { projectId: number; projectName: string; teamSize: number; requestCount: number; totalDaysOut: number; worstWeek: StaffingConflict | null; conflicts: StaffingConflict[] }>();
+    for (const r of active) {
+      if (!projectMap.has(r.projectId)) {
+        const teamSizes: Record<number, number> = { 1: 6, 2: 5, 3: 8, 4: 7, 5: 4, 6: 4, 7: 5, 8: 5 };
+        projectMap.set(r.projectId, { projectId: r.projectId, projectName: r.projectName, teamSize: teamSizes[r.projectId] ?? 5, requestCount: 0, totalDaysOut: 0, worstWeek: null, conflicts: [] });
+      }
+      const entry = projectMap.get(r.projectId)!;
+      entry.requestCount++;
+      entry.totalDaysOut += r.days;
+    }
+    for (const c of conflicts) {
+      const entry = projectMap.get(c.projectId);
+      if (entry) {
+        entry.conflicts.push(c);
+        if (!entry.worstWeek || c.absentPct > entry.worstWeek.absentPct) entry.worstWeek = c;
+      }
+    }
+    return [...projectMap.values()].sort((a, b) => {
+      const aSev = a.worstWeek?.severity === 'critical' ? 0 : a.worstWeek?.severity === 'warning' ? 1 : 2;
+      const bSev = b.worstWeek?.severity === 'critical' ? 0 : b.worstWeek?.severity === 'warning' ? 1 : 2;
+      return aSev - bSev || (b.worstWeek?.absentPct ?? 0) - (a.worstWeek?.absentPct ?? 0);
+    });
+  });
 
   readonly timeOffFilterOptions: readonly ('all' | 'Pending' | 'Approved' | 'Denied')[] = ['all', 'Pending', 'Approved', 'Denied'] as const;
   readonly timeOffCompactItems: readonly { key: 'all' | 'Pending' | 'Approved' | 'Denied'; label: string; icon: string; colorBg: string; colorText: string }[] = [

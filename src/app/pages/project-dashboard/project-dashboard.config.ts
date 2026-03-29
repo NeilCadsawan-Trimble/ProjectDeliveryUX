@@ -206,4 +206,14 @@ export const SUBNAV_CONFIGS: Record<string, SubnavConfig> = {
     ],
     viewToggles: [],
   },
+  'contract-detail': {
+    searchPlaceholder: 'Search in contract...',
+    actions: [
+      { icon: 'edit_mode', label: 'Edit' },
+      { icon: 'printer', label: 'Print' },
+      { icon: 'download', label: 'Export' },
+      { icon: 'document', label: 'Details' },
+    ],
+    viewToggles: [],
+  },
 };
