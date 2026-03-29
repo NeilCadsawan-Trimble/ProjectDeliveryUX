@@ -420,6 +420,28 @@ Features were added to desktop mode but not to canvas mode (or vice versa). Exam
 
 When a feature is added to ANY view mode, it must be added to ALL applicable view modes in the same implementation pass. The three modes are: desktop (non-canvas), canvas card/grid, and canvas list. See the `view-mode-parity` skill for the full parity matrix and verification checklist.
 
+## 11. Angular Template Compile Errors -- Arrow Functions & Private Members
+
+**Related test:** `tests/static/template-safety.spec.ts` (88 tests scanning all non-demo components)
+
+### The bug (occurred at least twice)
+
+1. **Arrow functions in event bindings**: `(click)="signal.update(v => !v)"` causes `NG5002: Parser Error: Unexpected token >`. Angular's template parser does not support arrow function syntax.
+2. **Private member access in templates**: `(click)="engine.saveAsDefaultLayout()"` causes `TS2341: Property 'engine' is private`. Templates can only access public members.
+
+### The fix
+
+- **Arrow functions**: Use `.set(!signal())` or call a named method instead of `.update(v => !v)`.
+- **Private members**: Create a public wrapper method (e.g., `saveDefaultLayout()`) that delegates to the private field.
+
+### Prevention
+
+`template-safety.spec.ts` scans all component inline templates for:
+- `=>` inside any `(event)="..."` binding (catches arrow functions)
+- Known private field names used in event/property/interpolation bindings
+
+This catches both errors at the static test level before any build is attempted.
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -432,5 +454,7 @@ When a feature is added to ANY view mode, it must be added to ALL applicable vie
 | Canvas navbar overflow | `src/styles.css` | `tests/static/styles.spec.ts` |
 | Side nav dark background | `src/styles.css` | (visual, test all 6 themes) |
 | Widget deselection | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` |
-| Tile detail template pattern | `project-dashboard.component.ts` | (manual: verify expand works) |
+| Tile detail template pattern | `project-dashboard.component.ts` | `tests/static/project-dashboard.spec.ts` |
 | View mode parity | all page components | (manual: compare desktop vs canvas) |
+| Template arrow functions | all `.component.ts` | `tests/static/template-safety.spec.ts` |
+| Template private member access | all `.component.ts` | `tests/static/template-safety.spec.ts` |

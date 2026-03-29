@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { NavItem } from '../project-dashboard.config';
+import type { AgentAlert } from '../../../data/widget-agents';
 
 @Component({
   selector: 'app-collapsible-subnav',
@@ -14,7 +15,6 @@ import type { NavItem } from '../project-dashboard.config';
         [class.rounded-r-lg]="!canvasMode()"
         [class.rounded-lg]="canvasMode()">
 
-        <!-- Header: clickable toggle -->
         <div class="flex items-center py-3 pl-4 pr-2 justify-between flex-shrink-0 cursor-pointer hover:bg-muted transition-colors duration-150"
           role="button" tabindex="0"
           [attr.aria-label]="collapsed() ? 'Expand side navigation' : 'Collapse side navigation'"
@@ -25,6 +25,15 @@ import type { NavItem } from '../project-dashboard.config';
             <div class="text-sm font-semibold truncate" [class]="collapsed() ? 'text-foreground' : 'text-primary'">
               {{ collapsed() ? activeItemLabel() : title() }}
             </div>
+            @if (totalAlertCount() > 0) {
+              <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
+                [class.bg-destructive]="hasCriticalAlerts()"
+                [class.text-destructive-foreground]="hasCriticalAlerts()"
+                [class.bg-warning]="!hasCriticalAlerts()"
+                [class.text-warning-foreground]="!hasCriticalAlerts()">
+                {{ totalAlertCount() }}
+              </div>
+            }
           </div>
           <div class="flex items-center justify-center w-6 h-6 rounded flex-shrink-0">
             <i class="modus-icons text-sm text-foreground-60 transition-transform duration-200" aria-hidden="true"
@@ -33,14 +42,13 @@ import type { NavItem } from '../project-dashboard.config';
           </div>
         </div>
 
-        <!-- Items list: rolls up/down via max-height -->
         <div class="overflow-hidden transition-all duration-200"
           [style.max-height.px]="collapsed() ? 0 : 600"
           [style.opacity]="collapsed() ? 0 : 1">
           <div class="overflow-y-auto min-h-0">
             @for (item of items(); track item.value) {
               <div
-                class="py-2.5 text-sm cursor-pointer transition-colors duration-150 whitespace-nowrap"
+                class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150 whitespace-nowrap"
                 [class.bg-primary]="activeItem() === item.value"
                 [class.text-primary-foreground]="activeItem() === item.value"
                 [class.font-medium]="activeItem() === item.value"
@@ -53,7 +61,19 @@ import type { NavItem } from '../project-dashboard.config';
                 role="button" tabindex="0"
                 (click)="onItemSelect(item.value)"
                 (keydown.enter)="onItemSelect(item.value)">
-                {{ item.label }}
+                <div>{{ item.label }}</div>
+                @if (getItemAlert(item.value); as alert) {
+                  <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1 mr-1"
+                    [class.bg-destructive]="alert.level === 'critical'"
+                    [class.text-destructive-foreground]="alert.level === 'critical'"
+                    [class.bg-warning]="alert.level === 'warning'"
+                    [class.text-warning-foreground]="alert.level === 'warning'"
+                    [class.bg-primary]="alert.level === 'info'"
+                    [class.text-primary-foreground]="alert.level === 'info'"
+                    [attr.title]="alert.count + ' ' + alert.label">
+                    {{ alert.count }}
+                  </div>
+                }
               </div>
             }
           </div>
@@ -69,6 +89,7 @@ export class CollapsibleSubnavComponent {
   readonly activeItem = input.required<string>();
   readonly collapsed = input.required<boolean>();
   readonly canvasMode = input<boolean>(false);
+  readonly alerts = input<Record<string, AgentAlert | null>>({});
 
   readonly itemSelect = output<string>();
   readonly collapsedChange = output<boolean>();
@@ -77,6 +98,24 @@ export class CollapsibleSubnavComponent {
     const active = this.activeItem();
     return this.items().find(i => i.value === active)?.label ?? this.title();
   });
+
+  readonly totalAlertCount = computed(() => {
+    const a = this.alerts();
+    let total = 0;
+    for (const key of Object.keys(a)) {
+      if (a[key]) total += a[key]!.count;
+    }
+    return total;
+  });
+
+  readonly hasCriticalAlerts = computed(() => {
+    const a = this.alerts();
+    return Object.values(a).some(v => v?.level === 'critical');
+  });
+
+  getItemAlert(value: string): AgentAlert | null {
+    return this.alerts()[value] ?? null;
+  }
 
   toggleCollapsed(): void {
     this.collapsedChange.emit(!this.collapsed());

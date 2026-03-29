@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { AiIconComponent } from './ai-icon.component';
 import { AiPanelController } from '../services/ai-panel-controller';
+import type { AgentAction } from '../../data/widget-agents';
 
 @Component({
   selector: 'ai-assistant-panel',
@@ -24,13 +25,26 @@ import { AiPanelController } from '../services/ai-panel-controller';
             <div class="text-xs text-foreground-60 truncate">{{ controller().subtitle() }}</div>
           </div>
         </div>
-        <div
-          class="w-7 h-7 flex items-center justify-center rounded cursor-pointer hover:bg-muted transition-colors duration-150"
-          (click)="controller().toggle()"
-          role="button"
-          aria-label="Close AI Assistant"
-        >
-          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+        <div class="flex items-center gap-1">
+          @if (controller().messages().length > 0) {
+            <div
+              class="w-7 h-7 flex items-center justify-center rounded cursor-pointer hover:bg-muted transition-colors duration-150"
+              (click)="controller().clearConversation()"
+              role="button"
+              aria-label="New conversation"
+              title="New conversation"
+            >
+              <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">add</i>
+            </div>
+          }
+          <div
+            class="w-7 h-7 flex items-center justify-center rounded cursor-pointer hover:bg-muted transition-colors duration-150"
+            (click)="controller().toggle()"
+            role="button"
+            aria-label="Close AI Assistant"
+          >
+            <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+          </div>
         </div>
       </div>
 
@@ -62,6 +76,27 @@ import { AiPanelController } from '../services/ai-panel-controller';
                 </div>
               }
             </div>
+
+            @if (controller().actions().length > 0) {
+              <div class="w-full mt-3 border-top-default pt-3">
+                <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wider mb-2 px-1">Quick Actions</div>
+                <div class="flex flex-col gap-1.5">
+                  @for (action of controller().actions(); track action.id) {
+                    <div
+                      class="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted text-sm text-foreground cursor-pointer hover:bg-secondary transition-colors duration-150"
+                      (click)="handleAction(action)"
+                      role="button"
+                      tabindex="0"
+                      [attr.aria-label]="action.label"
+                      (keydown.enter)="handleAction(action)"
+                    >
+                      <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">flash</i>
+                      <div>{{ action.label }}</div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
           </div>
         }
 
@@ -79,9 +114,9 @@ import { AiPanelController } from '../services/ai-panel-controller';
                   <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <ai-icon variant="solid-colored" size="xs" />
                   </div>
-                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed">
-                    {{ msg.text }}
-                  </div>
+                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed whitespace-pre-wrap"
+                    [innerHTML]="renderMessage(msg.text)"
+                  ></div>
                 </div>
               }
             }
@@ -98,6 +133,21 @@ import { AiPanelController } from '../services/ai-panel-controller';
                     <div class="w-1.5 h-1.5 rounded-full bg-foreground-40 animate-bounce" style="animation-delay: 300ms"></div>
                   </div>
                 </div>
+              </div>
+            }
+
+            @if (!controller().thinking() && controller().actions().length > 0) {
+              <div class="flex flex-wrap gap-1.5 mt-1">
+                @for (action of controller().actions(); track action.id) {
+                  <div
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs text-foreground cursor-pointer hover:bg-secondary transition-colors duration-150"
+                    (click)="handleAction(action)"
+                    role="button"
+                  >
+                    <i class="modus-icons text-xs text-primary" aria-hidden="true">flash</i>
+                    <div>{{ action.label }}</div>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -146,4 +196,28 @@ export class AiAssistantPanelComponent {
   readonly welcomeText = input('Ask me anything about this page.');
   readonly placeholder = input('Type a message...');
   readonly showDisclaimer = input(true);
+
+  handleAction(action: AgentAction): void {
+    this.controller().executeAction(action);
+  }
+
+  renderMessage(text: string): string {
+    if (!text) return '';
+    let escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    escaped = escaped.replace(
+      /\*\*([^*]+)\*\*/g,
+      '<div class="font-semibold inline">$1</div>'
+    );
+
+    escaped = escaped.replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      '<a href="$2" class="text-primary underline hover:text-primary-80 cursor-pointer">$1</a>'
+    );
+
+    return escaped;
+  }
 }
