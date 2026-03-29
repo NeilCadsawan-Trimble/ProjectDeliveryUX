@@ -5179,6 +5179,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly ai = new AiPanelController({
     widgetFocusService: this.widgetFocusService,
     aiService: this.aiService,
+    router: this.router,
     defaultSuggestions: computed(() => {
       const widgetId = this.widgetFocusService.selectedWidgetId();
       const subContext = this.getSubPageAgentContext();

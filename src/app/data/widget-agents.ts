@@ -61,6 +61,7 @@ export interface AgentAction {
   id: string;
   label: string;
   execute: (s: AgentDataState) => string;
+  route?: string;
 }
 
 export interface WidgetAgent {
@@ -307,8 +308,8 @@ const homeDefault: WidgetAgent = {
   },
   alerts: () => null,
   actions: () => [
-    { id: 'open-projects', label: 'Open Projects dashboard', execute: () => 'Navigated to Projects.' },
-    { id: 'open-financials', label: 'Open Financials', execute: () => 'Navigated to Financials.' },
+    { id: 'open-projects', label: 'Open Projects dashboard', execute: () => 'Opening Projects dashboard.', route: '/projects' },
+    { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
     { id: 'refresh-attention', label: 'Refresh attention feed', execute: () => 'Refreshed items needing attention.' },
   ],
   buildContext(s) {
@@ -610,8 +611,8 @@ const financialsDefault: WidgetAgent = {
   },
   alerts: () => null,
   actions: () => [
-    { id: 'open-revenue', label: 'Open revenue view', execute: () => 'Navigated to revenue breakdown.' },
-    { id: 'open-change-orders', label: 'Open change orders', execute: () => 'Navigated to change orders.' },
+    { id: 'open-revenue', label: 'Open revenue view', execute: () => 'Opening revenue breakdown.', route: '/financials' },
+    { id: 'open-change-orders', label: 'Open change orders', execute: () => 'Opening change orders.', route: '/financials' },
   ],
   buildContext(s) {
     const projects = s.projects ?? [];
