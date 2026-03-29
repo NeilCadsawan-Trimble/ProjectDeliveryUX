@@ -59,7 +59,7 @@ import {
 } from '../../data/project-data';
 import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
-import { getAgent, type AgentDataState } from '../../data/widget-agents';
+import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 
 type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals';
@@ -307,6 +307,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 [items]="recordsSubNavItems"
                 [activeItem]="activeRecordsPage()"
                 [collapsed]="sideSubNavCollapsed()"
+                [alerts]="recordsAlerts()"
                 [canvasMode]="isCanvas()"
                 (itemSelect)="onDetailSideSubnavSelect($event)"
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
@@ -319,6 +320,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 [items]="financialsSubNavItems"
                 [activeItem]="activeFinancialsPage()"
                 [collapsed]="sideSubNavCollapsed()"
+                [alerts]="financialsAlerts()"
                 [canvasMode]="isCanvas()"
                 (itemSelect)="onDetailSideSubnavSelect($event)"
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
@@ -547,6 +549,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 [items]="recordsSubNavItems"
                 [activeItem]="activeRecordsPage()"
                 [collapsed]="sideSubNavCollapsed()"
+                [alerts]="recordsAlerts()"
                 [canvasMode]="true"
                 (itemSelect)="activeRecordsPage.set($event)"
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
@@ -1341,6 +1344,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               [items]="recordsSubNavItems"
               [activeItem]="activeRecordsPage()"
               [collapsed]="sideSubNavCollapsed()"
+              [alerts]="recordsAlerts()"
               [canvasMode]="isCanvas()"
               (itemSelect)="activeRecordsPage.set($event)"
               (collapsedChange)="sideSubNavCollapsed.set($event)"
@@ -1539,6 +1543,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 [items]="financialsSubNavItems"
                 [activeItem]="activeFinancialsPage()"
                 [collapsed]="sideSubNavCollapsed()"
+                [alerts]="financialsAlerts()"
                 [canvasMode]="true"
                 (itemSelect)="selectFinancialsSubPage($event)"
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
@@ -1961,6 +1966,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               [items]="financialsSubNavItems"
               [activeItem]="activeFinancialsPage()"
               [collapsed]="sideSubNavCollapsed()"
+              [alerts]="financialsAlerts()"
               [canvasMode]="isCanvas()"
               (itemSelect)="selectFinancialsSubPage($event)"
               (collapsedChange)="sideSubNavCollapsed.set($event)"
@@ -2179,7 +2185,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
               @switch (wId) {
                 @case ('milestones') {
-              <app-widget-frame icon="flag" title="Milestones" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+              <app-widget-frame icon="flag" title="Milestones" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('milestones')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div headerMeta class="text-xs text-foreground-60">{{ completedMilestones() }}/{{ milestones().length }} Complete</div>
@@ -2245,7 +2251,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
 
                 @case ('risks') {
-              <app-widget-frame icon="warning" title="Risks" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+              <app-widget-frame icon="warning" title="Risks" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('risks')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div headerMeta class="text-xs text-foreground-60">{{ risks().length }} Identified</div>
@@ -2271,7 +2277,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
 
                 @case ('rfis') {
-              <app-widget-frame icon="clipboard" title="RFIs" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+              <app-widget-frame icon="clipboard" title="RFIs" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsRfis')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 @if (rfiOverdueCount() > 0) {
@@ -2308,7 +2314,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
 
                 @case ('submittals') {
-              <app-widget-frame icon="document" title="Submittals" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+              <app-widget-frame icon="document" title="Submittals" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsSubmittals')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 @if (submittalOverdueCount() > 0) {
@@ -2345,7 +2351,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
 
                 @case ('drawing') {
-              <app-widget-frame icon="floorplan" title="Latest Drawing" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+              <app-widget-frame icon="floorplan" title="Latest Drawing" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('drawing')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div headerMeta class="text-xs text-foreground-60">{{ latestDrawing().version }}</div>
@@ -2369,7 +2375,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
 
                 @case ('budget') {
-              <app-widget-frame icon="bar_graph" title="Budget" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+              <app-widget-frame icon="bar_graph" title="Budget" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('budget')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1 cursor-pointer"
@@ -2408,7 +2414,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
 
                 @case ('team') {
-              <app-widget-frame icon="people_group" title="Team" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+              <app-widget-frame icon="people_group" title="Team" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('team')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div headerMeta class="text-xs text-foreground-60">{{ team().length }} Members</div>
@@ -2433,7 +2439,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
 
                 @case ('activity') {
-              <app-widget-frame icon="history" title="Recent Activity" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+              <app-widget-frame icon="history" title="Recent Activity" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('activity')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
@@ -2850,6 +2856,44 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             }
           </div>
           <div class="mt-auto border-top-default">
+            <div class="relative">
+              <div
+                class="custom-side-nav-item relative"
+                (click)="desktopLayoutMenuOpen.set(!desktopLayoutMenuOpen()); $event.stopPropagation()"
+                title="Layout options"
+                role="button"
+                aria-label="Layout options"
+                [attr.aria-expanded]="desktopLayoutMenuOpen()"
+              >
+                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                @if (navExpanded() && !isMobile()) {
+                  <div class="custom-side-nav-label">Layout</div>
+                }
+                <svg class="absolute bottom-1 right-1 w-1.5 h-1.5 text-foreground-40" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true">
+                  <path d="M6 0V6H0L6 0Z"/>
+                </svg>
+              </div>
+              @if (desktopLayoutMenuOpen()) {
+                <div class="desktop-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[210px] py-1">
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="desktopLayoutMenuOpen.set(false); resetWidgetsToDefaults(); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">window_fit</i>
+                    <div class="text-sm">Reset Layout</div>
+                  </div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
+                    (click)="desktopLayoutMenuOpen.set(false); saveDefaultLayout(); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
+                    <div class="text-sm">Save as Default Layout</div>
+                  </div>
+                </div>
+              }
+            </div>
             <div
               class="custom-side-nav-item"
               title="Settings"
@@ -3947,6 +3991,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly navExpanded = signal(false);
   readonly activeNavItem = signal<string>('dashboard');
   readonly resetMenuOpen = signal(false);
+  readonly desktopLayoutMenuOpen = signal(false);
   readonly hasSubNav = computed(() => {
     const page = this.activeNavItem();
     return page === 'records' || page === 'financials';
@@ -5138,7 +5183,8 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       const widgetId = this.widgetFocusService.selectedWidgetId();
       const subContext = this.getSubPageAgentContext();
       const agent = getAgent(widgetId, 'project-dashboard', subContext);
-      return agent.suggestions;
+      const state = this.buildAgentDataState();
+      return getSuggestions(agent, state);
     }),
     contextBuilder: () => {
       const widgetId = this.widgetFocusService.selectedWidgetId();
@@ -5158,10 +5204,78 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       const state = this.buildAgentDataState();
       return (query: string) => agent.localRespond(query, state);
     },
+    actionsProvider: () => {
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const subContext = this.getSubPageAgentContext();
+      const agent = getAgent(widgetId, 'project-dashboard', subContext);
+      const state = this.buildAgentDataState();
+      return agent.actions?.(state) ?? [];
+    },
     injector: this.injector,
   });
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
+
+  readonly activeInsight = computed(() => {
+    const widgetId = this.widgetFocusService.selectedWidgetId();
+    const subContext = this.getSubPageAgentContext();
+    const agent = getAgent(widgetId, 'project-dashboard', subContext);
+    const state = this.buildAgentDataState();
+    return agent.insight?.(state) ?? null;
+  });
+
+  readonly activeAlerts = computed<Record<string, AgentAlert | null>>(() => {
+    const state = this.buildAgentDataState();
+    const alerts: Record<string, AgentAlert | null> = {};
+    const agentIds = ['recordsRfis', 'recordsSubmittals', 'recordsDailyReports', 'recordsInspections',
+      'recordsPunchItems', 'recordsActionItems', 'financialsBudget', 'financialsChangeOrders',
+      'financialsRevenue', 'financialsCostForecasts', 'budgetAgent', 'tasksAgent', 'risksAgent'];
+    for (const id of agentIds) {
+      const agent = getAgent(id, 'project-dashboard');
+      alerts[id] = agent.alerts?.(state) ?? null;
+    }
+    return alerts;
+  });
+
+  getWidgetInsight(widgetId: string): string | null {
+    const agent = getAgent(widgetId, 'project-dashboard');
+    const state = this.buildAgentDataState();
+    return agent.insight?.(state) ?? null;
+  }
+
+  readonly recordsAlerts = computed<Record<string, AgentAlert | null>>(() => {
+    const state = this.buildAgentDataState();
+    const map: Record<string, string> = {
+      'rfis': 'recordsRfis',
+      'submittals': 'recordsSubmittals',
+      'daily-reports': 'recordsDailyReports',
+      'punch-items': 'recordsPunchItems',
+      'inspections': 'recordsInspections',
+      'action-items': 'recordsActionItems',
+    };
+    const result: Record<string, AgentAlert | null> = {};
+    for (const [navValue, agentId] of Object.entries(map)) {
+      const agent = getAgent(agentId, 'project-dashboard');
+      result[navValue] = agent.alerts?.(state) ?? null;
+    }
+    return result;
+  });
+
+  readonly financialsAlerts = computed<Record<string, AgentAlert | null>>(() => {
+    const state = this.buildAgentDataState();
+    const map: Record<string, string> = {
+      'budget': 'financialsBudget',
+      'change-orders': 'financialsChangeOrders',
+      'revenue': 'financialsRevenue',
+      'cost-forecasts': 'financialsCostForecasts',
+    };
+    const result: Record<string, AgentAlert | null> = {};
+    for (const [navValue, agentId] of Object.entries(map)) {
+      const agent = getAgent(agentId, 'project-dashboard');
+      result[navValue] = agent.alerts?.(state) ?? null;
+    }
+    return result;
+  });
 
   // ── Mobile More Menu ──
   readonly moreMenuOpen = signal(false);
@@ -5209,6 +5323,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     if (this.resetMenuOpen() && !target.closest('[aria-label="Layout options"]') && !target.closest('.canvas-reset-flyout')) {
       this.resetMenuOpen.set(false);
     }
+    if (this.desktopLayoutMenuOpen() && !target.closest('[aria-label="Layout options"]') && !target.closest('.desktop-reset-flyout')) {
+      this.desktopLayoutMenuOpen.set(false);
+    }
     if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);
     }
@@ -5243,8 +5360,12 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     }
   }
 
-  private resetWidgetsToDefaults(): void {
+  resetWidgetsToDefaults(): void {
     this.engine.resetToDefaults();
+  }
+
+  saveDefaultLayout(): void {
+    this.engine.saveAsDefaultLayout();
   }
 
   toggleDarkMode(): void {

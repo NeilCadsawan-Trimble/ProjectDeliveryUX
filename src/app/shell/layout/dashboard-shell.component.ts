@@ -30,7 +30,7 @@ import {
   CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS,
   INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE,
 } from '../../data/dashboard-data';
-import { getAgent, type AgentDataState } from '../../data/widget-agents';
+import { getAgent, getSuggestions, type AgentDataState } from '../../data/widget-agents';
 
 export interface ShellNavItem {
   value: string;
@@ -518,7 +518,8 @@ export class DashboardShellComponent implements AfterViewInit {
       const page = this.getPageName();
       const widgetId = this.widgetFocusService.selectedWidgetId();
       const agent = getAgent(widgetId, page);
-      return agent.suggestions;
+      const state = this.buildAgentDataState();
+      return getSuggestions(agent, state);
     }),
     contextBuilder: () => {
       const page = this.getPageName();
@@ -536,6 +537,13 @@ export class DashboardShellComponent implements AfterViewInit {
       const agent = getAgent(widgetId, page);
       const state = this.buildAgentDataState();
       return (query: string) => agent.localRespond(query, state);
+    },
+    actionsProvider: () => {
+      const page = this.getPageName();
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const agent = getAgent(widgetId, page);
+      const state = this.buildAgentDataState();
+      return agent.actions?.(state) ?? [];
     },
     injector: this.injector,
   });

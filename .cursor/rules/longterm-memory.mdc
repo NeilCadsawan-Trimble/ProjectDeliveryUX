@@ -33,6 +33,7 @@ Consult this file before asking the user a question. If the answer is here, act 
 - Existing skill: `dashboard-layout-lessons` covers push-squeeze, collision priority, canvas navbar, dark-mode sidenav, widget deselection.
 - Existing skill: `canvas-subpage-checklist` covers the mandatory checklist for creating canvas sub-pages with tile detail expansion, list row highlighting, KPI strips, column parity, and proper navigation handlers.
 - Existing skill: `view-mode-parity` enforces feature parity across desktop, canvas card, and canvas list modes. Must be followed whenever adding new data, pages, widgets, or interactions.
+- Existing skill: `agentic-widgets` covers the full architecture for widget agents -- insight lines, alert badges, dynamic suggestions, cross-agent references, per-agent conversation memory, navigable links, natural language actions, and portfolio meta-agents. Must be followed when adding or modifying widget agents.
 - Update `PROGRESS.md` when phases of work are completed.
 
 ## Decisions Already Made (Do Not Re-Ask)

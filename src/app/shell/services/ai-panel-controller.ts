@@ -2,6 +2,7 @@ import { Injector, Signal, computed, effect, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { AiService, type AiChatMessage, type AiContext, type LocalResponder } from '../../services/ai.service';
 import { WidgetFocusService } from './widget-focus.service';
+import type { AgentAction } from '../../data/widget-agents';
 
 export interface AiMessage {
   id: number;
@@ -18,6 +19,7 @@ export interface AiPanelConfig {
   defaultSuggestions: string[] | Signal<string[]>;
   contextBuilder: AiContextBuilder;
   localResponder?: () => LocalResponder | undefined;
+  actionsProvider?: () => AgentAction[];
   injector: Injector;
 }
 
@@ -26,8 +28,10 @@ export class AiPanelController {
   readonly messages = signal<AiMessage[]>([]);
   readonly inputText = signal('');
   readonly thinking = signal(false);
+  readonly actions = signal<AgentAction[]>([]);
   private messageCounter = 0;
   private streamSub: Subscription | null = null;
+  private conversationMemory = new Map<string, { messages: AiMessage[]; counter: number }>();
 
   readonly title: Signal<string>;
   readonly subtitle: Signal<string>;
@@ -37,12 +41,14 @@ export class AiPanelController {
   private readonly aiService: AiService;
   private readonly contextBuilder: AiContextBuilder;
   private readonly localResponderFn?: () => LocalResponder | undefined;
+  private readonly actionsProviderFn?: () => AgentAction[];
 
   constructor(config: AiPanelConfig) {
     this.widgetFocusService = config.widgetFocusService;
     this.aiService = config.aiService;
     this.contextBuilder = config.contextBuilder;
     this.localResponderFn = config.localResponder;
+    this.actionsProviderFn = config.actionsProvider;
 
     this.title = this.widgetFocusService.aiAssistantTitle;
     this.subtitle = this.widgetFocusService.aiAssistantSubtitle;
@@ -56,12 +62,33 @@ export class AiPanelController {
     );
 
     effect(() => {
-      this.widgetFocusService.selectedWidgetId();
+      const widgetId = this.widgetFocusService.selectedWidgetId();
       this.streamSub?.unsubscribe();
       this.streamSub = null;
-      this.messages.set([]);
       this.thinking.set(false);
+
+      const agentKey = widgetId ?? '__default__';
+      const stored = this.conversationMemory.get(agentKey);
+      if (stored) {
+        this.messages.set(stored.messages);
+        this.messageCounter = stored.counter;
+      } else {
+        this.messages.set([]);
+        this.messageCounter = 0;
+      }
+
+      if (this.actionsProviderFn) {
+        this.actions.set(this.actionsProviderFn());
+      }
     }, { injector: config.injector });
+  }
+
+  private saveConversation(): void {
+    const agentKey = this.widgetFocusService.selectedWidgetId() ?? '__default__';
+    this.conversationMemory.set(agentKey, {
+      messages: this.messages(),
+      counter: this.messageCounter,
+    });
   }
 
   toggle(): void {
@@ -121,14 +148,39 @@ export class AiPanelController {
           msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text || 'Sorry, something went wrong. Please try again.', streaming: false } : m),
         );
         this.thinking.set(false);
+        this.saveConversation();
       },
       complete: () => {
         this.messages.update(msgs =>
           msgs.map(m => m.id === assistantMsgId ? { ...m, streaming: false } : m),
         );
         this.thinking.set(false);
+        this.saveConversation();
       },
     });
+  }
+
+  executeAction(action: AgentAction): void {
+    if (this.thinking()) return;
+
+    this.messages.update(msgs => [
+      ...msgs,
+      { id: ++this.messageCounter, role: 'user', text: action.label },
+    ]);
+
+    const result = action.execute({});
+
+    this.messages.update(msgs => [
+      ...msgs,
+      { id: ++this.messageCounter, role: 'assistant', text: result },
+    ]);
+    this.saveConversation();
+  }
+
+  clearConversation(): void {
+    this.messages.set([]);
+    this.messageCounter = 0;
+    this.saveConversation();
   }
 
   destroy(): void {

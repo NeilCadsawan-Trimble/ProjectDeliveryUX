@@ -51,13 +51,32 @@ export interface AgentDataState {
   currentSubPage?: string;
 }
 
+export interface AgentAlert {
+  level: 'info' | 'warning' | 'critical';
+  count: number;
+  label: string;
+}
+
+export interface AgentAction {
+  id: string;
+  label: string;
+  execute: (s: AgentDataState) => string;
+}
+
 export interface WidgetAgent {
   id: string;
   name: string;
   systemPrompt: string;
-  suggestions: string[];
+  suggestions: string[] | ((s: AgentDataState) => string[]);
   buildContext: (s: AgentDataState) => string;
   localRespond: (query: string, s: AgentDataState) => string;
+  insight?: (s: AgentDataState) => string | null;
+  alerts?: (s: AgentDataState) => AgentAlert | null;
+  actions?: (s: AgentDataState) => AgentAction[];
+}
+
+export function getSuggestions(agent: WidgetAgent, state: AgentDataState): string[] {
+  return typeof agent.suggestions === 'function' ? agent.suggestions(state) : agent.suggestions;
 }
 
 function kw(q: string, ...words: string[]): boolean {
@@ -71,11 +90,44 @@ function fmtProjects(projects: Project[]): string {
   ).join('\n');
 }
 
+function maxDaysPastDue(items: { dueDate: string }[]): number {
+  let max = 0;
+  const now = Date.now();
+  for (const it of items) {
+    const t = new Date(it.dueDate).getTime();
+    if (!Number.isNaN(t)) {
+      const days = Math.floor((now - t) / 86400000);
+      if (days > max) max = days;
+    }
+  }
+  return max;
+}
+
 const homeTimeOff: WidgetAgent = {
   id: 'homeTimeOff',
   name: 'Time Off Requests',
   systemPrompt: 'You are an HR scheduling assistant for a construction company. You help managers understand upcoming absences, PTO conflicts, and team availability.',
-  suggestions: ['How many time-off requests are pending?', 'Who is out this week?', 'Show upcoming PTO conflicts'],
+  suggestions(s) {
+    const pending = (s.timeOffRequests ?? []).filter(r => r.status === 'Pending').length;
+    const base = ['Who is out this week?', 'Show upcoming PTO conflicts'];
+    return pending
+      ? [`How many time-off requests are pending? (${pending} pending)`, ...base]
+      : ['How many time-off requests are pending?', ...base];
+  },
+  insight(s) {
+    const pending = (s.timeOffRequests ?? []).filter(r => r.status === 'Pending').length;
+    if (!pending) return null;
+    return `${pending} pending time-off request${pending === 1 ? '' : 's'} need review`;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'approve-all-pending', label: 'Approve all pending PTO', execute: (st) => {
+      const n = (st.timeOffRequests ?? []).filter(r => r.status === 'Pending').length;
+      return n ? `Approved ${n} pending time-off request(s).` : 'No pending requests to approve.';
+    }},
+    { id: 'notify-managers', label: 'Notify managers of this week\'s absences', execute: () => 'Sent absence summary to project managers.' },
+    { id: 'export-schedule', label: 'Export team availability', execute: () => 'Exported availability calendar.' },
+  ],
   buildContext(s) {
     if (!s.timeOffRequests?.length) return 'No time-off requests.';
     const lines = s.timeOffRequests.map(r => `  ${r.name}: ${r.type}, ${r.startDate}-${r.endDate} (${r.days} day(s)), status: ${r.status}`);
@@ -98,7 +150,25 @@ const homeCalendar: WidgetAgent = {
   id: 'homeCalendar',
   name: 'Calendar',
   systemPrompt: 'You are a scheduling assistant for construction project managers. You help with meeting coordination, schedule conflicts, and upcoming deadlines.',
-  suggestions: ['What meetings do I have today?', 'Show my schedule for this week', 'Are there any scheduling conflicts?'],
+  suggestions(s) {
+    const cal = s.calendar ?? [];
+    const today = new Date().toDateString();
+    const todayCount = cal.filter(a => a.date.toDateString() === today).length;
+    return todayCount
+      ? [`What meetings do I have today? (${todayCount} today)`, 'Show my schedule for this week', 'Are there any scheduling conflicts?']
+      : ['What meetings do I have today?', 'Show my schedule for this week', 'Are there any scheduling conflicts?'];
+  },
+  insight(s) {
+    const cal = s.calendar ?? [];
+    const today = new Date().toDateString();
+    const todayCount = cal.filter(a => a.date.toDateString() === today).length;
+    return todayCount ? `${todayCount} meeting${todayCount === 1 ? '' : 's'} on your calendar today` : null;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'open-week-view', label: 'Open week view', execute: () => 'Opened calendar week view.' },
+    { id: 'send-reminders', label: 'Send meeting reminders', execute: () => 'Queued reminders for today\'s meetings.' },
+  ],
   buildContext(s) {
     const cal = s.calendar ?? [];
     const upcoming = cal.slice(0, 15);
@@ -124,7 +194,30 @@ const homeRfis: WidgetAgent = {
   id: 'homeRfis',
   name: 'RFIs',
   systemPrompt: 'You are an RFI tracking specialist for construction projects. You monitor Request for Information items, response times, overdue items, and help prioritize RFI resolution.',
-  suggestions: ['How many RFIs are open?', 'Which RFIs are overdue?', 'Summarize RFI response times'],
+  suggestions(s) {
+    const overdue = (s.rfis ?? []).filter(r => r.status === 'overdue');
+    return overdue.length
+      ? ['Show overdue RFIs', 'How many RFIs are open?', 'Summarize RFI response times']
+      : ['Summarize RFI status', 'How many RFIs are open?', 'Which RFIs are overdue?'];
+  },
+  insight(s) {
+    const overdue = (s.rfis ?? []).filter(r => r.status === 'overdue');
+    if (!overdue.length) return null;
+    const oldest = maxDaysPastDue(overdue);
+    return `${overdue.length} overdue, oldest ${oldest} day${oldest === 1 ? '' : 's'} past due`;
+  },
+  alerts(s) {
+    const overdue = (s.rfis ?? []).filter(r => r.status === 'overdue');
+    return overdue.length ? { level: 'critical', count: overdue.length, label: 'overdue' } : null;
+  },
+  actions: () => [
+    { id: 'escalate-overdue', label: 'Escalate overdue RFIs', execute: (st) => {
+      const n = (st.rfis ?? []).filter(r => r.status === 'overdue').length;
+      return n ? `Escalated ${n} overdue RFI(s) to project managers.` : 'No overdue RFIs to escalate.';
+    }},
+    { id: 'summarize-open', label: 'Email open RFI summary', execute: () => 'Sent open RFI summary to the team.' },
+    { id: 'assign-review', label: 'Request assignee updates', execute: () => 'Requested status updates from assignees.' },
+  ],
   buildContext(s) {
     const rfis = s.rfis ?? [];
     if (!rfis.length) return 'No RFIs.';
@@ -149,7 +242,29 @@ const homeSubmittals: WidgetAgent = {
   id: 'homeSubmittals',
   name: 'Submittals',
   systemPrompt: 'You are a submittal tracking specialist for construction projects. You monitor submittal approvals, review cycles, overdue items, and help prioritize submittal processing.',
-  suggestions: ['How many submittals are pending review?', 'Which submittals are overdue?', 'Summarize submittal approval rates'],
+  suggestions(s) {
+    const overdue = (s.submittals ?? []).filter(sub => sub.status === 'overdue');
+    return overdue.length
+      ? ['Which submittals are overdue?', 'How many submittals are pending review?', 'Summarize submittal approval rates']
+      : ['Summarize submittal status', 'How many submittals are pending review?', 'Which submittals are overdue?'];
+  },
+  insight(s) {
+    const overdue = (s.submittals ?? []).filter(sub => sub.status === 'overdue');
+    if (!overdue.length) return null;
+    const oldest = maxDaysPastDue(overdue);
+    return `${overdue.length} overdue submittal${overdue.length === 1 ? '' : 's'}, oldest ${oldest} day${oldest === 1 ? '' : 's'} past due`;
+  },
+  alerts(s) {
+    const overdue = (s.submittals ?? []).filter(sub => sub.status === 'overdue');
+    return overdue.length ? { level: 'critical', count: overdue.length, label: 'overdue' } : null;
+  },
+  actions: () => [
+    { id: 'escalate-subs', label: 'Escalate overdue submittals', execute: (st) => {
+      const n = (st.submittals ?? []).filter(sub => sub.status === 'overdue').length;
+      return n ? `Escalated ${n} overdue submittal(s).` : 'No overdue submittals to escalate.';
+    }},
+    { id: 'batch-remind', label: 'Send reviewer reminders', execute: () => 'Sent reminders to submittal reviewers.' },
+  ],
   buildContext(s) {
     const subs = s.submittals ?? [];
     if (!subs.length) return 'No submittals.';
@@ -174,7 +289,28 @@ const homeDefault: WidgetAgent = {
   id: 'homeDefault',
   name: 'Dashboard Overview',
   systemPrompt: 'You are a project delivery assistant for a construction company. You provide portfolio-level insights across all projects, schedules, budgets, RFIs, submittals, change orders, weather impacts, and revenue.',
-  suggestions: ['Give me a portfolio overview', 'Which projects need attention?', 'Will weather impact work this week?', 'How are budgets tracking?'],
+  suggestions(s) {
+    const atRisk = (s.projects ?? []).filter(p => p.status === 'At Risk').length;
+    const attn = (s.attentionItems ?? []).length;
+    if (attn) return ['Which projects need attention?', 'Give me a portfolio overview', 'Will weather impact work this week?', 'How are budgets tracking?'];
+    if (atRisk) return ['Which projects are at risk?', 'Give me a portfolio overview', 'How are budgets tracking?', 'Will weather impact work this week?'];
+    return ['Give me a portfolio overview', 'Which projects need attention?', 'Will weather impact work this week?', 'How are budgets tracking?'];
+  },
+  insight(s) {
+    const projects = s.projects ?? [];
+    const atRisk = projects.filter(p => p.status === 'At Risk').length;
+    const overdueProj = projects.filter(p => p.status === 'Overdue').length;
+    const overdueRfi = (s.rfis ?? []).filter(r => r.status === 'overdue').length;
+    if (atRisk || overdueProj) return `${atRisk} at risk, ${overdueProj} overdue project${overdueProj === 1 ? '' : 's'}`;
+    if (overdueRfi) return `${overdueRfi} portfolio RFI(s) overdue`;
+    return null;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'open-projects', label: 'Open Projects dashboard', execute: () => 'Navigated to Projects.' },
+    { id: 'open-financials', label: 'Open Financials', execute: () => 'Navigated to Financials.' },
+    { id: 'refresh-attention', label: 'Refresh attention feed', execute: () => 'Refreshed items needing attention.' },
+  ],
   buildContext(s) {
     const parts: string[] = [];
     const projects = s.projects ?? [];
@@ -224,7 +360,26 @@ const projectsWidget: WidgetAgent = {
   id: 'projects',
   name: 'Projects',
   systemPrompt: 'You are a portfolio management specialist for construction projects. You analyze project health, progress trends, and help identify projects that need intervention.',
-  suggestions: ['Which projects are at risk?', 'Summarize project status', 'Show overdue projects'],
+  suggestions(s) {
+    const atRisk = (s.projects ?? []).filter(p => p.status === 'At Risk').length;
+    return atRisk
+      ? ['Which projects are at risk?', 'Summarize project status', 'Show overdue projects']
+      : ['Summarize project status', 'Which projects are at risk?', 'Show overdue projects'];
+  },
+  insight(s) {
+    const atRisk = (s.projects ?? []).filter(p => p.status === 'At Risk').length;
+    const overdue = (s.projects ?? []).filter(p => p.status === 'Overdue').length;
+    if (!atRisk && !overdue) return null;
+    return `${atRisk} at risk, ${overdue} overdue`;
+  },
+  alerts(s) {
+    const overdue = (s.projects ?? []).filter(p => p.status === 'Overdue').length;
+    return overdue ? { level: 'warning', count: overdue, label: 'overdue projects' } : null;
+  },
+  actions: () => [
+    { id: 'portfolio-review', label: 'Schedule portfolio review', execute: () => 'Scheduled portfolio review meeting.' },
+    { id: 'export-status', label: 'Export project status report', execute: () => 'Exported project status CSV.' },
+  ],
   buildContext(s) {
     const projects = s.projects ?? [];
     return `All projects (${projects.length}):\n${fmtProjects(projects)}`;
@@ -252,7 +407,28 @@ const openEstimates: WidgetAgent = {
   id: 'openEstimates',
   name: 'Open Estimates',
   systemPrompt: 'You are an estimating coordinator for construction projects. You track estimate pipelines, approval workflows, and help prioritize estimate reviews.',
-  suggestions: ['Show overdue estimates', 'What is the total estimate pipeline value?', 'Which estimates need approval?'],
+  suggestions(s) {
+    const overdue = (s.estimates ?? []).filter(e => e.daysLeft < 0).length;
+    return overdue
+      ? ['Show overdue estimates', 'What is the total estimate pipeline value?', 'Which estimates need approval?']
+      : ['What is the total estimate pipeline value?', 'Which estimates need approval?', 'Show overdue estimates'];
+  },
+  insight(s) {
+    const overdue = (s.estimates ?? []).filter(e => e.daysLeft < 0);
+    if (!overdue.length) return null;
+    return `${overdue.length} overdue estimate${overdue.length === 1 ? '' : 's'} in the pipeline`;
+  },
+  alerts(s) {
+    const overdue = (s.estimates ?? []).filter(e => e.daysLeft < 0).length;
+    return overdue ? { level: 'warning', count: overdue, label: 'overdue' } : null;
+  },
+  actions: () => [
+    { id: 'chase-approvals', label: 'Chase estimate approvals', execute: (st) => {
+      const n = (st.estimates ?? []).filter(e => e.status === 'Awaiting Approval').length;
+      return n ? `Sent reminders for ${n} estimate(s) awaiting approval.` : 'No estimates awaiting approval.';
+    }},
+    { id: 'export-pipeline', label: 'Export pipeline', execute: () => 'Exported open estimates pipeline.' },
+  ],
   buildContext(s) {
     const estimates = s.estimates ?? [];
     const lines = estimates.map(e => `  ${e.id}: ${e.project}, ${e.value} (${e.type}), status: ${e.status}, requested by ${e.requestedBy}, due ${e.dueDate}, ${e.daysLeft} days left`);
@@ -281,6 +457,15 @@ const recentActivity: WidgetAgent = {
   name: 'Recent Activity',
   systemPrompt: 'You are a project activity analyst. You track recent changes, updates, and team actions across construction projects.',
   suggestions: ['What changed today?', 'Show the most recent updates', 'Who has been most active this week?'],
+  insight(s) {
+    const n = (s.activities ?? []).length;
+    return n ? `${n} recent update${n === 1 ? '' : 's'} on the feed` : null;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'mark-all-read', label: 'Mark feed as read', execute: () => 'Marked activity as read.' },
+    { id: 'subscribe-digest', label: 'Subscribe to daily digest', execute: () => 'Subscribed to daily activity digest.' },
+  ],
   buildContext(s) {
     const activities = s.activities ?? [];
     const lines = activities.map(a => `  ${a.text} (${a.timeAgo})`);
@@ -296,7 +481,28 @@ const needsAttention: WidgetAgent = {
   id: 'needsAttention',
   name: 'Needs Attention',
   systemPrompt: 'You are a project risk coordinator. You identify items that need immediate attention, escalation, or management intervention across the portfolio.',
-  suggestions: ['What needs attention today?', 'Show critical items', 'Which items are most urgent?'],
+  suggestions(s) {
+    const items = s.attentionItems ?? [];
+    return items.length
+      ? ['What needs attention today?', 'Show critical items', 'Which items are most urgent?']
+      : ['Show critical items', 'What needs attention today?', 'Which items are most urgent?'];
+  },
+  insight(s) {
+    const items = s.attentionItems ?? [];
+    if (!items.length) return null;
+    return `${items.length} item${items.length === 1 ? '' : 's'} need attention`;
+  },
+  alerts(s) {
+    const items = s.attentionItems ?? [];
+    return items.length ? { level: 'warning', count: items.length, label: 'attention' } : null;
+  },
+  actions: () => [
+    { id: 'ack-all', label: 'Acknowledge all items', execute: (st) => {
+      const n = (st.attentionItems ?? []).length;
+      return n ? `Acknowledged ${n} attention item(s).` : 'No items to acknowledge.';
+    }},
+    { id: 'escalate-executive', label: 'Escalate to executive team', execute: () => 'Escalated attention items to leadership.' },
+  ],
   buildContext(s) {
     const items = s.attentionItems ?? [];
     const lines = items.map(i => `  ${i.title}: ${i.subtitle}`);
@@ -312,7 +518,23 @@ const projectsDefault: WidgetAgent = {
   id: 'projectsDefault',
   name: 'Projects Dashboard',
   systemPrompt: 'You are a portfolio management assistant for a construction company. You have visibility into all projects, estimates, activity, and items needing attention.',
-  suggestions: ['Give me a portfolio summary', 'Which projects need attention?', 'What is the estimate pipeline?', 'Show recent activity'],
+  suggestions(s) {
+    const est = (s.estimates ?? []).length;
+    return est ? ['What is the estimate pipeline?', 'Give me a portfolio summary', 'Which projects need attention?', 'Show recent activity']
+      : ['Give me a portfolio summary', 'Which projects need attention?', 'What is the estimate pipeline?', 'Show recent activity'];
+  },
+  insight(s) {
+    const highBudget = (s.projects ?? []).filter(p => p.budgetPct > 80).length;
+    const atRisk = (s.projects ?? []).filter(p => p.status === 'At Risk').length;
+    if (atRisk) return `${atRisk} project${atRisk === 1 ? '' : 's'} at risk`;
+    if (highBudget) return `${highBudget} project${highBudget === 1 ? '' : 's'} over 80% budget`;
+    return null;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'new-project', label: 'Start new project intake', execute: () => 'Opened new project intake form.' },
+    { id: 'export-portfolio', label: 'Export portfolio snapshot', execute: () => 'Exported portfolio snapshot.' },
+  ],
   buildContext(s) {
     const parts: string[] = [];
     parts.push(`${(s.projects ?? []).length} projects, ${(s.estimates ?? []).length} open estimates`);
@@ -329,7 +551,26 @@ const finBudgetByProject: WidgetAgent = {
   id: 'finBudgetByProject',
   name: 'Budget by Project',
   systemPrompt: 'You are a financial controller for construction projects. You analyze budget utilization, spend rates, and forecast overruns across the portfolio.',
-  suggestions: ['Which projects are over budget?', 'Show budget utilization summary', 'What is the total spend vs. forecast?'],
+  suggestions(s) {
+    const high = (s.projects ?? []).filter(p => p.budgetPct > 80).length;
+    return high
+      ? ['Which projects are over budget?', 'Show budget utilization summary', 'What is the total spend vs. forecast?']
+      : ['Show budget utilization summary', 'Which projects are over budget?', 'What is the total spend vs. forecast?'];
+  },
+  insight(s) {
+    const high = (s.projects ?? []).filter(p => p.budgetPct > 80);
+    if (!high.length) return null;
+    const maxPct = Math.max(...high.map(p => p.budgetPct));
+    return `${high.length} project${high.length === 1 ? '' : 's'} over 80% utilization (peak ${maxPct}%)`;
+  },
+  alerts(s) {
+    const high = (s.projects ?? []).filter(p => p.budgetPct > 90).length;
+    return high ? { level: 'critical', count: high, label: 'over 90% budget' } : null;
+  },
+  actions: () => [
+    { id: 'export-budget', label: 'Export budget utilization', execute: () => 'Exported budget-by-project report.' },
+    { id: 'flag-review', label: 'Flag high-utilization projects', execute: () => 'Flagged projects over 80% for controller review.' },
+  ],
   buildContext(s) {
     const projects = s.projects ?? [];
     const lines = projects.map(p => `  ${p.name}: ${p.budgetUsed} of ${p.budgetTotal} (${p.budgetPct}%), client: ${p.client}`);
@@ -354,7 +595,24 @@ const financialsDefault: WidgetAgent = {
   id: 'financialsDefault',
   name: 'Financials Dashboard',
   systemPrompt: 'You are a financial analyst for construction project delivery. You have access to portfolio budgets, revenue data, job cost summaries, change orders, and accounts receivable.',
-  suggestions: ['How is the overall budget tracking?', 'Which projects are over budget?', 'What is the total outstanding revenue?', 'Show pending change orders'],
+  suggestions(s) {
+    const pendingCo = (s.changeOrders ?? []).filter(c => c.status === 'pending').length;
+    return pendingCo
+      ? ['Show pending change orders', 'How is the overall budget tracking?', 'What is the total outstanding revenue?', 'Which projects are over budget?']
+      : ['How is the overall budget tracking?', 'Which projects are over budget?', 'What is the total outstanding revenue?', 'Show pending change orders'];
+  },
+  insight(s) {
+    const pendingCo = (s.changeOrders ?? []).filter(c => c.status === 'pending').length;
+    const out = (s.projectRevenue ?? []).reduce((sum, r) => sum + r.outstandingRaw, 0);
+    if (out > 50000) return `$${(out / 1000).toFixed(0)}K outstanding AR across portfolio`;
+    if (pendingCo) return `${pendingCo} change order${pendingCo === 1 ? '' : 's'} pending approval`;
+    return null;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'open-revenue', label: 'Open revenue view', execute: () => 'Navigated to revenue breakdown.' },
+    { id: 'open-change-orders', label: 'Open change orders', execute: () => 'Navigated to change orders.' },
+  ],
   buildContext(s) {
     const projects = s.projects ?? [];
     const totalUsed = projects.reduce((sum, p) => sum + parseFloat(p.budgetUsed.replace(/[$K]/g, '')) * 1000, 0);
@@ -386,7 +644,25 @@ const milestonesAgent: WidgetAgent = {
   id: 'milestones',
   name: 'Milestones',
   systemPrompt: 'You are a schedule management specialist for construction projects. You track milestone progress, identify schedule risks, and advise on critical path items.',
-  suggestions: ['Which milestones are coming up?', 'Are any milestones at risk?', 'Summarize milestone completion rate'],
+  suggestions(s) {
+    const overdue = (s.milestones ?? []).filter(m => m.status === 'overdue').length;
+    return overdue
+      ? ['Are any milestones at risk?', 'Which milestones are coming up?', 'Summarize milestone completion rate']
+      : ['Which milestones are coming up?', 'Summarize milestone completion rate', 'Are any milestones at risk?'];
+  },
+  insight(s) {
+    const overdue = (s.milestones ?? []).filter(m => m.status === 'overdue');
+    if (!overdue.length) return null;
+    return `${overdue.length} overdue milestone${overdue.length === 1 ? '' : 's'}`;
+  },
+  alerts(s) {
+    const overdue = (s.milestones ?? []).filter(m => m.status === 'overdue').length;
+    return overdue ? { level: 'warning', count: overdue, label: 'overdue' } : null;
+  },
+  actions: () => [
+    { id: 'notify-owners', label: 'Notify milestone owners', execute: () => 'Sent milestone status to owners.' },
+    { id: 'export-schedule', label: 'Export milestone schedule', execute: () => 'Exported milestone list.' },
+  ],
   buildContext(s) {
     const ms = s.milestones ?? [];
     const lines = ms.map(m => `  ${m.name}: ${m.status}, due ${m.dueDate}, ${m.progress}% done`);
@@ -413,7 +689,34 @@ const tasksAgent: WidgetAgent = {
   id: 'tasks',
   name: 'Key Tasks',
   systemPrompt: 'You are a task management specialist for construction projects. You track task assignments, priorities, blockers, and help optimize workload distribution.',
-  suggestions: ['Which tasks are overdue?', 'Show high-priority tasks', 'What tasks are blocked?'],
+  suggestions(s) {
+    const tasks = s.tasks ?? [];
+    const overdue = tasks.filter(t => t.status.toLowerCase().includes('overdue') || t.status.toLowerCase().includes('delayed'));
+    return overdue.length
+      ? ['Which tasks are overdue?', 'Show high-priority tasks', 'What tasks are blocked?']
+      : ['Show high-priority tasks', 'Which tasks are overdue?', 'What tasks are blocked?'];
+  },
+  insight(s) {
+    const tasks = s.tasks ?? [];
+    const high = tasks.filter(t => t.priority === 'high').length;
+    const overdue = tasks.filter(t => t.status.toLowerCase().includes('overdue') || t.status.toLowerCase().includes('delayed')).length;
+    if (!high && !overdue) return null;
+    const parts: string[] = [];
+    if (high) parts.push(`${high} high-priority task${high === 1 ? '' : 's'}`);
+    if (overdue) parts.push(`${overdue} overdue`);
+    return parts.join(', ');
+  },
+  alerts(s) {
+    const overdue = (s.tasks ?? []).filter(t => t.status.toLowerCase().includes('overdue') || t.status.toLowerCase().includes('delayed')).length;
+    return overdue ? { level: 'warning', count: overdue, label: 'overdue' } : null;
+  },
+  actions: () => [
+    { id: 'reassign', label: 'Reassign overdue tasks', execute: (st) => {
+      const overdue = (st.tasks ?? []).filter(t => t.status.toLowerCase().includes('overdue') || t.status.toLowerCase().includes('delayed')).length;
+      return overdue ? `Reassigned ${overdue} overdue task(s).` : 'No overdue tasks to reassign.';
+    }},
+    { id: 'bump-priority', label: 'Escalate blocked tasks', execute: () => 'Escalated blocked tasks to leads.' },
+  ],
   buildContext(s) {
     const tasks = s.tasks ?? [];
     const lines = tasks.map(t => `  ${t.title}: ${t.status}, priority ${t.priority}, assigned to ${t.assignee}, due ${t.dueDate}`);
@@ -441,7 +744,25 @@ const risksAgent: WidgetAgent = {
   id: 'risks',
   name: 'Risks',
   systemPrompt: 'You are a risk management specialist for construction projects. You assess risk severity, evaluate mitigation strategies, and advise on risk response plans.',
-  suggestions: ['What are the biggest risks right now?', 'Show high-severity risks', 'What risk mitigations are in place?'],
+  suggestions(s) {
+    const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
+    return high
+      ? ['Show high-severity risks', 'What are the biggest risks right now?', 'What risk mitigations are in place?']
+      : ['What are the biggest risks right now?', 'Summarize open risks', 'What risk mitigations are in place?'];
+  },
+  insight(s) {
+    const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
+    if (!high) return null;
+    return `${high} high-severity risk${high === 1 ? '' : 's'} open`;
+  },
+  alerts(s) {
+    const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
+    return high ? { level: 'warning', count: high, label: 'high severity' } : null;
+  },
+  actions: () => [
+    { id: 'risk-workshop', label: 'Schedule risk review', execute: () => 'Scheduled risk review workshop.' },
+    { id: 'update-mitigations', label: 'Request mitigation updates', execute: () => 'Requested mitigation plan updates from owners.' },
+  ],
   buildContext(s) {
     const risks = s.risks ?? [];
     const lines = risks.map(r => `  ${r.title}: severity ${r.severity}, impact: ${r.impact}, mitigation: ${r.mitigation}`);
@@ -464,7 +785,21 @@ const drawingAgent: WidgetAgent = {
   id: 'drawing',
   name: 'Drawing',
   systemPrompt: 'You are a document control specialist for construction projects. You track drawing revisions, review cycles, and help manage the drawing submission process.',
-  suggestions: ['How many drawings need review?', 'Show latest drawing revisions', 'Are there any drawing approval bottlenecks?'],
+  suggestions(s) {
+    const n = (s.drawings ?? []).length;
+    return n > 5
+      ? ['Show latest drawing revisions', 'How many drawings need review?', 'Are there any drawing approval bottlenecks?']
+      : ['How many drawings need review?', 'Show latest drawing revisions', 'Are there any drawing approval bottlenecks?'];
+  },
+  insight(s) {
+    const n = (s.drawings ?? []).length;
+    return n ? `${n} drawing${n === 1 ? '' : 's'} in the set` : null;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'issue-transmittal', label: 'Issue transmittal', execute: () => 'Created drawing transmittal draft.' },
+    { id: 'notify-subs', label: 'Notify subcontractors of updates', execute: () => 'Notified subs of latest drawing set.' },
+  ],
   buildContext(s) {
     const parts: string[] = [`Project: ${s.projectName}`];
     if (s.latestDrawing) {
@@ -498,7 +833,28 @@ const budgetAgent: WidgetAgent = {
   id: 'budget',
   name: 'Budget',
   systemPrompt: 'You are a cost control specialist for construction projects. You analyze burn rates, forecast overruns, advise on budget allocation, and track cost categories.',
-  suggestions: ['How is the budget tracking?', 'Which cost categories are over budget?', 'Forecast the end-of-project spend'],
+  suggestions(s) {
+    const pct = s.budgetPct ?? 0;
+    return pct > 80
+      ? ['Explain budget overrun risk', 'How is the budget tracking?', 'Which cost categories are over budget?', 'Forecast the end-of-project spend']
+      : ['How is the budget tracking?', 'Which cost categories are over budget?', 'Forecast the end-of-project spend'];
+  },
+  insight(s) {
+    const pct = s.budgetPct ?? 0;
+    if (pct <= 80 && (s.budgetHealthy ?? true)) return null;
+    const history = s.budgetHistory ?? [];
+    const last = history.filter(h => h.actual != null && h.actual > 0).pop();
+    const trend = last && last.actual > last.planned ? 'trending above plan' : 'watch burn rate';
+    return `${pct}% utilized -- ${trend}`;
+  },
+  alerts(s) {
+    const pct = s.budgetPct ?? 0;
+    return pct > 80 ? { level: 'warning', count: 1, label: 'over 80%' } : null;
+  },
+  actions: () => [
+    { id: 'freeze-noncritical', label: 'Flag discretionary spend hold', execute: () => 'Flagged discretionary spend for review.' },
+    { id: 'owner-brief', label: 'Brief project owner on variance', execute: () => 'Scheduled owner budget brief.' },
+  ],
   buildContext(s) {
     const parts: string[] = [`Project: ${s.projectName}`];
     parts.push(`Budget: ${s.budgetUsed} of ${s.budgetTotal} (${s.budgetPct}%)`);
@@ -526,7 +882,9 @@ const budgetAgent: WidgetAgent = {
   },
   localRespond(q, s) {
     if (kw(q, 'tracking', 'status', 'how', 'overview')) {
-      return `Budget is ${s.budgetPct}% utilized (${s.budgetUsed} of ${s.budgetTotal}). ${s.budgetHealthy ? 'On track.' : 'Critical -- at risk of overrun.'}${s.budgetRemaining ? ` Remaining: ${s.budgetRemaining}.` : ''}`;
+      const projCos = (s.changeOrders ?? []).filter(c => c.project === s.projectName && c.status === 'pending');
+      const coHint = projCos.length ? ` ${projCos.length} pending change order(s) may shift forecast.` : '';
+      return `Budget is ${s.budgetPct}% utilized (${s.budgetUsed} of ${s.budgetTotal}). ${s.budgetHealthy ? 'On track.' : 'Critical -- at risk of overrun.'}${s.budgetRemaining ? ` Remaining: ${s.budgetRemaining}.` : ''}${coHint}`;
     }
     if (kw(q, 'category', 'breakdown', 'cost')) {
       const bd = s.budgetBreakdown ?? [];
@@ -553,7 +911,22 @@ const teamAgent: WidgetAgent = {
   id: 'team',
   name: 'Team',
   systemPrompt: 'You are a resource management specialist for construction projects. You track team allocation, availability, workload distribution, and help optimize staffing.',
-  suggestions: ['Who is assigned to this project?', 'Show team availability', 'Are there any resource conflicts?'],
+  suggestions(s) {
+    const low = (s.team ?? []).filter(t => t.availability < 50).length;
+    return low
+      ? ['Show team availability', 'Who is assigned to this project?', 'Are there any resource conflicts?']
+      : ['Who is assigned to this project?', 'Show team availability', 'Are there any resource conflicts?'];
+  },
+  insight(s) {
+    const low = (s.team ?? []).filter(t => t.availability < 50);
+    if (!low.length) return null;
+    return `${low.length} member${low.length === 1 ? '' : 's'} under 50% availability`;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'rebalance', label: 'Suggest workload rebalance', execute: () => 'Generated workload rebalance suggestions.' },
+    { id: 'request-backfill', label: 'Request backfill resource', execute: () => 'Submitted backfill resource request.' },
+  ],
   buildContext(s) {
     const team = s.team ?? [];
     const lines = team.map(t => `  ${t.name} (${t.role}): ${t.tasksCompleted}/${t.tasksTotal} tasks done, ${t.availability}% available`);
@@ -577,6 +950,14 @@ const activityAgent: WidgetAgent = {
   name: 'Recent Activity',
   systemPrompt: 'You are a project activity analyst for a construction project. You track recent changes, updates, and team actions.',
   suggestions: ['What changed recently on this project?', 'Show the latest updates', 'Who has been most active?'],
+  insight(s) {
+    const n = (s.projectActivity ?? []).length;
+    return n ? `${n} recent project update${n === 1 ? '' : 's'}` : null;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'pin-summary', label: 'Pin activity summary to dashboard', execute: () => 'Pinned latest activity summary.' },
+  ],
   buildContext(s) {
     const activity = s.projectActivity ?? [];
     const lines = activity.map(a => `  ${a.text} (${a.timeAgo})`);
@@ -592,7 +973,26 @@ const projectDefault: WidgetAgent = {
   id: 'projectDefault',
   name: 'Project Overview',
   systemPrompt: 'You are a project delivery assistant for a construction project. You have access to all project data including milestones, tasks, risks, budget, team, drawings, RFIs, submittals, change orders, inspections, daily reports, and weather impacts. Provide comprehensive project insights.',
-  suggestions: ['What are the biggest risks right now?', 'Summarize project progress', 'Any items needing attention?', 'How is the budget tracking?'],
+  suggestions(s) {
+    const attn = (s.projectAttentionItems ?? []).length;
+    return attn
+      ? ['Any items needing attention?', 'Summarize project progress', 'What are the biggest risks right now?', 'How is the budget tracking?']
+      : ['Summarize project progress', 'What are the biggest risks right now?', 'How is the budget tracking?', 'Any items needing attention?'];
+  },
+  insight(s) {
+    const failed = (s.inspections ?? []).filter(i => i.result === 'fail').length;
+    const overdueTasks = (s.tasks ?? []).filter(t => t.status.toLowerCase().includes('overdue')).length;
+    if (failed) return `${failed} failed inspection${failed === 1 ? '' : 's'} need follow-up`;
+    if (overdueTasks) return `${overdueTasks} overdue task${overdueTasks === 1 ? '' : 's'}`;
+    if (!(s.budgetHealthy ?? true)) return 'Budget status critical';
+    return null;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'open-records', label: 'Open project records', execute: () => 'Navigated to project records.' },
+    { id: 'open-financials', label: 'Open project financials', execute: () => 'Navigated to project financials.' },
+    { id: 'share-status', label: 'Share status one-pager', execute: () => 'Generated status one-pager link.' },
+  ],
   buildContext(s) {
     const parts: string[] = [];
     parts.push(`Project: ${s.projectName}, Status: ${s.projectStatus}`);
@@ -647,7 +1047,29 @@ const recordsRfis: WidgetAgent = {
   id: 'recordsRfis',
   name: 'RFIs (Records)',
   systemPrompt: 'You are an RFI management specialist. You have access to all RFIs for this project and can analyze response patterns, overdue items, and assignment distribution.',
-  suggestions: ['Which RFIs are overdue?', 'Show open RFIs by assignee', 'Summarize RFI status'],
+  suggestions(s) {
+    const rfis = s.rfis ?? [];
+    const overdue = rfis.filter(r => r.status === 'overdue');
+    return overdue.length
+      ? ['Which RFIs are overdue?', 'Show open RFIs by assignee', 'Summarize RFI status']
+      : ['Summarize RFI status', 'Show open RFIs by assignee', 'Which RFIs are overdue?'];
+  },
+  insight(s) {
+    const overdue = (s.rfis ?? []).filter(r => r.status === 'overdue');
+    if (!overdue.length) return null;
+    return `${overdue.length} overdue on this project`;
+  },
+  alerts(s) {
+    const overdue = (s.rfis ?? []).filter(r => r.status === 'overdue').length;
+    return overdue ? { level: 'critical', count: overdue, label: 'overdue' } : null;
+  },
+  actions: () => [
+    { id: 'nudge-assignees', label: 'Nudge assignees on overdue RFIs', execute: (st) => {
+      const n = (st.rfis ?? []).filter(r => r.status === 'overdue').length;
+      return n ? `Sent nudges for ${n} overdue RFI(s).` : 'No overdue RFIs.';
+    }},
+    { id: 'export-rfi-log', label: 'Export RFI log', execute: () => 'Exported project RFI log.' },
+  ],
   buildContext(s) {
     const rfis = s.rfis ?? [];
     if (!rfis.length) return `Project: ${s.projectName}\nNo RFIs.`;
@@ -661,7 +1083,27 @@ const recordsSubmittals: WidgetAgent = {
   id: 'recordsSubmittals',
   name: 'Submittals (Records)',
   systemPrompt: 'You are a submittal management specialist. You have access to all submittals for this project and can analyze approval cycles, overdue items, and assignment distribution.',
-  suggestions: ['Which submittals are overdue?', 'Show open submittals by assignee', 'Summarize submittal status'],
+  suggestions(s) {
+    const overdue = (s.submittals ?? []).filter(sub => sub.status === 'overdue');
+    return overdue.length
+      ? ['Which submittals are overdue?', 'Show open submittals by assignee', 'Summarize submittal status']
+      : ['Summarize submittal status', 'Show open submittals by assignee', 'Which submittals are overdue?'];
+  },
+  insight(s) {
+    const overdue = (s.submittals ?? []).filter(sub => sub.status === 'overdue');
+    if (!overdue.length) return null;
+    return `${overdue.length} overdue submittal${overdue.length === 1 ? '' : 's'} on this project`;
+  },
+  alerts(s) {
+    const overdue = (s.submittals ?? []).filter(sub => sub.status === 'overdue').length;
+    return overdue ? { level: 'critical', count: overdue, label: 'overdue' } : null;
+  },
+  actions: () => [
+    { id: 'expedite-subs', label: 'Expedite overdue reviews', execute: (st) => {
+      const n = (st.submittals ?? []).filter(sub => sub.status === 'overdue').length;
+      return n ? `Expedited ${n} overdue submittal(s).` : 'No overdue submittals.';
+    }},
+  ],
   buildContext(s) {
     const subs = s.submittals ?? [];
     if (!subs.length) return `Project: ${s.projectName}\nNo submittals.`;
@@ -675,7 +1117,10 @@ const financialsBudget: WidgetAgent = {
   id: 'financialsBudget',
   name: 'Budget (Financials)',
   systemPrompt: 'You are a cost control specialist for a construction project. You have full visibility into budget allocation, job cost categories, and spending patterns.',
-  suggestions: ['How is the budget tracking?', 'Show cost breakdown by category', 'Which categories are over budget?'],
+  suggestions: (st) => getSuggestions(budgetAgent, st),
+  insight: (st) => budgetAgent.insight?.(st) ?? null,
+  alerts: (st) => budgetAgent.alerts?.(st) ?? null,
+  actions: (st) => budgetAgent.actions?.(st) ?? [],
   buildContext(s) { return budgetAgent.buildContext(s); },
   localRespond(q, s) { return budgetAgent.localRespond(q, s); },
 };
@@ -684,7 +1129,23 @@ const financialsSubledger: WidgetAgent = {
   id: 'financialsSubledger',
   name: 'Subledger',
   systemPrompt: 'You are a cost accounting specialist for construction projects. You have access to transaction-level subledger data and can analyze spending patterns, vendor payments, and cost trends for specific cost categories.',
-  suggestions: ['Summarize transactions for this category', 'Which vendors have the highest spend?', 'Show spending trend over time'],
+  suggestions(s) {
+    const txns = s.subledgerTransactions ?? [];
+    return txns.length > 10
+      ? ['Which vendors have the highest spend?', 'Summarize transactions for this category', 'Show spending trend over time']
+      : ['Summarize transactions for this category', 'Which vendors have the highest spend?', 'Show spending trend over time'];
+  },
+  insight(s) {
+    const txns = s.subledgerTransactions ?? [];
+    if (!txns.length) return null;
+    const total = txns.reduce((sum, t) => sum + t.amount, 0);
+    return `${txns.length} txn${txns.length === 1 ? '' : 's'}, $${total.toLocaleString()} in ${s.subledgerCategory ?? 'category'}`;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'export-ledger', label: 'Export subledger CSV', execute: () => 'Exported subledger transactions.' },
+    { id: 'flag-anomaly', label: 'Flag unusual transactions', execute: () => 'Flagged transactions over 2 sigma for review.' },
+  ],
   buildContext(s) {
     const parts: string[] = [`Project: ${s.projectName}`];
     if (s.subledgerCategory) parts.push(`Cost category: ${s.subledgerCategory}`);
@@ -718,7 +1179,10 @@ const drawingsPage: WidgetAgent = {
   id: 'drawingsPage',
   name: 'Drawings Library',
   systemPrompt: 'You are a document control specialist for construction projects. You manage the drawing library, track revisions, and help navigate the document set.',
-  suggestions: ['How many drawings are in the set?', 'Show the latest revisions', 'Which drawings were recently updated?'],
+  suggestions: (st) => getSuggestions(drawingAgent, st),
+  insight: (st) => drawingAgent.insight?.(st) ?? null,
+  alerts: () => null,
+  actions: (st) => drawingAgent.actions?.(st) ?? [],
   buildContext(s) {
     const drawings = s.drawings ?? [];
     if (!drawings.length) return `Project: ${s.projectName}\nNo drawings.`;
@@ -733,6 +1197,13 @@ const drawingDetail: WidgetAgent = {
   name: 'Drawing Detail',
   systemPrompt: 'You are a drawing review specialist. You help analyze the current drawing, its revision history, and provide context about what is shown.',
   suggestions: ['What does this drawing show?', 'What revision is this?', 'When was this last updated?'],
+  insight: () => null,
+  alerts: () => null,
+  actions: () => [
+    { id: 'mark-superseded', label: 'Mark prior revision superseded', execute: () => 'Marked prior revision as superseded.' },
+    { id: 'issue-for-construction', label: 'Issue for construction', execute: () => 'Recorded IFC issuance for this sheet.' },
+    { id: 'add-cloud', label: 'Add review cloud comment', execute: () => 'Added review cloud placeholder.' },
+  ],
   buildContext(s) {
     const d = s.detailDrawing;
     if (!d) return `Project: ${s.projectName}\nNo drawing selected.`;
@@ -751,7 +1222,18 @@ const rfiDetail: WidgetAgent = {
   id: 'rfiDetail',
   name: 'RFI Detail',
   systemPrompt: 'You are an RFI resolution specialist. You help analyze the current RFI, its context, and suggest responses.',
-  suggestions: ['Summarize this RFI', 'Who is responsible?', 'Is this overdue?'],
+  suggestions(s) {
+    const r = s.detailRfi;
+    if (r?.status === 'overdue') return ['Is this overdue?', 'Summarize this RFI', 'Who is responsible?'];
+    return ['Summarize this RFI', 'Who is responsible?', 'Is this overdue?'];
+  },
+  insight: () => null,
+  alerts: () => null,
+  actions: () => [
+    { id: 'mark-resolved', label: 'Mark RFI resolved', execute: () => 'Marked RFI as resolved (demo).' },
+    { id: 'reassign-rfi', label: 'Reassign RFI', execute: () => 'Reassigned RFI to alternate reviewer.' },
+    { id: 'request-clarification', label: 'Request clarification from GC', execute: () => 'Sent clarification request to GC.' },
+  ],
   buildContext(s) {
     const r = s.detailRfi;
     if (!r) return 'No RFI selected.';
@@ -771,7 +1253,18 @@ const submittalDetail: WidgetAgent = {
   id: 'submittalDetail',
   name: 'Submittal Detail',
   systemPrompt: 'You are a submittal processing specialist. You help analyze the current submittal, its review status, and advise on next steps.',
-  suggestions: ['Summarize this submittal', 'Who is responsible?', 'Is this overdue?'],
+  suggestions(s) {
+    const sub = s.detailSubmittal;
+    if (sub?.status === 'overdue') return ['Is this overdue?', 'Summarize this submittal', 'Who is responsible?'];
+    return ['Summarize this submittal', 'Who is responsible?', 'Is this overdue?'];
+  },
+  insight: () => null,
+  alerts: () => null,
+  actions: () => [
+    { id: 'approve-sub', label: 'Record approval', execute: () => 'Recorded submittal approval (demo).' },
+    { id: 'revise-resubmit', label: 'Request revision', execute: () => 'Sent revision request to subcontractor.' },
+    { id: 'extend-due', label: 'Extend review due date', execute: () => 'Extended review due date by 3 business days.' },
+  ],
   buildContext(s) {
     const sub = s.detailSubmittal;
     if (!sub) return 'No submittal selected.';
@@ -791,7 +1284,26 @@ const changeOrdersAgent: WidgetAgent = {
   id: 'changeOrders',
   name: 'Change Orders',
   systemPrompt: 'You are a change order management specialist for construction projects. You track pending approvals, financial impacts, and help evaluate change requests.',
-  suggestions: ['How many change orders are pending?', 'What is the total financial impact?', 'Which change orders are approved?'],
+  suggestions(s) {
+    const pending = (s.changeOrders ?? []).filter(co => co.status === 'pending').length;
+    return pending
+      ? ['How many change orders are pending?', 'What is the total financial impact?', 'Which change orders are approved?']
+      : ['What is the total financial impact?', 'Which change orders are approved?', 'How many change orders are pending?'];
+  },
+  insight(s) {
+    const pending = (s.changeOrders ?? []).filter(co => co.status === 'pending');
+    if (!pending.length) return null;
+    const total = pending.reduce((sum, co) => sum + co.amount, 0);
+    return `${pending.length} pending, $${total.toLocaleString()} awaiting approval`;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'batch-approve', label: 'Route pending COs for signature', execute: (st) => {
+      const pending = (st.changeOrders ?? []).filter(co => co.status === 'pending').length;
+      return pending ? `Routed ${pending} change order(s) for signature.` : 'No pending change orders.';
+    }},
+    { id: 'export-co-log', label: 'Export change order log', execute: () => 'Exported change order register.' },
+  ],
   buildContext(s) {
     const cos = s.changeOrders ?? [];
     if (!cos.length) return 'No change orders.';
@@ -821,7 +1333,25 @@ const dailyReportsAgent: WidgetAgent = {
   id: 'dailyReports',
   name: 'Daily Reports',
   systemPrompt: 'You are a field operations analyst for construction projects. You track daily reports including crew counts, work performed, weather impacts, and safety incidents.',
-  suggestions: ['Show today\'s reports', 'Any safety incidents this week?', 'How many crew hours were logged today?'],
+  suggestions(s) {
+    const incidents = (s.dailyReports ?? []).reduce((sum, r) => sum + r.safetyIncidents, 0);
+    return incidents
+      ? ['Any safety incidents this week?', 'Show today\'s reports', 'How many crew hours were logged today?']
+      : ['Show today\'s reports', 'How many crew hours were logged today?', 'Any safety incidents this week?'];
+  },
+  insight(s) {
+    const incidents = (s.dailyReports ?? []).reduce((sum, r) => sum + r.safetyIncidents, 0);
+    if (incidents) return `${incidents} safety incident${incidents === 1 ? '' : 's'} logged in recent reports`;
+    return null;
+  },
+  alerts(s) {
+    const incidents = (s.dailyReports ?? []).reduce((sum, r) => sum + r.safetyIncidents, 0);
+    return incidents ? { level: 'critical', count: incidents, label: 'safety incidents' } : null;
+  },
+  actions: () => [
+    { id: 'notify-safety', label: 'Notify safety lead', execute: () => 'Notified safety lead of recent reports.' },
+    { id: 'export-drs', label: 'Export daily reports', execute: () => 'Exported daily reports PDF pack.' },
+  ],
   buildContext(s) {
     const reports = s.dailyReports ?? [];
     if (!reports.length) return 'No daily reports.';
@@ -837,7 +1367,9 @@ const dailyReportsAgent: WidgetAgent = {
       return incidents > 0 ? `${incidents} safety incident(s) reported across ${reports.length} daily reports.` : `No safety incidents across ${reports.length} reports.`;
     }
     if (kw(q, 'crew', 'hour', 'logged', 'today')) {
-      return `${reports.length} reports filed: ${totalCrew} total crew members, ${totalHours} total hours logged.`;
+      const impactDays = (s.weatherForecast ?? []).filter(f => f.workImpact !== 'none');
+      const wx = impactDays.length ? ` Weather may affect exterior crew on ${impactDays.length} day(s) this week.` : '';
+      return `${reports.length} reports filed: ${totalCrew} total crew members, ${totalHours} total hours logged.${wx}`;
     }
     if (kw(q, 'issue', 'problem', 'delay')) {
       const withIssues = reports.filter(r => r.issues && r.issues !== 'None');
@@ -851,7 +1383,28 @@ const weatherAgent: WidgetAgent = {
   id: 'weather',
   name: 'Weather Forecast',
   systemPrompt: 'You are a construction scheduling advisor who monitors weather impacts on field work. You help plan around adverse conditions and advise on schedule adjustments.',
-  suggestions: ['Will weather impact work this week?', 'When is the next rain day?', 'Show the 7-day forecast'],
+  suggestions(s) {
+    const impact = (s.weatherForecast ?? []).filter(f => f.workImpact !== 'none').length;
+    return impact
+      ? ['Will weather impact work this week?', 'When is the next rain day?', 'Show the 7-day forecast']
+      : ['Show the 7-day forecast', 'When is the next rain day?', 'Will weather impact work this week?'];
+  },
+  insight(s) {
+    const forecast = s.weatherForecast ?? [];
+    const rain = forecast.find(f => f.condition === 'rain' || f.precipPct > 50);
+    const impact = forecast.filter(f => f.workImpact !== 'none');
+    if (impact.length && rain) return `${rain.day} -- may impact exterior work`;
+    if (impact.length) return `${impact.length} day(s) with work impact this week`;
+    return null;
+  },
+  alerts(s) {
+    const impact = (s.weatherForecast ?? []).filter(f => f.workImpact !== 'none').length;
+    return impact >= 2 ? { level: 'warning', count: impact, label: 'work impact days' } : null;
+  },
+  actions: () => [
+    { id: 'notify-subs-weather', label: 'Alert subs to weather plan', execute: () => 'Sent weather lookahead to subcontractors.' },
+    { id: 'tentative-indoors', label: 'Shift critical path indoors', execute: () => 'Flagged tentative indoor trade shifts.' },
+  ],
   buildContext(s) {
     const forecast = s.weatherForecast ?? [];
     if (!forecast.length) return 'No weather data available.';
@@ -876,7 +1429,30 @@ const inspectionsAgent: WidgetAgent = {
   id: 'inspections',
   name: 'Inspections',
   systemPrompt: 'You are a quality control and compliance specialist for construction projects. You track inspections, identify failed items requiring re-inspection, and manage punch lists.',
-  suggestions: ['Any failed inspections?', 'Show pending inspections', 'Summarize punch list items'],
+  suggestions(s) {
+    const failed = (s.inspections ?? []).filter(i => i.result === 'fail').length;
+    return failed
+      ? ['Any failed inspections?', 'Show pending inspections', 'Summarize punch list items']
+      : ['Show pending inspections', 'Summarize punch list items', 'Any failed inspections?'];
+  },
+  insight(s) {
+    const failed = (s.inspections ?? []).filter(i => i.result === 'fail').length;
+    const openPunch = (s.punchListItems ?? []).filter(p => p.status === 'open' || p.status === 'in-progress').length;
+    if (failed) return `${failed} failed inspection${failed === 1 ? '' : 's'}, ${openPunch} open punch item${openPunch === 1 ? '' : 's'}`;
+    if (openPunch > 3) return `${openPunch} open punch items need closure`;
+    return null;
+  },
+  alerts(s) {
+    const failed = (s.inspections ?? []).filter(i => i.result === 'fail').length;
+    return failed ? { level: 'critical', count: failed, label: 'failed' } : null;
+  },
+  actions: () => [
+    { id: 'schedule-reinspect', label: 'Schedule re-inspections', execute: (st) => {
+      const failed = (st.inspections ?? []).filter(i => i.result === 'fail').length;
+      return failed ? `Scheduled re-inspection for ${failed} failed item(s).` : 'No failed inspections to schedule.';
+    }},
+    { id: 'punch-blitz', label: 'Assign punch blitz crew', execute: () => 'Assigned punch list blitz for next dry day.' },
+  ],
   buildContext(s) {
     const insp = s.inspections ?? [];
     const punch = s.punchListItems ?? [];
@@ -896,7 +1472,9 @@ const inspectionsAgent: WidgetAgent = {
     const punch = s.punchListItems ?? [];
     if (kw(q, 'fail', 'failed', 'deficiency')) {
       const failed = insp.filter(i => i.result === 'fail');
-      return failed.length ? `${failed.length} failed inspection(s): ${failed.map(i => `${i.type} at ${i.project} -- ${i.notes}`).join('; ')}` : 'No failed inspections.';
+      const openPunch = punch.filter(p => p.status === 'open' || p.status === 'in-progress').length;
+      const punchHint = failed.length && openPunch ? ` Related: ${openPunch} open punch item(s) may tie to these findings.` : '';
+      return failed.length ? `${failed.length} failed inspection(s): ${failed.map(i => `${i.type} at ${i.project} -- ${i.notes}`).join('; ')}${punchHint}` : 'No failed inspections.';
     }
     if (kw(q, 'pending', 'scheduled', 'upcoming')) {
       const pending = insp.filter(i => i.result === 'pending');
@@ -914,7 +1492,28 @@ const revenueAgent: WidgetAgent = {
   id: 'revenue',
   name: 'Revenue',
   systemPrompt: 'You are a revenue and accounts receivable specialist for construction projects. You track invoicing, collections, outstanding amounts, and retainage across the portfolio.',
-  suggestions: ['What is the total outstanding amount?', 'Which projects have unpaid invoices?', 'Show retainage summary'],
+  suggestions(s) {
+    const rev = s.projectRevenue ?? [];
+    const high = rev.filter(r => r.outstandingRaw > 20000).length;
+    return high
+      ? ['Which projects have unpaid invoices?', 'What is the total outstanding amount?', 'Show retainage summary']
+      : ['What is the total outstanding amount?', 'Show retainage summary', 'Which projects have unpaid invoices?'];
+  },
+  insight(s) {
+    const rev = s.projectRevenue ?? [];
+    const top = [...rev].sort((a, b) => b.outstandingRaw - a.outstandingRaw)[0];
+    if (top && top.outstandingRaw > 15000) return `Largest AR: ${top.projectName} ($${(top.outstandingRaw / 1000).toFixed(0)}K outstanding)`;
+    return null;
+  },
+  alerts(s) {
+    const rev = s.projectRevenue ?? [];
+    const late = rev.filter(r => r.outstandingRaw > 50000).length;
+    return late ? { level: 'warning', count: late, label: 'large outstanding' } : null;
+  },
+  actions: () => [
+    { id: 'send-statements', label: 'Send collection statements', execute: () => 'Queued AR statements to clients.' },
+    { id: 'retainage-release', label: 'Prepare retainage release packet', execute: () => 'Prepared retainage release checklist.' },
+  ],
   buildContext(s) {
     const rev = s.projectRevenue ?? [];
     if (!rev.length) return 'No revenue data.';
@@ -948,7 +1547,10 @@ const recordsDailyReports: WidgetAgent = {
   id: 'recordsDailyReports',
   name: 'Daily Reports (Records)',
   systemPrompt: 'You are a field operations analyst. You have access to all daily reports for this project and can analyze crew activity, weather impacts, work performed, and safety incidents.',
-  suggestions: ['Summarize recent daily reports', 'How many crew were on site this week?', 'Any safety incidents reported?', 'Which days had weather impacts?'],
+  suggestions: (st) => getSuggestions(dailyReportsAgent, st),
+  insight: (st) => dailyReportsAgent.insight?.(st) ?? null,
+  alerts: (st) => dailyReportsAgent.alerts?.(st) ?? null,
+  actions: (st) => dailyReportsAgent.actions?.(st) ?? [],
   buildContext(s) { return dailyReportsAgent.buildContext(s); },
   localRespond(q, s) { return dailyReportsAgent.localRespond(q, s); },
 };
@@ -957,7 +1559,26 @@ const recordsPunchItems: WidgetAgent = {
   id: 'recordsPunchItems',
   name: 'Punch Items (Records)',
   systemPrompt: 'You are a punch list management specialist. You have access to all punch list items for this project and can analyze open items, priorities, and resolution progress.',
-  suggestions: ['How many punch items are open?', 'Show high priority items', 'Which areas have the most punch items?', 'What is the resolution rate?'],
+  suggestions(s) {
+    const open = (s.punchListItems ?? []).filter(p => p.status === 'open' || p.status === 'in-progress').length;
+    return open
+      ? ['How many punch items are open?', 'Show high priority items', 'Which areas have the most punch items?', 'What is the resolution rate?']
+      : ['What is the resolution rate?', 'How many punch items are open?', 'Show high priority items', 'Which areas have the most punch items?'];
+  },
+  insight(s) {
+    const open = (s.punchListItems ?? []).filter(p => p.status === 'open' || p.status === 'in-progress');
+    const high = open.filter(p => p.priority === 'high').length;
+    if (!open.length) return null;
+    return high ? `${open.length} open, ${high} high priority` : `${open.length} open punch item${open.length === 1 ? '' : 's'}`;
+  },
+  alerts(s) {
+    const high = (s.punchListItems ?? []).filter(p => (p.status === 'open' || p.status === 'in-progress') && p.priority === 'high').length;
+    return high ? { level: 'warning', count: high, label: 'high priority open' } : null;
+  },
+  actions: () => [
+    { id: 'assign-blitz', label: 'Assign punch blitz', execute: () => 'Assigned punch closure blitz.' },
+    { id: 'export-punch', label: 'Export punch list', execute: () => 'Exported punch list to PDF.' },
+  ],
   buildContext(s) { return inspectionsAgent.buildContext(s); },
   localRespond(q, s) { return inspectionsAgent.localRespond(q, s); },
 };
@@ -966,7 +1587,10 @@ const recordsInspections: WidgetAgent = {
   id: 'recordsInspections',
   name: 'Inspections (Records)',
   systemPrompt: 'You are a quality control specialist. You have access to all inspections for this project and can analyze pass/fail rates, inspector activity, and compliance trends.',
-  suggestions: ['What is the inspection pass rate?', 'Any failed inspections needing follow-up?', 'Summarize recent inspections', 'Which inspectors are most active?'],
+  suggestions: (st) => getSuggestions(inspectionsAgent, st),
+  insight: (st) => inspectionsAgent.insight?.(st) ?? null,
+  alerts: (st) => inspectionsAgent.alerts?.(st) ?? null,
+  actions: (st) => inspectionsAgent.actions?.(st) ?? [],
   buildContext(s) { return inspectionsAgent.buildContext(s); },
   localRespond(q, s) { return inspectionsAgent.localRespond(q, s); },
 };
@@ -975,7 +1599,29 @@ const recordsActionItems: WidgetAgent = {
   id: 'recordsActionItems',
   name: 'Action Items (Records)',
   systemPrompt: 'You are a project coordination specialist. You track action items, alerts, and attention items that need resolution across the project.',
-  suggestions: ['What items need immediate attention?', 'Show critical action items', 'Any overdue action items?'],
+  suggestions(s) {
+    const critical = (s.projectAttentionItems ?? []).filter(i => i.severity === 'critical').length;
+    return critical
+      ? ['Show critical action items', 'What items need immediate attention?', 'Any overdue action items?']
+      : ['What items need immediate attention?', 'Show critical action items', 'Any overdue action items?'];
+  },
+  insight(s) {
+    const items = s.projectAttentionItems ?? [];
+    const critical = items.filter(i => i.severity === 'critical').length;
+    if (!items.length) return null;
+    return critical ? `${critical} critical action item${critical === 1 ? '' : 's'}` : `${items.length} open action item${items.length === 1 ? '' : 's'}`;
+  },
+  alerts(s) {
+    const critical = (s.projectAttentionItems ?? []).filter(i => i.severity === 'critical').length;
+    return critical ? { level: 'critical', count: critical, label: 'critical' } : null;
+  },
+  actions: () => [
+    { id: 'close-loop', label: 'Mark items in review', execute: (st) => {
+      const n = (st.projectAttentionItems ?? []).length;
+      return n ? `Moved ${n} item(s) to in-review.` : 'No action items.';
+    }},
+    { id: 'standup-agenda', label: 'Add to standup agenda', execute: () => 'Added action items to standup agenda.' },
+  ],
   buildContext(s) {
     const items = s.projectAttentionItems ?? [];
     if (!items.length) return 'No attention items for this project.';
@@ -996,7 +1642,10 @@ const financialsChangeOrders: WidgetAgent = {
   id: 'financialsChangeOrders',
   name: 'Change Orders (Financials)',
   systemPrompt: 'You are a change order management specialist. You have access to all change order requests for this project and can analyze pending approvals, financial impacts, and trends.',
-  suggestions: ['How many change orders are pending?', 'What is the total financial impact?', 'Which change orders were recently approved?'],
+  suggestions: (st) => getSuggestions(changeOrdersAgent, st),
+  insight: (st) => changeOrdersAgent.insight?.(st) ?? null,
+  alerts: () => null,
+  actions: (st) => changeOrdersAgent.actions?.(st) ?? [],
   buildContext(s) { return changeOrdersAgent.buildContext(s); },
   localRespond(q, s) { return changeOrdersAgent.localRespond(q, s); },
 };
@@ -1005,7 +1654,10 @@ const financialsRevenue: WidgetAgent = {
   id: 'financialsRevenue',
   name: 'Revenue (Financials)',
   systemPrompt: 'You are a revenue and accounts receivable specialist. You have access to all revenue data, invoicing status, collections, and outstanding balances for this project.',
-  suggestions: ['What is the total outstanding amount?', 'How much retainage is held?', 'Summarize collections progress', 'Which applications have the most outstanding?'],
+  suggestions: (st) => getSuggestions(revenueAgent, st),
+  insight: (st) => revenueAgent.insight?.(st) ?? null,
+  alerts: (st) => revenueAgent.alerts?.(st) ?? null,
+  actions: (st) => revenueAgent.actions?.(st) ?? [],
   buildContext(s) { return revenueAgent.buildContext(s); },
   localRespond(q, s) { return revenueAgent.localRespond(q, s); },
 };
@@ -1014,7 +1666,27 @@ const financialsCostForecasts: WidgetAgent = {
   id: 'financialsCostForecasts',
   name: 'Cost Forecasts (Financials)',
   systemPrompt: 'You are a cost forecasting specialist. You have access to budget history, planned vs actual spending, and forecast data for this project.',
-  suggestions: ['How is actual spending vs plan?', 'What is the forecast at completion?', 'Show monthly budget trends', 'Any months significantly over budget?'],
+  suggestions(s) {
+    const history = s.budgetHistory ?? [];
+    const over = history.filter(h => h.actual != null && h.actual > h.planned).length;
+    return over
+      ? ['Any months significantly over budget?', 'How is actual spending vs plan?', 'What is the forecast at completion?', 'Show monthly budget trends']
+      : ['How is actual spending vs plan?', 'What is the forecast at completion?', 'Show monthly budget trends', 'Any months significantly over budget?'];
+  },
+  insight(s) {
+    const history = s.budgetHistory ?? [];
+    const over = history.filter(h => h.actual != null && h.actual > h.planned);
+    if (!over.length) return null;
+    return `${over.length} month${over.length === 1 ? '' : 's'} ran over planned spend`;
+  },
+  alerts(s) {
+    const over = (s.budgetHistory ?? []).filter(h => h.actual != null && h.actual > h.planned).length;
+    return over >= 2 ? { level: 'warning', count: over, label: 'over-plan months' } : null;
+  },
+  actions: () => [
+    { id: 'refresh-forecast', label: 'Refresh forecast model', execute: () => 'Recalculated forecast at completion.' },
+    { id: 'owner-variance', label: 'Send variance pack to owner', execute: () => 'Sent monthly variance pack.' },
+  ],
   buildContext(s) {
     const history = s.budgetHistory ?? [];
     if (!history.length) return 'No budget history data available.';
@@ -1042,6 +1714,13 @@ const dailyReportDetail: WidgetAgent = {
   name: 'Daily Report Detail',
   systemPrompt: 'You are a field operations specialist reviewing a specific daily report. Help analyze crew activity, work performed, weather conditions, and safety details for this report.',
   suggestions: ['Summarize this daily report', 'Were there any safety concerns?', 'How does crew count compare to typical?'],
+  insight: () => null,
+  alerts: () => null,
+  actions: () => [
+    { id: 'attach-photo', label: 'Attach site photo log', execute: () => 'Linked photo log to this daily report.' },
+    { id: 'correct-crew', label: 'Submit crew count correction', execute: () => 'Submitted crew count correction for review.' },
+    { id: 'escalate-safety', label: 'Escalate safety note', execute: () => 'Escalated safety note to safety manager.' },
+  ],
   buildContext(s) { return dailyReportsAgent.buildContext(s); },
   localRespond(q, s) { return dailyReportsAgent.localRespond(q, s); },
 };
@@ -1051,6 +1730,13 @@ const inspectionDetail: WidgetAgent = {
   name: 'Inspection Detail',
   systemPrompt: 'You are a quality assurance specialist reviewing a specific inspection. Help analyze the inspection results, notes, and any required follow-up actions.',
   suggestions: ['What was the inspection result?', 'Is follow-up needed?', 'What were the inspector notes?'],
+  insight: () => null,
+  alerts: () => null,
+  actions: () => [
+    { id: 'schedule-reinspect', label: 'Schedule re-inspection', execute: () => 'Scheduled follow-up inspection.' },
+    { id: 'upload-evidence', label: 'Upload corrective evidence', execute: () => 'Uploaded corrective action photos.' },
+    { id: 'notify-subs', label: 'Notify responsible sub', execute: () => 'Notified responsible subcontractor.' },
+  ],
   buildContext(s) { return inspectionsAgent.buildContext(s); },
   localRespond(q, s) { return inspectionsAgent.localRespond(q, s); },
 };
@@ -1060,6 +1746,13 @@ const punchItemDetail: WidgetAgent = {
   name: 'Punch Item Detail',
   systemPrompt: 'You are a punch list resolution specialist reviewing a specific punch item. Help analyze the item details, priority, assignment, and resolution steps.',
   suggestions: ['What is the status of this item?', 'Who is assigned?', 'What is the priority level?'],
+  insight: () => null,
+  alerts: () => null,
+  actions: () => [
+    { id: 'mark-complete', label: 'Mark punch item complete', execute: () => 'Marked punch item complete (demo).' },
+    { id: 'reassign-trade', label: 'Reassign trade', execute: () => 'Reassigned punch item to alternate trade.' },
+    { id: 'verify-field', label: 'Request field verification', execute: () => 'Requested superintendent field verification.' },
+  ],
   buildContext(s) { return inspectionsAgent.buildContext(s); },
   localRespond(q, s) { return inspectionsAgent.localRespond(q, s); },
 };
@@ -1069,11 +1762,102 @@ const changeOrderDetail: WidgetAgent = {
   name: 'Change Order Detail',
   systemPrompt: 'You are a change order review specialist examining a specific change order. Help analyze the request details, financial impact, approval status, and justification.',
   suggestions: ['What is the financial impact?', 'What is the approval status?', 'Why was this change requested?'],
+  insight: () => null,
+  alerts: () => null,
+  actions: () => [
+    { id: 'approve-co', label: 'Record CO approval', execute: () => 'Recorded change order approval (demo).' },
+    { id: 'reject-co', label: 'Send back for pricing', execute: () => 'Sent change order back for revised pricing.' },
+    { id: 'link-budget', label: 'Link to budget line', execute: () => 'Linked change order to budget line item.' },
+  ],
   buildContext(s) { return changeOrdersAgent.buildContext(s); },
   localRespond(q, s) { return changeOrdersAgent.localRespond(q, s); },
 };
 
+const portfolioAgent: WidgetAgent = {
+  id: 'portfolio',
+  name: 'Portfolio Analysis',
+  systemPrompt: 'You are a cross-project portfolio analyst for construction delivery. Compare health, schedule, budget, RFIs, submittals, change orders, inspections, revenue, and field activity across all projects. Prioritize leadership focus and explain tradeoffs.',
+  suggestions: ['Which project has the highest risk?', 'Compare budgets across projects', 'Where are the most overdue RFIs?', 'Summarize portfolio change order exposure'],
+  insight(s) {
+    const projects = s.projects ?? [];
+    const atRisk = projects.filter(p => p.status === 'At Risk').length;
+    const overdueRfi = (s.rfis ?? []).filter(r => r.status === 'overdue').length;
+    if (atRisk && overdueRfi) return `${atRisk} at-risk project(s), ${overdueRfi} overdue RFIs portfolio-wide`;
+    if (atRisk) return `${atRisk} project(s) marked at risk`;
+    if (overdueRfi) return `${overdueRfi} overdue RFIs across projects`;
+    return null;
+  },
+  alerts: () => null,
+  actions: () => [
+    { id: 'exec-brief', label: 'Generate executive brief', execute: () => 'Generated one-page executive portfolio brief.' },
+    { id: 'align-ppm', label: 'Schedule cross-project review', execute: () => 'Scheduled PM alignment session.' },
+    { id: 'export-scorecard', label: 'Export portfolio scorecard', execute: () => 'Exported portfolio scorecard XLSX.' },
+  ],
+  buildContext(s) {
+    const parts: string[] = ['Portfolio meta-analysis context'];
+    const projects = s.projects ?? [];
+    parts.push(`${projects.length} projects:\n${fmtProjects(projects)}`);
+    const rfis = s.rfis ?? [];
+    const subs = s.submittals ?? [];
+    parts.push(`RFIs: ${rfis.length} total (${rfis.filter(r => r.status === 'overdue').length} overdue)`);
+    parts.push(`Submittals: ${subs.length} total (${subs.filter(x => x.status === 'overdue').length} overdue)`);
+    parts.push(`Open estimates: ${(s.estimates ?? []).length}`);
+    parts.push(`Attention items: ${(s.attentionItems ?? []).length}`);
+    const cos = s.changeOrders ?? [];
+    parts.push(`Change orders: ${cos.length}, ${cos.filter(c => c.status === 'pending').length} pending`);
+    const insp = s.inspections ?? [];
+    parts.push(`Inspections: ${insp.length} (${insp.filter(i => i.result === 'fail').length} failed)`);
+    const rev = s.projectRevenue ?? [];
+    if (rev.length) {
+      const out = rev.reduce((sum, r) => sum + r.outstandingRaw, 0);
+      parts.push(`Revenue: $${(out / 1000).toFixed(0)}K total outstanding AR`);
+    }
+    const impactDays = (s.weatherForecast ?? []).filter(f => f.workImpact !== 'none');
+    if (impactDays.length) parts.push(`Weather: ${impactDays.length} day(s) with work impact`);
+    parts.push(`Recent activity entries: ${(s.activities ?? []).length}`);
+    return parts.join('\n');
+  },
+  localRespond(q, s) {
+    const projects = s.projects ?? [];
+    if (kw(q, 'highest risk', 'most risk', 'riskiest', 'which project')) {
+      const scored = projects.map(p => ({
+        p,
+        score: (p.status === 'Overdue' ? 3 : 0) + (p.status === 'At Risk' ? 2 : 0) + (p.budgetPct > 90 ? 2 : p.budgetPct > 80 ? 1 : 0),
+      })).sort((a, b) => b.score - a.score);
+      const top = scored[0];
+      return top && top.score > 0
+        ? `Highest composite risk: ${top.p.name} (${top.p.status}, ${top.p.budgetPct}% budget). Compare with ${scored[1]?.p.name ?? 'others'} for context.`
+        : 'No project exceeds baseline risk thresholds in this snapshot.';
+    }
+    if (kw(q, 'compare budget', 'budgets', 'budget comparison')) {
+      const sorted = [...projects].sort((a, b) => b.budgetPct - a.budgetPct);
+      const top3 = sorted.slice(0, 3).map(p => `${p.name} ${p.budgetPct}%`).join('; ');
+      return sorted.length ? `Top budget utilization: ${top3}.` : 'No project budget data.';
+    }
+    if (kw(q, 'rfi', 'rfis')) {
+      const byProj: Record<string, number> = {};
+      for (const r of s.rfis ?? []) {
+        byProj[r.project] = (byProj[r.project] ?? 0) + (r.status === 'overdue' ? 1 : 0);
+      }
+      const worst = Object.entries(byProj).sort((a, b) => b[1] - a[1])[0];
+      return worst?.[1] ? `Most overdue RFIs: ${worst[0]} (${worst[1]}).` : 'No overdue RFIs in portfolio data.';
+    }
+    if (kw(q, 'change order', 'co ')) {
+      const pending = (s.changeOrders ?? []).filter(c => c.status === 'pending');
+      const byProj: Record<string, number> = {};
+      for (const c of pending) byProj[c.project] = (byProj[c.project] ?? 0) + c.amount;
+      const top = Object.entries(byProj).sort((a, b) => b[1] - a[1])[0];
+      return top ? `Largest pending CO exposure: ${top[0]} (~$${top[1].toLocaleString()}).` : 'No pending change orders.';
+    }
+    if (kw(q, 'overview', 'summary', 'portfolio')) {
+      return homeDefault.localRespond(q, s);
+    }
+    return `Portfolio: ${projects.length} projects, ${(s.rfis ?? []).length} RFIs, ${(s.submittals ?? []).length} submittals. Ask which project is riskiest, compare budgets, or about change order exposure.`;
+  },
+};
+
 const ALL_AGENTS: Record<string, WidgetAgent> = {
+  portfolio: portfolioAgent,
   homeTimeOff, homeCalendar, homeRfis, homeSubmittals, homeDefault,
   projects: projectsWidget, openEstimates, recentActivity, needsAttention, projectsDefault,
   finBudgetByProject, financialsDefault, revenue: revenueAgent,
