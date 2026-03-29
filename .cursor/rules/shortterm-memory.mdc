@@ -48,11 +48,41 @@ alwaysApply: true
   - All mapping functions (icon, color, badge) that appear in more than one component go in `dashboard-data.ts`.
   - Components keep thin delegate methods that call the shared function (preserves template compatibility).
 
+### Session 9 (Mar 29)
+- **Topic**: Contracts integration, detail page layout fix, merged to main
+- **What happened**:
+  1. Generated 22 contracts (8 prime + 14 subcontracts) linked to existing change orders.
+  2. Created Contracts financials subpage with KPI strip, grid/list views.
+  3. Created Contract detail view with linked change order navigation.
+  4. Wired contract agents into agentic system (subpage, detail, general).
+  5. Created standalone change-order-detail and estimate-detail pages with routing.
+  6. Fixed detail page toolbar sliding beneath collapsed side subnav (margin-left adjustment).
+  7. Pushed to dev, created PR #29, merged to main.
+
+### Session 10 (Mar 29)
+- **Topic**: PROGRESS.md update, skill updates, deep refactoring
+- **What happened**:
+  1. Scanned codebase for duplicate helper functions across all components.
+  2. Added 5 new shared utilities to `dashboard-data.ts`: `formatCurrency`, `inspectionResultBadge`, `punchPriorityBadge`, `contractTypeLabelShort`, plus delegates.
+  3. Refactored 7 consumer files to use shared utilities instead of local duplicate implementations:
+     - `record-detail-views.component.ts`: 6 methods → thin delegates
+     - `financials-subpages.component.ts`: 5 methods → thin delegates
+     - `records-subpages.component.ts`: 2 methods → thin delegates
+     - `project-dashboard.component.ts`: 5 methods → thin delegates (statusBadgeColor, inspectionResultBadge, changeOrderStatusBadge, punchPriorityBadge, formatCurrency, formatCoAmount)
+     - `change-order-detail-page.component.ts`: formatCurrency → delegate
+     - `estimate-detail-page.component.ts`: formatCurrency → delegate
+     - `financials-page.component.ts`: formatCurrency → delegate
+  4. Updated `dashboard-layout-lessons` skill with section 13: collapsed subnav toolbar overlap.
+  5. Updated `PROGRESS.md` with Phase 9 (12 items). Test count updated to 186 static tests (90 template-safety).
+- **Decisions**:
+  - `contractTypeLabelShort()` added as separate function for financials-subpages short labels ('Prime', 'PO'), while `contractTypeLabel()` keeps full labels.
+  - All `formatCurrency` variants unified to `Math.abs`-based thresholds with `toLocaleString` on K values.
+
 ## Active Context
 
-- On `dev` branch, synced with `main`.
-- Refactoring and skill updates complete. Build, type-check, and 184 static tests all pass.
-- Pre-existing SVG color lint violations remain (AI icon gradients) -- not related to changes.
+- On `dev` branch, ahead of `main` by contracts/layout fix commits.
+- Deep refactoring complete. Type-check, 186 static tests, and lint all pass cleanly.
+- Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
 
 ## Pending Items
 
@@ -60,6 +90,6 @@ alwaysApply: true
 
 ## Scratch Notes
 
-- Total commits: 155+
-- Phase 8 added to PROGRESS.md: 18 new items, bringing total to 85/93 (91%)
-- New skill: `navigation-routing` at `.cursor/skills/navigation-routing/SKILL.md`
+- Total commits: 160+
+- Phase 9 added to PROGRESS.md: 12 new items, bringing total to 97/105 (92%)
+- Shared utilities in `dashboard-data.ts`: weatherIcon, weatherIconColor, workImpactBadge, formatCurrency, inspectionResultBadge, punchPriorityBadge, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, contractTypeIcon, coBadgeColor, coTypeLabel, coTypeIcon, statusBadgeColor, estimateBadgeColor, budgetProgressClass

@@ -8,6 +8,10 @@ const SRC = readFileSync(
   resolve(__dir, '../../src/app/pages/financials-page/financials-page.component.ts'),
   'utf-8',
 );
+const DASHBOARD_PAGE_BASE = readFileSync(
+  resolve(__dir, '../../src/app/shell/services/dashboard-page-base.ts'),
+  'utf-8',
+);
 
 describe('FinancialsPageComponent (template regression)', () => {
   describe('desktop padding', () => {
@@ -31,8 +35,9 @@ describe('FinancialsPageComponent (template regression)', () => {
   });
 
   describe('reset effect', () => {
-    it('calls resetToDefaults', () => {
-      expect(SRC).toContain('resetToDefaults()');
+    it('extends DashboardPageBase which resets widgets on canvas reset tick', () => {
+      expect(SRC).toContain('extends DashboardPageBase');
+      expect(DASHBOARD_PAGE_BASE).toContain('this.engine.resetToDefaults()');
     });
   });
 

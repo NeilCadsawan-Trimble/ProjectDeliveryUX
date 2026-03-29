@@ -124,6 +124,17 @@ export const SUBNAV_CONFIGS: Record<string, SubnavConfig> = {
       { icon: 'menu', label: 'Table view', value: 'list' },
     ],
   },
+  'financials-tiles': {
+    searchPlaceholder: 'Search financials...',
+    actions: [
+      { icon: 'download', label: 'Export' },
+      { icon: 'print', label: 'Print' },
+    ],
+    viewToggles: [
+      { icon: 'apps', label: 'Grid view', value: 'grid' },
+      { icon: 'menu', label: 'List view', value: 'list' },
+    ],
+  },
   files: {
     searchPlaceholder: 'Search files...',
     actions: [

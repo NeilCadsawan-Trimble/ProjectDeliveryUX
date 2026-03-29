@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import type { Estimate, EstimateStatus } from '../../data/dashboard-data';
-import { ESTIMATES, estimateBadgeColor, dueDateClass } from '../../data/dashboard-data';
+import { ESTIMATES, estimateBadgeColor, dueDateClass, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
 
 interface LineItem {
   description: string;
@@ -266,9 +266,7 @@ export class EstimateDetailPageComponent {
     });
   }
 
-  formatCurrency(value: number): string {
-    return '$' + value.toLocaleString();
-  }
+  formatCurrency(value: number): string { return sharedFormatCurrency(value); }
 
   goBack(): void {
     this.router.navigate(['/financials']);

@@ -50,6 +50,8 @@ For each sub-page, verify this matrix is complete:
 | Status indicators | Dot + label | Dot + label on card | Dot + label in column |
 | Sorting/filtering | If present | N/A (tiles) | If present |
 | Empty state | Shown | Shown | Shown |
+| Grid/list toggle | Grid renders tile cards, list renders table | Grid shows tiles, list shows locked list | N/A |
+| Toolbar icon | Matches page type (`apps` for tiles, `bar_graph` for charts) | Same as desktop | Same as desktop |
 
 ## Implementation Order
 
@@ -106,11 +108,39 @@ These specific gaps have been found and fixed in past sessions:
 | Missing list columns | Canvas list views | Fewer columns than desktop (Weather, Safety, Priority, Follow-up, Date, Retainage, Variance) |
 | Wrong click handler | Canvas tiles and list rows | Used `navigateToX()` instead of `navigateToXFromTile()` |
 | Missing weather display | Canvas daily reports cards | Desktop showed weather but canvas cards didn't |
+| Contracts shipped desktop-only | Contracts sub-page | No canvas tiles, list, detail expansion, or KPI strip at all -- required full implementation pass |
+| Action Items incomplete canvas | Action Items sub-page | Tiles existed but lacked detail expansion, `FromTile` handlers, and list row highlighting |
+| CO type sub-pages used page nav | Prime/Potential/Subcontract COs | Canvas list used `navigateToChangeOrder()` instead of `FromTile`, no row highlighting, no tile cards in grid mode |
+| Desktop tile view rendered as list | Prime/Potential/Subcontract COs, Contracts | Grid view toggle was present but template always rendered a list -- no `subnavViewMode() === 'grid'` conditional |
+| Canvas list not gated by view mode | CO type canvas lists | Canvas list was always rendered, overlapping tiles when grid mode was selected |
+| Wrong toolbar toggle icon | Financials sub-pages | Tile-based pages (COs, Contracts) used `bar_graph` (chart) icon instead of `apps` (grid) icon |
+
+## Automated Enforcement
+
+Per-tile-prefix static tests in `tests/static/project-dashboard.spec.ts` now enforce canvas completeness at CI time. These tests verify, for every registered tile prefix:
+
+- Detail expansion pattern (`tileDetailViews()['tile-X-'...`)
+- Close button wiring (`closeTileDetail(...)`)
+- List row highlighting (`bg-primary-20` with detail view guard)
+- Z-index boost (`9999` when detail is open)
+- Template and `subpageTileIds` registration
+- `FromTile` method existence
+- `TileDetailView` type union completeness
+
+Additional static tests enforce tile view and toolbar correctness:
+
+- **Desktop grid/list parity**: Verifies that records and financials subpages with view toggles implement both `grid` and `list` rendering paths, not just one.
+- **Canvas list view gating**: Verifies canvas list sections are wrapped in `@if (subnavViewMode() === 'list')` so they don't overlap tile cards in grid mode.
+- **Toolbar toggle icon correctness**: Verifies `financials-tiles` config uses `apps` icon (for tile pages) and `financials` config uses `bar_graph` icon (for chart pages), and that `activeFinancialsSubnavConfig` selects the right one dynamically.
+- **FINANCIALS_TILE_PAGES set**: Verifies all tile-based financials pages are registered in the set that triggers the `financials-tiles` toolbar config.
+
+Running `npm run test:static` will fail if any of these are missing. See the `canvas-subpage-checklist` skill for the full list of enforced patterns and instructions for adding new sub-pages.
 
 ## Pre-Completion Verification
 
 Before marking any UI feature as complete, run through this checklist:
 
+- [ ] `npm run test:static` passes with 0 failures
 - [ ] Desktop view shows all intended data and interactions
 - [ ] Canvas card tiles include detail expansion (not just card face)
 - [ ] Canvas card `FromTile` click handlers are wired (not page navigation)
@@ -119,4 +149,8 @@ Before marking any UI feature as complete, run through this checklist:
 - [ ] Canvas list rows use `FromTile` click handlers
 - [ ] Canvas KPI strip exists if desktop has KPI cards
 - [ ] Empty states render in all three modes
+- [ ] Desktop grid view renders tile cards (not a list) when view toggle is set to grid
+- [ ] Canvas list sections are gated by `@if (subnavViewMode() === 'list')` so they don't overlap tiles
+- [ ] Toolbar toggle icon matches page type (`apps` for tile pages, `bar_graph` for chart pages)
+- [ ] If adding a new financials sub-page with tiles, add it to `FINANCIALS_TILE_PAGES` set
 - [ ] Tested across multiple projects (not just one)

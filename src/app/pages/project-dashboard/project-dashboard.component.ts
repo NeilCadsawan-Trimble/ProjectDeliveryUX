@@ -2,7 +2,6 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
   Injector,
   OnInit,
@@ -28,6 +27,7 @@ import { ItemDetailViewComponent } from '../../shared/detail/item-detail-view.co
 import { RecordsSubpagesComponent } from './components/records-subpages.component';
 import { FinancialsSubpagesComponent } from './components/financials-subpages.component';
 import { RecordDetailViewsComponent } from './components/record-detail-views.component';
+import { CanvasTileShellComponent } from './components/canvas-tile-shell.component';
 import {
   STATUS_OPTIONS,
   PUNCH_STATUS_OPTIONS,
@@ -41,10 +41,8 @@ import { PdfViewerComponent } from '../../shared/detail/pdf-viewer.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
 
 import { ThemeService } from '../../shell/services/theme.service';
-import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
-import { CanvasResetService } from '../../shell/services/canvas-reset.service';
-import { WidgetFocusService } from '../../shell/services/widget-focus.service';
-import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
+import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { SubpageTileCanvas, type TileRect, type TileDetailView } from '../../shell/services/subpage-tile-canvas';
 import { AiService } from '../../services/ai.service';
@@ -58,10 +56,11 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel } from '../../data/dashboard-data';
+import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, type ContractStatus, type ContractType } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
+import { ProjectDashboardNavigationService } from './project-dashboard-navigation.service';
 
 type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather';
 
@@ -100,7 +99,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -118,3672 +117,16 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
     '(window:keydown)': 'panning.onKeyDown($event)',
     '(window:keyup)': 'panning.onKeyUp($event)',
   },
-  template: `
-    <svg aria-hidden="true" class="svg-defs-hidden">
-      <defs>
-        <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="20%" stop-color="#FF00FF" />
-          <stop offset="60%" stop-color="#0066CC" />
-          <stop offset="100%" stop-color="#0066CC" />
-        </linearGradient>
-        <radialGradient id="ai-grad-dark" cx="18%" cy="18%" r="70%">
-          <stop offset="0%" stop-color="#FF00FF" />
-          <stop offset="50%" stop-color="#9933FF" />
-          <stop offset="100%" stop-color="#0066CC" />
-        </radialGradient>
-      </defs>
-    </svg>
-    <ng-template #childPageSubnav let-config>
-      <div class="bg-card border-default rounded-lg mb-6">
-        <div class="flex items-center justify-between px-4 py-2 gap-4">
-          <div class="flex items-center gap-2 flex-1 max-w-xs">
-            <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
-              <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
-              <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
-                [placeholder]="config.searchPlaceholder" [value]="subnavSearch()" (input)="subnavSearch.set($any($event.target).value)" />
-            </div>
-            <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
-              role="button" tabindex="0" aria-label="Filter">
-              <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
-            </div>
-          </div>
-          <div class="flex items-center gap-1">
-            @if (activeNavItem() === 'drawings' && subnavViewMode() === 'grid' && !isCanvas() && !detailView()) {
-              <div class="flex items-center gap-2 mr-2">
-                <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">zoom_out</i>
-                <input type="range" min="0.5" max="2" step="0.1"
-                  class="tile-zoom-slider"
-                  [value]="drawingTileZoom()"
-                  (input)="drawingTileZoom.set(+$any($event.target).value)"
-                  aria-label="Tile size"
-                />
-                <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">zoom_in</i>
-              </div>
-              <div class="w-px h-5 bg-foreground-20 mr-1"></div>
-            }
-            @for (btn of config.actions; track btn.icon) {
-              <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
-                role="button" tabindex="0" [attr.aria-label]="btn.label">
-                <i class="modus-icons text-base" aria-hidden="true">{{ btn.icon }}</i>
-              </div>
-            }
-            @if (config.viewToggles.length > 0) {
-              <div class="flex items-center bg-secondary rounded ml-1">
-                @for (toggle of config.viewToggles; track toggle.value) {
-                  <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150"
-                    [class]="toggle.value === 'zoom-in' || toggle.value === 'zoom-out' ? 'text-foreground-60 hover:text-foreground hover:bg-muted active:bg-primary active:text-primary-foreground' : (subnavViewMode() === toggle.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground')"
-                    role="button" tabindex="0" [attr.aria-label]="toggle.label"
-                    (click)="handleSubnavToggle(toggle.value)">
-                    <i class="modus-icons text-base" aria-hidden="true">{{ toggle.icon }}</i>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-    </ng-template>
-
-    <ng-template #detailContent>
-      <div [class]="isCanvasDrawingDetail() ? 'canvas-detail-constrained' : ''">
-        @if ((!detailHasSubNav() || isMobile()) && !detailDrawing()) {
-          <div class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
-            role="button" tabindex="0"
-            (click)="clearDetailView()"
-            (keydown.enter)="clearDetailView()"
-          >
-            <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-            <div class="text-sm font-medium">{{ detailBackLabel() }}</div>
-          </div>
-        }
-        <div class="transition-all duration-200" [style.margin-left.px]="detailHasSubNav() && !isMobile() && sideSubNavCollapsed() ? 227 : 0">
-          <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
-        </div>
-        @if (detailRfi(); as rfi) {
-          <app-item-detail-view
-            icon="clipboard"
-            typeLabel="Request for Information"
-            [number]="rfi.number"
-            [subject]="rfi.subject"
-            [question]="rfi.question"
-            [assignee]="rfi.assignee"
-            [assigneeOptions]="ASSIGNEE_OPTIONS"
-            (assigneeChange)="onDetailAssigneeChange($event)"
-            field1Label="Created By"
-            [field1Value]="rfi.askedBy"
-            field3Label="Created On"
-            [field3Value]="rfi.askedOn"
-            field4Label="Due Date"
-            [field4Value]="rfi.dueDate"
-            [field4ShowStatus]="false"
-            [currentStatus]="rfi.status"
-            [statusOptions]="STATUS_OPTIONS"
-            [statusDotClass]="itemStatusDot(rfi.status)"
-            [statusText]="capitalizeStatus(rfi.status)"
-            (statusChange)="onDetailStatusChange($event)"
-            (dueDateChange)="onDetailDueDateChange($event)"
-          />
-        }
-        @if (detailSubmittal(); as sub) {
-          <app-item-detail-view
-            icon="document"
-            typeLabel="Submittal"
-            [number]="sub.number"
-            [subject]="sub.subject"
-            [assignee]="sub.assignee"
-            [assigneeOptions]="ASSIGNEE_OPTIONS"
-            (assigneeChange)="onDetailAssigneeChange($event)"
-            [field1Value]="sub.project"
-            [field3Value]="sub.dueDate"
-            [field3DateEditable]="true"
-            [currentStatus]="sub.status"
-            [statusOptions]="STATUS_OPTIONS"
-            [statusDotClass]="itemStatusDot(sub.status)"
-            [statusText]="capitalizeStatus(sub.status)"
-            (statusChange)="onDetailStatusChange($event)"
-            (dueDateChange)="onDetailDueDateChange($event)"
-          />
-        }
-        <app-record-detail-views
-          [dailyReport]="detailDailyReport()"
-          [inspection]="detailInspection()"
-          [punchItem]="detailPunchItem()"
-          [changeOrder]="detailChangeOrder()"
-          [contract]="detailContract()"
-          (statusChange)="onDetailStatusChange($event)"
-          (assigneeChange)="onDetailAssigneeChange($event)"
-          (linkedCoClick)="onLinkedCoClick($event)"
-        />
-      </div>
-      @if (detailDrawing(); as drawing) {
-        <div class="flex flex-col flex-1 min-h-0" data-detail-view>
-          @if (drawing.file && drawing.file.endsWith('.pdf')) {
-            <div class="bg-card border-default rounded-lg overflow-hidden flex-1 min-h-0 relative">
-              <app-pdf-viewer #pdfViewer [src]="drawing.file" />
-              <ng-container [ngTemplateOutlet]="drawingToolbar" />
-            </div>
-          } @else {
-            <div class="bg-card border-default rounded-lg overflow-hidden relative flex-1 min-h-0">
-              <div class="bg-secondary overflow-hidden h-full"
-                #drawingViewer
-                [class.cursor-grab]="drawingZoom() > 1 && !_drawingPanning"
-                [class.cursor-grabbing]="_drawingPanning"
-                (mousedown)="onDrawingMouseDown($event)"
-                (mousemove)="onDrawingMouseMove($event)"
-                (mouseup)="onDrawingMouseUp()"
-                (mouseleave)="onDrawingMouseUp()"
-              >
-                <img [src]="drawing.thumbnail" [alt]="drawing.title"
-                  class="w-full h-full object-contain pointer-events-none select-none"
-                  [style.transform]="'scale(' + drawingZoom() + ') translate(' + drawingPanX() / drawingZoom() + 'px, ' + drawingPanY() / drawingZoom() + 'px)'"
-                  [style.transform-origin]="'center center'"
-                  draggable="false"
-                  (load)="onDrawingImageLoad($event)"
-                />
-              </div>
-              @if (drawingZoom() !== 1) {
-                <div class="absolute bottom-3 right-3 flex items-center gap-2 bg-card border-default rounded-lg px-3 py-1.5 shadow-toolbar">
-                  <div class="text-xs text-foreground-60 font-medium">{{ drawingNativePercent() }}%</div>
-                  <div class="w-7 h-7 rounded flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                    role="button" tabindex="0" aria-label="Reset zoom" (click)="resetDrawingZoom()">
-                    <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">refresh</i>
-                  </div>
-                </div>
-              }
-              <ng-container [ngTemplateOutlet]="drawingToolbar" />
-            </div>
-          }
-        </div>
-      }
-    </ng-template>
-
-    <ng-template #drawingToolbar>
-      <app-drawing-markup-toolbar [activeTool]="activeDrawingTool()" (toolSelect)="activeDrawingTool.set($event)" />
-    </ng-template>
-
-    <ng-template #dashboardContent>
-      @if (detailView()) {
-        @if (detailHasSubNav() && !isMobile()) {
-          <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
-            @if (activeNavItem() === 'records') {
-              <app-collapsible-subnav
-                icon="clipboard"
-                title="Records"
-                [items]="recordsSubNavItems"
-                [activeItem]="activeRecordsPage()"
-                [collapsed]="sideSubNavCollapsed()"
-                [alerts]="recordsAlerts()"
-                [canvasMode]="isCanvas()"
-                (itemSelect)="onDetailSideSubnavSelect($event)"
-                (collapsedChange)="sideSubNavCollapsed.set($event)"
-              />
-            }
-            @if (activeNavItem() === 'financials') {
-              <app-collapsible-subnav
-                icon="bar_graph"
-                title="Financials"
-                [items]="financialsSubNavItems"
-                [activeItem]="activeFinancialsPage()"
-                [collapsed]="sideSubNavCollapsed()"
-                [alerts]="financialsAlerts()"
-                [canvasMode]="isCanvas()"
-                (itemSelect)="onDetailSideSubnavSelect($event)"
-                (collapsedChange)="sideSubNavCollapsed.set($event)"
-              />
-            }
-            <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
-              <ng-container [ngTemplateOutlet]="detailContent" />
-            </div>
-          </div>
-        } @else {
-          <ng-container [ngTemplateOutlet]="detailContent" />
-        }
-      } @else {
-      @switch (activeNavItem()) {
-      @case ('drawings') {
-        @if (isSubpageCanvasActive()) {
-          <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()">
-            <!-- Locked: Section Subnav (toolbar) -->
-            <div class="absolute"
-              [style.top.px]="0"
-              [style.left.px]="0"
-              [style.width.px]="1280"
-              [style.height.px]="56"
-            >
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['drawings'] }" />
-            </div>
-            <!-- Locked: Title -->
-            <div class="absolute flex items-center justify-between"
-              [style.top.px]="72"
-              [style.left.px]="0"
-              [style.width.px]="1280"
-              [style.height.px]="40"
-            >
-              <div class="text-2xl font-bold text-foreground">Drawings ({{ drawingTiles().length }})</div>
-            </div>
-            <!-- Locked: List widget (list view mode) -->
-            @if (subnavViewMode() === 'list') {
-              <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col"
-                [style.top.px]="tilePos()['tc-list']?.top ?? 128"
-                [style.left.px]="tilePos()['tc-list']?.left ?? 0"
-                [style.width.px]="tilePos()['tc-list']?.width ?? 1280"
-                [style.height.px]="tilePos()['tc-list']?.height ?? 500"
-                [style.z-index]="1"
-              >
-                <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-2.5 border-bottom-default bg-muted flex-shrink-0">
-                  <div class="w-4"></div>
-                  <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide">Name</div>
-                  <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide">Description</div>
-                  <div class="text-xs font-medium text-foreground-60 uppercase tracking-wide">Revision</div>
-                  <div class="text-xs font-medium text-foreground-60 uppercase tracking-wide">Date</div>
-                  <div class="w-6"></div>
-                </div>
-                <div class="overflow-y-auto flex-1">
-                  @for (drawing of drawingTiles(); track drawing.id) {
-                    <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
-                      tabindex="0" (click)="navigateToDrawingDetail(drawing)" (keydown.enter)="navigateToDrawingDetail(drawing)">
-                      <input type="checkbox" class="accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" (click)="$event.stopPropagation()" />
-                      <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded bg-secondary overflow-hidden flex-shrink-0">
-                          <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
-                        </div>
-                        <div class="text-sm font-medium text-foreground truncate">{{ drawing.title }}</div>
-                      </div>
-                      <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
-                      <div class="text-xs font-medium text-foreground whitespace-nowrap">{{ drawing.revision }}</div>
-                      <div class="text-xs text-foreground-60 whitespace-nowrap">{{ drawing.date }}</div>
-                      <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
-                        role="button" tabindex="0" aria-label="More options" (click)="$event.stopPropagation()">
-                        <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-            <!-- Drawing tiles as widgets (hidden in list mode) -->
-            @if (subnavViewMode() !== 'list') {
-              @for (drawing of drawingTiles(); track drawing.id) {
-                <div class="absolute"
-                  [attr.data-tile-id]="'tile-drawing-' + drawing.id"
-                  [style.top.px]="tilePos()['tile-drawing-' + drawing.id]?.top ?? 0"
-                  [style.left.px]="tilePos()['tile-drawing-' + drawing.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-drawing-' + drawing.id]?.width ?? 308"
-                  [style.height.px]="tilePos()['tile-drawing-' + drawing.id]?.height ?? 260"
-                  [style.z-index]="tileZ()['tile-drawing-' + drawing.id] ?? 0"
-                  [class.opacity-30]="tileMoveTargetId() === 'tile-drawing-' + drawing.id"
-                  (mousedown)="selectTileWidget('tile-drawing-' + drawing.id)"
-                >
-                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-drawing-' + drawing.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-drawing-' + drawing.id">
-                    <div class="flex items-start justify-between px-3 pt-3 pb-2 cursor-move select-none flex-shrink-0"
-                      (mousedown)="tileCanvas.onTileMouseDown('tile-drawing-' + drawing.id, $event)">
-                      <div class="flex items-start gap-2 min-w-0 flex-1">
-                        <input type="checkbox" class="mt-1 accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()" />
-                        <div class="min-w-0 flex-1">
-                          <div class="text-sm font-semibold text-foreground truncate">{{ drawing.title }}</div>
-                          <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
-                        </div>
-                      </div>
-                      <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
-                        role="button" tabindex="0" aria-label="More options" (mousedown)="$event.stopPropagation()">
-                        <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
-                      </div>
-                    </div>
-                    <div class="px-3 flex-1 cursor-pointer" (mousedown)="$event.stopPropagation()" (click)="navigateToDrawingDetail(drawing)">
-                      <div class="bg-secondary rounded overflow-hidden aspect-[16/9]">
-                        <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between px-3 py-3 flex-shrink-0">
-                      <div class="text-xs font-medium text-foreground">{{ drawing.revision }}</div>
-                      <div class="text-xs text-foreground-60">{{ drawing.date }}</div>
-                    </div>
-                  </div>
-                </div>
-              }
-            }
-          </div>
-        } @else {
-        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['drawings'] }" />
-        <div class="flex flex-col gap-6">
-          <div class="flex items-center justify-between">
-            <div class="text-2xl font-bold text-foreground">Drawings ({{ drawingTiles().length }})</div>
-          </div>
-          @if (subnavViewMode() === 'grid') {
-            <div class="grid gap-4" [style.grid-template-columns]="drawingTileGridStyle()">
-              @for (drawing of drawingTiles(); track drawing.id) {
-                <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                  tabindex="0" (click)="navigateToDrawingDetail(drawing)" (keydown.enter)="navigateToDrawingDetail(drawing)">
-                  <div class="flex items-start justify-between px-3 pt-3 pb-2">
-                    <div class="flex items-start gap-2 min-w-0 flex-1">
-                      <input type="checkbox" class="mt-1 accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" (click)="$event.stopPropagation()" />
-                      <div class="min-w-0 flex-1">
-                        <div class="text-sm font-semibold text-foreground truncate">{{ drawing.title }}</div>
-                        <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
-                      role="button" tabindex="0" aria-label="More options" (click)="$event.stopPropagation()">
-                      <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
-                    </div>
-                  </div>
-                  <div class="px-3 flex-1">
-                    <div class="bg-secondary rounded overflow-hidden aspect-[4/3]">
-                      <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
-                    </div>
-                  </div>
-                  <div class="flex items-center justify-between px-3 py-3">
-                    <div class="text-xs font-medium text-foreground">{{ drawing.revision }}</div>
-                    <div class="text-xs text-foreground-60">{{ drawing.date }}</div>
-                  </div>
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="bg-card border-default rounded-lg overflow-hidden">
-              <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-2.5 border-bottom-default bg-muted">
-                <div class="w-4"></div>
-                <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide">Name</div>
-                <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide">Description</div>
-                <div class="text-xs font-medium text-foreground-60 uppercase tracking-wide">Revision</div>
-                <div class="text-xs font-medium text-foreground-60 uppercase tracking-wide">Date</div>
-                <div class="w-6"></div>
-              </div>
-              @for (drawing of drawingTiles(); track drawing.id) {
-                <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
-                  tabindex="0" (click)="navigateToDrawingDetail(drawing)" (keydown.enter)="navigateToDrawingDetail(drawing)">
-                  <input type="checkbox" class="accent-primary w-4 h-4 flex-shrink-0 cursor-pointer" [attr.aria-label]="'Select ' + drawing.title" (click)="$event.stopPropagation()" />
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded bg-secondary overflow-hidden flex-shrink-0">
-                      <img [src]="drawing.thumbnail" [alt]="drawing.title" class="w-full h-full object-cover" />
-                    </div>
-                    <div class="text-sm font-medium text-foreground truncate">{{ drawing.title }}</div>
-                  </div>
-                  <div class="text-xs text-foreground-60 truncate">{{ drawing.subtitle }}</div>
-                  <div class="text-xs font-medium text-foreground whitespace-nowrap">{{ drawing.revision }}</div>
-                  <div class="text-xs text-foreground-60 whitespace-nowrap">{{ drawing.date }}</div>
-                  <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 flex-shrink-0"
-                    role="button" tabindex="0" aria-label="More options" (click)="$event.stopPropagation()">
-                    <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">more_vertical</i>
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        </div>
-        }
-      }
-      @case ('models') {
-        @if (isSubpageCanvasActive()) {
-          <div class="relative overflow-visible" [style.min-height.px]="400">
-            <div class="absolute" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['models'] }" />
-            </div>
-            <div class="absolute flex items-center" [style.top.px]="72" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
-              <div class="text-2xl font-bold text-foreground">Models</div>
-            </div>
-            <div class="absolute" [style.top.px]="128" [style.left.px]="0">
-              <app-empty-state icon="package" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
-            </div>
-          </div>
-        } @else {
-        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['models'] }" />
-        <div class="flex flex-col gap-6">
-          <div class="flex items-center justify-between">
-            <div class="text-2xl font-bold text-foreground">Models</div>
-          </div>
-          <app-empty-state icon="package" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
-        </div>
-        }
-      }
-      @case ('records') {
-        @if (isSubpageCanvasActive()) {
-          <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()" #tileGrid>
-            <!-- Side Subnav: high z-index when expanded so widgets pass beneath -->
-            <div class="absolute overflow-visible transition-all duration-200"
-              [style.top.px]="tilePos()['tc-subnav']?.top ?? 0"
-              [style.left.px]="tilePos()['tc-subnav']?.left ?? 0"
-              [style.width.px]="227"
-              [style.z-index]="sideSubNavCollapsed() ? 10 : 9000"
-            >
-              <app-collapsible-subnav
-                icon="clipboard"
-                title="Records"
-                [items]="recordsSubNavItems"
-                [activeItem]="activeRecordsPage()"
-                [collapsed]="sideSubNavCollapsed()"
-                [alerts]="recordsAlerts()"
-                [canvasMode]="true"
-                (itemSelect)="activeRecordsPage.set($event)"
-                (collapsedChange)="sideSubNavCollapsed.set($event)"
-              />
-            </div>
-            <!-- Locked: Section Subnav (toolbar) - stays right of expanded subnav -->
-            <div class="absolute transition-all duration-200"
-              [style.top.px]="tilePos()['tc-toolbar']?.top ?? 0"
-              [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileToolbarLeft()"
-              [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileToolbarWidth()"
-              [style.height.px]="tilePos()['tc-toolbar']?.height ?? 56"
-            >
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
-            </div>
-            <!-- Locked: Title -->
-            <div class="absolute flex items-center justify-between transition-all duration-200"
-              [style.top.px]="tilePos()['tc-title']?.top ?? 72"
-              [style.left.px]="tilePos()['tc-title']?.left ?? tileContentLeft()"
-              [style.width.px]="tilePos()['tc-title']?.width ?? tileContentWidth()"
-              [style.height.px]="tilePos()['tc-title']?.height ?? 40"
-            >
-              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
-            </div>
-            <!-- Locked: Weather forecast strip (daily reports only) -->
-            @if (activeRecordsPage() === 'daily-reports') {
-              <div class="absolute transition-all duration-200"
-                [style.top.px]="tilePos()['tc-weather']?.top ?? 128"
-                [style.left.px]="tilePos()['tc-weather']?.left ?? tileContentLeft()"
-                [style.width.px]="tilePos()['tc-weather']?.width ?? tileContentWidth()"
-                [style.height.px]="tilePos()['tc-weather']?.height ?? 80"
-                [style.z-index]="2"
-              >
-                <div class="bg-card border-default rounded-lg p-4 flex gap-3 overflow-hidden h-full items-center">
-                  @for (day of weatherForecast; track day.date) {
-                    <div class="flex flex-col items-center gap-1 min-w-[72px] px-3 py-3 rounded-lg"
-                      [class]="day.workImpact === 'major' ? 'bg-destructive-20' : day.workImpact === 'minor' ? 'bg-warning-20' : 'bg-muted'">
-                      <div class="text-xs font-medium text-foreground">{{ day.day }}</div>
-                      <i class="modus-icons text-lg" aria-hidden="true">{{ weatherIcon(day.condition) }}</i>
-                      <div class="text-xs text-foreground-60">{{ day.highF }}F</div>
-                      @if (day.precipPct > 30) {
-                        <div class="text-2xs text-primary">{{ day.precipPct }}%</div>
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-            <!-- Locked: List widget (list view mode) -->
-            @if (subnavViewMode() === 'list') {
-              <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
-                [style.top.px]="tilePos()['tc-list']?.top ?? 128"
-                [style.left.px]="tilePos()['tc-list']?.left ?? tileContentLeft()"
-                [style.width.px]="tilePos()['tc-list']?.width ?? tileContentWidth()"
-                [style.height.px]="tilePos()['tc-list']?.height ?? 500"
-                [style.z-index]="1"
-              >
-                @if (activeRecordsPage() === 'rfis') {
-                  <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                    <div>RFI #</div>
-                    <div>Subject</div>
-                    <div>Assignee</div>
-                    <div>Due Date</div>
-                    <div>Status</div>
-                  </div>
-                  <div class="overflow-y-auto flex-1">
-                    @for (rfi of projectRfis(); track rfi.id) {
-                      <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                        [class.bg-primary-20]="!!tileDetailViews()['tile-rfi-' + rfi.id]"
-                        tabindex="0" (click)="navigateToRfiFromTile(rfi, 'tile-rfi-' + rfi.id)" (keydown.enter)="navigateToRfiFromTile(rfi, 'tile-rfi-' + rfi.id)">
-                        <div class="text-sm font-medium text-primary">{{ rfi.number }}</div>
-                        <div class="text-sm text-foreground truncate">{{ rfi.subject }}</div>
-                        <div class="text-sm text-foreground-60 truncate">{{ rfi.assignee }}</div>
-                        <div class="text-sm text-foreground-60">{{ rfi.dueDate }}</div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
-                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                } @else if (activeRecordsPage() === 'submittals') {
-                  <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                    <div>SUB #</div>
-                    <div>Subject</div>
-                    <div>Assignee</div>
-                    <div>Due Date</div>
-                    <div>Status</div>
-                  </div>
-                  <div class="overflow-y-auto flex-1">
-                    @for (sub of projectSubmittals(); track sub.id) {
-                      <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                        [class.bg-primary-20]="!!tileDetailViews()['tile-sub-' + sub.id]"
-                        tabindex="0" (click)="navigateToSubFromTile(sub, 'tile-sub-' + sub.id)" (keydown.enter)="navigateToSubFromTile(sub, 'tile-sub-' + sub.id)">
-                        <div class="text-sm font-medium text-primary">{{ sub.number }}</div>
-                        <div class="text-sm text-foreground truncate">{{ sub.subject }}</div>
-                        <div class="text-sm text-foreground-60 truncate">{{ sub.assignee }}</div>
-                        <div class="text-sm text-foreground-60">{{ sub.dueDate }}</div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
-                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                } @else if (activeRecordsPage() === 'daily-reports') {
-                  <div class="grid grid-cols-[100px_1fr_120px_80px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                    <div>Date</div><div>Author</div><div>Weather</div><div>Crew</div><div>Hours</div><div>Safety</div>
-                  </div>
-                  <div class="overflow-y-auto flex-1">
-                    @for (dr of projectDailyReports(); track dr.id) {
-                      <div class="grid grid-cols-[100px_1fr_120px_80px_80px_60px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                        [class.bg-primary-20]="!!tileDetailViews()['tile-dr-' + dr.id]"
-                        tabindex="0" (click)="navigateToDailyReportFromTile(dr, 'tile-dr-' + dr.id)" (keydown.enter)="navigateToDailyReportFromTile(dr, 'tile-dr-' + dr.id)">
-                        <div class="text-sm font-medium text-primary">{{ dr.date }}</div>
-                        <div class="text-sm text-foreground truncate">{{ dr.author }}</div>
-                        <div class="text-sm text-foreground-60 truncate">{{ dr.weather }}</div>
-                        <div class="text-sm text-foreground-60">{{ dr.crewCount }}</div>
-                        <div class="text-sm text-foreground-60">{{ dr.hoursWorked }}</div>
-                        <div class="text-sm" [class]="dr.safetyIncidents > 0 ? 'text-destructive font-medium' : 'text-foreground-60'">{{ dr.safetyIncidents }}</div>
-                      </div>
-                    }
-                  </div>
-                } @else if (activeRecordsPage() === 'punch-items') {
-                  <div class="grid grid-cols-[80px_1fr_120px_80px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                    <div>ID</div><div>Description</div><div>Location</div><div>Priority</div><div>Status</div><div>Assignee</div>
-                  </div>
-                  <div class="overflow-y-auto flex-1">
-                    @for (pl of projectPunchItems(); track pl.id) {
-                      <div class="grid grid-cols-[80px_1fr_120px_80px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                        [class.bg-primary-20]="!!tileDetailViews()['tile-pl-' + pl.id]"
-                        tabindex="0" (click)="navigateToPunchItemFromTile(pl, 'tile-pl-' + pl.id)" (keydown.enter)="navigateToPunchItemFromTile(pl, 'tile-pl-' + pl.id)">
-                        <div class="text-sm font-medium text-primary">{{ pl.id }}</div>
-                        <div class="text-sm text-foreground truncate">{{ pl.description }}</div>
-                        <div class="text-sm text-foreground-60 truncate">{{ pl.location }}</div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="priorityDotClass(pl.priority)"></div>
-                          <div class="text-xs font-medium text-foreground-60">{{ pl.priority }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(pl.status)"></div>
-                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(pl.status) }}</div>
-                        </div>
-                        <div class="text-sm text-foreground-60 truncate">{{ pl.assignee }}</div>
-                      </div>
-                    }
-                  </div>
-                } @else if (activeRecordsPage() === 'inspections') {
-                  <div class="grid grid-cols-[80px_1fr_120px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                    <div>ID</div><div>Type</div><div>Date</div><div>Inspector</div><div>Result</div><div>Follow-up</div>
-                  </div>
-                  <div class="overflow-y-auto flex-1">
-                    @for (ins of projectInspections(); track ins.id) {
-                      <div class="grid grid-cols-[80px_1fr_120px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                        [class.bg-primary-20]="!!tileDetailViews()['tile-ins-' + ins.id]"
-                        tabindex="0" (click)="navigateToInspectionFromTile(ins, 'tile-ins-' + ins.id)" (keydown.enter)="navigateToInspectionFromTile(ins, 'tile-ins-' + ins.id)">
-                        <div class="text-sm font-medium text-primary">{{ ins.id }}</div>
-                        <div class="text-sm text-foreground truncate">{{ ins.type }}</div>
-                        <div class="text-sm text-foreground-60">{{ ins.date }}</div>
-                        <div class="text-sm text-foreground-60 truncate">{{ ins.inspector }}</div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="inspectionResultDotClass(ins.result)"></div>
-                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(ins.result) }}</div>
-                        </div>
-                        <div class="text-sm text-foreground-60 truncate">{{ ins.followUp || '--' }}</div>
-                      </div>
-                    }
-                  </div>
-                } @else if (activeRecordsPage() === 'action-items') {
-                  <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                    <div>Severity</div><div>Title</div><div>Description</div><div>Category</div>
-                  </div>
-                  <div class="overflow-y-auto flex-1">
-                    @for (ai of projectAttentionItems(); track ai.id) {
-                      <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="severityDotClass(ai.severity)"></div>
-                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(ai.severity) }}</div>
-                        </div>
-                        <div class="text-sm font-medium text-foreground truncate">{{ ai.title }}</div>
-                        <div class="text-sm text-foreground-60 truncate">{{ ai.subtitle }}</div>
-                        <div class="text-xs text-foreground-60">{{ ai.category }}</div>
-                      </div>
-                    }
-                  </div>
-                } @else {
-                  <div class="flex flex-col items-center justify-center flex-1 text-foreground-40 py-10">
-                    <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
-                    <div class="text-sm">Select a record type from the sidebar</div>
-                  </div>
-                }
-              </div>
-            }
-            <!-- RFI tiles as widgets -->
-            @if (activeRecordsPage() === 'rfis') {
-              @for (rfi of projectRfis(); track rfi.id) {
-                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-rfi-' + rfi.id]) {
-                <div
-                  [class]="'absolute' + (tileMoveTargetId() !== 'tile-rfi-' + rfi.id ? ' widget-detail-transition' : '')"
-                  [attr.data-tile-id]="'tile-rfi-' + rfi.id"
-                  [style.top.px]="tilePos()['tile-rfi-' + rfi.id]?.top ?? 0"
-                  [style.left.px]="tilePos()['tile-rfi-' + rfi.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-rfi-' + rfi.id]?.width ?? 308"
-                  [style.height.px]="tilePos()['tile-rfi-' + rfi.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-rfi-' + rfi.id] ? 9999 : (tileZ()['tile-rfi-' + rfi.id] ?? 0)"
-                  [class.opacity-30]="tileMoveTargetId() === 'tile-rfi-' + rfi.id"
-                  (mousedown)="selectTileWidget('tile-rfi-' + rfi.id); tileDetailViews()['tile-rfi-' + rfi.id] ? $event.stopPropagation() : null"
-                >
-                @if (tileDetailViews()['tile-rfi-' + rfi.id]; as detail) {
-                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-rfi-' + rfi.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-rfi-' + rfi.id">
-                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-rfi-' + rfi.id)">
-                      <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="itemStatusDot($any(detail).item.status)">
-                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">clipboard</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.number }}</div>
-                      </div>
-                      <div class="flex items-center gap-2 flex-shrink-0">
-                        <div class="relative">
-                          <div class="flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer hover:bg-muted transition-colors duration-150"
-                            (click)="toggleTileHeaderStatus('tile-rfi-' + rfi.id, $event)"
-                            (mousedown)="$event.stopPropagation()">
-                            <div class="w-2 h-2 rounded-full" [class]="itemStatusDot($any(detail).item.status)"></div>
-                            <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
-                            <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
-                          </div>
-                          @if (tileHeaderStatusOpen() === 'tile-rfi-' + rfi.id) {
-                            <div class="absolute top-full right-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[160px] py-1"
-                              role="listbox" (mousedown)="$event.stopPropagation()">
-                              @for (opt of STATUS_OPTIONS; track opt.value) {
-                                <div class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted transition-colors duration-150"
-                                  role="option" [attr.aria-selected]="opt.value === $any(detail).item.status"
-                                  (click)="onTileHeaderStatusSelect('tile-rfi-' + rfi.id, opt.value, $event)">
-                                  <div class="w-2 h-2 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
-                                  <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
-                                  @if (opt.value === $any(detail).item.status) {
-                                    <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
-                                  }
-                                </div>
-                              }
-                            </div>
-                          }
-                        </div>
-                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                          (click)="closeTileDetail('tile-rfi-' + rfi.id)" aria-label="Close detail">
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-5">
-                      <app-item-detail-view
-                        [hideHeader]="true"
-                        icon="clipboard" typeLabel="Request for Information"
-                        [number]="$any(detail).item.number" [subject]="$any(detail).item.subject"
-                        [question]="$any(detail).item.question" [assignee]="$any(detail).item.assignee"
-                        [assigneeOptions]="ASSIGNEE_OPTIONS"
-                        (assigneeChange)="onTileDetailAssigneeChange('tile-rfi-' + rfi.id, $event)"
-                        field1Label="Created By" [field1Value]="$any(detail).item.askedBy"
-                        field3Label="Created On" [field3Value]="$any(detail).item.askedOn"
-                        field4Label="Due Date" [field4Value]="$any(detail).item.dueDate" [field4ShowStatus]="false"
-                        [currentStatus]="$any(detail).item.status" [statusOptions]="STATUS_OPTIONS"
-                        [statusDotClass]="itemStatusDot($any(detail).item.status)"
-                        [statusText]="capitalizeStatus($any(detail).item.status)"
-                        (statusChange)="onTileDetailStatusChange('tile-rfi-' + rfi.id, $event)"
-                        (dueDateChange)="onTileDetailDueDateChange('tile-rfi-' + rfi.id, $event)"
-                      />
-                    </div>
-                  </div>
-                } @else {
-                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-rfi-' + rfi.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-rfi-' + rfi.id">
-                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="tileCanvas.onTileMouseDown('tile-rfi-' + rfi.id, $event)">
-                      <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="itemStatusDot(rfi.status)">
-                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">clipboard</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground">{{ rfi.number }}</div>
-                      </div>
-                      <div class="flex items-center gap-1.5">
-                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
-                        <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
-                      </div>
-                    </div>
-                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0" (click)="navigateToRfiFromTile(rfi, 'tile-rfi-' + rfi.id)" (keydown.enter)="navigateToRfiFromTile(rfi, 'tile-rfi-' + rfi.id)" (mousedown)="$event.stopPropagation()">
-                      <div class="text-sm text-foreground line-clamp-2">{{ rfi.subject }}</div>
-                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
-                        <div class="flex items-center gap-1.5">
-                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
-                          <div>{{ rfi.assignee }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                          <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                          <div>{{ rfi.dueDate }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                }
-                </div>
-                }
-              }
-            }
-            <!-- Submittal tiles as widgets -->
-            @if (activeRecordsPage() === 'submittals') {
-              @for (sub of projectSubmittals(); track sub.id) {
-                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-sub-' + sub.id]) {
-                <div
-                  [class]="'absolute' + (tileMoveTargetId() !== 'tile-sub-' + sub.id ? ' widget-detail-transition' : '')"
-                  [attr.data-tile-id]="'tile-sub-' + sub.id"
-                  [style.top.px]="tilePos()['tile-sub-' + sub.id]?.top ?? 0"
-                  [style.left.px]="tilePos()['tile-sub-' + sub.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-sub-' + sub.id]?.width ?? 308"
-                  [style.height.px]="tilePos()['tile-sub-' + sub.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-sub-' + sub.id] ? 9999 : (tileZ()['tile-sub-' + sub.id] ?? 0)"
-                  [class.opacity-30]="tileMoveTargetId() === 'tile-sub-' + sub.id"
-                  (mousedown)="selectTileWidget('tile-sub-' + sub.id); tileDetailViews()['tile-sub-' + sub.id] ? $event.stopPropagation() : null"
-                >
-                @if (tileDetailViews()['tile-sub-' + sub.id]; as detail) {
-                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-sub-' + sub.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-sub-' + sub.id">
-                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-sub-' + sub.id)">
-                      <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="itemStatusDot($any(detail).item.status)">
-                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">document</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.number }}</div>
-                      </div>
-                      <div class="flex items-center gap-2 flex-shrink-0">
-                        <div class="relative">
-                          <div class="flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer hover:bg-muted transition-colors duration-150"
-                            (click)="toggleTileHeaderStatus('tile-sub-' + sub.id, $event)"
-                            (mousedown)="$event.stopPropagation()">
-                            <div class="w-2 h-2 rounded-full" [class]="itemStatusDot($any(detail).item.status)"></div>
-                            <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
-                            <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
-                          </div>
-                          @if (tileHeaderStatusOpen() === 'tile-sub-' + sub.id) {
-                            <div class="absolute top-full right-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[160px] py-1"
-                              role="listbox" (mousedown)="$event.stopPropagation()">
-                              @for (opt of STATUS_OPTIONS; track opt.value) {
-                                <div class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted transition-colors duration-150"
-                                  role="option" [attr.aria-selected]="opt.value === $any(detail).item.status"
-                                  (click)="onTileHeaderStatusSelect('tile-sub-' + sub.id, opt.value, $event)">
-                                  <div class="w-2 h-2 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
-                                  <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
-                                  @if (opt.value === $any(detail).item.status) {
-                                    <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
-                                  }
-                                </div>
-                              }
-                            </div>
-                          }
-                        </div>
-                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                          (click)="closeTileDetail('tile-sub-' + sub.id)" aria-label="Close detail">
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-5">
-                      <app-item-detail-view
-                        [hideHeader]="true"
-                        icon="document" typeLabel="Submittal"
-                        [number]="$any(detail).item.number" [subject]="$any(detail).item.subject"
-                        [assignee]="$any(detail).item.assignee"
-                        [assigneeOptions]="ASSIGNEE_OPTIONS"
-                        (assigneeChange)="onTileDetailAssigneeChange('tile-sub-' + sub.id, $event)"
-                        [field1Value]="$any(detail).item.project"
-                        [field3Value]="$any(detail).item.dueDate" [field3DateEditable]="true"
-                        [currentStatus]="$any(detail).item.status" [statusOptions]="STATUS_OPTIONS"
-                        [statusDotClass]="itemStatusDot($any(detail).item.status)"
-                        [statusText]="capitalizeStatus($any(detail).item.status)"
-                        (statusChange)="onTileDetailStatusChange('tile-sub-' + sub.id, $event)"
-                        (dueDateChange)="onTileDetailDueDateChange('tile-sub-' + sub.id, $event)"
-                      />
-                    </div>
-                  </div>
-                } @else {
-                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-sub-' + sub.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-sub-' + sub.id">
-                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="tileCanvas.onTileMouseDown('tile-sub-' + sub.id, $event)">
-                      <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="itemStatusDot(sub.status)">
-                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">document</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground">{{ sub.number }}</div>
-                      </div>
-                      <div class="flex items-center gap-1.5">
-                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
-                        <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
-                      </div>
-                    </div>
-                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0" (click)="navigateToSubFromTile(sub, 'tile-sub-' + sub.id)" (keydown.enter)="navigateToSubFromTile(sub, 'tile-sub-' + sub.id)" (mousedown)="$event.stopPropagation()">
-                      <div class="text-sm text-foreground line-clamp-2">{{ sub.subject }}</div>
-                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
-                        <div class="flex items-center gap-1.5">
-                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
-                          <div>{{ sub.assignee }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                          <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                          <div>{{ sub.dueDate }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                }
-                </div>
-                }
-              }
-            }
-            <!-- Daily Report tiles -->
-            @if (activeRecordsPage() === 'daily-reports') {
-              @for (dr of projectDailyReports(); track dr.id) {
-                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-dr-' + dr.id]) {
-                <div
-                  [class]="'absolute' + (tileMoveTargetId() !== 'tile-dr-' + dr.id ? ' widget-detail-transition' : '')"
-                  [attr.data-tile-id]="'tile-dr-' + dr.id"
-                  [style.top.px]="tilePos()['tile-dr-' + dr.id]?.top ?? 0"
-                  [style.left.px]="tilePos()['tile-dr-' + dr.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-dr-' + dr.id]?.width ?? 308"
-                  [style.height.px]="tilePos()['tile-dr-' + dr.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-dr-' + dr.id] ? 9999 : (tileZ()['tile-dr-' + dr.id] ?? 0)"
-                  [class.opacity-30]="tileMoveTargetId() === 'tile-dr-' + dr.id"
-                  (mousedown)="selectTileWidget('tile-dr-' + dr.id); tileDetailViews()['tile-dr-' + dr.id] ? $event.stopPropagation() : null"
-                >
-                @if (tileDetailViews()['tile-dr-' + dr.id]; as detail) {
-                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-dr-' + dr.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-dr-' + dr.id">
-                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-dr-' + dr.id)">
-                      <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 bg-primary">
-                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">calendar</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.id }} - {{ $any(detail).item.date }}</div>
-                      </div>
-                      <div class="flex items-center gap-2 flex-shrink-0">
-                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                          (click)="closeTileDetail('tile-dr-' + dr.id)" aria-label="Close detail">
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-5">
-                      <div class="flex flex-col gap-6">
-                        <div>
-                          <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Work Performed</div>
-                          <div class="text-base text-foreground">{{ $any(detail).item.workPerformed }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-6">
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Author</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.author }}</div>
-                          </div>
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Date</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.date }}</div>
-                          </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-6">
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Crew Count</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.crewCount }}</div>
-                          </div>
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Hours Worked</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.hoursWorked }}</div>
-                          </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-6">
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Weather</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.weather }}</div>
-                          </div>
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Safety Incidents</div>
-                            <div class="text-base" [class]="$any(detail).item.safetyIncidents > 0 ? 'text-destructive font-medium' : 'text-foreground'">{{ $any(detail).item.safetyIncidents }}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-dr-' + dr.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-dr-' + dr.id">
-                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="tileCanvas.onTileMouseDown('tile-dr-' + dr.id, $event)">
-                      <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded flex items-center justify-center bg-primary">
-                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">calendar</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground">{{ dr.id }}</div>
-                      </div>
-                      <div class="text-2xs text-foreground-60">{{ dr.date }}</div>
-                    </div>
-                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0"
-                      (click)="navigateToDailyReportFromTile(dr, 'tile-dr-' + dr.id)" (keydown.enter)="navigateToDailyReportFromTile(dr, 'tile-dr-' + dr.id)" (mousedown)="$event.stopPropagation()">
-                      <div class="text-sm text-foreground line-clamp-2">{{ dr.workPerformed }}</div>
-                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
-                        <div class="flex items-center gap-1.5">
-                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
-                          <div>{{ dr.author }}</div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                          <div class="flex items-center gap-1">
-                            <i class="modus-icons text-sm" aria-hidden="true">people</i>
-                            <div>{{ dr.crewCount }}</div>
-                          </div>
-                          <div>{{ dr.hoursWorked }}h</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                }
-                </div>
-                }
-              }
-            }
-            <!-- Punch Item tiles -->
-            @if (activeRecordsPage() === 'punch-items') {
-              @for (pl of projectPunchItems(); track pl.id) {
-                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-pl-' + pl.id]) {
-                <div
-                  [class]="'absolute' + (tileMoveTargetId() !== 'tile-pl-' + pl.id ? ' widget-detail-transition' : '')"
-                  [attr.data-tile-id]="'tile-pl-' + pl.id"
-                  [style.top.px]="tilePos()['tile-pl-' + pl.id]?.top ?? 0"
-                  [style.left.px]="tilePos()['tile-pl-' + pl.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-pl-' + pl.id]?.width ?? 308"
-                  [style.height.px]="tilePos()['tile-pl-' + pl.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-pl-' + pl.id] ? 9999 : (tileZ()['tile-pl-' + pl.id] ?? 0)"
-                  [class.opacity-30]="tileMoveTargetId() === 'tile-pl-' + pl.id"
-                  (mousedown)="selectTileWidget('tile-pl-' + pl.id); tileDetailViews()['tile-pl-' + pl.id] ? $event.stopPropagation() : null"
-                >
-                @if (tileDetailViews()['tile-pl-' + pl.id]; as detail) {
-                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-pl-' + pl.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-pl-' + pl.id">
-                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-pl-' + pl.id)">
-                      <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="itemStatusDot($any(detail).item.status)">
-                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">flag</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.id }}</div>
-                      </div>
-                      <div class="flex items-center gap-2 flex-shrink-0">
-                        <div class="flex items-center gap-1.5 px-2 py-1 rounded-md">
-                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot($any(detail).item.status)"></div>
-                          <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
-                        </div>
-                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                          (click)="closeTileDetail('tile-pl-' + pl.id)" aria-label="Close detail">
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-5">
-                      <div class="flex flex-col gap-6">
-                        <div>
-                          <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Description</div>
-                          <div class="text-base text-foreground">{{ $any(detail).item.description }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-6">
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Location</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.location }}</div>
-                          </div>
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Priority</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.priority }}</div>
-                          </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-6">
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Assignee</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.assignee }}</div>
-                          </div>
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Due Date</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.dueDate }}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-pl-' + pl.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-pl-' + pl.id">
-                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="tileCanvas.onTileMouseDown('tile-pl-' + pl.id, $event)">
-                      <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="itemStatusDot(pl.status)">
-                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">flag</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground">{{ pl.id }}</div>
-                      </div>
-                      <div class="flex items-center gap-1.5">
-                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(pl.status)"></div>
-                        <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(pl.status) }}</div>
-                      </div>
-                    </div>
-                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0"
-                      (click)="navigateToPunchItemFromTile(pl, 'tile-pl-' + pl.id)" (keydown.enter)="navigateToPunchItemFromTile(pl, 'tile-pl-' + pl.id)" (mousedown)="$event.stopPropagation()">
-                      <div class="text-sm text-foreground line-clamp-2">{{ pl.description }}</div>
-                      <div class="text-xs text-foreground-60">{{ pl.location }}</div>
-                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
-                        <div class="flex items-center gap-1.5">
-                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
-                          <div>{{ pl.assignee }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="priorityDotClass(pl.priority)"></div>
-                          <div>{{ pl.priority }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                }
-                </div>
-                }
-              }
-            }
-            <!-- Inspection tiles -->
-            @if (activeRecordsPage() === 'inspections') {
-              @for (ins of projectInspections(); track ins.id) {
-                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-ins-' + ins.id]) {
-                <div
-                  [class]="'absolute' + (tileMoveTargetId() !== 'tile-ins-' + ins.id ? ' widget-detail-transition' : '')"
-                  [attr.data-tile-id]="'tile-ins-' + ins.id"
-                  [style.top.px]="tilePos()['tile-ins-' + ins.id]?.top ?? 0"
-                  [style.left.px]="tilePos()['tile-ins-' + ins.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-ins-' + ins.id]?.width ?? 308"
-                  [style.height.px]="tilePos()['tile-ins-' + ins.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-ins-' + ins.id] ? 9999 : (tileZ()['tile-ins-' + ins.id] ?? 0)"
-                  [class.opacity-30]="tileMoveTargetId() === 'tile-ins-' + ins.id"
-                  (mousedown)="selectTileWidget('tile-ins-' + ins.id); tileDetailViews()['tile-ins-' + ins.id] ? $event.stopPropagation() : null"
-                >
-                @if (tileDetailViews()['tile-ins-' + ins.id]; as detail) {
-                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-ins-' + ins.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-ins-' + ins.id">
-                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-ins-' + ins.id)">
-                      <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="inspectionResultDotClass($any(detail).item.result)">
-                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">check_circle</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.id }} - {{ $any(detail).item.type }}</div>
-                      </div>
-                      <div class="flex items-center gap-2 flex-shrink-0">
-                        <div class="flex items-center gap-1.5 px-2 py-1 rounded-md">
-                          <div class="w-2 h-2 rounded-full" [class]="inspectionResultDotClass($any(detail).item.result)"></div>
-                          <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.result) }}</div>
-                        </div>
-                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                          (click)="closeTileDetail('tile-ins-' + ins.id)" aria-label="Close detail">
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-5">
-                      <div class="flex flex-col gap-6">
-                        <div>
-                          <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Notes</div>
-                          <div class="text-base text-foreground">{{ $any(detail).item.notes }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-6">
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Inspector</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.inspector }}</div>
-                          </div>
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Date</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.date }}</div>
-                          </div>
-                        </div>
-                        @if ($any(detail).item.followUp) {
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Follow-up</div>
-                            <div class="text-base text-warning">{{ $any(detail).item.followUp }}</div>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-ins-' + ins.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-ins-' + ins.id">
-                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="tileCanvas.onTileMouseDown('tile-ins-' + ins.id, $event)">
-                      <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="inspectionResultDotClass(ins.result)">
-                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">check_circle</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground">{{ ins.id }}</div>
-                      </div>
-                      <div class="flex items-center gap-1.5">
-                        <div class="w-2 h-2 rounded-full" [class]="inspectionResultDotClass(ins.result)"></div>
-                        <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(ins.result) }}</div>
-                      </div>
-                    </div>
-                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0"
-                      (click)="navigateToInspectionFromTile(ins, 'tile-ins-' + ins.id)" (keydown.enter)="navigateToInspectionFromTile(ins, 'tile-ins-' + ins.id)" (mousedown)="$event.stopPropagation()">
-                      <div class="text-sm text-foreground line-clamp-2">{{ ins.type }}</div>
-                      <div class="text-xs text-foreground-60 line-clamp-1">{{ ins.notes }}</div>
-                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
-                        <div class="flex items-center gap-1.5">
-                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
-                          <div>{{ ins.inspector }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                          <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                          <div>{{ ins.date }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                }
-                </div>
-                }
-              }
-            }
-            <!-- Action Item tiles -->
-            @if (activeRecordsPage() === 'action-items') {
-              @for (ai of projectAttentionItems(); track ai.id) {
-                @if (subnavViewMode() !== 'list') {
-                <div class="absolute widget-detail-transition"
-                  [attr.data-tile-id]="'tile-ai-' + ai.id"
-                  [style.top.px]="tilePos()['tile-ai-' + ai.id]?.top ?? 0"
-                  [style.left.px]="tilePos()['tile-ai-' + ai.id]?.left ?? 0"
-                  [style.width.px]="tilePos()['tile-ai-' + ai.id]?.width ?? 308"
-                  [style.height.px]="tilePos()['tile-ai-' + ai.id]?.height ?? 220"
-                  [style.z-index]="tileZ()['tile-ai-' + ai.id] ?? 0"
-                  [class.opacity-30]="tileMoveTargetId() === 'tile-ai-' + ai.id"
-                  (mousedown)="selectTileWidget('tile-ai-' + ai.id)"
-                >
-                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-ai-' + ai.id"
-                    [class.border-primary]="selectedWidgetId() === 'tile-ai-' + ai.id">
-                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                      (mousedown)="tileCanvas.onTileMouseDown('tile-ai-' + ai.id, $event)">
-                      <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="severityDotClass(ai.severity)">
-                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">warning</i>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground truncate">{{ ai.title }}</div>
-                      </div>
-                    </div>
-                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0" (mousedown)="$event.stopPropagation()">
-                      <div class="text-sm text-foreground line-clamp-2">{{ ai.subtitle }}</div>
-                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="severityDotClass(ai.severity)"></div>
-                          <div>{{ capitalizeStatus(ai.severity) }}</div>
-                        </div>
-                        <div class="text-foreground-40">{{ ai.category }}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                }
-              }
-            }
-            @if (!recordsSubPageHasContent()) {
-              <div class="absolute transition-all duration-200"
-                [style.top.px]="tilePos()['tc-title']?.top ? (tilePos()['tc-title'].top + tilePos()['tc-title'].height + 16) : 128"
-                [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileToolbarLeft()"
-              >
-                <app-empty-state icon="clipboard" [title]="activeRecordsPageLabel()" [description]="activeRecordsPageDescription()" />
-              </div>
-            }
-          </div>
-        } @else {
-        <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
-          @if (!isMobile()) {
-            <app-collapsible-subnav
-              icon="clipboard"
-              title="Records"
-              [items]="recordsSubNavItems"
-              [activeItem]="activeRecordsPage()"
-              [collapsed]="sideSubNavCollapsed()"
-              [alerts]="recordsAlerts()"
-              [canvasMode]="isCanvas()"
-              (itemSelect)="activeRecordsPage.set($event)"
-              (collapsedChange)="sideSubNavCollapsed.set($event)"
-            />
-          }
-          <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
-            <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
-            </div>
-            <div class="flex items-center justify-between">
-              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
-            </div>
-            @if (activeRecordsPage() === 'rfis') {
-              @if (subnavViewMode() === 'grid') {
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  @for (rfi of projectRfis(); track rfi.id) {
-                    <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0" (click)="navigateToRfi(rfi)" (keydown.enter)="navigateToRfi(rfi)">
-                      <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
-                        <div class="flex items-center gap-3">
-                          <div class="w-9 h-9 rounded-lg flex items-center justify-center" [class]="itemStatusDot(rfi.status)">
-                            <i class="modus-icons text-lg text-primary-foreground" aria-hidden="true">clipboard</i>
-                          </div>
-                          <div class="text-base font-semibold text-foreground">{{ rfi.number }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
-                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
-                        </div>
-                      </div>
-                      <div class="px-5 py-4 flex flex-col gap-3">
-                        <div class="text-sm text-foreground line-clamp-2">{{ rfi.subject }}</div>
-                        <div class="flex items-center justify-between text-xs text-foreground-60">
-                          <div class="flex items-center gap-1.5">
-                            <i class="modus-icons text-sm" aria-hidden="true">person</i>
-                            <div>{{ rfi.assignee }}</div>
-                          </div>
-                          <div class="flex items-center gap-1.5">
-                            <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                            <div>{{ rfi.dueDate }}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  } @empty {
-                    <app-empty-state extraClass="col-span-full" icon="clipboard" title="No RFIs" description="No Requests for Information found for this project." />
-                  }
-                </div>
-              } @else {
-                <div class="bg-card border-default rounded-lg overflow-hidden">
-                  <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-                    <div>RFI #</div>
-                    <div>Subject</div>
-                    <div>Assignee</div>
-                    <div>Due Date</div>
-                    <div>Status</div>
-                  </div>
-                  @for (rfi of projectRfis(); track rfi.id) {
-                    <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                      tabindex="0" (click)="navigateToRfi(rfi)" (keydown.enter)="navigateToRfi(rfi)">
-                      <div class="text-sm font-medium text-primary">{{ rfi.number }}</div>
-                      <div class="text-sm text-foreground truncate">{{ rfi.subject }}</div>
-                      <div class="text-sm text-foreground-60 truncate">{{ rfi.assignee }}</div>
-                      <div class="text-sm text-foreground-60">{{ rfi.dueDate }}</div>
-                      <div class="flex items-center gap-1.5">
-                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
-                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
-                      </div>
-                    </div>
-                  } @empty {
-                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
-                      <div class="text-sm">No RFIs for this project</div>
-                    </div>
-                  }
-                </div>
-              }
-            } @else if (activeRecordsPage() === 'submittals') {
-              @if (subnavViewMode() === 'grid') {
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  @for (sub of projectSubmittals(); track sub.id) {
-                    <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0" (click)="navigateToSubmittal(sub)" (keydown.enter)="navigateToSubmittal(sub)">
-                      <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
-                        <div class="flex items-center gap-3">
-                          <div class="w-9 h-9 rounded-lg flex items-center justify-center" [class]="itemStatusDot(sub.status)">
-                            <i class="modus-icons text-lg text-primary-foreground" aria-hidden="true">document</i>
-                          </div>
-                          <div class="text-base font-semibold text-foreground">{{ sub.number }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
-                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
-                        </div>
-                      </div>
-                      <div class="px-5 py-4 flex flex-col gap-3">
-                        <div class="text-sm text-foreground line-clamp-2">{{ sub.subject }}</div>
-                        <div class="flex items-center justify-between text-xs text-foreground-60">
-                          <div class="flex items-center gap-1.5">
-                            <i class="modus-icons text-sm" aria-hidden="true">person</i>
-                            <div>{{ sub.assignee }}</div>
-                          </div>
-                          <div class="flex items-center gap-1.5">
-                            <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                            <div>{{ sub.dueDate }}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  } @empty {
-                    <app-empty-state extraClass="col-span-full" icon="document" title="No Submittals" description="No Submittals found for this project." />
-                  }
-                </div>
-              } @else {
-                <div class="bg-card border-default rounded-lg overflow-hidden">
-                  <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-                    <div>SUB #</div>
-                    <div>Subject</div>
-                    <div>Assignee</div>
-                    <div>Due Date</div>
-                    <div>Status</div>
-                  </div>
-                  @for (sub of projectSubmittals(); track sub.id) {
-                    <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                      tabindex="0" (click)="navigateToSubmittal(sub)" (keydown.enter)="navigateToSubmittal(sub)">
-                      <div class="text-sm font-medium text-primary">{{ sub.number }}</div>
-                      <div class="text-sm text-foreground truncate">{{ sub.subject }}</div>
-                      <div class="text-sm text-foreground-60 truncate">{{ sub.assignee }}</div>
-                      <div class="text-sm text-foreground-60">{{ sub.dueDate }}</div>
-                      <div class="flex items-center gap-1.5">
-                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
-                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
-                      </div>
-                    </div>
-                  } @empty {
-                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
-                      <div class="text-sm">No Submittals for this project</div>
-                    </div>
-                  }
-                </div>
-              }
-            } @else if (activeRecordsPage() === 'daily-reports' || activeRecordsPage() === 'punch-items' || activeRecordsPage() === 'inspections' || activeRecordsPage() === 'action-items') {
-              <app-records-subpages
-                [activePage]="activeRecordsPage()"
-                [viewMode]="subnavViewMode()"
-                [dailyReports]="projectDailyReports()"
-                [punchItems]="projectPunchItems()"
-                [inspections]="projectInspections()"
-                [actionItems]="projectAttentionItems()"
-                [weatherForecast]="weatherForecast"
-                (dailyReportClick)="navigateToDailyReport($event)"
-                (punchItemClick)="navigateToPunchItem($event)"
-                (inspectionClick)="navigateToInspection($event)"
-              />
-            } @else {
-              <app-empty-state icon="clipboard" [title]="activeRecordsPageLabel()" [description]="activeRecordsPageDescription()" />
-            }
-          </div>
-        </div>
-        }
-      }
-      @case ('field-captures') {
-        @if (isSubpageCanvasActive()) {
-          <div class="relative overflow-visible" [style.min-height.px]="400">
-            <div class="absolute" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['fieldCaptures'] }" />
-            </div>
-            <div class="absolute flex items-center" [style.top.px]="72" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
-              <div class="text-2xl font-bold text-foreground">Field Captures</div>
-            </div>
-            <div class="absolute" [style.top.px]="128" [style.left.px]="0">
-              <app-empty-state icon="camera" title="Field Captures" description="Browse photos, 360 captures, and site documentation from the field." />
-            </div>
-          </div>
-        } @else {
-        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['fieldCaptures'] }" />
-        <div class="flex flex-col gap-6">
-          <div class="flex items-center justify-between">
-            <div class="text-2xl font-bold text-foreground">Field Captures</div>
-          </div>
-          <app-empty-state icon="camera" title="Field Captures" description="Browse photos, 360 captures, and site documentation from the field." />
-        </div>
-        }
-      }
-      @case ('financials') {
-        @if (isSubpageCanvasActive()) {
-          <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()">
-            <!-- Side Subnav: high z-index when expanded so widgets pass beneath -->
-            <div class="absolute overflow-visible transition-all duration-200"
-              [style.top.px]="0" [style.left.px]="0"
-              [style.width.px]="227"
-              [style.z-index]="sideSubNavCollapsed() ? 10 : 9000"
-            >
-              <app-collapsible-subnav
-                icon="bar_graph"
-                title="Financials"
-                [items]="financialsSubNavItems"
-                [activeItem]="activeFinancialsPage()"
-                [collapsed]="sideSubNavCollapsed()"
-                [alerts]="financialsAlerts()"
-                [canvasMode]="true"
-                (itemSelect)="selectFinancialsSubPage($event)"
-                (collapsedChange)="sideSubNavCollapsed.set($event)"
-              />
-            </div>
-            <!-- Locked: Section Subnav (toolbar) - stays right of expanded subnav -->
-            <div class="absolute transition-all duration-200" [style.top.px]="tilePos()['tc-toolbar']?.top ?? 0" [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileToolbarLeft()" [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileToolbarWidth()" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
-            </div>
-            <!-- Locked: Title -->
-            @if (!subledgerCategory()) {
-            <div class="absolute flex items-center justify-between transition-all duration-200" [style.top.px]="tilePos()['tc-title']?.top ?? 72" [style.left.px]="tilePos()['tc-title']?.left ?? tileContentLeft()" [style.width.px]="tilePos()['tc-title']?.width ?? tileContentWidth()" [style.height.px]="40">
-              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'applications-for-payment') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }</div>
-            </div>
-            }
-            @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
-              @if (subledgerCategory()) {
-                <!-- Locked: Subledger header + KPIs -->
-                <div class="absolute transition-all duration-200"
-                  [style.top.px]="tilePos()['tc-subledger-header']?.top ?? 68"
-                  [style.left.px]="tilePos()['tc-subledger-header']?.left ?? tileContentLeft()"
-                  [style.width.px]="tilePos()['tc-subledger-header']?.width ?? tileContentWidth()">
-                  <ng-container [ngTemplateOutlet]="subledgerHeaderKpis" />
-                </div>
-                <!-- Resizable: Transaction Ledger -->
-                <div class="absolute bg-card border-default rounded-lg"
-                  data-widget-id="tile-subledger-ledger"
-                  [style.top.px]="tilePos()['tile-subledger-ledger']?.top"
-                  [style.left.px]="tilePos()['tile-subledger-ledger']?.left"
-                  [style.width.px]="tilePos()['tile-subledger-ledger']?.width"
-                  [style.height.px]="tilePos()['tile-subledger-ledger']?.height"
-                  [style.z-index]="tileZ()['tile-subledger-ledger'] ?? 0">
-                  <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
-                    <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
-                    <div class="text-base font-semibold text-foreground">Transaction Ledger</div>
-                    <div class="text-xs text-foreground-40 ml-auto">{{ subledgerTransactions().length }} entries</div>
-                  </div>
-                  <div class="absolute left-0 right-0 bottom-0 overflow-y-auto" style="top: 53px">
-                    <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />
-                  </div>
-                  <widget-resize-handle position="right" (resizeStart)="onSubledgerLedgerResizeStart($event)" />
-                </div>
-              } @else {
-                <!-- Locked: Budget KPIs -->
-                <div class="absolute transition-all duration-200"
-                  [style.top.px]="tilePos()['tile-budget-kpis']?.top"
-                  [style.left.px]="tilePos()['tile-budget-kpis']?.left"
-                  [style.width.px]="tilePos()['tile-budget-kpis']?.width"
-                  [style.height.px]="tilePos()['tile-budget-kpis']?.height">
-                  <ng-container [ngTemplateOutlet]="budgetKpisRaw" [ngTemplateOutletContext]="{ jcP: jcProject }" />
-                </div>
-                @for (btId of budgetTileIds; track btId) {
-                  <div class="absolute overflow-hidden"
-                    [attr.data-widget-id]="btId"
-                    [style.top.px]="tilePos()[btId]?.top"
-                    [style.left.px]="tilePos()[btId]?.left"
-                    [style.width.px]="tilePos()[btId]?.width"
-                    [style.height.px]="tilePos()[btId]?.height"
-                    [style.z-index]="tileZ()[btId] ?? 0"
-                    [class.opacity-30]="tileMoveTargetId() === btId">
-                    @switch (btId) {
-                      @case ('tile-budget-breakdown') {
-                        <ng-container [ngTemplateOutlet]="budgetBreakdownContent" [ngTemplateOutletContext]="{ jcP: jcProject }" />
-                      }
-                      @case ('tile-budget-profitfade') {
-                        <ng-container [ngTemplateOutlet]="budgetProfitFadeContent" [ngTemplateOutletContext]="{ jcP: jcProject }" />
-                      }
-                      @case ('tile-budget-costsummary') {
-                        <ng-container [ngTemplateOutlet]="budgetCostSummaryContent" [ngTemplateOutletContext]="{ jcP: jcProject }" />
-                      }
-                    }
-                  </div>
-                }
-              }
-            } @else if (activeFinancialsPage() === 'change-order-requests') {
-              <!-- Change Orders: List view -->
-              @if (subnavViewMode() === 'list') {
-                <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
-                  [style.top.px]="tilePos()['tc-list']?.top ?? 128"
-                  [style.left.px]="tilePos()['tc-list']?.left ?? tileContentLeft()"
-                  [style.width.px]="tilePos()['tc-list']?.width ?? tileContentWidth()"
-                  [style.height.px]="tilePos()['tc-list']?.height ?? 500"
-                  [style.z-index]="1">
-                  <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                    <div>CO #</div><div>Description</div><div>Amount</div><div>Status</div><div>Requested By</div><div>Date</div>
-                  </div>
-                  <div class="overflow-y-auto flex-1">
-                    @for (co of projectChangeOrders(); track co.id) {
-                      <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                        [class.bg-primary-20]="!!tileDetailViews()['tile-co-' + co.id]"
-                        tabindex="0" (click)="navigateToChangeOrderFromTile(co, 'tile-co-' + co.id)" (keydown.enter)="navigateToChangeOrderFromTile(co, 'tile-co-' + co.id)">
-                        <div class="text-sm font-medium text-primary">{{ co.id }}</div>
-                        <div class="text-sm text-foreground truncate">{{ co.description }}</div>
-                        <div class="text-sm font-medium text-foreground">{{ co.amount | currency:'USD':'symbol':'1.0-0' }}</div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="changeOrderStatusDot(co.status)"></div>
-                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(co.status) }}</div>
-                        </div>
-                        <div class="text-sm text-foreground-60 truncate">{{ co.requestedBy }}</div>
-                        <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-              <!-- Change Orders: Card tiles -->
-              @for (co of projectChangeOrders(); track co.id) {
-                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-co-' + co.id]) {
-                  <div
-                    [class]="'absolute' + (tileMoveTargetId() !== 'tile-co-' + co.id ? ' widget-detail-transition' : '')"
-                    [attr.data-tile-id]="'tile-co-' + co.id"
-                    [style.top.px]="tilePos()['tile-co-' + co.id]?.top ?? 0"
-                    [style.left.px]="tilePos()['tile-co-' + co.id]?.left ?? 0"
-                    [style.width.px]="tilePos()['tile-co-' + co.id]?.width ?? 308"
-                    [style.height.px]="tilePos()['tile-co-' + co.id]?.height ?? 220"
-                    [style.z-index]="tileDetailViews()['tile-co-' + co.id] ? 9999 : (tileZ()['tile-co-' + co.id] ?? 0)"
-                    [class.opacity-30]="tileMoveTargetId() === 'tile-co-' + co.id"
-                    (mousedown)="selectTileWidget('tile-co-' + co.id); tileDetailViews()['tile-co-' + co.id] ? $event.stopPropagation() : null">
-                  @if (tileDetailViews()['tile-co-' + co.id]; as detail) {
-                    <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                      [class.border-default]="selectedWidgetId() !== 'tile-co-' + co.id"
-                      [class.border-primary]="selectedWidgetId() === 'tile-co-' + co.id">
-                      <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                        (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-co-' + co.id)">
-                        <div class="flex items-center gap-3 min-w-0">
-                          <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="changeOrderStatusDot($any(detail).item.status)">
-                            <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">swap_horizontal</i>
-                          </div>
-                          <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.id }}</div>
-                        </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                          <div class="flex items-center gap-1.5 px-2 py-1 rounded-md">
-                            <div class="w-2 h-2 rounded-full" [class]="changeOrderStatusDot($any(detail).item.status)"></div>
-                            <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
-                          </div>
-                          <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                            (click)="closeTileDetail('tile-co-' + co.id)" aria-label="Close detail">
-                            <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flex-1 overflow-y-auto p-5">
-                        <div class="flex flex-col gap-6">
-                          <div>
-                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Description</div>
-                            <div class="text-base text-foreground">{{ $any(detail).item.description }}</div>
-                          </div>
-                          <div class="grid grid-cols-2 gap-6">
-                            <div>
-                              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Amount</div>
-                              <div class="text-lg font-bold text-foreground">{{ $any(detail).item.amount | currency:'USD':'symbol':'1.0-0' }}</div>
-                            </div>
-                            <div>
-                              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Requested By</div>
-                              <div class="text-base text-foreground">{{ $any(detail).item.requestedBy }}</div>
-                            </div>
-                          </div>
-                          <div class="grid grid-cols-2 gap-6">
-                            <div>
-                              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Request Date</div>
-                              <div class="text-base text-foreground">{{ $any(detail).item.requestDate }}</div>
-                            </div>
-                            @if ($any(detail).item.approvedDate) {
-                              <div>
-                                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Approved Date</div>
-                                <div class="text-base text-foreground">{{ $any(detail).item.approvedDate }}</div>
-                              </div>
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  } @else {
-                    <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                      [class.border-default]="selectedWidgetId() !== 'tile-co-' + co.id"
-                      [class.border-primary]="selectedWidgetId() === 'tile-co-' + co.id">
-                      <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                        (mousedown)="tileCanvas.onTileMouseDown('tile-co-' + co.id, $event)">
-                        <div class="flex items-center gap-2">
-                          <div class="w-7 h-7 rounded flex items-center justify-center" [class]="changeOrderStatusDot(co.status)">
-                            <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">swap_horizontal</i>
-                          </div>
-                          <div class="text-sm font-semibold text-foreground">{{ co.id }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full" [class]="changeOrderStatusDot(co.status)"></div>
-                          <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(co.status) }}</div>
-                        </div>
-                      </div>
-                      <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0"
-                        (click)="navigateToChangeOrderFromTile(co, 'tile-co-' + co.id)" (keydown.enter)="navigateToChangeOrderFromTile(co, 'tile-co-' + co.id)" (mousedown)="$event.stopPropagation()">
-                        <div class="text-sm text-foreground line-clamp-2">{{ co.description }}</div>
-                        <div class="text-lg font-bold text-foreground">{{ co.amount | currency:'USD':'symbol':'1.0-0' }}</div>
-                        <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
-                          <div class="flex items-center gap-1.5">
-                            <i class="modus-icons text-sm" aria-hidden="true">person</i>
-                            <div>{{ co.requestedBy }}</div>
-                          </div>
-                          <div>{{ co.requestDate }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  }
-                  </div>
-                }
-              }
-            } @else if (activeFinancialsPage() === 'prime-contract-change-orders' || activeFinancialsPage() === 'potential-change-orders' || activeFinancialsPage() === 'subcontract-change-orders') {
-              <!-- CO type sub-pages: List view -->
-              <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
-                [style.top.px]="tilePos()['tc-list']?.top ?? 128"
-                [style.left.px]="tilePos()['tc-list']?.left ?? tileContentLeft()"
-                [style.width.px]="tilePos()['tc-list']?.width ?? tileContentWidth()"
-                [style.height.px]="tilePos()['tc-list']?.height ?? 500"
-                [style.z-index]="1">
-                <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                  <div>ID</div><div>Description</div><div>Amount</div><div>Status</div><div>Requested By</div><div>Date</div>
-                </div>
-                <div class="overflow-y-auto flex-1">
-                  @for (co of activeCoTypeList(); track co.id) {
-                    <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                      tabindex="0" (click)="navigateToChangeOrder(co)" (keydown.enter)="navigateToChangeOrder(co)">
-                      <div class="text-sm font-medium text-primary">{{ co.id }}</div>
-                      <div class="text-sm text-foreground truncate">{{ co.description }}</div>
-                      <div class="text-sm font-medium text-foreground">{{ formatCoAmount(co.amount) }}</div>
-                      <div class="flex items-center gap-1.5">
-                        <div class="w-2 h-2 rounded-full" [class]="changeOrderStatusDot(co.status)"></div>
-                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(co.status) }}</div>
-                      </div>
-                      <div class="text-sm text-foreground-60 truncate">{{ co.requestedBy }}</div>
-                      <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
-                    </div>
-                  } @empty {
-                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap_horizontal</i>
-                      <div class="text-sm">No change orders of this type</div>
-                    </div>
-                  }
-                </div>
-              </div>
-            } @else if (activeFinancialsPage() === 'applications-for-payment') {
-              <!-- Revenue KPI strip -->
-              <div class="absolute transition-all duration-200"
-                [style.top.px]="tilePos()['tc-fin-kpis']?.top ?? 128"
-                [style.left.px]="tilePos()['tc-fin-kpis']?.left ?? tileContentLeft()"
-                [style.width.px]="tilePos()['tc-fin-kpis']?.width ?? tileContentWidth()"
-                [style.height.px]="tilePos()['tc-fin-kpis']?.height ?? 100"
-                [style.z-index]="2">
-                <div class="grid grid-cols-4 gap-3 h-full">
-                  @for (rev of projectRevenueData(); track rev.projectId) {
-                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-                      <div class="text-xs text-foreground-60">Contract Value</div>
-                      <div class="text-lg font-bold text-foreground">{{ rev.contractValue }}</div>
-                    </div>
-                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-                      <div class="text-xs text-foreground-60">Invoiced</div>
-                      <div class="text-lg font-bold text-foreground">{{ rev.invoiced }}</div>
-                    </div>
-                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-                      <div class="text-xs text-foreground-60">Collected</div>
-                      <div class="text-lg font-bold text-success">{{ rev.collected }}</div>
-                    </div>
-                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-                      <div class="text-xs text-foreground-60">Outstanding</div>
-                      <div class="text-lg font-bold" [class]="rev.outstandingRaw > 0 ? 'text-warning' : 'text-foreground'">{{ rev.outstanding }}</div>
-                    </div>
-                  }
-                </div>
-              </div>
-              <!-- Revenue/Applications: List view -->
-              @if (subnavViewMode() === 'list') {
-                <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
-                  [style.top.px]="tilePos()['tc-list']?.top ?? 128"
-                  [style.left.px]="tilePos()['tc-list']?.left ?? tileContentLeft()"
-                  [style.width.px]="tilePos()['tc-list']?.width ?? tileContentWidth()"
-                  [style.height.px]="tilePos()['tc-list']?.height ?? 500"
-                  [style.z-index]="1">
-                  <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                    <div>Project</div><div>Contract</div><div>Invoiced</div><div>Collected</div><div>Outstanding</div><div>Retainage</div>
-                  </div>
-                  <div class="overflow-y-auto flex-1">
-                    @for (rev of projectRevenueData(); track rev.projectId) {
-                      <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
-                        <div class="text-sm text-foreground truncate">{{ rev.projectName }}</div>
-                        <div class="text-sm font-medium text-foreground">{{ rev.contractValue }}</div>
-                        <div class="text-sm text-foreground-60">{{ rev.invoiced }}</div>
-                        <div class="text-sm text-success">{{ rev.collected }}</div>
-                        <div class="text-sm text-warning">{{ rev.outstanding }}</div>
-                        <div class="text-sm text-foreground-60">{{ rev.retainage }}</div>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-              <!-- Revenue: Card tiles -->
-              @if (subnavViewMode() !== 'list') {
-                @for (rev of projectRevenueData(); track rev.projectId) {
-                  <div class="absolute widget-detail-transition"
-                    [attr.data-tile-id]="'tile-rev-' + rev.projectId"
-                    [style.top.px]="tilePos()['tile-rev-' + rev.projectId]?.top ?? 0"
-                    [style.left.px]="tilePos()['tile-rev-' + rev.projectId]?.left ?? 0"
-                    [style.width.px]="tilePos()['tile-rev-' + rev.projectId]?.width ?? 308"
-                    [style.height.px]="tilePos()['tile-rev-' + rev.projectId]?.height ?? 220"
-                    [style.z-index]="tileZ()['tile-rev-' + rev.projectId] ?? 0"
-                    [class.opacity-30]="tileMoveTargetId() === 'tile-rev-' + rev.projectId"
-                    (mousedown)="selectTileWidget('tile-rev-' + rev.projectId)">
-                    <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                      [class.border-default]="selectedWidgetId() !== 'tile-rev-' + rev.projectId"
-                      [class.border-primary]="selectedWidgetId() === 'tile-rev-' + rev.projectId">
-                      <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                        (mousedown)="tileCanvas.onTileMouseDown('tile-rev-' + rev.projectId, $event)">
-                        <div class="flex items-center gap-2">
-                          <div class="w-7 h-7 rounded flex items-center justify-center bg-success">
-                            <i class="modus-icons text-sm text-success-foreground" aria-hidden="true">dollar</i>
-                          </div>
-                          <div class="text-sm font-semibold text-foreground truncate">{{ rev.projectName }}</div>
-                        </div>
-                      </div>
-                      <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden" (mousedown)="$event.stopPropagation()">
-                        <div class="text-lg font-bold text-foreground">{{ rev.contractValue }}</div>
-                        <div class="flex flex-col gap-1.5 text-xs text-foreground-60 mt-auto">
-                          <div class="flex items-center justify-between">
-                            <div>Invoiced</div><div class="font-medium text-foreground">{{ rev.invoiced }}</div>
-                          </div>
-                          <div class="flex items-center justify-between">
-                            <div>Collected</div><div class="font-medium text-success">{{ rev.collected }}</div>
-                          </div>
-                          <div class="flex items-center justify-between">
-                            <div>Outstanding</div><div class="font-medium text-warning">{{ rev.outstanding }}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                }
-              }
-            } @else if (activeFinancialsPage() === 'cost-forecasts') {
-              <!-- Cost Forecasts KPI strip -->
-              @if (lastBudgetPoint(); as last) {
-                <div class="absolute transition-all duration-200"
-                  [style.top.px]="tilePos()['tc-fin-kpis']?.top ?? 128"
-                  [style.left.px]="tilePos()['tc-fin-kpis']?.left ?? tileContentLeft()"
-                  [style.width.px]="tilePos()['tc-fin-kpis']?.width ?? tileContentWidth()"
-                  [style.height.px]="tilePos()['tc-fin-kpis']?.height ?? 100"
-                  [style.z-index]="2">
-                  <div class="grid grid-cols-3 gap-3 h-full">
-                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-                      <div class="text-xs text-foreground-60">Current Spend vs Plan</div>
-                      <div class="text-lg font-bold" [class]="(last.actual || 0) > last.planned ? 'text-destructive' : 'text-success'">
-                        {{ formatCurrency(last.actual || last.forecast) }} / {{ formatCurrency(last.planned) }}
-                      </div>
-                    </div>
-                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-                      <div class="text-xs text-foreground-60">Forecast at Completion</div>
-                      <div class="text-lg font-bold text-foreground">{{ formatCurrency(last.forecast) }}</div>
-                    </div>
-                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-                      <div class="text-xs text-foreground-60">Months Tracked</div>
-                      <div class="text-lg font-bold text-foreground">{{ projectBudgetHistory().length }}</div>
-                    </div>
-                  </div>
-                </div>
-              }
-              <!-- Cost Forecasts: List view -->
-              @if (subnavViewMode() === 'list') {
-                <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
-                  [style.top.px]="tilePos()['tc-list']?.top ?? 128"
-                  [style.left.px]="tilePos()['tc-list']?.left ?? tileContentLeft()"
-                  [style.width.px]="tilePos()['tc-list']?.width ?? tileContentWidth()"
-                  [style.height.px]="tilePos()['tc-list']?.height ?? 500"
-                  [style.z-index]="1">
-                  <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                    <div>Month</div><div>Planned</div><div>Actual</div><div>Forecast</div><div>Variance</div>
-                  </div>
-                  <div class="overflow-y-auto flex-1">
-                    @for (bp of projectBudgetHistory(); track $index) {
-                      <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
-                        <div class="text-sm font-medium text-foreground">{{ bp.month }}</div>
-                        <div class="text-sm text-foreground-60">{{ bp.planned | currency:'USD':'symbol':'1.0-0' }}</div>
-                        <div class="text-sm" [class]="bp.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ bp.actual > 0 ? (bp.actual | currency:'USD':'symbol':'1.0-0') : '--' }}</div>
-                        <div class="text-sm text-primary">{{ bp.forecast | currency:'USD':'symbol':'1.0-0' }}</div>
-                        <div class="text-sm" [class]="bp.actual > 0 ? (bp.actual > bp.planned ? 'text-destructive font-medium' : 'text-success') : 'text-foreground-40'">
-                          {{ bp.actual > 0 ? (bp.actual - bp.planned | currency:'USD':'symbol':'1.0-0') : '--' }}
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-              <!-- Cost Forecasts: Card tiles -->
-              @if (subnavViewMode() !== 'list') {
-                @for (bp of projectBudgetHistory(); track $index; let i = $index) {
-                  <div class="absolute widget-detail-transition"
-                    [attr.data-tile-id]="'tile-cf-' + i"
-                    [style.top.px]="tilePos()['tile-cf-' + i]?.top ?? 0"
-                    [style.left.px]="tilePos()['tile-cf-' + i]?.left ?? 0"
-                    [style.width.px]="tilePos()['tile-cf-' + i]?.width ?? 308"
-                    [style.height.px]="tilePos()['tile-cf-' + i]?.height ?? 220"
-                    [style.z-index]="tileZ()['tile-cf-' + i] ?? 0"
-                    [class.opacity-30]="tileMoveTargetId() === 'tile-cf-' + i"
-                    (mousedown)="selectTileWidget('tile-cf-' + i)">
-                    <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                      [class.border-default]="selectedWidgetId() !== 'tile-cf-' + i"
-                      [class.border-primary]="selectedWidgetId() === 'tile-cf-' + i">
-                      <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                        (mousedown)="tileCanvas.onTileMouseDown('tile-cf-' + i, $event)">
-                        <div class="flex items-center gap-2">
-                          <div class="w-7 h-7 rounded flex items-center justify-center bg-primary">
-                            <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">trending_up</i>
-                          </div>
-                          <div class="text-sm font-semibold text-foreground">{{ bp.month }}</div>
-                        </div>
-                      </div>
-                      <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden" (mousedown)="$event.stopPropagation()">
-                        <div class="flex flex-col gap-2">
-                          <div class="flex items-center justify-between">
-                            <div class="text-xs text-foreground-60">Planned</div>
-                            <div class="text-sm font-medium text-foreground">{{ bp.planned | currency:'USD':'symbol':'1.0-0' }}</div>
-                          </div>
-                          <div class="flex items-center justify-between">
-                            <div class="text-xs text-foreground-60">Actual</div>
-                            <div class="text-sm font-medium" [class]="bp.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ bp.actual > 0 ? (bp.actual | currency:'USD':'symbol':'1.0-0') : '--' }}</div>
-                          </div>
-                          <div class="flex items-center justify-between">
-                            <div class="text-xs text-foreground-60">Forecast</div>
-                            <div class="text-sm font-medium text-primary">{{ bp.forecast | currency:'USD':'symbol':'1.0-0' }}</div>
-                          </div>
-                        </div>
-                        @if (bp.actual > 0) {
-                          <div class="mt-auto">
-                            <div class="w-full bg-muted rounded-full h-1.5">
-                              <div class="h-1.5 rounded-full transition-all duration-300" [class]="bp.actual > bp.planned ? 'bg-warning' : 'bg-success'" [style.width.%]="(bp.actual / bp.planned) * 100"></div>
-                            </div>
-                            <div class="text-2xs text-foreground-40 mt-1">{{ ((bp.actual / bp.planned) * 100).toFixed(0) }}% of planned</div>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  </div>
-                }
-              }
-            } @else if (!financialsSubPageHasContent()) {
-              <div class="absolute transition-all duration-200" [style.top.px]="128" [style.left.px]="tileContentLeft()" [style.width.px]="tileContentWidth()">
-                <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
-              </div>
-            }
-          </div>
-        } @else {
-        <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
-          @if (!isMobile()) {
-            <app-collapsible-subnav
-              icon="bar_graph"
-              title="Financials"
-              [items]="financialsSubNavItems"
-              [activeItem]="activeFinancialsPage()"
-              [collapsed]="sideSubNavCollapsed()"
-              [alerts]="financialsAlerts()"
-              [canvasMode]="isCanvas()"
-              (itemSelect)="selectFinancialsSubPage($event)"
-              (collapsedChange)="sideSubNavCollapsed.set($event)"
-            />
-          }
-          <div class="flex-1 flex flex-col min-w-0 md:pl-4" [class]="subledgerCategory() ? 'gap-3' : 'gap-6'">
-            <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
-            </div>
-            @if (!subledgerCategory()) {
-              <div class="flex items-center justify-between">
-                <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'applications-for-payment') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }</div>
-              </div>
-            }
-            @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
-              <ng-container [ngTemplateOutlet]="budgetDetailContent" />
-            } @else if (activeFinancialsPage() === 'change-order-requests' || activeFinancialsPage() === 'applications-for-payment' || activeFinancialsPage() === 'cost-forecasts' || activeFinancialsPage() === 'contracts') {
-              <app-financials-subpages
-                [activePage]="activeFinancialsPage()"
-                [viewMode]="subnavViewMode()"
-                [changeOrders]="projectChangeOrders()"
-                [contracts]="projectContracts()"
-                [revenueData]="projectRevenueData()"
-                [budgetHistory]="projectBudgetHistory()"
-                [lastBudgetPoint]="lastBudgetPoint()"
-                (changeOrderClick)="navigateToChangeOrder($event)"
-                (contractClick)="navigateToContract($event)"
-              />
-            } @else if (activeFinancialsPage() === 'prime-contract-change-orders' || activeFinancialsPage() === 'potential-change-orders' || activeFinancialsPage() === 'subcontract-change-orders') {
-              <ng-container [ngTemplateOutlet]="coTypeSubpage" />
-            } @else {
-              <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
-            }
-          </div>
-        </div>
-        }
-      }
-      @case ('files') {
-        @if (isSubpageCanvasActive()) {
-          <div class="relative overflow-visible" [style.min-height.px]="400">
-            <div class="absolute" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['files'] }" />
-            </div>
-            <div class="absolute flex items-center" [style.top.px]="72" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
-              <div class="text-2xl font-bold text-foreground">Files</div>
-            </div>
-            <div class="absolute" [style.top.px]="128" [style.left.px]="0">
-              <app-empty-state icon="folder_closed" title="Project Files" description="Manage project documents, shared files, and folder structures." />
-            </div>
-          </div>
-        } @else {
-        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['files'] }" />
-        <div class="flex flex-col gap-6">
-          <div class="flex items-center justify-between">
-            <div class="text-2xl font-bold text-foreground">Files</div>
-          </div>
-          <app-empty-state icon="folder_closed" title="Project Files" description="Manage project documents, shared files, and folder structures." />
-        </div>
-        }
-      }
-      @default {
-        @if (!isCanvas()) {
-        <div class="flex items-center justify-between mb-6">
-          <div class="text-2xl font-bold text-foreground">Dashboard</div>
-        </div>
-        <div #pageHeader class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          @for (stat of summaryStats(); track stat.label) {
-            <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-              <div class="text-2xs text-foreground-40 uppercase tracking-wide">{{ stat.label }}</div>
-              <div class="text-2xl font-bold text-foreground">{{ stat.value }}</div>
-              @if (stat.subtext) {
-                <div class="text-xs" [class]="stat.subtextClass || 'text-foreground-60'">{{ stat.subtext }}</div>
-              }
-            </div>
-          }
-        </div>
-        }
-
-        <!-- Widget grid -->
-        <div
-          [class]="isCanvas() ? 'relative overflow-visible mb-6' : 'relative mb-6'"
-          [style.height.px]="isMobile() ? mobileGridHeight() : null"
-          [style.min-height.px]="!isMobile() ? desktopGridMinHeight() : null"
-          #widgetGrid
-        >
-          @if (isCanvas()) {
-            <div
-              class="absolute overflow-hidden"
-              [class.widget-detail-transition]="shouldTransition('projHeader')"
-              [attr.data-widget-id]="'projHeader'"
-              [style.top.px]="wTops()['projHeader']"
-              [style.left.px]="wLefts()['projHeader']"
-              [style.width.px]="wPixelWidths()['projHeader']"
-              [style.height.px]="wHeights()['projHeader']"
-              [style.z-index]="wZIndices()['projHeader'] ?? 0"
-            >
-              <div class="flex items-center justify-between mb-4">
-                <div class="text-2xl font-bold text-foreground">Dashboard</div>
-              </div>
-              <div class="grid grid-cols-4 gap-3">
-                @for (stat of summaryStats(); track stat.label) {
-                  <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-                    <div class="text-2xs text-foreground-40 uppercase tracking-wide">{{ stat.label }}</div>
-                    <div class="text-2xl font-bold text-foreground">{{ stat.value }}</div>
-                    @if (stat.subtext) {
-                      <div class="text-xs" [class]="stat.subtextClass || 'text-foreground-60'">{{ stat.subtext }}</div>
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-          }
-          @for (wId of widgets; track wId) {
-            <div
-              [class]="(canvasDetailViews()[wId] ? 'absolute' : (isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden')) + (shouldTransition(wId) ? ' widget-detail-transition' : '')"
-              [attr.data-widget-id]="wId"
-              [style.top.px]="wTops()[wId]"
-              [style.left.px]="!isMobile() ? wLefts()[wId] : null"
-              [style.width.px]="!isMobile() ? wPixelWidths()[wId] : null"
-              [style.height.px]="wHeights()[wId]"
-              [style.z-index]="canvasDetailViews()[wId] ? 9999 : (wZIndices()[wId] ?? 0)"
-              (mousedown)="canvasDetailViews()[wId] ? $event.stopPropagation() : null"
-            >
-            @if (canvasDetailViews()[wId]; as detail) {
-              <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full border-primary shadow-2xl">
-                <div
-                  class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
-                  (mousedown)="onCanvasDetailHeaderMouseDown($event, wId)"
-                >
-                  <div class="flex items-center gap-2 text-foreground-60 cursor-pointer hover:text-foreground transition-colors duration-150"
-                    (click)="closeCanvasDetail(wId)"
-                    (keydown.enter)="closeCanvasDetail(wId)"
-                  >
-                    <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-                    <div class="text-sm font-medium">{{ detailBackLabel() }}</div>
-                  </div>
-                  <div
-                    class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                    (click)="closeCanvasDetail(wId)"
-                    aria-label="Close detail"
-                  >
-                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
-                  </div>
-                </div>
-                <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detail.type === 'rfi' ? 'rfi-detail' : detail.type === 'drawing' ? 'drawing-detail' : 'submittal-detail'] }" />
-                <div class="flex-1 overflow-y-auto p-5">
-                  @if (detail.type === 'rfi') {
-                    <app-item-detail-view
-                      icon="clipboard"
-                      typeLabel="Request for Information"
-                      [number]="detail.item.number"
-                      [subject]="detail.item.subject"
-                      [question]="$any(detail.item).question"
-                      [assignee]="detail.item.assignee"
-                      [assigneeOptions]="ASSIGNEE_OPTIONS"
-                      (assigneeChange)="onCanvasDetailAssigneeChange(wId, $event)"
-                      field1Label="Created By"
-                      [field1Value]="$any(detail.item).askedBy"
-                      field3Label="Created On"
-                      [field3Value]="$any(detail.item).askedOn"
-                      field4Label="Due Date"
-                      [field4Value]="detail.item.dueDate"
-                      [field4ShowStatus]="false"
-                      [currentStatus]="detail.item.status"
-                      [statusOptions]="STATUS_OPTIONS"
-                      [statusDotClass]="itemStatusDot(detail.item.status)"
-                      [statusText]="capitalizeStatus(detail.item.status)"
-                      (statusChange)="onCanvasDetailStatusChange(wId, $event)"
-                      (dueDateChange)="onCanvasDetailDueDateChange(wId, $event)"
-                    />
-                  }
-                  @if (detail.type === 'submittal') {
-                    <app-item-detail-view
-                      icon="document"
-                      typeLabel="Submittal"
-                      [number]="detail.item.number"
-                      [subject]="detail.item.subject"
-                      [assignee]="detail.item.assignee"
-                      [assigneeOptions]="ASSIGNEE_OPTIONS"
-                      (assigneeChange)="onCanvasDetailAssigneeChange(wId, $event)"
-                      [field1Value]="$any(detail.item).project"
-                      [field3Value]="detail.item.dueDate"
-                      [field3DateEditable]="true"
-                      [currentStatus]="detail.item.status"
-                      [statusOptions]="STATUS_OPTIONS"
-                      [statusDotClass]="itemStatusDot(detail.item.status)"
-                      [statusText]="capitalizeStatus(detail.item.status)"
-                      (statusChange)="onCanvasDetailStatusChange(wId, $event)"
-                      (dueDateChange)="onCanvasDetailDueDateChange(wId, $event)"
-                    />
-                  }
-                  @if (detail.type === 'drawing') {
-                    <div class="flex flex-col gap-4">
-                      <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center flex-shrink-0">
-                          <i class="modus-icons text-lg text-primary" aria-hidden="true">floorplan</i>
-                        </div>
-                        <div class="min-w-0">
-                          <div class="text-lg font-semibold text-foreground truncate">{{ $any(detail.item).title }}</div>
-                          <div class="text-sm text-foreground-60">{{ $any(detail.item).revision }} &middot; {{ $any(detail.item).date }}</div>
-                        </div>
-                      </div>
-                      <div class="bg-secondary rounded-lg overflow-hidden flex items-center justify-center p-4" style="min-height: 300px">
-                        <img [src]="$any(detail.item).thumbnail" [alt]="$any(detail.item).title" class="max-w-full max-h-[60vh] object-contain rounded" />
-                      </div>
-                      <div class="text-sm text-foreground-60">{{ $any(detail.item).subtitle }}</div>
-                    </div>
-                  }
-                </div>
-                <div
-                  class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
-                  (mousedown)="onCanvasDetailResizeMouseDown($event, wId)"
-                >
-                  <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
-                </div>
-              </div>
-            } @else {
-              <div class="relative h-full" [class.opacity-30]="moveTargetId() === wId">
-                <widget-lock-toggle [locked]="wLocked()[wId]" (toggle)="toggleWidgetLock(wId)" />
-
-              @switch (wId) {
-                @case ('milestones') {
-              <app-widget-frame icon="flag" title="Milestones" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('milestones')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ completedMilestones() }}/{{ milestones().length }} Complete</div>
-                <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
-                  @for (ms of milestones(); track ms.id) {
-                    <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
-                      <div class="flex-shrink-0">
-                        @if (ms.status === 'completed') {
-                          <div class="w-8 h-8 rounded-full bg-success flex items-center justify-center">
-                            <i class="modus-icons text-sm text-success-foreground" aria-hidden="true">check</i>
-                          </div>
-                        } @else if (ms.status === 'in-progress') {
-                          <div class="w-8 h-8 rounded-full bg-primary-20 flex items-center justify-center">
-                            <i class="modus-icons text-sm text-primary" aria-hidden="true">timer</i>
-                          </div>
-                        } @else if (ms.status === 'overdue') {
-                          <div class="w-8 h-8 rounded-full bg-destructive-20 flex items-center justify-center">
-                            <i class="modus-icons text-sm text-destructive" aria-hidden="true">warning</i>
-                          </div>
-                        } @else {
-                          <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                            <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">add_circle</i>
-                          </div>
-                        }
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between mb-1">
-                          <div class="text-sm font-medium text-foreground truncate">{{ ms.name }}</div>
-                          <div class="text-xs text-foreground-60 flex-shrink-0 ml-2">{{ ms.dueDate }}</div>
-                        </div>
-                        @if (ms.status !== 'completed') {
-                          <modus-progress [value]="ms.progress" [max]="100" [className]="milestoneProgressClass(ms.status)" />
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              </app-widget-frame>
-                }
-
-                @case ('tasks') {
-              <app-widget-frame icon="clipboard" title="Key Tasks" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
-                [insight]="getWidgetInsight('tasks')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ openTaskCount() }} Open</div>
-                <div class="p-4 flex flex-col gap-2 overflow-y-auto flex-1">
-                  @for (task of tasks(); track task.id) {
-                    <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
-                      <div class="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold">
-                        {{ task.assigneeInitials }}
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <div class="text-sm text-foreground truncate">{{ task.title }}</div>
-                        <div class="text-xs text-foreground-40">{{ task.assignee }} · {{ task.dueDate }}</div>
-                      </div>
-                      <modus-badge [color]="severityBadgeColor(task.priority)" variant="filled" size="sm">
-                        {{ task.priority | titlecase }}
-                      </modus-badge>
-                    </div>
-                  }
-                </div>
-              </app-widget-frame>
-                }
-
-                @case ('risks') {
-              <app-widget-frame icon="warning" title="Risks &amp; Urgent Needs" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('risks')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ filteredRisks().length + filteredProjectUrgentNeeds().length }} of {{ risks().length + projectUrgentNeeds().length }}</div>
-                @if (filteredProjectUrgentNeeds().length > 0) {
-                  <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                    <div class="text-xs font-medium text-destructive">{{ filteredProjectUrgentNeeds().length }} urgent</div>
-                  </div>
-                }
-                <div class="flex items-center gap-1.5 px-4 py-2 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
-                  @for (sev of risksSeverityOptions; track sev.key) {
-                    <div
-                      class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                      [class]="risksSeverityFilter().has(sev.key) ? sev.activeCls : 'bg-muted text-foreground-60 hover:bg-secondary'"
-                      (click)="toggleRisksSeverity(sev.key)"
-                    >
-                      <div class="w-1.5 h-1.5 rounded-full" [class]="sev.dotCls"></div>
-                      {{ sev.label }} ({{ risksSeverityCounts()[sev.key] }})
-                    </div>
-                  }
-                </div>
-                <div class="overflow-y-auto flex-1">
-                  @if (filteredProjectUrgentNeeds().length > 0) {
-                    <div class="px-4 pt-3 pb-1">
-                      <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide mb-2">Urgent Needs</div>
-                    </div>
-                    @for (item of filteredProjectUrgentNeeds(); track item.id) {
-                      <div
-                        class="flex items-start gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
-                        role="button" tabindex="0"
-                        (click)="navigateToUrgentNeed(item)" (mousedown)="$event.stopPropagation()"
-                        (keydown.enter)="navigateToUrgentNeed(item)"
-                      >
-                        <div class="flex items-center gap-2 flex-shrink-0 mt-0.5">
-                          <div class="w-2 h-2 rounded-full flex-shrink-0"
-                            [class.bg-destructive]="item.severity === 'critical'"
-                            [class.bg-warning]="item.severity === 'warning'"
-                            [class.bg-primary]="item.severity === 'info'"></div>
-                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">{{ urgentNeedCategoryIcon(item.category) }}</i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-sm font-medium text-foreground truncate">{{ item.title }}</div>
-                          <div class="text-xs text-foreground-60 truncate">{{ item.subtitle }}</div>
-                        </div>
-                        <div class="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-                          @if (item.financialsRoute) {
-                            <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary text-2xs font-medium">
-                              <i class="modus-icons text-2xs" aria-hidden="true">account_balance</i>
-                              Job Costs
-                            </div>
-                          }
-                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
-                        </div>
-                      </div>
-                    }
-                    @if (filteredRisks().length > 0) {
-                      <div class="mx-4 my-2 border-bottom-default"></div>
-                    }
-                  }
-                  @if (filteredRisks().length > 0) {
-                    <div class="px-4 pt-3 pb-1">
-                      <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide mb-2">Risks</div>
-                    </div>
-                    <div class="px-4 pb-3 flex flex-col gap-2">
-                      @for (risk of filteredRisks(); track risk.id) {
-                        <div class="p-3 bg-background border-default rounded-lg flex flex-col gap-2">
-                          <div class="flex items-center justify-between">
-                            <div class="text-sm font-medium text-foreground">{{ risk.title }}</div>
-                            <modus-badge [color]="severityBadgeColor(risk.severity)" variant="filled" size="sm">
-                              {{ risk.severity | titlecase }}
-                            </modus-badge>
-                          </div>
-                          <div class="text-xs text-foreground-60">
-                            <div class="inline text-foreground-80 font-medium">Impact:</div> {{ risk.impact }}
-                          </div>
-                          <div class="text-xs text-foreground-60">
-                            <div class="inline text-foreground-80 font-medium">Mitigation:</div> {{ risk.mitigation }}
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-              </app-widget-frame>
-                }
-
-                @case ('rfis') {
-              <app-widget-frame icon="clipboard" title="RFIs" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsRfis')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                @if (rfiOverdueCount() > 0) {
-                  <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                    <div class="text-xs font-medium text-destructive">{{ rfiOverdueCount() }} overdue</div>
-                  </div>
-                }
-                <div headerMeta class="text-xs text-foreground-60">{{ projectRfis().length }} Total</div>
-                <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
-                  <div role="columnheader">RFI #</div>
-                  <div role="columnheader">Subject</div>
-                  <div role="columnheader">Due</div>
-                  <div role="columnheader">Status</div>
-                </div>
-                <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
-                  @for (rfi of projectRfis(); track rfi.id) {
-                    <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToRfi(rfi, wId)" (keydown.enter)="navigateToRfi(rfi, wId)" (mousedown)="$event.stopPropagation()">
-                      <div class="text-sm font-medium text-primary" role="cell">{{ rfi.number }}</div>
-                      <div class="text-sm text-foreground truncate" role="cell">{{ rfi.subject }}</div>
-                      <div class="text-sm text-foreground-60" role="cell">{{ rfi.dueDate }}</div>
-                      <div class="flex items-center gap-1.5" role="cell">
-                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(rfi.status)"></div>
-                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(rfi.status) }}</div>
-                      </div>
-                    </div>
-                  } @empty {
-                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
-                      <div class="text-sm">No RFIs for this project</div>
-                    </div>
-                  }
-                </div>
-              </app-widget-frame>
-                }
-
-                @case ('submittals') {
-              <app-widget-frame icon="document" title="Submittals" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsSubmittals')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                @if (submittalOverdueCount() > 0) {
-                  <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                    <div class="text-xs font-medium text-destructive">{{ submittalOverdueCount() }} overdue</div>
-                  </div>
-                }
-                <div headerMeta class="text-xs text-foreground-60">{{ projectSubmittals().length }} Total</div>
-                <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
-                  <div role="columnheader">SUB #</div>
-                  <div role="columnheader">Subject</div>
-                  <div role="columnheader">Due</div>
-                  <div role="columnheader">Status</div>
-                </div>
-                <div class="overflow-y-auto flex-1" role="table" aria-label="Submittals" aria-live="polite">
-                  @for (sub of projectSubmittals(); track sub.id) {
-                    <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToSubmittal(sub, wId)" (keydown.enter)="navigateToSubmittal(sub, wId)" (mousedown)="$event.stopPropagation()">
-                      <div class="text-sm font-medium text-primary" role="cell">{{ sub.number }}</div>
-                      <div class="text-sm text-foreground truncate" role="cell">{{ sub.subject }}</div>
-                      <div class="text-sm text-foreground-60" role="cell">{{ sub.dueDate }}</div>
-                      <div class="flex items-center gap-1.5" role="cell">
-                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
-                        <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
-                      </div>
-                    </div>
-                  } @empty {
-                    <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                      <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
-                      <div class="text-sm">No submittals for this project</div>
-                    </div>
-                  }
-                </div>
-              </app-widget-frame>
-                }
-
-                @case ('drawing') {
-              <app-widget-frame icon="floorplan" title="Latest Drawing" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('drawing')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ latestDrawing().version }}</div>
-                <div class="overflow-y-auto flex-1 cursor-pointer hover:opacity-90 transition-opacity duration-150" role="button" tabindex="0"
-                  [attr.aria-label]="'Open drawing: ' + newestDrawingTile().title"
-                  (click)="openLatestDrawing()"
-                  (keydown.enter)="openLatestDrawing()">
-                  <div class="relative w-full aspect-[4/3] bg-muted overflow-hidden">
-                    <img [src]="newestDrawingTile().thumbnail" [alt]="newestDrawingTile().title" class="w-full h-full object-cover" />
-                    <div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-success text-success-foreground text-2xs font-semibold">{{ newestDrawingTile().revision }}</div>
-                  </div>
-                  <div class="px-4 py-3 flex flex-col gap-1">
-                    <div class="text-sm font-medium text-foreground truncate">{{ newestDrawingTile().title }}</div>
-                    <div class="flex items-center justify-between">
-                      <div class="text-xs text-foreground-60 truncate">{{ newestDrawingTile().subtitle }}</div>
-                      <div class="text-xs text-foreground-40 flex-shrink-0 ml-2">{{ newestDrawingTile().date }}</div>
-                    </div>
-                  </div>
-                </div>
-              </app-widget-frame>
-                }
-
-                @case ('budget') {
-              <app-widget-frame icon="bar_graph" title="Budget" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('budget')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1 cursor-pointer"
-                  (click)="navigateToBudgetPage(); $event.stopPropagation()"
-                  (keydown.enter)="navigateToBudgetPage()"
-                  (mousedown)="$event.stopPropagation()"
-                  role="button" tabindex="0">
-                  <div class="flex items-baseline justify-between">
-                    <div class="text-3xl font-bold text-foreground">{{ budgetUsed() }}</div>
-                    <div class="text-sm text-foreground-60">of {{ budgetTotal() }}</div>
-                  </div>
-                  <modus-progress [value]="budgetPct()" [max]="100" [className]="budgetHealthy() ? 'progress-primary' : 'progress-danger'" />
-                  <div class="flex w-full h-3 rounded-full overflow-hidden">
-                    @for (item of budgetBreakdown(); track item.label) {
-                      <div class="{{ item.colorClass }}" [style.width.%]="item.pct"></div>
-                    }
-                  </div>
-                  <div class="grid grid-cols-2 gap-3">
-                    @for (item of budgetBreakdown(); track item.label) {
-                      <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
-                        <div class="flex items-center gap-1.5">
-                          <div class="w-2 h-2 rounded-full {{ item.colorClass }} flex-shrink-0"></div>
-                          <div class="text-2xs text-foreground-40 uppercase tracking-wide">{{ item.label }}</div>
-                        </div>
-                        <div class="text-sm font-semibold text-foreground">{{ item.amount }}</div>
-                        <div class="text-2xs text-foreground-60">{{ item.pct }}% of spend</div>
-                      </div>
-                    }
-                  </div>
-                  <div class="flex items-center gap-2 p-3 rounded-lg" [class]="budgetHealthy() ? 'bg-success-20 border-success' : 'bg-destructive-20 border-destructive'">
-                    <i class="modus-icons text-sm" [class]="budgetHealthy() ? 'text-success' : 'text-destructive'" aria-hidden="true">{{ budgetHealthy() ? 'check_circle' : 'warning' }}</i>
-                    <div class="text-xs text-foreground">{{ budgetHealthy() ? 'Budget on track' : 'Budget critical' }} -- {{ budgetRemaining() }} remaining</div>
-                  </div>
-                </div>
-              </app-widget-frame>
-                }
-
-                @case ('team') {
-              <app-widget-frame icon="people_group" title="Team" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('team')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="flex items-center gap-2">
-                  <div class="text-xs text-foreground-60">{{ team().length }} Members</div>
-                  @if (projectStaffingConflicts().length) {
-                    <div class="flex items-center gap-1 px-2 py-0.5 rounded-full"
-                      [class.bg-destructive-20]="projectStaffingConflicts()[0].severity === 'critical'"
-                      [class.bg-warning-20]="projectStaffingConflicts()[0].severity !== 'critical'">
-                      <i class="modus-icons text-2xs" aria-hidden="true"
-                        [class.text-destructive]="projectStaffingConflicts()[0].severity === 'critical'"
-                        [class.text-warning]="projectStaffingConflicts()[0].severity !== 'critical'">warning</i>
-                      <div class="text-2xs font-medium"
-                        [class.text-destructive]="projectStaffingConflicts()[0].severity === 'critical'"
-                        [class.text-warning]="projectStaffingConflicts()[0].severity !== 'critical'">{{ projectStaffingConflicts().length }} staffing gap{{ projectStaffingConflicts().length === 1 ? '' : 's' }}</div>
-                    </div>
-                  }
-                </div>
-                <div class="flex flex-col overflow-y-auto flex-1">
-                  @if (projectStaffingConflicts().length) {
-                    <div class="px-4 pt-3 pb-2">
-                      @for (conflict of projectStaffingConflicts(); track conflict.week) {
-                        <div class="flex items-start gap-2 mb-2 px-3 py-2 rounded-lg"
-                          [class.bg-destructive-20]="conflict.severity === 'critical'"
-                          [class.bg-warning-20]="conflict.severity === 'warning'"
-                          [class.bg-primary-20]="conflict.severity === 'info'">
-                          <i class="modus-icons text-sm mt-0.5 flex-shrink-0" aria-hidden="true"
-                            [class.text-destructive]="conflict.severity === 'critical'"
-                            [class.text-warning]="conflict.severity === 'warning'"
-                            [class.text-primary]="conflict.severity === 'info'">warning</i>
-                          <div class="min-w-0">
-                            <div class="text-xs font-semibold text-foreground">{{ conflict.week }}</div>
-                            <div class="text-2xs text-foreground-60">{{ conflict.reason }}</div>
-                            <div class="text-2xs text-foreground-40 mt-0.5">{{ conflict.absentees.join(', ') }}</div>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  }
-                  @if (projectTimeOffRequests().length) {
-                    <div class="px-4 pt-2 pb-1 flex items-center gap-1.5">
-                      <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">calendar</i>
-                      <div class="text-2xs font-semibold text-foreground-40 uppercase tracking-wide">Upcoming Time Off</div>
-                    </div>
-                    @for (req of projectTimeOffRequests().slice(0, 4); track req.id) {
-                      <div class="flex items-center gap-3 px-4 py-2">
-                        <div class="w-6 h-6 rounded-full bg-primary-20 text-primary text-2xs font-semibold flex items-center justify-center flex-shrink-0">{{ req.initials }}</div>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-xs font-medium text-foreground truncate">{{ req.name }}</div>
-                          <div class="text-2xs text-foreground-40">{{ req.startDate }} - {{ req.endDate }} ({{ req.days }}d)</div>
-                        </div>
-                        <div class="text-2xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
-                          [class.bg-warning-20]="req.status === 'Pending'"
-                          [class.text-warning]="req.status === 'Pending'"
-                          [class.bg-success-20]="req.status === 'Approved'"
-                          [class.text-success]="req.status === 'Approved'">{{ req.status }}</div>
-                      </div>
-                    }
-                    @if (projectTimeOffRequests().length > 4) {
-                      <div class="px-4 py-1 text-2xs text-foreground-40">+{{ projectTimeOffRequests().length - 4 }} more</div>
-                    }
-                  }
-                  <div class="px-4 pt-2 pb-1 flex items-center gap-1.5">
-                    <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">people_group</i>
-                    <div class="text-2xs font-semibold text-foreground-40 uppercase tracking-wide">Team Members</div>
-                  </div>
-                  <div class="px-4 pb-4 flex flex-col gap-2">
-                    @for (member of team(); track member.id) {
-                      <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
-                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
-                          {{ member.initials }}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-sm font-medium text-foreground truncate">{{ member.name }}</div>
-                          <div class="text-xs text-foreground-60">{{ member.role }}</div>
-                        </div>
-                        <div class="text-right flex-shrink-0">
-                          <div class="text-xs text-foreground-80 font-medium">{{ member.tasksCompleted }}/{{ member.tasksTotal }}</div>
-                          <div class="text-2xs text-foreground-40">tasks</div>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </app-widget-frame>
-                }
-
-                @case ('weather') {
-              @if (projectWeather(); as pw) {
-              <app-widget-frame icon="wb_sunny" [title]="projectCity()" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('weather')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="flex items-center gap-1.5">
-                  <i class="modus-icons text-lg" [class]="weatherIconColor(pw.current.condition)" aria-hidden="true">{{ weatherIcon(pw.current.condition) }}</i>
-                  <div class="text-lg font-semibold text-foreground">{{ pw.current.tempF }}&deg;F</div>
-                </div>
-                <div class="flex flex-col h-full overflow-hidden">
-                  <div class="flex items-center gap-4 px-4 py-3 border-bottom-default flex-shrink-0">
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-3xl" [class]="weatherIconColor(pw.current.condition)" aria-hidden="true">{{ weatherIcon(pw.current.condition) }}</i>
-                      <div>
-                        <div class="text-2xl font-bold text-foreground">{{ pw.current.tempF }}&deg;F</div>
-                        <div class="text-xs text-foreground-60">Feels like {{ pw.current.feelsLikeF }}&deg;F</div>
-                      </div>
-                    </div>
-                    <div class="flex-1 grid grid-cols-3 gap-2 text-center">
-                      <div>
-                        <div class="text-2xs text-foreground-40 uppercase">Humidity</div>
-                        <div class="text-sm font-medium text-foreground">{{ pw.current.humidity }}%</div>
-                      </div>
-                      <div>
-                        <div class="text-2xs text-foreground-40 uppercase">Wind</div>
-                        <div class="text-sm font-medium text-foreground">{{ pw.current.windMph }} mph {{ pw.current.windDir }}</div>
-                      </div>
-                      <div>
-                        <div class="text-2xs text-foreground-40 uppercase">UV Index</div>
-                        <div class="text-sm font-medium text-foreground">{{ pw.current.uvIndex }}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex-1 overflow-y-auto">
-                    <div class="flex px-2 py-2 gap-1">
-                      @for (day of pw.forecast; track day.date) {
-                        <div class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg" [class]="day.workImpact === 'major' ? 'bg-destructive-20' : day.workImpact === 'minor' ? 'bg-warning-20' : 'hover:bg-muted'" [attr.title]="day.note || day.condition">
-                          <div class="text-2xs font-medium text-foreground-60">{{ day.day }}</div>
-                          <i class="modus-icons text-lg" [class]="weatherIconColor(day.condition)" aria-hidden="true">{{ weatherIcon(day.condition) }}</i>
-                          <div class="text-xs font-medium text-foreground">{{ day.highF }}&deg;</div>
-                          <div class="text-2xs text-foreground-40">{{ day.lowF }}&deg;</div>
-                          @if (day.workImpact !== 'none') {
-                            <div class="text-2xs font-medium px-1 py-0.5 rounded" [class]="workImpactBadge(day.workImpact).cls">
-                              {{ day.workImpact === 'major' ? 'Stop' : 'Caution' }}
-                            </div>
-                          }
-                        </div>
-                      }
-                    </div>
-                  </div>
-                </div>
-              </app-widget-frame>
-              }
-                }
-
-                @case ('activity') {
-              <app-widget-frame icon="history" title="Recent Activity" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('activity')"
-                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
-                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
-                  @for (entry of activity(); track entry.id) {
-                    <div class="flex items-start gap-3">
-                      <div class="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-foreground-60 text-2xs font-semibold flex-shrink-0 mt-0.5">
-                        {{ entry.actorInitials }}
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <div class="text-xs text-foreground leading-relaxed">{{ entry.text }}</div>
-                        <div class="text-2xs text-foreground-40 mt-0.5">{{ entry.timeAgo }}</div>
-                      </div>
-                      <i class="modus-icons text-sm text-foreground-40 flex-shrink-0 mt-0.5" aria-hidden="true">{{ entry.icon }}</i>
-                    </div>
-                  }
-                </div>
-              </app-widget-frame>
-                }
-              }
-
-              </div>
-            }
-            </div>
-          }
-
-          </div>
-      }
-      }
-      }
-    </ng-template>
-
-    @if (isCanvas()) {
-      <div class="canvas-host bg-background text-foreground canvas-mode" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
-        <div class="canvas-navbar">
-          <modus-navbar
-            [userCard]="userCard"
-            [visibility]="navbarVisibility()"
-            [condensed]="false"
-            [searchInputOpen]="searchInputOpen()"
-            (searchClick)="searchInputOpen.set(!searchInputOpen())"
-            (searchInputOpenChange)="searchInputOpen.set($event)"
-            (trimbleLogoClick)="navigateHome()"
-          >
-            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              <div
-                class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
-                (click)="navigateBack()"
-                role="button"
-                tabindex="0"
-                (keydown.enter)="navigateBack()"
-              >
-                <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-                <div class="text-sm">Back</div>
-              </div>
-              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              <div class="relative min-w-0 flex-1">
-                <div
-                  class="flex items-center gap-1 cursor-pointer select-none"
-                  role="button"
-                  [attr.aria-expanded]="projectSelectorOpen()"
-                  [attr.aria-label]="projectName()"
-                  (click)="toggleProjectSelector(); $event.stopPropagation()"
-                  (keydown.enter)="toggleProjectSelector(); $event.stopPropagation()"
-                  tabindex="0"
-                >
-                  <div class="text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
-                  <i class="modus-icons text-base text-foreground-60 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectSelectorOpen()" aria-hidden="true">expand_more</i>
-                </div>
-                @if (projectSelectorOpen()) {
-                  <div class="absolute top-full left-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[260px] max-w-[340px] py-1" role="listbox" aria-label="Switch project">
-                    @for (proj of otherProjects(); track proj.id) {
-                      <div
-                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
-                        role="option"
-                        [attr.aria-label]="proj.name"
-                        (click)="navigateToProject(proj.slug); $event.stopPropagation()"
-                      >
-                        <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="statusDotClass(proj.status)"></div>
-                        <div class="min-w-0 flex-1">
-                          <div class="text-sm font-medium text-foreground truncate">{{ proj.name }}</div>
-                          <div class="text-xs text-foreground-60 truncate">{{ proj.client }}</div>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-            <div slot="end" class="flex items-center gap-1">
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                aria-label="AI assistant"
-                (click)="ai.toggle()"
-                (keydown.enter)="ai.toggle()"
-                tabindex="0"
-              >
-                <ai-icon variant="nav" [isDark]="isDark()" />
-              </div>
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-                (click)="toggleDarkMode()"
-                (keydown.enter)="toggleDarkMode()"
-                tabindex="0"
-              >
-                <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-              </div>
-            </div>
-          </modus-navbar>
-        </div>
-        <div class="canvas-navbar-shadow navbar-shadow"></div>
-
-        <div class="canvas-side-nav" [class.expanded]="navExpanded()">
-          <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
-            @for (item of sideNavItems; track item.value) {
-              <div
-                class="custom-side-nav-item"
-                [class.selected]="activeNavItem() === item.value"
-                (click)="selectNavItem(item.value)"
-                [title]="item.label"
-                role="button"
-                [attr.aria-label]="item.label"
-              >
-                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
-                @if (navExpanded()) {
-                  <div class="custom-side-nav-label">{{ item.label }}</div>
-                }
-              </div>
-            }
-          </div>
-          <div class="mt-auto border-top-default">
-            <div class="relative">
-              <div
-                class="custom-side-nav-item relative"
-                (click)="detailDrawing() ? resetDrawingFit() : toggleResetMenu(); $event.stopPropagation()"
-                [title]="detailDrawing() ? 'Reset Layout' : 'Layout options'"
-                role="button"
-                [attr.aria-label]="detailDrawing() ? 'Reset Layout' : 'Layout options'"
-                [attr.aria-expanded]="detailDrawing() ? null : resetMenuOpen()"
-              >
-                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
-                @if (panning.locked()) {
-                  <i class="modus-icons absolute top-1 right-1 text-2xs text-primary" aria-hidden="true">lock</i>
-                }
-                @if (navExpanded()) {
-                  <div class="custom-side-nav-label">Layout</div>
-                }
-                @if (!detailDrawing()) {
-                  <svg class="absolute bottom-1 right-1 w-1.5 h-1.5 text-foreground-40" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true">
-                    <path d="M6 0V6H0L6 0Z"/>
-                  </svg>
-                }
-              </div>
-              @if (resetMenuOpen() && !detailDrawing()) {
-                <div class="canvas-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[210px] py-1">
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="panning.toggleLock(); $event.stopPropagation()"
-                  >
-                    <i class="modus-icons text-base" [class]="panning.locked() ? 'text-primary' : 'text-foreground'" aria-hidden="true">{{ panning.locked() ? 'lock' : 'lock_open' }}</i>
-                    <div class="text-sm" [class]="panning.locked() ? 'text-primary font-medium' : 'text-foreground'">{{ panning.locked() ? 'Canvas Locked' : 'Canvas Unlocked' }}</div>
-                  </div>
-                  <div class="border-bottom-default my-1"></div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="resetMenuAction('view'); $event.stopPropagation()"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">window_fit</i>
-                    <div class="text-sm">Reset View</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="resetMenuAction('widgets'); $event.stopPropagation()"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
-                    <div class="text-sm">Reset Layout</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="resetMenuAction('save-defaults'); $event.stopPropagation()"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
-                    <div class="text-sm">Save as Default Layout</div>
-                  </div>
-                </div>
-              }
-            </div>
-            <div
-              class="custom-side-nav-item"
-              title="Settings"
-              role="button"
-              aria-label="Settings"
-            >
-              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
-              @if (navExpanded()) {
-                <div class="custom-side-nav-label">Settings</div>
-              }
-            </div>
-          </div>
-        </div>
-        @if (navExpanded()) {
-          <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
-        }
-
-        <div class="canvas-content" [class.canvas-drawing-detail]="isCanvasDrawingDetail()" role="main" id="main-content" tabindex="-1"
-          [style.transform]="(panning.panOffsetX() || panning.panOffsetY()) ? 'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px)' : null">
-          <div [class]="isCanvasDrawingDetail() ? 'py-6 flex flex-col' : 'py-6 max-w-screen-xl mx-auto'"
-            [style.height]="isCanvasDrawingDetail() ? 'calc(100vh - 80px)' : null">
-            <ng-container [ngTemplateOutlet]="dashboardContent" />
-          </div>
-        </div>
-      </div>
-    } @else {
-    <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
-    <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
-      <!-- Navbar -->
-      <modus-navbar
-        [userCard]="userCard"
-        [visibility]="navbarVisibility()"
-        [condensed]="isMobile()"
-        [searchInputOpen]="searchInputOpen()"
-        (searchClick)="searchInputOpen.set(!searchInputOpen())"
-        (searchInputOpenChange)="searchInputOpen.set($event)"
-        (trimbleLogoClick)="navigateHome()"
-      >
-        <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-          <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-          <div
-            class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
-            (click)="navigateBack()"
-            role="button"
-            tabindex="0"
-            (keydown.enter)="navigateBack()"
-          >
-            <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-            <div class="text-sm hidden md:block">Back</div>
-          </div>
-          <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-          <div class="relative min-w-0 flex-1">
-            <div
-              class="flex items-center gap-1 cursor-pointer select-none"
-              role="button"
-              [attr.aria-expanded]="projectSelectorOpen()"
-              [attr.aria-label]="projectName()"
-              (click)="toggleProjectSelector(); $event.stopPropagation()"
-              (keydown.enter)="toggleProjectSelector(); $event.stopPropagation()"
-              tabindex="0"
-            >
-              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="projectName()">{{ projectName() }}</div>
-              <i class="modus-icons text-base text-foreground-60 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="projectSelectorOpen()" aria-hidden="true">expand_more</i>
-            </div>
-            @if (projectSelectorOpen()) {
-              <div class="absolute top-full left-0 mt-1 z-50 bg-card border-default rounded-lg shadow-lg min-w-[260px] max-w-[340px] py-1" role="listbox" aria-label="Switch project">
-                @for (proj of otherProjects(); track proj.id) {
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
-                    role="option"
-                    [attr.aria-label]="proj.name"
-                    (click)="navigateToProject(proj.slug); $event.stopPropagation()"
-                  >
-                    <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="statusDotClass(proj.status)"></div>
-                    <div class="min-w-0 flex-1">
-                      <div class="text-sm font-medium text-foreground truncate">{{ proj.name }}</div>
-                      <div class="text-xs text-foreground-60 truncate">{{ proj.client }}</div>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        </div>
-        <div slot="end" class="flex items-center gap-1">
-          <!-- AI assistant button -->
-          <div
-            class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-            role="button"
-            aria-label="AI assistant"
-            (click)="ai.toggle()"
-            (keydown.enter)="ai.toggle()"
-            tabindex="0"
-          >
-            @if (isDark()) {
-              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <radialGradient id="ai-nav-grad-dark" cx="18%" cy="18%" r="70%">
-                    <stop offset="0%" stop-color="#FF00FF" />
-                    <stop offset="50%" stop-color="#9933FF" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </radialGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
-                <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-nav-grad-dark)" transform="translate(-256, 0)"/>
-              </svg>
-            } @else {
-              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="ai-nav-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="20%" stop-color="#FF00FF" />
-                    <stop offset="60%" stop-color="#0066CC" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </linearGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
-                <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-nav-grad-light)"/>
-              </svg>
-            }
-          </div>
-          <!-- Desktop: dark mode toggle -->
-          <div
-            class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-            role="button"
-            [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-            (click)="toggleDarkMode()"
-            (keydown.enter)="toggleDarkMode()"
-            tabindex="0"
-          >
-            <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-          </div>
-          <!-- Mobile: more menu with dark mode + other actions -->
-          @if (isMobile()) {
-            <div class="relative">
-              <div
-                class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                aria-label="More options"
-                [attr.aria-expanded]="moreMenuOpen()"
-                (click)="toggleMoreMenu()"
-                (keydown.enter)="toggleMoreMenu()"
-                tabindex="0"
-              >
-                <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
-              </div>
-              @if (moreMenuOpen()) {
-                <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('search')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">search</i>
-                    <div class="text-sm">Search</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('notifications')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">notifications</i>
-                    <div class="text-sm">Notifications</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('help')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">help</i>
-                    <div class="text-sm">Help</div>
-                  </div>
-                  <div class="border-bottom-default mx-3 my-1"></div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="moreMenuAction('darkMode')"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-                    <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        </div>
-      </modus-navbar>
-
-      <div class="navbar-shadow"></div>
-
-      <!-- Body -->
-      <div class="flex flex-1 overflow-hidden">
-        <!-- Main content -->
-        <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
-          <div [class]="detailDrawing() ? 'p-4 max-w-[1920px] mx-auto flex flex-col h-full' : 'px-4 py-4 md:py-6 max-w-[1920px] mx-auto'">
-            <ng-container [ngTemplateOutlet]="dashboardContent" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Custom Side Navigation -->
-      @if (!isMobile() || navExpanded()) {
-        <div class="custom-side-nav" [class.expanded]="navExpanded()">
-          <div class="flex flex-col flex-1 min-h-0">
-            @for (item of sideNavItems; track item.value) {
-              <div
-                class="custom-side-nav-item"
-                [class.selected]="activeNavItem() === item.value"
-                (click)="selectNavItem(item.value)"
-                [title]="item.label"
-                role="button"
-                [attr.aria-label]="item.label"
-              >
-                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
-                @if (navExpanded() && !isMobile()) {
-                  <div class="custom-side-nav-label">{{ item.label }}</div>
-                }
-              </div>
-            }
-          </div>
-          <div class="mt-auto border-top-default">
-            <div class="relative">
-              <div
-                class="custom-side-nav-item relative"
-                (click)="desktopLayoutMenuOpen.set(!desktopLayoutMenuOpen()); $event.stopPropagation()"
-                title="Layout options"
-                role="button"
-                aria-label="Layout options"
-                [attr.aria-expanded]="desktopLayoutMenuOpen()"
-              >
-                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
-                @if (navExpanded() && !isMobile()) {
-                  <div class="custom-side-nav-label">Layout</div>
-                }
-                <svg class="absolute bottom-1 right-1 w-1.5 h-1.5 text-foreground-40" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true">
-                  <path d="M6 0V6H0L6 0Z"/>
-                </svg>
-              </div>
-              @if (desktopLayoutMenuOpen()) {
-                <div class="desktop-reset-flyout bg-card border-default rounded-lg shadow-lg z-50 min-w-[210px] py-1">
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="desktopLayoutMenuOpen.set(false); resetWidgetsToDefaults(); $event.stopPropagation()"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">window_fit</i>
-                    <div class="text-sm">Reset Layout</div>
-                  </div>
-                  <div
-                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                    role="menuitem"
-                    (click)="desktopLayoutMenuOpen.set(false); saveDefaultLayout(); $event.stopPropagation()"
-                  >
-                    <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
-                    <div class="text-sm">Save as Default Layout</div>
-                  </div>
-                </div>
-              }
-            </div>
-            <div
-              class="custom-side-nav-item"
-              title="Settings"
-              role="button"
-              aria-label="Settings"
-            >
-              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
-              @if (navExpanded() && !isMobile()) {
-                <div class="custom-side-nav-label">Settings</div>
-              }
-            </div>
-          </div>
-        </div>
-      }
-
-      @if (isMobile() && navExpanded() && hasSubNav()) {
-        <div class="mobile-side-subnav">
-          @switch (activeNavItem()) {
-            @case ('records') {
-              <div class="flex items-center gap-2 px-4 py-3 flex-shrink-0">
-                <i class="modus-icons text-base text-primary" aria-hidden="true">clipboard</i>
-                <div class="text-sm font-semibold text-primary">Records</div>
-              </div>
-              <div class="flex-1 overflow-y-auto min-h-0">
-                @for (item of recordsSubNavItems; track item.value) {
-                  <div
-                    class="py-2.5 text-sm cursor-pointer transition-colors duration-150"
-                    [class.bg-primary]="activeRecordsPage() === item.value"
-                    [class.text-primary-foreground]="activeRecordsPage() === item.value"
-                    [class.font-medium]="activeRecordsPage() === item.value"
-                    [class.rounded-md]="activeRecordsPage() === item.value"
-                    [class.mx-2]="activeRecordsPage() === item.value"
-                    [class.px-2]="activeRecordsPage() === item.value"
-                    [class.px-4]="activeRecordsPage() !== item.value"
-                    [class.text-foreground]="activeRecordsPage() !== item.value"
-                    [class.hover:bg-muted]="activeRecordsPage() !== item.value"
-                    role="button" tabindex="0"
-                    (click)="selectRecordsSubPage(item.value)"
-                    (keydown.enter)="selectRecordsSubPage(item.value)">
-                    {{ item.label }}
-                  </div>
-                }
-              </div>
-            }
-            @case ('financials') {
-              <div class="flex items-center gap-2 px-4 py-3 flex-shrink-0">
-                <i class="modus-icons text-base text-primary" aria-hidden="true">bar_graph</i>
-                <div class="text-sm font-semibold text-primary">Financials</div>
-              </div>
-              <div class="flex-1 overflow-y-auto min-h-0">
-                @for (item of financialsSubNavItems; track item.value) {
-                  <div
-                    class="py-2.5 text-sm cursor-pointer transition-colors duration-150"
-                    [class.bg-primary]="activeFinancialsPage() === item.value"
-                    [class.text-primary-foreground]="activeFinancialsPage() === item.value"
-                    [class.font-medium]="activeFinancialsPage() === item.value"
-                    [class.rounded-md]="activeFinancialsPage() === item.value"
-                    [class.mx-2]="activeFinancialsPage() === item.value"
-                    [class.px-2]="activeFinancialsPage() === item.value"
-                    [class.px-4]="activeFinancialsPage() !== item.value"
-                    [class.text-foreground]="activeFinancialsPage() !== item.value"
-                    [class.hover:bg-muted]="activeFinancialsPage() !== item.value"
-                    role="button" tabindex="0"
-                    (click)="selectFinancialsSubPage(item.value)"
-                    (keydown.enter)="selectFinancialsSubPage(item.value)">
-                    {{ item.label }}
-                </div>
-              }
-              </div>
-            }
-          }
-        </div>
-      }
-
-      @if (navExpanded()) {
-        <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
-      }
-
-    </div>
-    }
-
-    <ai-assistant-panel
-      [controller]="ai"
-      welcomeText="Ask me about this project, milestones, budget, or team status."
-      placeholder="Ask about this project..."
-      [showDisclaimer]="false"
-    />
-
-    <ng-template #budgetDetailContent>
-      @if (projectJobCost(); as jcP) {
-        @if (subledgerCategory(); as slCat) {
-          <ng-container [ngTemplateOutlet]="subledgerHeaderKpis" />
-          <ng-container [ngTemplateOutlet]="subledgerLedgerRaw" />
-        } @else {
-        <ng-container [ngTemplateOutlet]="budgetKpisRaw" [ngTemplateOutletContext]="{ jcP: jcP }" />
-        <ng-container [ngTemplateOutlet]="budgetBreakdownRaw" [ngTemplateOutletContext]="{ jcP: jcP }" />
-        <ng-container [ngTemplateOutlet]="budgetProfitFadeRaw" [ngTemplateOutletContext]="{ jcP: jcP }" />
-        <ng-container [ngTemplateOutlet]="budgetCostSummaryRaw" [ngTemplateOutletContext]="{ jcP: jcP }" />
-        }
-      }
-    </ng-template>
-
-    <ng-template #subledgerHeaderKpis>
-      @if (subledgerCategory(); as slCat) {
-        <div class="flex items-center gap-3 mb-6" (mousedown)="$event.stopPropagation()">
-          <div
-            class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center cursor-pointer hover:bg-secondary transition-colors duration-150"
-            (click)="closeSubledger()"
-            role="button" tabindex="0"
-            aria-label="Back to Budget"
-          >
-            <i class="modus-icons text-base text-foreground" aria-hidden="true">arrow_left</i>
-          </div>
-          <div class="flex items-center gap-3 relative">
-            <div class="w-3 h-3 rounded-full {{ subledgerColorClass() }} flex-shrink-0"></div>
-            <div class="flex items-center gap-2 cursor-pointer select-none"
-              role="button" tabindex="0"
-              (click)="subledgerDropdownOpen.set(!subledgerDropdownOpen())"
-              (keydown.enter)="subledgerDropdownOpen.set(!subledgerDropdownOpen())">
-              <div class="text-2xl font-bold text-foreground">{{ slCat }} Subledger</div>
-              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">{{ subledgerDropdownOpen() ? 'expand_less' : 'expand_more' }}</i>
-            </div>
-            @if (subledgerDropdownOpen()) {
-              <div class="absolute top-full left-0 mt-2 bg-card border-default rounded-lg shadow-lg overflow-hidden z-50 min-w-[200px]">
-                @for (cat of subledgerCategoryOptions(); track cat) {
-                  <div class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted transition-colors duration-150"
-                    [class.bg-primary-20]="cat === slCat"
-                    role="option" tabindex="0"
-                    [attr.aria-selected]="cat === slCat"
-                    (click)="switchSubledger(cat)"
-                    (keydown.enter)="switchSubledger(cat)">
-                    <div class="w-2.5 h-2.5 rounded-full {{ getCategoryColor(cat) }} flex-shrink-0"></div>
-                    <div class="text-sm font-medium text-foreground">{{ cat }}</div>
-                    @if (cat === slCat) {
-                      <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-2">
-            <div class="text-sm text-foreground-60">Total {{ slCat }} Cost</div>
-            <div class="text-3xl font-bold text-foreground">{{ formatJobCost(subledgerTotal()) }}</div>
-          </div>
-          <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-2">
-            <div class="text-sm text-foreground-60">Transactions</div>
-            <div class="text-3xl font-bold text-foreground">{{ subledgerTransactions().length }}</div>
-          </div>
-          <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-2">
-            <div class="text-sm text-foreground-60">Date Range</div>
-            <div class="text-lg font-bold text-foreground">{{ subledgerDateRange() }}</div>
-          </div>
-        </div>
-      }
-    </ng-template>
-
-    <ng-template #subledgerLedgerRaw>
-      @if (subledgerCategory(); as slCat) {
-        <div class="bg-card border-default rounded-lg overflow-hidden">
-          <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
-            <div class="text-base font-semibold text-foreground">Transaction Ledger</div>
-            <div class="text-xs text-foreground-40 ml-auto">{{ subledgerTransactions().length }} entries</div>
-          </div>
-          <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />
-        </div>
-      }
-    </ng-template>
-
-    <ng-template #subledgerLedgerTableRows>
-      <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-        <div role="columnheader">Date</div>
-        <div role="columnheader">Description</div>
-        <div role="columnheader">Vendor</div>
-        <div role="columnheader">Ref</div>
-        <div class="text-right" role="columnheader">Amount</div>
-        <div class="text-right" role="columnheader">Running</div>
-      </div>
-      <div role="table" aria-label="Subledger transactions">
-        @for (tx of subledgerTransactions(); track tx.id) {
-          <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
-            <div class="text-sm text-foreground-60" role="cell">{{ tx.date }}</div>
-            <div class="text-sm text-foreground" role="cell">{{ tx.description }}</div>
-            <div class="text-sm text-foreground-60" role="cell">{{ tx.vendor }}</div>
-            <div class="text-xs text-foreground-40 font-mono" role="cell">{{ tx.reference }}</div>
-            <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(tx.amount) }}</div>
-            <div class="text-sm text-foreground-60 text-right" role="cell">{{ formatJobCost(tx.runningTotal) }}</div>
-          </div>
-        }
-        <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 bg-muted items-center" role="row">
-          <div class="text-sm font-bold text-foreground" role="cell"></div>
-          <div class="text-sm font-bold text-foreground" role="cell">Total</div>
-          <div role="cell"></div>
-          <div role="cell"></div>
-          <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(subledgerTotal()) }}</div>
-          <div role="cell"></div>
-        </div>
-      </div>
-    </ng-template>
-
-    <ng-template #budgetKpisRaw let-jcP="jcP">
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-primary-20 flex items-center justify-center">
-              <i class="modus-icons text-base text-primary" aria-hidden="true">payment_instant</i>
-            </div>
-            <div class="text-sm font-medium text-foreground-60">Total Budget</div>
-          </div>
-          <div class="text-3xl font-bold text-foreground">{{ jcP.budgetTotal }}</div>
-        </div>
-        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-warning-20 flex items-center justify-center">
-              <i class="modus-icons text-base text-warning" aria-hidden="true">bar_graph_line</i>
-            </div>
-            <div class="text-sm font-medium text-foreground-60">Total Spent</div>
-          </div>
-          <div class="text-3xl font-bold text-foreground">{{ jcP.budgetUsed }}</div>
-          <div class="text-xs {{ jcP.budgetPct >= 90 ? 'text-destructive' : jcP.budgetPct >= 75 ? 'text-warning' : 'text-success' }} font-medium">{{ jcP.budgetPct }}% of budget</div>
-        </div>
-        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-success-20 flex items-center justify-center">
-              <i class="modus-icons text-base text-success" aria-hidden="true">bar_graph</i>
-            </div>
-            <div class="text-sm font-medium text-foreground-60">Remaining</div>
-          </div>
-          <div class="text-3xl font-bold text-success">{{ formatJobCost(jcBudgetInfo().remaining) }}</div>
-          <div class="text-xs text-success font-medium">{{ 100 - jcP.budgetPct }}% remaining</div>
-        </div>
-        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-              <i class="modus-icons text-base text-foreground-60" aria-hidden="true">gauge</i>
-            </div>
-            <div class="text-sm font-medium text-foreground-60">Budget Health</div>
-          </div>
-          <div class="w-full mt-1">
-            <modus-progress [value]="jcP.budgetPct" [max]="100" [className]="budgetProgressClass(jcP.budgetPct)" />
-          </div>
-          <div class="text-xs text-foreground-60">{{ jcP.budgetUsed }} of {{ jcP.budgetTotal }} used</div>
-        </div>
-      </div>
-    </ng-template>
-
-    <ng-template #budgetBreakdownRaw let-jcP="jcP">
-      <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
-        <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
-          <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph</i>
-          <div class="text-base font-semibold text-foreground">Cost Breakdown</div>
-        </div>
-        <div class="px-5 py-5 flex flex-col gap-5">
-          <div class="flex flex-col gap-2">
-            <div class="flex w-full h-5 rounded-full overflow-hidden">
-              @for (cat of jcDetailCategories(); track cat.label) {
-                <div class="{{ cat.colorClass }}" [style.width.%]="cat.pctOfSpend"></div>
-              }
-            </div>
-            <div class="flex items-center justify-between text-2xs text-foreground-40">
-              <div>0%</div>
-              <div>{{ formatJobCost(jcBudgetInfo().spent) }} total spend</div>
-              <div>100%</div>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-            @for (cat of jcDetailCategories(); track cat.label) {
-              <div class="flex flex-col gap-3 p-4 bg-background border-default rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
-                role="button" tabindex="0"
-                (click)="openSubledger(cat.label)"
-                (keydown.enter)="openSubledger(cat.label)"
-                (mousedown)="$event.stopPropagation()">
-                <div class="flex items-center gap-2">
-                  <div class="w-3 h-3 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                  <div class="text-xs text-foreground-60 uppercase tracking-wide font-semibold">{{ cat.label }}</div>
-                </div>
-                <div class="text-2xl font-bold text-foreground">{{ formatJobCost(cat.amount) }}</div>
-                <div class="flex flex-col gap-1.5">
-                  <div class="flex items-center justify-between text-xs">
-                    <div class="text-foreground-60">% of spend</div>
-                    <div class="font-semibold text-foreground">{{ cat.pctOfSpend }}%</div>
-                  </div>
-                  <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfSpend"></div>
-                  </div>
-                </div>
-                <div class="flex flex-col gap-1.5">
-                  <div class="flex items-center justify-between text-xs">
-                    <div class="text-foreground-60">% of budget</div>
-                    <div class="font-semibold text-foreground">{{ cat.pctOfBudget }}%</div>
-                  </div>
-                  <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfBudget"></div>
-                  </div>
-                </div>
-                <div class="border-top-default pt-2 mt-1">
-                  <div class="flex items-center justify-between text-xs">
-                    <div class="text-foreground-40">Portfolio avg</div>
-                    <div class="text-foreground-60">{{ cat.portfolioAvgPct }}%</div>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-    </ng-template>
-
-    <ng-template #budgetProfitFadeRaw let-jcP="jcP">
-      @if (jcProfitFadeData(); as pf) {
-      <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
-        <div class="flex items-center justify-between px-5 py-4 border-bottom-default">
-          <div class="flex items-center gap-2">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">trending_up</i>
-            <div class="text-base font-semibold text-foreground">Profit Fade / Gain</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="px-2.5 py-1 rounded-full text-xs font-semibold {{ pf.isFade ? 'bg-destructive-20 text-destructive' : 'bg-success-20 text-success' }}">
-              {{ pf.isFade ? 'Fade' : 'Gain' }} {{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%
-            </div>
-          </div>
-        </div>
-        <div class="px-5 py-5 flex flex-col gap-5">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
-              <div class="text-xs text-foreground-40 uppercase tracking-wide">Original Estimate</div>
-              <div class="text-2xl font-bold text-foreground">{{ pf.originalMargin }}%</div>
-              <div class="text-xs text-foreground-60">Bid margin</div>
-            </div>
-            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
-              <div class="text-xs text-foreground-40 uppercase tracking-wide">Current Projected</div>
-              <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.currentMargin }}%</div>
-              <div class="text-xs text-foreground-60">Based on costs to date</div>
-            </div>
-            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
-              <div class="text-xs text-foreground-40 uppercase tracking-wide">{{ pf.isFade ? 'Profit Fade' : 'Profit Gain' }}</div>
-              <div class="flex items-center gap-2">
-                <i class="modus-icons text-lg {{ pf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ pf.isFade ? 'trending_down' : 'trending_up' }}</i>
-                <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%</div>
-              </div>
-              <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
-            </div>
-          </div>
-          <div class="relative" style="padding-left:36px;padding-bottom:20px">
-            <svg class="w-full" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none" style="height:160px">
-              <defs>
-                <linearGradient [attr.id]="'pfGradProjRaw' + projectId()" x1="0" y1="0" x2="0" y2="1">
-                  @if (jcProfitFadeData()?.isFade) {
-                    <stop offset="0%" class="pf-gradient-fade-end" />
-                    <stop offset="100%" class="pf-gradient-fade-start" />
-                  } @else {
-                    <stop offset="0%" class="pf-gradient-gain-start" />
-                    <stop offset="100%" class="pf-gradient-gain-end" />
-                  }
-                </linearGradient>
-              </defs>
-              @for (line of jcPfGridLines(); track line.y) {
-                <line [attr.x1]="0" [attr.y1]="line.y" [attr.x2]="jcPfW" [attr.y2]="line.y" class="chart-grid-line" />
-              }
-              <line [attr.x1]="jcPfPadX" [attr.y1]="jcPfBaselineY()" [attr.x2]="jcPfW - jcPfPadX" [attr.y2]="jcPfBaselineY()" class="pf-baseline" />
-              <path [attr.d]="jcPfAreaPath()" [attr.fill]="'url(#pfGradProjRaw' + projectId() + ')'" />
-              <path [attr.d]="jcPfLinePath()" [class]="pf.isFade ? 'pf-line-fade' : 'pf-line-gain'" />
-              @for (pt of jcPfChartPoints(); track pt.x) {
-                <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5" [class]="pf.isFade ? 'pf-dot-fade' : 'pf-dot-gain'" />
-              }
-            </svg>
-            <div class="absolute bottom-0 left-9 right-0 text-2xs text-foreground-40" style="position:relative">
-              @for (lbl of jcPfMonthLabels(); track lbl.pct) {
-                <div class="absolute" [style.left.%]="lbl.pct" style="transform:translateX(-50%)">{{ lbl.text }}</div>
-              }
-            </div>
-            <div class="absolute top-0 left-0 bottom-5 flex flex-col justify-between text-2xs text-foreground-40">
-              @for (line of jcPfGridLines(); track line.y) {
-                <div>{{ line.label }}</div>
-              }
-            </div>
-            <div class="absolute text-2xs font-medium text-foreground-60" style="right:4px" [style.top.px]="jcPfBaselineY() - 14">
-              Est. {{ pf.originalMargin }}%
-            </div>
-          </div>
-          <div class="flex flex-col gap-3">
-            <div class="text-sm font-semibold text-foreground">Fade / Gain by Category</div>
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-              @for (cf of jcPfCategoryFade(); track cf.label) {
-                <div class="flex flex-col gap-2 p-3 bg-background border-default rounded-lg">
-                  <div class="flex items-center gap-1.5">
-                    <div class="w-2.5 h-2.5 rounded-full {{ cf.colorClass }} flex-shrink-0"></div>
-                    <div class="text-xs text-foreground-60 font-medium">{{ cf.label }}</div>
-                  </div>
-                  <div class="flex items-center gap-1">
-                    <i class="modus-icons text-sm {{ cf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ cf.isFade ? 'trending_down' : 'trending_up' }}</i>
-                    <div class="text-sm font-bold {{ cf.isFade ? 'text-destructive' : 'text-success' }}">{{ cf.isFade ? '' : '+' }}{{ cf.fadeAmount }}%</div>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-      }
-    </ng-template>
-
-    <ng-template #budgetCostSummaryRaw let-jcP="jcP">
-      <div class="bg-card border-default rounded-lg overflow-hidden">
-        <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
-          <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
-          <div class="text-base font-semibold text-foreground">Cost Summary</div>
-        </div>
-        <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-          <div role="columnheader">Category</div>
-          <div class="text-right" role="columnheader">Amount</div>
-          <div class="text-right" role="columnheader">% of Spend</div>
-          <div class="text-right" role="columnheader">% of Budget</div>
-        </div>
-        <div role="table" aria-label="Cost summary">
-          @for (cat of jcDetailCategories(); track cat.label) {
-            <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-              role="row" tabindex="0"
-              (click)="openSubledger(cat.label)"
-              (keydown.enter)="openSubledger(cat.label)"
-              (mousedown)="$event.stopPropagation()">
-              <div class="flex items-center gap-2" role="cell">
-                <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
-                <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
-              </div>
-              <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</div>
-              <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</div>
-              <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</div>
-            </div>
-          }
-          <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted items-center" role="row">
-            <div class="text-sm font-bold text-foreground" role="cell">Total</div>
-            <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
-            <div class="text-sm font-bold text-foreground text-right" role="cell">100%</div>
-            <div class="text-sm font-bold text-foreground text-right" role="cell">{{ jcP.budgetPct }}%</div>
-          </div>
-        </div>
-      </div>
-    </ng-template>
-
-    <ng-template #budgetBreakdownContent let-jcP="jcP">
-      <app-widget-frame icon="bar_graph" title="Cost Breakdown"
-        [isSelected]="selectedWidgetId() === 'tile-budget-breakdown'" [isMobile]="isMobile()"
-        (headerMouseDown)="onBudgetTileMouseDown('tile-budget-breakdown', $event)"
-        (resizeStart)="onBudgetTileResizeStart('tile-budget-breakdown', $event)">
-        <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1">
-          <div class="flex flex-col gap-2">
-            <div class="flex w-full h-5 rounded-full overflow-hidden">
-              @for (cat of jcDetailCategories(); track cat.label) {
-                <div class="{{ cat.colorClass }}" [style.width.%]="cat.pctOfSpend"></div>
-              }
-            </div>
-            <div class="flex items-center justify-between text-2xs text-foreground-40">
-              <div>0%</div>
-              <div>{{ formatJobCost(jcBudgetInfo().spent) }} total spend</div>
-              <div>100%</div>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-            @for (cat of jcDetailCategories(); track cat.label) {
-              <div class="flex flex-col gap-3 p-4 bg-background border-default rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
-                role="button" tabindex="0"
-                (click)="openSubledger(cat.label)"
-                (keydown.enter)="openSubledger(cat.label)"
-                (mousedown)="$event.stopPropagation()">
-                <div class="flex items-center gap-2">
-                  <div class="w-3 h-3 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                  <div class="text-xs text-foreground-60 uppercase tracking-wide font-semibold">{{ cat.label }}</div>
-                </div>
-                <div class="text-2xl font-bold text-foreground">{{ formatJobCost(cat.amount) }}</div>
-                <div class="flex flex-col gap-1.5">
-                  <div class="flex items-center justify-between text-xs">
-                    <div class="text-foreground-60">% of spend</div>
-                    <div class="font-semibold text-foreground">{{ cat.pctOfSpend }}%</div>
-                  </div>
-                  <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfSpend"></div>
-                  </div>
-                </div>
-                <div class="flex flex-col gap-1.5">
-                  <div class="flex items-center justify-between text-xs">
-                    <div class="text-foreground-60">% of budget</div>
-                    <div class="font-semibold text-foreground">{{ cat.pctOfBudget }}%</div>
-                  </div>
-                  <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfBudget"></div>
-                  </div>
-                </div>
-                <div class="border-top-default pt-2 mt-1">
-                  <div class="flex items-center justify-between text-xs">
-                    <div class="text-foreground-40">Portfolio avg</div>
-                    <div class="text-foreground-60">{{ cat.portfolioAvgPct }}%</div>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-      </app-widget-frame>
-    </ng-template>
-
-    <ng-template #budgetProfitFadeContent let-jcP="jcP">
-      @if (jcProfitFadeData(); as pf) {
-      <app-widget-frame icon="trending_up" title="Profit Fade / Gain"
-        [isSelected]="selectedWidgetId() === 'tile-budget-profitfade'" [isMobile]="isMobile()"
-        (headerMouseDown)="onBudgetTileMouseDown('tile-budget-profitfade', $event)"
-        (resizeStart)="onBudgetTileResizeStart('tile-budget-profitfade', $event)">
-        <div class="px-2.5 py-1 rounded-full text-xs font-semibold {{ pf.isFade ? 'bg-destructive-20 text-destructive' : 'bg-success-20 text-success' }}" headerMeta>
-          {{ pf.isFade ? 'Fade' : 'Gain' }} {{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%
-        </div>
-        <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
-              <div class="text-xs text-foreground-40 uppercase tracking-wide">Original Estimate</div>
-              <div class="text-2xl font-bold text-foreground">{{ pf.originalMargin }}%</div>
-              <div class="text-xs text-foreground-60">Bid margin</div>
-            </div>
-            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
-              <div class="text-xs text-foreground-40 uppercase tracking-wide">Current Projected</div>
-              <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.currentMargin }}%</div>
-              <div class="text-xs text-foreground-60">Based on costs to date</div>
-            </div>
-            <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
-              <div class="text-xs text-foreground-40 uppercase tracking-wide">{{ pf.isFade ? 'Profit Fade' : 'Profit Gain' }}</div>
-              <div class="flex items-center gap-2">
-                <i class="modus-icons text-lg {{ pf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ pf.isFade ? 'trending_down' : 'trending_up' }}</i>
-                <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%</div>
-              </div>
-              <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
-            </div>
-          </div>
-          <div class="relative" style="padding-left:36px;padding-bottom:20px">
-            <svg class="w-full" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none" style="height:160px">
-              <defs>
-                <linearGradient [attr.id]="'pfGradProj' + projectId()" x1="0" y1="0" x2="0" y2="1">
-                  @if (jcProfitFadeData()?.isFade) {
-                    <stop offset="0%" class="pf-gradient-fade-end" />
-                    <stop offset="100%" class="pf-gradient-fade-start" />
-                  } @else {
-                    <stop offset="0%" class="pf-gradient-gain-start" />
-                    <stop offset="100%" class="pf-gradient-gain-end" />
-                  }
-                </linearGradient>
-              </defs>
-              @for (line of jcPfGridLines(); track line.y) {
-                <line [attr.x1]="0" [attr.y1]="line.y" [attr.x2]="jcPfW" [attr.y2]="line.y" class="chart-grid-line" />
-              }
-              <line [attr.x1]="jcPfPadX" [attr.y1]="jcPfBaselineY()" [attr.x2]="jcPfW - jcPfPadX" [attr.y2]="jcPfBaselineY()" class="pf-baseline" />
-              <path [attr.d]="jcPfAreaPath()" [attr.fill]="'url(#pfGradProj' + projectId() + ')'" />
-              <path [attr.d]="jcPfLinePath()" [class]="pf.isFade ? 'pf-line-fade' : 'pf-line-gain'" />
-              @for (pt of jcPfChartPoints(); track pt.x) {
-                <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5" [class]="pf.isFade ? 'pf-dot-fade' : 'pf-dot-gain'" />
-              }
-            </svg>
-            <div class="absolute bottom-0 left-9 right-0 text-2xs text-foreground-40" style="position:relative">
-              @for (lbl of jcPfMonthLabels(); track lbl.pct) {
-                <div class="absolute" [style.left.%]="lbl.pct" style="transform:translateX(-50%)">{{ lbl.text }}</div>
-              }
-            </div>
-            <div class="absolute top-0 left-0 bottom-5 flex flex-col justify-between text-2xs text-foreground-40">
-              @for (line of jcPfGridLines(); track line.y) {
-                <div>{{ line.label }}</div>
-              }
-            </div>
-            <div class="absolute text-2xs font-medium text-foreground-60" style="right:4px" [style.top.px]="jcPfBaselineY() - 14">
-              Est. {{ pf.originalMargin }}%
-            </div>
-          </div>
-          <div class="flex flex-col gap-3">
-            <div class="text-sm font-semibold text-foreground">Fade / Gain by Category</div>
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-              @for (cf of jcPfCategoryFade(); track cf.label) {
-                <div class="flex flex-col gap-2 p-3 bg-background border-default rounded-lg">
-                  <div class="flex items-center gap-1.5">
-                    <div class="w-2.5 h-2.5 rounded-full {{ cf.colorClass }} flex-shrink-0"></div>
-                    <div class="text-xs text-foreground-60 font-medium">{{ cf.label }}</div>
-                  </div>
-                  <div class="flex items-center gap-1">
-                    <i class="modus-icons text-sm {{ cf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ cf.isFade ? 'trending_down' : 'trending_up' }}</i>
-                    <div class="text-sm font-bold {{ cf.isFade ? 'text-destructive' : 'text-success' }}">{{ cf.isFade ? '' : '+' }}{{ cf.fadeAmount }}%</div>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-      </app-widget-frame>
-      }
-    </ng-template>
-
-    <ng-template #budgetCostSummaryContent let-jcP="jcP">
-      <app-widget-frame icon="list" title="Cost Summary"
-        [isSelected]="selectedWidgetId() === 'tile-budget-costsummary'" [isMobile]="isMobile()"
-        (headerMouseDown)="onBudgetTileMouseDown('tile-budget-costsummary', $event)"
-        (resizeStart)="onBudgetTileResizeStart('tile-budget-costsummary', $event)">
-        <div class="overflow-y-auto flex-1">
-          <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-            <div role="columnheader">Category</div>
-            <div class="text-right" role="columnheader">Amount</div>
-            <div class="text-right" role="columnheader">% of Spend</div>
-            <div class="text-right" role="columnheader">% of Budget</div>
-          </div>
-          <div role="table" aria-label="Cost summary">
-            @for (cat of jcDetailCategories(); track cat.label) {
-              <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                role="row" tabindex="0"
-                (click)="openSubledger(cat.label)"
-                (keydown.enter)="openSubledger(cat.label)"
-                (mousedown)="$event.stopPropagation()">
-                <div class="flex items-center gap-2" role="cell">
-                  <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                  <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
-                  <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
-                </div>
-                <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</div>
-                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</div>
-                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</div>
-              </div>
-            }
-            <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted items-center" role="row">
-              <div class="text-sm font-bold text-foreground" role="cell">Total</div>
-              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
-              <div class="text-sm font-bold text-foreground text-right" role="cell">100%</div>
-              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ jcP.budgetPct }}%</div>
-            </div>
-          </div>
-        </div>
-      </app-widget-frame>
-    </ng-template>
-
-    <ng-template #coTypeSubpage>
-      @if (activeCoTypeList().length > 0) {
-        <div class="bg-card border-default rounded-lg overflow-hidden">
-          <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-            <div>ID</div><div>Description</div><div>Amount</div><div>Status</div><div>Requested By</div><div>Date</div>
-          </div>
-          @for (co of activeCoTypeList(); track co.id) {
-            <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-              tabindex="0" (click)="navigateToChangeOrder(co)" (keydown.enter)="navigateToChangeOrder(co)">
-              <div class="text-sm font-medium text-primary">{{ co.id }}</div>
-              <div class="text-sm text-foreground truncate">{{ co.description }}</div>
-              <div class="text-sm font-medium text-foreground">{{ formatCoAmount(co.amount) }}</div>
-              <div><modus-badge [color]="coStatusBadge(co.status)">{{ capitalizeStatus(co.status) }}</modus-badge></div>
-              <div class="text-sm text-foreground-60 truncate">{{ co.requestedBy }}</div>
-              <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
-            </div>
-          }
-        </div>
-      } @else {
-        <app-empty-state icon="swap_horizontal" [title]="activeFinancialsPageLabel()" description="No change orders of this type for this project." />
-      }
-    </ng-template>
-  `,
+  templateUrl: './project-dashboard.component.html',
+  providers: [ProjectDashboardNavigationService],
 })
-export class ProjectDashboardComponent implements OnInit, AfterViewInit {
+export class ProjectDashboardComponent extends DashboardPageBase implements OnInit, AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
+  private readonly projectNav = inject(ProjectDashboardNavigationService);
   private readonly navHistory = inject(NavigationHistoryService);
   private readonly elementRef = inject(ElementRef);
-  private readonly canvasResetService = inject(CanvasResetService);
-  readonly widgetFocusService = inject(WidgetFocusService);
   private readonly aiService = inject(AiService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
   readonly projectData = input.required<ProjectDashboardData>();
@@ -3792,62 +135,47 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   private static readonly PROJ_HEADER_HEIGHT = 140;
   private static readonly PROJ_HEADER_OFFSET = ProjectDashboardComponent.PROJ_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
-  private readonly engine = new DashboardLayoutEngine({
-    widgets: ['projHeader', 'milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'],
-    layoutStorageKey: () => `project-${this.projectId()}-v3`,
-    canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v4`,
-    defaultColStarts: { projHeader: 1, milestones: 1, tasks: 1, risks: 1, rfis: 1, submittals: 1, drawing: 12, weather: 12, budget: 12, team: 12, activity: 12 },
-    defaultColSpans: { projHeader: 16, milestones: 11, tasks: 11, risks: 11, rfis: 11, submittals: 11, drawing: 5, weather: 5, budget: 5, team: 5, activity: 5 },
-    defaultTops: { projHeader: 0, milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, weather: 436, budget: 686, team: 1152, activity: 1568 },
-    defaultHeights: { projHeader: 0, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, weather: 234, budget: 450, team: 400, activity: 350 },
-    defaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
-    defaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
-    canvasDefaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
-    canvasDefaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
-    canvasDefaultTops: {
-      projHeader: 0,
-      milestones: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
-      tasks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 536,
-      risks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 952,
-      rfis: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1318,
-      submittals: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1658,
-      drawing: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
-      weather: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 436,
-      budget: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 686,
-      team: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1152,
-      activity: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1568,
-    },
-    canvasDefaultHeights: { projHeader: ProjectDashboardComponent.PROJ_HEADER_HEIGHT, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, weather: 234, budget: 450, team: 400, activity: 350 },
-    minColSpan: 4,
-    canvasGridMinHeightOffset: 200,
-    savesDesktopOnMobile: true,
-    onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-  }, inject(WidgetLayoutService));
-
-  private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
-    this.engine.destroy();
+  private readonly _registerAiCleanup = this.destroyRef.onDestroy(() => {
     this.ai.destroy();
   });
-  private readonly _lockProjHeader = (() => {
+
+  protected override getEngineConfig(): DashboardLayoutConfig {
+    return {
+      widgets: ['projHeader', 'milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'],
+      layoutStorageKey: () => `project-${this.projectId()}-v3`,
+      canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v4`,
+      defaultColStarts: { projHeader: 1, milestones: 1, tasks: 1, risks: 1, rfis: 1, submittals: 1, drawing: 12, weather: 12, budget: 12, team: 12, activity: 12 },
+      defaultColSpans: { projHeader: 16, milestones: 11, tasks: 11, risks: 11, rfis: 11, submittals: 11, drawing: 5, weather: 5, budget: 5, team: 5, activity: 5 },
+      defaultTops: { projHeader: 0, milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, weather: 436, budget: 686, team: 1152, activity: 1568 },
+      defaultHeights: { projHeader: 0, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, weather: 234, budget: 450, team: 400, activity: 350 },
+      defaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
+      defaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
+      canvasDefaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
+      canvasDefaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
+      canvasDefaultTops: {
+        projHeader: 0,
+        milestones: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
+        tasks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 536,
+        risks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 952,
+        rfis: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1318,
+        submittals: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1658,
+        drawing: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
+        weather: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 436,
+        budget: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 686,
+        team: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1152,
+        activity: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1568,
+      },
+      canvasDefaultHeights: { projHeader: ProjectDashboardComponent.PROJ_HEADER_HEIGHT, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, weather: 234, budget: 450, team: 400, activity: 350 },
+      minColSpan: 4,
+      canvasGridMinHeightOffset: 200,
+      savesDesktopOnMobile: true,
+      onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
+    };
+  }
+
+  protected override applyInitialHeaderLock(): void {
     this.engine.widgetLocked.update(l => ({ ...l, projHeader: true }));
-  })();
-
-  private readonly _resetWidgetsEffect = effect(() => {
-    const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0) {
-      untracked(() => {
-        this.engine.resetToDefaults();
-        this.engine.widgetLocked.update(l => ({ ...l, projHeader: true }));
-      });
-    }
-  });
-
-  private readonly _saveDefaultsEffect = effect(() => {
-    const tick = this.canvasResetService.saveDefaultsTick();
-    if (tick > 0) {
-      untracked(() => this.engine.saveAsDefaultLayout());
-    }
-  });
+  }
 
   private _prevProjectId: number | null = null;
   private readonly _projectChangeEffect = effect(() => {
@@ -3877,19 +205,17 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     }
   });
 
-  readonly isMobile = this.engine.isMobile;
-  readonly isCanvas = this.engine.isCanvasMode;
-  readonly wTops = this.engine.widgetTops;
-  readonly wHeights = this.engine.widgetHeights;
-  readonly wLefts = this.engine.widgetLefts;
-  readonly wPixelWidths = this.engine.widgetPixelWidths;
-  readonly wZIndices = this.engine.widgetZIndices;
-  readonly wLocked = this.engine.widgetLocked;
-  readonly wColStarts = this.engine.widgetColStarts;
-  readonly wColSpans = this.engine.widgetColSpans;
-  readonly moveTargetId = this.engine.moveTargetId;
+  readonly isCanvas = this.isCanvasMode;
+  readonly wTops = this.widgetTops;
+  readonly wHeights = this.widgetHeights;
+  readonly wLefts = this.widgetLefts;
+  readonly wPixelWidths = this.widgetPixelWidths;
+  readonly wZIndices = this.widgetZIndices;
+  readonly wLocked = this.widgetLocked;
+  readonly wColStarts = this.widgetColStarts;
+  readonly wColSpans = this.widgetColSpans;
   readonly mobileGridHeight = computed(() => this.engine.mobileGridHeight());
-  readonly desktopGridMinHeight = this.engine.canvasGridMinHeight;
+  readonly desktopGridMinHeight = this.canvasGridMinHeight;
 
   // --- Subpage tile canvas (tiles become widgets in canvas mode) ---
   private static readonly TILE_SUBNAV_EXPANDED = 227;
@@ -3968,6 +294,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       if (sub === 'subcontract-change-orders') return this.projectSubcontractCOs().map(c => `tile-sco-${c.id}`);
       if (sub === 'applications-for-payment') return this.projectRevenueData().map(r => `tile-rev-${r.projectId}`);
       if (sub === 'cost-forecasts') return this.projectBudgetHistory().map((_, i) => `tile-cf-${i}`);
+      if (sub === 'contracts') return this.projectContracts().map(c => `tile-ct-${c.id}`);
     }
     return [];
   });
@@ -3996,32 +323,48 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   navigateToRfiFromTile(rfi: Rfi, tileId: string): void {
-    this.openTileDetail(tileId, { type: 'rfi', item: rfi });
+    this.projectNav.navigateToRfiFromTile(rfi, tileId);
   }
 
   navigateToSubFromTile(sub: Submittal, tileId: string): void {
-    this.openTileDetail(tileId, { type: 'submittal', item: sub });
+    this.projectNav.navigateToSubFromTile(sub, tileId);
   }
 
   navigateToDailyReportFromTile(report: DailyReport, tileId: string): void {
-    this.openTileDetail(tileId, { type: 'dailyReport', item: report });
+    this.projectNav.navigateToDailyReportFromTile(report, tileId);
   }
 
   navigateToPunchItemFromTile(item: PunchListItem, tileId: string): void {
-    this.openTileDetail(tileId, { type: 'punchItem', item });
+    this.projectNav.navigateToPunchItemFromTile(item, tileId);
   }
 
   navigateToInspectionFromTile(insp: Inspection, tileId: string): void {
-    this.openTileDetail(tileId, { type: 'inspection', item: insp });
+    this.projectNav.navigateToInspectionFromTile(insp, tileId);
   }
 
   navigateToChangeOrderFromTile(co: ChangeOrder, tileId: string): void {
-    this.openTileDetail(tileId, { type: 'changeOrder', item: co });
+    this.projectNav.navigateToChangeOrderFromTile(co, tileId);
   }
 
-  private openTileDetail(tileId: string, detail: TileDetailView): void {
-    this.tileCanvas.openDetail(tileId, detail);
-    this.widgetFocusService.selectWidget(tileId);
+  navigateToContractFromTile(ct: Contract, tileId: string): void {
+    this.projectNav.navigateToContractFromTile(ct, tileId);
+  }
+
+  navigateToActionItemFromTile(ai: ProjectAttentionItem, tileId: string): void {
+    this.projectNav.navigateToActionItemFromTile(ai, tileId);
+  }
+
+  contractStatusDotClass(status: ContractStatus): string {
+    const map: Record<ContractStatus, string> = { active: 'bg-success', closed: 'bg-secondary', pending: 'bg-warning', draft: 'bg-muted' };
+    return map[status] ?? 'bg-muted';
+  }
+
+  contractTypeIconName(ct: ContractType): string { return contractTypeIcon(ct); }
+  contractTypeLabelText(ct: ContractType): string { return sharedContractTypeLabel(ct); }
+  contractTypeLabelShortText(ct: ContractType): string { return contractTypeLabelShort(ct); }
+
+  openTileDetail(tileId: string, detail: TileDetailView): void {
+    this.projectNav.openTileDetail(tileId, detail);
   }
 
   selectTileWidget(tileId: string): void {
@@ -4029,7 +372,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   closeTileDetail(tileId: string): void {
-    this.tileCanvas.closeDetail(tileId);
+    this.projectNav.closeTileDetail(tileId);
   }
 
   onTileDetailHeaderMouseDown(event: MouseEvent, tileId: string): void {
@@ -4163,7 +506,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
           'tile-budget-profitfade':  { width: halfW, height: 600, columns: 2 },
           'tile-budget-costsummary': { width: halfW, height: 600, columns: 2 },
         };
-      } else if (nav === 'financials' && (this.activeFinancialsPage() === 'applications-for-payment' || this.activeFinancialsPage() === 'cost-forecasts')) {
+      } else if (nav === 'financials' && (this.activeFinancialsPage() === 'applications-for-payment' || this.activeFinancialsPage() === 'cost-forecasts' || this.activeFinancialsPage() === 'contracts')) {
         const kpiTop = ProjectDashboardComponent.TILE_CONTENT_TOP;
         const kpiH = 100;
         lockedRects['tc-fin-kpis'] = { top: kpiTop, left: contentLeft, width: contentWidth, height: kpiH };
@@ -4277,6 +620,16 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   });
   readonly activeFinancialsPageDescription = computed(() =>
     FINANCIALS_PAGE_DESCRIPTIONS[this.activeFinancialsPage()] ?? ''
+  );
+
+  private static readonly FINANCIALS_TILE_PAGES = new Set([
+    'change-order-requests', 'prime-contract-change-orders', 'potential-change-orders',
+    'subcontract-change-orders', 'contracts',
+  ]);
+  readonly activeFinancialsSubnavConfig = computed(() =>
+    ProjectDashboardComponent.FINANCIALS_TILE_PAGES.has(this.activeFinancialsPage())
+      ? this.subnavConfigs['financials-tiles']
+      : this.subnavConfigs['financials']
   );
 
   readonly weatherForecast = WEATHER_FORECAST;
@@ -4501,21 +854,21 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
 
   closeSubledger(): void {
     this.subledgerCategory.set(null);
-    this.pushPageUrl();
+    this.projectNav.pushPageUrl();
   }
 
   openSubledger(category: string): void {
     this.subledgerCategory.set(category as JobCostCategory);
     this.subledgerDropdownOpen.set(false);
     if (this.isCanvas()) this.panning.resetView();
-    this.pushPageUrl();
+    this.projectNav.pushPageUrl();
   }
 
   switchSubledger(category: string): void {
     this.subledgerCategory.set(category as JobCostCategory);
     this.subledgerDropdownOpen.set(false);
     if (this.isCanvas()) this.panning.resetView();
-    this.pushPageUrl();
+    this.projectNav.pushPageUrl();
   }
 
   readonly drawingTiles = computed(() =>
@@ -4528,6 +881,14 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
 
   private readonly gridRef = viewChild<ElementRef>('widgetGrid');
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
+
+  protected override resolveGridElement(): HTMLElement | undefined {
+    return this.gridRef()?.nativeElement as HTMLElement | undefined;
+  }
+
+  protected override resolveHeaderElement(): HTMLElement | undefined {
+    return this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
+  }
   private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
 
   readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'];
@@ -4705,6 +1066,10 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly projectContracts = computed(() =>
     CONTRACTS.filter(c => c.projectId === this.projectId())
   );
+
+  readonly contractOriginalTotal = computed(() => this.projectContracts().reduce((sum, c) => sum + c.originalValue, 0));
+  readonly contractRevisedTotal = computed(() => this.projectContracts().reduce((sum, c) => sum + c.revisedValue, 0));
+  readonly contractGrowth = computed(() => this.contractRevisedTotal() - this.contractOriginalTotal());
 
   readonly projectPrimeContractCOs = computed(() =>
     CHANGE_ORDERS.filter(c => c.projectId === this.projectId() && c.coType === 'prime')
@@ -4924,13 +1289,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   });
 
   statusBadgeColor(): ModusBadgeColor {
-    const map: Record<ProjectStatus, ModusBadgeColor> = {
-      'On Track': 'success',
-      'At Risk': 'warning',
-      'Overdue': 'danger',
-      'Planning': 'secondary',
-    };
-    return map[this.projectStatus()];
+    return sharedStatusBadgeColor(this.projectStatus());
   }
 
   milestoneProgressClass(status: MilestoneStatus): string {
@@ -4958,77 +1317,35 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   navigateToRfi(rfi: Rfi, sourceWidgetId?: string): void {
-    this.navigateToDetail('rfi', rfi, sourceWidgetId);
+    this.projectNav.navigateToRfi(rfi, sourceWidgetId);
   }
 
   navigateToSubmittal(sub: Submittal, sourceWidgetId?: string): void {
-    this.navigateToDetail('submittal', sub, sourceWidgetId);
+    this.projectNav.navigateToSubmittal(sub, sourceWidgetId);
   }
 
   navigateToUrgentNeed(item: UrgentNeedItem): void {
-    if (item.financialsRoute && (item.category === 'budget' || item.category === 'change-order')) {
-      this.router.navigate([item.financialsRoute]);
-      return;
-    }
-    const qp = item.queryParams;
-    if (qp['view'] && qp['id']) {
-      const view = qp['view'];
-      const id = qp['id'];
-      if (view === 'rfi') {
-        const rfi = RFIS.find(r => r.id === id);
-        if (rfi) { this.navigateToDetail('rfi', rfi, 'risks'); return; }
-      } else if (view === 'submittal') {
-        const sub = SUBMITTALS.find(s => s.id === id);
-        if (sub) { this.navigateToDetail('submittal', sub, 'risks'); return; }
-      } else if (view === 'changeOrder') {
-        const co = CHANGE_ORDERS.find(c => c.id === id);
-        if (co) {
-          if (this.isCanvas()) {
-            this.openCanvasDetail('risks', { type: 'changeOrder', item: co } as DetailView);
-          } else {
-            this.navigateToChangeOrder(co);
-          }
-          return;
-        }
-      }
-    }
-    const page = qp['page'] || 'dashboard';
-    const validPages = this.sideNavItems.map(i => i.value);
-    if (page !== 'dashboard' && validPages.includes(page)) {
-      this.activeNavItem.set(page);
-      if (page === 'records' && qp['subpage']) this.activeRecordsPage.set(qp['subpage']);
-      else if (page === 'financials' && qp['subpage']) this.activeFinancialsPage.set(qp['subpage']);
-    }
+    this.projectNav.navigateToUrgentNeed(item);
   }
 
   navigateToDailyReport(report: DailyReport): void {
-    this.detailSourceLabel.set(this.currentPageLabel());
-    this.detailView.set({ type: 'dailyReport', item: report });
-    this.pushDetailUrl('dailyReport', report.id);
+    this.projectNav.navigateToDailyReport(report);
   }
 
   navigateToInspection(inspection: Inspection): void {
-    this.detailSourceLabel.set(this.currentPageLabel());
-    this.detailView.set({ type: 'inspection', item: inspection });
-    this.pushDetailUrl('inspection', inspection.id);
+    this.projectNav.navigateToInspection(inspection);
   }
 
   navigateToPunchItem(item: PunchListItem): void {
-    this.detailSourceLabel.set(this.currentPageLabel());
-    this.detailView.set({ type: 'punchItem', item });
-    this.pushDetailUrl('punchItem', item.id);
+    this.projectNav.navigateToPunchItem(item);
   }
 
   navigateToChangeOrder(co: ChangeOrder): void {
-    this.detailSourceLabel.set(this.currentPageLabel());
-    this.detailView.set({ type: 'changeOrder', item: co });
-    this.pushDetailUrl('changeOrder', co.id);
+    this.projectNav.navigateToChangeOrder(co);
   }
 
   navigateToContract(ct: Contract): void {
-    this.detailSourceLabel.set(this.currentPageLabel());
-    this.detailView.set({ type: 'contract', item: ct } as DetailView);
-    this.pushDetailUrl('contract', ct.id);
+    this.projectNav.navigateToContract(ct);
   }
 
   onLinkedCoClick(coId: string): void {
@@ -5036,10 +1353,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     if (co) this.navigateToChangeOrder(co);
   }
 
-  inspectionResultBadge(result: InspectionResult): ModusBadgeColor {
-    const map: Record<InspectionResult, ModusBadgeColor> = { pass: 'success', fail: 'danger', conditional: 'warning', pending: 'secondary' };
-    return map[result] ?? 'secondary';
-  }
+  inspectionResultBadge(result: InspectionResult): ModusBadgeColor { return sharedInspectionResultBadge(result); }
 
   inspectionResultDotClass(result: InspectionResult): string {
     const map: Record<InspectionResult, string> = { pass: 'bg-success', fail: 'bg-destructive', conditional: 'bg-warning', pending: 'bg-secondary' };
@@ -5056,10 +1370,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     return map[priority] ?? 'bg-secondary';
   }
 
-  changeOrderStatusBadge(status: ChangeOrderStatus): ModusBadgeColor {
-    const map: Record<ChangeOrderStatus, ModusBadgeColor> = { approved: 'success', pending: 'warning', rejected: 'danger' };
-    return map[status] ?? 'secondary';
-  }
+  changeOrderStatusBadge(status: ChangeOrderStatus): ModusBadgeColor { return coBadgeColor(status); }
 
   changeOrderStatusDot(status: ChangeOrderStatus): string {
     const map: Record<ChangeOrderStatus, string> = { approved: 'bg-success', pending: 'bg-warning', rejected: 'bg-destructive' };
@@ -5074,26 +1385,22 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     return [];
   });
 
+  readonly activeCoTilePrefix = computed(() => {
+    const page = this.activeFinancialsPage();
+    if (page === 'prime-contract-change-orders') return 'pco-';
+    if (page === 'potential-change-orders') return 'pot-';
+    if (page === 'subcontract-change-orders') return 'sco-';
+    return 'co-';
+  });
+
   coStatusBadge(status: ChangeOrderStatus): ModusBadgeColor {
     return coBadgeColor(status);
   }
 
-  formatCoAmount(value: number): string {
-    if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (Math.abs(value) >= 1_000) return `$${Math.round(value / 1_000).toLocaleString()}K`;
-    return '$' + value.toLocaleString();
-  }
+  formatCoAmount(value: number): string { return sharedFormatCurrency(value); }
 
-  punchPriorityBadge(priority: string): ModusBadgeColor {
-    const map: Record<string, ModusBadgeColor> = { high: 'danger', medium: 'warning', low: 'secondary' };
-    return map[priority] ?? 'secondary';
-  }
-
-  formatCurrency(amount: number): string {
-    if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
-    if (amount >= 1_000) return `$${Math.round(amount / 1_000)}K`;
-    return `$${amount.toLocaleString()}`;
-  }
+  punchPriorityBadge(priority: string): ModusBadgeColor { return sharedPunchPriorityBadge(priority); }
+  formatCurrency(amount: number): string { return sharedFormatCurrency(amount); }
 
   openLatestDrawing(): void {
     this.selectNavItem('drawings');
@@ -5104,19 +1411,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   navigateToDrawingDetail(drawing: DrawingTile): void {
-    this.detailSourceLabel.set('Drawings');
-    this.detailView.set({ type: 'drawing', item: drawing });
-    this.pushDetailUrl('drawing', drawing.id);
-  }
-
-  private navigateToDetail(type: 'rfi' | 'submittal', item: Rfi | Submittal, sourceWidgetId?: string): void {
-    if (this.isCanvas() && sourceWidgetId) {
-      this.openCanvasDetail(sourceWidgetId, { type, item } as DetailView);
-      return;
-    }
-    this.detailSourceLabel.set(this.currentPageLabel());
-    this.detailView.set({ type, item } as DetailView);
-    this.pushDetailUrl(type, item.id);
+    this.projectNav.navigateToDrawingDetail(drawing);
   }
 
   private openCanvasDetail(sourceWidgetId: string, detail: DetailView): void {
@@ -5128,18 +1423,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly ASSIGNEE_OPTIONS = ASSIGNEE_OPTIONS;
 
   clearDetailView(): void {
-    this.resetDrawingZoom();
-    const fromRoute = this.detailFromRoute();
-    if (fromRoute) {
-      this.detailFromRoute.set('');
-      this.detailSourceLabel.set('');
-      this.detailView.set(null);
-      this.router.navigate([this.resolveFromPath(fromRoute)]);
-      return;
-    }
-    this.detailView.set(null);
-    this.detailSourceLabel.set('');
-    this.replaceUrlWithoutDetail();
+    this.projectNav.clearDetailView();
   }
 
   updateDetailField(field: string, value: string): void {
@@ -5152,64 +1436,6 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   onDetailStatusChange(newStatus: string): void { this.updateDetailField('status', newStatus); }
   onDetailAssigneeChange(newAssignee: string): void { this.updateDetailField('assignee', newAssignee); }
   onDetailDueDateChange(newDate: string): void { this.updateDetailField('dueDate', newDate); }
-
-  private pushDetailUrl(type: string, id: string): void {
-    const params = new URLSearchParams();
-    params.set('view', type);
-    params.set('id', id);
-    const nav = this.activeNavItem();
-    if (nav && nav !== 'dashboard') {
-      params.set('page', nav);
-      if (nav === 'records') params.set('subpage', this.activeRecordsPage());
-      else if (nav === 'financials') params.set('subpage', this.activeFinancialsPage());
-    }
-    window.history.pushState({ detailType: type, detailId: id }, '', window.location.pathname + '?' + params.toString());
-  }
-
-  private resolveFromLabel(from: string): string {
-    const labels: Record<string, string> = {
-      home: 'Home',
-      projects: 'Projects',
-      financials: 'Financials',
-    };
-    return labels[from] ?? 'Home';
-  }
-
-  private resolveFromPath(from: string): string {
-    const paths: Record<string, string> = {
-      home: '/',
-      projects: '/projects',
-      financials: '/financials',
-    };
-    return paths[from] ?? '/';
-  }
-
-  private replaceUrlWithoutDetail(): void {
-    const url = this.buildPageUrl();
-    window.history.replaceState({}, '', url);
-  }
-
-  private buildPageUrl(): string {
-    const nav = this.activeNavItem();
-    if (nav && nav !== 'dashboard') {
-      const params = new URLSearchParams();
-      params.set('page', nav);
-      if (nav === 'records') params.set('subpage', this.activeRecordsPage());
-      else if (nav === 'financials') {
-        params.set('subpage', this.activeFinancialsPage());
-        const slCat = this.subledgerCategory();
-        if (slCat && this.activeFinancialsPage() === 'budget') {
-          params.set('subledger', slCat);
-        }
-      }
-      return window.location.pathname + '?' + params.toString();
-    }
-    return window.location.pathname;
-  }
-
-  private pushPageUrl(): void {
-    window.history.pushState({}, '', this.buildPageUrl());
-  }
 
   readonly detailSourceLabel = signal('');
   readonly detailFromRoute = signal('');
@@ -5263,119 +1489,39 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   });
 
   ngOnInit(): void {
+    this.projectNav.bindContext({
+      detailView: this.detailView,
+      detailSourceLabel: this.detailSourceLabel,
+      detailFromRoute: this.detailFromRoute,
+      activeNavItem: this.activeNavItem,
+      activeRecordsPage: this.activeRecordsPage,
+      activeFinancialsPage: this.activeFinancialsPage,
+      subledgerCategory: this.subledgerCategory,
+      navExpanded: this.navExpanded,
+      projectSelectorOpen: this.projectSelectorOpen,
+      isCanvas: () => this.isCanvas(),
+      currentPageLabel: () => this.currentPageLabel(),
+      drawingTiles: () => this.drawingTiles(),
+      sideNavItems: this.sideNavItems,
+      recordsSubNavItems: this.recordsSubNavItems,
+      financialsSubNavItems: this.financialsSubNavItems,
+      resetDrawingZoom: () => this.resetDrawingZoom(),
+      tileCanvas: this.tileCanvas,
+      widgetFocus: this.widgetFocusService,
+      openCanvasDetail: (sourceWidgetId, detail) => this.openCanvasDetail(sourceWidgetId, detail),
+    });
+    this.projectNav.registerPopStateListener();
+
     const backInfo = this.navHistory.getBackInfo();
     this.navBackRoute.set(backInfo.route);
     this.navBackLabel.set(backInfo.label);
 
     const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');
-    const id = params.get('id');
-    const page = params.get('page');
-    const from = params.get('from');
-
-    this.restorePageContext(params);
-
-    if (view && id) {
-      if (from) {
-        this.detailFromRoute.set(from);
-        this.detailSourceLabel.set(this.resolveFromLabel(from));
-      }
-      if (view === 'rfi') {
-        const rfi = RFIS.find(r => r.id === id);
-        if (rfi) this.detailView.set({ type: 'rfi', item: rfi });
-      } else if (view === 'submittal') {
-        const submittal = SUBMITTALS.find(s => s.id === id);
-        if (submittal) this.detailView.set({ type: 'submittal', item: submittal });
-      } else if (view === 'drawing') {
-        const drawing = this.drawingTiles().find(d => d.id === id);
-        if (drawing) this.detailView.set({ type: 'drawing', item: drawing });
-      } else if (view === 'dailyReport') {
-        const report = DAILY_REPORTS.find(r => r.id === id);
-        if (report) this.detailView.set({ type: 'dailyReport', item: report });
-      } else if (view === 'inspection') {
-        const insp = INSPECTIONS.find(i => i.id === id);
-        if (insp) this.detailView.set({ type: 'inspection', item: insp });
-      } else if (view === 'punchItem') {
-        const punch = PUNCH_LIST_ITEMS.find(p => p.id === id);
-        if (punch) this.detailView.set({ type: 'punchItem', item: punch });
-      } else if (view === 'changeOrder') {
-        const co = CHANGE_ORDERS.find(c => c.id === id);
-        if (co) this.detailView.set({ type: 'changeOrder', item: co });
-      }
-    }
-
-    this.popStateHandler = () => this.onPopState();
-    window.addEventListener('popstate', this.popStateHandler);
-    this.destroyRef.onDestroy(() => window.removeEventListener('popstate', this.popStateHandler!));
+    this.projectNav.restoreFromUrl(params);
   }
 
-  private popStateHandler: (() => void) | null = null;
-
-  private onPopState(): void {
-    const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');
-    const id = params.get('id');
-
-    if (view && id) {
-      if (view === 'rfi') {
-        const rfi = RFIS.find(r => r.id === id);
-        if (rfi) { this.detailView.set({ type: 'rfi', item: rfi }); return; }
-      } else if (view === 'submittal') {
-        const sub = SUBMITTALS.find(s => s.id === id);
-        if (sub) { this.detailView.set({ type: 'submittal', item: sub }); return; }
-      } else if (view === 'drawing') {
-        const drawing = this.drawingTiles().find(d => d.id === id);
-        if (drawing) { this.detailView.set({ type: 'drawing', item: drawing }); return; }
-      } else if (view === 'dailyReport') {
-        const report = DAILY_REPORTS.find(r => r.id === id);
-        if (report) { this.detailView.set({ type: 'dailyReport', item: report }); return; }
-      } else if (view === 'inspection') {
-        const insp = INSPECTIONS.find(i => i.id === id);
-        if (insp) { this.detailView.set({ type: 'inspection', item: insp }); return; }
-      } else if (view === 'punchItem') {
-        const punch = PUNCH_LIST_ITEMS.find(p => p.id === id);
-        if (punch) { this.detailView.set({ type: 'punchItem', item: punch }); return; }
-      } else if (view === 'changeOrder') {
-        const co = CHANGE_ORDERS.find(c => c.id === id);
-        if (co) { this.detailView.set({ type: 'changeOrder', item: co }); return; }
-      }
-    }
-    this.detailView.set(null);
-    this.restorePageContext(params);
-  }
-
-  private restorePageContext(params: URLSearchParams): void {
-    const page = params.get('page');
-    if (!page) return;
-    const validPages = this.sideNavItems.map(i => i.value);
-    if (validPages.includes(page)) {
-      this.activeNavItem.set(page);
-    }
-    const subpage = params.get('subpage');
-    if (subpage) {
-      if (page === 'records') {
-        const validSubPages = this.recordsSubNavItems.map(i => i.value);
-        if (validSubPages.includes(subpage)) this.activeRecordsPage.set(subpage);
-      } else if (page === 'financials') {
-        const validSubPages = this.financialsSubNavItems.map(i => i.value);
-        if (validSubPages.includes(subpage)) this.activeFinancialsPage.set(subpage);
-      }
-    }
-    const subledger = params.get('subledger');
-    if (subledger && page === 'financials' && subpage === 'budget') {
-      const validCategories = JOB_COST_CATEGORIES as readonly string[];
-      if (validCategories.includes(subledger)) {
-        this.subledgerCategory.set(subledger as JobCostCategory);
-      }
-    } else {
-      this.subledgerCategory.set(null);
-    }
-  }
-
-  ngAfterViewInit(): void {
-    this.engine.gridElAccessor = () => this.gridRef()?.nativeElement as HTMLElement | undefined;
-    this.engine.headerElAccessor = () => this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
-    this.engine.init();
+  override ngAfterViewInit(): void {
+    super.ngAfterViewInit();
 
     this.fixNavbarLayout();
     this.reorderNavbarEnd();
@@ -5486,19 +1632,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   navigateToProject(slug: string): void {
-    this.projectSelectorOpen.set(false);
-    const currentPage = this.activeNavItem();
-    if (currentPage && currentPage !== 'dashboard') {
-      const qp: Record<string, string> = { page: currentPage };
-      if (currentPage === 'records') {
-        qp['subpage'] = this.activeRecordsPage();
-      } else if (currentPage === 'financials') {
-        qp['subpage'] = this.activeFinancialsPage();
-      }
-      this.router.navigate(['/project', slug], { queryParams: qp });
-    } else {
-      this.router.navigate(['/project', slug]);
-    }
+    this.projectNav.navigateToProject(slug);
   }
 
   statusDotClass(status: ProjectStatus): string {
@@ -5516,30 +1650,25 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.subledgerCategory.set(null);
     this.activeNavItem.set(value);
     this.navExpanded.set(false);
-    this.pushPageUrl();
+    this.projectNav.pushPageUrl();
   }
 
   navigateToBudgetPage(): void {
-    this.detailView.set(null);
-    this.subledgerCategory.set(null);
-    this.activeNavItem.set('financials');
-    this.activeFinancialsPage.set('budget');
-    this.navExpanded.set(false);
-    this.pushPageUrl();
+    this.projectNav.navigateToBudgetPage();
   }
 
   selectRecordsSubPage(value: string): void {
     this.activeRecordsPage.set(value);
     this.subledgerCategory.set(null);
     this.navExpanded.set(false);
-    this.pushPageUrl();
+    this.projectNav.pushPageUrl();
   }
 
   selectFinancialsSubPage(value: string): void {
     this.activeFinancialsPage.set(value);
     this.subledgerCategory.set(null);
     this.navExpanded.set(false);
-    this.pushPageUrl();
+    this.projectNav.pushPageUrl();
   }
 
   onDetailSideSubnavSelect(value: string): void {
@@ -5548,7 +1677,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     const nav = this.activeNavItem();
     if (nav === 'records') this.activeRecordsPage.set(value);
     if (nav === 'financials') this.activeFinancialsPage.set(value);
-    this.replaceUrlWithoutDetail();
+    this.projectNav.replaceUrlWithoutDetail();
   }
 
   onWidgetHeaderMouseDown(id: ProjectWidgetId, event: MouseEvent): void {
@@ -5571,7 +1700,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.engine.toggleWidgetLock(id);
   }
 
-  onDocumentMouseMove(event: MouseEvent): void {
+  override onDocumentMouseMove(event: MouseEvent): void {
     if (this.panning.handleMouseMove(event)) return;
     if (this.tileCanvas.isInteracting) {
       this.tileCanvas.onDocumentMouseMove(event);
@@ -5580,7 +1709,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.engine.onDocumentMouseMove(event);
   }
 
-  onDocumentMouseUp(): void {
+  override onDocumentMouseUp(): void {
     if (this.panning.handleMouseUp()) return;
     if (this.tileCanvas.isInteracting) {
       this.tileCanvas.onDocumentMouseUp();
@@ -5590,7 +1719,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.engine.onDocumentMouseUp();
   }
 
-  onDocumentTouchEnd(): void {
+  override onDocumentTouchEnd(): void {
     if (this.panning.handleMouseUp()) return;
     this.engine.onDocumentTouchEnd();
   }

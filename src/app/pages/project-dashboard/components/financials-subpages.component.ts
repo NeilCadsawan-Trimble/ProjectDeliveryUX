@@ -2,6 +2,13 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { TitleCasePipe } from '@angular/common';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../../components/modus-badge.component';
 import { EmptyStateComponent } from './empty-state.component';
+import {
+  coBadgeColor,
+  contractStatusBadge as sharedContractStatusBadge,
+  contractTypeLabelShort,
+  contractTypeIcon,
+  formatCurrency as sharedFormatCurrency,
+} from '../../../data/dashboard-data';
 import type {
   ChangeOrder,
   Contract,
@@ -248,30 +255,9 @@ export class FinancialsSubpagesComponent {
   contractRevisedTotal(): number { return this.contracts().reduce((sum, c) => sum + c.revisedValue, 0); }
   contractGrowth(): number { return this.contractRevisedTotal() - this.contractOriginalTotal(); }
 
-  contractStatusColor(status: ContractStatus): ModusBadgeColor {
-    const map: Record<ContractStatus, ModusBadgeColor> = { active: 'success', closed: 'secondary', pending: 'warning', draft: 'tertiary' };
-    return map[status] ?? 'secondary';
-  }
-
-  contractTypeLabel(ct: ContractType): string {
-    const map: Record<ContractType, string> = { prime: 'Prime', subcontract: 'Subcontract', 'purchase-order': 'PO' };
-    return map[ct];
-  }
-
-  contractIcon(ct: ContractType): string {
-    const map: Record<ContractType, string> = { prime: 'content_copy', subcontract: 'assignment', 'purchase-order': 'shopping_cart' };
-    return map[ct];
-  }
-
-  changeOrderStatusBadge(status: ChangeOrderStatus): ModusBadgeColor {
-    if (status === 'approved') return 'success';
-    if (status === 'rejected') return 'danger';
-    return 'warning';
-  }
-
-  formatCurrency(value: number): string {
-    if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (Math.abs(value) >= 1_000) return `$${Math.round(value / 1_000)}K`;
-    return `$${value.toLocaleString()}`;
-  }
+  contractStatusColor(status: ContractStatus): ModusBadgeColor { return sharedContractStatusBadge(status); }
+  contractTypeLabel(ct: ContractType): string { return contractTypeLabelShort(ct); }
+  contractIcon(ct: ContractType): string { return contractTypeIcon(ct); }
+  changeOrderStatusBadge(status: ChangeOrderStatus): ModusBadgeColor { return coBadgeColor(status); }
+  formatCurrency(value: number): string { return sharedFormatCurrency(value); }
 }

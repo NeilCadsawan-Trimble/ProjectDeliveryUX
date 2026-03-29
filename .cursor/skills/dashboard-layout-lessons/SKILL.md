@@ -498,6 +498,63 @@ When adding a mapping function (icon, color, badge, status text) that could appl
 | `budgetProgressClass(pct)` | Returns Tailwind class for budget progress bar |
 | `getProjectWeather(projectId)` | Fetches weather data for a project |
 | `buildUrgentNeeds()` | Builds and caches the full urgent needs list |
+| `formatCurrency(value)` | Compact USD formatting: $1.2M / $45K / $1,234 |
+| `inspectionResultBadge(result)` | Maps pass/fail/conditional/pending to ModusBadgeColor |
+| `punchPriorityBadge(priority)` | Maps high/medium/low to ModusBadgeColor |
+| `contractStatusBadge(status)` | Maps active/closed/pending/draft to ModusBadgeColor |
+| `contractTypeLabel(ct)` | Full label: "Prime Contract" / "Subcontract" / "Purchase Order" |
+| `contractTypeLabelShort(ct)` | Short label: "Prime" / "Subcontract" / "PO" |
+| `contractTypeIcon(ct)` | Maps contract type to Modus icon name |
+| `coBadgeColor(status)` | Maps CO status (pending/approved/rejected) to ModusBadgeColor |
+| `coTypeLabel(coType)` | Maps CO type to display label |
+| `coTypeIcon(coType)` | Maps CO type to Modus icon name |
+| `statusBadgeColor(status)` | Maps ProjectStatus to ModusBadgeColor |
+| `estimateBadgeColor(status)` | Maps EstimateStatus to ModusBadgeColor |
+
+## 13. Collapsed Subnav Toolbar Overlap on Detail Pages
+
+**File:** `src/app/pages/project-dashboard/project-dashboard.component.ts` -- `#detailContent` template
+
+### The bug
+
+When a detail page (RFI, Contract, Change Order, etc.) is open with the collapsible side subnav collapsed, the top toolbar (`childPageSubnav`) slides beneath the collapsed subnav header. The collapsed subnav's layout width goes to 0 but its header floats at 227px wide via `position: absolute` with `z-index: 10`.
+
+### Why it happened
+
+The non-detail subpages (records list, financials list) already wrap the toolbar with a conditional `margin-left: 227px` when collapsed:
+
+```html
+<div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
+  <ng-container [ngTemplateOutlet]="childPageSubnav" ... />
+</div>
+```
+
+But the shared `#detailContent` template rendered the toolbar without this wrapper. Since `#detailContent` is used both with and without a subnav (e.g., drawing details don't have one), the margin needs a three-way condition.
+
+### The fix
+
+Wrap the `childPageSubnav` in `#detailContent` with a conditional margin that checks all three conditions:
+
+```html
+<div class="transition-all duration-200"
+  [style.margin-left.px]="detailHasSubNav() && !isMobile() && sideSubNavCollapsed() ? 227 : 0">
+  <ng-container [ngTemplateOutlet]="childPageSubnav"
+    [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
+</div>
+```
+
+The condition:
+- `detailHasSubNav()` -- only when records/financials (not drawings, not standalone)
+- `!isMobile()` -- subnav is hidden on mobile
+- `sideSubNavCollapsed()` -- only when actually collapsed
+
+### Why the content below doesn't need margin
+
+The collapsed header is ~48px tall. The toolbar is ~56px + 24px margin-bottom = 80px total. Content below the toolbar starts well past the 48px header, so no overlap occurs below the toolbar.
+
+### The rule
+
+Whenever a new template uses the `childPageSubnav` alongside a `CollapsibleSubnavComponent`, the toolbar must be wrapped with the margin-left adjustment. Check both the list subpage template AND the detail content template.
 
 ## Quick Reference: Files and Regression Tests
 
