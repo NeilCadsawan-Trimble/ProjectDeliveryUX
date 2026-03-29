@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, or overflow behavior. Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, or view-mode parity. Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -372,6 +372,54 @@ if (existing[id] && !lockedRects[id]) {
 
 `SubpageTileCanvas.openDetail` follows the same double-rAF pattern as `CanvasDetailManager.openDetail`, then calls `resolveCanvasPush` which delegates to `runCanvasPushBfs`. This keeps all push logic in one place.
 
+## 9. Tile Detail Expansion -- Template Pattern
+
+**File:** `project-dashboard.component.ts` (template section)
+
+**Related skill:** `canvas-subpage-checklist` has the full mandatory checklist.
+
+### The bug (occurred multiple times)
+
+New sub-page tile types were created with card-only rendering (no `@if/@else` for detail expansion). Clicking a tile navigated away from the canvas instead of expanding in-place. This happened because the new tiles copied only the card portion of the RFI/Submittal pattern, omitting:
+
+1. The `@if (tileDetailViews()['tile-X-' + id]; as detail)` detail block
+2. The z-index boost to 9999 when detail is open
+3. The `FromTile` click handler (used page navigation instead)
+4. The `subnavViewMode() !== 'list' || tileDetailViews()[...]` outer gate
+5. List row `bg-primary-20` highlighting for active details
+
+### The rule
+
+Every tile type in canvas mode must have the **complete dual-mode pattern**. The RFI tile is the reference implementation. When creating a new tile type, copy the full RFI tile structure (outer gate, wrapper div, `@if` detail / `@else` card, z-index, mousedown, click handlers) and adapt the content. Never create a card-only tile.
+
+### Quick template checklist
+
+```
+Outer @if gate:    subnavViewMode() !== 'list' || tileDetailViews()['tile-X-' + id]
+Wrapper class:     'absolute' + conditional ' widget-detail-transition'
+Z-index:           tileDetailViews()['tile-X-' + id] ? 9999 : (tileZ()['tile-X-' + id] ?? 0)
+Mousedown:         selectTileWidget + stopPropagation when detail open
+Inner @if:         tileDetailViews()['tile-X-' + id]; as detail → expanded content
+Inner @else:       card tile with FromTile click handler
+List row:          [class.bg-primary-20]="!!tileDetailViews()['tile-X-' + id]"
+```
+
+## 10. View Mode Parity
+
+**Related skill:** `view-mode-parity` has the full enforcement rules.
+
+### The bug (occurred multiple times)
+
+Features were added to desktop mode but not to canvas mode (or vice versa). Examples:
+
+- Desktop list had Weather and Safety columns for Daily Reports; canvas list did not
+- Desktop had KPI summary cards for financials pages; canvas mode did not
+- Canvas tiles used page navigation instead of in-canvas detail expansion
+
+### The rule
+
+When a feature is added to ANY view mode, it must be added to ALL applicable view modes in the same implementation pass. The three modes are: desktop (non-canvas), canvas card/grid, and canvas list. See the `view-mode-parity` skill for the full parity matrix and verification checklist.
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -384,3 +432,5 @@ if (existing[id] && !lockedRects[id]) {
 | Canvas navbar overflow | `src/styles.css` | `tests/static/styles.spec.ts` |
 | Side nav dark background | `src/styles.css` | (visual, test all 6 themes) |
 | Widget deselection | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` |
+| Tile detail template pattern | `project-dashboard.component.ts` | (manual: verify expand works) |
+| View mode parity | all page components | (manual: compare desktop vs canvas) |

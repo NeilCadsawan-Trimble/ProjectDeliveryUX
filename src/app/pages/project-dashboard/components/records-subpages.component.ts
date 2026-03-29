@@ -26,7 +26,7 @@ type ViewMode = 'grid' | 'list';
       @case ('daily-reports') {
         <div class="bg-card border-default rounded-lg p-4 flex gap-3 overflow-x-auto mb-2">
           @for (day of weatherForecast(); track day.date) {
-            <div class="flex flex-col items-center gap-1 min-w-[72px] px-2 py-2 rounded-lg"
+            <div class="flex flex-col items-center gap-1 min-w-[72px] px-3 py-3 rounded-lg"
               [class]="day.workImpact === 'major' ? 'bg-destructive-20' : day.workImpact === 'minor' ? 'bg-warning-20' : 'bg-muted'">
               <div class="text-xs font-medium text-foreground">{{ day.day }}</div>
               <i class="modus-icons text-lg" aria-hidden="true">{{ weatherIcon(day.condition) }}</i>

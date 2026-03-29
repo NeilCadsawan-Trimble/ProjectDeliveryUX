@@ -3,8 +3,8 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: March 27, 2026
-**Total Commits**: 97+
+**Last Updated**: March 29, 2026
+**Total Commits**: 100+
 
 ---
 
@@ -18,9 +18,10 @@
 | 4 | Multi-Page Architecture and Canvas | Done | 6/6 |
 | 5 | Canvas Polish and Deployment | Done | 8/8 |
 | 6 | Layout Engine and Quality | Done | 12/12 |
-| 7 | Remaining Work | Not Started | 0/10 |
+| 7 | AI Agents and Sub-Page Expansion | Done | 8/8 |
+| 8 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 59/69 items (86%)
+**Completed**: 67/75 items (89%)
 
 ---
 
@@ -148,7 +149,36 @@ Push-squeeze resize algorithm, regression testing, collision resolution, and the
 
 ---
 
-## Phase 7: Remaining Work
+## Phase 7: AI Agents, Sub-Page Expansion, and Refactoring (Mar 26--29)
+
+AI widget agent architecture, data generation for all project sub-pages, and component extraction refactoring.
+
+### AI Agent Architecture
+- [x] Widget agent system (`widget-agents.ts`) with per-context agents for every sub-page and detail view
+- [x] AI assistant automatically switches agent context when navigating between pages
+- [x] Local fallback responders for offline/demo mode
+- [x] Agent context wired to Records sub-pages (RFIs, Submittals, Daily Reports, Punch Items, Inspections, Action Items)
+- [x] Agent context wired to Financials sub-pages (Budget, Change Orders, Revenue, Cost Forecasts) and all detail views
+
+### Data Expansion
+- [x] Generated full data sets for all 8 projects: Daily Reports, Punch Items, Inspections, Action Items, Change Orders, Revenue, Cost Forecasts, and Budget History
+
+### Sub-Page Views and Navigation
+- [x] Grid/list views and detail pages for all new Records and Financials data types
+- [x] Full URL support (pushState/replaceState) for all detail pages with browser back/forward
+
+### Component Refactoring
+- [x] Extracted `RecordsSubpagesComponent` (287 lines) -- daily reports, punch items, inspections, action items
+- [x] Extracted `FinancialsSubpagesComponent` (174 lines) -- change orders, revenue, cost forecasts
+- [x] Extracted `RecordDetailViewsComponent` (184 lines) -- all record detail pages
+- [x] Reduced `project-dashboard.component.ts` from ~4,860 to ~4,450 lines
+
+**Key commits**: `a66361e` AI agents + sub-page expansion + refactoring
+**PRs**: #24
+
+---
+
+## Phase 8: Remaining Work
 
 Features and improvements not yet started.
 
@@ -156,10 +186,6 @@ Features and improvements not yet started.
 - [ ] REST API integration (replace mock data in `src/app/data/`)
 - [ ] User authentication and authorization
 - [ ] Real-time data updates (WebSocket or polling)
-
-### AI Assistant
-- [x] Backend AI service integration (current panel is static suggestions)
-- [~] Context-aware widget suggestions based on real project data
 
 ### Testing
 - [ ] E2E tests with Playwright (configured but minimal coverage)
@@ -183,7 +209,7 @@ Features and improvements not yet started.
 | Home page | `home-page.spec.ts` | 10 structural tests |
 | Projects page | `projects-page.spec.ts` | 6 structural tests |
 | Financials page | `financials-page.spec.ts` | 6 structural tests |
-| Project dashboard | `project-dashboard.spec.ts` | 8 structural tests |
+| Project dashboard | `project-dashboard.spec.ts` | 17 structural tests |
 | CSS regressions | `styles.spec.ts` | Side nav overflow, reset flyout positioning, canvas navbar overflow/rounding |
 
 ### Covered (Unit Tests -- `src/app/shell/services/`)
@@ -214,7 +240,7 @@ Features and improvements not yet started.
 | Mar 24 | [Engine refinement](bc28969b-5fd7-49fc-907e-894008a53ccc) | Push-squeeze algorithm, regression testing, collision priority, theming, skills |
 | Mar 25 | [Canvas compact mode](8807b645-9b9a-4f2d-b223-80e249dd101f) | Compact mode revert on canvas resize |
 | Mar 26 | [Memory and detail views](b3ea14f9-5bd7-453f-8329-20bad1e7cc3a) | Short-term memory, detail view navigation, URL state |
-| Mar 26-27 | [Canvas push and tests](6387a8f3-f2de-4dae-933b-eeec94687608) | Canvas detail expansion, BFS push refactoring, cascade direction fix, unit tests |
+| Mar 26-27 | [Canvas push and tests](6387a8f3-f2de-4dae-933b-eeec94687608) | Canvas detail expansion, BFS push refactoring, cascade direction fix, unit tests, AI agents, sub-page expansion, refactoring |
 
 ---
 
@@ -235,5 +261,9 @@ Features and improvements not yet started.
 | `src/app/pages/projects-page/projects-page.component.ts` | Projects portfolio dashboard |
 | `src/app/pages/financials-page/financials-page.component.ts` | Financials dashboard |
 | `src/app/pages/project-dashboard/project-dashboard.component.ts` | Shared project detail dashboard (used by 8 project routes) |
+| `src/app/pages/project-dashboard/components/records-subpages.component.ts` | Extracted Records sub-page views (daily reports, punch items, inspections, action items) |
+| `src/app/pages/project-dashboard/components/financials-subpages.component.ts` | Extracted Financials sub-page views (change orders, revenue, cost forecasts) |
+| `src/app/pages/project-dashboard/components/record-detail-views.component.ts` | Extracted record detail pages (daily report, inspection, punch item, change order) |
+| `src/app/data/widget-agents.ts` | AI widget agent definitions and context registry |
 | `src/styles.css` | Design system colors, side nav, canvas layout, custom utilities |
 | `.cursor/skills/dashboard-layout-lessons/SKILL.md` | Hard-won patterns for layout engine and styling |

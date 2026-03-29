@@ -14,7 +14,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { NgTemplateOutlet, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, NgTemplateOutlet, TitleCasePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
@@ -99,7 +99,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -534,12 +534,12 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
       @case ('records') {
         @if (isSubpageCanvasActive()) {
           <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()" #tileGrid>
-            <!-- Locked: Side Subnav -->
+            <!-- Side Subnav: high z-index when expanded so widgets pass beneath -->
             <div class="absolute overflow-visible transition-all duration-200"
               [style.top.px]="tilePos()['tc-subnav']?.top ?? 0"
               [style.left.px]="tilePos()['tc-subnav']?.left ?? 0"
-              [style.width.px]="tilePos()['tc-subnav']?.width ?? tileSubnavWidth()"
-              [style.height.px]="tilePos()['tc-subnav']?.height ?? 600"
+              [style.width.px]="227"
+              [style.z-index]="sideSubNavCollapsed() ? 10 : 9000"
             >
               <app-collapsible-subnav
                 icon="clipboard"
@@ -552,11 +552,11 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
               />
             </div>
-            <!-- Locked: Section Subnav (toolbar) -->
+            <!-- Locked: Section Subnav (toolbar) - stays right of expanded subnav -->
             <div class="absolute transition-all duration-200"
               [style.top.px]="tilePos()['tc-toolbar']?.top ?? 0"
-              [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileContentLeft()"
-              [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileContentWidth()"
+              [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileToolbarLeft()"
+              [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileToolbarWidth()"
               [style.height.px]="tilePos()['tc-toolbar']?.height ?? 56"
             >
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
@@ -570,6 +570,30 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             >
               <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
             </div>
+            <!-- Locked: Weather forecast strip (daily reports only) -->
+            @if (activeRecordsPage() === 'daily-reports') {
+              <div class="absolute transition-all duration-200"
+                [style.top.px]="tilePos()['tc-weather']?.top ?? 128"
+                [style.left.px]="tilePos()['tc-weather']?.left ?? tileContentLeft()"
+                [style.width.px]="tilePos()['tc-weather']?.width ?? tileContentWidth()"
+                [style.height.px]="tilePos()['tc-weather']?.height ?? 80"
+                [style.z-index]="2"
+              >
+                <div class="bg-card border-default rounded-lg p-4 flex gap-3 overflow-hidden h-full items-center">
+                  @for (day of weatherForecast; track day.date) {
+                    <div class="flex flex-col items-center gap-1 min-w-[72px] px-3 py-3 rounded-lg"
+                      [class]="day.workImpact === 'major' ? 'bg-destructive-20' : day.workImpact === 'minor' ? 'bg-warning-20' : 'bg-muted'">
+                      <div class="text-xs font-medium text-foreground">{{ day.day }}</div>
+                      <i class="modus-icons text-lg" aria-hidden="true">{{ weatherIcon(day.condition) }}</i>
+                      <div class="text-xs text-foreground-60">{{ day.highF }}F</div>
+                      @if (day.precipPct > 30) {
+                        <div class="text-2xs text-primary">{{ day.precipPct }}%</div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
             <!-- Locked: List widget (list view mode) -->
             @if (subnavViewMode() === 'list') {
               <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
@@ -624,6 +648,86 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                           <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(sub.status)"></div>
                           <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(sub.status) }}</div>
                         </div>
+                      </div>
+                    }
+                  </div>
+                } @else if (activeRecordsPage() === 'daily-reports') {
+                  <div class="grid grid-cols-[100px_1fr_120px_80px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                    <div>Date</div><div>Author</div><div>Weather</div><div>Crew</div><div>Hours</div><div>Safety</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1">
+                    @for (dr of projectDailyReports(); track dr.id) {
+                      <div class="grid grid-cols-[100px_1fr_120px_80px_80px_60px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                        [class.bg-primary-20]="!!tileDetailViews()['tile-dr-' + dr.id]"
+                        tabindex="0" (click)="navigateToDailyReportFromTile(dr, 'tile-dr-' + dr.id)" (keydown.enter)="navigateToDailyReportFromTile(dr, 'tile-dr-' + dr.id)">
+                        <div class="text-sm font-medium text-primary">{{ dr.date }}</div>
+                        <div class="text-sm text-foreground truncate">{{ dr.author }}</div>
+                        <div class="text-sm text-foreground-60 truncate">{{ dr.weather }}</div>
+                        <div class="text-sm text-foreground-60">{{ dr.crewCount }}</div>
+                        <div class="text-sm text-foreground-60">{{ dr.hoursWorked }}</div>
+                        <div class="text-sm" [class]="dr.safetyIncidents > 0 ? 'text-destructive font-medium' : 'text-foreground-60'">{{ dr.safetyIncidents }}</div>
+                      </div>
+                    }
+                  </div>
+                } @else if (activeRecordsPage() === 'punch-items') {
+                  <div class="grid grid-cols-[80px_1fr_120px_80px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                    <div>ID</div><div>Description</div><div>Location</div><div>Priority</div><div>Status</div><div>Assignee</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1">
+                    @for (pl of projectPunchItems(); track pl.id) {
+                      <div class="grid grid-cols-[80px_1fr_120px_80px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                        [class.bg-primary-20]="!!tileDetailViews()['tile-pl-' + pl.id]"
+                        tabindex="0" (click)="navigateToPunchItemFromTile(pl, 'tile-pl-' + pl.id)" (keydown.enter)="navigateToPunchItemFromTile(pl, 'tile-pl-' + pl.id)">
+                        <div class="text-sm font-medium text-primary">{{ pl.id }}</div>
+                        <div class="text-sm text-foreground truncate">{{ pl.description }}</div>
+                        <div class="text-sm text-foreground-60 truncate">{{ pl.location }}</div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="priorityDotClass(pl.priority)"></div>
+                          <div class="text-xs font-medium text-foreground-60">{{ pl.priority }}</div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(pl.status)"></div>
+                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(pl.status) }}</div>
+                        </div>
+                        <div class="text-sm text-foreground-60 truncate">{{ pl.assignee }}</div>
+                      </div>
+                    }
+                  </div>
+                } @else if (activeRecordsPage() === 'inspections') {
+                  <div class="grid grid-cols-[80px_1fr_120px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                    <div>ID</div><div>Type</div><div>Date</div><div>Inspector</div><div>Result</div><div>Follow-up</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1">
+                    @for (ins of projectInspections(); track ins.id) {
+                      <div class="grid grid-cols-[80px_1fr_120px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                        [class.bg-primary-20]="!!tileDetailViews()['tile-ins-' + ins.id]"
+                        tabindex="0" (click)="navigateToInspectionFromTile(ins, 'tile-ins-' + ins.id)" (keydown.enter)="navigateToInspectionFromTile(ins, 'tile-ins-' + ins.id)">
+                        <div class="text-sm font-medium text-primary">{{ ins.id }}</div>
+                        <div class="text-sm text-foreground truncate">{{ ins.type }}</div>
+                        <div class="text-sm text-foreground-60">{{ ins.date }}</div>
+                        <div class="text-sm text-foreground-60 truncate">{{ ins.inspector }}</div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="inspectionResultDotClass(ins.result)"></div>
+                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(ins.result) }}</div>
+                        </div>
+                        <div class="text-sm text-foreground-60 truncate">{{ ins.followUp || '--' }}</div>
+                      </div>
+                    }
+                  </div>
+                } @else if (activeRecordsPage() === 'action-items') {
+                  <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                    <div>Severity</div><div>Title</div><div>Description</div><div>Category</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1">
+                    @for (ai of projectAttentionItems(); track ai.id) {
+                      <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="severityDotClass(ai.severity)"></div>
+                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(ai.severity) }}</div>
+                        </div>
+                        <div class="text-sm font-medium text-foreground truncate">{{ ai.title }}</div>
+                        <div class="text-sm text-foreground-60 truncate">{{ ai.subtitle }}</div>
+                        <div class="text-xs text-foreground-60">{{ ai.category }}</div>
                       </div>
                     }
                   </div>
@@ -862,10 +966,367 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
               }
             }
+            <!-- Daily Report tiles -->
+            @if (activeRecordsPage() === 'daily-reports') {
+              @for (dr of projectDailyReports(); track dr.id) {
+                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-dr-' + dr.id]) {
+                <div
+                  [class]="'absolute' + (tileMoveTargetId() !== 'tile-dr-' + dr.id ? ' widget-detail-transition' : '')"
+                  [attr.data-tile-id]="'tile-dr-' + dr.id"
+                  [style.top.px]="tilePos()['tile-dr-' + dr.id]?.top ?? 0"
+                  [style.left.px]="tilePos()['tile-dr-' + dr.id]?.left ?? 0"
+                  [style.width.px]="tilePos()['tile-dr-' + dr.id]?.width ?? 308"
+                  [style.height.px]="tilePos()['tile-dr-' + dr.id]?.height ?? 220"
+                  [style.z-index]="tileDetailViews()['tile-dr-' + dr.id] ? 9999 : (tileZ()['tile-dr-' + dr.id] ?? 0)"
+                  [class.opacity-30]="tileMoveTargetId() === 'tile-dr-' + dr.id"
+                  (mousedown)="selectTileWidget('tile-dr-' + dr.id); tileDetailViews()['tile-dr-' + dr.id] ? $event.stopPropagation() : null"
+                >
+                @if (tileDetailViews()['tile-dr-' + dr.id]; as detail) {
+                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
+                    [class.border-default]="selectedWidgetId() !== 'tile-dr-' + dr.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-dr-' + dr.id">
+                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-dr-' + dr.id)">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 bg-primary">
+                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">calendar</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.id }} - {{ $any(detail).item.date }}</div>
+                      </div>
+                      <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="closeTileDetail('tile-dr-' + dr.id)" aria-label="Close detail">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-5">
+                      <div class="flex flex-col gap-6">
+                        <div>
+                          <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Work Performed</div>
+                          <div class="text-base text-foreground">{{ $any(detail).item.workPerformed }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Author</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.author }}</div>
+                          </div>
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Date</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.date }}</div>
+                          </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Crew Count</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.crewCount }}</div>
+                          </div>
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Hours Worked</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.hoursWorked }}</div>
+                          </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Weather</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.weather }}</div>
+                          </div>
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Safety Incidents</div>
+                            <div class="text-base" [class]="$any(detail).item.safetyIncidents > 0 ? 'text-destructive font-medium' : 'text-foreground'">{{ $any(detail).item.safetyIncidents }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                    [class.border-default]="selectedWidgetId() !== 'tile-dr-' + dr.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-dr-' + dr.id">
+                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="tileCanvas.onTileMouseDown('tile-dr-' + dr.id, $event)">
+                      <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded flex items-center justify-center bg-primary">
+                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">calendar</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground">{{ dr.id }}</div>
+                      </div>
+                      <div class="text-2xs text-foreground-60">{{ dr.date }}</div>
+                    </div>
+                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0"
+                      (click)="navigateToDailyReportFromTile(dr, 'tile-dr-' + dr.id)" (keydown.enter)="navigateToDailyReportFromTile(dr, 'tile-dr-' + dr.id)" (mousedown)="$event.stopPropagation()">
+                      <div class="text-sm text-foreground line-clamp-2">{{ dr.workPerformed }}</div>
+                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
+                        <div class="flex items-center gap-1.5">
+                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
+                          <div>{{ dr.author }}</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                          <div class="flex items-center gap-1">
+                            <i class="modus-icons text-sm" aria-hidden="true">people</i>
+                            <div>{{ dr.crewCount }}</div>
+                          </div>
+                          <div>{{ dr.hoursWorked }}h</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+                </div>
+                }
+              }
+            }
+            <!-- Punch Item tiles -->
+            @if (activeRecordsPage() === 'punch-items') {
+              @for (pl of projectPunchItems(); track pl.id) {
+                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-pl-' + pl.id]) {
+                <div
+                  [class]="'absolute' + (tileMoveTargetId() !== 'tile-pl-' + pl.id ? ' widget-detail-transition' : '')"
+                  [attr.data-tile-id]="'tile-pl-' + pl.id"
+                  [style.top.px]="tilePos()['tile-pl-' + pl.id]?.top ?? 0"
+                  [style.left.px]="tilePos()['tile-pl-' + pl.id]?.left ?? 0"
+                  [style.width.px]="tilePos()['tile-pl-' + pl.id]?.width ?? 308"
+                  [style.height.px]="tilePos()['tile-pl-' + pl.id]?.height ?? 220"
+                  [style.z-index]="tileDetailViews()['tile-pl-' + pl.id] ? 9999 : (tileZ()['tile-pl-' + pl.id] ?? 0)"
+                  [class.opacity-30]="tileMoveTargetId() === 'tile-pl-' + pl.id"
+                  (mousedown)="selectTileWidget('tile-pl-' + pl.id); tileDetailViews()['tile-pl-' + pl.id] ? $event.stopPropagation() : null"
+                >
+                @if (tileDetailViews()['tile-pl-' + pl.id]; as detail) {
+                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
+                    [class.border-default]="selectedWidgetId() !== 'tile-pl-' + pl.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-pl-' + pl.id">
+                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-pl-' + pl.id)">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="itemStatusDot($any(detail).item.status)">
+                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">flag</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.id }}</div>
+                      </div>
+                      <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="flex items-center gap-1.5 px-2 py-1 rounded-md">
+                          <div class="w-2 h-2 rounded-full" [class]="itemStatusDot($any(detail).item.status)"></div>
+                          <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="closeTileDetail('tile-pl-' + pl.id)" aria-label="Close detail">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-5">
+                      <div class="flex flex-col gap-6">
+                        <div>
+                          <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Description</div>
+                          <div class="text-base text-foreground">{{ $any(detail).item.description }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Location</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.location }}</div>
+                          </div>
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Priority</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.priority }}</div>
+                          </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Assignee</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.assignee }}</div>
+                          </div>
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Due Date</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.dueDate }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                    [class.border-default]="selectedWidgetId() !== 'tile-pl-' + pl.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-pl-' + pl.id">
+                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="tileCanvas.onTileMouseDown('tile-pl-' + pl.id, $event)">
+                      <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="itemStatusDot(pl.status)">
+                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">flag</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground">{{ pl.id }}</div>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full" [class]="itemStatusDot(pl.status)"></div>
+                        <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(pl.status) }}</div>
+                      </div>
+                    </div>
+                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0"
+                      (click)="navigateToPunchItemFromTile(pl, 'tile-pl-' + pl.id)" (keydown.enter)="navigateToPunchItemFromTile(pl, 'tile-pl-' + pl.id)" (mousedown)="$event.stopPropagation()">
+                      <div class="text-sm text-foreground line-clamp-2">{{ pl.description }}</div>
+                      <div class="text-xs text-foreground-60">{{ pl.location }}</div>
+                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
+                        <div class="flex items-center gap-1.5">
+                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
+                          <div>{{ pl.assignee }}</div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="priorityDotClass(pl.priority)"></div>
+                          <div>{{ pl.priority }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+                </div>
+                }
+              }
+            }
+            <!-- Inspection tiles -->
+            @if (activeRecordsPage() === 'inspections') {
+              @for (ins of projectInspections(); track ins.id) {
+                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-ins-' + ins.id]) {
+                <div
+                  [class]="'absolute' + (tileMoveTargetId() !== 'tile-ins-' + ins.id ? ' widget-detail-transition' : '')"
+                  [attr.data-tile-id]="'tile-ins-' + ins.id"
+                  [style.top.px]="tilePos()['tile-ins-' + ins.id]?.top ?? 0"
+                  [style.left.px]="tilePos()['tile-ins-' + ins.id]?.left ?? 0"
+                  [style.width.px]="tilePos()['tile-ins-' + ins.id]?.width ?? 308"
+                  [style.height.px]="tilePos()['tile-ins-' + ins.id]?.height ?? 220"
+                  [style.z-index]="tileDetailViews()['tile-ins-' + ins.id] ? 9999 : (tileZ()['tile-ins-' + ins.id] ?? 0)"
+                  [class.opacity-30]="tileMoveTargetId() === 'tile-ins-' + ins.id"
+                  (mousedown)="selectTileWidget('tile-ins-' + ins.id); tileDetailViews()['tile-ins-' + ins.id] ? $event.stopPropagation() : null"
+                >
+                @if (tileDetailViews()['tile-ins-' + ins.id]; as detail) {
+                  <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
+                    [class.border-default]="selectedWidgetId() !== 'tile-ins-' + ins.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-ins-' + ins.id">
+                    <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-ins-' + ins.id)">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="inspectionResultDotClass($any(detail).item.result)">
+                          <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">check_circle</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.id }} - {{ $any(detail).item.type }}</div>
+                      </div>
+                      <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="flex items-center gap-1.5 px-2 py-1 rounded-md">
+                          <div class="w-2 h-2 rounded-full" [class]="inspectionResultDotClass($any(detail).item.result)"></div>
+                          <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.result) }}</div>
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="closeTileDetail('tile-ins-' + ins.id)" aria-label="Close detail">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-5">
+                      <div class="flex flex-col gap-6">
+                        <div>
+                          <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Notes</div>
+                          <div class="text-base text-foreground">{{ $any(detail).item.notes }}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Inspector</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.inspector }}</div>
+                          </div>
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Date</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.date }}</div>
+                          </div>
+                        </div>
+                        @if ($any(detail).item.followUp) {
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Follow-up</div>
+                            <div class="text-base text-warning">{{ $any(detail).item.followUp }}</div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                    [class.border-default]="selectedWidgetId() !== 'tile-ins-' + ins.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-ins-' + ins.id">
+                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="tileCanvas.onTileMouseDown('tile-ins-' + ins.id, $event)">
+                      <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="inspectionResultDotClass(ins.result)">
+                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">check_circle</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground">{{ ins.id }}</div>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full" [class]="inspectionResultDotClass(ins.result)"></div>
+                        <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(ins.result) }}</div>
+                      </div>
+                    </div>
+                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0"
+                      (click)="navigateToInspectionFromTile(ins, 'tile-ins-' + ins.id)" (keydown.enter)="navigateToInspectionFromTile(ins, 'tile-ins-' + ins.id)" (mousedown)="$event.stopPropagation()">
+                      <div class="text-sm text-foreground line-clamp-2">{{ ins.type }}</div>
+                      <div class="text-xs text-foreground-60 line-clamp-1">{{ ins.notes }}</div>
+                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
+                        <div class="flex items-center gap-1.5">
+                          <i class="modus-icons text-sm" aria-hidden="true">person</i>
+                          <div>{{ ins.inspector }}</div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                          <div>{{ ins.date }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+                </div>
+                }
+              }
+            }
+            <!-- Action Item tiles -->
+            @if (activeRecordsPage() === 'action-items') {
+              @for (ai of projectAttentionItems(); track ai.id) {
+                @if (subnavViewMode() !== 'list') {
+                <div class="absolute widget-detail-transition"
+                  [attr.data-tile-id]="'tile-ai-' + ai.id"
+                  [style.top.px]="tilePos()['tile-ai-' + ai.id]?.top ?? 0"
+                  [style.left.px]="tilePos()['tile-ai-' + ai.id]?.left ?? 0"
+                  [style.width.px]="tilePos()['tile-ai-' + ai.id]?.width ?? 308"
+                  [style.height.px]="tilePos()['tile-ai-' + ai.id]?.height ?? 220"
+                  [style.z-index]="tileZ()['tile-ai-' + ai.id] ?? 0"
+                  [class.opacity-30]="tileMoveTargetId() === 'tile-ai-' + ai.id"
+                  (mousedown)="selectTileWidget('tile-ai-' + ai.id)"
+                >
+                  <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                    [class.border-default]="selectedWidgetId() !== 'tile-ai-' + ai.id"
+                    [class.border-primary]="selectedWidgetId() === 'tile-ai-' + ai.id">
+                    <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                      (mousedown)="tileCanvas.onTileMouseDown('tile-ai-' + ai.id, $event)">
+                      <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded flex items-center justify-center" [class]="severityDotClass(ai.severity)">
+                          <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">warning</i>
+                        </div>
+                        <div class="text-sm font-semibold text-foreground truncate">{{ ai.title }}</div>
+                      </div>
+                    </div>
+                    <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0" (mousedown)="$event.stopPropagation()">
+                      <div class="text-sm text-foreground line-clamp-2">{{ ai.subtitle }}</div>
+                      <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="severityDotClass(ai.severity)"></div>
+                          <div>{{ capitalizeStatus(ai.severity) }}</div>
+                        </div>
+                        <div class="text-foreground-40">{{ ai.category }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                }
+              }
+            }
             @if (!recordsSubPageHasContent()) {
               <div class="absolute transition-all duration-200"
                 [style.top.px]="tilePos()['tc-title']?.top ? (tilePos()['tc-title'].top + tilePos()['tc-title'].height + 16) : 128"
-                [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileContentLeft()"
+                [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileToolbarLeft()"
               >
                 <app-empty-state icon="clipboard" [title]="activeRecordsPageLabel()" [description]="activeRecordsPageDescription()" />
               </div>
@@ -886,7 +1347,9 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             />
           }
           <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
-            <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
+            <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
+            </div>
             <div class="flex items-center justify-between">
               <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
             </div>
@@ -1064,10 +1527,11 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
       @case ('financials') {
         @if (isSubpageCanvasActive()) {
           <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()">
-            <!-- Locked: Side Subnav -->
+            <!-- Side Subnav: high z-index when expanded so widgets pass beneath -->
             <div class="absolute overflow-visible transition-all duration-200"
               [style.top.px]="0" [style.left.px]="0"
-              [style.width.px]="tileSubnavWidth()" [style.height.px]="600"
+              [style.width.px]="227"
+              [style.z-index]="sideSubNavCollapsed() ? 10 : 9000"
             >
               <app-collapsible-subnav
                 icon="bar_graph"
@@ -1080,14 +1544,14 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
               />
             </div>
-            <!-- Locked: Section Subnav (toolbar) -->
-            <div class="absolute transition-all duration-200" [style.top.px]="tilePos()['tc-toolbar']?.top ?? 0" [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileContentLeft()" [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileContentWidth()" [style.height.px]="56">
+            <!-- Locked: Section Subnav (toolbar) - stays right of expanded subnav -->
+            <div class="absolute transition-all duration-200" [style.top.px]="tilePos()['tc-toolbar']?.top ?? 0" [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileToolbarLeft()" [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileToolbarWidth()" [style.height.px]="56">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
             </div>
             <!-- Locked: Title -->
             @if (!subledgerCategory()) {
             <div class="absolute flex items-center justify-between transition-all duration-200" [style.top.px]="tilePos()['tc-title']?.top ?? 72" [style.left.px]="tilePos()['tc-title']?.left ?? tileContentLeft()" [style.width.px]="tilePos()['tc-title']?.width ?? tileContentWidth()" [style.height.px]="40">
-              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-orders') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'revenue') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }</div>
+              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'applications-for-payment') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }</div>
             </div>
             }
             @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
@@ -1149,6 +1613,339 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                   </div>
                 }
               }
+            } @else if (activeFinancialsPage() === 'change-order-requests') {
+              <!-- Change Orders: List view -->
+              @if (subnavViewMode() === 'list') {
+                <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
+                  [style.top.px]="tilePos()['tc-list']?.top ?? 128"
+                  [style.left.px]="tilePos()['tc-list']?.left ?? tileContentLeft()"
+                  [style.width.px]="tilePos()['tc-list']?.width ?? tileContentWidth()"
+                  [style.height.px]="tilePos()['tc-list']?.height ?? 500"
+                  [style.z-index]="1">
+                  <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                    <div>CO #</div><div>Description</div><div>Amount</div><div>Status</div><div>Requested By</div><div>Date</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1">
+                    @for (co of projectChangeOrders(); track co.id) {
+                      <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                        [class.bg-primary-20]="!!tileDetailViews()['tile-co-' + co.id]"
+                        tabindex="0" (click)="navigateToChangeOrderFromTile(co, 'tile-co-' + co.id)" (keydown.enter)="navigateToChangeOrderFromTile(co, 'tile-co-' + co.id)">
+                        <div class="text-sm font-medium text-primary">{{ co.id }}</div>
+                        <div class="text-sm text-foreground truncate">{{ co.description }}</div>
+                        <div class="text-sm font-medium text-foreground">{{ co.amount | currency:'USD':'symbol':'1.0-0' }}</div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="changeOrderStatusDot(co.status)"></div>
+                          <div class="text-xs font-medium text-foreground-60">{{ capitalizeStatus(co.status) }}</div>
+                        </div>
+                        <div class="text-sm text-foreground-60 truncate">{{ co.requestedBy }}</div>
+                        <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              <!-- Change Orders: Card tiles -->
+              @for (co of projectChangeOrders(); track co.id) {
+                @if (subnavViewMode() !== 'list' || tileDetailViews()['tile-co-' + co.id]) {
+                  <div
+                    [class]="'absolute' + (tileMoveTargetId() !== 'tile-co-' + co.id ? ' widget-detail-transition' : '')"
+                    [attr.data-tile-id]="'tile-co-' + co.id"
+                    [style.top.px]="tilePos()['tile-co-' + co.id]?.top ?? 0"
+                    [style.left.px]="tilePos()['tile-co-' + co.id]?.left ?? 0"
+                    [style.width.px]="tilePos()['tile-co-' + co.id]?.width ?? 308"
+                    [style.height.px]="tilePos()['tile-co-' + co.id]?.height ?? 220"
+                    [style.z-index]="tileDetailViews()['tile-co-' + co.id] ? 9999 : (tileZ()['tile-co-' + co.id] ?? 0)"
+                    [class.opacity-30]="tileMoveTargetId() === 'tile-co-' + co.id"
+                    (mousedown)="selectTileWidget('tile-co-' + co.id); tileDetailViews()['tile-co-' + co.id] ? $event.stopPropagation() : null">
+                  @if (tileDetailViews()['tile-co-' + co.id]; as detail) {
+                    <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
+                      [class.border-default]="selectedWidgetId() !== 'tile-co-' + co.id"
+                      [class.border-primary]="selectedWidgetId() === 'tile-co-' + co.id">
+                      <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                        (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-co-' + co.id)">
+                        <div class="flex items-center gap-3 min-w-0">
+                          <div class="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0" [class]="changeOrderStatusDot($any(detail).item.status)">
+                            <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">swap_horizontal</i>
+                          </div>
+                          <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.id }}</div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                          <div class="flex items-center gap-1.5 px-2 py-1 rounded-md">
+                            <div class="w-2 h-2 rounded-full" [class]="changeOrderStatusDot($any(detail).item.status)"></div>
+                            <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
+                          </div>
+                          <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                            (click)="closeTileDetail('tile-co-' + co.id)" aria-label="Close detail">
+                            <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="flex-1 overflow-y-auto p-5">
+                        <div class="flex flex-col gap-6">
+                          <div>
+                            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Description</div>
+                            <div class="text-base text-foreground">{{ $any(detail).item.description }}</div>
+                          </div>
+                          <div class="grid grid-cols-2 gap-6">
+                            <div>
+                              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Amount</div>
+                              <div class="text-lg font-bold text-foreground">{{ $any(detail).item.amount | currency:'USD':'symbol':'1.0-0' }}</div>
+                            </div>
+                            <div>
+                              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Requested By</div>
+                              <div class="text-base text-foreground">{{ $any(detail).item.requestedBy }}</div>
+                            </div>
+                          </div>
+                          <div class="grid grid-cols-2 gap-6">
+                            <div>
+                              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Request Date</div>
+                              <div class="text-base text-foreground">{{ $any(detail).item.requestDate }}</div>
+                            </div>
+                            @if ($any(detail).item.approvedDate) {
+                              <div>
+                                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Approved Date</div>
+                                <div class="text-base text-foreground">{{ $any(detail).item.approvedDate }}</div>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                      [class.border-default]="selectedWidgetId() !== 'tile-co-' + co.id"
+                      [class.border-primary]="selectedWidgetId() === 'tile-co-' + co.id">
+                      <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                        (mousedown)="tileCanvas.onTileMouseDown('tile-co-' + co.id, $event)">
+                        <div class="flex items-center gap-2">
+                          <div class="w-7 h-7 rounded flex items-center justify-center" [class]="changeOrderStatusDot(co.status)">
+                            <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">swap_horizontal</i>
+                          </div>
+                          <div class="text-sm font-semibold text-foreground">{{ co.id }}</div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 rounded-full" [class]="changeOrderStatusDot(co.status)"></div>
+                          <div class="text-2xs font-medium text-foreground-60">{{ capitalizeStatus(co.status) }}</div>
+                        </div>
+                      </div>
+                      <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden cursor-pointer" tabindex="0"
+                        (click)="navigateToChangeOrderFromTile(co, 'tile-co-' + co.id)" (keydown.enter)="navigateToChangeOrderFromTile(co, 'tile-co-' + co.id)" (mousedown)="$event.stopPropagation()">
+                        <div class="text-sm text-foreground line-clamp-2">{{ co.description }}</div>
+                        <div class="text-lg font-bold text-foreground">{{ co.amount | currency:'USD':'symbol':'1.0-0' }}</div>
+                        <div class="flex items-center justify-between text-xs text-foreground-60 mt-auto">
+                          <div class="flex items-center gap-1.5">
+                            <i class="modus-icons text-sm" aria-hidden="true">person</i>
+                            <div>{{ co.requestedBy }}</div>
+                          </div>
+                          <div>{{ co.requestDate }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                  </div>
+                }
+              }
+            } @else if (activeFinancialsPage() === 'applications-for-payment') {
+              <!-- Revenue KPI strip -->
+              <div class="absolute transition-all duration-200"
+                [style.top.px]="tilePos()['tc-fin-kpis']?.top ?? 128"
+                [style.left.px]="tilePos()['tc-fin-kpis']?.left ?? tileContentLeft()"
+                [style.width.px]="tilePos()['tc-fin-kpis']?.width ?? tileContentWidth()"
+                [style.height.px]="tilePos()['tc-fin-kpis']?.height ?? 100"
+                [style.z-index]="2">
+                <div class="grid grid-cols-4 gap-3 h-full">
+                  @for (rev of projectRevenueData(); track rev.projectId) {
+                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+                      <div class="text-xs text-foreground-60">Contract Value</div>
+                      <div class="text-lg font-bold text-foreground">{{ rev.contractValue }}</div>
+                    </div>
+                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+                      <div class="text-xs text-foreground-60">Invoiced</div>
+                      <div class="text-lg font-bold text-foreground">{{ rev.invoiced }}</div>
+                    </div>
+                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+                      <div class="text-xs text-foreground-60">Collected</div>
+                      <div class="text-lg font-bold text-success">{{ rev.collected }}</div>
+                    </div>
+                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+                      <div class="text-xs text-foreground-60">Outstanding</div>
+                      <div class="text-lg font-bold" [class]="rev.outstandingRaw > 0 ? 'text-warning' : 'text-foreground'">{{ rev.outstanding }}</div>
+                    </div>
+                  }
+                </div>
+              </div>
+              <!-- Revenue/Applications: List view -->
+              @if (subnavViewMode() === 'list') {
+                <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
+                  [style.top.px]="tilePos()['tc-list']?.top ?? 128"
+                  [style.left.px]="tilePos()['tc-list']?.left ?? tileContentLeft()"
+                  [style.width.px]="tilePos()['tc-list']?.width ?? tileContentWidth()"
+                  [style.height.px]="tilePos()['tc-list']?.height ?? 500"
+                  [style.z-index]="1">
+                  <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                    <div>Project</div><div>Contract</div><div>Invoiced</div><div>Collected</div><div>Outstanding</div><div>Retainage</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1">
+                    @for (rev of projectRevenueData(); track rev.projectId) {
+                      <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
+                        <div class="text-sm text-foreground truncate">{{ rev.projectName }}</div>
+                        <div class="text-sm font-medium text-foreground">{{ rev.contractValue }}</div>
+                        <div class="text-sm text-foreground-60">{{ rev.invoiced }}</div>
+                        <div class="text-sm text-success">{{ rev.collected }}</div>
+                        <div class="text-sm text-warning">{{ rev.outstanding }}</div>
+                        <div class="text-sm text-foreground-60">{{ rev.retainage }}</div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              <!-- Revenue: Card tiles -->
+              @if (subnavViewMode() !== 'list') {
+                @for (rev of projectRevenueData(); track rev.projectId) {
+                  <div class="absolute widget-detail-transition"
+                    [attr.data-tile-id]="'tile-rev-' + rev.projectId"
+                    [style.top.px]="tilePos()['tile-rev-' + rev.projectId]?.top ?? 0"
+                    [style.left.px]="tilePos()['tile-rev-' + rev.projectId]?.left ?? 0"
+                    [style.width.px]="tilePos()['tile-rev-' + rev.projectId]?.width ?? 308"
+                    [style.height.px]="tilePos()['tile-rev-' + rev.projectId]?.height ?? 220"
+                    [style.z-index]="tileZ()['tile-rev-' + rev.projectId] ?? 0"
+                    [class.opacity-30]="tileMoveTargetId() === 'tile-rev-' + rev.projectId"
+                    (mousedown)="selectTileWidget('tile-rev-' + rev.projectId)">
+                    <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                      [class.border-default]="selectedWidgetId() !== 'tile-rev-' + rev.projectId"
+                      [class.border-primary]="selectedWidgetId() === 'tile-rev-' + rev.projectId">
+                      <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                        (mousedown)="tileCanvas.onTileMouseDown('tile-rev-' + rev.projectId, $event)">
+                        <div class="flex items-center gap-2">
+                          <div class="w-7 h-7 rounded flex items-center justify-center bg-success">
+                            <i class="modus-icons text-sm text-success-foreground" aria-hidden="true">dollar</i>
+                          </div>
+                          <div class="text-sm font-semibold text-foreground truncate">{{ rev.projectName }}</div>
+                        </div>
+                      </div>
+                      <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden" (mousedown)="$event.stopPropagation()">
+                        <div class="text-lg font-bold text-foreground">{{ rev.contractValue }}</div>
+                        <div class="flex flex-col gap-1.5 text-xs text-foreground-60 mt-auto">
+                          <div class="flex items-center justify-between">
+                            <div>Invoiced</div><div class="font-medium text-foreground">{{ rev.invoiced }}</div>
+                          </div>
+                          <div class="flex items-center justify-between">
+                            <div>Collected</div><div class="font-medium text-success">{{ rev.collected }}</div>
+                          </div>
+                          <div class="flex items-center justify-between">
+                            <div>Outstanding</div><div class="font-medium text-warning">{{ rev.outstanding }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              }
+            } @else if (activeFinancialsPage() === 'cost-forecasts') {
+              <!-- Cost Forecasts KPI strip -->
+              @if (lastBudgetPoint(); as last) {
+                <div class="absolute transition-all duration-200"
+                  [style.top.px]="tilePos()['tc-fin-kpis']?.top ?? 128"
+                  [style.left.px]="tilePos()['tc-fin-kpis']?.left ?? tileContentLeft()"
+                  [style.width.px]="tilePos()['tc-fin-kpis']?.width ?? tileContentWidth()"
+                  [style.height.px]="tilePos()['tc-fin-kpis']?.height ?? 100"
+                  [style.z-index]="2">
+                  <div class="grid grid-cols-3 gap-3 h-full">
+                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+                      <div class="text-xs text-foreground-60">Current Spend vs Plan</div>
+                      <div class="text-lg font-bold" [class]="(last.actual || 0) > last.planned ? 'text-destructive' : 'text-success'">
+                        {{ formatCurrency(last.actual || last.forecast) }} / {{ formatCurrency(last.planned) }}
+                      </div>
+                    </div>
+                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+                      <div class="text-xs text-foreground-60">Forecast at Completion</div>
+                      <div class="text-lg font-bold text-foreground">{{ formatCurrency(last.forecast) }}</div>
+                    </div>
+                    <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
+                      <div class="text-xs text-foreground-60">Months Tracked</div>
+                      <div class="text-lg font-bold text-foreground">{{ projectBudgetHistory().length }}</div>
+                    </div>
+                  </div>
+                </div>
+              }
+              <!-- Cost Forecasts: List view -->
+              @if (subnavViewMode() === 'list') {
+                <div class="absolute bg-card border-default rounded-lg overflow-hidden flex flex-col transition-all duration-200"
+                  [style.top.px]="tilePos()['tc-list']?.top ?? 128"
+                  [style.left.px]="tilePos()['tc-list']?.left ?? tileContentLeft()"
+                  [style.width.px]="tilePos()['tc-list']?.width ?? tileContentWidth()"
+                  [style.height.px]="tilePos()['tc-list']?.height ?? 500"
+                  [style.z-index]="1">
+                  <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                    <div>Month</div><div>Planned</div><div>Actual</div><div>Forecast</div><div>Variance</div>
+                  </div>
+                  <div class="overflow-y-auto flex-1">
+                    @for (bp of projectBudgetHistory(); track $index) {
+                      <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
+                        <div class="text-sm font-medium text-foreground">{{ bp.month }}</div>
+                        <div class="text-sm text-foreground-60">{{ bp.planned | currency:'USD':'symbol':'1.0-0' }}</div>
+                        <div class="text-sm" [class]="bp.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ bp.actual > 0 ? (bp.actual | currency:'USD':'symbol':'1.0-0') : '--' }}</div>
+                        <div class="text-sm text-primary">{{ bp.forecast | currency:'USD':'symbol':'1.0-0' }}</div>
+                        <div class="text-sm" [class]="bp.actual > 0 ? (bp.actual > bp.planned ? 'text-destructive font-medium' : 'text-success') : 'text-foreground-40'">
+                          {{ bp.actual > 0 ? (bp.actual - bp.planned | currency:'USD':'symbol':'1.0-0') : '--' }}
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              <!-- Cost Forecasts: Card tiles -->
+              @if (subnavViewMode() !== 'list') {
+                @for (bp of projectBudgetHistory(); track $index; let i = $index) {
+                  <div class="absolute widget-detail-transition"
+                    [attr.data-tile-id]="'tile-cf-' + i"
+                    [style.top.px]="tilePos()['tile-cf-' + i]?.top ?? 0"
+                    [style.left.px]="tilePos()['tile-cf-' + i]?.left ?? 0"
+                    [style.width.px]="tilePos()['tile-cf-' + i]?.width ?? 308"
+                    [style.height.px]="tilePos()['tile-cf-' + i]?.height ?? 220"
+                    [style.z-index]="tileZ()['tile-cf-' + i] ?? 0"
+                    [class.opacity-30]="tileMoveTargetId() === 'tile-cf-' + i"
+                    (mousedown)="selectTileWidget('tile-cf-' + i)">
+                    <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
+                      [class.border-default]="selectedWidgetId() !== 'tile-cf-' + i"
+                      [class.border-primary]="selectedWidgetId() === 'tile-cf-' + i">
+                      <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
+                        (mousedown)="tileCanvas.onTileMouseDown('tile-cf-' + i, $event)">
+                        <div class="flex items-center gap-2">
+                          <div class="w-7 h-7 rounded flex items-center justify-center bg-primary">
+                            <i class="modus-icons text-sm text-primary-foreground" aria-hidden="true">trending_up</i>
+                          </div>
+                          <div class="text-sm font-semibold text-foreground">{{ bp.month }}</div>
+                        </div>
+                      </div>
+                      <div class="flex-1 px-4 py-3 flex flex-col gap-2 overflow-hidden" (mousedown)="$event.stopPropagation()">
+                        <div class="flex flex-col gap-2">
+                          <div class="flex items-center justify-between">
+                            <div class="text-xs text-foreground-60">Planned</div>
+                            <div class="text-sm font-medium text-foreground">{{ bp.planned | currency:'USD':'symbol':'1.0-0' }}</div>
+                          </div>
+                          <div class="flex items-center justify-between">
+                            <div class="text-xs text-foreground-60">Actual</div>
+                            <div class="text-sm font-medium" [class]="bp.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ bp.actual > 0 ? (bp.actual | currency:'USD':'symbol':'1.0-0') : '--' }}</div>
+                          </div>
+                          <div class="flex items-center justify-between">
+                            <div class="text-xs text-foreground-60">Forecast</div>
+                            <div class="text-sm font-medium text-primary">{{ bp.forecast | currency:'USD':'symbol':'1.0-0' }}</div>
+                          </div>
+                        </div>
+                        @if (bp.actual > 0) {
+                          <div class="mt-auto">
+                            <div class="w-full bg-muted rounded-full h-1.5">
+                              <div class="h-1.5 rounded-full transition-all duration-300" [class]="bp.actual > bp.planned ? 'bg-warning' : 'bg-success'" [style.width.%]="(bp.actual / bp.planned) * 100"></div>
+                            </div>
+                            <div class="text-2xs text-foreground-40 mt-1">{{ ((bp.actual / bp.planned) * 100).toFixed(0) }}% of planned</div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              }
             } @else if (!financialsSubPageHasContent()) {
               <div class="absolute transition-all duration-200" [style.top.px]="128" [style.left.px]="tileContentLeft()" [style.width.px]="tileContentWidth()">
                 <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
@@ -1170,10 +1967,12 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
             />
           }
           <div class="flex-1 flex flex-col min-w-0 md:pl-4" [class]="subledgerCategory() ? 'gap-3' : 'gap-6'">
-            <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
+            <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['financials'] }" />
+            </div>
             @if (!subledgerCategory()) {
               <div class="flex items-center justify-between">
-                <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-orders') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'revenue') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }</div>
+                <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'applications-for-payment') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }</div>
               </div>
             }
             @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
@@ -2803,7 +3602,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
 
   // --- Subpage tile canvas (tiles become widgets in canvas mode) ---
   private static readonly TILE_SUBNAV_EXPANDED = 227;
-  private static readonly TILE_SUBNAV_COLLAPSED = 32;
+  private static readonly TILE_SUBNAV_COLLAPSED = 40;
   private static readonly TILE_TOOLBAR_HEIGHT = 56;
   private static readonly TILE_TITLE_HEIGHT = 40;
   private static readonly TILE_CHROME_GAP = 16;
@@ -2811,7 +3610,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   private static readonly TILE_CONTENT_TOP = ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT + ProjectDashboardComponent.TILE_TITLE_HEIGHT + ProjectDashboardComponent.TILE_CHROME_GAP * 2;
 
   readonly tileSubnavWidth = computed(() =>
-    this.sideSubNavCollapsed() ? ProjectDashboardComponent.TILE_SUBNAV_COLLAPSED : ProjectDashboardComponent.TILE_SUBNAV_EXPANDED
+    this.sideSubNavCollapsed() ? 0 : ProjectDashboardComponent.TILE_SUBNAV_EXPANDED
   );
   readonly tileContentLeft = computed(() =>
     this.tileSubnavWidth() + ProjectDashboardComponent.TILE_CHROME_GAP
@@ -2819,10 +3618,16 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly tileContentWidth = computed(() =>
     ProjectDashboardComponent.TILE_CANVAS_TOTAL - this.tileContentLeft()
   );
+  readonly tileToolbarLeft = computed(() =>
+    ProjectDashboardComponent.TILE_SUBNAV_EXPANDED + ProjectDashboardComponent.TILE_CHROME_GAP
+  );
+  readonly tileToolbarWidth = computed(() =>
+    ProjectDashboardComponent.TILE_CANVAS_TOTAL - this.tileToolbarLeft()
+  );
 
   readonly tileCanvas = new SubpageTileCanvas({
     storageKey: () => `tile-canvas:project-${this.projectId()}:${this.activeNavItem()}:${this.activeSubpage()}:v2`,
-    lockedIds: ['tc-subnav', 'tc-toolbar', 'tc-title', 'tc-list'],
+    lockedIds: ['tc-subnav', 'tc-toolbar', 'tc-title', 'tc-list', 'tc-weather', 'tc-fin-kpis'],
     tileWidth: 308,
     tileHeight: 260,
     columns: 4,
@@ -2855,6 +3660,10 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       const sub = this.activeRecordsPage();
       if (sub === 'rfis') return this.projectRfis().map(r => `tile-rfi-${r.id}`);
       if (sub === 'submittals') return this.projectSubmittals().map(s => `tile-sub-${s.id}`);
+      if (sub === 'daily-reports') return this.projectDailyReports().map(d => `tile-dr-${d.id}`);
+      if (sub === 'punch-items') return this.projectPunchItems().map(p => `tile-pl-${p.id}`);
+      if (sub === 'inspections') return this.projectInspections().map(i => `tile-ins-${i.id}`);
+      if (sub === 'action-items') return this.projectAttentionItems().map(a => `tile-ai-${a.id}`);
     }
     if (nav === 'financials') {
       const sub = this.activeFinancialsPage();
@@ -2862,6 +3671,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
         if (this.subledgerCategory()) return ['tile-subledger-ledger'];
         return this.budgetTileIds;
       }
+      if (sub === 'change-order-requests') return this.projectChangeOrders().map(c => `tile-co-${c.id}`);
+      if (sub === 'applications-for-payment') return this.projectRevenueData().map(r => `tile-rev-${r.projectId}`);
+      if (sub === 'cost-forecasts') return this.projectBudgetHistory().map((_, i) => `tile-cf-${i}`);
     }
     return [];
   });
@@ -2890,15 +3702,31 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   }
 
   navigateToRfiFromTile(rfi: Rfi, tileId: string): void {
-    this.navigateToItemFromTile('rfi', rfi, tileId);
+    this.openTileDetail(tileId, { type: 'rfi', item: rfi });
   }
 
   navigateToSubFromTile(sub: Submittal, tileId: string): void {
-    this.navigateToItemFromTile('submittal', sub, tileId);
+    this.openTileDetail(tileId, { type: 'submittal', item: sub });
   }
 
-  private navigateToItemFromTile(type: 'rfi' | 'submittal', item: Rfi | Submittal, tileId: string): void {
-    this.tileCanvas.openDetail(tileId, { type, item } as TileDetailView);
+  navigateToDailyReportFromTile(report: DailyReport, tileId: string): void {
+    this.openTileDetail(tileId, { type: 'dailyReport', item: report });
+  }
+
+  navigateToPunchItemFromTile(item: PunchListItem, tileId: string): void {
+    this.openTileDetail(tileId, { type: 'punchItem', item });
+  }
+
+  navigateToInspectionFromTile(insp: Inspection, tileId: string): void {
+    this.openTileDetail(tileId, { type: 'inspection', item: insp });
+  }
+
+  navigateToChangeOrderFromTile(co: ChangeOrder, tileId: string): void {
+    this.openTileDetail(tileId, { type: 'changeOrder', item: co });
+  }
+
+  private openTileDetail(tileId: string, detail: TileDetailView): void {
+    this.tileCanvas.openDetail(tileId, detail);
     this.widgetFocusService.selectWidget(tileId);
   }
 
@@ -2938,13 +3766,21 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     const contentWidth = hasSideNav ? this.tileContentWidth() : ProjectDashboardComponent.TILE_CANVAS_TOTAL;
     const subnavW = this.tileSubnavWidth();
 
+    const toolbarLeft = hasSideNav ? this.tileToolbarLeft() : 0;
+    const toolbarWidth = hasSideNav ? this.tileToolbarWidth() : ProjectDashboardComponent.TILE_CANVAS_TOTAL;
+
     const lockedRects: Record<string, TileRect> = {
-      'tc-toolbar': { top: 0, left: contentLeft, width: contentWidth, height: ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT },
+      'tc-toolbar': { top: 0, left: toolbarLeft, width: toolbarWidth, height: ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT },
       'tc-title': { top: ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT + ProjectDashboardComponent.TILE_CHROME_GAP, left: contentLeft, width: contentWidth, height: ProjectDashboardComponent.TILE_TITLE_HEIGHT },
     };
 
     if (hasSideNav) {
-      lockedRects['tc-subnav'] = { top: 0, left: 0, width: subnavW, height: 600 };
+      const subnavCollapsed = this.sideSubNavCollapsed();
+      lockedRects['tc-subnav'] = {
+        top: 0, left: 0,
+        width: subnavCollapsed ? ProjectDashboardComponent.TILE_SUBNAV_EXPANDED : subnavW,
+        height: subnavCollapsed ? 48 : 600,
+      };
     }
 
     if (viewMode === 'list') {
@@ -2983,9 +3819,32 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       }
 
       this.tileCanvas.config.offsetLeft = contentLeft;
+
+      const isDailyReports = nav === 'records' && this.activeRecordsPage() === 'daily-reports';
+      const weatherHeight = 80;
+      let baseContentTop = ProjectDashboardComponent.TILE_CONTENT_TOP;
+      if (isDailyReports) {
+        lockedRects['tc-weather'] = {
+          top: baseContentTop,
+          left: contentLeft,
+          width: contentWidth,
+          height: weatherHeight,
+        };
+        baseContentTop += weatherHeight + ProjectDashboardComponent.TILE_CHROME_GAP;
+      }
+
       this.tileCanvas.config.offsetTop = viewMode === 'list'
-        ? ProjectDashboardComponent.TILE_CONTENT_TOP + Math.min(40 + tileIds.length * 45, 600) + this.tileCanvas.config.gap
-        : ProjectDashboardComponent.TILE_CONTENT_TOP;
+        ? baseContentTop + Math.min(40 + tileIds.length * 45, 600) + this.tileCanvas.config.gap
+        : baseContentTop;
+
+      if (viewMode === 'list' && isDailyReports) {
+        lockedRects['tc-list'] = {
+          top: baseContentTop,
+          left: contentLeft,
+          width: contentWidth,
+          height: Math.min(40 + tileIds.length * 45, 600),
+        };
+      }
 
       const isSubledger = nav === 'financials' && this.activeFinancialsPage() === 'budget' && !!this.subledgerCategory();
       const isBudget = nav === 'financials' && this.activeFinancialsPage() === 'budget' && !this.subledgerCategory();
@@ -3010,6 +3869,20 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
           'tile-budget-profitfade':  { width: halfW, height: 600, columns: 2 },
           'tile-budget-costsummary': { width: halfW, height: 600, columns: 2 },
         };
+      } else if (nav === 'financials' && (this.activeFinancialsPage() === 'applications-for-payment' || this.activeFinancialsPage() === 'cost-forecasts')) {
+        const kpiTop = ProjectDashboardComponent.TILE_CONTENT_TOP;
+        const kpiH = 100;
+        lockedRects['tc-fin-kpis'] = { top: kpiTop, left: contentLeft, width: contentWidth, height: kpiH };
+        const afterKpi = kpiTop + kpiH + ProjectDashboardComponent.TILE_CHROME_GAP;
+        if (viewMode === 'list') {
+          const itemCount = tileIds.length;
+          const listHeight = Math.min(40 + itemCount * 45, 600);
+          lockedRects['tc-list'] = { top: afterKpi, left: contentLeft, width: contentWidth, height: listHeight };
+          this.tileCanvas.config.offsetTop = afterKpi + listHeight + this.tileCanvas.config.gap;
+        } else {
+          this.tileCanvas.config.offsetTop = afterKpi;
+        }
+        this.tileCanvas.config.tileSizeOverrides = undefined;
       } else {
         this.tileCanvas.config.tileSizeOverrides = undefined;
         this.tileCanvas.config.heightOnlyResizeIds = undefined;
@@ -3088,7 +3961,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly sideNavItems = SIDE_NAV_ITEMS;
 
   readonly subnavSearch = signal('');
-  readonly subnavViewMode = signal<string>('grid');
+  readonly subnavViewMode = signal<'grid' | 'list'>('grid');
 
   readonly recordsSubNavItems = RECORDS_SUB_NAV_ITEMS;
   readonly sideSubNavCollapsed = signal(false);
@@ -3630,7 +4503,9 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       }
       return;
     }
-    this.subnavViewMode.set(value);
+    if (value === 'grid' || value === 'list') {
+      this.subnavViewMode.set(value);
+    }
   }
 
   resetDrawingZoom(): void {
@@ -3732,9 +4607,29 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     return map[result] ?? 'secondary';
   }
 
+  inspectionResultDotClass(result: InspectionResult): string {
+    const map: Record<InspectionResult, string> = { pass: 'bg-success', fail: 'bg-destructive', conditional: 'bg-warning', pending: 'bg-secondary' };
+    return map[result] ?? 'bg-secondary';
+  }
+
+  severityDotClass(severity: string): string {
+    const map: Record<string, string> = { critical: 'bg-destructive', warning: 'bg-warning', info: 'bg-primary' };
+    return map[severity] ?? 'bg-secondary';
+  }
+
+  priorityDotClass(priority: string): string {
+    const map: Record<string, string> = { high: 'bg-destructive', medium: 'bg-warning', low: 'bg-success' };
+    return map[priority] ?? 'bg-secondary';
+  }
+
   changeOrderStatusBadge(status: ChangeOrderStatus): ModusBadgeColor {
     const map: Record<ChangeOrderStatus, ModusBadgeColor> = { approved: 'success', pending: 'warning', rejected: 'danger' };
     return map[status] ?? 'secondary';
+  }
+
+  changeOrderStatusDot(status: ChangeOrderStatus): string {
+    const map: Record<ChangeOrderStatus, string> = { approved: 'bg-success', pending: 'bg-warning', rejected: 'bg-destructive' };
+    return map[status] ?? 'bg-secondary';
   }
 
   punchPriorityBadge(priority: string): ModusBadgeColor {

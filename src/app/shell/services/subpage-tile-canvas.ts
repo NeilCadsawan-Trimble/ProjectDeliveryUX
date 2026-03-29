@@ -25,7 +25,7 @@ export interface TileCanvasConfig {
 }
 
 export interface TileDetailView {
-  type: 'rfi' | 'submittal';
+  type: 'rfi' | 'submittal' | 'dailyReport' | 'punchItem' | 'inspection' | 'changeOrder';
   item: unknown;
 }
 

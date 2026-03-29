@@ -985,7 +985,7 @@ const recordsActionItems: WidgetAgent = {
     const items = s.projectAttentionItems ?? [];
     if (!items.length) return 'No action items for this project.';
     if (kw(q, 'critical', 'high', 'urgent')) {
-      const critical = items.filter(i => i.severity === 'critical' || i.severity === 'high');
+      const critical = items.filter(i => i.severity === 'critical');
       return critical.length ? critical.map(i => `[${i.severity}] ${i.title}: ${i.subtitle}`).join('\n') : 'No critical/high priority action items.';
     }
     return `${items.length} action items: ${items.map(a => `[${a.severity}] ${a.title}`).join(', ')}`;

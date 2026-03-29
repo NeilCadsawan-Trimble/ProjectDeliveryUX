@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Short-Term Memory
 
-**Current window**: Mar 26, 2026
+**Current window**: Mar 29, 2026
 
 > **Lifecycle**:
 > 1. During each session, append interactions below under the current date.
@@ -19,23 +19,25 @@ alwaysApply: true
 
 ## Today's Sessions
 
-### Session 5 (Mar 26)
-- **Topic**: Memory system setup + detail view navigation fix
+### Session 7 (Mar 29)
+- **Topic**: Collapsible subnav redesign
 - **What happened**:
-  1. Created `shortterm-memory.mdc` to track daily interactions.
-  2. Fixed detail view navigation in `ProjectDashboardComponent` so clicking RFIs/Submittals from child pages (Records, Dashboard widgets, etc.) replaces the main content with a detail page and the "Back" button returns to the correct source page.
-  3. Added unique URLs for every detail item. Clicking an RFI/Submittal pushes a URL like `?view=rfi&id=rfi-1&page=records&subpage=rfis`. URLs are shareable/bookmarkable. Browser back/forward works via `popstate` listener.
+  1. Rewrote `CollapsibleSubnavComponent` collapse behavior: items list rolls up/down via `max-height` animation instead of width collapse.
+  2. Chevron rotates: `chevron_left` at 0deg (points left, collapsed) and -90deg (points down, expanded), animated via `transition-transform duration-200`.
+  3. Collapsed header shows active item label instead of section title.
+  4. When collapsed, subnav layout width goes to 0 so title/widgets slide left (16px from edge). Subnav header floats visually at 227px via absolute positioning.
+  5. Top toolbar (childPageSubnav) stays pinned right of the subnav header -- never slides underneath when collapsed.
+  6. Fixed pre-existing build errors: `ViewMode` type mismatch (`signal<string>` -> `signal<'grid' | 'list'>`), severity type overlap in `widget-agents.ts`.
 - **Decisions**:
-  - Short-term memory file lives at `.cursor/rules/shortterm-memory.mdc` with `alwaysApply: true`.
-  - Detail view is now a top-level `@if` in `dashboardContent` template, shown above the `@switch` for child pages.
-  - `navigateToRfi`/`navigateToSubmittal` no longer change `activeNavItem` -- they only set `detailView` + push URL state.
-  - `clearDetailView` clears `detailView` signal and replaces URL (preserving page context). User stays on the same page they came from.
-  - `detailBackLabel` computed signal provides context-aware back label (e.g., "Back to RFIs", "Back to Dashboard").
-  - URL scheme: `?view=rfi&id=<id>` plus optional `&page=<nav>&subpage=<sub>` for page context. Uses `pushState`/`replaceState` for history. `popstate` listener handles browser back/forward.
+  - `CollapsibleSubnavComponent` uses two nested divs: outer for layout width (0 or 227), inner absolute-positioned at 227px for visual rendering.
+  - Canvas mode: `tileSubnavWidth` is 0 when collapsed, `tileToolbarLeft`/`tileToolbarWidth` always use expanded width so toolbar doesn't shift.
+  - Non-canvas mode: toolbar wrapped in div with conditional `margin-left: 227px` when collapsed.
+  - Collapsed subnav locked rect: 227px wide, 48px tall (header only). Expanded: 227px wide, 600px tall.
+  - `onItemSelect` auto-collapses the subnav after selecting an item.
 
 ## Active Context
 
-- Detail view feature with unique URLs is complete and passing all tests (59 static, type-check).
+- Collapsible subnav redesign complete and building clean.
 - Pre-existing SVG color lint violations remain (AI icon gradients) -- not related to changes.
 
 ## Pending Items
