@@ -11,6 +11,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
@@ -19,6 +20,7 @@ import { WidgetLayoutService } from '../../shell/services/widget-layout.service'
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 import type { DashboardWidgetId, Project, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost } from '../../data/dashboard-data';
 import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS } from '../../data/dashboard-data';
 
@@ -35,16 +37,7 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
     @if (jobCostDetailProject(); as project) {
       <!-- Job Cost Detail View -->
       <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
-        <!-- Back button + project header -->
         <div class="flex items-center gap-3 mb-6">
-          <div
-            class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center cursor-pointer hover:bg-secondary transition-colors duration-150"
-            (click)="closeJobCostDetail()"
-            role="button" tabindex="0"
-            aria-label="Back to Financials"
-          >
-            <i class="modus-icons text-base text-foreground" aria-hidden="true">arrow_left</i>
-          </div>
           <div class="flex flex-col">
             <div class="text-2xl font-bold text-foreground">{{ project.projectName }}</div>
             <div class="text-sm text-foreground-60">{{ project.client }}</div>
@@ -305,8 +298,8 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
       <!-- Page header -->
       <div class="flex items-start justify-between mb-6">
         <div>
-          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials</div>
-          <div class="text-sm text-foreground-60 mt-1">Budget overview and cost tracking</div>
+          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials Dashboard</div>
+          <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
         </div>
         <div class="flex-shrink-0">
           <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
@@ -368,8 +361,8 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
           >
             <div class="flex items-start justify-between mb-4">
               <div>
-                <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials</div>
-                <div class="text-sm text-foreground-60 mt-1">Budget overview and cost tracking</div>
+                <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials Dashboard</div>
+                <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
               </div>
               <div class="flex-shrink-0">
                 <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
@@ -654,7 +647,17 @@ import { PROJECTS, budgetProgressClass, getRevenueData, getRevenueSummary, getJo
 export class FinancialsPageComponent implements AfterViewInit {
   private readonly canvasResetService = inject(CanvasResetService);
   private readonly widgetFocusService = inject(WidgetFocusService);
+  private readonly navHistory = inject(NavigationHistoryService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
   private static readonly HEADER_HEIGHT = 160;
   private static readonly HEADER_OFFSET = FinancialsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
@@ -1052,17 +1055,37 @@ export class FinancialsPageComponent implements AfterViewInit {
   });
 
   openJobCostDetail(p: ProjectJobCost): void {
+    const proj = PROJECTS.find(pr => pr.id === p.projectId);
+    const slug = proj?.slug ?? String(p.projectId);
+    this.router.navigate(['/financials/job-costs', slug]);
+  }
+
+  private activateJobCostDetail(p: ProjectJobCost): void {
     this.jobCostDetailProject.set(p);
-    window.history.pushState(
-      { view: 'jobcost', projectId: p.projectId },
-      '',
-      `${window.location.pathname}?view=jobcost&projectId=${p.projectId}`,
-    );
+    this.navHistory.shellBackButton.set({ action: () => this.closeJobCostDetail() });
+    this.setTitleOverrideForProject(p);
   }
 
   closeJobCostDetail(): void {
     this.jobCostDetailProject.set(null);
-    window.history.replaceState({}, '', window.location.pathname);
+    this.navHistory.shellBackButton.set(null);
+    this.navHistory.shellTitleOverride.set(null);
+    this.router.navigate(['/financials']);
+  }
+
+  private setTitleOverrideForProject(current: ProjectJobCost): void {
+    const otherProjects = this.projectJobCosts().filter(p => p.projectId !== current.projectId);
+    this.navHistory.shellTitleOverride.set({
+      text: current.projectName,
+      items: otherProjects.map(p => {
+        const proj = PROJECTS.find(pr => pr.id === p.projectId);
+        return { id: p.projectId, label: p.projectName, sublabel: p.budgetUsed, slug: proj?.slug ?? '' };
+      }),
+      onSelect: (id: number) => {
+        const proj = PROJECTS.find(pr => pr.id === id);
+        if (proj) this.router.navigate(['/financials/job-costs', proj.slug]);
+      },
+    });
   }
 
   mobileGridHeight(): number {
@@ -1101,21 +1124,10 @@ export class FinancialsPageComponent implements AfterViewInit {
     this.engine.onDocumentTouchEnd();
   }
 
-  private popStateHandler: (() => void) | null = null;
-
-  private restoreDetailFromUrl(): void {
-    const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');
-    const projectId = params.get('projectId');
-    if (view === 'jobcost' && projectId) {
-      const pid = parseInt(projectId, 10);
-      const match = this.projectJobCosts().find(p => p.projectId === pid);
-      if (match) {
-        this.jobCostDetailProject.set(match);
-        return;
-      }
-    }
-    this.jobCostDetailProject.set(null);
+  private resolveSlugToProject(slug: string): ProjectJobCost | null {
+    const proj = PROJECTS.find(p => p.slug === slug);
+    if (!proj) return null;
+    return this.projectJobCosts().find(p => p.projectId === proj.id) ?? null;
   }
 
   ngAfterViewInit(): void {
@@ -1123,12 +1135,25 @@ export class FinancialsPageComponent implements AfterViewInit {
     this.engine.headerElAccessor = () => this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
     this.engine.init();
 
-    this.restoreDetailFromUrl();
+    this.route.paramMap.subscribe(params => {
+      const slug = params.get('slug');
+      if (slug) {
+        const match = this.resolveSlugToProject(slug);
+        if (match) {
+          this.activateJobCostDetail(match);
+        } else {
+          this.router.navigate(['/financials']);
+        }
+      } else {
+        this.jobCostDetailProject.set(null);
+        this.navHistory.shellBackButton.set(null);
+        this.navHistory.shellTitleOverride.set(null);
+      }
+    });
 
-    this.popStateHandler = () => this.restoreDetailFromUrl();
-    window.addEventListener('popstate', this.popStateHandler);
     this.destroyRef.onDestroy(() => {
-      if (this.popStateHandler) window.removeEventListener('popstate', this.popStateHandler);
+      this.navHistory.shellBackButton.set(null);
+      this.navHistory.shellTitleOverride.set(null);
     });
   }
 }

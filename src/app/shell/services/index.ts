@@ -11,3 +11,5 @@ export { AiPanelController } from './ai-panel-controller';
 export type { AiMessage, AiPanelConfig, AiContextBuilder } from './ai-panel-controller';
 export { CanvasPanning } from './canvas-panning';
 export type { CanvasItemHost } from './canvas-item-host';
+export { NavigationHistoryService } from './navigation-history.service';
+export type { ShellBackButton, ShellTitleOverride, ShellTitleItem } from './navigation-history.service';

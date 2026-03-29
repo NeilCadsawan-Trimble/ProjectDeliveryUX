@@ -47,7 +47,11 @@ import {
   SUBMITTALS,
   TIME_OFF_REQUESTS,
   CALENDAR_APPOINTMENTS,
+  buildUrgentNeeds,
+  urgentNeedCategoryIcon,
+  getProjectWeather,
 } from '../../data/dashboard-data';
+import type { UrgentNeedItem, UrgentNeedCategory, ProjectWeather, WeatherCondition } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards.component';
 
@@ -115,7 +119,7 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
         }
         @for (widgetId of homeWidgets; track widgetId) {
           <div
-            [class]="(canvasDetailViews()[widgetId] ? 'absolute pointer-events-auto' : (isMobile() ? 'absolute left-0 right-0 overflow-hidden pointer-events-auto' : 'absolute overflow-hidden pointer-events-auto')) + (shouldTransition(widgetId) ? ' widget-detail-transition' : '')"
+            [class]="(canvasDetailViews()[widgetId] ? 'absolute pointer-events-auto' : (isMobile() ? 'absolute left-0 right-0 pointer-events-auto' + (widgetId === 'homeUrgentNeeds' ? '' : ' overflow-hidden') : 'absolute pointer-events-auto' + (widgetId === 'homeUrgentNeeds' ? '' : ' overflow-hidden'))) + (shouldTransition(widgetId) ? ' widget-detail-transition' : '')"
             [attr.data-widget-id]="widgetId"
             [style.top.px]="widgetTops()[widgetId]"
             [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
@@ -1032,6 +1036,264 @@ import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards
                 />
               }
 
+              @else if (widgetId === 'homeWeather') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-3.5 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-warning" aria-hidden="true">wb_sunny</i>
+                      <div class="text-base font-semibold text-foreground">Weather Outlook</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      @if (weatherImpactProjects().length > 0) {
+                        <div class="flex items-center px-2 py-0.5 rounded-full" [class]="weatherImpactProjects()[0].majorDays > 0 ? 'bg-destructive-20' : 'bg-warning-20'">
+                          <div class="text-xs font-medium" [class]="weatherImpactProjects()[0].majorDays > 0 ? 'text-destructive' : 'text-warning'">{{ weatherImpactProjects().length }} impacted</div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="flex-1 overflow-y-auto min-h-0">
+                    @if (weatherImpactProjects().length > 0) {
+                      @for (pw of weatherImpactProjects(); track pw.project.id) {
+                        <div
+                          class="flex items-center gap-3 px-5 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
+                          role="button" tabindex="0"
+                          (click)="navigateToProject(pw.project.slug)"
+                          (keydown.enter)="navigateToProject(pw.project.slug)"
+                        >
+                          <div class="flex items-center gap-2 flex-shrink-0">
+                            <i class="modus-icons text-xl" [class]="weatherConditionColor(pw.weather.current.condition)" aria-hidden="true">{{ weatherConditionIcon(pw.weather.current.condition) }}</i>
+                            <div class="text-lg font-semibold text-foreground">{{ pw.weather.current.tempF }}&deg;</div>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                              <div class="text-sm font-medium text-foreground truncate">{{ pw.project.name }}</div>
+                            </div>
+                            <div class="text-xs text-foreground-60">{{ pw.project.city }}, {{ pw.project.state }}</div>
+                          </div>
+                          <div class="flex items-center gap-1.5 flex-shrink-0">
+                            @if (pw.majorDays > 0) {
+                              <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-destructive-20 text-destructive text-2xs font-medium">
+                                <i class="modus-icons text-2xs" aria-hidden="true">error</i>
+                                {{ pw.majorDays }}d stop
+                              </div>
+                            }
+                            @if (pw.minorDays > 0) {
+                              <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-warning-20 text-warning text-2xs font-medium">
+                                <i class="modus-icons text-2xs" aria-hidden="true">warning</i>
+                                {{ pw.minorDays }}d caution
+                              </div>
+                            }
+                            <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
+                          </div>
+                        </div>
+                      }
+                    }
+                    @for (pw of allProjectWeather(); track pw.project.id) {
+                      @if (pw.impactDays === 0) {
+                        <div
+                          class="flex items-center gap-3 px-5 py-2.5 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
+                          role="button" tabindex="0"
+                          (click)="navigateToProject(pw.project.slug)"
+                          (keydown.enter)="navigateToProject(pw.project.slug)"
+                        >
+                          <div class="flex items-center gap-2 flex-shrink-0">
+                            <i class="modus-icons text-lg" [class]="weatherConditionColor(pw.weather.current.condition)" aria-hidden="true">{{ weatherConditionIcon(pw.weather.current.condition) }}</i>
+                            <div class="text-sm font-medium text-foreground">{{ pw.weather.current.tempF }}&deg;</div>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <div class="text-xs text-foreground truncate">{{ pw.project.name }}</div>
+                            <div class="text-2xs text-foreground-40">{{ pw.project.city }}, {{ pw.project.state }}</div>
+                          </div>
+                          <div class="flex items-center gap-1 flex-shrink-0">
+                            <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-success-20 text-success text-2xs font-medium">
+                              Clear
+                            </div>
+                            <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
+                          </div>
+                        </div>
+                      }
+                    }
+                  </div>
+
+                  <div class="flex items-center justify-between px-5 py-2.5 border-top-default bg-card flex-shrink-0">
+                    <div class="text-xs text-foreground-40">
+                      {{ allProjectWeather().length }} sites
+                    </div>
+                    <div class="text-xs text-foreground-40">
+                      {{ weatherImpactSummary() }}
+                    </div>
+                  </div>
+                </div>
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                />
+              }
+
+              @else if (widgetId === 'homeUrgentNeeds') {
+                <div class="bg-card rounded-lg overflow-visible flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-destructive" aria-hidden="true">warning</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Urgent Needs</div>
+                      @if (urgentCriticalCount() > 0) {
+                        <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                          <div class="text-xs font-medium text-destructive">{{ urgentCriticalCount() }} critical</div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 px-4 py-2.5 border-bottom-default flex-shrink-0 overflow-visible relative z-20">
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                      @for (sev of urgentSeverityOptions; track sev.key) {
+                        <div
+                          class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                          [class]="urgentSeverityFilter().has(sev.key) ? sev.activeCls : 'bg-muted text-foreground-60 hover:bg-secondary'"
+                          (click)="toggleUrgentSeverity(sev.key)"
+                        >
+                          <div class="w-1.5 h-1.5 rounded-full" [class]="sev.dotCls"></div>
+                          {{ sev.label }} ({{ urgentSeverityCounts()[sev.key] }})
+                        </div>
+                      }
+                    </div>
+                    <div class="w-px h-5 bg-secondary flex-shrink-0"></div>
+                    <div class="relative flex-shrink-0" data-urgent-category-dropdown>
+                      <div
+                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                        [class]="urgentCategoryFilter() !== null ? 'bg-primary-20 text-primary' : 'bg-muted text-foreground-60 hover:bg-secondary'"
+                        (click)="urgentCategoryDropdownOpen.set(!urgentCategoryDropdownOpen())"
+                      >
+                        <i class="modus-icons text-xs" aria-hidden="true">filter_list</i>
+                        {{ urgentCategoryFilterLabel() }}
+                        <i class="modus-icons text-xs" aria-hidden="true">{{ urgentCategoryDropdownOpen() ? 'expand_less' : 'expand_more' }}</i>
+                      </div>
+                      @if (urgentCategoryDropdownOpen()) {
+                        <div class="absolute top-full left-0 mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] max-h-[280px] overflow-y-auto py-1">
+                          <div
+                            class="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer transition-colors duration-150"
+                            [class]="urgentCategoryFilter() === null ? 'bg-primary-20 text-primary font-semibold' : 'text-foreground hover:bg-muted'"
+                            (click)="clearUrgentCategoryFilter()"
+                          >
+                            <i class="modus-icons text-sm" aria-hidden="true">apps</i>
+                            All Types
+                          </div>
+                          @for (cat of urgentCategoryOptions; track cat.key) {
+                            <div
+                              class="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer transition-colors duration-150"
+                              [class]="urgentCategoryFilter()?.has(cat.key) ? 'bg-primary-20 text-primary font-semibold' : 'text-foreground hover:bg-muted'"
+                              (click)="selectUrgentCategory(cat.key)"
+                            >
+                              <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">{{ cat.icon }}</i>
+                              {{ cat.label }}
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                    <div class="w-px h-5 bg-secondary flex-shrink-0"></div>
+                    <div class="relative flex-shrink-0" data-urgent-project-dropdown>
+                      <div
+                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                        [class]="urgentProjectFilter() !== null ? 'bg-primary-20 text-primary' : 'bg-muted text-foreground-60 hover:bg-secondary'"
+                        (click)="urgentProjectDropdownOpen.set(!urgentProjectDropdownOpen())"
+                      >
+                        <i class="modus-icons text-xs" aria-hidden="true">folder_closed</i>
+                        {{ urgentProjectFilterLabel() }}
+                        <i class="modus-icons text-xs" aria-hidden="true">{{ urgentProjectDropdownOpen() ? 'expand_less' : 'expand_more' }}</i>
+                      </div>
+                      @if (urgentProjectDropdownOpen()) {
+                        <div class="absolute top-full left-0 mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[200px] max-h-[240px] overflow-y-auto py-1">
+                          <div
+                            class="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer transition-colors duration-150"
+                            [class]="urgentProjectFilter() === null ? 'bg-primary-20 text-primary font-semibold' : 'text-foreground hover:bg-muted'"
+                            (click)="urgentProjectFilter.set(null); urgentProjectDropdownOpen.set(false)"
+                          >
+                            <i class="modus-icons text-sm" aria-hidden="true">apps</i>
+                            All Projects
+                          </div>
+                          @for (proj of urgentProjectOptions(); track proj.id) {
+                            <div
+                              class="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer transition-colors duration-150 truncate"
+                              [class]="urgentProjectFilter() === proj.id ? 'bg-primary-20 text-primary font-semibold' : 'text-foreground hover:bg-muted'"
+                              (click)="urgentProjectFilter.set(proj.id); urgentProjectDropdownOpen.set(false)"
+                              [attr.title]="proj.name"
+                            >
+                              <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">folder_closed</i>
+                              {{ proj.name }}
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="flex-1 overflow-y-auto min-h-0">
+                    @for (item of filteredUrgentNeeds(); track item.id) {
+                      <div
+                        class="flex items-start gap-3 px-5 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
+                        role="button" tabindex="0"
+                        (click)="navigateToUrgentNeed(item)"
+                        (keydown.enter)="navigateToUrgentNeed(item)"
+                      >
+                        <div class="flex items-center gap-2.5 flex-shrink-0 mt-0.5">
+                          <div class="w-2 h-2 rounded-full flex-shrink-0"
+                            [class.bg-destructive]="item.severity === 'critical'"
+                            [class.bg-warning]="item.severity === 'warning'"
+                            [class.bg-primary]="item.severity === 'info'"></div>
+                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">{{ urgentNeedCategoryIcon(item.category) }}</i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm font-medium text-foreground truncate">{{ item.title }}</div>
+                          <div class="text-xs text-foreground-60 truncate mt-0.5">{{ item.subtitle }}</div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                          @if (item.financialsRoute) {
+                            <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary text-2xs font-medium">
+                              <i class="modus-icons text-2xs" aria-hidden="true">account_balance</i>
+                              Job Costs
+                            </div>
+                          }
+                          <div class="text-xs text-foreground-40 truncate max-w-[100px]" [attr.title]="item.projectName">{{ item.projectName }}</div>
+                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
+                        </div>
+                      </div>
+                    } @empty {
+                      <div class="flex flex-col items-center justify-center h-full py-8 text-foreground-40">
+                        <i class="modus-icons text-3xl mb-2" aria-hidden="true">check_circle</i>
+                        <div class="text-sm">No items match your filters</div>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="flex items-center justify-between px-5 py-2.5 border-top-default bg-card flex-shrink-0">
+                    <div class="text-xs text-foreground-40">
+                      {{ filteredUrgentNeeds().length }} of {{ allUrgentNeeds.length }} items
+                    </div>
+                    <div class="text-xs text-foreground-40">
+                      {{ urgentProjectSummary() }}
+                    </div>
+                  </div>
+                </div>
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                />
+              }
+
             </div>
           }
           </div>
@@ -1052,26 +1314,28 @@ export class HomePageComponent implements AfterViewInit {
   private static readonly HEADER_OFFSET = HomePageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['homeHeader', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings'],
-    layoutStorageKey: 'dashboard-home-v3',
-    canvasStorageKey: 'canvas-layout:dashboard-home:v8',
-    defaultColStarts: { homeHeader: 1, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11 },
-    defaultColSpans: { homeHeader: 16, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6 },
-    defaultTops: { homeHeader: 0, homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356, homeDrawings: 356 },
-    defaultHeights: { homeHeader: 0, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580, homeDrawings: 580 },
-    defaultLefts: { homeHeader: 0, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810 },
-    defaultPixelWidths: { homeHeader: 1280, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470 },
-    canvasDefaultLefts: { homeHeader: 0, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810 },
-    canvasDefaultPixelWidths: { homeHeader: 1280, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470 },
+    widgets: ['homeHeader', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings'],
+    layoutStorageKey: 'dashboard-home-v5',
+    canvasStorageKey: 'canvas-layout:dashboard-home:v10',
+    defaultColStarts: { homeHeader: 1, homeUrgentNeeds: 1, homeWeather: 11, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11 },
+    defaultColSpans: { homeHeader: 16, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6 },
+    defaultTops: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 0, homeRfis: 356, homeSubmittals: 356, homeTimeOff: 356, homeCalendar: 712, homeDrawings: 712 },
+    defaultHeights: { homeHeader: 0, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340 },
+    defaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810 },
+    defaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470 },
+    canvasDefaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810 },
+    canvasDefaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470 },
     canvasDefaultTops: {
       homeHeader: 0,
-      homeRfis: HomePageComponent.HEADER_OFFSET,
-      homeSubmittals: HomePageComponent.HEADER_OFFSET,
-      homeTimeOff: HomePageComponent.HEADER_OFFSET,
-      homeCalendar: HomePageComponent.HEADER_OFFSET + 356,
-      homeDrawings: HomePageComponent.HEADER_OFFSET + 356,
+      homeUrgentNeeds: HomePageComponent.HEADER_OFFSET,
+      homeWeather: HomePageComponent.HEADER_OFFSET,
+      homeTimeOff: HomePageComponent.HEADER_OFFSET + 356,
+      homeRfis: HomePageComponent.HEADER_OFFSET + 356,
+      homeSubmittals: HomePageComponent.HEADER_OFFSET + 356,
+      homeDrawings: HomePageComponent.HEADER_OFFSET + 712,
+      homeCalendar: HomePageComponent.HEADER_OFFSET + 712,
     },
-    canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580, homeDrawings: 580 },
+    canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340 },
     minColSpan: 4,
     canvasGridMinHeightOffset: 100,
     savesDesktopOnMobile: true,
@@ -1158,7 +1422,7 @@ export class HomePageComponent implements AfterViewInit {
     return results;
   });
 
-  readonly homeWidgets: DashboardWidgetId[] = ['homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings'];
+  readonly homeWidgets: DashboardWidgetId[] = ['homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
@@ -1387,6 +1651,187 @@ export class HomePageComponent implements AfterViewInit {
     if (status === 'Approved') return 'bg-success text-success-foreground';
     if (status === 'Pending') return 'bg-warning text-warning-foreground';
     return 'bg-destructive text-destructive-foreground';
+  }
+
+  readonly allUrgentNeeds = buildUrgentNeeds();
+  readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
+
+  readonly urgentSeverityFilter = signal<Set<string>>(new Set(['critical', 'warning', 'info']));
+  readonly urgentCategoryFilter = signal<Set<UrgentNeedCategory> | null>(null);
+  readonly urgentProjectFilter = signal<number | null>(null);
+  readonly urgentProjectDropdownOpen = signal(false);
+  readonly urgentCategoryDropdownOpen = signal(false);
+
+  readonly urgentProjectFilterLabel = computed(() => {
+    const id = this.urgentProjectFilter();
+    if (id === null) return 'All Projects';
+    const proj = this.urgentProjectOptions().find(p => p.id === id);
+    return proj?.shortName ?? 'All Projects';
+  });
+
+  readonly urgentSeverityOptions = [
+    { key: 'critical', label: 'Critical', dotCls: 'bg-destructive', activeCls: 'bg-destructive-20 text-destructive' },
+    { key: 'warning', label: 'Warning', dotCls: 'bg-warning', activeCls: 'bg-warning-20 text-warning' },
+    { key: 'info', label: 'Info', dotCls: 'bg-primary', activeCls: 'bg-primary-20 text-primary' },
+  ] as const;
+
+  readonly urgentCategoryOptions: { key: UrgentNeedCategory; label: string; icon: string }[] = [
+    { key: 'budget', label: 'Budget', icon: 'account_balance' },
+    { key: 'change-order', label: 'Change Orders', icon: 'swap_horiz' },
+    { key: 'rfi', label: 'RFIs', icon: 'clipboard' },
+    { key: 'submittal', label: 'Submittals', icon: 'document' },
+    { key: 'schedule', label: 'Schedule', icon: 'calendar' },
+    { key: 'inspection', label: 'Inspections', icon: 'search' },
+    { key: 'safety', label: 'Safety', icon: 'shield' },
+    { key: 'quality', label: 'Quality', icon: 'bug' },
+  ];
+
+  readonly urgentCategoryFilterLabel = computed(() => {
+    const filter = this.urgentCategoryFilter();
+    if (!filter) return 'All Types';
+    if (filter.size === 1) {
+      const key = [...filter][0];
+      const opt = this.urgentCategoryOptions.find(o => o.key === key);
+      return opt?.label ?? 'Filtered';
+    }
+    return `${filter.size} types`;
+  });
+
+  readonly urgentSeverityCounts = computed(() => {
+    const items = this.allUrgentNeeds;
+    const projFilter = this.urgentProjectFilter();
+    const catFilter = this.urgentCategoryFilter();
+    let filtered = projFilter !== null ? items.filter(i => i.projectId === projFilter) : items;
+    if (catFilter) filtered = filtered.filter(i => catFilter.has(i.category));
+    return {
+      critical: filtered.filter(i => i.severity === 'critical').length,
+      warning: filtered.filter(i => i.severity === 'warning').length,
+      info: filtered.filter(i => i.severity === 'info').length,
+    };
+  });
+
+  readonly urgentCriticalCount = computed(() => this.allUrgentNeeds.filter(i => i.severity === 'critical').length);
+
+  readonly urgentProjectOptions = computed(() => {
+    const projectIds = new Set(this.allUrgentNeeds.map(i => i.projectId));
+    return PROJECTS
+      .filter(p => projectIds.has(p.id))
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        shortName: p.name.split(' ').slice(0, 2).join(' '),
+      }));
+  });
+
+  readonly filteredUrgentNeeds = computed(() => {
+    const sevFilter = this.urgentSeverityFilter();
+    const projFilter = this.urgentProjectFilter();
+    const catFilter = this.urgentCategoryFilter();
+    return this.allUrgentNeeds.filter(item => {
+      if (!sevFilter.has(item.severity)) return false;
+      if (projFilter !== null && item.projectId !== projFilter) return false;
+      if (catFilter && !catFilter.has(item.category)) return false;
+      return true;
+    });
+  });
+
+  readonly urgentProjectSummary = computed(() => {
+    const items = this.filteredUrgentNeeds();
+    const projects = new Set(items.map(i => i.projectId));
+    return `${projects.size} project${projects.size !== 1 ? 's' : ''}`;
+  });
+
+  toggleUrgentSeverity(key: string): void {
+    this.urgentSeverityFilter.update(set => {
+      const next = new Set(set);
+      if (next.has(key)) {
+        if (next.size > 1) next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  selectUrgentCategory(cat: UrgentNeedCategory): void {
+    const current = this.urgentCategoryFilter();
+    if (current && current.size === 1 && current.has(cat)) {
+      this.urgentCategoryFilter.set(null);
+    } else {
+      this.urgentCategoryFilter.set(new Set([cat]));
+    }
+    this.urgentCategoryDropdownOpen.set(false);
+  }
+
+  clearUrgentCategoryFilter(): void {
+    this.urgentCategoryFilter.set(null);
+    this.urgentCategoryDropdownOpen.set(false);
+  }
+
+  navigateToUrgentNeed(item: UrgentNeedItem): void {
+    if (item.financialsRoute) {
+      this.router.navigate([item.financialsRoute]);
+    } else {
+      this.router.navigate([item.route], { queryParams: item.queryParams });
+    }
+  }
+
+  private readonly _urgentDropdownClickOutside = (() => {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('click', (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (this.urgentProjectDropdownOpen() && !target.closest('[data-urgent-project-dropdown]')) {
+          this.urgentProjectDropdownOpen.set(false);
+        }
+        if (this.urgentCategoryDropdownOpen() && !target.closest('[data-urgent-category-dropdown]')) {
+          this.urgentCategoryDropdownOpen.set(false);
+        }
+      }, true);
+    }
+  })();
+
+  readonly allProjectWeather = computed(() => {
+    return PROJECTS.map(p => {
+      const w = getProjectWeather(p.id);
+      if (!w) return null;
+      const impactDays = w.forecast.filter(f => f.workImpact !== 'none');
+      const majorDays = w.forecast.filter(f => f.workImpact === 'major');
+      const minorDays = w.forecast.filter(f => f.workImpact === 'minor');
+      return { project: p, weather: w, impactDays: impactDays.length, majorDays: majorDays.length, minorDays: minorDays.length };
+    }).filter(Boolean) as { project: typeof PROJECTS[0]; weather: ProjectWeather; impactDays: number; majorDays: number; minorDays: number }[];
+  });
+
+  readonly weatherImpactProjects = computed(() =>
+    this.allProjectWeather().filter(pw => pw.impactDays > 0).sort((a, b) => b.majorDays - a.majorDays || b.impactDays - a.impactDays)
+  );
+
+  readonly weatherImpactSummary = computed(() => {
+    const all = this.allProjectWeather();
+    const impacted = all.filter(pw => pw.impactDays > 0);
+    const majorCount = all.filter(pw => pw.majorDays > 0).length;
+    if (majorCount > 0) return `${majorCount} project${majorCount !== 1 ? 's' : ''} with major weather impact`;
+    if (impacted.length > 0) return `${impacted.length} project${impacted.length !== 1 ? 's' : ''} with weather advisories`;
+    return 'No weather impacts expected';
+  });
+
+  weatherConditionIcon(condition: WeatherCondition): string {
+    const map: Record<WeatherCondition, string> = {
+      sunny: 'wb_sunny', 'partly-cloudy': 'cloud', cloudy: 'cloud',
+      rain: 'water_drop', thunderstorm: 'flash_on', snow: 'ac_unit',
+    };
+    return map[condition] ?? 'cloud';
+  }
+
+  weatherConditionColor(condition: WeatherCondition): string {
+    const map: Record<WeatherCondition, string> = {
+      sunny: 'text-warning', 'partly-cloudy': 'text-foreground-60', cloudy: 'text-foreground-40',
+      rain: 'text-primary', thunderstorm: 'text-destructive', snow: 'text-primary',
+    };
+    return map[condition] ?? 'text-foreground-60';
+  }
+
+  navigateToProject(projectSlug: string): void {
+    this.router.navigate(['/projects', projectSlug]);
   }
 
   readonly pendingTimeOffCount = computed(() =>

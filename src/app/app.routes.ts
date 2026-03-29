@@ -49,6 +49,14 @@ export const routes: Routes = [
         title: 'Financials',
       },
       {
+        path: 'financials/job-costs/:slug',
+        loadComponent: () =>
+          import('./pages/financials-page/financials-page.component').then(
+            (m) => m.FinancialsPageComponent,
+          ),
+        title: 'Job Costs',
+      },
+      {
         path: 'rfi/:id',
         loadComponent: () =>
           import('./pages/rfi-detail/rfi-detail-page.component').then(

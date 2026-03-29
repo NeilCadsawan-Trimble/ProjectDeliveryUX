@@ -50,6 +50,7 @@ import { SubpageTileCanvas, type TileRect, type TileDetailView } from '../../she
 import { AiService } from '../../services/ai.service';
 import { AiPanelController } from '../../shell/services/ai-panel-controller';
 import { CanvasPanning } from '../../shell/services/canvas-panning';
+import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 import {
   type ProjectDashboardData,
   type ProjectStatus,
@@ -57,12 +58,12 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus } from '../../data/dashboard-data';
+import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 
-type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals';
+type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather';
 
 const RECORDS_PAGE_DESCRIPTIONS: Record<string, string> = {
   'daily-reports': 'View and manage daily field reports including weather, workforce, equipment, and work performed.',
@@ -2251,25 +2252,86 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
                 }
 
                 @case ('risks') {
-              <app-widget-frame icon="warning" title="Risks" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('risks')"
+              <app-widget-frame icon="warning" title="Risks &amp; Urgent Needs" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('risks')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ risks().length }} Identified</div>
-                <div class="p-4 flex flex-col gap-2 overflow-y-auto flex-1">
-                  @for (risk of risks(); track risk.id) {
-                    <div class="p-3 bg-background border-default rounded-lg flex flex-col gap-2">
-                      <div class="flex items-center justify-between">
-                        <div class="text-sm font-medium text-foreground">{{ risk.title }}</div>
-                        <modus-badge [color]="severityBadgeColor(risk.severity)" variant="filled" size="sm">
-                          {{ risk.severity | titlecase }}
-                        </modus-badge>
+                <div headerMeta class="text-xs text-foreground-60">{{ filteredRisks().length + filteredProjectUrgentNeeds().length }} of {{ risks().length + projectUrgentNeeds().length }}</div>
+                @if (filteredProjectUrgentNeeds().length > 0) {
+                  <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                    <div class="text-xs font-medium text-destructive">{{ filteredProjectUrgentNeeds().length }} urgent</div>
+                  </div>
+                }
+                <div class="flex items-center gap-1.5 px-4 py-2 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()">
+                  @for (sev of risksSeverityOptions; track sev.key) {
+                    <div
+                      class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                      [class]="risksSeverityFilter().has(sev.key) ? sev.activeCls : 'bg-muted text-foreground-60 hover:bg-secondary'"
+                      (click)="toggleRisksSeverity(sev.key)"
+                    >
+                      <div class="w-1.5 h-1.5 rounded-full" [class]="sev.dotCls"></div>
+                      {{ sev.label }} ({{ risksSeverityCounts()[sev.key] }})
+                    </div>
+                  }
+                </div>
+                <div class="overflow-y-auto flex-1">
+                  @if (filteredProjectUrgentNeeds().length > 0) {
+                    <div class="px-4 pt-3 pb-1">
+                      <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide mb-2">Urgent Needs</div>
+                    </div>
+                    @for (item of filteredProjectUrgentNeeds(); track item.id) {
+                      <div
+                        class="flex items-start gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                        role="button" tabindex="0"
+                        (click)="navigateToUrgentNeed(item)" (mousedown)="$event.stopPropagation()"
+                        (keydown.enter)="navigateToUrgentNeed(item)"
+                      >
+                        <div class="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                          <div class="w-2 h-2 rounded-full flex-shrink-0"
+                            [class.bg-destructive]="item.severity === 'critical'"
+                            [class.bg-warning]="item.severity === 'warning'"
+                            [class.bg-primary]="item.severity === 'info'"></div>
+                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">{{ urgentNeedCategoryIcon(item.category) }}</i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm font-medium text-foreground truncate">{{ item.title }}</div>
+                          <div class="text-xs text-foreground-60 truncate">{{ item.subtitle }}</div>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+                          @if (item.financialsRoute) {
+                            <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary text-2xs font-medium">
+                              <i class="modus-icons text-2xs" aria-hidden="true">account_balance</i>
+                              Job Costs
+                            </div>
+                          }
+                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
+                        </div>
                       </div>
-                      <div class="text-xs text-foreground-60">
-                        <div class="inline text-foreground-80 font-medium">Impact:</div> {{ risk.impact }}
-                      </div>
-                      <div class="text-xs text-foreground-60">
-                        <div class="inline text-foreground-80 font-medium">Mitigation:</div> {{ risk.mitigation }}
-                      </div>
+                    }
+                    @if (filteredRisks().length > 0) {
+                      <div class="mx-4 my-2 border-bottom-default"></div>
+                    }
+                  }
+                  @if (filteredRisks().length > 0) {
+                    <div class="px-4 pt-3 pb-1">
+                      <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wide mb-2">Risks</div>
+                    </div>
+                    <div class="px-4 pb-3 flex flex-col gap-2">
+                      @for (risk of filteredRisks(); track risk.id) {
+                        <div class="p-3 bg-background border-default rounded-lg flex flex-col gap-2">
+                          <div class="flex items-center justify-between">
+                            <div class="text-sm font-medium text-foreground">{{ risk.title }}</div>
+                            <modus-badge [color]="severityBadgeColor(risk.severity)" variant="filled" size="sm">
+                              {{ risk.severity | titlecase }}
+                            </modus-badge>
+                          </div>
+                          <div class="text-xs text-foreground-60">
+                            <div class="inline text-foreground-80 font-medium">Impact:</div> {{ risk.impact }}
+                          </div>
+                          <div class="text-xs text-foreground-60">
+                            <div class="inline text-foreground-80 font-medium">Mitigation:</div> {{ risk.mitigation }}
+                          </div>
+                        </div>
+                      }
                     </div>
                   }
                 </div>
@@ -2438,6 +2500,61 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               </app-widget-frame>
                 }
 
+                @case ('weather') {
+              @if (projectWeather(); as pw) {
+              <app-widget-frame icon="wb_sunny" [title]="projectCity()" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('weather')"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <div headerMeta class="flex items-center gap-1.5">
+                  <i class="modus-icons text-lg" [class]="weatherIconColor(pw.current.condition)" aria-hidden="true">{{ weatherIcon(pw.current.condition) }}</i>
+                  <div class="text-lg font-semibold text-foreground">{{ pw.current.tempF }}&deg;F</div>
+                </div>
+                <div class="flex flex-col h-full overflow-hidden">
+                  <div class="flex items-center gap-4 px-4 py-3 border-bottom-default flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-3xl" [class]="weatherIconColor(pw.current.condition)" aria-hidden="true">{{ weatherIcon(pw.current.condition) }}</i>
+                      <div>
+                        <div class="text-2xl font-bold text-foreground">{{ pw.current.tempF }}&deg;F</div>
+                        <div class="text-xs text-foreground-60">Feels like {{ pw.current.feelsLikeF }}&deg;F</div>
+                      </div>
+                    </div>
+                    <div class="flex-1 grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <div class="text-2xs text-foreground-40 uppercase">Humidity</div>
+                        <div class="text-sm font-medium text-foreground">{{ pw.current.humidity }}%</div>
+                      </div>
+                      <div>
+                        <div class="text-2xs text-foreground-40 uppercase">Wind</div>
+                        <div class="text-sm font-medium text-foreground">{{ pw.current.windMph }} mph {{ pw.current.windDir }}</div>
+                      </div>
+                      <div>
+                        <div class="text-2xs text-foreground-40 uppercase">UV Index</div>
+                        <div class="text-sm font-medium text-foreground">{{ pw.current.uvIndex }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex-1 overflow-y-auto">
+                    <div class="flex px-2 py-2 gap-1">
+                      @for (day of pw.forecast; track day.date) {
+                        <div class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg" [class]="day.workImpact === 'major' ? 'bg-destructive-20' : day.workImpact === 'minor' ? 'bg-warning-20' : 'hover:bg-muted'" [attr.title]="day.note || day.condition">
+                          <div class="text-2xs font-medium text-foreground-60">{{ day.day }}</div>
+                          <i class="modus-icons text-lg" [class]="weatherIconColor(day.condition)" aria-hidden="true">{{ weatherIcon(day.condition) }}</i>
+                          <div class="text-xs font-medium text-foreground">{{ day.highF }}&deg;</div>
+                          <div class="text-2xs text-foreground-40">{{ day.lowF }}&deg;</div>
+                          @if (day.workImpact !== 'none') {
+                            <div class="text-2xs font-medium px-1 py-0.5 rounded" [class]="workImpactBadge(day.workImpact).cls">
+                              {{ day.workImpact === 'major' ? 'Stop' : 'Caution' }}
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </app-widget-frame>
+              }
+                }
+
                 @case ('activity') {
               <app-widget-frame icon="history" title="Recent Activity" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('activity')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
@@ -2487,13 +2604,13 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
               <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               <div
                 class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
-                (click)="navigateToProjects()"
+                (click)="navigateBack()"
                 role="button"
                 tabindex="0"
-                (keydown.enter)="navigateToProjects()"
+                (keydown.enter)="navigateBack()"
               >
                 <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-                <div class="text-sm">Projects</div>
+                <div class="text-sm">Back</div>
               </div>
               <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               <div class="relative min-w-0 flex-1">
@@ -2676,13 +2793,13 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
           <div
             class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
-            (click)="navigateToProjects()"
+            (click)="navigateBack()"
             role="button"
             tabindex="0"
-            (keydown.enter)="navigateToProjects()"
+            (keydown.enter)="navigateBack()"
           >
             <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-            <div class="text-sm hidden md:block">Projects</div>
+            <div class="text-sm hidden md:block">Back</div>
           </div>
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
           <div class="relative min-w-0 flex-1">
@@ -3533,6 +3650,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
+  private readonly navHistory = inject(NavigationHistoryService);
   private readonly elementRef = inject(ElementRef);
   private readonly canvasResetService = inject(CanvasResetService);
   readonly widgetFocusService = inject(WidgetFocusService);
@@ -3547,17 +3665,17 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   private static readonly PROJ_HEADER_OFFSET = ProjectDashboardComponent.PROJ_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['projHeader', 'milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'budget', 'team', 'activity'],
-    layoutStorageKey: () => `project-${this.projectId()}-v2`,
-    canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v3`,
-    defaultColStarts: { projHeader: 1, milestones: 1, tasks: 1, risks: 1, rfis: 1, submittals: 1, drawing: 12, budget: 12, team: 12, activity: 12 },
-    defaultColSpans: { projHeader: 16, milestones: 11, tasks: 11, risks: 11, rfis: 11, submittals: 11, drawing: 5, budget: 5, team: 5, activity: 5 },
-    defaultTops: { projHeader: 0, milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, budget: 436, team: 902, activity: 1318 },
-    defaultHeights: { projHeader: 0, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, budget: 450, team: 400, activity: 350 },
-    defaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
-    defaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
-    canvasDefaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, budget: 891, team: 891, activity: 891 },
-    canvasDefaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, budget: 389, team: 389, activity: 389 },
+    widgets: ['projHeader', 'milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'],
+    layoutStorageKey: () => `project-${this.projectId()}-v3`,
+    canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v4`,
+    defaultColStarts: { projHeader: 1, milestones: 1, tasks: 1, risks: 1, rfis: 1, submittals: 1, drawing: 12, weather: 12, budget: 12, team: 12, activity: 12 },
+    defaultColSpans: { projHeader: 16, milestones: 11, tasks: 11, risks: 11, rfis: 11, submittals: 11, drawing: 5, weather: 5, budget: 5, team: 5, activity: 5 },
+    defaultTops: { projHeader: 0, milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, weather: 436, budget: 686, team: 1152, activity: 1568 },
+    defaultHeights: { projHeader: 0, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, weather: 234, budget: 450, team: 400, activity: 350 },
+    defaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
+    defaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
+    canvasDefaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
+    canvasDefaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
     canvasDefaultTops: {
       projHeader: 0,
       milestones: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
@@ -3566,11 +3684,12 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       rfis: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1318,
       submittals: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1658,
       drawing: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
-      budget: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 436,
-      team: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 902,
-      activity: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1318,
+      weather: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 436,
+      budget: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 686,
+      team: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1152,
+      activity: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1568,
     },
-    canvasDefaultHeights: { projHeader: ProjectDashboardComponent.PROJ_HEADER_HEIGHT, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, budget: 450, team: 400, activity: 350 },
+    canvasDefaultHeights: { projHeader: ProjectDashboardComponent.PROJ_HEADER_HEIGHT, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, weather: 234, budget: 450, team: 400, activity: 350 },
     minColSpan: 4,
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: true,
@@ -4280,7 +4399,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
 
-  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'budget', 'team', 'activity'];
+  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   readonly navbarVisibility = computed(() => {
@@ -4314,6 +4433,84 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   readonly milestones = computed(() => this.projectData().milestones);
   readonly tasks = computed(() => this.projectData().tasks);
   readonly risks = computed(() => this.projectData().risks);
+  readonly projectUrgentNeeds = computed(() => buildUrgentNeeds().filter(n => n.projectId === this.projectId()));
+  readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
+
+  readonly projectWeather = computed(() => getProjectWeather(this.projectId()));
+  readonly projectCity = computed(() => {
+    const proj = PROJECTS.find(p => p.id === this.projectId());
+    return proj ? `${proj.city}, ${proj.state}` : '';
+  });
+
+  weatherIcon(condition: WeatherCondition): string {
+    const map: Record<WeatherCondition, string> = {
+      sunny: 'wb_sunny', 'partly-cloudy': 'cloud', cloudy: 'cloud',
+      rain: 'water_drop', thunderstorm: 'flash_on', snow: 'ac_unit',
+    };
+    return map[condition] ?? 'cloud';
+  }
+
+  weatherIconColor(condition: WeatherCondition): string {
+    const map: Record<WeatherCondition, string> = {
+      sunny: 'text-warning', 'partly-cloudy': 'text-foreground-60', cloudy: 'text-foreground-40',
+      rain: 'text-primary', thunderstorm: 'text-destructive', snow: 'text-primary',
+    };
+    return map[condition] ?? 'text-foreground-60';
+  }
+
+  workImpactBadge(impact: 'none' | 'minor' | 'major'): { cls: string; label: string } {
+    if (impact === 'major') return { cls: 'bg-destructive-20 text-destructive', label: 'Major impact' };
+    if (impact === 'minor') return { cls: 'bg-warning-20 text-warning', label: 'Minor impact' };
+    return { cls: 'bg-success-20 text-success', label: 'No impact' };
+  }
+
+  readonly risksSeverityFilter = signal<Set<string>>(new Set(['critical', 'warning', 'info']));
+
+  readonly risksSeverityOptions = [
+    { key: 'critical', label: 'Critical', dotCls: 'bg-destructive', activeCls: 'bg-destructive-20 text-destructive' },
+    { key: 'warning', label: 'Warning', dotCls: 'bg-warning', activeCls: 'bg-warning-20 text-warning' },
+    { key: 'info', label: 'Info', dotCls: 'bg-primary', activeCls: 'bg-primary-20 text-primary' },
+  ] as const;
+
+  private riskSevToFilterKey(sev: string): string {
+    if (sev === 'high') return 'critical';
+    if (sev === 'medium') return 'warning';
+    if (sev === 'low') return 'info';
+    return sev;
+  }
+
+  readonly risksSeverityCounts = computed(() => {
+    const urgent = this.projectUrgentNeeds();
+    const risks = this.risks();
+    return {
+      critical: urgent.filter(i => i.severity === 'critical').length + risks.filter(r => r.severity === 'high').length,
+      warning: urgent.filter(i => i.severity === 'warning').length + risks.filter(r => r.severity === 'medium').length,
+      info: urgent.filter(i => i.severity === 'info').length + risks.filter(r => r.severity === 'low').length,
+    };
+  });
+
+  readonly filteredProjectUrgentNeeds = computed(() => {
+    const sev = this.risksSeverityFilter();
+    return this.projectUrgentNeeds().filter(i => sev.has(i.severity));
+  });
+
+  readonly filteredRisks = computed(() => {
+    const sev = this.risksSeverityFilter();
+    return this.risks().filter(r => sev.has(this.riskSevToFilterKey(r.severity)));
+  });
+
+  toggleRisksSeverity(key: string): void {
+    this.risksSeverityFilter.update(set => {
+      const next = new Set(set);
+      if (next.has(key)) {
+        if (next.size > 1) next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
   readonly team = computed(() => this.projectData().team);
   readonly activity = computed(() => this.projectData().activity);
   readonly latestDrawing = computed(() => this.projectData().latestDrawing);
@@ -4623,6 +4820,42 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.navigateToDetail('submittal', sub, sourceWidgetId);
   }
 
+  navigateToUrgentNeed(item: UrgentNeedItem): void {
+    if (item.financialsRoute && (item.category === 'budget' || item.category === 'change-order')) {
+      this.router.navigate([item.financialsRoute]);
+      return;
+    }
+    const qp = item.queryParams;
+    if (qp['view'] && qp['id']) {
+      const view = qp['view'];
+      const id = qp['id'];
+      if (view === 'rfi') {
+        const rfi = RFIS.find(r => r.id === id);
+        if (rfi) { this.navigateToDetail('rfi', rfi, 'risks'); return; }
+      } else if (view === 'submittal') {
+        const sub = SUBMITTALS.find(s => s.id === id);
+        if (sub) { this.navigateToDetail('submittal', sub, 'risks'); return; }
+      } else if (view === 'changeOrder') {
+        const co = CHANGE_ORDERS.find(c => c.id === id);
+        if (co) {
+          if (this.isCanvas()) {
+            this.openCanvasDetail('risks', { type: 'changeOrder', item: co } as DetailView);
+          } else {
+            this.navigateToChangeOrder(co);
+          }
+          return;
+        }
+      }
+    }
+    const page = qp['page'] || 'dashboard';
+    const validPages = this.sideNavItems.map(i => i.value);
+    if (page !== 'dashboard' && validPages.includes(page)) {
+      this.activeNavItem.set(page);
+      if (page === 'records' && qp['subpage']) this.activeRecordsPage.set(qp['subpage']);
+      else if (page === 'financials' && qp['subpage']) this.activeFinancialsPage.set(qp['subpage']);
+    }
+  }
+
   navigateToDailyReport(report: DailyReport): void {
     this.detailSourceLabel.set(this.currentPageLabel());
     this.detailView.set({ type: 'dailyReport', item: report });
@@ -4680,11 +4913,6 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   punchPriorityBadge(priority: string): ModusBadgeColor {
     const map: Record<string, ModusBadgeColor> = { high: 'danger', medium: 'warning', low: 'secondary' };
     return map[priority] ?? 'secondary';
-  }
-
-  weatherIcon(condition: string): string {
-    const map: Record<string, string> = { 'sunny': 'wb_sunny', 'partly-cloudy': 'cloud', 'cloudy': 'cloud', 'rain': 'water', 'thunderstorm': 'flash_on', 'snow': 'ac_unit' };
-    return map[condition] ?? 'cloud';
   }
 
   formatCurrency(amount: number): string {
@@ -4861,6 +5089,10 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
   });
 
   ngOnInit(): void {
+    const backInfo = this.navHistory.getBackInfo();
+    this.navBackRoute.set(backInfo.route);
+    this.navBackLabel.set(backInfo.label);
+
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
     const id = params.get('id');
@@ -5057,8 +5289,22 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
     this.router.navigate(['/']);
   }
 
-  navigateToProjects(): void {
-    this.router.navigate(['/projects']);
+  readonly navBackRoute = signal('/projects');
+  readonly navBackLabel = signal('Projects');
+
+  navigateBack(): void {
+    const route = this.navBackRoute();
+    if (route.includes('?')) {
+      const [path, query] = route.split('?');
+      const qp: Record<string, string> = {};
+      for (const pair of query.split('&')) {
+        const [k, v] = pair.split('=');
+        if (k) qp[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
+      }
+      this.router.navigate([path || '/'], { queryParams: qp });
+    } else {
+      this.router.navigate([route]);
+    }
   }
 
   toggleProjectSelector(): void {
@@ -5448,7 +5694,7 @@ export class ProjectDashboardComponent implements OnInit, AfterViewInit {
       subledgerTransactions: txns,
       changeOrders: CHANGE_ORDERS.filter(co => co.projectId === projId),
       dailyReports: DAILY_REPORTS.filter(dr => dr.projectId === projId),
-      weatherForecast: WEATHER_FORECAST,
+      weatherForecast: this.projectWeather()?.forecast ?? WEATHER_FORECAST,
       projectAttentionItems: PROJECT_ATTENTION_ITEMS.filter(a => a.projectId === projId),
       budgetHistory: BUDGET_HISTORY_BY_PROJECT[projId] ?? [],
       inspections: INSPECTIONS.filter(i => i.projectId === projId),

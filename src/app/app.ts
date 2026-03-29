@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ThemeService } from './shell/services/theme.service';
 import { WidgetFocusService } from './shell/services/widget-focus.service';
+import { NavigationHistoryService } from './shell/services/navigation-history.service';
 import { DevPanelService, DevPanelComponent } from './dev';
 import { ALL_WIDGETS } from './data/widget-registrations';
 
@@ -41,6 +42,7 @@ export class App implements OnInit {
   readonly devPanelService = inject(DevPanelService);
   private readonly themeService = inject(ThemeService);
   private readonly widgetFocusService = inject(WidgetFocusService);
+  private readonly _navHistory = inject(NavigationHistoryService);
 
   ngOnInit(): void {
     this.themeService.getThemeConfig();
