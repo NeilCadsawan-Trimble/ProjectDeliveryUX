@@ -182,7 +182,7 @@
 
     <ng-template #dashboardContent>
       @if (detailView()) {
-        @if (detailHasSubNav() && !isMobile()) {
+        @if (detailHasSubNav()) {
           <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
             @if (activeNavItem() === 'records') {
               <app-collapsible-subnav
@@ -193,6 +193,7 @@
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="recordsAlerts()"
                 [canvasMode]="isCanvas()"
+                [isMobile]="isMobile()"
                 (itemSelect)="onDetailSideSubnavSelect($event)"
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
               />
@@ -206,6 +207,7 @@
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="financialsAlerts()"
                 [canvasMode]="isCanvas()"
+                [isMobile]="isMobile()"
                 (itemSelect)="onDetailSideSubnavSelect($event)"
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
               />
@@ -435,6 +437,7 @@
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="recordsAlerts()"
                 [canvasMode]="true"
+                [isMobile]="isMobile()"
                 (itemSelect)="activeRecordsPage.set($event)"
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
               />
@@ -1266,7 +1269,6 @@
           </div>
         } @else {
         <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
-          @if (!isMobile()) {
             <app-collapsible-subnav
               icon="clipboard"
               title="Records"
@@ -1275,10 +1277,10 @@
               [collapsed]="sideSubNavCollapsed()"
               [alerts]="recordsAlerts()"
               [canvasMode]="isCanvas()"
+              [isMobile]="isMobile()"
               (itemSelect)="activeRecordsPage.set($event)"
               (collapsedChange)="sideSubNavCollapsed.set($event)"
             />
-          }
           <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
             <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
@@ -1287,6 +1289,15 @@
               <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
             </div>
             @if (activeRecordsPage() === 'rfis') {
+              <div class="flex items-center gap-4 mb-4 flex-wrap">
+                <div class="flex items-center gap-1.5 text-sm font-medium text-foreground">{{ rfiStatusCounts()['total'] }} Total</div>
+                @for (opt of STATUS_OPTIONS; track opt.value) {
+                  <div class="flex items-center gap-1.5 text-sm text-foreground-60">
+                    <div class="w-2 h-2 rounded-full" [class]="opt.dotClass"></div>
+                    <div>{{ rfiStatusCounts()[opt.value] }} {{ opt.label }}</div>
+                  </div>
+                }
+              </div>
               @if (subnavViewMode() === 'grid') {
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   @for (rfi of projectRfis(); track rfi.id) {
@@ -1351,6 +1362,15 @@
                 </div>
               }
             } @else if (activeRecordsPage() === 'submittals') {
+              <div class="flex items-center gap-4 mb-4 flex-wrap">
+                <div class="flex items-center gap-1.5 text-sm font-medium text-foreground">{{ submittalStatusCounts()['total'] }} Total</div>
+                @for (opt of STATUS_OPTIONS; track opt.value) {
+                  <div class="flex items-center gap-1.5 text-sm text-foreground-60">
+                    <div class="w-2 h-2 rounded-full" [class]="opt.dotClass"></div>
+                    <div>{{ submittalStatusCounts()[opt.value] }} {{ opt.label }}</div>
+                  </div>
+                }
+              </div>
               @if (subnavViewMode() === 'grid') {
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   @for (sub of projectSubmittals(); track sub.id) {
@@ -1474,6 +1494,7 @@
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="financialsAlerts()"
                 [canvasMode]="true"
+                [isMobile]="isMobile()"
                 (itemSelect)="selectFinancialsSubPage($event)"
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
               />
@@ -2392,7 +2413,6 @@
           </div>
         } @else {
         <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
-          @if (!isMobile()) {
             <app-collapsible-subnav
               icon="bar_graph"
               title="Financials"
@@ -2401,10 +2421,10 @@
               [collapsed]="sideSubNavCollapsed()"
               [alerts]="financialsAlerts()"
               [canvasMode]="isCanvas()"
+              [isMobile]="isMobile()"
               (itemSelect)="selectFinancialsSubPage($event)"
               (collapsedChange)="sideSubNavCollapsed.set($event)"
             />
-          }
           <div class="flex-1 flex flex-col min-w-0 md:pl-4" [class]="subledgerCategory() ? 'gap-3' : 'gap-6'">
             <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: activeFinancialsSubnavConfig() }" />
@@ -2420,6 +2440,7 @@
               <app-financials-subpages
                 [activePage]="activeFinancialsPage()"
                 [viewMode]="subnavViewMode()"
+                [isMobile]="isMobile()"
                 [changeOrders]="projectChangeOrders()"
                 [contracts]="projectContracts()"
                 [revenueData]="projectRevenueData()"
@@ -3114,7 +3135,7 @@
                 (keydown.enter)="navigateBack()"
               >
                 <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-                <div class="text-sm">Back</div>
+                <div class="text-sm">{{ navBackLabel() }}</div>
               </div>
               <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               <div class="relative min-w-0 flex-1">
@@ -3303,7 +3324,7 @@
             (keydown.enter)="navigateBack()"
           >
             <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-            <div class="text-sm hidden md:block">Back</div>
+            <div class="text-sm hidden md:block">{{ navBackLabel() }}</div>
           </div>
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
           <div class="relative min-w-0 flex-1">
@@ -3677,46 +3698,71 @@
 
     <ng-template #subledgerLedgerRaw>
       @if (subledgerCategory(); as slCat) {
-        <div class="bg-card border-default rounded-lg overflow-hidden">
-          <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
+        <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="isMobile() ? '75vh' : 'none'">
+          <div class="flex items-center gap-2 px-5 py-4 border-bottom-default flex-shrink-0">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
             <div class="text-base font-semibold text-foreground">Transaction Ledger</div>
             <div class="text-xs text-foreground-40 ml-auto">{{ subledgerTransactions().length }} entries</div>
           </div>
-          <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />
+          <div class="overflow-y-auto flex-1">
+            <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />
+          </div>
         </div>
       }
     </ng-template>
 
     <ng-template #subledgerLedgerTableRows>
-      <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-        <div role="columnheader">Date</div>
-        <div role="columnheader">Description</div>
-        <div role="columnheader">Vendor</div>
-        <div role="columnheader">Ref</div>
-        <div class="text-right" role="columnheader">Amount</div>
-        <div class="text-right" role="columnheader">Running</div>
-      </div>
-      <div role="table" aria-label="Subledger transactions">
-        @for (tx of subledgerTransactions(); track tx.id) {
-          <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
-            <div class="text-sm text-foreground-60" role="cell">{{ tx.date }}</div>
-            <div class="text-sm text-foreground" role="cell">{{ tx.description }}</div>
-            <div class="text-sm text-foreground-60" role="cell">{{ tx.vendor }}</div>
-            <div class="text-xs text-foreground-40 font-mono" role="cell">{{ tx.reference }}</div>
-            <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(tx.amount) }}</div>
-            <div class="text-sm text-foreground-60 text-right" role="cell">{{ formatJobCost(tx.runningTotal) }}</div>
+      @if (isMobile()) {
+        <div class="flex flex-col gap-2 p-3" role="table" aria-label="Subledger transactions">
+          @for (tx of subledgerTransactions(); track tx.id) {
+            <div class="bg-background border-default rounded-lg px-4 py-3 flex flex-col gap-1.5" role="row">
+              <div class="flex items-center justify-between">
+                <div class="text-xs text-foreground-60" role="cell">{{ tx.date }}</div>
+                <div class="text-xs text-foreground-40 font-mono" role="cell">{{ tx.reference }}</div>
+              </div>
+              <div class="text-sm text-foreground" role="cell">{{ tx.description }}</div>
+              <div class="text-xs text-foreground-60" role="cell">{{ tx.vendor }}</div>
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-semibold text-foreground" role="cell">{{ formatJobCost(tx.amount) }}</div>
+                <div class="text-xs text-foreground-60" role="cell">Running {{ formatJobCost(tx.runningTotal) }}</div>
+              </div>
+            </div>
+          }
+          <div class="bg-muted rounded-lg px-4 py-3 flex items-center justify-between" role="row">
+            <div class="text-sm font-bold text-foreground" role="cell">Total</div>
+            <div class="text-sm font-bold text-foreground" role="cell">{{ formatJobCost(subledgerTotal()) }}</div>
           </div>
-        }
-        <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 bg-muted items-center" role="row">
-          <div class="text-sm font-bold text-foreground" role="cell"></div>
-          <div class="text-sm font-bold text-foreground" role="cell">Total</div>
-          <div role="cell"></div>
-          <div role="cell"></div>
-          <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(subledgerTotal()) }}</div>
-          <div role="cell"></div>
         </div>
-      </div>
+      } @else {
+        <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+          <div role="columnheader">Date</div>
+          <div role="columnheader">Description</div>
+          <div role="columnheader">Vendor</div>
+          <div role="columnheader">Ref</div>
+          <div class="text-right" role="columnheader">Amount</div>
+          <div class="text-right" role="columnheader">Running</div>
+        </div>
+        <div role="table" aria-label="Subledger transactions">
+          @for (tx of subledgerTransactions(); track tx.id) {
+            <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
+              <div class="text-sm text-foreground-60" role="cell">{{ tx.date }}</div>
+              <div class="text-sm text-foreground" role="cell">{{ tx.description }}</div>
+              <div class="text-sm text-foreground-60" role="cell">{{ tx.vendor }}</div>
+              <div class="text-xs text-foreground-40 font-mono" role="cell">{{ tx.reference }}</div>
+              <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(tx.amount) }}</div>
+              <div class="text-sm text-foreground-60 text-right" role="cell">{{ formatJobCost(tx.runningTotal) }}</div>
+            </div>
+          }
+          <div class="grid grid-cols-[100px_1fr_1fr_100px_100px_100px] gap-3 px-5 py-3 bg-muted items-center" role="row">
+            <div class="text-sm font-bold text-foreground" role="cell"></div>
+            <div class="text-sm font-bold text-foreground" role="cell">Total</div>
+            <div role="cell"></div>
+            <div role="cell"></div>
+            <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(subledgerTotal()) }}</div>
+            <div role="cell"></div>
+          </div>
+        </div>
+      }
     </ng-template>
 
     <ng-template #budgetKpisRaw let-jcP="jcP">
@@ -3927,36 +3973,62 @@
           <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
           <div class="text-base font-semibold text-foreground">Cost Summary</div>
         </div>
-        <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-          <div role="columnheader">Category</div>
-          <div class="text-right" role="columnheader">Amount</div>
-          <div class="text-right" role="columnheader">% of Spend</div>
-          <div class="text-right" role="columnheader">% of Budget</div>
-        </div>
-        <div role="table" aria-label="Cost summary">
-          @for (cat of jcDetailCategories(); track cat.label) {
-            <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-              role="row" tabindex="0"
-              (click)="openSubledger(cat.label)"
-              (keydown.enter)="openSubledger(cat.label)"
-              (mousedown)="$event.stopPropagation()">
-              <div class="flex items-center gap-2" role="cell">
-                <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
-                <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
+        @if (isMobile()) {
+          <div class="flex flex-col gap-2 p-3" role="table" aria-label="Cost summary">
+            @for (cat of jcDetailCategories(); track cat.label) {
+              <div class="bg-background border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer active:bg-muted transition-colors"
+                role="row" tabindex="0"
+                (click)="openSubledger(cat.label)"
+                (keydown.enter)="openSubledger(cat.label)"
+                (mousedown)="$event.stopPropagation()">
+                <div class="flex items-center gap-2">
+                  <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                  <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
+                  <i class="modus-icons text-xs text-foreground-40 ml-auto" aria-hidden="true">chevron_right</i>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-semibold text-foreground">{{ formatJobCost(cat.amount) }}</div>
+                  <div class="text-xs text-foreground-60">{{ cat.pctOfSpend }}% of spend</div>
+                </div>
               </div>
-              <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</div>
-              <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</div>
-              <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</div>
+            }
+            <div class="bg-muted rounded-lg px-4 py-3 flex items-center justify-between" role="row">
+              <div class="text-sm font-bold text-foreground">Total</div>
+              <div class="text-sm font-bold text-foreground">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
             </div>
-          }
-          <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted items-center" role="row">
-            <div class="text-sm font-bold text-foreground" role="cell">Total</div>
-            <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
-            <div class="text-sm font-bold text-foreground text-right" role="cell">100%</div>
-            <div class="text-sm font-bold text-foreground text-right" role="cell">{{ jcP.budgetPct }}%</div>
           </div>
-        </div>
+        } @else {
+          <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+            <div role="columnheader">Category</div>
+            <div class="text-right" role="columnheader">Amount</div>
+            <div class="text-right" role="columnheader">% of Spend</div>
+            <div class="text-right" role="columnheader">% of Budget</div>
+          </div>
+          <div role="table" aria-label="Cost summary">
+            @for (cat of jcDetailCategories(); track cat.label) {
+              <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                role="row" tabindex="0"
+                (click)="openSubledger(cat.label)"
+                (keydown.enter)="openSubledger(cat.label)"
+                (mousedown)="$event.stopPropagation()">
+                <div class="flex items-center gap-2" role="cell">
+                  <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                  <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
+                  <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
+                </div>
+                <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</div>
+                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</div>
+                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</div>
+              </div>
+            }
+            <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted items-center" role="row">
+              <div class="text-sm font-bold text-foreground" role="cell">Total</div>
+              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
+              <div class="text-sm font-bold text-foreground text-right" role="cell">100%</div>
+              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ jcP.budgetPct }}%</div>
+            </div>
+          </div>
+        }
       </div>
     </ng-template>
 
@@ -4116,36 +4188,62 @@
         (headerMouseDown)="onBudgetTileMouseDown('tile-budget-costsummary', $event)"
         (resizeStart)="onBudgetTileResizeStart('tile-budget-costsummary', $event)">
         <div class="overflow-y-auto flex-1">
-          <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-            <div role="columnheader">Category</div>
-            <div class="text-right" role="columnheader">Amount</div>
-            <div class="text-right" role="columnheader">% of Spend</div>
-            <div class="text-right" role="columnheader">% of Budget</div>
-          </div>
-          <div role="table" aria-label="Cost summary">
-            @for (cat of jcDetailCategories(); track cat.label) {
-              <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
-                role="row" tabindex="0"
-                (click)="openSubledger(cat.label)"
-                (keydown.enter)="openSubledger(cat.label)"
-                (mousedown)="$event.stopPropagation()">
-                <div class="flex items-center gap-2" role="cell">
-                  <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                  <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
-                  <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
+          @if (isMobile()) {
+            <div class="flex flex-col gap-2 p-3" role="table" aria-label="Cost summary">
+              @for (cat of jcDetailCategories(); track cat.label) {
+                <div class="bg-background border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer active:bg-muted transition-colors"
+                  role="row" tabindex="0"
+                  (click)="openSubledger(cat.label)"
+                  (keydown.enter)="openSubledger(cat.label)"
+                  (mousedown)="$event.stopPropagation()">
+                  <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                    <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
+                    <i class="modus-icons text-xs text-foreground-40 ml-auto" aria-hidden="true">chevron_right</i>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm font-semibold text-foreground">{{ formatJobCost(cat.amount) }}</div>
+                    <div class="text-xs text-foreground-60">{{ cat.pctOfSpend }}% of spend</div>
+                  </div>
                 </div>
-                <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</div>
-                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</div>
-                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</div>
+              }
+              <div class="bg-muted rounded-lg px-4 py-3 flex items-center justify-between" role="row">
+                <div class="text-sm font-bold text-foreground">Total</div>
+                <div class="text-sm font-bold text-foreground">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
               </div>
-            }
-            <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted items-center" role="row">
-              <div class="text-sm font-bold text-foreground" role="cell">Total</div>
-              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
-              <div class="text-sm font-bold text-foreground text-right" role="cell">100%</div>
-              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ jcP.budgetPct }}%</div>
             </div>
-          </div>
+          } @else {
+            <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
+              <div role="columnheader">Category</div>
+              <div class="text-right" role="columnheader">Amount</div>
+              <div class="text-right" role="columnheader">% of Spend</div>
+              <div class="text-right" role="columnheader">% of Budget</div>
+            </div>
+            <div role="table" aria-label="Cost summary">
+              @for (cat of jcDetailCategories(); track cat.label) {
+                <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                  role="row" tabindex="0"
+                  (click)="openSubledger(cat.label)"
+                  (keydown.enter)="openSubledger(cat.label)"
+                  (mousedown)="$event.stopPropagation()">
+                  <div class="flex items-center gap-2" role="cell">
+                    <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                    <div class="text-sm font-medium text-primary">{{ cat.label }}</div>
+                    <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
+                  </div>
+                  <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</div>
+                  <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</div>
+                  <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</div>
+                </div>
+              }
+              <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted items-center" role="row">
+                <div class="text-sm font-bold text-foreground" role="cell">Total</div>
+                <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(jcBudgetInfo().spent) }}</div>
+                <div class="text-sm font-bold text-foreground text-right" role="cell">100%</div>
+                <div class="text-sm font-bold text-foreground text-right" role="cell">{{ jcP.budgetPct }}%</div>
+              </div>
+            </div>
+          }
         </div>
       </app-widget-frame>
     </ng-template>
@@ -4167,6 +4265,22 @@
                     <div>{{ co.requestDate }}</div>
                   </div>
                   <div class="text-xs text-foreground-60">{{ co.requestedBy }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else if (isMobile()) {
+          <div class="flex flex-col gap-2">
+            @for (co of activeCoTypeList(); track co.id) {
+              <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer active:bg-muted transition-colors" tabindex="0" (click)="navigateToChangeOrder(co)" (keydown.enter)="navigateToChangeOrder(co)">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-semibold text-primary">{{ co.id }}</div>
+                  <modus-badge [color]="coStatusBadge(co.status)">{{ capitalizeStatus(co.status) }}</modus-badge>
+                </div>
+                <div class="text-sm text-foreground truncate">{{ co.description }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground">{{ formatCoAmount(co.amount) }}</div>
+                  <div class="text-xs text-foreground-60">{{ co.requestDate }}</div>
                 </div>
               </div>
             }

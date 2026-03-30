@@ -111,7 +111,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   (keydown.enter)="navHistory.shellBackButton()?.action()"
                 >
                   <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-                  <div class="text-sm">Back</div>
+                  <div class="text-sm">{{ navHistory.shellBackButton()?.label || 'Back' }}</div>
                 </div>
                 <div class="w-px h-5 bg-foreground-20"></div>
               }
@@ -303,7 +303,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   (keydown.enter)="navHistory.shellBackButton()?.action()"
                 >
                   <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-                  <div class="text-sm hidden md:block">Back</div>
+                  <div class="text-sm hidden md:block">{{ navHistory.shellBackButton()?.label || 'Back' }}</div>
                 </div>
                 <div class="w-px h-5 bg-foreground-20"></div>
               }
@@ -440,7 +440,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   [attr.aria-label]="item.label"
                 >
                   <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
-                  @if (navExpanded()) {
+                  @if (navExpanded() && !isMobile()) {
                     <div class="custom-side-nav-label">{{ item.label }}</div>
                   }
                 </div>
@@ -457,7 +457,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   [attr.aria-expanded]="desktopResetMenuOpen()"
                 >
                   <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
-                  @if (navExpanded()) {
+                  @if (navExpanded() && !isMobile()) {
                     <div class="custom-side-nav-label">Layout</div>
                   }
                   <svg class="absolute bottom-1 right-1 w-1.5 h-1.5 text-foreground-40" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true">
@@ -747,7 +747,8 @@ export class DashboardShellComponent implements AfterViewInit {
   }
 
   onMainMenuToggle(_open: boolean): void {
-    this.navExpanded.set(!this.navExpanded());
+    // Intentionally empty — hamburger toggle is handled by the direct DOM
+    // listener in attachHamburgerListener() to avoid double-fire issues.
   }
 
   selectNavItem(value: string): void {

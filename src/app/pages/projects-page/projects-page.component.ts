@@ -36,8 +36,17 @@ import {
   buildUrgentNeeds,
   urgentNeedCategoryIcon,
   getProjectJobCosts,
+  getProjectWeather,
+  weatherIcon,
+  weatherIconColor,
 } from '../../data/dashboard-data';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
+
+const TILE_IDS: DashboardWidgetId[] = ['proj1', 'proj2', 'proj3', 'proj4', 'proj5', 'proj6', 'proj7', 'proj8'];
+const TILE_PROJECT_MAP: Record<string, number> = {
+  proj1: 0, proj2: 1, proj3: 2, proj4: 3,
+  proj5: 4, proj6: 5, proj7: 6, proj8: 7,
+};
 
 @Component({
   selector: 'app-projects-page',
@@ -52,11 +61,32 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
     <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
 
       @if (!isCanvasMode()) {
-      <!-- Page header -->
       <div #pageHeader class="flex items-start justify-between mb-6">
         <div>
           <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
-          <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+          <div class="flex items-center gap-3 mt-1.5">
+            <div class="text-sm text-foreground-60">{{ today }}</div>
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-20">
+                <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+                <div class="text-xs font-medium text-success">{{ onTrackCount() }} On Track</div>
+              </div>
+              <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-20">
+                <div class="w-1.5 h-1.5 rounded-full bg-warning"></div>
+                <div class="text-xs font-medium text-warning">{{ atRiskCount() }} At Risk</div>
+              </div>
+              <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive-20">
+                <div class="w-1.5 h-1.5 rounded-full bg-destructive"></div>
+                <div class="text-xs font-medium text-destructive">{{ overdueCount() }} Overdue</div>
+              </div>
+            </div>
+            @if (projectsInsight()) {
+              <div class="flex items-center gap-1.5">
+                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                <div class="text-xs text-foreground-60 truncate leading-none">{{ projectsInsight() }}</div>
+              </div>
+            }
+          </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 mt-1">
           <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
@@ -64,7 +94,6 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
       </div>
       }
 
-      <!-- Widget area -->
       <div
         [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : 'relative mb-6'"
         [style.height.px]="isMobile() ? mobileGridHeight() : null"
@@ -85,43 +114,8 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
           <div class="flex items-start justify-between">
             <div>
               <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
-              <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
-            </div>
-            <div class="flex items-center gap-2 flex-shrink-0 mt-1">
-              <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
-            </div>
-          </div>
-        </div>
-        }
-
-        @for (widgetId of projectWidgets; track widgetId) {
-
-        <div
-          [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden'"
-          [attr.data-widget-id]="widgetId"
-          [style.top.px]="widgetTops()[widgetId]"
-          [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
-          [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
-          [style.height.px]="widgetHeights()[widgetId]"
-          [style.z-index]="widgetZIndices()[widgetId] ?? 0"
-        >
-          <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
-            <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
-
-            @if (widgetId === 'projects') {
-            <!-- Projects Widget -->
-            <div class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId" #projectsContainer>
-              <div
-                class="flex items-center justify-between px-6 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-              >
-                <div class="flex items-center gap-2">
-                  <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                  <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">apps</i>
-                  <div class="text-lg font-semibold text-foreground" role="heading" aria-level="2">Projects</div>
-                  <div class="text-xs text-foreground-40">{{ totalProjects() }} projects</div>
-                </div>
+              <div class="flex items-center gap-3 mt-1.5">
+                <div class="text-sm text-foreground-60">{{ today }}</div>
                 <div class="flex items-center gap-2">
                   <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-20">
                     <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
@@ -136,141 +130,184 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                     <div class="text-xs font-medium text-destructive">{{ overdueCount() }} Overdue</div>
                   </div>
                 </div>
+                @if (projectsInsight()) {
+                  <div class="flex items-center gap-1.5">
+                    <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                    <div class="text-xs text-foreground-60 truncate leading-none">{{ projectsInsight() }}</div>
+                  </div>
+                }
               </div>
-              @if (projectsInsight()) {
-                <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                  <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                  <div class="text-xs text-foreground-60 truncate leading-none">{{ projectsInsight() }}</div>
-                </div>
-              }
-              <div class="p-4 overflow-y-auto flex-1 min-h-0">
-                <div class="grid gap-3" [class]="projectsGridCols()">
-                  @for (project of projects(); track project.id) {
-                    <div
-                      class="bg-background border-default rounded-lg overflow-hidden flex flex-col cursor-pointer hover:bg-muted transition-colors duration-150"
-                      (click)="navigateToProject(project)"
-                      (keydown.enter)="navigateToProject(project)"
-                      role="link"
-                      tabindex="0"
-                      [attr.aria-label]="'Open ' + project.name + ' dashboard'"
-                    >
-                      <div class="h-1 w-full flex-shrink-0"
-                        [class.bg-success]="project.status === 'On Track'"
-                        [class.bg-warning]="project.status === 'At Risk'"
-                        [class.bg-destructive]="project.status === 'Overdue'"
-                        [class.bg-muted]="project.status === 'Planning'"
-                      ></div>
-                      <div class="p-4 flex flex-col gap-3 flex-1">
-                        <div class="flex items-start justify-between gap-2">
-                          <div class="text-sm font-semibold text-foreground leading-tight">{{ project.name }}</div>
-                          <modus-badge [color]="statusBadgeColor(project.status)" variant="filled" size="sm">
-                            {{ project.status }}
-                          </modus-badge>
-                        </div>
-                        <div class="text-xs text-foreground-60">{{ project.client }}</div>
-                        <div class="flex items-center justify-between">
-                          <div class="flex items-center gap-1.5">
-                            <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
-                              {{ project.ownerInitials }}
-                            </div>
-                            <div class="text-xs text-foreground-60 truncate max-w-[80px]">{{ project.owner }}</div>
-                          </div>
-                          <div class="flex items-center gap-1 text-xs text-foreground-60">
-                            <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                            <div>{{ project.dueDate }}</div>
-                          </div>
-                        </div>
-                        <div class="flex flex-col gap-1">
-                          <div class="flex items-center justify-between">
-                            <div class="text-2xs text-foreground-40 uppercase tracking-wide">Schedule</div>
-                            <div class="text-2xs text-foreground-60 font-medium">{{ project.progress }}%</div>
-                          </div>
-                          <modus-progress [value]="project.progress" [max]="100" [className]="progressClass(project.status)" />
-                        </div>
-                        <div class="flex flex-col gap-1">
-                          <div class="flex items-center justify-between">
-                            <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget</div>
-                            <div class="text-2xs flex-shrink-0">
-                              <div [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</div>
-                            </div>
-                          </div>
-                          <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
-                          <div class="flex items-center justify-between">
-                            <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
-                            @if (getProjectAgent(project.id).budgetAlert) {
-                              <div
-                                class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary text-2xs font-medium cursor-pointer hover:bg-primary-40 transition-colors duration-150"
-                                (click)="navigateToJobCosts(project, $event)"
-                                role="link"
-                                [attr.aria-label]="'View ' + project.name + ' job costs'"
-                              >
-                                <i class="modus-icons text-2xs" aria-hidden="true">building_corporate</i>
-                                Job Costs
-                              </div>
-                            }
-                          </div>
-                        </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0 mt-1">
+              <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
+            </div>
+          </div>
+        </div>
+        }
 
-                        @if (getProjectAgent(project.id).criticalCount > 0 || getProjectAgent(project.id).warningCount > 0) {
-                          <div class="border-top-default pt-3 mt-1 flex flex-col gap-2">
-                            <div class="flex items-center justify-between">
-                              <div class="flex items-center gap-1.5">
-                                <i class="modus-icons text-sm text-warning" aria-hidden="true">warning</i>
-                                <div class="text-2xs font-semibold text-foreground-60 uppercase tracking-wide">Urgent Needs</div>
-                              </div>
-                              <div class="flex items-center gap-1.5">
-                                @if (getProjectAgent(project.id).criticalCount > 0) {
-                                  <div class="flex items-center px-1.5 py-0.5 rounded-full bg-destructive-20">
-                                    <div class="text-2xs font-medium text-destructive">{{ getProjectAgent(project.id).criticalCount }} critical</div>
-                                  </div>
-                                }
-                                @if (getProjectAgent(project.id).warningCount > 0) {
-                                  <div class="flex items-center px-1.5 py-0.5 rounded-full bg-warning-20">
-                                    <div class="text-2xs font-medium text-warning">{{ getProjectAgent(project.id).warningCount }} warning</div>
-                                  </div>
-                                }
-                              </div>
-                            </div>
-                            @if (getProjectAgent(project.id).topNeed; as topNeed) {
-                              <div class="flex items-start gap-2">
-                                <div class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
-                                  [class.bg-destructive]="topNeed.severity === 'critical'"
-                                  [class.bg-warning]="topNeed.severity === 'warning'"
-                                  [class.bg-primary]="topNeed.severity === 'info'"></div>
-                                <div class="flex-1 min-w-0">
-                                  <div class="text-2xs font-medium text-foreground truncate">{{ topNeed.title }}</div>
-                                  <div class="text-2xs text-foreground-40 truncate">{{ topNeed.subtitle }}</div>
-                                </div>
-                                <i class="modus-icons text-2xs text-foreground-40 flex-shrink-0 mt-0.5" aria-hidden="true">{{ urgentNeedCategoryIcon(topNeed.category) }}</i>
-                              </div>
-                            }
-                          </div>
-                        } @else {
-                          <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
-                            <i class="modus-icons text-sm text-primary" aria-hidden="true">file_new</i>
-                            <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project); $event.stopPropagation()">
-                              {{ project.latestDrawingName }}
-                            </div>
-                            <div class="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</div>
-                          </div>
-                        }
+        @for (widgetId of projectWidgets; track widgetId) {
+          @if (projectForWidget(widgetId); as project) {
+
+        <div
+          [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden'"
+          [attr.data-widget-id]="widgetId"
+          [style.top.px]="widgetTops()[widgetId]"
+          [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
+          [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
+          [style.height.px]="widgetHeights()[widgetId]"
+          [style.z-index]="widgetZIndices()[widgetId] ?? 0"
+        >
+          <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
+            <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
+
+            <div
+              class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full"
+              [class.border-default]="selectedWidgetId() !== widgetId"
+              [class.border-primary]="selectedWidgetId() === widgetId"
+            >
+              <div
+                class="flex items-center justify-between px-3 py-2 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+              >
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <i class="modus-icons text-sm text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                  <div class="text-xs font-semibold text-foreground truncate">{{ project.name }}</div>
+                </div>
+                <modus-badge [color]="statusBadgeColor(project.status)" variant="filled" size="sm">
+                  {{ project.status }}
+                </modus-badge>
+              </div>
+
+              <div
+                class="flex-1 min-h-0 overflow-y-auto cursor-pointer hover:bg-muted transition-colors duration-150"
+                (click)="navigateToProject(project)"
+                (keydown.enter)="navigateToProject(project)"
+                role="link"
+                tabindex="0"
+                [attr.aria-label]="'Open ' + project.name + ' dashboard'"
+              >
+                <div class="h-1 w-full flex-shrink-0"
+                  [class.bg-success]="project.status === 'On Track'"
+                  [class.bg-warning]="project.status === 'At Risk'"
+                  [class.bg-destructive]="project.status === 'Overdue'"
+                  [class.bg-muted]="project.status === 'Planning'"
+                ></div>
+                <div class="p-4 flex flex-col gap-3">
+                  <div class="text-xs text-foreground-60">{{ project.client }}</div>
+                  @if (getWeather(project.id); as pw) {
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-1.5">
+                        <i class="modus-icons text-sm" [class]="weatherIconColor(pw.current.condition)" aria-hidden="true">{{ weatherIcon(pw.current.condition) }}</i>
+                        <div class="text-xs font-medium text-foreground">{{ pw.current.tempF }}&deg;F</div>
+                        <div class="text-2xs text-foreground-40">{{ project.city }}, {{ project.state }}</div>
                       </div>
+                      @if (pw.forecast[0]?.workImpact === 'major') {
+                        <div class="text-2xs font-medium px-1.5 py-0.5 rounded bg-destructive-20 text-destructive">Stop Work</div>
+                      } @else if (pw.forecast[0]?.workImpact === 'minor') {
+                        <div class="text-2xs font-medium px-1.5 py-0.5 rounded bg-warning-20 text-warning">Caution</div>
+                      }
+                    </div>
+                  }
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                      <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
+                        {{ project.ownerInitials }}
+                      </div>
+                      <div class="text-xs text-foreground-60 truncate max-w-[80px]">{{ project.owner }}</div>
+                    </div>
+                    <div class="flex items-center gap-1 text-xs text-foreground-60">
+                      <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                      <div>{{ project.dueDate }}</div>
+                    </div>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center justify-between">
+                      <div class="text-2xs text-foreground-40 uppercase tracking-wide">Schedule</div>
+                      <div class="text-2xs text-foreground-60 font-medium">{{ project.progress }}%</div>
+                    </div>
+                    <modus-progress [value]="project.progress" [max]="100" [className]="progressClass(project.status)" />
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center justify-between">
+                      <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget</div>
+                      <div class="text-2xs flex-shrink-0">
+                        <div [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</div>
+                      </div>
+                    </div>
+                    <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
+                    <div class="flex items-center justify-between">
+                      <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
+                      @if (getProjectAgent(project.id).budgetAlert) {
+                        <div
+                          class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary text-2xs font-medium cursor-pointer hover:bg-primary-40 transition-colors duration-150"
+                          (click)="navigateToJobCosts(project, $event)"
+                          role="link"
+                          [attr.aria-label]="'View ' + project.name + ' job costs'"
+                        >
+                          <i class="modus-icons text-2xs" aria-hidden="true">building_corporate</i>
+                          Job Costs
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  @if (getProjectAgent(project.id).criticalCount > 0 || getProjectAgent(project.id).warningCount > 0) {
+                    <div class="border-top-default pt-3 mt-1 flex flex-col gap-2">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                          <i class="modus-icons text-sm text-warning" aria-hidden="true">warning</i>
+                          <div class="text-2xs font-semibold text-foreground-60 uppercase tracking-wide">Urgent Needs</div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          @if (getProjectAgent(project.id).criticalCount > 0) {
+                            <div class="flex items-center px-1.5 py-0.5 rounded-full bg-destructive-20">
+                              <div class="text-2xs font-medium text-destructive">{{ getProjectAgent(project.id).criticalCount }} critical</div>
+                            </div>
+                          }
+                          @if (getProjectAgent(project.id).warningCount > 0) {
+                            <div class="flex items-center px-1.5 py-0.5 rounded-full bg-warning-20">
+                              <div class="text-2xs font-medium text-warning">{{ getProjectAgent(project.id).warningCount }} warning</div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                      @if (getProjectAgent(project.id).topNeed; as topNeed) {
+                        <div class="flex items-start gap-2">
+                          <div class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
+                            [class.bg-destructive]="topNeed.severity === 'critical'"
+                            [class.bg-warning]="topNeed.severity === 'warning'"
+                            [class.bg-primary]="topNeed.severity === 'info'"></div>
+                          <div class="flex-1 min-w-0">
+                            <div class="text-2xs font-medium text-foreground truncate">{{ topNeed.title }}</div>
+                            <div class="text-2xs text-foreground-40 truncate">{{ topNeed.subtitle }}</div>
+                          </div>
+                          <i class="modus-icons text-2xs text-foreground-40 flex-shrink-0 mt-0.5" aria-hidden="true">{{ urgentNeedCategoryIcon(topNeed.category) }}</i>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
+                      <i class="modus-icons text-sm text-primary" aria-hidden="true">file_new</i>
+                      <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project); $event.stopPropagation()">
+                        {{ project.latestDrawingName }}
+                      </div>
+                      <div class="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</div>
                     </div>
                   }
                 </div>
               </div>
               <widget-resize-handle
                 [isMobile]="isMobile()"
-                (resizeStart)="startWidgetResize('projects', 'both', $event)"
-                (resizeTouchStart)="startWidgetResizeTouch('projects', 'both', $event)"
+                (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
               />
             </div>
-
-            }
 
           </div>
         </div>
 
+          }
         }
 
       </div>
@@ -285,26 +322,65 @@ export class ProjectsPageComponent implements AfterViewInit {
   private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
-  private static readonly HEADER_HEIGHT = 64;
+  private static readonly HEADER_HEIGHT = 80;
   private static readonly HEADER_OFFSET = ProjectsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly TILE_HEIGHT = 416;
+  private static readonly ROW_2_TOP = ProjectsPageComponent.TILE_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   private readonly engine = new DashboardLayoutEngine({
-    widgets: ['projsHeader', 'projects'],
-    layoutStorageKey: 'dashboard-projects:v4',
-    canvasStorageKey: 'canvas-layout:dashboard-projects:v6',
-    defaultColStarts: { projsHeader: 1, projects: 1 },
-    defaultColSpans: { projsHeader: 16, projects: 16 },
-    defaultTops: { projsHeader: 0, projects: 0 },
-    defaultHeights: { projsHeader: 0, projects: 768 },
-    defaultLefts: { projsHeader: 0, projects: 0 },
-    defaultPixelWidths: { projsHeader: 1280, projects: 1280 },
-    canvasDefaultLefts: { projsHeader: 0, projects: 0 },
-    canvasDefaultPixelWidths: { projsHeader: 1280, projects: 1280 },
+    widgets: ['projsHeader', ...TILE_IDS],
+    layoutStorageKey: 'dashboard-projects:v6',
+    canvasStorageKey: 'canvas-layout:dashboard-projects:v8',
+    defaultColStarts: {
+      projsHeader: 1,
+      proj1: 1, proj2: 5, proj3: 9, proj4: 13,
+      proj5: 1, proj6: 5, proj7: 9, proj8: 13,
+    },
+    defaultColSpans: {
+      projsHeader: 16,
+      proj1: 4, proj2: 4, proj3: 4, proj4: 4,
+      proj5: 4, proj6: 4, proj7: 4, proj8: 4,
+    },
+    defaultTops: {
+      projsHeader: 0,
+      proj1: 0, proj2: 0, proj3: 0, proj4: 0,
+      proj5: ProjectsPageComponent.ROW_2_TOP, proj6: ProjectsPageComponent.ROW_2_TOP, proj7: ProjectsPageComponent.ROW_2_TOP, proj8: ProjectsPageComponent.ROW_2_TOP,
+    },
+    defaultHeights: {
+      projsHeader: 0,
+      proj1: ProjectsPageComponent.TILE_HEIGHT, proj2: ProjectsPageComponent.TILE_HEIGHT, proj3: ProjectsPageComponent.TILE_HEIGHT, proj4: ProjectsPageComponent.TILE_HEIGHT,
+      proj5: ProjectsPageComponent.TILE_HEIGHT, proj6: ProjectsPageComponent.TILE_HEIGHT, proj7: ProjectsPageComponent.TILE_HEIGHT, proj8: ProjectsPageComponent.TILE_HEIGHT,
+    },
+    defaultLefts: {
+      projsHeader: 0,
+      proj1: 0, proj2: 324, proj3: 648, proj4: 972,
+      proj5: 0, proj6: 324, proj7: 648, proj8: 972,
+    },
+    defaultPixelWidths: {
+      projsHeader: 1280,
+      proj1: 308, proj2: 308, proj3: 308, proj4: 308,
+      proj5: 308, proj6: 308, proj7: 308, proj8: 308,
+    },
+    canvasDefaultLefts: {
+      projsHeader: 0,
+      proj1: 0, proj2: 324, proj3: 648, proj4: 972,
+      proj5: 0, proj6: 324, proj7: 648, proj8: 972,
+    },
+    canvasDefaultPixelWidths: {
+      projsHeader: 1280,
+      proj1: 308, proj2: 308, proj3: 308, proj4: 308,
+      proj5: 308, proj6: 308, proj7: 308, proj8: 308,
+    },
     canvasDefaultTops: {
       projsHeader: 0,
-      projects: ProjectsPageComponent.HEADER_OFFSET,
+      proj1: ProjectsPageComponent.HEADER_OFFSET, proj2: ProjectsPageComponent.HEADER_OFFSET, proj3: ProjectsPageComponent.HEADER_OFFSET, proj4: ProjectsPageComponent.HEADER_OFFSET,
+      proj5: ProjectsPageComponent.HEADER_OFFSET + ProjectsPageComponent.ROW_2_TOP, proj6: ProjectsPageComponent.HEADER_OFFSET + ProjectsPageComponent.ROW_2_TOP, proj7: ProjectsPageComponent.HEADER_OFFSET + ProjectsPageComponent.ROW_2_TOP, proj8: ProjectsPageComponent.HEADER_OFFSET + ProjectsPageComponent.ROW_2_TOP,
     },
-    canvasDefaultHeights: { projsHeader: ProjectsPageComponent.HEADER_HEIGHT, projects: 768 },
+    canvasDefaultHeights: {
+      projsHeader: ProjectsPageComponent.HEADER_HEIGHT,
+      proj1: ProjectsPageComponent.TILE_HEIGHT, proj2: ProjectsPageComponent.TILE_HEIGHT, proj3: ProjectsPageComponent.TILE_HEIGHT, proj4: ProjectsPageComponent.TILE_HEIGHT,
+      proj5: ProjectsPageComponent.TILE_HEIGHT, proj6: ProjectsPageComponent.TILE_HEIGHT, proj7: ProjectsPageComponent.TILE_HEIGHT, proj8: ProjectsPageComponent.TILE_HEIGHT,
+    },
     minColSpan: 4,
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: true,
@@ -361,18 +437,13 @@ export class ProjectsPageComponent implements AfterViewInit {
   readonly atRiskCount = computed(() => this.projects().filter((p) => p.status === 'At Risk').length);
   readonly overdueCount = computed(() => this.projects().filter((p) => p.status === 'Overdue').length);
 
-  private readonly projectsContainerRef = viewChild<ElementRef>('projectsContainer');
-  readonly projectsContainerWidth = signal<number>(0);
-  readonly projectsGridCols = computed(() => {
-    const w = this.projectsContainerWidth();
-    if (w > 0 && w <= 400) return 'grid-cols-1';
-    if (w > 0 && w <= 640) return 'grid-cols-2';
-    if (w > 0 && w <= 960) return 'grid-cols-3';
-    return 'grid-cols-4';
-  });
-  private readonly _projectsResizeEffect = this.trackContainerWidth(this.projectsContainerRef, this.projectsContainerWidth);
-
   readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
+  readonly weatherIcon = weatherIcon;
+  readonly weatherIconColor = weatherIconColor;
+
+  getWeather(projectId: number) {
+    return getProjectWeather(projectId);
+  }
 
   private readonly allUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals()));
   private readonly allJobCosts = getProjectJobCosts();
@@ -396,32 +467,14 @@ export class ProjectsPageComponent implements AfterViewInit {
     return this.projectAgentData().get(projectId) ?? { urgentNeeds: [], criticalCount: 0, warningCount: 0, topNeed: null, budgetAlert: false, jobCostSpend: null };
   }
 
+  projectForWidget(widgetId: string): Project | undefined {
+    const idx = TILE_PROJECT_MAP[widgetId];
+    return idx !== undefined ? this.projects()[idx] : undefined;
+  }
+
   navigateToJobCosts(project: Project, event: MouseEvent): void {
     event.stopPropagation();
     this.router.navigate(['/financials/job-costs', project.slug]);
-  }
-
-  private trackContainerWidth(
-    ref: ReturnType<typeof viewChild<ElementRef>>,
-    widthSignal: ReturnType<typeof signal<number>>,
-  ) {
-    let observer: ResizeObserver | null = null;
-    return effect(() => {
-      const el = ref()?.nativeElement as HTMLElement | undefined;
-      observer?.disconnect();
-      observer = null;
-      if (!el) {
-        widthSignal.set(0);
-        return;
-      }
-      widthSignal.set(el.offsetWidth);
-      const ro = new ResizeObserver((entries) => {
-        const w = entries[0]?.contentRect.width ?? el.offsetWidth;
-        widthSignal.set(w);
-      });
-      ro.observe(el);
-      observer = ro;
-    });
   }
 
   navigateToProject(project: Project): void {
@@ -443,9 +496,7 @@ export class ProjectsPageComponent implements AfterViewInit {
   readonly projectsInsight = computed<string | null>(() => this.getProjectsWidgetInsight('projects'));
 
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
-  readonly projectWidgets: DashboardWidgetId[] = [
-    'projects',
-  ];
+  readonly projectWidgets: DashboardWidgetId[] = [...TILE_IDS];
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly gridContainerRef = viewChild<ElementRef>('widgetGrid');

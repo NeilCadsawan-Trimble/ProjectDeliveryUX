@@ -101,7 +101,7 @@ These areas have broken multiple times. Extra care required:
 
 | Area | Risk | Mitigation |
 |------|------|------------|
-| Hamburger/sidenav | DOM listener can be overwritten by Angular lifecycle | Use native DOM listener with capture phase; test in static specs |
+| Hamburger/sidenav | DOM listener double-fires with Angular `(mainMenuOpenChange)` binding, toggling twice (net no change) | `onMainMenuToggle` must be a no-op; all toggle logic in `attachHamburgerListener()` only. See skill section 16 |
 | Canvas navbar overflow | Setting `overflow: hidden` clips dropdowns | Static test asserts `overflow: visible`; border-radius on inner element |
 | Push-squeeze ordering | Wrong cascade order causes incorrect widget relocation | Unit tests cover right-edge and left-edge squeeze ordering |
 | Collision after resize | Active vs relocated widget priority | `_pushSqueezeActive` set tracks active widgets; unit tests cover |
@@ -146,3 +146,5 @@ These areas have broken multiple times. Extra care required:
 | 5 (Mar 25) | `8807b645-9b9a-4f2d-b223-80e249dd101f` | Canvas compact mode revert on resize |
 | 6 (Mar 26) | `b3ea14f9-5bd7-453f-8329-20bad1e7cc3a` | Short-term memory, detail view navigation, URL state |
 | 7 (Mar 26-29) | `6387a8f3-f2de-4dae-933b-eeec94687608` | Canvas detail expansion, BFS push, AI agents, agentic widgets, urgent needs, financial routing, weather widgets, dynamic back button, skills, refactoring |
+| 8 (Mar 29) | `b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8` | Collapsible subnav, shared utilities refactoring, contracts integration, canvas parity tests, financials expansion, icon compliance, collision fix for same-size widgets |
+| 9 (Mar 30) | *(current session)* | Canvas collision frozen-direction pushback, construction domain data, risks widget layout promotion |

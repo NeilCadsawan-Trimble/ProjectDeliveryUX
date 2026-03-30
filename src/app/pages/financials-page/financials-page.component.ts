@@ -339,6 +339,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         [collapsed]="finSubnavCollapsed()"
         [alerts]="finSubnavAlerts()"
         [canvasMode]="isCanvasMode()"
+        [isMobile]="isMobile()"
         (itemSelect)="selectSubPage($event)"
         (collapsedChange)="finSubnavCollapsed.set($event)"
       />
@@ -482,37 +483,81 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
 
               @if (widgetId === 'finNavLinks') {
-                <!-- Financials Navigation Links Widget -->
+                <!-- Financials Navigation Links Widget (collapsible) -->
                 <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div class="px-4 py-3 border-bottom-default flex-shrink-0">
-                    <div class="text-sm font-semibold text-foreground">Financials</div>
-                  </div>
-                  <div class="flex-1 overflow-y-auto py-1">
-                    @for (item of finNavLinkItems; track item.value) {
-                      <div
-                        class="flex items-center justify-between px-4 py-2.5 cursor-pointer transition-colors duration-150 hover:bg-muted"
-                        tabindex="0"
-                        (click)="selectSubPage(item.value)"
-                        (keydown.enter)="selectSubPage(item.value)"
-                      >
-                        <div class="flex items-center gap-3 min-w-0">
-                          <i class="modus-icons text-base text-foreground-60 flex-shrink-0" aria-hidden="true">{{ item.icon }}</i>
-                          <div class="text-sm text-foreground truncate">{{ item.label }}</div>
-                        </div>
-                        @if (finSubnavAlerts()[item.value]; as alert) {
-                          <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
-                            [class.bg-destructive]="alert.level === 'critical'"
-                            [class.text-destructive-foreground]="alert.level === 'critical'"
-                            [class.bg-warning]="alert.level === 'warning'"
-                            [class.text-warning-foreground]="alert.level === 'warning'"
-                            [class.bg-primary]="alert.level === 'info'"
-                            [class.text-primary-foreground]="alert.level === 'info'"
-                            [attr.title]="alert.count + ' ' + alert.label">
-                            {{ alert.count }}
-                          </div>
-                        }
+                  <div class="flex items-center py-3 pl-4 pr-2 justify-between flex-shrink-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+                    role="button" tabindex="0"
+                    [attr.aria-label]="finNavLinksCollapsed() ? 'Expand navigation' : 'Collapse navigation'"
+                    (click)="finNavLinksCollapsed.set(!finNavLinksCollapsed())"
+                    (keydown.enter)="finNavLinksCollapsed.set(!finNavLinksCollapsed())">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">payment_instant</i>
+                      <div class="text-sm font-semibold truncate" [class]="finNavLinksCollapsed() ? 'text-foreground' : 'text-primary'">
+                        {{ finNavLinksCollapsed() ? activeNavLinkLabel() : 'Financials' }}
                       </div>
-                    }
+                      @if (navLinkTotalAlerts() > 0) {
+                        <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
+                          [class.bg-destructive]="navLinkHasCriticalAlerts()"
+                          [class.text-destructive-foreground]="navLinkHasCriticalAlerts()"
+                          [class.bg-warning]="!navLinkHasCriticalAlerts()"
+                          [class.text-warning-foreground]="!navLinkHasCriticalAlerts()">
+                          {{ navLinkTotalAlerts() }}
+                        </div>
+                      }
+                    </div>
+                    <div class="flex items-center justify-center w-6 h-6 rounded flex-shrink-0">
+                      <i class="modus-icons text-sm text-foreground-60 transition-transform duration-200" aria-hidden="true"
+                        [style.transform]="finNavLinksCollapsed() ? 'rotate(0deg)' : 'rotate(-90deg)'"
+                      >chevron_left</i>
+                    </div>
+                  </div>
+
+                  <div class="overflow-hidden transition-all duration-200"
+                    [style.max-height.px]="finNavLinksCollapsed() ? 0 : 600"
+                    [style.opacity]="finNavLinksCollapsed() ? 0 : 1">
+                    <div class="overflow-y-auto min-h-0 py-1">
+                      @for (item of finNavLinkItems; track item.value) {
+                        <div
+                          class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150 whitespace-nowrap"
+                          [class.bg-primary]="activeSubPage() === item.value"
+                          [class.text-primary-foreground]="activeSubPage() === item.value"
+                          [class.font-medium]="activeSubPage() === item.value"
+                          [class.rounded-md]="activeSubPage() === item.value"
+                          [class.mx-2]="activeSubPage() === item.value"
+                          [class.px-2]="activeSubPage() === item.value"
+                          [class.px-4]="activeSubPage() !== item.value"
+                          [class.text-foreground]="activeSubPage() !== item.value"
+                          [class.hover:bg-muted]="activeSubPage() !== item.value"
+                          tabindex="0"
+                          (click)="selectSubPageFromNavLinks(item.value)"
+                          (keydown.enter)="selectSubPageFromNavLinks(item.value)"
+                        >
+                          <div class="flex items-center gap-2 min-w-0">
+                            @if (item.icon) {
+                              <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true"
+                                [class.text-primary-foreground]="activeSubPage() === item.value"
+                                [class.text-foreground-60]="activeSubPage() !== item.value"
+                              >{{ item.icon }}</i>
+                            }
+                            <div class="truncate">{{ item.label }}</div>
+                          </div>
+                          @if (finSubnavAlerts()[item.value]; as alert) {
+                            <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1 mr-1"
+                              [class.bg-destructive]="alert.level === 'critical'"
+                              [class.text-destructive-foreground]="alert.level === 'critical'"
+                              [class.bg-warning]="alert.level === 'warning'"
+                              [class.text-warning-foreground]="alert.level === 'warning'"
+                              [class.bg-primary]="alert.level === 'info' && activeSubPage() !== item.value"
+                              [class.text-primary-foreground]="alert.level === 'info' && activeSubPage() !== item.value"
+                              [class.bg-primary-foreground]="alert.level === 'info' && activeSubPage() === item.value"
+                              [class.text-primary]="alert.level === 'info' && activeSubPage() === item.value"
+                              [attr.title]="alert.count + ' ' + alert.label">
+                              {{ alert.count }}
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
                   </div>
                 </div>
               } @else if (widgetId === 'finRevenueChart') {
@@ -1736,6 +1781,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   ];
   readonly activeSubPage = signal<string>('overview');
   readonly finSubnavCollapsed = signal(false);
+  readonly finNavLinksCollapsed = signal(false);
   readonly finSubpageSearch = signal('');
 
   // Financial data references
@@ -1859,6 +1905,25 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   readonly finNavLinkItems = this.finSubNavItems.filter(i => i.value !== 'overview');
 
+  readonly activeNavLinkLabel = computed(() => {
+    const active = this.activeSubPage();
+    return this.finNavLinkItems.find(i => i.value === active)?.label ?? 'Financials';
+  });
+
+  readonly navLinkTotalAlerts = computed(() => {
+    const a = this.finSubnavAlerts();
+    let total = 0;
+    for (const key of Object.keys(a)) {
+      if (a[key]) total += a[key]!.count;
+    }
+    return total;
+  });
+
+  readonly navLinkHasCriticalAlerts = computed(() => {
+    const a = this.finSubnavAlerts();
+    return Object.values(a).some(v => v?.level === 'critical');
+  });
+
   readonly estimates = signal<Estimate[]>(ESTIMATES);
   readonly estimateBadgeColor = estimateBadgeColor;
   readonly dueDateClass = dueDateClass;
@@ -1924,6 +1989,10 @@ export class FinancialsPageComponent extends DashboardPageBase {
       url.searchParams.set('subpage', value);
     }
     window.history.replaceState({}, '', url.toString());
+  }
+
+  selectSubPageFromNavLinks(value: string): void {
+    this.selectSubPage(value);
   }
 
   private readonly _restoreSubPage = effect(() => {
@@ -2334,7 +2403,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   private activateJobCostDetail(p: ProjectJobCost): void {
     this.jobCostDetailProject.set(p);
-    this.navHistory.shellBackButton.set({ action: () => this.closeJobCostDetail() });
+    this.navHistory.shellBackButton.set({ label: 'Financials', action: () => this.closeJobCostDetail() });
     this.setTitleOverrideForProject(p);
   }
 

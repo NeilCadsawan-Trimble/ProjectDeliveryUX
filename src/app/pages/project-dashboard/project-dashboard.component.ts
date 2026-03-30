@@ -1051,6 +1051,28 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.projectSubmittals().filter(s => s.status === 'overdue').length
   );
 
+  readonly rfiStatusCounts = computed(() => {
+    const list = this.projectRfis();
+    return {
+      total: list.length,
+      open: list.filter(r => r.status === 'open').length,
+      overdue: list.filter(r => r.status === 'overdue').length,
+      upcoming: list.filter(r => r.status === 'upcoming').length,
+      closed: list.filter(r => r.status === 'closed').length,
+    } as Record<string, number>;
+  });
+
+  readonly submittalStatusCounts = computed(() => {
+    const list = this.projectSubmittals();
+    return {
+      total: list.length,
+      open: list.filter(s => s.status === 'open').length,
+      overdue: list.filter(s => s.status === 'overdue').length,
+      upcoming: list.filter(s => s.status === 'upcoming').length,
+      closed: list.filter(s => s.status === 'closed').length,
+    } as Record<string, number>;
+  });
+
   readonly projectDailyReports = computed(() =>
     DAILY_REPORTS.filter(r => r.projectId === this.projectId())
   );

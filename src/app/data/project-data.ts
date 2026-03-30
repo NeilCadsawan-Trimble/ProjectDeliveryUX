@@ -118,9 +118,9 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 6, title: 'Review MEP coordination drawings for conflicts', assigneeInitials: 'TE', assignee: 'Tom Evans', priority: 'low', dueDate: 'Mar 14', status: 'To Do' },
     ],
     risks: [
-      { id: 1, title: 'Database migration data loss', severity: 'high', impact: 'Potential loss of transactional data during cutover', mitigation: 'Dual-write pattern with automated reconciliation checks' },
-      { id: 2, title: 'Extended downtime during cutover', severity: 'medium', impact: 'Customer-facing services unavailable beyond maintenance window', mitigation: 'Blue-green deployment with automated rollback triggers' },
-      { id: 3, title: 'Third-party API compatibility', severity: 'low', impact: 'Some integrations may need endpoint updates', mitigation: 'API gateway abstraction layer already in place' },
+      { id: 1, title: 'MEP rough-in behind schedule', severity: 'high', impact: 'MEP rough-in at only 35% with 2 days to project deadline — risk of cascading delays to interior finishes', mitigation: 'Authorized overtime shifts for MEP crew; parallel work zones on floors 3 and 4' },
+      { id: 2, title: 'Curtain wall installation weather dependency', severity: 'medium', impact: 'High winds forecast may halt crane operations for curtain wall on floors 3-5', mitigation: 'Pre-staged panels at floor level; backup installation sequence starting from interior glazing' },
+      { id: 3, title: 'HVAC and electrical conduit routing conflicts', severity: 'medium', impact: 'Duct routing clashes with electrical conduit in ceiling plenum on Level 4', mitigation: 'BIM clash detection review scheduled; MEP coordinator resolving spatial conflicts' },
     ],
     team: [
       { id: 1, initials: 'SC', name: 'Sarah Chen', role: 'Project Manager', tasksCompleted: 14, tasksTotal: 18, availability: 100 },
@@ -177,9 +177,9 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 6, title: 'Balcony railing mock-up approval from architect', assigneeInitials: 'NP', assignee: 'Nick Park', priority: 'low', dueDate: 'Mar 22', status: 'To Do' },
     ],
     risks: [
-      { id: 1, title: 'Testing resource shortfall', severity: 'high', impact: 'QA team stretched thin across projects, may delay beta', mitigation: 'Contract QA resource engaged for March sprint' },
-      { id: 2, title: 'iOS 18 API deprecation', severity: 'medium', impact: 'Three deprecated APIs used in current navigation stack', mitigation: 'Migration to new APIs prioritized in current sprint' },
-      { id: 3, title: 'Design-to-code handoff gaps', severity: 'low', impact: 'Minor inconsistencies between Figma and implementation', mitigation: 'Weekly design review sessions established' },
+      { id: 1, title: 'Budget nearly exhausted at 82%', severity: 'high', impact: 'Only $54K remaining with concrete superstructure at 72% and exterior cladding barely started at 20%', mitigation: 'Value engineering review on cladding materials; contingency fund request submitted to client' },
+      { id: 2, title: 'Waterproofing deficiency at parking level', severity: 'high', impact: 'Active water infiltration at parking garage membrane — if unresolved, will damage finished units above', mitigation: 'Emergency repair crew mobilized; warranty claim filed with membrane subcontractor' },
+      { id: 3, title: 'Concrete pour sequencing delay', severity: 'medium', impact: 'Level 5 east wing deck pour behind schedule — blocks window frame installation for units 301-320', mitigation: 'Weekend pour scheduled with batch plant; window crew redirected to completed floors' },
     ],
     team: [
       { id: 1, initials: 'JC', name: 'James Carter', role: 'General Superintendent', tasksCompleted: 9, tasksTotal: 14, availability: 80 },
@@ -234,9 +234,10 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 6, title: 'Coordinate track outage windows with transit operations', assigneeInitials: 'PN', assignee: 'Priya Nair', priority: 'medium', dueDate: 'Mar 10', status: 'To Do' },
     ],
     risks: [
-      { id: 1, title: 'Budget overrun imminent', severity: 'high', impact: 'Only $45K remaining — insufficient for go-live support', mitigation: 'Change request submitted for $120K budget extension' },
-      { id: 2, title: 'UAT defect backlog growing', severity: 'high', impact: '14 critical defects blocking sign-off', mitigation: 'Dedicated bug-fix sprint with vendor support' },
-      { id: 3, title: 'User adoption resistance', severity: 'medium', impact: 'Finance team unfamiliar with new approval workflows', mitigation: 'Additional training sessions and quick-reference guides' },
+      { id: 1, title: 'Budget exhaustion — only $45K remaining', severity: 'high', impact: 'At 95% budget used with canopy steel overdue and track installation at 40% — insufficient funds to complete remaining work', mitigation: 'Change request submitted for $120K budget extension; non-critical scope items deferred' },
+      { id: 2, title: 'Concrete supply chain disruption', severity: 'high', impact: 'Primary concrete vendor reporting 2-week lead time increase — directly threatens platform and concourse pours', mitigation: 'Secondary supplier engaged; batch plant scheduling locked in for next 3 weeks' },
+      { id: 3, title: 'RFI backlog on canopy steel connections (14 open)', severity: 'high', impact: '14 unresolved RFIs blocking fabrication and erection of remaining canopy sections', mitigation: 'Daily design coordination meetings with structural engineer; priority RFI resolution tracker' },
+      { id: 4, title: 'ADA compliance drawing revisions', severity: 'medium', impact: 'Transit authority flagged platform access non-compliance — could delay final systems testing', mitigation: 'Revised ADA drawings in progress; pre-submission review with transit authority scheduled' },
     ],
     team: [
       { id: 1, initials: 'PN', name: 'Priya Nair', role: 'Project Manager', tasksCompleted: 22, tasksTotal: 30, availability: 100 },
@@ -294,8 +295,9 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 6, title: 'Update BIM model with as-built structural changes', assigneeInitials: 'TE', assignee: 'Tom Evans', priority: 'low', dueDate: 'Apr 1', status: 'To Do' },
     ],
     risks: [
-      { id: 1, title: 'Data source latency issues', severity: 'medium', impact: 'Real-time dashboards may show stale data under load', mitigation: 'Caching layer with configurable refresh intervals' },
-      { id: 2, title: 'Schema evolution conflicts', severity: 'low', impact: 'Upstream schema changes could break pipeline transforms', mitigation: 'Schema registry with backward compatibility enforcement' },
+      { id: 1, title: 'Medical gas piping coordination complexity', severity: 'high', impact: 'Surgical wing medical gas layout must align with specialized equipment vendor specs not yet finalized', mitigation: 'Joint coordination meeting with equipment vendor and MEP engineer scheduled; BIM model updated weekly' },
+      { id: 2, title: 'Radiology shielding change order pending', severity: 'medium', impact: 'Lead-lined wall specifications changed by radiologist — cost estimate under review, may delay interior fit-out', mitigation: 'Cost engineer fast-tracking estimate; pre-ordering long-lead shielding materials' },
+      { id: 3, title: 'Healthcare code inspection sequencing', severity: 'medium', impact: 'Health department requires sequential inspections that could create 5-7 day hold points between phases', mitigation: 'Pre-scheduled inspection windows with health department; parallel prep for next phase during holds' },
     ],
     team: [
       { id: 1, initials: 'TE', name: 'Tom Evans', role: 'Project Director', tasksCompleted: 8, tasksTotal: 14, availability: 100 },
@@ -351,8 +353,9 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 5, title: 'Submit fire protection shop drawings for review', assigneeInitials: 'RK', assignee: 'Rachel Kim', priority: 'low', dueDate: 'Mar 18', status: 'To Do' },
     ],
     risks: [
-      { id: 1, title: 'Scope creep from stakeholders', severity: 'medium', impact: 'Requirements keep expanding beyond initial brief', mitigation: 'Strict change control process with prioritized backlog' },
-      { id: 2, title: 'Backend API readiness', severity: 'medium', impact: 'Portal depends on new API endpoints not yet built', mitigation: 'Mock API layer for parallel frontend development' },
+      { id: 1, title: 'Escalator long-lead procurement delay', severity: 'high', impact: 'Escalator units have 14-week lead time — late order jeopardizes common area and food court schedule', mitigation: 'Purchase order expedited; interim stairway access plan for phased tenant move-in' },
+      { id: 2, title: 'Tenant scope changes during planning phase', severity: 'medium', impact: 'Anchor tenant requesting layout modifications that may affect structural reinforcement design', mitigation: 'Change control process enforced; structural engineer reviewing impact of requested changes' },
+      { id: 3, title: 'Food court mechanical scope uncertainty', severity: 'low', impact: 'Ventilation requirements vary by food court tenant type — final tenant mix not confirmed', mitigation: 'Designing for worst-case exhaust capacity; modular kitchen hood connections for flexibility' },
     ],
     team: [
       { id: 1, initials: 'LB', name: 'Lena Brooks', role: 'Project Manager', tasksCompleted: 4, tasksTotal: 8, availability: 100 },
@@ -404,8 +407,9 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 5, title: 'Coordinate traffic lane reopening with DOT', assigneeInitials: 'MO', assignee: 'Mike Osei', priority: 'medium', dueDate: 'Mar 5', status: 'To Do' },
     ],
     risks: [
-      { id: 1, title: 'Three critical findings unresolved', severity: 'high', impact: 'Could delay certification if not remediated by deadline', mitigation: 'Daily standup with remediation owners, escalation path defined' },
-      { id: 2, title: 'Auditor availability', severity: 'low', impact: 'External auditor may need additional evidence collection time', mitigation: 'Pre-staged evidence repository with organized documentation' },
+      { id: 1, title: 'Concrete cure time vs. reopening deadline', severity: 'high', impact: 'Bridge deck concrete requires 7-day cure — any weather delays push past Mar 5 traffic reopening date', mitigation: 'High-early-strength concrete mix specified; thermal blankets staged for overnight temperature drops' },
+      { id: 2, title: 'DOT final inspection scheduling', severity: 'medium', impact: 'DOT inspector availability limited — single-day window for structural load test before reopening', mitigation: 'Pre-inspection walkthrough completed; all documentation pre-staged for inspector review' },
+      { id: 3, title: 'Environmental compliance documentation gap', severity: 'medium', impact: 'Missing stormwater discharge records from deck removal phase could trigger DOT non-compliance finding', mitigation: 'Environmental specialist compiling retroactive documentation from daily site logs' },
     ],
     team: [
       { id: 1, initials: 'MO', name: 'Mike Osei', role: 'Bridge Engineer', tasksCompleted: 18, tasksTotal: 20, availability: 100 },
@@ -459,9 +463,10 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 5, title: 'Pressure test domestic water lines for floors 1-2', assigneeInitials: 'DL', assignee: 'David Lin', priority: 'high', dueDate: 'Mar 10', status: 'To Do' },
     ],
     risks: [
-      { id: 1, title: 'Legacy service dependencies', severity: 'high', impact: 'Three services still tightly coupled to old gateway routing', mitigation: 'Adapter pattern with gradual traffic shifting' },
-      { id: 2, title: 'Team capacity exhausted', severity: 'high', impact: 'All team members at 100% allocation, no buffer', mitigation: 'Request temporary resource from platform team' },
-      { id: 3, title: 'Client-facing API breaking changes', severity: 'medium', impact: 'Some consumers may not handle new URL patterns', mitigation: 'Reverse proxy shim to maintain backward compatibility' },
+      { id: 1, title: 'Wood framing deficiency on Building B stairwell', severity: 'high', impact: 'Structural framing issue found during inspection — blocks all work on Building B upper floors until remediated', mitigation: 'Structural engineer on-site evaluating repair options; temporary shoring installed' },
+      { id: 2, title: 'Zero team availability buffer', severity: 'high', impact: 'All 4 team members at 100% allocation with 27 days overdue — no capacity to absorb additional issues', mitigation: 'Request for temporary framing crew submitted; overtime authorized for critical-path tasks' },
+      { id: 3, title: 'Stormwater drainage conflict at courtyard', severity: 'medium', impact: 'As-built drainage routing conflicts with foundation plan — courtyard work blocked until resolved', mitigation: 'Civil engineer redesigning drainage tie-in; alternate routing through Building A corridor' },
+      { id: 4, title: 'Siding material substitution risk', severity: 'medium', impact: 'Specified siding out of stock — substitute material requires owner approval and may change exterior appearance', mitigation: 'Three alternate materials submitted with mock-up samples for owner review' },
     ],
     team: [
       { id: 1, initials: 'SC', name: 'Sarah Chen', role: 'Project Manager', tasksCompleted: 5, tasksTotal: 12, availability: 100 },
@@ -515,8 +520,9 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 6, title: 'Submit O&M manuals and warranty documentation', assigneeInitials: 'LB', assignee: 'Lena Brooks', priority: 'low', dueDate: 'Apr 10', status: 'To Do' },
     ],
     risks: [
-      { id: 1, title: 'GPU resource availability', severity: 'medium', impact: 'Training jobs may queue during peak usage periods', mitigation: 'Reserved GPU instances with spot instance fallback' },
-      { id: 2, title: 'Model reproducibility', severity: 'low', impact: 'Different results across environments due to dependency drift', mitigation: 'Containerized environments with pinned dependency versions' },
+      { id: 1, title: 'Pre-engineered metal building delivery timeline', severity: 'medium', impact: 'Steel building package fabrication tracking 1 week behind — could delay erection start for bays 2-4', mitigation: 'Weekly fabrication progress calls with manufacturer; mobilizing erection crew for available bays first' },
+      { id: 2, title: 'Slab-on-grade concrete weather dependency', severity: 'medium', impact: 'Warehouse bay 1 slab pour requires 3 consecutive dry days — spring rain forecast threatens schedule', mitigation: 'Temporary weather enclosure available; backup pour dates scheduled with batch plant' },
+      { id: 3, title: 'Fire suppression code compliance', severity: 'low', impact: 'Warehouse classification may require ESFR sprinkler system upgrade over standard design', mitigation: 'Fire protection engineer reviewing occupancy classification; early submission to fire marshal for pre-approval' },
     ],
     team: [
       { id: 1, initials: 'PN', name: 'Priya Nair', role: 'Project Manager', tasksCompleted: 5, tasksTotal: 12, availability: 100 },
