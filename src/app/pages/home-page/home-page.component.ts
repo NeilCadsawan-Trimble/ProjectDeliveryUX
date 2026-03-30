@@ -9,6 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { DataStoreService } from '../../data/data-store.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
@@ -39,8 +40,6 @@ import type {
 import {
   PROJECTS,
   ESTIMATES,
-  RFIS,
-  SUBMITTALS,
   ACTIVITIES,
   TIME_OFF_REQUESTS,
   CALENDAR_APPOINTMENTS,
@@ -1457,7 +1456,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
 
                   <div class="flex items-center justify-between px-5 py-2.5 border-top-default bg-card flex-shrink-0">
                     <div class="text-xs text-foreground-40">
-                      {{ filteredUrgentNeeds().length }} of {{ allUrgentNeeds.length }} items
+                      {{ filteredUrgentNeeds().length }} of {{ allUrgentNeeds().length }} items
                     </div>
                     <div class="text-xs text-foreground-40">
                       {{ urgentProjectSummary() }}
@@ -1523,6 +1522,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
 })
 export class HomePageComponent extends DashboardPageBase {
   private readonly router = inject(Router);
+  private readonly store = inject(DataStoreService);
 
   private static readonly HEADER_HEIGHT = 224;
   private static readonly HEADER_OFFSET = HomePageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
@@ -1580,8 +1580,8 @@ export class HomePageComponent extends DashboardPageBase {
 
   readonly timeOffRequests = TIME_OFF_REQUESTS;
   readonly activities: ActivityItem[] = ACTIVITIES;
-  readonly rfis: Rfi[] = RFIS;
-  readonly submittals: Submittal[] = SUBMITTALS;
+  readonly rfis = this.store.rfis;
+  readonly submittals = this.store.submittals;
   readonly calendarAppointments: CalendarAppointment[] = CALENDAR_APPOINTMENTS;
   readonly projects = signal(PROJECTS);
   readonly estimates = signal(ESTIMATES);
@@ -1599,8 +1599,8 @@ export class HomePageComponent extends DashboardPageBase {
       .reduce((sum, e) => sum + e.valueRaw, 0);
     return formatCurrency(total);
   });
-  readonly overdueRfis = computed(() => this.rfis.filter(r => r.status === 'overdue'));
-  readonly overdueSubmittals = computed(() => this.submittals.filter(s => s.status === 'overdue'));
+  readonly overdueRfis = computed(() => this.rfis().filter(r => r.status === 'overdue'));
+  readonly overdueSubmittals = computed(() => this.submittals().filter(s => s.status === 'overdue'));
   readonly overdueItemCount = computed(() => this.overdueRfis().length + this.overdueSubmittals().length);
   readonly pendingChangeOrders = computed(() => CHANGE_ORDERS.filter(co => co.status === 'pending'));
   readonly pendingCoTotal = computed(() => this.pendingChangeOrders().reduce((s, co) => s + Math.abs(co.amount), 0));
@@ -1925,7 +1925,7 @@ export class HomePageComponent extends DashboardPageBase {
     return 'bg-destructive text-destructive-foreground';
   }
 
-  readonly allUrgentNeeds = buildUrgentNeeds();
+  readonly allUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals()));
   readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
 
   readonly urgentSeverityFilter = signal<Set<string>>(new Set(['critical', 'warning', 'info']));
@@ -1970,7 +1970,7 @@ export class HomePageComponent extends DashboardPageBase {
   });
 
   readonly urgentSeverityCounts = computed(() => {
-    const items = this.allUrgentNeeds;
+    const items = this.allUrgentNeeds();
     const projFilter = this.urgentProjectFilter();
     const catFilter = this.urgentCategoryFilter();
     let filtered = projFilter !== null ? items.filter(i => i.projectId === projFilter) : items;
@@ -1982,10 +1982,10 @@ export class HomePageComponent extends DashboardPageBase {
     };
   });
 
-  readonly urgentCriticalCount = computed(() => this.allUrgentNeeds.filter(i => i.severity === 'critical').length);
+  readonly urgentCriticalCount = computed(() => this.allUrgentNeeds().filter(i => i.severity === 'critical').length);
 
   readonly urgentProjectOptions = computed(() => {
-    const projectIds = new Set(this.allUrgentNeeds.map(i => i.projectId));
+    const projectIds = new Set(this.allUrgentNeeds().map(i => i.projectId));
     return PROJECTS
       .filter(p => projectIds.has(p.id))
       .map(p => ({
@@ -1999,7 +1999,7 @@ export class HomePageComponent extends DashboardPageBase {
     const sevFilter = this.urgentSeverityFilter();
     const projFilter = this.urgentProjectFilter();
     const catFilter = this.urgentCategoryFilter();
-    return this.allUrgentNeeds.filter(item => {
+    return this.allUrgentNeeds().filter(item => {
       if (!sevFilter.has(item.severity)) return false;
       if (projFilter !== null && item.projectId !== projFilter) return false;
       if (catFilter && !catFilter.has(item.category)) return false;
@@ -2118,8 +2118,8 @@ export class HomePageComponent extends DashboardPageBase {
     return {
       projects: PROJECTS,
       estimates: ESTIMATES,
-      rfis: RFIS,
-      submittals: SUBMITTALS,
+      rfis: this.store.rfis(),
+      submittals: this.store.submittals(),
       activities: ACTIVITIES,
       calendar: CALENDAR_APPOINTMENTS,
       timeOffRequests: TIME_OFF_REQUESTS,
@@ -2384,17 +2384,17 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   readonly rfiCounts = computed(() => ({
-    all: this.rfis.length,
-    open: this.rfis.filter((r) => r.status === 'open').length,
-    overdue: this.rfis.filter((r) => r.status === 'overdue').length,
-    upcoming: this.rfis.filter((r) => r.status === 'upcoming').length,
-    closed: this.rfis.filter((r) => r.status === 'closed').length,
+    all: this.rfis().length,
+    open: this.rfis().filter((r) => r.status === 'open').length,
+    overdue: this.rfis().filter((r) => r.status === 'overdue').length,
+    upcoming: this.rfis().filter((r) => r.status === 'upcoming').length,
+    closed: this.rfis().filter((r) => r.status === 'closed').length,
   }));
 
   readonly filteredRfis = computed(() => {
     const filter = this.rfiActiveFilter();
-    if (filter === 'all') return this.rfis;
-    return this.rfis.filter((r) => r.status === filter);
+    if (filter === 'all') return this.rfis();
+    return this.rfis().filter((r) => r.status === filter);
   });
 
   rfiStatusColor(status: RfiStatus): string {
@@ -2465,17 +2465,17 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   readonly submittalCounts = computed(() => ({
-    all: this.submittals.length,
-    open: this.submittals.filter((s) => s.status === 'open').length,
-    overdue: this.submittals.filter((s) => s.status === 'overdue').length,
-    upcoming: this.submittals.filter((s) => s.status === 'upcoming').length,
-    closed: this.submittals.filter((s) => s.status === 'closed').length,
+    all: this.submittals().length,
+    open: this.submittals().filter((s) => s.status === 'open').length,
+    overdue: this.submittals().filter((s) => s.status === 'overdue').length,
+    upcoming: this.submittals().filter((s) => s.status === 'upcoming').length,
+    closed: this.submittals().filter((s) => s.status === 'closed').length,
   }));
 
   readonly filteredSubmittals = computed(() => {
     const filter = this.submittalActiveFilter();
-    if (filter === 'all') return this.submittals;
-    return this.submittals.filter((s) => s.status === filter);
+    if (filter === 'all') return this.submittals();
+    return this.submittals().filter((s) => s.status === filter);
   });
 
   submittalStatusColor(status: SubmittalStatus): string {

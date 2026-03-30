@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { Rfi, RfiStatus } from '../../data/dashboard-data';
-import { RFIS } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 
 @Component({
   selector: 'app-rfi-detail-page',
@@ -87,12 +87,13 @@ import { RFIS } from '../../data/dashboard-data';
 export class RfiDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly store = inject(DataStoreService);
 
   private readonly rfiId = signal<string>('');
 
   readonly rfi = computed<Rfi | null>(() => {
     const id = this.rfiId();
-    return RFIS.find((r) => r.id === id) ?? null;
+    return this.store.rfis().find((r) => r.id === id) ?? null;
   });
 
   readonly statusLabel = computed(() => {

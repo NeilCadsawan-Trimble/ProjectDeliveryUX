@@ -3,8 +3,8 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: March 29, 2026
-**Total Commits**: 170+
+**Last Updated**: March 30, 2026
+**Total Commits**: 175+
 
 ---
 
@@ -23,9 +23,10 @@
 | 9 | Contracts, Detail Fixes, and Consolidation | Done | 12/12 |
 | 10 | Optimization and Refactoring | Done | 7/7 |
 | 11 | Financials Expansion and Icon Quality | Done | 16/16 |
-| 12 | Remaining Work | Not Started | 0/8 |
+| 12 | Reactive Data Store | Done | 5/5 |
+| 13 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 120/128 items (94%)
+**Completed**: 125/133 items (94%)
 
 ---
 
@@ -319,7 +320,27 @@ Massive financials data expansion, global Financials dashboard restructure, icon
 
 ---
 
-## Phase 12: Remaining Work
+## Phase 12: Reactive Data Store (Mar 30)
+
+Centralized reactive state management for RFI and Submittal data, enabling agentic system to dynamically respond to status changes across the entire application.
+
+### DataStoreService
+- [x] Created `DataStoreService` (`src/app/data/data-store.service.ts`) with writable signals for RFI and Submittal arrays, plus `updateRfiStatus()` and `updateSubmittalStatus()` mutation methods
+- [x] Renamed `RFIS`/`SUBMITTALS` exports to `RFIS_SEED`/`SUBMITTALS_SEED` in `dashboard-data.seed.ts` to clarify their role as seed data
+
+### Reactive Consumer Wiring
+- [x] Updated `buildUrgentNeeds()` to accept `rfis`/`submittals` parameters (removed internal cache), enabling reactive re-computation when data changes
+- [x] Wired 6 consumer files to `DataStoreService`: `home-page`, `project-dashboard`, `projects-page`, `rfi-detail-page`, `dashboard-shell`, and `project-dashboard-navigation.service` -- all now read from store signals instead of static constants
+- [x] Updated `home-agents.ts` and `project-agents.ts` to pass reactive data through `AgentDataState` to `buildUrgentNeeds()`, ensuring agent insights and alerts update when RFI/Submittal statuses change
+
+**Key files**:
+- `src/app/data/data-store.service.ts` (new) -- centralized reactive data store
+- `src/app/data/dashboard-data.formatters.ts` -- `buildUrgentNeeds()` now parameterized
+- `src/app/data/dashboard-data.seed.ts` -- renamed seed constants
+
+---
+
+## Phase 13: Remaining Work
 
 Features and improvements not yet started.
 
@@ -387,7 +408,7 @@ Features and improvements not yet started.
 | Mar 26-27 | [Canvas push and tests](6387a8f3-f2de-4dae-933b-eeec94687608) | Canvas detail expansion, BFS push refactoring, cascade direction fix, unit tests, AI agents, sub-page expansion, refactoring |
 | Mar 27-29 | [Agentic and weather](6387a8f3-f2de-4dae-933b-eeec94687608) | Agentic widgets, AI navigation, urgent needs, financial routing, weather widgets, dynamic back button, refactoring |
 | Mar 29 | [Contracts and consolidation](76bc1c7e-999f-450e-9650-709afeb8457f) | Contracts integration, detail page layout fix, shared utility consolidation, skill updates, optimization and refactoring |
-| Mar 29 | [Financials expansion](b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8) | Financials data expansion, sub-page restructure, finNavLinks widget, agent badges, icon compliance, mobile filter fix, user rename, code consolidation |
+| Mar 29 | [Financials expansion](b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8) | Financials data expansion, sub-page restructure, finNavLinks widget, agent badges, icon compliance, mobile filter fix, user rename, code consolidation, reactive data store |
 
 ---
 
@@ -413,6 +434,7 @@ Features and improvements not yet started.
 | `src/app/pages/project-dashboard/components/record-detail-views.component.ts` | Extracted record detail pages (daily report, inspection, punch item, change order) |
 | `src/app/data/widget-agents.ts` | Barrel re-export for AI widget agents |
 | `src/app/data/widget-agents/` | Domain-split agent files: home, project, financials, portfolio, shared |
+| `src/app/data/data-store.service.ts` | Centralized reactive data store for RFIs and Submittals |
 | `src/app/data/dashboard-data.ts` | Barrel re-export for dashboard data layer |
 | `src/app/data/dashboard-data.types.ts` | Type aliases and interfaces |
 | `src/app/data/dashboard-data.seed.ts` | Static/mock data arrays |
