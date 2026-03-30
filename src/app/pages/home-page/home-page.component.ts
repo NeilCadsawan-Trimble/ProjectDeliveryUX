@@ -1249,6 +1249,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                           role="button" tabindex="0"
                           (click)="navigateToProject(pw.project.slug)"
                           (keydown.enter)="navigateToProject(pw.project.slug)"
+                          (mousedown)="$event.stopPropagation()"
                         >
                           <div class="flex items-center gap-2 flex-shrink-0">
                             <i class="modus-icons text-xl" [class]="weatherConditionColor(pw.weather.current.condition)" aria-hidden="true">{{ weatherConditionIcon(pw.weather.current.condition) }}</i>
@@ -1285,6 +1286,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                           role="button" tabindex="0"
                           (click)="navigateToProject(pw.project.slug)"
                           (keydown.enter)="navigateToProject(pw.project.slug)"
+                          (mousedown)="$event.stopPropagation()"
                         >
                           <div class="flex items-center gap-2 flex-shrink-0">
                             <i class="modus-icons text-lg" [class]="weatherConditionColor(pw.weather.current.condition)" aria-hidden="true">{{ weatherConditionIcon(pw.weather.current.condition) }}</i>
@@ -1423,6 +1425,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                         role="button" tabindex="0"
                         (click)="navigateToUrgentNeed(item)"
                         (keydown.enter)="navigateToUrgentNeed(item)"
+                        (mousedown)="$event.stopPropagation()"
                       >
                         <div class="flex items-center gap-2.5 flex-shrink-0 mt-0.5">
                           <div class="w-2 h-2 rounded-full flex-shrink-0"
@@ -2099,9 +2102,9 @@ export class HomePageComponent extends DashboardPageBase {
   navigateToProject(slugOrId: string | number): void {
     if (typeof slugOrId === 'number') {
       const proj = PROJECTS.find(p => p.id === slugOrId);
-      if (proj) this.router.navigate(['/projects', proj.slug]);
+      if (proj) this.router.navigate(['/project', proj.slug]);
     } else {
-      this.router.navigate(['/projects', slugOrId]);
+      this.router.navigate(['/project', slugOrId]);
     }
   }
 
