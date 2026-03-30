@@ -579,6 +579,179 @@ Without grid alignment, widgets in different conceptual rows can have different 
 
 `tests/static/canvas-grid-alignment.spec.ts` -- 70 tests that parse all 6 page files and verify every `canvasDefaultTops` and `canvasDefaultHeights` value is a multiple of 16.
 
+## 14. Wall Cascade Two-Phase: Mover-vs-Opposite-Side Overlap
+
+**File:** `src/app/shell/services/canvas-push.ts` -- `runCanvasPushBfs`
+
+### The bug
+
+When a wide mover overlaps 4+ widgets and those widgets are near a locked boundary, the wall cascade pushes the mover backward but fails to resolve overlaps between the mover and widgets that BFS pushed in the **opposite** direction. This creates visible widget overlap in canvas mode.
+
+### Why it happens
+
+1. The mover's center divides overlapping widgets into two groups: widgets whose centers are left of the mover's center get pushed LEFT, and those right get pushed RIGHT.
+2. With 4+ widgets, some get pushed left while the rest cascade right toward the locked boundary.
+3. When the rightward chain hits the locked widget, a frozen-wall cascade compresses the chain back, pushing the mover leftward.
+4. The mover now overlaps the leftward-pushed widgets, but the wall cascade doesn't fix this because: (a) the mover doesn't become a wall, and (b) the leftward widgets aren't walls either.
+
+### Why a simple `pushAway` cleanup is WRONG
+
+The first fix attempted was a post-wall-cascade pass that called `pushAway(movedId, otherId)` for any widget still overlapping the mover. This introduced a regression: `pushAway` uses different axis selection heuristics than the wall cascade and doesn't cascade -- widgets pushed by `pushAway` can overlap other widgets without resolution. **Never use `pushAway` as a post-wall-cascade fix.**
+
+### The correct fix: two-phase wall cascade
+
+The wall cascade is split into two phases, both using the **same** wall-push logic (extracted into `wallPushOne`):
+
+- **Phase 1** (existing): Frozen/locked widgets are walls. The mover is NOT a wall and can be pushed backward by chain members. Pushed non-mover widgets become walls.
+- **Phase 2** (new): The mover is promoted to a wall. Any non-wall widget overlapping the mover is pushed away using the same wall-cascade logic and itself becomes a wall, cascading naturally.
+
+```typescript
+// Phase 1: compress chain toward the mover
+for (let pass = 0; pass < ids.length * 3; pass++) {
+  // ... wall cascade loop (mover excluded from walls) ...
+  if (!anyFixed) break;
+}
+
+// Phase 2: promote mover to wall, resolve opposite-side overlaps
+walls.add(movedId);
+for (let pass = 0; pass < ids.length * 2; pass++) {
+  // ... same wall cascade loop (mover now included in walls) ...
+  if (!anyFixed) break;
+}
+```
+
+Both phases share a `wallPushOne` helper that positions the target at gap distance from the wall using center-based direction logic -- identical to the original wall cascade.
+
+### Why 3 or fewer widgets didn't trigger this
+
+With fewer widgets, all overlapping widgets tend to be on the same side of the mover's center, so they all get pushed in the same direction. The wall cascade compresses and pushes the mover back, but there are no opposite-side widgets to collide with.
+
+### Regression tests
+
+7 new tests in `canvas-push.spec.ts`:
+- `4-widget cascade through locked wall: all compress, no overlap`
+- `5-widget cascade through locked wall: all compress, no overlap`
+- `wide mover overlaps 4 widgets at once against locked: no overlap`
+- `mover dragged into 4 stacked widgets with widget below: no overlap`
+- `vertically stacked widgets pushed down against locked: no overlap`
+- `vertically stacked drag into 4 widgets with side neighbor: no overlap`
+- `mixed horizontal+vertical layout near locked: no overlap`
+
+## 15. Same-Size Widget Oscillation and Frozen-Direction Mover Pushback
+
+**File:** `src/app/shell/services/canvas-push.ts` -- `runCanvasPushBfs`
+
+### The bug
+
+When dragging the bottom widget of a column upward into a stack of 4+ widgets, overlaps occur specifically in columns with wide (11-col) widgets but not narrow (5-col) widgets. The overlap appears as two widgets occupying the same vertical space.
+
+### Root cause 1: same-size widget oscillation in all-pairs cleanup
+
+In the project dashboard, Column 1 has widgets with identical dimensions (875x320px). During the all-pairs cleanup loop (which resolves residual overlaps after BFS), the mover and its neighbor create an oscillation:
+
+1. Widget A pushes neighbor B upward (A has >= size, so A is the pusher)
+2. Widget C pushes neighbor B downward (C has >= size, so C is the pusher)
+3. B ends up in the same overlapping position, the loop never converges
+
+Column 2 doesn't trigger this because widget sizes differ enough that the pusher/target relationships are stable.
+
+### Fix: exclude the mover from all-pairs cleanup
+
+The mover should never participate in the cleanup loop -- neither as a pusher nor as a target. Its position is the user's drag position (or constrained by `clampMoveAgainstLocked`) and should not be adjusted by the general cleanup:
+
+```typescript
+for (const aId of ids) {
+  if (isLocked[aId] || aId === movedId) continue;  // skip mover as pusher
+  for (const bId of ids) {
+    if (bId === aId || isLocked[bId] || bId === movedId) continue;  // skip mover as target
+    // ... pushAway logic ...
+  }
+}
+```
+
+### Root cause 2: unconditional Phase 2 wall cascade
+
+Phase 2 of the wall cascade (promoting the mover to a wall) ran unconditionally. When the mover was far from the compressed boundary, Phase 2 would incorrectly push widgets away from the mover even though the mover hadn't been pushed back by Phase 1.
+
+### Fix: conditional Phase 2
+
+Snapshot the mover's position before Phase 1. Only run Phase 2 if Phase 1 actually displaced the mover:
+
+```typescript
+const moverBefore = { ...rects[movedId] };
+// ... Phase 1 ...
+const moverPushedBack = rects[movedId].left !== moverBefore.left
+                     || rects[movedId].top !== moverBefore.top;
+if (moverPushedBack) {
+  walls.add(movedId);
+  // ... Phase 2 ...
+}
+```
+
+### Root cause 3: two-candidate pushback fails in compressed chains
+
+The original "final mover pushback" tried both directions (e.g., up and down) for each overlapping widget and picked the one that didn't create new overlaps. In a fully compressed chain (contiguous widgets from locked header to bottom), **both** directions overlap other widgets. The fallback (minimum displacement) pushed the mover deeper into the chain, creating cascading oscillation.
+
+### Fix: frozen-direction pushback
+
+Instead of testing two candidates, compute the average center of all frozen/locked widgets. Push the mover in the **opposite** direction (away from the compressed boundary). This naturally cascades the mover through the chain until it exits:
+
+```typescript
+if (frozen.size > 0) {
+  let frozenSumY = 0, frozenCount = 0;
+  for (const fid of ids) {
+    if (isLocked[fid] || frozen.has(fid)) {
+      frozenSumY += rects[fid].top + rects[fid].height / 2;
+      frozenCount++;
+    }
+  }
+  const frozenCY = frozenSumY / frozenCount;
+
+  for (let pass = 0; pass < ids.length * 2; pass++) {
+    let anyFixed = false;
+    for (const otherId of ids) {
+      if (otherId === movedId || isLocked[otherId]) continue;
+      if (!hasOverlap(movedId, otherId)) continue;
+      const m = rects[movedId];
+      const o = rects[otherId];
+      const mCY = m.top + m.height / 2;
+      if (mCY >= frozenCY) {
+        rects[movedId] = { ...m, top: o.top + o.height + gap };  // push below
+      } else {
+        rects[movedId] = { ...m, top: o.top - m.height - gap };  // push above
+      }
+      anyFixed = true;
+    }
+    if (!anyFixed) break;
+  }
+}
+```
+
+For the project dashboard (locked header at top, chain below), the mover cascades downward: overlap with `risks` → push below risks → overlap with `rfis` → push below rfis → no more overlaps. Done in 2 iterations.
+
+### Why Column 2 (narrow widgets) didn't trigger this
+
+Column 2 widgets have different heights (320, 240, 192, 256, 320), so:
+- The all-pairs cleanup has stable pusher/target relationships (no oscillation)
+- The chain compresses asymmetrically, leaving gaps the mover can fit into
+
+### The rule
+
+When a compressed chain has no free internal space for the mover:
+1. **Never** let the mover participate in all-pairs cleanup (it oscillates with same-size neighbors)
+2. **Never** run Phase 2 wall cascade unless Phase 1 actually pushed the mover
+3. **Always** push the mover away from the frozen boundary, not toward minimum displacement
+
+### Regression tests
+
+6 new tests in `canvas-push.spec.ts` under "project dashboard: incremental vertical drag against locked header":
+- `column 1: single large drag upward produces no overlap`
+- `column 1: incremental 20px drag upward (100 steps) never creates overlap`
+- `column 1: incremental 5px drag upward (400 steps) never creates overlap`
+- `column 2: incremental 20px drag upward (100 steps) never creates overlap`
+- `both columns: incremental drag of bottom column 1 widget never creates overlap`
+- `same-size widgets: mover with identical dimensions to neighbor produces no overlap`
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -596,3 +769,5 @@ Without grid alignment, widgets in different conceptual rows can have different 
 | View mode parity | all page components | `tests/static/project-dashboard.spec.ts` (canvas parity) |
 | Template arrow functions | all `.component.ts` | `tests/static/template-safety.spec.ts` |
 | Template private member access | all `.component.ts` | `tests/static/template-safety.spec.ts` |
+| Wall cascade post-cleanup (4+ widgets) | `canvas-push.ts` | `canvas-push.spec.ts` (4 new tests) |
+| Same-size oscillation & frozen pushback | `canvas-push.ts` | `canvas-push.spec.ts` (6 new tests) |

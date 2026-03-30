@@ -240,6 +240,113 @@ describe('runCanvasPushBfs', () => {
       assertNoPairwiseOverlap(rects, GAP);
     });
 
+    it('4-widget cascade through locked wall: all compress, no overlap', () => {
+      const rects: Record<string, WidgetRect> = {
+        mover:   { left: 0,   top: 0, width: 200, height: 300 },
+        widgetA: { left: 216, top: 0, width: 200, height: 300 },
+        widgetB: { left: 432, top: 0, width: 200, height: 300 },
+        widgetC: { left: 648, top: 0, width: 200, height: 300 },
+        widgetD: { left: 864, top: 0, width: 200, height: 300 },
+        locked:  { left: 1080, top: 0, width: 200, height: 300 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].left).toBe(1080);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('5-widget cascade through locked wall: all compress, no overlap', () => {
+      const rects: Record<string, WidgetRect> = {
+        mover:   { left: 0,   top: 0, width: 200, height: 300 },
+        widgetA: { left: 216, top: 0, width: 200, height: 300 },
+        widgetB: { left: 432, top: 0, width: 200, height: 300 },
+        widgetC: { left: 648, top: 0, width: 200, height: 300 },
+        widgetD: { left: 864, top: 0, width: 200, height: 300 },
+        widgetE: { left: 1080, top: 0, width: 200, height: 300 },
+        locked:  { left: 1296, top: 0, width: 200, height: 300 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].left).toBe(1296);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('wide mover overlaps 4 widgets at once against locked: no overlap', () => {
+      const rects: Record<string, WidgetRect> = {
+        mover:   { left: 0,   top: 0, width: 700, height: 300 },
+        widgetA: { left: 216, top: 0, width: 200, height: 300 },
+        widgetB: { left: 432, top: 0, width: 200, height: 300 },
+        widgetC: { left: 648, top: 0, width: 200, height: 300 },
+        widgetD: { left: 864, top: 0, width: 200, height: 300 },
+        locked:  { left: 1080, top: 0, width: 200, height: 300 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].left).toBe(1080);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('mover dragged into 4 stacked widgets with widget below: no overlap', () => {
+      const rects: Record<string, WidgetRect> = {
+        mover:   { left: 0,   top: 0,   width: 500, height: 300 },
+        widgetA: { left: 216, top: 0,   width: 200, height: 300 },
+        widgetB: { left: 432, top: 0,   width: 200, height: 300 },
+        widgetC: { left: 648, top: 0,   width: 200, height: 300 },
+        widgetD: { left: 864, top: 0,   width: 200, height: 300 },
+        locked:  { left: 1080, top: 0,  width: 200, height: 300 },
+        below:   { left: 400, top: 316, width: 400, height: 300 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].left).toBe(1080);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('vertically stacked widgets pushed down against locked: no overlap', () => {
+      const rects: Record<string, WidgetRect> = {
+        mover:   { left: 0, top: 0,   width: 300, height: 300 },
+        widgetA: { left: 0, top: 316, width: 300, height: 300 },
+        widgetB: { left: 0, top: 632, width: 300, height: 300 },
+        widgetC: { left: 0, top: 948, width: 300, height: 300 },
+        locked:  { left: 0, top: 1264, width: 300, height: 300 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].top).toBe(1264);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('vertically stacked drag into 4 widgets with side neighbor: no overlap', () => {
+      const rects: Record<string, WidgetRect> = {
+        mover:   { left: 0,   top: 0,   width: 300, height: 500 },
+        widgetA: { left: 0,   top: 200, width: 300, height: 300 },
+        widgetB: { left: 0,   top: 516, width: 300, height: 300 },
+        widgetC: { left: 0,   top: 832, width: 300, height: 300 },
+        widgetD: { left: 0,   top: 1148, width: 300, height: 300 },
+        locked:  { left: 0,   top: 1464, width: 300, height: 300 },
+        side:    { left: 316, top: 200,  width: 300, height: 300 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].top).toBe(1464);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('mixed horizontal+vertical layout near locked: no overlap', () => {
+      const rects: Record<string, WidgetRect> = {
+        mover:   { left: 0,   top: 0,   width: 400, height: 400 },
+        above:   { left: 100, top: -316, width: 200, height: 300 },
+        right:   { left: 200, top: 0,   width: 200, height: 300 },
+        below:   { left: 0,   top: 200, width: 300, height: 300 },
+        locked:  { left: 500, top: 0,   width: 300, height: 300 },
+      };
+      runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+      expect(rects['locked'].left).toBe(500);
+      expect(rects['locked'].top).toBe(0);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
     it('mover pushed back when blocked widget is not on same row', () => {
       // Locked widgets block the pushed widget. Mover pushed back.
       const rects: Record<string, WidgetRect> = {
@@ -438,6 +545,167 @@ describe('runCanvasPushBfs', () => {
       // After dragging 100px, all widgets still on same row, no overlaps
       expect(noOverlap(rects, GAP, 'timeOff', 'rfis')).toBe(true);
       expect(noOverlap(rects, GAP, 'rfis', 'submittals')).toBe(true);
+    });
+  });
+
+  describe('project dashboard: incremental vertical drag against locked header', () => {
+    const PROJ_HEADER_HEIGHT = 144;
+    const OFFSET = PROJ_HEADER_HEIGHT + GAP; // 160
+
+    function makeProjectDashboardCol1(): {
+      rects: Record<string, WidgetRect>;
+      locked: Record<string, boolean>;
+    } {
+      return {
+        rects: {
+          projHeader: { left: 0, top: 0, width: 1280, height: PROJ_HEADER_HEIGHT },
+          milestones: { left: 0, top: OFFSET, width: 875, height: 512 },
+          tasks:      { left: 0, top: OFFSET + 528, width: 875, height: 400 },
+          risks:      { left: 0, top: OFFSET + 944, width: 875, height: 352 },
+          rfis:       { left: 0, top: OFFSET + 1312, width: 875, height: 320 },
+          submittals: { left: 0, top: OFFSET + 1648, width: 875, height: 320 },
+        },
+        locked: { projHeader: true },
+      };
+    }
+
+    function makeProjectDashboardCol2(): {
+      rects: Record<string, WidgetRect>;
+      locked: Record<string, boolean>;
+    } {
+      return {
+        rects: {
+          projHeader: { left: 0, top: 0, width: 1280, height: PROJ_HEADER_HEIGHT },
+          drawing:    { left: 891, top: OFFSET, width: 389, height: 416 },
+          weather:    { left: 891, top: OFFSET + 432, width: 389, height: 240 },
+          budget:     { left: 891, top: OFFSET + 688, width: 389, height: 448 },
+          team:       { left: 891, top: OFFSET + 1152, width: 389, height: 400 },
+          activity:   { left: 891, top: OFFSET + 1568, width: 389, height: 352 },
+        },
+        locked: { projHeader: true },
+      };
+    }
+
+    it('column 1: single large drag upward produces no overlap', () => {
+      const { rects, locked } = makeProjectDashboardCol1();
+      rects['submittals'] = { ...rects['submittals'], top: OFFSET };
+      runCanvasPushBfs('submittals', rects, locked, GAP);
+
+      expect(rects['projHeader'].top).toBe(0);
+      assertNoPairwiseOverlap(rects, GAP);
+    });
+
+    it('column 1: incremental 20px drag upward (100 steps) never creates overlap', () => {
+      const { rects, locked } = makeProjectDashboardCol1();
+      const startTop = rects['submittals'].top;
+
+      for (let step = 1; step <= 100; step++) {
+        rects['submittals'] = {
+          ...rects['submittals'],
+          top: Math.max(OFFSET, startTop - step * 20),
+        };
+        runCanvasPushBfs('submittals', rects, locked, GAP);
+
+        try {
+          assertNoPairwiseOverlap(rects, GAP);
+        } catch (e) {
+          throw new Error(`Overlap at step ${step}: ${(e as Error).message}`);
+        }
+      }
+    });
+
+    it('column 1: incremental 5px drag upward (400 steps) never creates overlap', () => {
+      const { rects, locked } = makeProjectDashboardCol1();
+      const startTop = rects['submittals'].top;
+
+      for (let step = 1; step <= 400; step++) {
+        rects['submittals'] = {
+          ...rects['submittals'],
+          top: Math.max(OFFSET, startTop - step * 5),
+        };
+        runCanvasPushBfs('submittals', rects, locked, GAP);
+
+        try {
+          assertNoPairwiseOverlap(rects, GAP);
+        } catch (e) {
+          throw new Error(`Overlap at step ${step}: ${(e as Error).message}`);
+        }
+      }
+    });
+
+    it('column 2: incremental 20px drag upward (100 steps) never creates overlap', () => {
+      const { rects, locked } = makeProjectDashboardCol2();
+      const startTop = rects['activity'].top;
+
+      for (let step = 1; step <= 100; step++) {
+        rects['activity'] = {
+          ...rects['activity'],
+          top: Math.max(OFFSET, startTop - step * 20),
+        };
+        runCanvasPushBfs('activity', rects, locked, GAP);
+
+        try {
+          assertNoPairwiseOverlap(rects, GAP);
+        } catch (e) {
+          throw new Error(`Overlap at step ${step}: ${(e as Error).message}`);
+        }
+      }
+    });
+
+    it('both columns: incremental drag of bottom column 1 widget never creates overlap', () => {
+      const rects: Record<string, WidgetRect> = {
+        projHeader: { left: 0, top: 0, width: 1280, height: PROJ_HEADER_HEIGHT },
+        milestones: { left: 0, top: OFFSET, width: 875, height: 512 },
+        tasks:      { left: 0, top: OFFSET + 528, width: 875, height: 400 },
+        risks:      { left: 0, top: OFFSET + 944, width: 875, height: 352 },
+        rfis:       { left: 0, top: OFFSET + 1312, width: 875, height: 320 },
+        submittals: { left: 0, top: OFFSET + 1648, width: 875, height: 320 },
+        drawing:    { left: 891, top: OFFSET, width: 389, height: 416 },
+        weather:    { left: 891, top: OFFSET + 432, width: 389, height: 240 },
+        budget:     { left: 891, top: OFFSET + 688, width: 389, height: 448 },
+        team:       { left: 891, top: OFFSET + 1152, width: 389, height: 400 },
+        activity:   { left: 891, top: OFFSET + 1568, width: 389, height: 352 },
+      };
+      const locked = { projHeader: true };
+      const startTop = rects['submittals'].top;
+
+      for (let step = 1; step <= 100; step++) {
+        rects['submittals'] = {
+          ...rects['submittals'],
+          top: Math.max(OFFSET, startTop - step * 20),
+        };
+        runCanvasPushBfs('submittals', rects, locked, GAP);
+
+        try {
+          assertNoPairwiseOverlap(rects, GAP);
+        } catch (e) {
+          throw new Error(`Overlap at step ${step}: ${(e as Error).message}`);
+        }
+      }
+    });
+
+    it('same-size widgets: mover with identical dimensions to neighbor produces no overlap', () => {
+      const rects: Record<string, WidgetRect> = {
+        locked:  { left: 0, top: 0, width: 400, height: 200 },
+        widgetA: { left: 0, top: 216, width: 400, height: 300 },
+        widgetB: { left: 0, top: 532, width: 400, height: 300 },
+        widgetC: { left: 0, top: 848, width: 400, height: 300 },
+        mover:   { left: 0, top: 1164, width: 400, height: 300 },
+      };
+
+      for (let step = 1; step <= 200; step++) {
+        rects['mover'] = {
+          ...rects['mover'],
+          top: Math.max(216, 1164 - step * 5),
+        };
+        runCanvasPushBfs('mover', rects, { locked: true }, GAP);
+
+        try {
+          assertNoPairwiseOverlap(rects, GAP);
+        } catch (e) {
+          throw new Error(`Overlap at step ${step}: ${(e as Error).message}`);
+        }
+      }
     });
   });
 

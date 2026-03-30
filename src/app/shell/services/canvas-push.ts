@@ -148,19 +148,21 @@ export function runCanvasPushBfs(
   // All-pairs cleanup: resolve any remaining overlaps between non-mover
   // widgets that the BFS cascade missed. Freezing is disabled here to
   // avoid incorrect direction-based freezing of intermediate widgets.
+  // The mover is excluded as both pusher and target to prevent oscillation
+  // when the mover and an adjacent widget have identical sizes (same
+  // width × height), which causes conflicting push directions.
   canFreeze = false;
   for (let pass = 0; pass < ids.length * 3; pass++) {
     let anyFixed = false;
     for (const aId of ids) {
-      if (isLocked[aId]) continue;
+      if (isLocked[aId] || aId === movedId) continue;
       for (const bId of ids) {
-        if (bId === aId || isLocked[bId]) continue;
+        if (bId === aId || isLocked[bId] || bId === movedId) continue;
         if (!hasOverlap(aId, bId)) continue;
         const aSize = rects[aId].width * rects[aId].height;
         const bSize = rects[bId].width * rects[bId].height;
         const pusherId = aSize >= bSize ? aId : bId;
         const targetId = pusherId === aId ? bId : aId;
-        if (targetId === movedId) continue;
         const prev = { ...rects[targetId] };
         pushAway(pusherId, targetId);
         if (rects[targetId].left !== prev.left || rects[targetId].top !== prev.top) {
@@ -176,37 +178,118 @@ export function runCanvasPushBfs(
   // Frozen-widget wall cascade: frozen and locked widgets act as immovable
   // walls. Any widget overlapping a wall is pushed to exactly gap distance
   // from it and itself becomes a wall, cascading backward to the mover.
+  //
+  // Two phases:
+  //   Phase 1 -- Normal cascade. The mover is NOT a wall so it can be
+  //              pushed backward by chain members.
+  //   Phase 2 -- Promote the mover to a wall. This resolves overlaps
+  //              between the (pushed-back) mover and widgets that BFS
+  //              displaced in the opposite direction. Uses the same
+  //              wall-cascade logic so secondary overlaps cascade
+  //              correctly and all pushed widgets become walls.
   if (frozen.size > 0) {
     const walls = new Set<string>();
     for (const id of ids) {
       if (isLocked[id] || frozen.has(id)) walls.add(id);
     }
 
+    const wallPushOne = (wallId: string, otherId: string): void => {
+      const m = rects[otherId];
+      const o = rects[wallId];
+      const sameRow = Math.abs(m.top - o.top) <= gap;
+      const stacked = Math.abs(m.left - o.left) <= gap
+                   && Math.abs(m.width - o.width) <= gap * 2;
+      if (sameRow && !stacked) {
+        const mCX = m.left + m.width / 2;
+        const oCX = o.left + o.width / 2;
+        if (mCX >= oCX) rects[otherId] = { ...m, left: o.left + o.width + gap };
+        else rects[otherId] = { ...m, left: o.left - m.width - gap };
+      } else {
+        const mCY = m.top + m.height / 2;
+        const oCY = o.top + o.height / 2;
+        if (mCY >= oCY) rects[otherId] = { ...m, top: o.top + o.height + gap };
+        else rects[otherId] = { ...m, top: o.top - m.height - gap };
+      }
+    };
+
+    // Phase 1: compress chain toward the mover.
+    const moverBefore = { ...rects[movedId] };
     for (let pass = 0; pass < ids.length * 3; pass++) {
       let anyFixed = false;
       for (const wallId of [...walls]) {
         for (const otherId of ids) {
           if (otherId === wallId || walls.has(otherId)) continue;
           if (!hasOverlap(otherId, wallId)) continue;
-          const m = rects[otherId];
-          const o = rects[wallId];
-          const sameRow = Math.abs(m.top - o.top) <= gap;
-          const stacked = Math.abs(m.left - o.left) <= gap
-                       && Math.abs(m.width - o.width) <= gap * 2;
-          if (sameRow && !stacked) {
-            const mCX = m.left + m.width / 2;
-            const oCX = o.left + o.width / 2;
-            if (mCX >= oCX) rects[otherId] = { ...m, left: o.left + o.width + gap };
-            else rects[otherId] = { ...m, left: o.left - m.width - gap };
-          } else {
-            const mCY = m.top + m.height / 2;
-            const oCY = o.top + o.height / 2;
-            if (mCY >= oCY) rects[otherId] = { ...m, top: o.top + o.height + gap };
-            else rects[otherId] = { ...m, top: o.top - m.height - gap };
-          }
+          wallPushOne(wallId, otherId);
           if (otherId !== movedId) walls.add(otherId);
           anyFixed = true;
         }
+      }
+      if (!anyFixed) break;
+    }
+
+    // Phase 2: only run if the mover was actually pushed back by Phase 1.
+    // If the mover didn't move, Phase 2 would incorrectly push widgets
+    // toward the frozen zone (e.g., during incremental vertical drags
+    // where the mover is far from the wall but the chain is compressed).
+    const moverPushedBack = rects[movedId].left !== moverBefore.left
+                         || rects[movedId].top !== moverBefore.top;
+    if (moverPushedBack) {
+      walls.add(movedId);
+      for (let pass = 0; pass < ids.length * 2; pass++) {
+        let anyFixed = false;
+        for (const wallId of [...walls]) {
+          for (const otherId of ids) {
+            if (otherId === wallId || walls.has(otherId)) continue;
+            if (!hasOverlap(otherId, wallId)) continue;
+            wallPushOne(wallId, otherId);
+            walls.add(otherId);
+            anyFixed = true;
+          }
+        }
+        if (!anyFixed) break;
+      }
+    }
+  }
+
+  // Final mover pushback: when a compressed chain leaves no room for the
+  // mover at its dragged position, push the mover away from frozen/locked
+  // widgets until it clears all overlaps. The direction is determined by
+  // the average position of frozen/locked widgets: the mover is pushed
+  // away from the compressed boundary (e.g. downward when the locked
+  // header is above).
+  if (frozen.size > 0) {
+    let frozenSumX = 0, frozenSumY = 0, frozenCount = 0;
+    for (const fid of ids) {
+      if (isLocked[fid] || frozen.has(fid)) {
+        frozenSumX += rects[fid].left + rects[fid].width / 2;
+        frozenSumY += rects[fid].top + rects[fid].height / 2;
+        frozenCount++;
+      }
+    }
+    const frozenCX = frozenSumX / frozenCount;
+    const frozenCY = frozenSumY / frozenCount;
+
+    for (let pass = 0; pass < ids.length * 2; pass++) {
+      let anyFixed = false;
+      for (const otherId of ids) {
+        if (otherId === movedId || isLocked[otherId]) continue;
+        if (!hasOverlap(movedId, otherId)) continue;
+        const m = rects[movedId];
+        const o = rects[otherId];
+        const sameRow = Math.abs(m.top - o.top) <= gap;
+        const stacked = Math.abs(m.left - o.left) <= gap
+                     && Math.abs(m.width - o.width) <= gap * 2;
+        if (sameRow && !stacked) {
+          const mCX = m.left + m.width / 2;
+          if (mCX >= frozenCX) rects[movedId] = { ...m, left: o.left + o.width + gap };
+          else rects[movedId] = { ...m, left: o.left - m.width - gap };
+        } else {
+          const mCY = m.top + m.height / 2;
+          if (mCY >= frozenCY) rects[movedId] = { ...m, top: o.top + o.height + gap };
+          else rects[movedId] = { ...m, top: o.top - m.height - gap };
+        }
+        anyFixed = true;
       }
       if (!anyFixed) break;
     }
