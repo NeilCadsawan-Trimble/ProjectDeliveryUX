@@ -138,7 +138,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
               </div>
               @if (projectsInsight()) {
                 <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                  <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                  <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                   <div class="text-xs text-foreground-60 truncate leading-none">{{ projectsInsight() }}</div>
                 </div>
               }
@@ -203,7 +203,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                                 role="link"
                                 [attr.aria-label]="'View ' + project.name + ' job costs'"
                               >
-                                <i class="modus-icons text-2xs" aria-hidden="true">account_balance</i>
+                                <i class="modus-icons text-2xs" aria-hidden="true">building_corporate</i>
                                 Job Costs
                               </div>
                             }
@@ -246,7 +246,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                           </div>
                         } @else {
                           <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
-                            <i class="modus-icons text-sm text-primary" aria-hidden="true">draft</i>
+                            <i class="modus-icons text-sm text-primary" aria-hidden="true">file_new</i>
                             <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project); $event.stopPropagation()">
                               {{ project.latestDrawingName }}
                             </div>
@@ -283,13 +283,13 @@ export class ProjectsPageComponent implements AfterViewInit {
   private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
-  private static readonly HEADER_HEIGHT = 60;
+  private static readonly HEADER_HEIGHT = 64;
   private static readonly HEADER_OFFSET = ProjectsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   private readonly engine = new DashboardLayoutEngine({
     widgets: ['projsHeader', 'projects'],
     layoutStorageKey: 'dashboard-projects:v4',
-    canvasStorageKey: 'canvas-layout:dashboard-projects:v5',
+    canvasStorageKey: 'canvas-layout:dashboard-projects:v6',
     defaultColStarts: { projsHeader: 1, projects: 1 },
     defaultColSpans: { projsHeader: 16, projects: 16 },
     defaultTops: { projsHeader: 0, projects: 0 },

@@ -4,7 +4,7 @@
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
 **Last Updated**: March 29, 2026
-**Total Commits**: 165+
+**Total Commits**: 170+
 
 ---
 
@@ -22,9 +22,10 @@
 | 8 | Agentic Enhancements and Cross-Cutting Features | Done | 18/18 |
 | 9 | Contracts, Detail Fixes, and Consolidation | Done | 12/12 |
 | 10 | Optimization and Refactoring | Done | 7/7 |
-| 11 | Remaining Work | Not Started | 0/8 |
+| 11 | Financials Expansion and Icon Quality | Done | 16/16 |
+| 12 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 104/112 items (93%)
+**Completed**: 120/128 items (94%)
 
 ---
 
@@ -278,14 +279,47 @@ Major codebase restructuring to improve maintainability, reduce file sizes, and 
 | File | Before | After |
 |------|-------:|------:|
 | `project-dashboard.component.ts` | 6,278 | 2,020 (+ 4,014 .html + 427 nav service) |
-| `dashboard-data.ts` | 1,640 | 3-line barrel (types 338 + seed 824 + formatters 540) |
+| `dashboard-data.ts` | 1,640 | 3-line barrel (types 552 + seed 1,279 + formatters 849) |
 | `widget-agents.ts` | 2,501 | 1-line barrel (4 domain files + shared + index = 2,714 total) |
 
-**Tests**: 253 static tests, type-check, and build all passing.
+**Tests**: 325 static tests, type-check, and build all passing.
 
 ---
 
-## Phase 11: Remaining Work
+## Phase 11: Financials Expansion and Icon Quality (Mar 29)
+
+Massive financials data expansion, global Financials dashboard restructure, icon name compliance, and duplicate code consolidation.
+
+### Financials Data and Sub-Pages
+- [x] Added 6 months of data for all financial sub-pages (estimates, change orders, job costs, invoices, payables, POs, GL, cash flow, subcontract ledger)
+- [x] Renamed "Applications for Payment" to "Billings" across all navigation, UI text, and data references
+- [x] Associated global financial data (Invoices, Payables, POs, Subcontract Ledger) to individual project financials filtered by `projectId`
+- [x] Added canvas mode rendering parity for new financial sub-pages (`purchase-orders`, `contract-invoices`, `general-invoices`)
+- [x] Added 17 static regression tests for canvas rendering parity
+
+### Financials Dashboard Restructure
+- [x] Replaced subnav on Financials overview with `finNavLinks` navigation widget (3 columns, below KPIs)
+- [x] Added icons to all subnav items (both `finNavLinks` widget and `app-collapsible-subnav` on sub-pages)
+- [x] Added agent alert badges to Financials subnav (global and sub-page views) with `finSubnavAlerts` computed signal
+- [x] Updated project financials `financialsAlerts` mapping for all 11 sub-page agent associations
+
+### Icon Name Compliance
+- [x] Fixed 46 invalid Modus icon names across 8 files (`flash`→`lightning`, `swap_horizontal`→`swap`, `account_balance`→`building_corporate`, `list`→`list_bulleted`, `content_copy`→`copy_content`, `people`→`people_group`, `trending_up`→`arrow_up`, `wb_sunny`→`sun`, `gauge`→`dashboard`, `dollar`→`costs`, `error`→`warning`, `package`→`cube`, `draft`→`file_new`)
+- [x] Fixed invalid weather icon map entries in `dashboard-data.formatters.ts` (`wb_sunny`→`sun`, `water_drop`→`raindrop`, `flash_on`→`thunderstorm_heavy`, `ac_unit`→`snowflake`, `air`→`wind`)
+
+### UX Improvements
+- [x] Mobile filter bar fix: `flex-wrap` on urgent needs filter bar with hidden dividers on mobile
+- [x] User name updated from "Alex Morgan" to "Frank Mendoza" across navbar and home page
+
+### Code Quality
+- [x] Consolidated `formatJobCost` into shared `dashboard-data.formatters.ts` (removed from 2 files)
+- [x] Consolidated `capitalizeFirst` into shared `dashboard-data.formatters.ts` (removed from 2 files)
+
+**Tests**: 325 static tests (9 files), type-check, and lint all passing. Zero icon name violations.
+
+---
+
+## Phase 12: Remaining Work
 
 Features and improvements not yet started.
 
@@ -308,7 +342,7 @@ Features and improvements not yet started.
 
 ## Regression Test Coverage
 
-### Covered (Static Tests -- `tests/static/` -- 253 tests)
+### Covered (Static Tests -- `tests/static/` -- 325 tests)
 
 | Area | File | Tests |
 |------|------|-------|
@@ -316,10 +350,11 @@ Features and improvements not yet started.
 | Home page | `home-page.spec.ts` | 11 tests: widgets, urgent needs, weather outlook |
 | Projects page | `projects-page.spec.ts` | 6 structural tests |
 | Financials page | `financials-page.spec.ts` | 6 structural tests |
-| Project dashboard | `project-dashboard.spec.ts` | 93 tests: widgets, weather, tile detail, subnav, layout menu, per-prefix canvas completeness, grid/list parity, toolbar icons |
+| Project dashboard | `project-dashboard.spec.ts` | 110 tests: widgets, weather, tile detail, subnav, layout menu, per-prefix canvas completeness, grid/list parity, toolbar icons, canvas rendering parity |
 | CSS regressions | `styles.spec.ts` | 10 tests: side nav overflow, reset flyout, canvas navbar |
 | Canvas panning | `canvas-panning.spec.ts` | 10 tests: spacebar panning, lock canvas |
-| Template safety | `template-safety.spec.ts` | 89 tests: arrow function prevention, private member access |
+| Canvas grid alignment | `canvas-grid-alignment.spec.ts` | 58 tests: grid alignment, column parity, canvas structure |
+| Template safety | `template-safety.spec.ts` | 86 tests: arrow function prevention, private member access |
 
 ### Covered (Unit Tests -- `src/app/shell/services/`)
 
@@ -352,6 +387,7 @@ Features and improvements not yet started.
 | Mar 26-27 | [Canvas push and tests](6387a8f3-f2de-4dae-933b-eeec94687608) | Canvas detail expansion, BFS push refactoring, cascade direction fix, unit tests, AI agents, sub-page expansion, refactoring |
 | Mar 27-29 | [Agentic and weather](6387a8f3-f2de-4dae-933b-eeec94687608) | Agentic widgets, AI navigation, urgent needs, financial routing, weather widgets, dynamic back button, refactoring |
 | Mar 29 | [Contracts and consolidation](76bc1c7e-999f-450e-9650-709afeb8457f) | Contracts integration, detail page layout fix, shared utility consolidation, skill updates, optimization and refactoring |
+| Mar 29 | [Financials expansion](b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8) | Financials data expansion, sub-page restructure, finNavLinks widget, agent badges, icon compliance, mobile filter fix, user rename, code consolidation |
 
 ---
 

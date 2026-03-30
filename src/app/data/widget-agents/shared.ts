@@ -1,22 +1,33 @@
 import type {
-  Rfi,
-  Submittal,
-  CalendarAppointment,
-  Project,
-  Estimate,
-  ActivityItem,
+  BillingEvent,
+  BillingSchedule,
+  CashFlowEntry,
+  CashPosition,
   ChangeOrder,
-  DailyReport,
-  WeatherForecast,
-  ProjectAttentionItem,
-  BudgetHistoryPoint,
-  Inspection,
-  PunchListItem,
-  ProjectRevenue,
-  ProjectJobCost,
-  TimeOffRequest,
-  StaffingConflict,
   Contract,
+  CalendarAppointment,
+  DailyReport,
+  Estimate,
+  GLAccount,
+  GLEntry,
+  Inspection,
+  Invoice,
+  Payable,
+  PayrollRecord,
+  Project,
+  ProjectAttentionItem,
+  ProjectJobCost,
+  ProjectRevenue,
+  PunchListItem,
+  PurchaseOrder,
+  SubcontractLedgerEntry,
+  Rfi,
+  ActivityItem,
+  BudgetHistoryPoint,
+  StaffingConflict,
+  Submittal,
+  TimeOffRequest,
+  WeatherForecast,
 } from '../dashboard-data';
 import type { Milestone, TeamMember, Task, Risk, ActivityEntry, Drawing, BudgetBreakdown } from '../project-data';
 import type { DrawingTile } from '../drawings-data';
@@ -70,6 +81,18 @@ export interface AgentDataState {
   detailDrawing?: DrawingTile;
 
   jobCostDetailProject?: ProjectJobCost;
+
+  invoices?: Invoice[];
+  billingSchedules?: BillingSchedule[];
+  billingEvents?: BillingEvent[];
+  payables?: Payable[];
+  cashFlowHistory?: CashFlowEntry[];
+  cashPosition?: CashPosition;
+  glAccounts?: GLAccount[];
+  glEntries?: GLEntry[];
+  purchaseOrders?: PurchaseOrder[];
+  payrollRecords?: PayrollRecord[];
+  subcontractLedger?: SubcontractLedgerEntry[];
 
   currentPage?: string;
   currentSubPage?: string;

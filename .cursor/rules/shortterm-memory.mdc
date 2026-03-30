@@ -78,10 +78,42 @@ alwaysApply: true
   - `contractTypeLabelShort()` added as separate function for financials-subpages short labels ('Prime', 'PO'), while `contractTypeLabel()` keeps full labels.
   - All `formatCurrency` variants unified to `Math.abs`-based thresholds with `toLocaleString` on K values.
 
+### Session 11 (Mar 29)
+- **Topic**: Canvas mode parity fix + regression test
+- **What happened**:
+  1. User reported content not appearing in canvas mode for new financials sub-pages (purchase-orders, contract-invoices, general-invoices).
+  2. Root cause: canvas template had separate rendering path with `@else if` branches per page. New pages were added to desktop mode routing and `FINANCIALS_PAGES_WITH_CONTENT` but had NO canvas-mode rendering branch. They fell through to a gap where nothing rendered.
+  3. Added 3 new `@else if` branches in canvas template for purchase-orders, contract-invoices, general-invoices (KPI strip + scrollable list each).
+  4. Added computed signals (poTotalValue, poReceivedValue, poOpenCount, invTotalAmount, invPaidAmount, invOutstanding, payTotalAmount, payPaidAmount, payOutstanding) and status dot class helpers (poStatusDotClass, invStatusDotClass, payStatusDotClass) to project-dashboard.component.ts.
+  5. Added 17 new static regression tests in `project-dashboard.spec.ts` that auto-extract every page from FINANCIALS_PAGES_WITH_CONTENT and RECORDS_PAGES_WITH_CONTENT and verify each has a corresponding canvas-mode rendering branch. This ensures the bug can never recur.
+  6. Updated `dashboard-layout-lessons` skill section 10 with the new regression test reference and the new bug instance.
+- **Decisions**:
+  - Canvas parity is now enforced by static tests, not just skills/documentation.
+  - This was a known issue that should have been caught during original implementation per view-mode-parity and canvas-subpage-checklist skills.
+
+### Session 11 (Mar 29)
+- **Topic**: Financials expansion, icon compliance, optimization
+- **What happened**:
+  1. Massive financials data expansion: 6 months of data for all sub-pages, "Applications for Payment" → "Billings" rename, project-level financials data association.
+  2. Global Financials dashboard restructured: removed subnav on overview, added `finNavLinks` widget (3 cols, below KPIs).
+  3. Added icons to all subnav items (financials + records sub-pages).
+  4. Added agent alert badges to Financials subnav (both global and sub-page views).
+  5. Fixed canvas mode rendering parity for new financial sub-pages + 17 regression tests.
+  6. Fixed 46 invalid Modus icon names across 8 files.
+  7. Fixed invalid weather icon map entries (5 Material-style names → valid Modus names).
+  8. Mobile filter bar fix: `flex-wrap` on urgent needs, hidden dividers on mobile.
+  9. User name changed from "Alex Morgan" to "Frank Mendoza" across all UI.
+  10. Consolidated `formatJobCost` and `capitalizeFirst` into shared formatters (removed from 4 files).
+  11. Updated PROGRESS.md with Phase 11 (16 items).
+- **Decisions**:
+  - Weather icon map now uses only valid Modus icon names: `sun`, `raindrop`, `thunderstorm_heavy`, `snowflake`, `wind`.
+  - `formatJobCost` and `capitalizeFirst` live in `dashboard-data.formatters.ts`; consumer components use thin delegates or `readonly` property aliases.
+
 ## Active Context
 
-- On `dev` branch, ahead of `main` by contracts/layout fix commits.
-- Deep refactoring complete. Type-check, 186 static tests, and lint all pass cleanly.
+- On `dev` branch, ahead of `main`.
+- All optimizations complete. Type-check, 325 static tests, and lint all pass cleanly.
+- Zero icon name violations (was 46).
 - Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
 
 ## Pending Items
@@ -90,6 +122,8 @@ alwaysApply: true
 
 ## Scratch Notes
 
-- Total commits: 160+
-- Phase 9 added to PROGRESS.md: 12 new items, bringing total to 97/105 (92%)
-- Shared utilities in `dashboard-data.ts`: weatherIcon, weatherIconColor, workImpactBadge, formatCurrency, inspectionResultBadge, punchPriorityBadge, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, contractTypeIcon, coBadgeColor, coTypeLabel, coTypeIcon, statusBadgeColor, estimateBadgeColor, budgetProgressClass
+- Total commits: 170+
+- Phase 11 added to PROGRESS.md: 16 new items, bringing total to 120/128 (94%)
+- Static tests: 325 across 9 files
+- Data layer sizes: types 552, seed 1,279, formatters 849
+- Shared utilities in `dashboard-data.formatters.ts`: weatherIcon, weatherIconColor, workImpactBadge, formatCurrency, formatJobCost, capitalizeFirst, inspectionResultBadge, punchPriorityBadge, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, contractTypeIcon, coBadgeColor, coTypeLabel, coTypeIcon, statusBadgeColor, estimateBadgeColor, budgetProgressClass, invoiceStatusBadge, payableStatusBadge, poStatusBadge, payrollStatusBadge, ledgerTypeBadge, ledgerTypeLabel

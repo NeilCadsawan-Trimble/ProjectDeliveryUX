@@ -22,7 +22,17 @@ export type DashboardWidgetId =
   | 'finRevenueChart'
   | 'finJobCosts'
   | 'finOpenEstimates'
-  | 'finChangeOrders';
+  | 'finChangeOrders'
+  | 'finJobBilling'
+  | 'finAccountsReceivable'
+  | 'finAccountsPayable'
+  | 'finCashManagement'
+  | 'finGeneralLedger'
+  | 'finPurchaseOrders'
+  | 'finPayroll'
+  | 'finContracts'
+  | 'finSubcontractLedger'
+  | 'finNavLinks';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
@@ -335,4 +345,208 @@ export interface UrgentNeedItem {
   route: string;
   queryParams: Record<string, string>;
   financialsRoute?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Accounts Receivable (Invoices Out)
+// ---------------------------------------------------------------------------
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'partially-paid' | 'void';
+export type InvoiceTerms = 'Net 30' | 'Net 45';
+
+export interface Invoice {
+  id: string;
+  projectId: number;
+  invoiceNumber: string;
+  amount: number;
+  amountPaid: number;
+  status: InvoiceStatus;
+  issueDate: string;
+  dueDate: string;
+  paidDate?: string;
+  terms: InvoiceTerms;
+  retainageHeld: number;
+  linkedContractId?: string;
+}
+
+export interface AgingBucket {
+  label: string;
+  minDays: number;
+  maxDays: number;
+  total: number;
+  count: number;
+}
+
+// ---------------------------------------------------------------------------
+// Job Billing
+// ---------------------------------------------------------------------------
+export type BillingFrequency = 'monthly' | 'milestone' | 'progress' | 'upon-completion';
+export type BillingEventStatus = 'scheduled' | 'completed' | 'skipped';
+
+export interface BillingSchedule {
+  projectId: number;
+  frequency: BillingFrequency;
+  nextBillingDate: string;
+  lastBilledDate: string;
+  lastBilledAmount: number;
+  contractValue: number;
+  totalBilled: number;
+  totalRemaining: number;
+  billingContact: string;
+}
+
+export interface BillingEvent {
+  id: string;
+  projectId: number;
+  billingDate: string;
+  amount: number;
+  description: string;
+  invoiceId?: string;
+  period: string;
+  status: BillingEventStatus;
+}
+
+// ---------------------------------------------------------------------------
+// Accounts Payable (Bills In)
+// ---------------------------------------------------------------------------
+export type PayableStatus = 'pending' | 'approved' | 'paid' | 'overdue' | 'disputed';
+
+export interface Payable {
+  id: string;
+  vendor: string;
+  projectId: number;
+  invoiceNumber: string;
+  description: string;
+  amount: number;
+  amountPaid: number;
+  status: PayableStatus;
+  receivedDate: string;
+  dueDate: string;
+  paidDate?: string;
+  costCode: string;
+  linkedContractId?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Cash Management
+// ---------------------------------------------------------------------------
+export interface CashFlowEntry {
+  month: string;
+  inflows: number;
+  outflows: number;
+  netCash: number;
+  runningBalance: number;
+}
+
+export interface CashPosition {
+  currentBalance: number;
+  thirtyDayForecast: number;
+  sixtyDayForecast: number;
+  ninetyDayForecast: number;
+  monthlyPayroll: number;
+  monthlyOverhead: number;
+  upcomingPayables: number;
+}
+
+// ---------------------------------------------------------------------------
+// General Ledger
+// ---------------------------------------------------------------------------
+export type GLAccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+export type GLCategory = 'revenue' | 'expense' | 'asset' | 'liability';
+
+export interface GLEntry {
+  id: string;
+  date: string;
+  accountCode: string;
+  accountName: string;
+  description: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  projectId?: number;
+  category: GLCategory;
+  reference: string;
+}
+
+export interface GLAccount {
+  code: string;
+  name: string;
+  type: GLAccountType;
+  balance: number;
+}
+
+// ---------------------------------------------------------------------------
+// Purchase Orders
+// ---------------------------------------------------------------------------
+export type PurchaseOrderStatus = 'draft' | 'issued' | 'acknowledged' | 'partially-received' | 'received' | 'closed' | 'cancelled';
+
+export interface PurchaseOrder {
+  id: string;
+  poNumber: string;
+  vendor: string;
+  projectId: number;
+  project: string;
+  description: string;
+  amount: number;
+  amountReceived: number;
+  status: PurchaseOrderStatus;
+  issueDate: string;
+  expectedDelivery: string;
+  receivedDate?: string;
+  costCode: string;
+  lineItems: number;
+  linkedContractId?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Payroll
+// ---------------------------------------------------------------------------
+export type PayrollStatus = 'processed' | 'pending' | 'scheduled';
+export type PayFrequency = 'weekly' | 'biweekly' | 'monthly';
+
+export interface PayrollRecord {
+  id: string;
+  period: string;
+  periodStart: string;
+  periodEnd: string;
+  payDate: string;
+  status: PayrollStatus;
+  grossPay: number;
+  taxes: number;
+  benefits: number;
+  netPay: number;
+  employeeCount: number;
+  totalHours: number;
+  overtimeHours: number;
+  frequency: PayFrequency;
+}
+
+export interface PayrollSummary {
+  totalGrossYTD: number;
+  totalTaxesYTD: number;
+  totalBenefitsYTD: number;
+  totalNetYTD: number;
+  averageEmployees: number;
+  totalOvertimeHours: number;
+  laborBurdenRate: number;
+}
+
+// ---------------------------------------------------------------------------
+// Subcontract Ledger
+// ---------------------------------------------------------------------------
+export type SubcontractLedgerType = 'payment' | 'retainage-held' | 'retainage-release' | 'backcharge' | 'change-order' | 'withholding';
+
+export interface SubcontractLedgerEntry {
+  id: string;
+  subcontractId: string;
+  vendor: string;
+  projectId: number;
+  project: string;
+  type: SubcontractLedgerType;
+  description: string;
+  amount: number;
+  date: string;
+  payApp: string;
+  invoiceRef?: string;
+  period: string;
+  runningBalance: number;
 }

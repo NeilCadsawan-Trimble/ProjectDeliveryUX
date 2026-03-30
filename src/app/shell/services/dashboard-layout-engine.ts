@@ -1380,13 +1380,24 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   applyCanvasDefaults(): void {
+    const g = DashboardLayoutEngine.GAP_PX;
+    const snapGrid = (v: number) => Math.round(v / g) * g;
+
     this.widgetLefts.set({ ...this.config.canvasDefaultLefts });
     this.widgetPixelWidths.set({ ...this.config.canvasDefaultPixelWidths });
     if (this.config.canvasDefaultTops) {
-      this.widgetTops.set({ ...this.config.canvasDefaultTops });
+      const snapped: Record<string, number> = {};
+      for (const [k, v] of Object.entries(this.config.canvasDefaultTops)) {
+        snapped[k] = snapGrid(v);
+      }
+      this.widgetTops.set(snapped);
     }
     if (this.config.canvasDefaultHeights) {
-      this.widgetHeights.set({ ...this.config.canvasDefaultHeights });
+      const snapped: Record<string, number> = {};
+      for (const [k, v] of Object.entries(this.config.canvasDefaultHeights)) {
+        snapped[k] = snapGrid(v);
+      }
+      this.widgetHeights.set(snapped);
     }
     this.syncColSpansFromPixelWidths();
   }

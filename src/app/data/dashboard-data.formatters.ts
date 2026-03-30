@@ -1,15 +1,31 @@
 import type { ModusBadgeColor } from '../components/modus-badge.component';
 import type {
+  AgingBucket,
+  BillingEvent,
+  BillingFrequency,
+  CashFlowEntry,
   ChangeOrderStatus,
   ChangeOrderType,
   ContractStatus,
   ContractType,
   EstimateStatus,
+  GLAccount,
   InspectionResult,
+  Invoice,
+  InvoiceStatus,
   JobCostCategory,
   JobCostCategorySummary,
+  Payable,
+  PayableStatus,
+  PayrollRecord,
+  PayrollStatus,
   ProjectJobCost,
+  PurchaseOrder,
+  PurchaseOrderStatus,
   ProjectStatus,
+  Contract,
+  SubcontractLedgerEntry,
+  SubcontractLedgerType,
   RevenueDataPoint,
   RevenueTimeRange,
   StaffingConflict,
@@ -21,10 +37,20 @@ import type {
 import { JOB_COST_CATEGORIES } from './dashboard-data.types';
 import {
   ANNUAL_TOTALS,
+  BILLING_EVENTS,
+  CASH_FLOW_HISTORY,
+  CASH_POSITION,
   CATEGORY_COLORS,
   CHANGE_ORDERS,
+  GL_ACCOUNTS,
+  INVOICES,
   MONTHLY_REVENUE,
+  PAYABLES,
+  PAYROLL_RECORDS,
   PROJECT_ATTENTION_ITEMS,
+  PURCHASE_ORDERS,
+  CONTRACTS,
+  SUBCONTRACT_LEDGER,
   PROJECTS,
   PROJECT_TEAM_SIZES,
   PROJECT_WEATHER_DATA,
@@ -212,13 +238,13 @@ export function getProjectWeather(projectId: number) {
 }
 
 const WEATHER_ICON_MAP: Record<string, string> = {
-  sunny: 'wb_sunny', 'partly-cloudy': 'cloud', 'partly cloudy': 'cloud',
+  sunny: 'sun', 'partly-cloudy': 'cloud', 'partly cloudy': 'cloud',
   cloudy: 'cloud', overcast: 'cloud',
-  rain: 'water_drop', rainy: 'water_drop',
-  thunderstorm: 'flash_on', storm: 'flash_on',
-  snow: 'ac_unit', snowy: 'ac_unit',
-  windy: 'air', hot: 'wb_sunny',
-  clear: 'wb_sunny', fog: 'cloud',
+  rain: 'raindrop', rainy: 'raindrop',
+  thunderstorm: 'thunderstorm_heavy', storm: 'thunderstorm_heavy',
+  snow: 'snowflake', snowy: 'snowflake',
+  windy: 'wind', hot: 'sun',
+  clear: 'sun', fog: 'cloud',
 };
 
 const WEATHER_COLOR_MAP: Record<string, string> = {
@@ -537,4 +563,287 @@ export function buildUrgentNeeds(): UrgentNeedItem[] {
 
   _urgentNeedsCache = items;
   return items;
+}
+
+// ---------------------------------------------------------------------------
+// Accounts Receivable helpers
+// ---------------------------------------------------------------------------
+
+export function getInvoiceAgingBuckets(invoices?: Invoice[]): AgingBucket[] {
+  const src = invoices ?? INVOICES;
+  const today = new Date();
+  const outstanding = src.filter(i => i.status === 'sent' || i.status === 'overdue' || i.status === 'partially-paid');
+  const buckets: AgingBucket[] = [
+    { label: 'Current', minDays: -Infinity, maxDays: 0, total: 0, count: 0 },
+    { label: '1-30', minDays: 1, maxDays: 30, total: 0, count: 0 },
+    { label: '31-60', minDays: 31, maxDays: 60, total: 0, count: 0 },
+    { label: '61-90', minDays: 61, maxDays: 90, total: 0, count: 0 },
+    { label: '90+', minDays: 91, maxDays: Infinity, total: 0, count: 0 },
+  ];
+  for (const inv of outstanding) {
+    const due = new Date(inv.dueDate);
+    const daysOverdue = Math.floor((today.getTime() - due.getTime()) / 86_400_000);
+    const owed = inv.amount - inv.amountPaid;
+    const bucket = buckets.find(b => daysOverdue >= b.minDays && daysOverdue <= b.maxDays) ?? buckets[4];
+    bucket.total += owed;
+    bucket.count += 1;
+  }
+  return buckets;
+}
+
+export function getDSO(invoices?: Invoice[]): number {
+  const src = invoices ?? INVOICES;
+  const paid = src.filter(i => i.status === 'paid' && i.paidDate);
+  if (paid.length === 0) return 0;
+  let totalDays = 0;
+  let totalAmount = 0;
+  for (const inv of paid) {
+    const issue = new Date(inv.issueDate).getTime();
+    const paidAt = new Date(inv.paidDate!).getTime();
+    const days = Math.max(0, Math.floor((paidAt - issue) / 86_400_000));
+    totalDays += days * inv.amount;
+    totalAmount += inv.amount;
+  }
+  return totalAmount > 0 ? Math.round(totalDays / totalAmount) : 0;
+}
+
+export function invoiceStatusBadge(status: InvoiceStatus): ModusBadgeColor {
+  const map: Record<InvoiceStatus, ModusBadgeColor> = {
+    draft: 'secondary',
+    sent: 'primary',
+    paid: 'success',
+    overdue: 'danger',
+    'partially-paid': 'warning',
+    void: 'secondary',
+  };
+  return map[status] ?? 'secondary';
+}
+
+// ---------------------------------------------------------------------------
+// Job Billing helpers
+// ---------------------------------------------------------------------------
+
+export function getUpcomingBillings(days = 30, events?: BillingEvent[]): BillingEvent[] {
+  const src = events ?? BILLING_EVENTS;
+  const today = new Date();
+  const cutoff = new Date(today.getTime() + days * 86_400_000);
+  return src
+    .filter(e => e.status === 'scheduled' && new Date(e.billingDate) <= cutoff)
+    .sort((a, b) => new Date(a.billingDate).getTime() - new Date(b.billingDate).getTime());
+}
+
+export function billingFrequencyLabel(freq: BillingFrequency): string {
+  const map: Record<BillingFrequency, string> = {
+    monthly: 'Monthly',
+    milestone: 'Milestone',
+    progress: 'Progress',
+    'upon-completion': 'Upon Completion',
+  };
+  return map[freq] ?? freq;
+}
+
+// ---------------------------------------------------------------------------
+// Accounts Payable helpers
+// ---------------------------------------------------------------------------
+
+export function getPayablesSummary(payables?: Payable[]): Record<PayableStatus, { count: number; total: number }> {
+  const src = payables ?? PAYABLES;
+  const result: Record<string, { count: number; total: number }> = {};
+  for (const status of ['pending', 'approved', 'paid', 'overdue', 'disputed'] as PayableStatus[]) {
+    result[status] = { count: 0, total: 0 };
+  }
+  for (const p of src) {
+    const bucket = result[p.status];
+    if (bucket) {
+      bucket.count += 1;
+      bucket.total += p.amount - p.amountPaid;
+    }
+  }
+  return result as Record<PayableStatus, { count: number; total: number }>;
+}
+
+export function payableStatusBadge(status: PayableStatus): ModusBadgeColor {
+  const map: Record<PayableStatus, ModusBadgeColor> = {
+    pending: 'secondary',
+    approved: 'primary',
+    paid: 'success',
+    overdue: 'danger',
+    disputed: 'warning',
+  };
+  return map[status] ?? 'secondary';
+}
+
+// ---------------------------------------------------------------------------
+// Cash Management helpers
+// ---------------------------------------------------------------------------
+
+export function getCashRunway(position?: typeof CASH_POSITION): number {
+  const pos = position ?? CASH_POSITION;
+  const monthlyBurn = pos.monthlyPayroll + pos.monthlyOverhead;
+  return monthlyBurn > 0 ? Math.round((pos.currentBalance / monthlyBurn) * 10) / 10 : Infinity;
+}
+
+export function getCashFlowTrend(history?: CashFlowEntry[]): { months: string[]; inflows: number[]; outflows: number[]; net: number[] } {
+  const src = history ?? CASH_FLOW_HISTORY;
+  return {
+    months: src.map(e => e.month),
+    inflows: src.map(e => e.inflows),
+    outflows: src.map(e => e.outflows),
+    net: src.map(e => e.netCash),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// General Ledger helpers
+// ---------------------------------------------------------------------------
+
+export function getGLBalanceSheet(accounts?: GLAccount[]): { assets: GLAccount[]; liabilities: GLAccount[]; equity: GLAccount[]; revenue: GLAccount[]; expenses: GLAccount[] } {
+  const src = accounts ?? GL_ACCOUNTS;
+  return {
+    assets: src.filter(a => a.type === 'asset'),
+    liabilities: src.filter(a => a.type === 'liability'),
+    equity: src.filter(a => a.type === 'equity'),
+    revenue: src.filter(a => a.type === 'revenue'),
+    expenses: src.filter(a => a.type === 'expense'),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Purchase Order helpers
+// ---------------------------------------------------------------------------
+
+export function getPOSummary(orders?: PurchaseOrder[]): { totalValue: number; totalReceived: number; openPOs: number; overdueDeliveries: number; draftCount: number } {
+  const src = orders ?? PURCHASE_ORDERS;
+  const today = new Date().toISOString().split('T')[0];
+  const open = src.filter(po => !['received', 'closed', 'cancelled'].includes(po.status));
+  const overdue = open.filter(po => po.expectedDelivery < today);
+  return {
+    totalValue: src.reduce((s, po) => s + po.amount, 0),
+    totalReceived: src.filter(po => ['received', 'closed'].includes(po.status)).reduce((s, po) => s + po.amount, 0),
+    openPOs: open.length,
+    overdueDeliveries: overdue.length,
+    draftCount: src.filter(po => po.status === 'draft').length,
+  };
+}
+
+export function poStatusBadge(status: PurchaseOrderStatus): ModusBadgeColor {
+  const map: Record<PurchaseOrderStatus, ModusBadgeColor> = {
+    draft: 'secondary',
+    issued: 'primary',
+    acknowledged: 'primary',
+    'partially-received': 'warning',
+    received: 'success',
+    closed: 'secondary',
+    cancelled: 'danger',
+  };
+  return map[status] ?? 'secondary';
+}
+
+// ---------------------------------------------------------------------------
+// Payroll helpers
+// ---------------------------------------------------------------------------
+
+export function getPayrollSummary(records?: PayrollRecord[]): { totalGross: number; totalTaxes: number; totalBenefits: number; totalNet: number; avgEmployees: number; totalOT: number; laborBurdenPct: number } {
+  const src = records ?? PAYROLL_RECORDS;
+  const processed = src.filter(r => r.status === 'processed');
+  const totalGross = processed.reduce((s, r) => s + r.grossPay, 0);
+  const totalTaxes = processed.reduce((s, r) => s + r.taxes, 0);
+  const totalBenefits = processed.reduce((s, r) => s + r.benefits, 0);
+  const totalNet = processed.reduce((s, r) => s + r.netPay, 0);
+  const avgEmployees = processed.length > 0 ? Math.round(processed.reduce((s, r) => s + r.employeeCount, 0) / processed.length) : 0;
+  const totalOT = processed.reduce((s, r) => s + r.overtimeHours, 0);
+  const laborBurdenPct = totalGross > 0 ? Math.round(((totalTaxes + totalBenefits) / totalGross) * 1000) / 10 : 0;
+  return { totalGross, totalTaxes, totalBenefits, totalNet, avgEmployees, totalOT, laborBurdenPct };
+}
+
+export function getMonthlyPayrollTotals(records?: PayrollRecord[]): { month: string; gross: number; net: number; headcount: number }[] {
+  const src = records ?? PAYROLL_RECORDS;
+  const byMonth = new Map<string, { gross: number; net: number; counts: number[]}>();
+  for (const r of src.filter(p => p.status === 'processed')) {
+    const month = r.period.split(' - ')[0];
+    const entry = byMonth.get(month) ?? { gross: 0, net: 0, counts: [] };
+    entry.gross += r.grossPay;
+    entry.net += r.netPay;
+    entry.counts.push(r.employeeCount);
+    byMonth.set(month, entry);
+  }
+  return Array.from(byMonth.entries()).map(([month, v]) => ({
+    month,
+    gross: v.gross,
+    net: v.net,
+    headcount: Math.round(v.counts.reduce((a, b) => a + b, 0) / v.counts.length),
+  }));
+}
+
+export function payrollStatusBadge(status: PayrollStatus): ModusBadgeColor {
+  const map: Record<PayrollStatus, ModusBadgeColor> = {
+    processed: 'success',
+    pending: 'warning',
+    scheduled: 'secondary',
+  };
+  return map[status] ?? 'secondary';
+}
+
+// ---------------------------------------------------------------------------
+// Contract summary helpers
+// ---------------------------------------------------------------------------
+
+export function getContractSummary(contracts?: Contract[]): { totalOriginal: number; totalRevised: number; activeCount: number; pendingCount: number; totalRetainage: number; primeCount: number; subCount: number } {
+  const src = contracts ?? CONTRACTS;
+  const totalOriginal = src.reduce((s, c) => s + c.originalValue, 0);
+  const totalRevised = src.reduce((s, c) => s + c.revisedValue, 0);
+  const activeCount = src.filter(c => c.status === 'active').length;
+  const pendingCount = src.filter(c => c.status === 'pending').length;
+  const totalRetainage = src.reduce((s, c) => s + (c.revisedValue * c.retainage / 100), 0);
+  const primeCount = src.filter(c => c.contractType === 'prime').length;
+  const subCount = src.filter(c => c.contractType === 'subcontract').length;
+  return { totalOriginal, totalRevised, activeCount, pendingCount, totalRetainage, primeCount, subCount };
+}
+
+// ---------------------------------------------------------------------------
+// Subcontract Ledger helpers
+// ---------------------------------------------------------------------------
+
+export function getSubcontractLedgerSummary(entries?: SubcontractLedgerEntry[]): { totalPaid: number; totalRetainageHeld: number; totalRetainageReleased: number; totalBackcharges: number; totalChangeOrders: number; entryCount: number } {
+  const src = entries ?? SUBCONTRACT_LEDGER;
+  const totalPaid = src.filter(e => e.type === 'payment').reduce((s, e) => s + e.amount, 0);
+  const totalRetainageHeld = Math.abs(src.filter(e => e.type === 'retainage-held').reduce((s, e) => s + e.amount, 0));
+  const totalRetainageReleased = src.filter(e => e.type === 'retainage-release').reduce((s, e) => s + e.amount, 0);
+  const totalBackcharges = Math.abs(src.filter(e => e.type === 'backcharge').reduce((s, e) => s + e.amount, 0));
+  const totalChangeOrders = src.filter(e => e.type === 'change-order').reduce((s, e) => s + e.amount, 0);
+  return { totalPaid, totalRetainageHeld, totalRetainageReleased, totalBackcharges, totalChangeOrders, entryCount: src.length };
+}
+
+export function ledgerTypeBadge(type: SubcontractLedgerType): ModusBadgeColor {
+  const map: Record<SubcontractLedgerType, ModusBadgeColor> = {
+    payment: 'success',
+    'retainage-held': 'warning',
+    'retainage-release': 'primary',
+    backcharge: 'danger',
+    'change-order': 'tertiary',
+    withholding: 'secondary',
+  };
+  return map[type] ?? 'secondary';
+}
+
+export function formatJobCost(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
+  return `$${value}`;
+}
+
+export function capitalizeFirst(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export function ledgerTypeLabel(type: SubcontractLedgerType): string {
+  const map: Record<SubcontractLedgerType, string> = {
+    payment: 'Payment',
+    'retainage-held': 'Retainage Held',
+    'retainage-release': 'Retainage Release',
+    backcharge: 'Backcharge',
+    'change-order': 'Change Order',
+    withholding: 'Withholding',
+  };
+  return map[type] ?? type;
 }

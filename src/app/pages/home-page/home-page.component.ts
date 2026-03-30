@@ -44,12 +44,16 @@ import {
   ACTIVITIES,
   TIME_OFF_REQUESTS,
   CALENDAR_APPOINTMENTS,
+  CHANGE_ORDERS,
+  INSPECTIONS,
+  PUNCH_LIST_ITEMS,
   buildUrgentNeeds,
   urgentNeedCategoryIcon,
   getProjectWeather,
   weatherIcon,
   weatherIconColor,
   buildStaffingConflicts,
+  formatCurrency,
 } from '../../data/dashboard-data';
 import type { UrgentNeedItem, UrgentNeedCategory, ProjectWeather, WeatherCondition, StaffingConflict } from '../../data/dashboard-data';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
@@ -81,7 +85,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
       <div #pageHeader>
       <div class="flex items-start justify-between mb-6">
         <div>
-          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Alex</div>
+          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Frank</div>
           <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
         </div>
       </div>
@@ -91,7 +95,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
       </div>
       @if (homeKpiInsight()) {
         <div class="flex items-center gap-1.5 px-5 py-2 mb-6 bg-card border-default rounded-lg">
-          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
           <div class="text-xs text-foreground-60 truncate leading-none">{{ homeKpiInsight() }}</div>
         </div>
       } @else {
@@ -119,7 +123,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
           >
             <div class="flex items-start justify-between mb-4">
               <div>
-                <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Alex</div>
+                <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Frank</div>
                 <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
               </div>
             </div>
@@ -128,7 +132,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
             </div>
             @if (homeKpiInsight()) {
               <div class="flex items-center gap-1.5 px-5 py-2 mt-3 bg-card border-default rounded-lg">
-                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                 <div class="text-xs text-foreground-60 truncate leading-none">{{ homeKpiInsight() }}</div>
               </div>
             }
@@ -444,7 +448,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                           (keydown.enter)="timeOffView.set('staffing')"
                           (keydown.space)="$event.preventDefault(); timeOffView.set('staffing')"
                         >
-                          <i class="modus-icons text-sm" aria-hidden="true">people</i>
+                          <i class="modus-icons text-sm" aria-hidden="true">people_group</i>
                           <div>Staffing</div>
                         </div>
                         <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
@@ -468,7 +472,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                   </div>
                   @if (timeOffInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ timeOffInsight() }}</div>
                     </div>
                   }
@@ -755,7 +759,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                   </div>
                   @if (calendarInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ calendarInsight() }}</div>
                     </div>
                   }
@@ -897,7 +901,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                   </div>
                   @if (rfisInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ rfisInsight() }}</div>
                     </div>
                   }
@@ -1047,7 +1051,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                   </div>
                   @if (submittalsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ submittalsInsight() }}</div>
                     </div>
                   }
@@ -1172,7 +1176,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                 >
                   @if (drawingsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ drawingsInsight() }}</div>
                     </div>
                   }
@@ -1207,7 +1211,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                 <app-home-widget-frame
                   [widgetId]="widgetId"
                   [title]="'Weather Outlook'"
-                  [icon]="'wb_sunny'"
+                  [icon]="'sun'"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerRowClass]="'px-5 py-3.5'"
@@ -1233,7 +1237,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                   }
                   @if (weatherInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ weatherInsight() }}</div>
                     </div>
                   }
@@ -1260,7 +1264,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                           <div class="flex items-center gap-1.5 flex-shrink-0">
                             @if (pw.majorDays > 0) {
                               <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-destructive-20 text-destructive text-2xs font-medium">
-                                <i class="modus-icons text-2xs" aria-hidden="true">error</i>
+                                <i class="modus-icons text-2xs" aria-hidden="true">warning</i>
                                 {{ pw.majorDays }}d stop
                               </div>
                             }
@@ -1324,13 +1328,13 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                   </div>
                   @if (urgentNeedsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ urgentNeedsInsight() }}</div>
                     </div>
                   }
 
-                  <div class="flex items-center gap-2 px-4 py-2.5 border-bottom-default flex-shrink-0 overflow-visible relative z-20">
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <div class="flex flex-wrap items-center gap-2 px-4 py-2.5 border-bottom-default flex-shrink-0 overflow-visible relative z-20">
+                    <div class="flex items-center gap-1.5">
                       @for (sev of urgentSeverityOptions; track sev.key) {
                         <div
                           class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
@@ -1342,7 +1346,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                         </div>
                       }
                     </div>
-                    <div class="w-px h-5 bg-secondary flex-shrink-0"></div>
+                    <div class="w-px h-5 bg-secondary flex-shrink-0 hidden md:block"></div>
                     <div class="relative flex-shrink-0" data-urgent-category-dropdown>
                       <div
                         class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
@@ -1376,7 +1380,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                         </div>
                       }
                     </div>
-                    <div class="w-px h-5 bg-secondary flex-shrink-0"></div>
+                    <div class="w-px h-5 bg-secondary flex-shrink-0 hidden md:block"></div>
                     <div class="relative flex-shrink-0" data-urgent-project-dropdown>
                       <div
                         class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
@@ -1435,7 +1439,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                         <div class="flex items-center gap-2 flex-shrink-0">
                           @if (item.financialsRoute) {
                             <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary text-2xs font-medium">
-                              <i class="modus-icons text-2xs" aria-hidden="true">account_balance</i>
+                              <i class="modus-icons text-2xs" aria-hidden="true">building_corporate</i>
                               Job Costs
                             </div>
                           }
@@ -1482,7 +1486,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                 >
                   @if (recentActivityInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ recentActivityInsight() }}</div>
                     </div>
                   }
@@ -1520,20 +1524,25 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
 export class HomePageComponent extends DashboardPageBase {
   private readonly router = inject(Router);
 
-  private static readonly HEADER_HEIGHT = 190;
+  private static readonly HEADER_HEIGHT = 224;
   private static readonly HEADER_OFFSET = HomePageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
-  private static readonly ACTIVITY_ROW_TOP = 712 + 440 + 16;
+  private static readonly ROW_1_HEIGHT = 336;
+  private static readonly ROW_2_HEIGHT = 336;
+  private static readonly ROW_3_MAX_HEIGHT = 448;
+  private static readonly ROW_2_TOP = HomePageComponent.ROW_1_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ROW_3_TOP = HomePageComponent.ROW_2_TOP + HomePageComponent.ROW_2_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ACTIVITY_ROW_TOP = HomePageComponent.ROW_3_TOP + HomePageComponent.ROW_3_MAX_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
     return {
       widgets: ['homeHeader', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
       layoutStorageKey: 'dashboard-home-v6',
-      canvasStorageKey: 'canvas-layout:dashboard-home:v11',
+      canvasStorageKey: 'canvas-layout:dashboard-home:v13',
       defaultColStarts: { homeHeader: 1, homeUrgentNeeds: 1, homeWeather: 11, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11, homeRecentActivity: 1 },
       defaultColSpans: { homeHeader: 16, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 16 },
-      defaultTops: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 0, homeRfis: 356, homeSubmittals: 356, homeTimeOff: 356, homeCalendar: 712, homeDrawings: 712, homeRecentActivity: HomePageComponent.ACTIVITY_ROW_TOP },
-      defaultHeights: { homeHeader: 0, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340, homeRecentActivity: 380 },
+      defaultTops: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 0, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP, homeTimeOff: HomePageComponent.ROW_2_TOP, homeCalendar: HomePageComponent.ROW_3_TOP, homeDrawings: HomePageComponent.ROW_3_TOP, homeRecentActivity: HomePageComponent.ACTIVITY_ROW_TOP },
+      defaultHeights: { homeHeader: 0, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT, homeWeather: HomePageComponent.ROW_1_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT, homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT, homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: 384 },
       defaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
       defaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470, homeRecentActivity: 1280 },
       canvasDefaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
@@ -1542,14 +1551,14 @@ export class HomePageComponent extends DashboardPageBase {
         homeHeader: 0,
         homeUrgentNeeds: HomePageComponent.HEADER_OFFSET,
         homeWeather: HomePageComponent.HEADER_OFFSET,
-        homeTimeOff: HomePageComponent.HEADER_OFFSET + 356,
-        homeRfis: HomePageComponent.HEADER_OFFSET + 356,
-        homeSubmittals: HomePageComponent.HEADER_OFFSET + 356,
-        homeDrawings: HomePageComponent.HEADER_OFFSET + 712,
-        homeCalendar: HomePageComponent.HEADER_OFFSET + 712,
+        homeTimeOff: HomePageComponent.HEADER_OFFSET + HomePageComponent.ROW_2_TOP,
+        homeRfis: HomePageComponent.HEADER_OFFSET + HomePageComponent.ROW_2_TOP,
+        homeSubmittals: HomePageComponent.HEADER_OFFSET + HomePageComponent.ROW_2_TOP,
+        homeDrawings: HomePageComponent.HEADER_OFFSET + HomePageComponent.ROW_3_TOP,
+        homeCalendar: HomePageComponent.HEADER_OFFSET + HomePageComponent.ROW_3_TOP,
         homeRecentActivity: HomePageComponent.HEADER_OFFSET + HomePageComponent.ACTIVITY_ROW_TOP,
       },
-      canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeUrgentNeeds: 340, homeWeather: 340, homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 440, homeDrawings: 340, homeRecentActivity: 380 },
+      canvasDefaultHeights: { homeHeader: HomePageComponent.HEADER_HEIGHT, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT, homeWeather: HomePageComponent.ROW_1_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT, homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT, homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: 384 },
       minColSpan: 4,
       canvasGridMinHeightOffset: 100,
       savesDesktopOnMobile: true,
@@ -1578,6 +1587,9 @@ export class HomePageComponent extends DashboardPageBase {
   readonly estimates = signal(ESTIMATES);
 
   readonly totalProjects = computed(() => this.projects().length);
+  readonly atRiskProjects = computed(() =>
+    this.projects().filter(p => p.status === 'At Risk' || p.status === 'Overdue')
+  );
   readonly openEstimatesCount = computed(() =>
     this.estimates().filter((e) => e.status !== 'Approved').length
   );
@@ -1585,16 +1597,88 @@ export class HomePageComponent extends DashboardPageBase {
     const total = this.estimates()
       .filter((e) => e.status !== 'Approved')
       .reduce((sum, e) => sum + e.valueRaw, 0);
-    if (total >= 1_000_000) return `$${(total / 1_000_000).toFixed(1)}M`;
-    if (total >= 1_000) return `$${(total / 1_000).toFixed(0)}K`;
-    return `$${total}`;
+    return formatCurrency(total);
+  });
+  readonly overdueRfis = computed(() => this.rfis.filter(r => r.status === 'overdue'));
+  readonly overdueSubmittals = computed(() => this.submittals.filter(s => s.status === 'overdue'));
+  readonly overdueItemCount = computed(() => this.overdueRfis().length + this.overdueSubmittals().length);
+  readonly pendingChangeOrders = computed(() => CHANGE_ORDERS.filter(co => co.status === 'pending'));
+  readonly pendingCoTotal = computed(() => this.pendingChangeOrders().reduce((s, co) => s + Math.abs(co.amount), 0));
+  readonly failedInspections = computed(() => INSPECTIONS.filter(i => i.result === 'fail' || i.result === 'conditional'));
+  readonly openPunchItems = computed(() => PUNCH_LIST_ITEMS.filter(p => p.status === 'open' || p.status === 'in-progress'));
+  readonly approvedCosThisMonth = computed(() => {
+    const now = new Date();
+    const monthStr = now.toLocaleString('en-US', { month: 'short' });
+    return CHANGE_ORDERS
+      .filter(co => co.status === 'approved' && co.requestDate.includes(monthStr))
+      .reduce((s, co) => s + Math.abs(co.amount), 0);
   });
 
-  readonly kpiCards = computed<KpiCard[]>(() => [
-    { value: '' + this.totalProjects(), label: 'Active Projects', icon: 'briefcase', iconBg: 'bg-primary-20', iconColor: 'text-primary', ariaPrefix: 'Active Projects', action: 'projects' },
-    { value: '' + this.openEstimatesCount(), label: 'Open Estimates', icon: 'description', iconBg: 'bg-warning-20', iconColor: 'text-warning', ariaPrefix: 'Open Estimates', action: 'projects' },
-    { value: this.totalEstimateValue(), label: 'Estimate Pipeline', icon: 'bar_graph', iconBg: 'bg-success-20', iconColor: 'text-success', ariaPrefix: 'Estimate Pipeline', action: 'financials' },
-  ]);
+  readonly kpiCards = computed<KpiCard[]>(() => {
+    const pool: (KpiCard & { priority: number })[] = [];
+
+    const overdueCount = this.overdueItemCount();
+    if (overdueCount > 0) {
+      const rfiCount = this.overdueRfis().length;
+      const subCount = this.overdueSubmittals().length;
+      const parts: string[] = [];
+      if (rfiCount > 0) parts.push(`${rfiCount} RFI${rfiCount > 1 ? 's' : ''}`);
+      if (subCount > 0) parts.push(`${subCount} submittal${subCount > 1 ? 's' : ''}`);
+      pool.push({ priority: 100, value: '' + overdueCount, label: 'Overdue Items', icon: 'warning', iconBg: 'bg-destructive-20', iconColor: 'text-destructive', ariaPrefix: 'Overdue Items', action: 'overdue-items', subtitle: parts.join(', ') });
+    }
+
+    const atRisk = this.atRiskProjects();
+    if (atRisk.length > 0) {
+      const names = atRisk.slice(0, 2).map(p => p.name.split(' ').slice(0, 2).join(' '));
+      pool.push({ priority: 90, value: '' + atRisk.length, label: 'Projects At Risk', icon: 'alert', iconBg: 'bg-destructive-20', iconColor: 'text-destructive', ariaPrefix: 'Projects At Risk', action: 'at-risk-projects', subtitle: names.join(', ') });
+    }
+
+    const pendingCoAmt = this.pendingCoTotal();
+    if (pendingCoAmt > 0) {
+      const coCount = this.pendingChangeOrders().length;
+      pool.push({ priority: 80, value: formatCurrency(pendingCoAmt), label: 'Pending COs', icon: 'swap_horizontal', iconBg: 'bg-warning-20', iconColor: 'text-warning', ariaPrefix: 'Pending Change Orders', action: 'pending-cos', subtitle: `across ${coCount} order${coCount > 1 ? 's' : ''}` });
+    }
+
+    const failedIns = this.failedInspections();
+    if (failedIns.length > 0) {
+      const failCount = failedIns.filter(i => i.result === 'fail').length;
+      const condCount = failedIns.filter(i => i.result === 'conditional').length;
+      const parts: string[] = [];
+      if (failCount > 0) parts.push(`${failCount} failed`);
+      if (condCount > 0) parts.push(`${condCount} conditional`);
+      pool.push({ priority: 70, value: '' + failedIns.length, label: 'Inspections Need Follow-Up', icon: 'clipboard', iconBg: 'bg-warning-20', iconColor: 'text-warning', ariaPrefix: 'Inspections Need Follow-Up', action: 'failed-inspections', subtitle: parts.join(', ') });
+    }
+
+    const weatherImpacted = this.weatherImpactProjects();
+    if (weatherImpacted.length > 0) {
+      const majorCount = weatherImpacted.filter(pw => pw.majorDays > 0).length;
+      pool.push({ priority: 60, value: '' + weatherImpacted.length, label: 'Weather-Impacted Projects', icon: 'cloud', iconBg: 'bg-warning-20', iconColor: 'text-warning', ariaPrefix: 'Weather-Impacted Projects', action: 'weather-impact', subtitle: majorCount > 0 ? `${majorCount} with major delays` : 'minor delays expected' });
+    }
+
+    const conflicts = this.allStaffingConflicts();
+    if (conflicts.length > 2) {
+      const critical = conflicts.filter(c => c.severity === 'critical').length;
+      pool.push({ priority: 50, value: '' + conflicts.length, label: 'Staffing Conflicts', icon: 'people_group', iconBg: 'bg-warning-20', iconColor: 'text-warning', ariaPrefix: 'Staffing Conflicts', action: 'staffing-conflicts', subtitle: critical > 0 ? `${critical} critical` : 'monitor closely' });
+    }
+
+    const openPunch = this.openPunchItems();
+    if (openPunch.length > 0) {
+      const highPri = openPunch.filter(p => p.priority === 'high').length;
+      pool.push({ priority: 40, value: '' + openPunch.length, label: 'Open Punch Items', icon: 'check_circle', iconBg: 'bg-primary-20', iconColor: 'text-primary', ariaPrefix: 'Open Punch Items', action: 'punch-items', subtitle: highPri > 0 ? `${highPri} high priority` : 'on track' });
+    }
+
+    pool.push({ priority: 20, value: this.totalEstimateValue(), label: 'Estimate Pipeline', icon: 'bar_graph', iconBg: 'bg-success-20', iconColor: 'text-success', ariaPrefix: 'Estimate Pipeline', action: 'financials', subtitle: `${this.openEstimatesCount()} open estimates` });
+
+    const approvedAmt = this.approvedCosThisMonth();
+    if (approvedAmt > 0) {
+      pool.push({ priority: 15, value: formatCurrency(approvedAmt), label: 'COs Approved This Month', icon: 'check_circle', iconBg: 'bg-success-20', iconColor: 'text-success', ariaPrefix: 'Change Orders Approved This Month', action: 'financials', subtitle: 'revenue captured' });
+    }
+
+    pool.push({ priority: 10, value: '' + this.totalProjects(), label: 'Active Projects', icon: 'briefcase', iconBg: 'bg-primary-20', iconColor: 'text-primary', ariaPrefix: 'Active Projects', action: 'projects', subtitle: `${atRisk.length > 0 ? atRisk.length + ' need attention' : 'all on track'}` });
+
+    pool.sort((a, b) => b.priority - a.priority);
+    return pool.slice(0, 3);
+  });
 
   readonly recentDrawings = computed(() => {
     const results: { projectId: number; projectName: string; drawing: DrawingTile }[] = [];
@@ -1864,7 +1948,7 @@ export class HomePageComponent extends DashboardPageBase {
   ] as const;
 
   readonly urgentCategoryOptions: { key: UrgentNeedCategory; label: string; icon: string }[] = [
-    { key: 'budget', label: 'Budget', icon: 'account_balance' },
+    { key: 'budget', label: 'Budget', icon: 'building_corporate' },
     { key: 'change-order', label: 'Change Orders', icon: 'swap_horiz' },
     { key: 'rfi', label: 'RFIs', icon: 'clipboard' },
     { key: 'submittal', label: 'Submittals', icon: 'document' },
@@ -1964,6 +2048,7 @@ export class HomePageComponent extends DashboardPageBase {
     }
   }
 
+  private readonly _urgentDropdownAbort = new AbortController();
   private readonly _urgentDropdownClickOutside = (() => {
     if (typeof document !== 'undefined') {
       document.addEventListener('click', (e: MouseEvent) => {
@@ -1974,9 +2059,10 @@ export class HomePageComponent extends DashboardPageBase {
         if (this.urgentCategoryDropdownOpen() && !target.closest('[data-urgent-category-dropdown]')) {
           this.urgentCategoryDropdownOpen.set(false);
         }
-      }, true);
+      }, { capture: true, signal: this._urgentDropdownAbort.signal });
     }
   })();
+  private readonly _cleanupUrgentDropdown = this.destroyRef.onDestroy(() => this._urgentDropdownAbort.abort());
 
   readonly allProjectWeather = computed(() => {
     return PROJECTS.map(p => {
@@ -2409,8 +2495,49 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   handleKpiCardClick(action: string): void {
-    if (action === 'projects') this.navigateToProjects();
-    else if (action === 'financials') this.navigateToFinancials();
+    switch (action) {
+      case 'projects':
+        this.navigateToProjects();
+        break;
+      case 'financials':
+      case 'pending-cos':
+        this.navigateToFinancials();
+        break;
+      case 'overdue-items': {
+        const hasOverdueRfis = this.overdueRfis().length > 0;
+        if (hasOverdueRfis) {
+          this.rfiActiveFilter.set('overdue');
+          this.scrollToWidget('homeRfis');
+        } else {
+          this.submittalActiveFilter.set('overdue');
+          this.scrollToWidget('homeSubmittals');
+        }
+        break;
+      }
+      case 'at-risk-projects': {
+        const first = this.atRiskProjects()[0];
+        if (first) this.router.navigate(['/project', first.slug]);
+        else this.navigateToProjects();
+        break;
+      }
+      case 'failed-inspections':
+      case 'punch-items':
+        this.navigateToProjects();
+        break;
+      case 'weather-impact':
+        this.scrollToWidget('homeWeather');
+        break;
+      case 'staffing-conflicts':
+        this.scrollToWidget('homeTimeOff');
+        break;
+      default:
+        this.navigateToProjects();
+    }
+  }
+
+  private scrollToWidget(widgetId: string): void {
+    const el = document.querySelector(`[data-widget-id="${widgetId}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   openDrawingDetail(projectId: number, drawing: DrawingTile): void {

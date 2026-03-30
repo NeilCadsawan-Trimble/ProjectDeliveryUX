@@ -1,5 +1,5 @@
-import type { ChangeOrder, Contract } from '../dashboard-data';
-import { PROJECTS, JOB_COST_CATEGORIES, getProjectJobCosts } from '../dashboard-data';
+import type { ChangeOrder, Contract, SubcontractLedgerEntry } from '../dashboard-data';
+import { PROJECTS, JOB_COST_CATEGORIES, getProjectJobCosts, formatCurrency } from '../dashboard-data';
 import type { AgentAction, WidgetAgent } from './shared';
 import { getSuggestions, kw } from './shared';
 
@@ -706,6 +706,546 @@ export const financialsJobCostDetail: WidgetAgent = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Accounts Receivable Agent
+// ---------------------------------------------------------------------------
+export const financialsAR: WidgetAgent = {
+  id: 'financialsAR',
+  name: 'Accounts Receivable',
+  systemPrompt: 'You are an AR specialist for a general contracting company. You track invoices, aging, collections, and DSO metrics.',
+  suggestions: [
+    'What is the total outstanding AR?',
+    'Which invoices are overdue?',
+    'What is our DSO?',
+    'Show the AR aging breakdown',
+  ],
+  insight(s) {
+    const invoices = s.invoices ?? [];
+    const overdue = invoices.filter(i => i.status === 'overdue');
+    if (overdue.length > 0) {
+      const total = overdue.reduce((sum, i) => sum + i.amount - i.amountPaid, 0);
+      return `${overdue.length} overdue invoices totaling ${formatCurrency(total)}`;
+    }
+    return null;
+  },
+  alerts(s) {
+    const invoices = s.invoices ?? [];
+    const overdue = invoices.filter(i => i.status === 'overdue');
+    if (overdue.length >= 3) return { level: 'critical', count: overdue.length, label: 'overdue invoices' };
+    if (overdue.length > 0) return { level: 'warning', count: overdue.length, label: 'overdue invoices' };
+    return null;
+  },
+  buildContext(s) {
+    const invoices = s.invoices ?? [];
+    const outstanding = invoices.filter(i => ['sent', 'overdue', 'partially-paid'].includes(i.status));
+    const totalOwed = outstanding.reduce((sum, i) => sum + i.amount - i.amountPaid, 0);
+    return `AR Overview: ${invoices.length} total invoices, ${outstanding.length} outstanding, ${formatCurrency(totalOwed)} owed. Statuses: ${invoices.map(i => i.status).join(', ')}.`;
+  },
+  localRespond(q, s) {
+    const invoices = s.invoices ?? [];
+    if (kw(q, 'overdue', 'past due', 'late')) {
+      const overdue = invoices.filter(i => i.status === 'overdue');
+      if (overdue.length === 0) return 'No invoices are currently overdue.';
+      const total = overdue.reduce((sum, i) => sum + i.amount, 0);
+      return `${overdue.length} overdue invoices totaling ${formatCurrency(total)}: ${overdue.map(i => `${i.invoiceNumber} (${formatCurrency(i.amount)})`).join(', ')}.`;
+    }
+    if (kw(q, 'aging', 'bucket')) return 'Use the AR Aging chart above to see the breakdown by aging bucket (Current, 1-30, 31-60, 61-90, 90+ days).';
+    if (kw(q, 'dso', 'days sales')) return 'DSO measures average collection time. A lower number means faster collections.';
+    const outstanding = invoices.filter(i => ['sent', 'overdue', 'partially-paid'].includes(i.status));
+    const total = outstanding.reduce((sum, i) => sum + i.amount - i.amountPaid, 0);
+    return `Total outstanding AR: ${formatCurrency(total)} across ${outstanding.length} invoices. Ask about overdue invoices, aging breakdown, or DSO.`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Accounts Payable Agent
+// ---------------------------------------------------------------------------
+export const financialsAP: WidgetAgent = {
+  id: 'financialsAP',
+  name: 'Accounts Payable',
+  systemPrompt: 'You are an AP specialist for a general contracting company. You track vendor bills, payment schedules, and cash outflow management.',
+  suggestions: [
+    'What bills are coming due soon?',
+    'Which payables are overdue?',
+    'Show AP by vendor',
+    'What is total AP outstanding?',
+  ],
+  insight(s) {
+    const payables = s.payables ?? [];
+    const overdue = payables.filter(p => p.status === 'overdue');
+    if (overdue.length > 0) {
+      const total = overdue.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
+      return `${overdue.length} overdue payables totaling ${formatCurrency(total)}`;
+    }
+    return null;
+  },
+  alerts(s) {
+    const payables = s.payables ?? [];
+    const overdue = payables.filter(p => p.status === 'overdue');
+    const disputed = payables.filter(p => p.status === 'disputed');
+    if (overdue.length + disputed.length >= 3) return { level: 'critical', count: overdue.length + disputed.length, label: 'AP issues' };
+    if (overdue.length > 0) return { level: 'warning', count: overdue.length, label: 'overdue payables' };
+    return null;
+  },
+  buildContext(s) {
+    const payables = s.payables ?? [];
+    const unpaid = payables.filter(p => p.status !== 'paid');
+    const totalOwed = unpaid.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
+    return `AP Overview: ${payables.length} total payables, ${unpaid.length} unpaid, ${formatCurrency(totalOwed)} owed. Vendors: ${[...new Set(payables.map(p => p.vendor))].join(', ')}.`;
+  },
+  localRespond(q, s) {
+    const payables = s.payables ?? [];
+    if (kw(q, 'overdue', 'past due', 'late')) {
+      const overdue = payables.filter(p => p.status === 'overdue');
+      if (overdue.length === 0) return 'No payables are currently overdue.';
+      return `${overdue.length} overdue payables: ${overdue.map(p => `${p.vendor} - ${p.invoiceNumber} (${formatCurrency(p.amount)})`).join('; ')}.`;
+    }
+    if (kw(q, 'vendor', 'supplier', 'sub')) {
+      const byVendor = new Map<string, number>();
+      for (const p of payables.filter(p => p.status !== 'paid')) { byVendor.set(p.vendor, (byVendor.get(p.vendor) ?? 0) + p.amount - p.amountPaid); }
+      const lines = [...byVendor.entries()].sort((a, b) => b[1] - a[1]).map(([v, t]) => `${v}: ${formatCurrency(t)}`);
+      return `Outstanding AP by vendor:\n${lines.join('\n')}`;
+    }
+    const unpaid = payables.filter(p => p.status !== 'paid');
+    const total = unpaid.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
+    return `Total AP outstanding: ${formatCurrency(total)} across ${unpaid.length} payables. Ask about overdue items, vendor breakdown, or upcoming payments.`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Job Billing Agent
+// ---------------------------------------------------------------------------
+export const financialsBilling: WidgetAgent = {
+  id: 'financialsBilling',
+  name: 'Job Billing',
+  systemPrompt: 'You are a billing specialist for a general contracting company. You track billing schedules, progress billing, and invoice generation.',
+  suggestions: [
+    'Which projects are due for billing?',
+    'Show billing history',
+    'What is the total unbilled amount?',
+    'Compare billed vs contract value',
+  ],
+  insight(s) {
+    const schedules = s.billingSchedules ?? [];
+    const today = new Date();
+    const cutoff = new Date(today.getTime() + 7 * 86_400_000);
+    const dueSoon = schedules.filter(bs => new Date(bs.nextBillingDate) <= cutoff);
+    if (dueSoon.length > 0) {
+      const total = dueSoon.reduce((sum, bs) => sum + bs.lastBilledAmount, 0);
+      return `${dueSoon.length} projects due for billing this week (~${formatCurrency(total)})`;
+    }
+    return null;
+  },
+  alerts() { return null; },
+  buildContext(s) {
+    const schedules = s.billingSchedules ?? [];
+    const totalRemaining = schedules.reduce((sum, bs) => sum + bs.totalRemaining, 0);
+    return `Billing Overview: ${schedules.length} active billing schedules, ${formatCurrency(totalRemaining)} remaining to bill. Frequencies: ${schedules.map(bs => bs.frequency).join(', ')}.`;
+  },
+  localRespond(q, s) {
+    const schedules = s.billingSchedules ?? [];
+    const events = s.billingEvents ?? [];
+    if (kw(q, 'due', 'upcoming', 'next')) {
+      const sorted = [...schedules].sort((a, b) => new Date(a.nextBillingDate).getTime() - new Date(b.nextBillingDate).getTime());
+      const lines = sorted.slice(0, 5).map(bs => {
+        const proj = PROJECTS.find(p => p.id === bs.projectId);
+        return `${proj?.name ?? `Project ${bs.projectId}`}: ${bs.nextBillingDate} (${bs.frequency})`;
+      });
+      return `Upcoming billing:\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'unbilled', 'remaining')) {
+      const totalRemaining = schedules.reduce((sum, bs) => sum + bs.totalRemaining, 0);
+      return `Total unbilled: ${formatCurrency(totalRemaining)} across ${schedules.length} projects.`;
+    }
+    if (kw(q, 'history', 'past', 'completed')) {
+      const completed = events.filter(e => e.status === 'completed');
+      const total = completed.reduce((sum, e) => sum + e.amount, 0);
+      return `${completed.length} completed billing events totaling ${formatCurrency(total)}.`;
+    }
+    const totalBilled = schedules.reduce((sum, bs) => sum + bs.totalBilled, 0);
+    const totalContract = schedules.reduce((sum, bs) => sum + bs.contractValue, 0);
+    return `Billing: ${formatCurrency(totalBilled)} billed of ${formatCurrency(totalContract)} total contract value (${Math.round((totalBilled / totalContract) * 100)}%). Ask about upcoming billing, unbilled amounts, or history.`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Cash Management Agent
+// ---------------------------------------------------------------------------
+export const financialsCash: WidgetAgent = {
+  id: 'financialsCash',
+  name: 'Cash Management',
+  systemPrompt: 'You are a cash management specialist for a general contracting company. You track cash position, forecast runway, and manage inflows/outflows.',
+  suggestions: [
+    'What is our current cash position?',
+    'How many months of runway do we have?',
+    'Show cash flow trend',
+    'What are our fixed monthly costs?',
+  ],
+  insight(s) {
+    const pos = s.cashPosition;
+    if (!pos) return null;
+    const monthlyBurn = pos.monthlyPayroll + pos.monthlyOverhead;
+    const runway = monthlyBurn > 0 ? Math.round((pos.currentBalance / monthlyBurn) * 10) / 10 : 0;
+    if (runway < 3) return `Cash runway: ${runway} months -- action needed`;
+    return `Cash position: ${formatCurrency(pos.currentBalance)}, ~${runway} months runway`;
+  },
+  alerts(s) {
+    const pos = s.cashPosition;
+    if (!pos) return null;
+    const monthlyBurn = pos.monthlyPayroll + pos.monthlyOverhead;
+    const runway = monthlyBurn > 0 ? pos.currentBalance / monthlyBurn : Infinity;
+    if (runway < 2) return { level: 'critical', count: 1, label: 'low cash runway' };
+    if (runway < 3) return { level: 'warning', count: 1, label: 'cash runway below 3 months' };
+    return null;
+  },
+  buildContext(s) {
+    const pos = s.cashPosition;
+    const history = s.cashFlowHistory ?? [];
+    if (!pos) return 'No cash position data available.';
+    return `Cash: ${formatCurrency(pos.currentBalance)} balance. 30-day forecast: ${formatCurrency(pos.thirtyDayForecast)}. Monthly payroll: ${formatCurrency(pos.monthlyPayroll)}, overhead: ${formatCurrency(pos.monthlyOverhead)}. Upcoming AP: ${formatCurrency(pos.upcomingPayables)}. ${history.length} months of history.`;
+  },
+  localRespond(q, s) {
+    const pos = s.cashPosition;
+    if (!pos) return 'Cash position data is not available.';
+    if (kw(q, 'runway', 'how long', 'months')) {
+      const monthlyBurn = pos.monthlyPayroll + pos.monthlyOverhead;
+      const runway = monthlyBurn > 0 ? Math.round((pos.currentBalance / monthlyBurn) * 10) / 10 : 0;
+      return `At current burn rate of ${formatCurrency(monthlyBurn)}/month, you have approximately ${runway} months of cash runway. Balance: ${formatCurrency(pos.currentBalance)}.`;
+    }
+    if (kw(q, 'forecast', 'outlook', 'projection')) {
+      return `Cash forecasts: 30-day: ${formatCurrency(pos.thirtyDayForecast)}, 60-day: ${formatCurrency(pos.sixtyDayForecast)}, 90-day: ${formatCurrency(pos.ninetyDayForecast)}.`;
+    }
+    if (kw(q, 'fixed', 'cost', 'payroll', 'overhead')) {
+      return `Monthly fixed costs: Payroll ${formatCurrency(pos.monthlyPayroll)} + Overhead ${formatCurrency(pos.monthlyOverhead)} = ${formatCurrency(pos.monthlyPayroll + pos.monthlyOverhead)}/month.`;
+    }
+    if (kw(q, 'trend', 'flow', 'history')) {
+      const history = s.cashFlowHistory ?? [];
+      const lines = history.map(e => `${e.month}: In ${formatCurrency(e.inflows)}, Out ${formatCurrency(e.outflows)}, Net ${formatCurrency(e.netCash)}`);
+      return `Cash flow trend:\n${lines.join('\n')}`;
+    }
+    return `Current cash: ${formatCurrency(pos.currentBalance)}. Upcoming payables: ${formatCurrency(pos.upcomingPayables)}. Ask about runway, forecasts, fixed costs, or trends.`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// General Ledger Agent
+// ---------------------------------------------------------------------------
+export const financialsGL: WidgetAgent = {
+  id: 'financialsGL',
+  name: 'General Ledger',
+  systemPrompt: 'You are an accounting specialist for a general contracting company. You track journal entries, account balances, and produce financial summaries.',
+  suggestions: [
+    'Show account balances',
+    'What are total assets vs liabilities?',
+    'Show recent journal entries',
+    'What is the revenue this period?',
+  ],
+  insight(s) {
+    const accounts = s.glAccounts ?? [];
+    const totalAssets = accounts.filter(a => a.type === 'asset').reduce((sum, a) => sum + a.balance, 0);
+    const totalLiabilities = accounts.filter(a => a.type === 'liability').reduce((sum, a) => sum + a.balance, 0);
+    if (totalAssets > 0) return `Total assets: ${formatCurrency(totalAssets)}, liabilities: ${formatCurrency(totalLiabilities)}`;
+    return null;
+  },
+  alerts() { return null; },
+  buildContext(s) {
+    const accounts = s.glAccounts ?? [];
+    const entries = s.glEntries ?? [];
+    return `GL: ${accounts.length} accounts, ${entries.length} journal entries. Account types: ${accounts.map(a => `${a.code} ${a.name} (${formatCurrency(a.balance)})`).join('; ')}.`;
+  },
+  localRespond(q, s) {
+    const accounts = s.glAccounts ?? [];
+    const entries = s.glEntries ?? [];
+    if (kw(q, 'balance', 'account', 'trial')) {
+      const groups: Record<string, number> = {};
+      for (const a of accounts) { groups[a.type] = (groups[a.type] ?? 0) + a.balance; }
+      const lines = Object.entries(groups).map(([type, total]) => `${type}: ${formatCurrency(total)}`);
+      return `Account balances by type:\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'asset', 'liability', 'equity')) {
+      const assets = accounts.filter(a => a.type === 'asset').reduce((sum, a) => sum + a.balance, 0);
+      const liabilities = accounts.filter(a => a.type === 'liability').reduce((sum, a) => sum + a.balance, 0);
+      const equity = accounts.filter(a => a.type === 'equity').reduce((sum, a) => sum + a.balance, 0);
+      return `Assets: ${formatCurrency(assets)}, Liabilities: ${formatCurrency(liabilities)}, Equity: ${formatCurrency(equity)}. A = L + E check: ${formatCurrency(assets)} vs ${formatCurrency(liabilities + equity)}.`;
+    }
+    if (kw(q, 'journal', 'recent', 'entries', 'entry')) {
+      const recent = entries.slice(-5);
+      const lines = recent.map(e => `${e.date}: ${e.description} (Dr ${formatCurrency(e.debit)}, Cr ${formatCurrency(e.credit)})`);
+      return `Recent journal entries:\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'revenue', 'income')) {
+      const revenue = accounts.filter(a => a.type === 'revenue').reduce((sum, a) => sum + a.balance, 0);
+      return `Total revenue booked: ${formatCurrency(revenue)}.`;
+    }
+    return `GL has ${accounts.length} accounts and ${entries.length} journal entries. Ask about balances, recent entries, revenue, or the balance sheet equation.`;
+  },
+};
+
+export const financialsPO: WidgetAgent = {
+  id: 'financialsPO',
+  name: 'Purchase Orders',
+  systemPrompt: 'You are a procurement specialist for a general contracting company. You track purchase orders, vendor deliveries, material costs, and procurement timelines.',
+  suggestions: [
+    'How many POs are open?',
+    'What is the total committed spend?',
+    'Are any deliveries overdue?',
+    'Show POs by vendor',
+  ],
+  insight(s) {
+    const pos = s.purchaseOrders ?? [];
+    const open = pos.filter(po => !['received', 'closed', 'cancelled'].includes(po.status));
+    if (open.length > 0) {
+      const total = open.reduce((sum, po) => sum + po.amount, 0);
+      return `${open.length} open POs worth ${formatCurrency(total)}`;
+    }
+    return null;
+  },
+  alerts(s) {
+    const pos = s.purchaseOrders ?? [];
+    const today = new Date().toISOString().split('T')[0];
+    const overdue = pos.filter(po => !['received', 'closed', 'cancelled'].includes(po.status) && po.expectedDelivery < today);
+    if (overdue.length > 0) return { level: 'warning' as const, count: overdue.length, label: 'PO deliveries past due' };
+    return null;
+  },
+  buildContext(s) {
+    const pos = s.purchaseOrders ?? [];
+    const open = pos.filter(po => !['received', 'closed', 'cancelled'].includes(po.status));
+    return `Purchase Orders: ${pos.length} total, ${open.length} open. Total committed: ${formatCurrency(pos.reduce((sum, po) => sum + po.amount, 0))}. Vendors: ${[...new Set(pos.map(po => po.vendor))].join(', ')}.`;
+  },
+  localRespond(q, s) {
+    const pos = s.purchaseOrders ?? [];
+    if (kw(q, 'open', 'active', 'pending')) {
+      const open = pos.filter(po => !['received', 'closed', 'cancelled'].includes(po.status));
+      const lines = open.map(po => `${po.poNumber}: ${po.vendor} - ${po.description} (${formatCurrency(po.amount)}, ${po.status})`);
+      return `${open.length} open POs:\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'overdue', 'late', 'delivery')) {
+      const today = new Date().toISOString().split('T')[0];
+      const overdue = pos.filter(po => !['received', 'closed', 'cancelled'].includes(po.status) && po.expectedDelivery < today);
+      if (overdue.length === 0) return 'No overdue deliveries.';
+      const lines = overdue.map(po => `${po.poNumber}: ${po.vendor} - expected ${po.expectedDelivery} (${formatCurrency(po.amount)})`);
+      return `${overdue.length} overdue deliveries:\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'vendor', 'supplier')) {
+      const byVendor = new Map<string, { count: number; total: number }>();
+      for (const po of pos) {
+        const v = byVendor.get(po.vendor) ?? { count: 0, total: 0 };
+        v.count++; v.total += po.amount;
+        byVendor.set(po.vendor, v);
+      }
+      const lines = Array.from(byVendor.entries()).sort((a, b) => b[1].total - a[1].total).map(([v, d]) => `${v}: ${d.count} POs, ${formatCurrency(d.total)}`);
+      return `POs by vendor:\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'total', 'spend', 'committed', 'value')) {
+      const total = pos.reduce((sum, po) => sum + po.amount, 0);
+      const received = pos.filter(po => ['received', 'closed'].includes(po.status)).reduce((sum, po) => sum + po.amount, 0);
+      return `Total PO value: ${formatCurrency(total)}. Received/closed: ${formatCurrency(received)}. Outstanding: ${formatCurrency(total - received)}.`;
+    }
+    return `${pos.length} purchase orders tracked. Ask about open POs, overdue deliveries, vendors, or total spend.`;
+  },
+};
+
+export const financialsPayroll: WidgetAgent = {
+  id: 'financialsPayroll',
+  name: 'Payroll',
+  systemPrompt: 'You are a payroll specialist for a general contracting company. You track weekly payroll, labor costs, overtime, tax withholdings, and headcount trends.',
+  suggestions: [
+    'What is total payroll this month?',
+    'How much overtime this period?',
+    'Show headcount trend',
+    'What is the labor burden rate?',
+  ],
+  insight(s) {
+    const records = s.payrollRecords ?? [];
+    const processed = records.filter(r => r.status === 'processed');
+    if (processed.length > 0) {
+      const totalGross = processed.reduce((sum, r) => sum + r.grossPay, 0);
+      const latest = processed[processed.length - 1];
+      return `${latest.employeeCount} employees, ${formatCurrency(totalGross)} gross YTD`;
+    }
+    return null;
+  },
+  alerts(s) {
+    const records = s.payrollRecords ?? [];
+    const pending = records.filter(r => r.status === 'pending');
+    if (pending.length > 0) return { level: 'warning' as const, count: pending.length, label: 'payroll periods pending' };
+    const recent = records.filter(r => r.status === 'processed').slice(-4);
+    const avgOT = recent.length > 0 ? recent.reduce((s2, r) => s2 + r.overtimeHours, 0) / recent.length : 0;
+    if (avgOT > 70) return { level: 'info' as const, count: Math.round(avgOT), label: 'avg OT hrs/week trending high' };
+    return null;
+  },
+  buildContext(s) {
+    const records = s.payrollRecords ?? [];
+    const processed = records.filter(r => r.status === 'processed');
+    const totalGross = processed.reduce((sum, r) => sum + r.grossPay, 0);
+    const latest = processed[processed.length - 1];
+    return `Payroll: ${records.length} periods, ${processed.length} processed. Total gross: ${formatCurrency(totalGross)}. Current headcount: ${latest?.employeeCount ?? 'N/A'}.`;
+  },
+  localRespond(q, s) {
+    const records = s.payrollRecords ?? [];
+    const processed = records.filter(r => r.status === 'processed');
+    if (kw(q, 'total', 'ytd', 'gross', 'summary')) {
+      const totalGross = processed.reduce((sum, r) => sum + r.grossPay, 0);
+      const totalTaxes = processed.reduce((sum, r) => sum + r.taxes, 0);
+      const totalBenefits = processed.reduce((sum, r) => sum + r.benefits, 0);
+      const totalNet = processed.reduce((sum, r) => sum + r.netPay, 0);
+      return `Payroll summary (${processed.length} periods processed):\nGross: ${formatCurrency(totalGross)}\nTaxes: ${formatCurrency(totalTaxes)}\nBenefits: ${formatCurrency(totalBenefits)}\nNet: ${formatCurrency(totalNet)}`;
+    }
+    if (kw(q, 'overtime', 'ot', 'hours')) {
+      const totalOT = processed.reduce((sum, r) => sum + r.overtimeHours, 0);
+      const totalHours = processed.reduce((sum, r) => sum + r.totalHours, 0);
+      const otPct = totalHours > 0 ? ((totalOT / totalHours) * 100).toFixed(1) : '0';
+      return `Overtime: ${totalOT.toLocaleString()} hrs of ${totalHours.toLocaleString()} total (${otPct}%). Last 4 weeks avg: ${Math.round(processed.slice(-4).reduce((s2, r) => s2 + r.overtimeHours, 0) / Math.min(4, processed.length))} hrs/week.`;
+    }
+    if (kw(q, 'headcount', 'employees', 'staffing', 'trend')) {
+      const recent = processed.slice(-8);
+      const lines = recent.map(r => `${r.period}: ${r.employeeCount} employees`);
+      return `Recent headcount:\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'burden', 'rate', 'cost')) {
+      const totalGross = processed.reduce((sum, r) => sum + r.grossPay, 0);
+      const totalTaxes = processed.reduce((sum, r) => sum + r.taxes, 0);
+      const totalBenefits = processed.reduce((sum, r) => sum + r.benefits, 0);
+      const burdenPct = totalGross > 0 ? (((totalTaxes + totalBenefits) / totalGross) * 100).toFixed(1) : '0';
+      return `Labor burden rate: ${burdenPct}% (taxes: ${formatCurrency(totalTaxes)}, benefits: ${formatCurrency(totalBenefits)} on ${formatCurrency(totalGross)} gross).`;
+    }
+    if (kw(q, 'pending', 'scheduled', 'upcoming')) {
+      const pending = records.filter(r => r.status !== 'processed');
+      if (pending.length === 0) return 'All payroll periods are processed.';
+      const lines = pending.map(r => `${r.period}: ${r.status} - ${formatCurrency(r.grossPay)} gross, pay date ${r.payDate}`);
+      return `Upcoming payroll:\n${lines.join('\n')}`;
+    }
+    return `${records.length} payroll periods tracked (${processed.length} processed). Ask about totals, overtime, headcount, burden rate, or pending payroll.`;
+  },
+};
+
+export const financialsContractsSub: WidgetAgent = {
+  id: 'financialsContractsSub',
+  name: 'Contracts',
+  systemPrompt: 'You are a contract management specialist for construction. You track prime contracts and subcontracts, analyze change order impact on contract values, monitor retainage, and advise on vendor exposure.',
+  suggestions(s) {
+    const contracts = s.contracts ?? [];
+    const subs = contracts.filter(c => c.contractType === 'subcontract');
+    const pending = contracts.filter(c => c.status === 'pending');
+    const base: string[] = [
+      'What is the total contract value across all projects?',
+      'Which contracts have the most change order exposure?',
+    ];
+    if (pending.length > 0) base.push(`Why are ${pending.length} contracts still pending?`);
+    if (subs.length > 0) base.push(`How many subcontracts are active?`);
+    return base;
+  },
+  insight(s) {
+    const contracts = s.contracts ?? [];
+    const totalOriginal = contracts.reduce((sum, c) => sum + c.originalValue, 0);
+    const totalRevised = contracts.reduce((sum, c) => sum + c.revisedValue, 0);
+    const delta = totalRevised - totalOriginal;
+    if (delta > 0) {
+      const pct = ((delta / totalOriginal) * 100).toFixed(1);
+      return `Contract values have increased ${pct}% ($${formatCurrency(delta)}) from original via change orders`;
+    }
+    return null;
+  },
+  alerts(s) {
+    const contracts = s.contracts ?? [];
+    const pending = contracts.filter(c => c.status === 'pending');
+    if (pending.length > 0) return { level: 'info' as const, count: pending.length, label: 'contracts pending approval' };
+    return null;
+  },
+  buildContext(s) {
+    const contracts = s.contracts ?? [];
+    const primes = contracts.filter(c => c.contractType === 'prime');
+    const subs = contracts.filter(c => c.contractType === 'subcontract');
+    return `Contracts: ${contracts.length} total (${primes.length} prime, ${subs.length} subcontracts). Total original value: $${formatCurrency(contracts.reduce((sum, c) => sum + c.originalValue, 0))}. Total revised: $${formatCurrency(contracts.reduce((sum, c) => sum + c.revisedValue, 0))}. Active: ${contracts.filter(c => c.status === 'active').length}, pending: ${contracts.filter(c => c.status === 'pending').length}.`;
+  },
+  localRespond(q, s) {
+    const contracts = s.contracts ?? [];
+    const ql = q.toLowerCase();
+    if (kw(ql, 'total', 'value')) {
+      return `Total original contract value is $${formatCurrency(contracts.reduce((sum, c) => sum + c.originalValue, 0))}. Revised total (after COs) is $${formatCurrency(contracts.reduce((sum, c) => sum + c.revisedValue, 0))}.`;
+    }
+    if (kw(ql, 'sub', 'active')) {
+      const subs = contracts.filter(c => c.contractType === 'subcontract' && c.status === 'active');
+      return `There are ${subs.length} active subcontracts with a combined revised value of $${formatCurrency(subs.reduce((sum, c) => sum + c.revisedValue, 0))}.`;
+    }
+    if (kw(ql, 'pending')) {
+      const pending = contracts.filter(c => c.status === 'pending');
+      if (pending.length === 0) return 'No contracts are currently pending approval.';
+      return `${pending.length} contract(s) pending: ${pending.map(c => `${c.title} ($${formatCurrency(c.revisedValue)})`).join('; ')}.`;
+    }
+    if (kw(ql, 'retainage')) {
+      const totalRet = contracts.reduce((sum, c) => sum + (c.revisedValue * c.retainage / 100), 0);
+      return `Total retainage held across all contracts is approximately $${formatCurrency(totalRet)}.`;
+    }
+    return `There are ${contracts.length} contracts across all projects.`;
+  },
+};
+
+export const financialsSubLedger: WidgetAgent = {
+  id: 'financialsSubLedger',
+  name: 'Subcontract Ledger',
+  systemPrompt: 'You are a subcontract accounting specialist. You track payment applications, retainage, backcharges, and change order adjustments against subcontracts. You help ensure subs are paid correctly and retainage is managed per contract terms.',
+  suggestions(s) {
+    const entries = s.subcontractLedger ?? [];
+    const backcharges = entries.filter(e => e.type === 'backcharge');
+    const base: string[] = [
+      'What is total paid to subcontractors?',
+      'How much retainage is currently held?',
+      'Show me the latest pay applications',
+    ];
+    if (backcharges.length > 0) base.push(`Why were ${backcharges.length} backcharges issued?`);
+    return base;
+  },
+  insight(s) {
+    const entries = s.subcontractLedger ?? [];
+    const totalPaid = entries.filter(e => e.type === 'payment').reduce((sum, e) => sum + e.amount, 0);
+    const retHeld = Math.abs(entries.filter(e => e.type === 'retainage-held').reduce((sum, e) => sum + e.amount, 0));
+    if (retHeld > 0) {
+      const pct = ((retHeld / (totalPaid + retHeld)) * 100).toFixed(1);
+      return `$${formatCurrency(retHeld)} retainage held (${pct}% of gross billings) across all subcontracts`;
+    }
+    return null;
+  },
+  alerts(s) {
+    const entries = s.subcontractLedger ?? [];
+    const backcharges = entries.filter(e => e.type === 'backcharge');
+    if (backcharges.length > 0) return { level: 'warning' as const, count: backcharges.length, label: 'backcharges issued' };
+    return null;
+  },
+  buildContext(s) {
+    const entries = s.subcontractLedger ?? [];
+    const totalPaid = entries.filter(e => e.type === 'payment').reduce((sum, e) => sum + e.amount, 0);
+    const retHeld = Math.abs(entries.filter(e => e.type === 'retainage-held').reduce((sum, e) => sum + e.amount, 0));
+    const retReleased = entries.filter(e => e.type === 'retainage-release').reduce((sum, e) => sum + e.amount, 0);
+    const backcharges = Math.abs(entries.filter(e => e.type === 'backcharge').reduce((sum, e) => sum + e.amount, 0));
+    const coAdj = entries.filter(e => e.type === 'change-order').reduce((sum, e) => sum + e.amount, 0);
+    const vendors = [...new Set(entries.map(e => e.vendor))];
+    return `Subcontract Ledger: ${entries.length} entries across ${vendors.length} vendors. Total paid: $${formatCurrency(totalPaid)}. Retainage held: $${formatCurrency(retHeld)}. Released: $${formatCurrency(retReleased)}. Backcharges: $${formatCurrency(backcharges)}. CO adjustments: $${formatCurrency(coAdj)}.`;
+  },
+  localRespond(q, s) {
+    const entries = s.subcontractLedger ?? [];
+    const ql = q.toLowerCase();
+    if (kw(ql, 'total', 'paid')) {
+      const totalPaid = entries.filter(e => e.type === 'payment').reduce((sum, e) => sum + e.amount, 0);
+      return `Total paid to subcontractors: $${formatCurrency(totalPaid)} across ${entries.filter(e => e.type === 'payment').length} pay applications.`;
+    }
+    if (kw(ql, 'retainage', 'held')) {
+      const retHeld = Math.abs(entries.filter(e => e.type === 'retainage-held').reduce((sum, e) => sum + e.amount, 0));
+      return `Total retainage currently held: $${formatCurrency(retHeld)}.`;
+    }
+    if (kw(ql, 'backcharge')) {
+      const bcs = entries.filter(e => e.type === 'backcharge');
+      if (bcs.length === 0) return 'No backcharges have been issued.';
+      return `${bcs.length} backcharge(s) totaling $${formatCurrency(Math.abs(bcs.reduce((s, e) => s + e.amount, 0)))}: ${bcs.map(b => `${b.vendor} -- ${b.description}`).join('; ')}.`;
+    }
+    if (kw(ql, 'latest', 'pay', 'recent')) {
+      const payments = entries.filter(e => e.type === 'payment').sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+      return payments.map(p => `${p.date}: ${p.vendor} -- $${formatCurrency(p.amount)} (${p.payApp})`).join('\n');
+    }
+    return `Subcontract ledger has ${entries.length} entries across ${[...new Set(entries.map(e => e.vendor))].length} vendors.`;
+  },
+};
+
 export const FINANCIALS_AGENTS: WidgetAgent[] = [
   budgetAgent,
   changeOrdersAgent,
@@ -721,5 +1261,14 @@ export const FINANCIALS_AGENTS: WidgetAgent[] = [
   financialsRevenue,
   financialsCostForecasts,
   financialsJobCostDetail,
+  financialsAR,
+  financialsAP,
+  financialsBilling,
+  financialsCash,
+  financialsGL,
+  financialsPO,
+  financialsPayroll,
+  financialsContractsSub,
+  financialsSubLedger,
 ];
 

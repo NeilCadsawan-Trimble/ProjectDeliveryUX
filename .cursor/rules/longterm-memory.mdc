@@ -17,10 +17,16 @@ Consult this file before asking the user a question. If the answer is here, act 
 
 ### Workflow: Git Push
 - When asked to "push to github", ALWAYS run regression tests first.
-- Regression test sequence: `npm run lint:all` then `npm run test:static` then `npm run type-check`.
+- Regression test sequence: `npm run lint:all` then `npm run test:static` then `npm run type-check` then `npx ng build`.
 - If any test fails, stop the push, fix the issue, re-run tests, and repeat until clean.
 - Only after all tests pass, commit and push.
 - After a successful push, this becomes the new regression baseline.
+
+### Workflow: Verification After Code Changes
+- ALWAYS run `npx ng build` (or check `ng serve` terminal output) after modifying component templates.
+- `npm run type-check` uses `tsc` which does NOT type-check Angular inline templates -- only `ng build`/`ng serve` does.
+- Static tests check structural patterns, not type correctness of template expressions.
+- When adding new sub-pages or widgets with data bindings, verify property names match the backing TypeScript interfaces by running the Angular compiler.
 
 ### Workflow: Branch Management
 - NEVER switch to the `main` branch automatically. Always ask the user before checking out main.

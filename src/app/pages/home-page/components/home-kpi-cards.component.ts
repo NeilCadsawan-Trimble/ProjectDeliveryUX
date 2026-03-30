@@ -8,6 +8,7 @@ export interface KpiCard {
   iconColor: string;
   ariaPrefix: string;
   action: string;
+  subtitle?: string;
 }
 
 @Component({
@@ -28,6 +29,9 @@ export interface KpiCard {
         <div class="flex-1 min-w-0">
           <div class="text-2xl font-bold text-foreground">{{ card.value }}</div>
           <div class="text-sm text-foreground-60">{{ card.label }}</div>
+          @if (card.subtitle) {
+            <div class="text-xs text-foreground-40 mt-0.5 truncate">{{ card.subtitle }}</div>
+          }
         </div>
         <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
       </div>

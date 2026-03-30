@@ -23,7 +23,7 @@ import { WidgetResizeHandleComponent } from '../../../shell/components/widget-re
         </div>
         @if (insight()) {
           <div class="flex items-center gap-1.5 px-6 pb-3 -mt-1">
-            <i class="modus-icons text-xs text-primary" aria-hidden="true">flash</i>
+            <i class="modus-icons text-xs text-primary" aria-hidden="true">lightning</i>
             <div class="text-xs text-foreground-60 truncate">{{ insight() }}</div>
           </div>
         }

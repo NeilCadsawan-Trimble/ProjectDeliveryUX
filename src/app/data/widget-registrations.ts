@@ -79,6 +79,78 @@ export const FINANCIALS_WIDGETS: Record<string, WidgetRegistration> = {
       'What is the total spend vs. forecast?',
     ],
   },
+  finAccountsReceivable: {
+    name: 'Accounts Receivable',
+    suggestions: [
+      'What is the total outstanding AR?',
+      'Which invoices are overdue?',
+      'What is our DSO?',
+    ],
+  },
+  finAccountsPayable: {
+    name: 'Accounts Payable',
+    suggestions: [
+      'What bills are coming due soon?',
+      'Which payables are overdue?',
+      'Show AP by vendor',
+    ],
+  },
+  finJobBilling: {
+    name: 'Job Billing',
+    suggestions: [
+      'Which projects are due for billing?',
+      'What is the total unbilled amount?',
+      'Show billing history',
+    ],
+  },
+  finCashManagement: {
+    name: 'Cash Management',
+    suggestions: [
+      'What is our current cash position?',
+      'How many months of runway?',
+      'Show cash flow trend',
+    ],
+  },
+  finGeneralLedger: {
+    name: 'General Ledger',
+    suggestions: [
+      'Show account balances',
+      'What are total assets vs liabilities?',
+      'Show recent journal entries',
+    ],
+  },
+  finPurchaseOrders: {
+    name: 'Purchase Orders',
+    suggestions: [
+      'How many POs are open?',
+      'What is the total committed spend?',
+      'Are any deliveries overdue?',
+    ],
+  },
+  finPayroll: {
+    name: 'Payroll',
+    suggestions: [
+      'What is total payroll this month?',
+      'How much overtime this period?',
+      'What is the labor burden rate?',
+    ],
+  },
+  finContracts: {
+    name: 'Contracts',
+    suggestions: [
+      'What is the total contract value?',
+      'How many subcontracts are active?',
+      'Which contracts are pending approval?',
+    ],
+  },
+  finSubcontractLedger: {
+    name: 'Subcontract Ledger',
+    suggestions: [
+      'What is total paid to subcontractors?',
+      'How much retainage is currently held?',
+      'Show me recent backcharges',
+    ],
+  },
 };
 
 export const PROJECT_DETAIL_WIDGETS: Record<string, WidgetRegistration> = {

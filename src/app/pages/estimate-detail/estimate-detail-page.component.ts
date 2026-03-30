@@ -156,7 +156,7 @@ function buildHistory(est: Estimate): HistoryEntry[] {
         <!-- Line Items -->
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
             <div class="text-base font-semibold text-foreground">Line Items</div>
             <div class="text-xs text-foreground-40">{{ lineItems().length }} items</div>
           </div>
