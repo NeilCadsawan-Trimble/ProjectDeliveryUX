@@ -3,7 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import type { Estimate, EstimateStatus } from '../../data/dashboard-data';
-import { ESTIMATES, estimateBadgeColor, dueDateClass, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { estimateBadgeColor, dueDateClass, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
+import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 interface LineItem {
   description: string;
@@ -19,6 +21,13 @@ interface HistoryEntry {
   actor: string;
   actorInitials: string;
 }
+
+const EST_STATUS_OPTIONS: { value: EstimateStatus; label: string; dotClass: string }[] = [
+  { value: 'Draft', label: 'Draft', dotClass: 'bg-secondary' },
+  { value: 'Under Review', label: 'Under Review', dotClass: 'bg-primary' },
+  { value: 'Awaiting Approval', label: 'Awaiting Approval', dotClass: 'bg-warning' },
+  { value: 'Approved', label: 'Approved', dotClass: 'bg-success' },
+];
 
 function buildLineItems(est: Estimate): LineItem[] {
   const seed = est.id.charCodeAt(est.id.length - 1);
@@ -84,7 +93,7 @@ function buildHistory(est: Estimate): HistoryEntry[] {
           (keydown.enter)="goBack()"
         >
           <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">Back to Financials</div>
+          <div class="text-sm font-medium">{{ backLabel }}</div>
         </div>
 
         <!-- Header card -->
@@ -100,9 +109,32 @@ function buildHistory(est: Estimate): HistoryEntry[] {
               </div>
             </div>
             <div class="flex items-center gap-3">
-              <modus-badge [color]="estimateBadgeColor(estimate()!.status)" variant="outlined" size="md">
-                {{ estimate()!.status }}
-              </modus-badge>
+              <div class="relative">
+                <div class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-muted transition-colors duration-150"
+                  role="button" tabindex="0"
+                  (click)="statusOpen.set(!statusOpen())"
+                  (keydown.enter)="statusOpen.set(!statusOpen())">
+                  <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
+                  <div class="text-sm font-medium text-foreground">{{ estimate()!.status }}</div>
+                  <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">chevron_down</i>
+                </div>
+                @if (statusOpen()) {
+                  <div class="fixed inset-0 z-[9998]" (click)="statusOpen.set(false)"></div>
+                  <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-[9999] min-w-[200px] py-1 overflow-hidden">
+                    @for (opt of estStatusOptions; track opt.value) {
+                      <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                        role="option" [attr.aria-selected]="opt.value === estimate()!.status"
+                        (click)="changeStatus(opt.value)">
+                        <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
+                        <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
+                        @if (opt.value === estimate()!.status) {
+                          <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
             </div>
           </div>
 
@@ -220,7 +252,7 @@ function buildHistory(est: Estimate): HistoryEntry[] {
             role="button" tabindex="0"
             (click)="goBack()"
             (keydown.enter)="goBack()"
-          >Return to Financials</div>
+          >Return to {{ backLabel }}</div>
         </div>
       }
     </div>
@@ -229,12 +261,20 @@ function buildHistory(est: Estimate): HistoryEntry[] {
 export class EstimateDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly store = inject(DataStoreService);
+  private readonly navHistory = inject(NavigationHistoryService);
+
+  private readonly backInfo = this.navHistory.getBackInfo();
+  readonly backLabel = 'Back to ' + this.backInfo.label;
+
+  readonly estStatusOptions = EST_STATUS_OPTIONS;
+  readonly statusOpen = signal(false);
 
   private readonly estimateId = signal<string>('');
 
   readonly estimate = computed<Estimate | null>(() => {
     const id = this.estimateId();
-    return ESTIMATES.find(e => e.id === id) ?? null;
+    return this.store.estimates().find(e => e.id === id) ?? null;
   });
 
   readonly lineItems = computed<LineItem[]>(() => {
@@ -257,6 +297,18 @@ export class EstimateDetailPageComponent {
     return this.estimate() ? map[this.estimate()!.status] : '';
   });
 
+  readonly statusDotClass = computed(() => {
+    const est = this.estimate();
+    if (!est) return '';
+    const map: Record<EstimateStatus, string> = {
+      'Draft': 'bg-secondary',
+      'Under Review': 'bg-primary',
+      'Awaiting Approval': 'bg-warning',
+      'Approved': 'bg-success',
+    };
+    return map[est.status] ?? 'bg-secondary';
+  });
+
   readonly estimateBadgeColor = estimateBadgeColor;
   readonly dueDateClass = dueDateClass;
 
@@ -268,7 +320,25 @@ export class EstimateDetailPageComponent {
 
   formatCurrency(value: number): string { return sharedFormatCurrency(value); }
 
+  changeStatus(newStatus: EstimateStatus): void {
+    const est = this.estimate();
+    if (!est) return;
+    this.store.updateEstimateStatus(est.id, newStatus);
+    this.statusOpen.set(false);
+  }
+
   goBack(): void {
-    this.router.navigate(['/financials']);
+    const route = this.backInfo.route;
+    if (route.includes('?')) {
+      const [path, query] = route.split('?');
+      const qp: Record<string, string> = {};
+      for (const pair of query.split('&')) {
+        const [k, v] = pair.split('=');
+        if (k) qp[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
+      }
+      this.router.navigate([path || '/'], { queryParams: qp });
+    } else {
+      this.router.navigate([route]);
+    }
   }
 }

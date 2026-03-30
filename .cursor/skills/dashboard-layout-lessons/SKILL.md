@@ -752,6 +752,42 @@ When a compressed chain has no free internal space for the mover:
 - `both columns: incremental drag of bottom column 1 widget never creates overlap`
 - `same-size widgets: mover with identical dimensions to neighbor produces no overlap`
 
+## 16. Hamburger / Side Nav Toggle -- Double-Fire Prevention
+
+### The bug
+
+The Modus navbar emits a `mainMenuOpenChange` custom event when the hamburger button is clicked. The `DashboardShellComponent` also attaches a direct DOM click listener on the hamburger button via `attachHamburgerListener()` (capture phase, `stopImmediatePropagation`). Both handlers toggle `navExpanded`.
+
+When both fire on the same click, `navExpanded` toggles twice (false→true→false), making the sidenav appear broken -- clicking the hamburger does nothing.
+
+### Why both exist
+
+The direct DOM listener was added because `(mainMenuOpenChange)` is unreliable -- Angular lifecycle re-renders can disconnect the binding from the Modus web component's internal shadow DOM button. The direct listener with `capture: true` is the reliable path.
+
+### The fix
+
+`onMainMenuToggle` must be a **no-op**. The Angular `(mainMenuOpenChange)` binding is kept to avoid Angular logging unhandled events, but the handler body is empty:
+
+```typescript
+onMainMenuToggle(_open: boolean): void {
+  // Intentionally empty — hamburger toggle is handled by the direct DOM
+  // listener in attachHamburgerListener() to avoid double-fire issues.
+}
+```
+
+All toggle logic lives exclusively in `attachHamburgerListener()`.
+
+### Mobile side nav: icons only
+
+On mobile (< 768px), the side nav renders at 56px width (icons only). The CSS rule `.custom-side-nav.expanded { width: 56px }` inside `@media (max-width: 767px)` enforces this. Template labels must be guarded with `navExpanded() && !isMobile()` to avoid text rendering in the narrow column.
+
+### Rules
+
+1. **Never put toggle logic in `onMainMenuToggle`** -- it will double-fire with the direct listener.
+2. **Always use `attachHamburgerListener`** for hamburger click handling (capture phase, `stopImmediatePropagation`).
+3. **Guard side nav labels** with `navExpanded() && !isMobile()` to prevent text in the 56px mobile column.
+4. **`@if (!isMobile() || navExpanded())`** controls side nav DOM presence on mobile -- completely removed when collapsed, rendered when expanded.
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -771,3 +807,4 @@ When a compressed chain has no free internal space for the mover:
 | Template private member access | all `.component.ts` | `tests/static/template-safety.spec.ts` |
 | Wall cascade post-cleanup (4+ widgets) | `canvas-push.ts` | `canvas-push.spec.ts` (4 new tests) |
 | Same-size oscillation & frozen pushback | `canvas-push.ts` | `canvas-push.spec.ts` (6 new tests) |
+| Hamburger double-fire prevention | `dashboard-shell.component.ts` | (manual test: hamburger toggles sidenav on mobile) |

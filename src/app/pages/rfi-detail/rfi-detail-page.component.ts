@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router } from '@angular/router';
 import type { Rfi, RfiStatus } from '../../data/dashboard-data';
 import { DataStoreService } from '../../data/data-store.service';
+import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
+import { STATUS_OPTIONS } from '../../data/dashboard-item-status';
 
 @Component({
   selector: 'app-rfi-detail-page',
@@ -16,7 +18,7 @@ import { DataStoreService } from '../../data/data-store.service';
           (keydown.enter)="goBack()"
         >
           <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">Back to Dashboard</div>
+          <div class="text-sm font-medium">{{ backLabel }}</div>
         </div>
 
         <div class="bg-card border-default rounded-lg overflow-hidden">
@@ -30,9 +32,31 @@ import { DataStoreService } from '../../data/data-store.service';
                 <div class="text-sm text-foreground-60">Request for Information</div>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <div class="w-2.5 h-2.5 rounded-full" [class]="statusDot()"></div>
-              <div class="text-sm font-medium text-foreground">{{ statusLabel() }}</div>
+            <div class="relative">
+              <div class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-muted transition-colors duration-150"
+                role="button" tabindex="0"
+                (click)="statusOpen.set(!statusOpen())"
+                (keydown.enter)="statusOpen.set(!statusOpen())">
+                <div class="w-2.5 h-2.5 rounded-full" [class]="statusDot()"></div>
+                <div class="text-sm font-medium text-foreground">{{ statusLabel() }}</div>
+                <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">chevron_down</i>
+              </div>
+              @if (statusOpen()) {
+                <div class="fixed inset-0 z-[9998]" (click)="statusOpen.set(false)"></div>
+                <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-[9999] min-w-[160px] py-1 overflow-hidden">
+                  @for (opt of statusOptions; track opt.value) {
+                    <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                      role="option" [attr.aria-selected]="opt.value === rfi()!.status"
+                      (click)="changeStatus(opt.value)">
+                      <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
+                      <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
+                      @if (opt.value === rfi()!.status) {
+                        <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
+                      }
+                    </div>
+                  }
+                </div>
+              }
             </div>
           </div>
 
@@ -78,7 +102,7 @@ import { DataStoreService } from '../../data/data-store.service';
             role="button" tabindex="0"
             (click)="goBack()"
             (keydown.enter)="goBack()"
-          >Return to Dashboard</div>
+          >Return to {{ backLabel }}</div>
         </div>
       }
     </div>
@@ -88,6 +112,13 @@ export class RfiDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
+  private readonly navHistory = inject(NavigationHistoryService);
+
+  private readonly backInfo = this.navHistory.getBackInfo();
+  readonly backLabel = 'Back to ' + this.backInfo.label;
+
+  readonly statusOptions = STATUS_OPTIONS;
+  readonly statusOpen = signal(false);
 
   private readonly rfiId = signal<string>('');
 
@@ -128,7 +159,15 @@ export class RfiDetailPageComponent {
     });
   }
 
+  changeStatus(newStatus: string): void {
+    const r = this.rfi();
+    if (!r) return;
+    this.store.updateRfiStatus(r.id, newStatus as RfiStatus);
+    this.statusOpen.set(false);
+  }
+
   goBack(): void {
-    this.router.navigate(['/']);
+    const route = this.backInfo.route;
+    this.router.navigate([route]);
   }
 }
