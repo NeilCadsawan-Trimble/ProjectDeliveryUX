@@ -25,9 +25,10 @@ import { AiService } from '../../services/ai.service';
 import { AiPanelController } from '../services/ai-panel-controller';
 import { CanvasPanning } from '../services/canvas-panning';
 import { NavigationHistoryService } from '../services/navigation-history.service';
+import { DataStoreService } from '../../data/data-store.service';
 import {
   PROJECTS, ESTIMATES, ACTIVITIES, ATTENTION_ITEMS,
-  TIME_OFF_REQUESTS, RFIS, SUBMITTALS, CALENDAR_APPOINTMENTS,
+  TIME_OFF_REQUESTS, CALENDAR_APPOINTMENTS,
   CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS,
   INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, getProjectJobCosts,
 } from '../../data/dashboard-data';
@@ -517,6 +518,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 export class DashboardShellComponent implements AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
+  private readonly store = inject(DataStoreService);
   private readonly elementRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
@@ -716,8 +718,8 @@ export class DashboardShellComponent implements AfterViewInit {
       activities: ACTIVITIES,
       attentionItems: ATTENTION_ITEMS,
       timeOffRequests: TIME_OFF_REQUESTS,
-      rfis: RFIS,
-      submittals: SUBMITTALS,
+      rfis: this.store.rfis(),
+      submittals: this.store.submittals(),
       calendar: CALENDAR_APPOINTMENTS,
       changeOrders: CHANGE_ORDERS,
       dailyReports: DAILY_REPORTS,

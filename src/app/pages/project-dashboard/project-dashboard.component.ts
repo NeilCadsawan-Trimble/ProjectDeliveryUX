@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { CurrencyPipe, NgTemplateOutlet, TitleCasePipe } from '@angular/common';
 import { Router } from '@angular/router';
+import { DataStoreService } from '../../data/data-store.service';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
@@ -56,7 +57,7 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType } from '../../data/dashboard-data';
+import { PROJECTS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
@@ -123,6 +124,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 export class ProjectDashboardComponent extends DashboardPageBase implements OnInit, AfterViewInit {
   private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
+  private readonly store = inject(DataStoreService);
   private readonly projectNav = inject(ProjectDashboardNavigationService);
   private readonly navHistory = inject(NavigationHistoryService);
   private readonly elementRef = inject(ElementRef);
@@ -394,7 +396,12 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.tileCanvas.updateDetailItem(tileId, updated);
   }
 
-  onTileDetailStatusChange(tileId: string, newStatus: string): void { this.updateTileDetailField(tileId, 'status', newStatus); }
+  onTileDetailStatusChange(tileId: string, newStatus: string): void {
+    this.updateTileDetailField(tileId, 'status', newStatus);
+    const dv = this.tileDetailViews()[tileId];
+    if (dv?.type === 'rfi') this.store.updateRfiStatus((dv.item as Rfi).id, newStatus as RfiStatus);
+    if (dv?.type === 'submittal') this.store.updateSubmittalStatus((dv.item as Submittal).id, newStatus as SubmittalStatus);
+  }
   onTileDetailAssigneeChange(tileId: string, newAssignee: string): void { this.updateTileDetailField(tileId, 'assignee', newAssignee); }
   onTileDetailDueDateChange(tileId: string, newDate: string): void { this.updateTileDetailField(tileId, 'dueDate', newDate); }
 
@@ -926,7 +933,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly milestones = computed(() => this.projectData().milestones);
   readonly tasks = computed(() => this.projectData().tasks);
   readonly risks = computed(() => this.projectData().risks);
-  readonly projectUrgentNeeds = computed(() => buildUrgentNeeds().filter(n => n.projectId === this.projectId()));
+  readonly projectUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals()).filter(n => n.projectId === this.projectId()));
   readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
 
   readonly projectWeather = computed(() => getProjectWeather(this.projectId()));
@@ -1029,7 +1036,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly budgetHealthy = computed(() => this.budgetPct() < 90);
 
   readonly projectRfis = computed(() =>
-    RFIS.filter(r => r.project === this.projectName())
+    this.store.rfis().filter(r => r.project === this.projectName())
   );
 
   readonly rfiOverdueCount = computed(() =>
@@ -1037,7 +1044,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   );
 
   readonly projectSubmittals = computed(() =>
-    SUBMITTALS.filter(s => s.project === this.projectName())
+    this.store.submittals().filter(s => s.project === this.projectName())
   );
 
   readonly submittalOverdueCount = computed(() =>
@@ -1486,7 +1493,12 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.detailView.set({ ...current, item: updated } as DetailView);
   }
 
-  onDetailStatusChange(newStatus: string): void { this.updateDetailField('status', newStatus); }
+  onDetailStatusChange(newStatus: string): void {
+    this.updateDetailField('status', newStatus);
+    const dv = this.detailView();
+    if (dv?.type === 'rfi') this.store.updateRfiStatus(dv.item.id, newStatus as RfiStatus);
+    if (dv?.type === 'submittal') this.store.updateSubmittalStatus(dv.item.id, newStatus as SubmittalStatus);
+  }
   onDetailAssigneeChange(newAssignee: string): void { this.updateDetailField('assignee', newAssignee); }
   onDetailDueDateChange(newDate: string): void { this.updateDetailField('dueDate', newDate); }
 
@@ -1516,6 +1528,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   onCanvasDetailStatusChange(widgetId: string, newStatus: string): void {
     this._detailMgr.updateField(widgetId, 'status', newStatus);
+    const dv = this._detailMgr.canvasDetailViews()[widgetId];
+    if (dv?.type === 'rfi') this.store.updateRfiStatus(dv.item.id, newStatus as RfiStatus);
+    if (dv?.type === 'submittal') this.store.updateSubmittalStatus(dv.item.id, newStatus as SubmittalStatus);
   }
 
   onCanvasDetailAssigneeChange(widgetId: string, newAssignee: string): void {

@@ -4,9 +4,8 @@ import type { DetailView } from '../../shell/services/canvas-detail-manager';
 import type { SubpageTileCanvas, TileDetailView } from '../../shell/services/subpage-tile-canvas';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import type { DrawingTile } from '../../data/drawings-data';
+import { DataStoreService } from '../../data/data-store.service';
 import {
-  RFIS,
-  SUBMITTALS,
   CHANGE_ORDERS,
   DAILY_REPORTS,
   INSPECTIONS,
@@ -55,6 +54,7 @@ export interface ProjectDashboardNavigationBindings {
 export class ProjectDashboardNavigationService {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly store = inject(DataStoreService);
 
   private ctx!: ProjectDashboardNavigationBindings;
 
@@ -84,10 +84,10 @@ export class ProjectDashboardNavigationService {
         this.ctx.detailSourceLabel.set(this.resolveFromLabel(from));
       }
       if (view === 'rfi') {
-        const rfi = RFIS.find(r => r.id === id);
+        const rfi = this.store.rfis().find(r => r.id === id);
         if (rfi) this.ctx.detailView.set({ type: 'rfi', item: rfi });
       } else if (view === 'submittal') {
-        const submittal = SUBMITTALS.find(s => s.id === id);
+        const submittal = this.store.submittals().find(s => s.id === id);
         if (submittal) this.ctx.detailView.set({ type: 'submittal', item: submittal });
       } else if (view === 'drawing') {
         const drawing = this.ctx.drawingTiles().find(d => d.id === id);
@@ -167,13 +167,13 @@ export class ProjectDashboardNavigationService {
       const view = qp['view'];
       const id = qp['id'];
       if (view === 'rfi') {
-        const rfi = RFIS.find(r => r.id === id);
+        const rfi = this.store.rfis().find(r => r.id === id);
         if (rfi) {
           this.navigateToDetail('rfi', rfi, 'risks');
           return;
         }
       } else if (view === 'submittal') {
-        const sub = SUBMITTALS.find(s => s.id === id);
+        const sub = this.store.submittals().find(s => s.id === id);
         if (sub) {
           this.navigateToDetail('submittal', sub, 'risks');
           return;
@@ -350,13 +350,13 @@ export class ProjectDashboardNavigationService {
 
     if (view && id) {
       if (view === 'rfi') {
-        const rfi = RFIS.find(r => r.id === id);
+        const rfi = this.store.rfis().find(r => r.id === id);
         if (rfi) {
           this.ctx.detailView.set({ type: 'rfi', item: rfi });
           return;
         }
       } else if (view === 'submittal') {
-        const sub = SUBMITTALS.find(s => s.id === id);
+        const sub = this.store.submittals().find(s => s.id === id);
         if (sub) {
           this.ctx.detailView.set({ type: 'submittal', item: sub });
           return;

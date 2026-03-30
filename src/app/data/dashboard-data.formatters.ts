@@ -31,6 +31,8 @@ import type {
   StaffingConflict,
   SubledgerTransaction,
   TimeOffRequest,
+  Rfi,
+  Submittal,
   UrgentNeedCategory,
   UrgentNeedItem,
 } from './dashboard-data.types';
@@ -54,8 +56,6 @@ import {
   PROJECTS,
   PROJECT_TEAM_SIZES,
   PROJECT_WEATHER_DATA,
-  RFIS,
-  SUBMITTALS,
   TIME_OFF_REQUESTS,
 } from './dashboard-data.seed';
 import { PROJECT_DATA, type BudgetBreakdown } from './project-data';
@@ -419,10 +419,7 @@ export function getProjectMeta(id: number): { name: string; slug: string } {
   return _projectSlugMap.get(id) ?? { name: 'Unknown', slug: '' };
 }
 
-let _urgentNeedsCache: UrgentNeedItem[] | null = null;
-
-export function buildUrgentNeeds(): UrgentNeedItem[] {
-  if (_urgentNeedsCache) return _urgentNeedsCache;
+export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[]): UrgentNeedItem[] {
 
   const seen = new Set<string>();
   const items: UrgentNeedItem[] = [];
@@ -444,14 +441,14 @@ export function buildUrgentNeeds(): UrgentNeedItem[] {
     const rfiMatch = upperTitle.match(/RFI-(\d+)/);
     if (rfiMatch) {
       const rfiId = String(parseInt(rfiMatch[1], 10));
-      const rfi = RFIS.find(r => r.id === rfiId);
+      const rfi = rfis.find(r => r.id === rfiId);
       if (rfi) qp = { view: 'rfi', id: rfiId, page: 'records', subpage: 'rfis' };
       seen.add(`rfi-${rfiMatch[1]}`);
     }
     const subMatch = upperTitle.match(/SUB-(\d+)/);
     if (subMatch) {
       const subId = String(parseInt(subMatch[1], 10));
-      const sub = SUBMITTALS.find(s => s.id === subId);
+      const sub = submittals.find(s => s.id === subId);
       if (sub) qp = { view: 'submittal', id: subId, page: 'records', subpage: 'submittals' };
       seen.add(`sub-${subMatch[1]}`);
     }
@@ -480,7 +477,7 @@ export function buildUrgentNeeds(): UrgentNeedItem[] {
     });
   }
 
-  for (const rfi of RFIS) {
+  for (const rfi of rfis) {
     if (rfi.status !== 'overdue') continue;
     if (seen.has(`rfi-${rfi.id}`)) continue;
     const proj = PROJECTS.find(p => p.name === rfi.project);
@@ -499,7 +496,7 @@ export function buildUrgentNeeds(): UrgentNeedItem[] {
     });
   }
 
-  for (const sub of SUBMITTALS) {
+  for (const sub of submittals) {
     if (sub.status !== 'overdue') continue;
     if (seen.has(`sub-${sub.id}`)) continue;
     const proj = PROJECTS.find(p => p.name === sub.project);
@@ -561,7 +558,6 @@ export function buildUrgentNeeds(): UrgentNeedItem[] {
   const severityOrder: Record<string, number> = { critical: 0, warning: 1, info: 2 };
   items.sort((a, b) => (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9));
 
-  _urgentNeedsCache = items;
   return items;
 }
 

@@ -110,7 +110,7 @@ export const risksAgent: WidgetAgent = {
   systemPrompt: 'You are a risk management specialist for construction projects. You assess risk severity, evaluate mitigation strategies, advise on risk response plans, and track urgent needs that require immediate attention.',
   suggestions(s) {
     const projId = s.projects?.[0]?.id;
-    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
+    const urgent = projId ? buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []).filter(n => n.projectId === projId) : [];
     const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
     const base = high
       ? ['Show high-severity risks', 'What are the biggest risks right now?', 'What risk mitigations are in place?']
@@ -120,7 +120,7 @@ export const risksAgent: WidgetAgent = {
   },
   insight(s) {
     const projId = s.projects?.[0]?.id;
-    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
+    const urgent = projId ? buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []).filter(n => n.projectId === projId) : [];
     const critical = urgent.filter(n => n.severity === 'critical').length;
     const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
     const parts: string[] = [];
@@ -130,7 +130,7 @@ export const risksAgent: WidgetAgent = {
   },
   alerts(s) {
     const projId = s.projects?.[0]?.id;
-    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
+    const urgent = projId ? buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []).filter(n => n.projectId === projId) : [];
     const critical = urgent.filter(n => n.severity === 'critical').length;
     const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
     const total = critical + high;
@@ -138,15 +138,15 @@ export const risksAgent: WidgetAgent = {
     if (high) return { level: 'warning', count: total, label: 'high severity' };
     return null;
   },
-  actions: () => [
+  actions: (s) => [
     { id: 'risk-workshop', label: 'Schedule risk review', execute: () => 'Scheduled risk review workshop.' },
     { id: 'update-mitigations', label: 'Request mitigation updates', execute: () => 'Requested mitigation plan updates from owners.' },
-    { id: 'escalate-urgent', label: 'Escalate urgent needs', execute: (st) => { const projId = st.projects?.[0]?.id; const n = projId ? buildUrgentNeeds().filter(i => i.projectId === projId && i.severity === 'critical').length : 0; return n ? `Escalated ${n} critical item(s).` : 'No critical items to escalate.'; } },
+    { id: 'escalate-urgent', label: 'Escalate urgent needs', execute: (st) => { const projId = st.projects?.[0]?.id; const n = projId ? buildUrgentNeeds(st.rfis ?? [], st.submittals ?? []).filter(i => i.projectId === projId && i.severity === 'critical').length : 0; return n ? `Escalated ${n} critical item(s).` : 'No critical items to escalate.'; } },
   ],
   buildContext(s) {
     const risks = s.risks ?? [];
     const projId = s.projects?.[0]?.id;
-    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
+    const urgent = projId ? buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []).filter(n => n.projectId === projId) : [];
     const riskLines = risks.map(r => `  ${r.title}: severity ${r.severity}, impact: ${r.impact}, mitigation: ${r.mitigation}`);
     const urgentLines = urgent.map(u => `  [${u.severity.toUpperCase()}] ${u.title} -- ${u.subtitle} (${u.category})`);
     return `Project: ${s.projectName}\nRisks (${risks.length}):\n${riskLines.join('\n')}\nUrgent Needs (${urgent.length}):\n${urgentLines.join('\n')}`;
@@ -154,7 +154,7 @@ export const risksAgent: WidgetAgent = {
   localRespond(q, s) {
     const risks = s.risks ?? [];
     const projId = s.projects?.[0]?.id;
-    const urgent = projId ? buildUrgentNeeds().filter(n => n.projectId === projId) : [];
+    const urgent = projId ? buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []).filter(n => n.projectId === projId) : [];
 
     if (kw(q, 'urgent', 'needs', 'action', 'attention')) {
       if (!urgent.length) return 'No urgent needs flagged for this project.';

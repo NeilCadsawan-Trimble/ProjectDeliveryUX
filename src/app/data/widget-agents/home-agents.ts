@@ -305,8 +305,8 @@ export const urgentNeedsAgent: WidgetAgent = {
     'Show me all pending change orders',
     'Summarize schedule risks',
   ],
-  insight: () => {
-    const items = buildUrgentNeeds();
+  insight: (s) => {
+    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []);
     const critical = items.filter(i => i.severity === 'critical').length;
     const budgetCritical = items.filter(i => i.severity === 'critical' && i.category === 'budget').length;
     if (budgetCritical > 0 && critical >= 5) return `${critical} critical items including ${budgetCritical} budget alert(s) need attention`;
@@ -315,15 +315,15 @@ export const urgentNeedsAgent: WidgetAgent = {
     if (critical > 0) return `${critical} critical item(s) flagged`;
     return null;
   },
-  alerts: () => {
-    const items = buildUrgentNeeds();
+  alerts: (s) => {
+    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []);
     const critical = items.filter(i => i.severity === 'critical').length;
     if (critical >= 5) return { level: 'critical' as const, count: critical, label: `${critical} critical` };
     if (critical > 0) return { level: 'warning' as const, count: critical, label: `${critical} critical` };
     return null;
   },
-  actions: () => {
-    const items = buildUrgentNeeds();
+  actions: (s) => {
+    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []);
     const budgetItems = items.filter(i => (i.category === 'budget' || i.category === 'change-order') && i.financialsRoute);
     const projectsWithBudgetIssues = [...new Map(budgetItems.map(i => [i.projectId, i])).values()].slice(0, 3);
     const finActions: AgentAction[] = projectsWithBudgetIssues.map(i => ({
@@ -340,8 +340,8 @@ export const urgentNeedsAgent: WidgetAgent = {
       ...finActions,
     ];
   },
-  buildContext() {
-    const items = buildUrgentNeeds();
+  buildContext(s) {
+    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []);
     const critical = items.filter(i => i.severity === 'critical');
     const warnings = items.filter(i => i.severity === 'warning');
     const info = items.filter(i => i.severity === 'info');
@@ -349,8 +349,8 @@ export const urgentNeedsAgent: WidgetAgent = {
     const lines = items.map(i => `  [${i.severity.toUpperCase()}] ${i.projectName}: ${i.title} -- ${i.subtitle} (${i.category})${i.financialsRoute ? ' [financials: ' + i.financialsRoute + ']' : ''}`);
     return `Urgent needs across portfolio: ${critical.length} critical, ${warnings.length} warnings, ${info.length} info. ${budgetItems.length} financial items (budget/change-order) with direct job cost links.\n${lines.join('\n')}`;
   },
-  localRespond(q) {
-    const items = buildUrgentNeeds();
+  localRespond(q, s) {
+    const items = buildUrgentNeeds(s?.rfis ?? [], s?.submittals ?? []);
     const critical = items.filter(i => i.severity === 'critical');
     const warnings = items.filter(i => i.severity === 'warning');
 

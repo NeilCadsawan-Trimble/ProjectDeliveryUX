@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { DataStoreService } from '../../data/data-store.service';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
@@ -279,6 +280,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
 })
 export class ProjectsPageComponent implements AfterViewInit {
   private readonly router = inject(Router);
+  private readonly store = inject(DataStoreService);
   private readonly canvasResetService = inject(CanvasResetService);
   private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
@@ -372,13 +374,13 @@ export class ProjectsPageComponent implements AfterViewInit {
 
   readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
 
-  private readonly allUrgentNeeds = buildUrgentNeeds();
+  private readonly allUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals()));
   private readonly allJobCosts = getProjectJobCosts();
 
   readonly projectAgentData = computed(() => {
     const map = new Map<number, { urgentNeeds: UrgentNeedItem[]; criticalCount: number; warningCount: number; topNeed: UrgentNeedItem | null; budgetAlert: boolean; jobCostSpend: string | null }>();
     for (const p of this.projects()) {
-      const needs = this.allUrgentNeeds.filter(n => n.projectId === p.id);
+      const needs = this.allUrgentNeeds().filter(n => n.projectId === p.id);
       const critical = needs.filter(n => n.severity === 'critical');
       const warning = needs.filter(n => n.severity === 'warning');
       const topNeed = critical[0] ?? warning[0] ?? needs[0] ?? null;
