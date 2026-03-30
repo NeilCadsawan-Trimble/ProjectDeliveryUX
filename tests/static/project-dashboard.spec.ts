@@ -358,4 +358,41 @@ describe('ProjectDashboardComponent (template regression)', () => {
       expect(SRC).not.toContain("subnavConfigs['financials'] }");
     });
   });
+
+  describe('canvas mode rendering parity for financials sub-pages', () => {
+    const financialsPagesMatch = TS_SRC.match(
+      /FINANCIALS_PAGES_WITH_CONTENT\s*=\s*new\s+Set\(\[([^\]]+)\]\)/
+    );
+    const financialsPages = financialsPagesMatch
+      ? financialsPagesMatch[1].match(/'([^']+)'/g)!.map(s => s.replace(/'/g, ''))
+      : [];
+
+    const canvasSectionMatch = TEMPLATE_SRC.match(
+      /<!-- Canvas mode financials[\s\S]*?financialsSubPageHasContent|activeFinancialsPage\(\) === 'budget'[\s\S]*?financialsSubPageHasContent/
+    );
+    const canvasSection = canvasSectionMatch ? canvasSectionMatch[0] : TEMPLATE_SRC;
+
+    for (const page of financialsPages) {
+      it(`canvas template has rendering branch for financials page '${page}'`, () => {
+        const pattern = new RegExp(`activeFinancialsPage\\(\\)\\s*===\\s*'${page}'`);
+        expect(canvasSection).toMatch(pattern);
+      });
+    }
+  });
+
+  describe('canvas mode rendering parity for records sub-pages', () => {
+    const recordsPagesMatch = TS_SRC.match(
+      /RECORDS_PAGES_WITH_CONTENT\s*=\s*new\s+Set\(\[([^\]]+)\]\)/
+    );
+    const recordsPages = recordsPagesMatch
+      ? recordsPagesMatch[1].match(/'([^']+)'/g)!.map(s => s.replace(/'/g, ''))
+      : [];
+
+    for (const page of recordsPages) {
+      it(`canvas template has rendering branch for records page '${page}'`, () => {
+        const pattern = new RegExp(`activeRecordsPage\\(\\)\\s*===\\s*'${page}'`);
+        expect(TEMPLATE_SRC).toMatch(pattern);
+      });
+    }
+  });
 });

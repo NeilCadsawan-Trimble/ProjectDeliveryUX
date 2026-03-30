@@ -408,6 +408,8 @@ List row:          [class.bg-primary-20]="!!tileDetailViews()['tile-X-' + id]"
 
 **Related skill:** `view-mode-parity` has the full enforcement rules.
 
+**Regression test:** `tests/static/project-dashboard.spec.ts` -- "canvas mode rendering parity" sections auto-extract every page from `FINANCIALS_PAGES_WITH_CONTENT` and `RECORDS_PAGES_WITH_CONTENT` and verify each has a corresponding `activeFinancialsPage() === 'X'` or `activeRecordsPage() === 'X'` branch in the canvas template. Adding a page to either set without adding a canvas rendering branch will fail the test.
+
 ### The bug (occurred multiple times)
 
 Features were added to desktop mode but not to canvas mode (or vice versa). Examples:
@@ -415,6 +417,7 @@ Features were added to desktop mode but not to canvas mode (or vice versa). Exam
 - Desktop list had Weather and Safety columns for Daily Reports; canvas list did not
 - Desktop had KPI summary cards for financials pages; canvas mode did not
 - Canvas tiles used page navigation instead of in-canvas detail expansion
+- New financials sub-pages (purchase-orders, contract-invoices, general-invoices) were wired into desktop mode and `FINANCIALS_PAGES_WITH_CONTENT` but had no canvas-mode rendering branch, causing blank content at viewport >= 2000px
 
 ### The rule
 
@@ -556,6 +559,26 @@ The collapsed header is ~48px tall. The toolbar is ~56px + 24px margin-bottom = 
 
 Whenever a new template uses the `childPageSubnav` alongside a `CollapsibleSubnavComponent`, the toolbar must be wrapped with the margin-left adjustment. Check both the list subpage template AND the detail content template.
 
+## 13. Canvas Grid Alignment (16px Global Grid)
+
+All canvas default values -- `HEADER_HEIGHT`, `canvasDefaultTops`, `canvasDefaultHeights` -- must be multiples of 16 (`DashboardLayoutEngine.GAP_PX`). This ensures every widget edge lands on the same global grid, so widgets in different rows align vertically when given equal heights.
+
+### The rule
+
+1. Every `HEADER_HEIGHT`, `*_HEIGHT`, and height constant must be `round(value / 16) * 16`.
+2. Since `HEADER_OFFSET = HEADER_HEIGHT + GAP_PX` and `GAP_PX = 16`, offsets are automatically aligned when heights are aligned.
+3. Row tops are calculated as cumulative `height + GAP_PX` sums -- all automatically grid-aligned when individual heights are.
+4. The `applyCanvasDefaults()` method in `DashboardLayoutEngine` now snaps all tops and heights to the 16px grid as a safeguard.
+5. Bump `canvasStorageKey` after changing any default values to force layout reset.
+
+### Why this matters
+
+Without grid alignment, widgets in different conceptual rows can have different starting offsets (e.g., 246px vs 602px vs 958px). Even though interactive resize snaps to 16px, the initial positions are off-grid, so edges never align. With all values as 16px multiples, the global grid is consistent and bottom edges of same-height widgets always match.
+
+### Regression test
+
+`tests/static/canvas-grid-alignment.spec.ts` -- 70 tests that parse all 6 page files and verify every `canvasDefaultTops` and `canvasDefaultHeights` value is a multiple of 16.
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -569,6 +592,7 @@ Whenever a new template uses the `childPageSubnav` alongside a `CollapsibleSubna
 | Side nav dark background | `src/styles.css` | (visual, test all 6 themes) |
 | Widget deselection | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` |
 | Tile detail template pattern | `project-dashboard.component.ts` | `tests/static/project-dashboard.spec.ts` |
-| View mode parity | all page components | (manual: compare desktop vs canvas) |
+| Canvas grid alignment | all page components | `tests/static/canvas-grid-alignment.spec.ts` |
+| View mode parity | all page components | `tests/static/project-dashboard.spec.ts` (canvas parity) |
 | Template arrow functions | all `.component.ts` | `tests/static/template-safety.spec.ts` |
 | Template private member access | all `.component.ts` | `tests/static/template-safety.spec.ts` |

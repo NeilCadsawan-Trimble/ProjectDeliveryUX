@@ -155,7 +155,7 @@ widgetFocusService.selectWidget('myWidget');
 5. **Register widgets** with `WidgetFocusService` for AI integration
 6. **Add the route** in `app.routes.ts`
 
-See `src/app/pages/example-home/` for a complete working example.
+See `src/app/pages/home-page/` for a complete working example.
 
 ## Customization Points
 
@@ -222,7 +222,9 @@ Never use generic Tailwind colors (`bg-blue-500`) or hardcoded hex values.
 - `@trimble-oss/modus-icons`
 - Tailwind CSS v4
 
-## Example Pages
+## Main Pages
 
-- `/example` -- Example home dashboard with 4 draggable widgets
-- `/example-project/alpha-project` -- Example project page with selector and custom side nav
+- `/` -- Home dashboard with draggable widgets
+- `/projects` -- Projects list with grid/list views
+- `/financials` -- Financial overview with charts and tables
+- `/projects/:slug` -- Project detail with 8 sub-pages

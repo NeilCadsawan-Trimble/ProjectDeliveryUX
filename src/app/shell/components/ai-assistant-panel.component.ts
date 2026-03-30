@@ -92,7 +92,7 @@ import type { AgentAction } from '../../data/widget-agents';
                       [attr.aria-label]="action.label"
                       (keydown.enter)="handleAction(action)"
                     >
-                      <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">lightning</i>
                       <div>{{ action.label }}</div>
                     </div>
                   }
@@ -147,7 +147,7 @@ import type { AgentAction } from '../../data/widget-agents';
                     (click)="handleAction(action)"
                     role="button"
                   >
-                    <i class="modus-icons text-xs text-primary" aria-hidden="true">flash</i>
+                    <i class="modus-icons text-xs text-primary" aria-hidden="true">lightning</i>
                     <div>{{ action.label }}</div>
                   </div>
                 }

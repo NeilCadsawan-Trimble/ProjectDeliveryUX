@@ -26,8 +26,8 @@ export class DashboardLayoutComponent {
   readonly appTitle = 'Project Delivery';
 
   readonly userCard: INavbarUserCard = {
-    name: 'Alex Morgan',
-    email: 'alex.morgan@trimble.com',
+    name: 'Frank Mendoza',
+    email: 'frank.mendoza@trimble.com',
   };
 
   readonly sideNavItems: ShellNavItem[] = [

@@ -56,7 +56,7 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, type ContractStatus, type ContractType } from '../../data/dashboard-data';
+import { PROJECTS, RFIS, SUBMITTALS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
@@ -89,7 +89,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
   'contracts': 'Manage prime contracts, subcontracts, and contract documents. Track values, retainage, and linked change orders.',
   'potential-change-orders': 'Track potential change orders before formal approval.',
   'subcontract-change-orders': 'Manage change orders issued to subcontractors.',
-  'applications-for-payment': 'Submit and review payment applications and progress billing.',
+  'billings': 'Track progress billings, invoices, and payment status.',
   'change-order-requests': 'Process and approve change order requests from stakeholders.',
   'contract-invoices': 'Track invoices against contract line items and retainage.',
   'cost-forecasts': 'Project future costs and compare against budget allocations.',
@@ -132,10 +132,12 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly projectData = input.required<ProjectDashboardData>();
   readonly projectId = input<number>(1);
 
-  private static readonly PROJ_HEADER_HEIGHT = 140;
+  private static readonly PROJ_HEADER_HEIGHT = 144;
   private static readonly PROJ_HEADER_OFFSET = ProjectDashboardComponent.PROJ_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
-  private readonly _registerAiCleanup = this.destroyRef.onDestroy(() => {
+  private readonly _abortCtrl = new AbortController();
+  private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
+    this._abortCtrl.abort();
     this.ai.destroy();
   });
 
@@ -143,11 +145,11 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     return {
       widgets: ['projHeader', 'milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'],
       layoutStorageKey: () => `project-${this.projectId()}-v3`,
-      canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v4`,
+      canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v5`,
       defaultColStarts: { projHeader: 1, milestones: 1, tasks: 1, risks: 1, rfis: 1, submittals: 1, drawing: 12, weather: 12, budget: 12, team: 12, activity: 12 },
       defaultColSpans: { projHeader: 16, milestones: 11, tasks: 11, risks: 11, rfis: 11, submittals: 11, drawing: 5, weather: 5, budget: 5, team: 5, activity: 5 },
-      defaultTops: { projHeader: 0, milestones: 0, tasks: 536, risks: 952, rfis: 1318, submittals: 1658, drawing: 0, weather: 436, budget: 686, team: 1152, activity: 1568 },
-      defaultHeights: { projHeader: 0, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, weather: 234, budget: 450, team: 400, activity: 350 },
+      defaultTops: { projHeader: 0, milestones: 0, tasks: 528, risks: 944, rfis: 1312, submittals: 1648, drawing: 0, weather: 432, budget: 688, team: 1152, activity: 1568 },
+      defaultHeights: { projHeader: 0, milestones: 512, tasks: 400, risks: 352, rfis: 320, submittals: 320, drawing: 416, weather: 240, budget: 448, team: 400, activity: 352 },
       defaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
       defaultPixelWidths: { projHeader: 1280, milestones: 875, tasks: 875, risks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
       canvasDefaultLefts: { projHeader: 0, milestones: 0, tasks: 0, risks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
@@ -155,17 +157,17 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       canvasDefaultTops: {
         projHeader: 0,
         milestones: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
-        tasks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 536,
-        risks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 952,
-        rfis: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1318,
-        submittals: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1658,
+        tasks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 528,
+        risks: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 944,
+        rfis: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1312,
+        submittals: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1648,
         drawing: ProjectDashboardComponent.PROJ_HEADER_OFFSET,
-        weather: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 436,
-        budget: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 686,
+        weather: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 432,
+        budget: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 688,
         team: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1152,
         activity: ProjectDashboardComponent.PROJ_HEADER_OFFSET + 1568,
       },
-      canvasDefaultHeights: { projHeader: ProjectDashboardComponent.PROJ_HEADER_HEIGHT, milestones: 520, tasks: 400, risks: 350, rfis: 324, submittals: 324, drawing: 420, weather: 234, budget: 450, team: 400, activity: 350 },
+      canvasDefaultHeights: { projHeader: ProjectDashboardComponent.PROJ_HEADER_HEIGHT, milestones: 512, tasks: 400, risks: 352, rfis: 320, submittals: 320, drawing: 416, weather: 240, budget: 448, team: 400, activity: 352 },
       minColSpan: 4,
       canvasGridMinHeightOffset: 200,
       savesDesktopOnMobile: true,
@@ -292,9 +294,12 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       if (sub === 'prime-contract-change-orders') return this.projectPrimeContractCOs().map(c => `tile-pco-${c.id}`);
       if (sub === 'potential-change-orders') return this.projectPotentialCOs().map(c => `tile-pot-${c.id}`);
       if (sub === 'subcontract-change-orders') return this.projectSubcontractCOs().map(c => `tile-sco-${c.id}`);
-      if (sub === 'applications-for-payment') return this.projectRevenueData().map(r => `tile-rev-${r.projectId}`);
+      if (sub === 'billings') return this.projectRevenueData().map(r => `tile-rev-${r.projectId}`);
       if (sub === 'cost-forecasts') return this.projectBudgetHistory().map((_, i) => `tile-cf-${i}`);
       if (sub === 'contracts') return this.projectContracts().map(c => `tile-ct-${c.id}`);
+      if (sub === 'purchase-orders') return this.projectPurchaseOrders().map(po => `tile-po-${po.id}`);
+      if (sub === 'contract-invoices') return this.projectInvoices().map(inv => `tile-inv-${inv.id}`);
+      if (sub === 'general-invoices') return this.projectPayables().map(p => `tile-ap-${p.id}`);
     }
     return [];
   });
@@ -506,7 +511,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
           'tile-budget-profitfade':  { width: halfW, height: 600, columns: 2 },
           'tile-budget-costsummary': { width: halfW, height: 600, columns: 2 },
         };
-      } else if (nav === 'financials' && (this.activeFinancialsPage() === 'applications-for-payment' || this.activeFinancialsPage() === 'cost-forecasts' || this.activeFinancialsPage() === 'contracts')) {
+      } else if (nav === 'financials' && (this.activeFinancialsPage() === 'billings' || this.activeFinancialsPage() === 'cost-forecasts' || this.activeFinancialsPage() === 'contracts' || this.activeFinancialsPage() === 'purchase-orders' || this.activeFinancialsPage() === 'contract-invoices' || this.activeFinancialsPage() === 'general-invoices')) {
         const kpiTop = ProjectDashboardComponent.TILE_CONTENT_TOP;
         const kpiH = 100;
         lockedRects['tc-fin-kpis'] = { top: kpiTop, left: contentLeft, width: contentWidth, height: kpiH };
@@ -635,7 +640,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly weatherForecast = WEATHER_FORECAST;
 
   private static readonly RECORDS_PAGES_WITH_CONTENT = new Set(['rfis', 'submittals', 'daily-reports', 'punch-items', 'inspections', 'action-items']);
-  private static readonly FINANCIALS_PAGES_WITH_CONTENT = new Set(['budget', 'change-order-requests', 'applications-for-payment', 'cost-forecasts', 'prime-contract-change-orders', 'potential-change-orders', 'subcontract-change-orders', 'contracts']);
+  private static readonly FINANCIALS_PAGES_WITH_CONTENT = new Set(['budget', 'change-order-requests', 'billings', 'cost-forecasts', 'prime-contract-change-orders', 'potential-change-orders', 'subcontract-change-orders', 'contracts', 'purchase-orders', 'contract-invoices', 'general-invoices']);
 
   readonly recordsSubPageHasContent = computed(() =>
     ProjectDashboardComponent.RECORDS_PAGES_WITH_CONTENT.has(this.activeRecordsPage())
@@ -802,11 +807,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     });
   });
 
-  formatJobCost(value: number): string {
-    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
-    return `$${value}`;
-  }
+  readonly formatJobCost = sharedFormatJobCost;
 
   readonly subledgerCategory = signal<JobCostCategory | null>(null);
 
@@ -910,8 +911,8 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   });
 
   readonly userCard: INavbarUserCard = {
-    name: 'Alex Morgan',
-    email: 'alex.morgan@trimble.com',
+    name: 'Frank Mendoza',
+    email: 'frank.mendoza@trimble.com',
   };
 
   readonly projectName = computed(() => this.projectData().name);
@@ -1095,6 +1096,58 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const h = this.projectBudgetHistory();
     return h.length > 0 ? h[h.length - 1] : null;
   });
+
+  readonly projectInvoices = computed(() =>
+    INVOICES.filter(inv => inv.projectId === this.projectId())
+  );
+
+  readonly projectPayables = computed(() =>
+    PAYABLES.filter(p => p.projectId === this.projectId())
+  );
+
+  readonly projectPurchaseOrders = computed(() =>
+    PURCHASE_ORDERS.filter(po => po.projectId === this.projectId())
+  );
+
+  readonly projectSubcontractLedger = computed(() =>
+    SUBCONTRACT_LEDGER.filter(sl => sl.projectId === this.projectId())
+  );
+
+  readonly poTotalValue = computed(() => this.projectPurchaseOrders().reduce((s, po) => s + po.amount, 0));
+  readonly poReceivedValue = computed(() => this.projectPurchaseOrders().reduce((s, po) => s + po.amountReceived, 0));
+  readonly poOpenCount = computed(() => this.projectPurchaseOrders().filter(po => po.status === 'issued' || po.status === 'acknowledged' || po.status === 'draft').length);
+
+  readonly invTotalAmount = computed(() => this.projectInvoices().reduce((s, inv) => s + inv.amount, 0));
+  readonly invPaidAmount = computed(() => this.projectInvoices().reduce((s, inv) => s + inv.amountPaid, 0));
+  readonly invOutstanding = computed(() => this.invTotalAmount() - this.invPaidAmount());
+
+  readonly payTotalAmount = computed(() => this.projectPayables().reduce((s, p) => s + p.amount, 0));
+  readonly payPaidAmount = computed(() => this.projectPayables().reduce((s, p) => s + p.amountPaid, 0));
+  readonly payOutstanding = computed(() => this.payTotalAmount() - this.payPaidAmount());
+
+  poStatusDotClass(status: PurchaseOrderStatus): string {
+    const map: Record<PurchaseOrderStatus, string> = {
+      'draft': 'bg-secondary', 'issued': 'bg-primary', 'acknowledged': 'bg-primary',
+      'partially-received': 'bg-warning', 'received': 'bg-success', 'closed': 'bg-secondary', 'cancelled': 'bg-destructive',
+    };
+    return map[status] ?? 'bg-secondary';
+  }
+
+  invStatusDotClass(status: InvoiceStatus): string {
+    const map: Record<InvoiceStatus, string> = {
+      'draft': 'bg-secondary', 'sent': 'bg-primary', 'paid': 'bg-success',
+      'overdue': 'bg-destructive', 'partially-paid': 'bg-warning', 'void': 'bg-secondary',
+    };
+    return map[status] ?? 'bg-secondary';
+  }
+
+  payStatusDotClass(status: PayableStatus): string {
+    const map: Record<PayableStatus, string> = {
+      'pending': 'bg-secondary', 'approved': 'bg-primary', 'paid': 'bg-success',
+      'overdue': 'bg-destructive', 'disputed': 'bg-warning',
+    };
+    return map[status] ?? 'bg-secondary';
+  }
 
   readonly detailView = signal<DetailView | null>(null);
 
@@ -1541,7 +1594,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
         btn.addEventListener('click', (e: Event) => {
           e.stopImmediatePropagation();
           this.navExpanded.set(!this.navExpanded());
-        }, { capture: true });
+        }, { capture: true, signal: this._abortCtrl.signal });
         return;
       }
       requestAnimationFrame(tryAttach);
@@ -1815,10 +1868,16 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const state = this.buildAgentDataState();
     const map: Record<string, string> = {
       'budget': 'financialsBudget',
-      'change-orders': 'financialsChangeOrders',
-      'contracts': 'financialsContracts',
-      'revenue': 'financialsRevenue',
+      'purchase-orders': 'financialsPO',
+      'contracts': 'financialsContractsSub',
+      'potential-change-orders': 'financialsChangeOrders',
+      'subcontract-change-orders': 'financialsChangeOrders',
+      'billings': 'financialsBilling',
+      'change-order-requests': 'financialsChangeOrders',
+      'contract-invoices': 'financialsAR',
       'cost-forecasts': 'financialsCostForecasts',
+      'general-invoices': 'financialsAR',
+      'prime-contract-change-orders': 'financialsChangeOrders',
     };
     const result: Record<string, AgentAlert | null> = {};
     for (const [navValue, agentId] of Object.entries(map)) {

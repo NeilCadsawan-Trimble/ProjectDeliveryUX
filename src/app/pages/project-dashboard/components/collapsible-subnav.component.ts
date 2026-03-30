@@ -61,7 +61,15 @@ import type { AgentAlert } from '../../../data/widget-agents';
                 role="button" tabindex="0"
                 (click)="onItemSelect(item.value)"
                 (keydown.enter)="onItemSelect(item.value)">
-                <div>{{ item.label }}</div>
+                <div class="flex items-center gap-2">
+                  @if (item.icon) {
+                    <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true"
+                      [class.text-primary-foreground]="activeItem() === item.value"
+                      [class.text-foreground-60]="activeItem() !== item.value"
+                    >{{ item.icon }}</i>
+                  }
+                  <div>{{ item.label }}</div>
+                </div>
                 @if (getItemAlert(item.value); as alert) {
                   <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1 mr-1"
                     [class.bg-destructive]="alert.level === 'critical'"

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { ChangeOrder, ChangeOrderStatus, ChangeOrderType } from '../../data/dashboard-data';
-import { CHANGE_ORDERS, coBadgeColor, coTypeLabel, coTypeIcon, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { CHANGE_ORDERS, coBadgeColor, coTypeLabel, coTypeIcon, formatCurrency as sharedFormatCurrency, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
 
 interface CostBreakdownItem {
   description: string;
@@ -88,7 +88,7 @@ function typeBgClass(coType: ChangeOrderType): string {
           <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
             <div class="flex items-center gap-4">
               <div class="w-11 h-11 rounded-lg flex items-center justify-center" [class]="statusBg()">
-                <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">swap_horizontal</i>
+                <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">swap</i>
               </div>
               <div>
                 <div class="text-xl font-semibold text-foreground">{{ changeOrder()!.id }}</div>
@@ -157,7 +157,7 @@ function typeBgClass(coType: ChangeOrderType): string {
         <!-- Cost Breakdown -->
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
             <div class="text-base font-semibold text-foreground">Cost Breakdown</div>
           </div>
           <div class="overflow-x-auto">
@@ -202,7 +202,7 @@ function typeBgClass(coType: ChangeOrderType): string {
         </div>
       } @else {
         <div class="flex flex-col items-center justify-center py-20 text-foreground-40">
-          <i class="modus-icons text-4xl mb-3" aria-hidden="true">swap_horizontal</i>
+          <i class="modus-icons text-4xl mb-3" aria-hidden="true">swap</i>
           <div class="text-lg font-medium mb-1">Change Order Not Found</div>
           <div class="text-sm mb-4">The requested change order could not be found.</div>
           <div
@@ -258,9 +258,7 @@ export class ChangeOrderDetailPageComponent {
     });
   }
 
-  capitalizeFirst(s: string): string {
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
+  readonly capitalizeFirst = sharedCapitalizeFirst;
 
   formatCurrency(value: number): string { return sharedFormatCurrency(value); }
 

@@ -8,22 +8,25 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
+import { CollapsibleSubnavComponent } from '../project-dashboard/components/collapsible-subnav.component';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
-import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost, ChangeOrder, ChangeOrderType } from '../../data/dashboard-data';
-import { PROJECTS, ESTIMATES, budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS, CHANGE_ORDERS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
-import { getAgent, type AgentDataState } from '../../data/widget-agents';
+import type { NavItem } from '../project-dashboard/project-dashboard.config';
+import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost, ChangeOrder, ChangeOrderType, Invoice, BillingSchedule, BillingEvent, Payable, CashFlowEntry, GLAccount, GLEntry, PurchaseOrder, PayrollRecord, Contract, SubcontractLedgerEntry } from '../../data/dashboard-data';
+import { PROJECTS, ESTIMATES, budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS, CHANGE_ORDERS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, INVOICES, BILLING_SCHEDULES, BILLING_EVENTS, PAYABLES, CASH_FLOW_HISTORY, CASH_POSITION, GL_ACCOUNTS, GL_ENTRIES, PURCHASE_ORDERS, PAYROLL_RECORDS, CONTRACTS, SUBCONTRACT_LEDGER, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
+import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
 
 @Component({
   selector: 'app-financials-page',
-  imports: [ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent],
+  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -31,6 +34,34 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
     '(document:touchend)': 'onDocumentTouchEnd()',
   },
   template: `
+    <ng-template #finSubpageToolbar let-placeholder>
+      <div class="bg-card border-default rounded-lg mb-6">
+        <div class="flex items-center justify-between px-4 py-2 gap-4">
+          <div class="flex items-center gap-2 flex-1 max-w-xs">
+            <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
+              <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
+              <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
+                [placeholder]="placeholder" [value]="finSubpageSearch()" (input)="finSubpageSearch.set($any($event.target).value)" />
+            </div>
+            <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
+              role="button" tabindex="0" aria-label="Filter">
+              <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+              role="button" tabindex="0" aria-label="Sort">
+              <i class="modus-icons text-base" aria-hidden="true">sort_arrow_down</i>
+            </div>
+            <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+              role="button" tabindex="0" aria-label="Download">
+              <i class="modus-icons text-base" aria-hidden="true">download</i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
     @if (jobCostDetailProject(); as project) {
       <!-- Job Cost Detail View -->
       <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
@@ -75,7 +106,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
           <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
             <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">gauge</i>
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">dashboard</i>
               </div>
               <div class="text-sm font-medium text-foreground-60">Budget Health</div>
             </div>
@@ -87,7 +118,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
         </div>
         @if (jobCostKpiInsight()) {
           <div class="flex items-center gap-1.5 px-5 py-2 mb-6 bg-card border-default rounded-lg">
-            <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+            <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
             <div class="text-xs text-foreground-60 truncate leading-none">{{ jobCostKpiInsight() }}</div>
           </div>
         } @else {
@@ -160,7 +191,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center justify-between px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
-              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">trending_up</i>
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">arrow_up</i>
               <div class="text-base font-semibold text-foreground">Profit Fade / Gain</div>
             </div>
             <div class="flex items-center gap-2">
@@ -186,7 +217,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
               <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
                 <div class="text-xs text-foreground-40 uppercase tracking-wide">{{ pf.isFade ? 'Profit Fade' : 'Profit Gain' }}</div>
                 <div class="flex items-center gap-2">
-                  <i class="modus-icons text-lg {{ pf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ pf.isFade ? 'trending_down' : 'trending_up' }}</i>
+                  <i class="modus-icons text-lg {{ pf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ pf.isFade ? 'trending_down' : 'arrow_up' }}</i>
                   <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%</div>
                 </div>
                 <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
@@ -250,7 +281,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                       <div class="text-xs text-foreground-60 font-medium">{{ cf.label }}</div>
                     </div>
                     <div class="flex items-center gap-1">
-                      <i class="modus-icons text-sm {{ cf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ cf.isFade ? 'trending_down' : 'trending_up' }}</i>
+                      <i class="modus-icons text-sm {{ cf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ cf.isFade ? 'trending_down' : 'arrow_up' }}</i>
                       <div class="text-sm font-bold {{ cf.isFade ? 'text-destructive' : 'text-success' }}">{{ cf.isFade ? '' : '+' }}{{ cf.fadeAmount }}%</div>
                     </div>
                   </div>
@@ -264,7 +295,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
         <!-- Budget vs Cost comparison table -->
         <div class="bg-card border-default rounded-lg overflow-hidden">
           <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
             <div class="text-base font-semibold text-foreground">Cost Summary</div>
           </div>
 
@@ -297,6 +328,25 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
         </div>
       </div>
     } @else {
+    <div class="flex min-h-[calc(100vh-56px)]">
+      @if (activeSubPage() !== 'overview') {
+      <!-- Subnav (hidden on overview -- replaced by nav links widget) -->
+      <app-collapsible-subnav
+        icon="payment_instant"
+        title="Financials"
+        [items]="finSubNavItems"
+        [activeItem]="activeSubPage()"
+        [collapsed]="finSubnavCollapsed()"
+        [alerts]="finSubnavAlerts()"
+        [canvasMode]="isCanvasMode()"
+        (itemSelect)="selectSubPage($event)"
+        (collapsedChange)="finSubnavCollapsed.set($event)"
+      />
+      }
+
+      <!-- Content area -->
+      <div class="flex-1 min-w-0">
+      @if (activeSubPage() === 'overview') {
     <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
       @if (!isCanvasMode()) {
       <div #pageHeader>
@@ -346,7 +396,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
       </div>
       @if (finKpiInsight()) {
         <div class="flex items-center gap-1.5 px-5 py-2 mb-6 bg-card border-default rounded-lg">
-          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
           <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
         </div>
       } @else {
@@ -412,7 +462,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
             </div>
             @if (finKpiInsight()) {
               <div class="flex items-center gap-1.5 px-5 py-2 mt-3 bg-card border-default rounded-lg">
-                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                 <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
               </div>
             }
@@ -431,7 +481,41 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
 
-              @if (widgetId === 'finRevenueChart') {
+              @if (widgetId === 'finNavLinks') {
+                <!-- Financials Navigation Links Widget -->
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div class="px-4 py-3 border-bottom-default flex-shrink-0">
+                    <div class="text-sm font-semibold text-foreground">Financials</div>
+                  </div>
+                  <div class="flex-1 overflow-y-auto py-1">
+                    @for (item of finNavLinkItems; track item.value) {
+                      <div
+                        class="flex items-center justify-between px-4 py-2.5 cursor-pointer transition-colors duration-150 hover:bg-muted"
+                        tabindex="0"
+                        (click)="selectSubPage(item.value)"
+                        (keydown.enter)="selectSubPage(item.value)"
+                      >
+                        <div class="flex items-center gap-3 min-w-0">
+                          <i class="modus-icons text-base text-foreground-60 flex-shrink-0" aria-hidden="true">{{ item.icon }}</i>
+                          <div class="text-sm text-foreground truncate">{{ item.label }}</div>
+                        </div>
+                        @if (finSubnavAlerts()[item.value]; as alert) {
+                          <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
+                            [class.bg-destructive]="alert.level === 'critical'"
+                            [class.text-destructive-foreground]="alert.level === 'critical'"
+                            [class.bg-warning]="alert.level === 'warning'"
+                            [class.text-warning-foreground]="alert.level === 'warning'"
+                            [class.bg-primary]="alert.level === 'info'"
+                            [class.text-primary-foreground]="alert.level === 'info'"
+                            [attr.title]="alert.count + ' ' + alert.label">
+                            {{ alert.count }}
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              } @else if (widgetId === 'finRevenueChart') {
                 <!-- Revenue Over Time Widget -->
                 <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
@@ -462,7 +546,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                   </div>
                   @if (revenueInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ revenueInsight() }}</div>
                     </div>
                   }
@@ -471,7 +555,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                     <div class="flex items-baseline gap-3">
                       <div class="text-3xl font-bold text-foreground">{{ formatCurrency(revenueSummary().current) }}</div>
                       <div class="flex items-center gap-1 text-sm font-medium text-success">
-                        <i class="modus-icons text-sm" aria-hidden="true">trending_up</i>
+                        <i class="modus-icons text-sm" aria-hidden="true">arrow_up</i>
                         +{{ revenueSummary().growthPct }}%
                       </div>
                       <div class="text-xs text-foreground-40">{{ revenueSummary().label }}</div>
@@ -564,7 +648,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                   </div>
                   @if (estimatesInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ estimatesInsight() }}</div>
                     </div>
                   }
@@ -663,7 +747,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                   </div>
                   @if (budgetByProjectInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ budgetByProjectInsight() }}</div>
                     </div>
                   }
@@ -716,7 +800,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                   </div>
                   @if (jobCostsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ jobCostsInsight() }}</div>
                     </div>
                   }
@@ -779,14 +863,14 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                   >
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">swap_horizontal</i>
+                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">swap</i>
                       <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Change Orders</div>
                       <modus-badge color="secondary" size="sm">{{ filteredChangeOrders().length }}</modus-badge>
                     </div>
                   </div>
                   @if (changeOrdersInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">flash</i>
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ changeOrdersInsight() }}</div>
                     </div>
                   }
@@ -825,7 +909,7 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
                       </div>
                     } @empty {
                       <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                        <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap_horizontal</i>
+                        <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap</i>
                         <div class="text-sm">No change orders in this category</div>
                       </div>
                     }
@@ -843,6 +927,789 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
         }
       </div>
     </div>
+    } <!-- end overview -->
+
+    @if (activeSubPage() === 'estimates') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search estimates...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Estimates</div>
+        <div class="text-sm text-foreground-60 mb-4">Open estimates, pricing proposals, and pending approvals</div>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Estimates</div>
+            <div class="text-2xl font-bold text-foreground">{{ estimates().length }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Value</div>
+            <div class="text-2xl font-bold text-primary">{{ formatCurrency(estimatesTotalValue()) }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Approved</div>
+            <div class="text-2xl font-bold text-success">{{ estimatesApprovedCount() }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Under Review</div>
+            <div class="text-2xl font-bold text-warning">{{ estimatesUnderReviewCount() }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Overdue</div>
+            <div class="text-2xl font-bold text-destructive">{{ estimatesOverdueCount() }}</div>
+          </div>
+        </div>
+
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>ID</div>
+            <div>Project / Client</div>
+            <div>Type</div>
+            <div class="text-right">Value</div>
+            <div>Status</div>
+            <div>Requested By</div>
+            <div>Due Date</div>
+          </div>
+          @for (est of estimates(); track est.id) {
+            <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="navigateToEstimate(est.id)">
+              <div class="text-sm font-mono text-primary font-medium">{{ est.id }}</div>
+              <div>
+                <div class="text-sm font-medium text-foreground truncate">{{ est.project }}</div>
+                <div class="text-xs text-foreground-40">{{ est.client }}</div>
+              </div>
+              <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ est.type }}</div>
+              <div class="text-sm font-semibold text-foreground text-right">{{ est.value }}</div>
+              <div><modus-badge [color]="estimateBadgeColor(est.status)" variant="outlined" size="sm">{{ est.status }}</modus-badge></div>
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-2xs font-semibold flex-shrink-0">
+                  {{ est.requestedByInitials }}
+                </div>
+                <div class="text-xs text-foreground-80 truncate">{{ est.requestedBy }}</div>
+              </div>
+              <div>
+                <div class="text-sm text-foreground-80">{{ est.dueDate }}</div>
+                <div class="text-xs mt-0.5" [class]="dueDateClass(est.daysLeft)">
+                  @if (est.daysLeft < 0) {
+                    {{ -est.daysLeft }}d overdue
+                  } @else if (est.daysLeft === 0) {
+                    Due today
+                  } @else {
+                    {{ est.daysLeft }}d left
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'change-orders') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search change orders...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Change Orders</div>
+        <div class="text-sm text-foreground-60 mb-4">Owner, subcontractor, and internal change orders across all projects</div>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total COs</div>
+            <div class="text-2xl font-bold text-foreground">{{ coSubpageAll().length }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Value</div>
+            <div class="text-2xl font-bold text-primary">{{ formatCurrency(coSubpageTotalValue()) }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Approved</div>
+            <div class="text-2xl font-bold text-success">{{ coSubpageApproved() }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Pending</div>
+            <div class="text-2xl font-bold text-warning">{{ coSubpagePending() }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Rejected</div>
+            <div class="text-2xl font-bold text-destructive">{{ coSubpageRejected() }}</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1 mb-4">
+          @for (tab of coTabs; track tab.value) {
+            <div
+              class="px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors duration-150"
+              [class]="activeCoTab() === tab.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:bg-muted'"
+              (click)="activeCoTab.set(tab.value)"
+            >{{ tab.label }} ({{ coTabCount(tab.value) }})</div>
+          }
+        </div>
+
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>ID</div>
+            <div>Project</div>
+            <div>Description</div>
+            <div class="text-right">Amount</div>
+            <div>Status</div>
+            <div>Date</div>
+          </div>
+          @for (co of filteredChangeOrders(); track co.id) {
+            <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="navigateToChangeOrder(co.id)">
+              <div class="text-sm font-medium text-primary">{{ co.id }}</div>
+              <div class="text-sm text-foreground truncate">{{ co.project }}</div>
+              <div class="text-sm text-foreground truncate">{{ co.description }}</div>
+              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(co.amount) }}</div>
+              <div><modus-badge [color]="coBadgeColor(co.status)" size="sm">{{ capitalizeFirst(co.status) }}</modus-badge></div>
+              <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
+            </div>
+          } @empty {
+            <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+              <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap</i>
+              <div class="text-sm">No change orders in this category</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'job-costs') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search job costs...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Job Costs</div>
+        <div class="text-sm text-foreground-60 mb-4">Cost breakdown by category and project across the portfolio</div>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Grand Total</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(jobCostSummary().grandTotal) }}</div>
+          </div>
+          @for (cat of jobCostSummary().categories; track cat.label) {
+            <div class="bg-card rounded-lg border-default p-4 text-center">
+              <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">{{ cat.label }}</div>
+              <div class="text-2xl font-bold text-foreground">{{ formatJobCost(cat.total) }}</div>
+              <div class="text-xs text-foreground-40">{{ cat.pct }}%</div>
+            </div>
+          }
+        </div>
+
+        <div class="mb-6">
+          <div class="flex w-full h-5 rounded-full overflow-hidden">
+            @for (cat of jobCostSummary().categories; track cat.label) {
+              <div class="{{ cat.colorClass }}" [style.width.%]="cat.pct"></div>
+            }
+          </div>
+          <div class="flex justify-between mt-2">
+            @for (cat of jobCostSummary().categories; track cat.label) {
+              <div class="flex items-center gap-1.5">
+                <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                <div class="text-xs text-foreground-60">{{ cat.label }}</div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Project</div>
+            <div class="text-right">Budget</div>
+            @for (cat of jobCostCategories; track cat) {
+              <div class="text-right">{{ cat }}</div>
+            }
+          </div>
+          @for (p of projectJobCosts(); track p.projectId) {
+            <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="openJobCostDetail(p)">
+              <div class="text-sm font-medium text-foreground truncate">{{ p.projectName }}</div>
+              <div class="text-sm text-foreground-60 text-right">{{ p.budgetUsed }}</div>
+              @for (cat of jobCostCategories; track cat) {
+                <div class="text-sm text-foreground-60 text-right">{{ formatJobCost(getCost(p.costs, cat)) }}</div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'job-billing') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search billing...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Job Billing</div>
+        <div class="text-sm text-foreground-60 mb-4">Billing schedules and invoice events across all projects</div>
+
+        <!-- KPI strip -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Active Schedules</div>
+            <div class="text-2xl font-bold text-foreground">{{ billingSchedules.length }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Billed (6 mo)</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(billedTotal()) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Upcoming (30d)</div>
+            <div class="text-2xl font-bold text-primary">{{ upcomingBillings().length }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Collected</div>
+            <div class="text-2xl font-bold text-success">{{ formatCurrency(collectedTotal()) }}</div>
+          </div>
+        </div>
+
+        <!-- Billing events table -->
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">invoice</i>
+              <div class="text-base font-semibold text-foreground">Billing Events</div>
+              <modus-badge color="secondary" size="sm">{{ billingEvents.length }}</modus-badge>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Description</div><div>Period</div><div class="text-right">Amount</div><div>Status</div><div>Date</div>
+          </div>
+          @for (ev of billingEvents; track ev.id) {
+            <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+              <div class="text-sm text-foreground truncate">{{ ev.description }}</div>
+              <div class="text-sm text-foreground-60">{{ ev.period }}</div>
+              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(ev.amount) }}</div>
+              <div><modus-badge [color]="ev.status === 'completed' ? 'success' : ev.status === 'skipped' ? 'warning' : 'secondary'" size="sm">{{ capitalizeFirst(ev.status) }}</modus-badge></div>
+              <div class="text-sm text-foreground-60">{{ ev.billingDate }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'accounts-receivable') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search invoices...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Accounts Receivable</div>
+        <div class="text-sm text-foreground-60 mb-4">Invoices, aging, and collection metrics</div>
+
+        <!-- KPI strip -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Total Outstanding</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(arOutstanding()) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">DSO</div>
+            <div class="text-2xl font-bold text-foreground">{{ dso() }} days</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Overdue</div>
+            <div class="text-2xl font-bold text-destructive">{{ formatCurrency(arOverdue()) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Open Invoices</div>
+            <div class="text-2xl font-bold text-primary">{{ openInvoiceCount() }}</div>
+          </div>
+        </div>
+
+        <!-- Aging buckets -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          @for (bucket of agingBuckets(); track bucket.label) {
+            <div class="bg-card rounded-lg p-4 border-default">
+              <div class="text-xs text-foreground-60 mb-1">{{ bucket.label }}</div>
+              <div class="text-xl font-bold text-foreground">{{ formatCurrency(bucket.total) }}</div>
+              <div class="text-xs text-foreground-40">{{ bucket.count }} invoices</div>
+            </div>
+          }
+        </div>
+
+        <!-- Invoice table -->
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
+              <div class="text-base font-semibold text-foreground">Invoices</div>
+              <modus-badge color="secondary" size="sm">{{ invoices.length }}</modus-badge>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Invoice #</div><div class="text-right">Amount</div><div class="text-right">Paid</div><div>Status</div><div>Terms</div><div>Due</div>
+          </div>
+          @for (inv of invoices; track inv.id) {
+            <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+              <div class="text-sm font-medium text-primary">{{ inv.invoiceNumber }}</div>
+              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(inv.amount) }}</div>
+              <div class="text-sm text-success text-right">{{ formatCurrency(inv.amountPaid) }}</div>
+              <div><modus-badge [color]="invoiceStatusBadge(inv.status)" size="sm">{{ capitalizeFirst(inv.status) }}</modus-badge></div>
+              <div class="text-sm text-foreground-60">{{ inv.terms }}</div>
+              <div class="text-sm text-foreground-60">{{ inv.dueDate }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'accounts-payable') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search payables...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Accounts Payable</div>
+        <div class="text-sm text-foreground-60 mb-4">Vendor payables, subcontractor payments, and aging</div>
+
+        <!-- KPI strip -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Pending</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(payablesSummary()['pending'].total) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Approved</div>
+            <div class="text-2xl font-bold text-warning">{{ formatCurrency(payablesSummary()['approved'].total) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Overdue</div>
+            <div class="text-2xl font-bold text-destructive">{{ formatCurrency(payablesSummary()['overdue'].total) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Paid</div>
+            <div class="text-2xl font-bold text-success">{{ formatCurrency(payablesSummary()['paid'].total) }}</div>
+          </div>
+        </div>
+
+        <!-- Payables table -->
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">credit_card</i>
+              <div class="text-base font-semibold text-foreground">Payables</div>
+              <modus-badge color="secondary" size="sm">{{ payables.length }}</modus-badge>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Vendor</div><div>Description</div><div class="text-right">Amount</div><div>Status</div><div>Due</div><div>Cost Code</div>
+          </div>
+          @for (p of payables; track p.id) {
+            <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+              <div class="text-sm text-foreground truncate">{{ p.vendor }}</div>
+              <div class="text-sm text-foreground truncate">{{ p.description }}</div>
+              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(p.amount) }}</div>
+              <div><modus-badge [color]="payableStatusBadge(p.status)" size="sm">{{ capitalizeFirst(p.status) }}</modus-badge></div>
+              <div class="text-sm text-foreground-60">{{ p.dueDate }}</div>
+              <div class="text-sm text-foreground-60">{{ p.costCode }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'cash-management') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search transactions...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Cash Management</div>
+        <div class="text-sm text-foreground-60 mb-4">Cash position, flow trends, and runway analysis</div>
+
+        <!-- KPI strip -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Cash on Hand</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(cashPosition.currentBalance) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">30-Day Forecast</div>
+            <div class="text-2xl font-bold text-primary">{{ formatCurrency(cashPosition.thirtyDayForecast) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Runway</div>
+            <div class="text-2xl font-bold" [class]="cashRunway() > 6 ? 'text-success' : cashRunway() > 3 ? 'text-warning' : 'text-destructive'">{{ cashRunway() }} mo</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Net Cash Flow (6 mo)</div>
+            <div class="text-2xl font-bold" [class]="netCashFlow() >= 0 ? 'text-success' : 'text-destructive'">{{ formatCurrency(netCashFlow()) }}</div>
+          </div>
+        </div>
+
+        <!-- Cash flow table -->
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
+              <div class="text-base font-semibold text-foreground">Cash Flow History</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Month</div><div class="text-right">Inflow</div><div class="text-right">Outflow</div><div class="text-right">Net</div>
+          </div>
+          @for (cf of cashFlowHistory; track cf.month) {
+            <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+              <div class="text-sm font-medium text-foreground">{{ cf.month }}</div>
+              <div class="text-sm text-success text-right">{{ formatCurrency(cf.inflows) }}</div>
+              <div class="text-sm text-destructive text-right">{{ formatCurrency(cf.outflows) }}</div>
+              <div class="text-sm font-medium text-right" [class]="cf.netCash >= 0 ? 'text-success' : 'text-destructive'">{{ formatCurrency(cf.netCash) }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'general-ledger') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search accounts...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">General Ledger</div>
+        <div class="text-sm text-foreground-60 mb-4">Chart of accounts, journal entries, and trial balance</div>
+
+        <!-- Balance sheet summary -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Total Assets</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(glTotalAssets()) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Total Liabilities</div>
+            <div class="text-2xl font-bold text-warning">{{ formatCurrency(glTotalLiabilities()) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Revenue</div>
+            <div class="text-2xl font-bold text-success">{{ formatCurrency(glTotalRevenue()) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Expenses</div>
+            <div class="text-2xl font-bold text-destructive">{{ formatCurrency(glTotalExpenses()) }}</div>
+          </div>
+        </div>
+
+        <!-- GL accounts -->
+        <div class="bg-card rounded-lg border-default overflow-hidden mb-6">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
+              <div class="text-base font-semibold text-foreground">Chart of Accounts</div>
+              <modus-badge color="secondary" size="sm">{{ glAccounts.length }}</modus-badge>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Acct #</div><div>Name</div><div>Type</div><div class="text-right">Balance</div>
+          </div>
+          @for (acct of glAccounts; track acct.code) {
+            <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+              <div class="text-sm font-medium text-primary">{{ acct.code }}</div>
+              <div class="text-sm text-foreground">{{ acct.name }}</div>
+              <div class="text-sm text-foreground-60">{{ capitalizeFirst(acct.type) }}</div>
+              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(acct.balance) }}</div>
+            </div>
+          }
+        </div>
+
+        <!-- Recent journal entries -->
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">file_edit</i>
+              <div class="text-base font-semibold text-foreground">Recent Journal Entries</div>
+              <modus-badge color="secondary" size="sm">{{ glEntries.length }}</modus-badge>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Entry #</div><div>Account</div><div>Description</div><div class="text-right">Debit</div><div class="text-right">Credit</div><div>Date</div>
+          </div>
+          @for (entry of glEntries; track entry.id) {
+            <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+              <div class="text-sm font-medium text-primary">{{ entry.id }}</div>
+              <div class="text-sm text-foreground-60">{{ entry.accountCode }}</div>
+              <div class="text-sm text-foreground truncate">{{ entry.description }}</div>
+              <div class="text-sm text-foreground text-right">{{ entry.debit > 0 ? formatCurrency(entry.debit) : '-' }}</div>
+              <div class="text-sm text-foreground text-right">{{ entry.credit > 0 ? formatCurrency(entry.credit) : '-' }}</div>
+              <div class="text-sm text-foreground-60">{{ entry.date }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'purchase-orders') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search purchase orders...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Purchase Orders</div>
+        <div class="text-sm text-foreground-60 mb-4">Material procurement, vendor deliveries, and committed spend</div>
+
+        <!-- KPI strip -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Total PO Value</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(poSummary().totalValue) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Received/Closed</div>
+            <div class="text-2xl font-bold text-success">{{ formatCurrency(poSummary().totalReceived) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Open POs</div>
+            <div class="text-2xl font-bold text-primary">{{ poSummary().openPOs }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Overdue Deliveries</div>
+            <div class="text-2xl font-bold" [class]="poSummary().overdueDeliveries > 0 ? 'text-destructive' : 'text-success'">{{ poSummary().overdueDeliveries }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Draft POs</div>
+            <div class="text-2xl font-bold text-foreground-60">{{ poSummary().draftCount }}</div>
+          </div>
+        </div>
+
+        <!-- PO table -->
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">shopping_cart</i>
+              <div class="text-base font-semibold text-foreground">Purchase Orders</div>
+              <modus-badge color="secondary" size="sm">{{ purchaseOrders.length }}</modus-badge>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>PO #</div><div>Vendor</div><div>Description</div><div class="text-right">Amount</div><div>Status</div><div>Delivery</div><div>Project</div>
+          </div>
+          @for (po of purchaseOrders; track po.id) {
+            <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+              <div class="text-sm font-medium text-primary">{{ po.poNumber }}</div>
+              <div class="text-sm text-foreground truncate">{{ po.vendor }}</div>
+              <div class="text-sm text-foreground truncate">{{ po.description }}</div>
+              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(po.amount) }}</div>
+              <div><modus-badge [color]="poStatusBadge(po.status)" size="sm">{{ capitalizeFirst(po.status) }}</modus-badge></div>
+              <div class="text-sm text-foreground-60">{{ po.expectedDelivery }}</div>
+              <div class="text-sm text-foreground-60 truncate">{{ po.project }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'payroll') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search payroll...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Payroll</div>
+        <div class="text-sm text-foreground-60 mb-4">Weekly payroll, labor costs, headcount, and overtime tracking</div>
+
+        <!-- KPI strip -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Gross Pay (YTD)</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(payrollSummary().totalGross) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Net Pay (YTD)</div>
+            <div class="text-2xl font-bold text-success">{{ formatCurrency(payrollSummary().totalNet) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Avg Headcount</div>
+            <div class="text-2xl font-bold text-primary">{{ payrollSummary().avgEmployees }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Labor Burden</div>
+            <div class="text-2xl font-bold text-foreground">{{ payrollSummary().laborBurdenPct }}%</div>
+          </div>
+        </div>
+
+        <!-- Additional KPIs -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Total Taxes</div>
+            <div class="text-xl font-bold text-warning">{{ formatCurrency(payrollSummary().totalTaxes) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Total Benefits</div>
+            <div class="text-xl font-bold text-primary">{{ formatCurrency(payrollSummary().totalBenefits) }}</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Total Overtime</div>
+            <div class="text-xl font-bold" [class]="payrollSummary().totalOT > 1200 ? 'text-warning' : 'text-foreground'">{{ payrollSummary().totalOT.toLocaleString() }} hrs</div>
+          </div>
+        </div>
+
+        <!-- Monthly rollup -->
+        <div class="bg-card rounded-lg border-default overflow-hidden mb-6">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
+              <div class="text-base font-semibold text-foreground">Monthly Summary</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Month</div><div class="text-right">Gross</div><div class="text-right">Net</div><div class="text-right">Headcount</div>
+          </div>
+          @for (mp of monthlyPayroll(); track mp.month) {
+            <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+              <div class="text-sm font-medium text-foreground">{{ mp.month }}</div>
+              <div class="text-sm text-foreground text-right">{{ formatCurrency(mp.gross) }}</div>
+              <div class="text-sm text-success text-right">{{ formatCurrency(mp.net) }}</div>
+              <div class="text-sm text-foreground-60 text-right">{{ mp.headcount }}</div>
+            </div>
+          }
+        </div>
+
+        <!-- Weekly detail -->
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">people_group</i>
+              <div class="text-base font-semibold text-foreground">Weekly Payroll Detail</div>
+              <modus-badge color="secondary" size="sm">{{ payrollRecords.length }}</modus-badge>
+            </div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Period</div><div class="text-right">Gross</div><div class="text-right">Net</div><div>Status</div><div class="text-right">Emp</div><div class="text-right">Hours</div><div class="text-right">OT</div>
+          </div>
+          @for (pr of payrollRecords; track pr.id) {
+            <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150">
+              <div class="text-sm font-medium text-foreground">{{ pr.period }}</div>
+              <div class="text-sm text-foreground text-right">{{ formatCurrency(pr.grossPay) }}</div>
+              <div class="text-sm text-success text-right">{{ formatCurrency(pr.netPay) }}</div>
+              <div><modus-badge [color]="payrollStatusBadge(pr.status)" size="sm">{{ capitalizeFirst(pr.status) }}</modus-badge></div>
+              <div class="text-sm text-foreground-60 text-right">{{ pr.employeeCount }}</div>
+              <div class="text-sm text-foreground-60 text-right">{{ pr.totalHours.toLocaleString() }}</div>
+              <div class="text-sm text-right" [class]="pr.overtimeHours > 70 ? 'text-warning font-medium' : 'text-foreground-60'">{{ pr.overtimeHours }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'contracts') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search contracts...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Contracts</div>
+        <div class="text-sm text-foreground-60 mb-4">Prime contracts, subcontracts, and committed values across all projects</div>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Contracts</div>
+            <div class="text-2xl font-bold text-foreground">{{ contracts.length }}</div>
+            <div class="text-xs text-foreground-40">{{ contractSummary().primeCount }} prime / {{ contractSummary().subCount }} sub</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Original Value</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(contractSummary().totalOriginal) }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Revised Value</div>
+            <div class="text-2xl font-bold text-primary">{{ formatCurrency(contractSummary().totalRevised) }}</div>
+            <div class="text-xs" [class]="contractSummary().totalRevised > contractSummary().totalOriginal ? 'text-warning' : 'text-success'">
+              {{ contractSummary().totalRevised > contractSummary().totalOriginal ? '+' : '' }}{{ formatCurrency(contractSummary().totalRevised - contractSummary().totalOriginal) }}
+            </div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Active</div>
+            <div class="text-2xl font-bold text-success">{{ contractSummary().activeCount }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Est. Retainage</div>
+            <div class="text-2xl font-bold text-warning">{{ formatCurrency(contractSummary().totalRetainage) }}</div>
+          </div>
+        </div>
+
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Contract</div>
+            <div>Type</div>
+            <div class="text-right">Original</div>
+            <div class="text-right">Revised</div>
+            <div class="text-right">Delta</div>
+            <div>Status</div>
+            <div>Project</div>
+          </div>
+          @for (c of contracts; track c.id) {
+            <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center">
+              <div>
+                <div class="text-sm font-medium text-foreground truncate">{{ c.title }}</div>
+                <div class="text-xs text-foreground-40">{{ c.vendor }}</div>
+              </div>
+              <div><modus-badge [color]="c.contractType === 'prime' ? 'primary' : 'tertiary'" size="sm">{{ contractTypeLabelShort(c.contractType) }}</modus-badge></div>
+              <div class="text-sm text-foreground-60 text-right">{{ formatCurrency(c.originalValue) }}</div>
+              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(c.revisedValue) }}</div>
+              <div class="text-sm text-right" [class]="c.revisedValue > c.originalValue ? 'text-warning' : 'text-foreground-40'">
+                {{ c.revisedValue > c.originalValue ? '+' : '' }}{{ formatCurrency(c.revisedValue - c.originalValue) }}
+              </div>
+              <div><modus-badge [color]="contractStatusBadge(c.status)" size="sm">{{ capitalizeFirst(c.status) }}</modus-badge></div>
+              <div class="text-xs text-foreground-40 truncate">{{ c.project }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSubPage() === 'subcontract-ledger') {
+      <div class="px-4 pb-6">
+        <div class="transition-all duration-200" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+          <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search ledger entries...' }" />
+        </div>
+        <div class="text-2xl font-bold text-foreground mb-1">Subcontract Ledger</div>
+        <div class="text-sm text-foreground-60 mb-4">Payment applications, retainage, backcharges, and change order adjustments</div>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Paid</div>
+            <div class="text-2xl font-bold text-success">{{ formatCurrency(subLedgerSummary().totalPaid) }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Retainage Held</div>
+            <div class="text-2xl font-bold text-warning">{{ formatCurrency(subLedgerSummary().totalRetainageHeld) }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Retainage Released</div>
+            <div class="text-2xl font-bold text-primary">{{ formatCurrency(subLedgerSummary().totalRetainageReleased) }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Backcharges</div>
+            <div class="text-2xl font-bold text-destructive">{{ formatCurrency(subLedgerSummary().totalBackcharges) }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">CO Adjustments</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(subLedgerSummary().totalChangeOrders) }}</div>
+          </div>
+        </div>
+
+        <div class="bg-card rounded-lg border-default overflow-hidden">
+          <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+            <div>Description</div>
+            <div>Vendor</div>
+            <div>Type</div>
+            <div class="text-right">Amount</div>
+            <div>Pay App</div>
+            <div>Date</div>
+            <div class="text-right">Balance</div>
+          </div>
+          @for (entry of subcontractLedger; track entry.id) {
+            <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center">
+              <div>
+                <div class="text-sm font-medium text-foreground truncate">{{ entry.description }}</div>
+                <div class="text-xs text-foreground-40">{{ entry.project }}</div>
+              </div>
+              <div class="text-sm text-foreground-60 truncate">{{ entry.vendor }}</div>
+              <div><modus-badge [color]="ledgerTypeBadge(entry.type)" size="sm">{{ ledgerTypeLabel(entry.type) }}</modus-badge></div>
+              <div class="text-sm font-medium text-right" [class]="entry.amount < 0 ? 'text-destructive' : 'text-success'">
+                {{ entry.amount < 0 ? '-' : '' }}{{ formatCurrency(entry.amount < 0 ? -entry.amount : entry.amount) }}
+              </div>
+              <div class="text-xs text-foreground-60">{{ entry.payApp }}</div>
+              <div class="text-xs text-foreground-60">{{ entry.date }}</div>
+              <div class="text-sm text-foreground text-right">{{ formatCurrency(entry.runningBalance) }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    </div> <!-- end flex-1 content area -->
+    </div> <!-- end flex wrapper -->
     }
   `,
 })
@@ -850,6 +1717,76 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private readonly navHistory = inject(NavigationHistoryService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  // Subnav configuration
+  readonly finSubNavItems: NavItem[] = [
+    { value: 'overview', label: 'Overview', icon: 'dashboard' },
+    { value: 'estimates', label: 'Estimates', icon: 'file' },
+    { value: 'change-orders', label: 'Change Orders', icon: 'swap' },
+    { value: 'job-costs', label: 'Job Costs', icon: 'bar_graph' },
+    { value: 'job-billing', label: 'Job Billing', icon: 'invoice' },
+    { value: 'accounts-receivable', label: 'Accounts Receivable', icon: 'document' },
+    { value: 'accounts-payable', label: 'Accounts Payable', icon: 'credit_card' },
+    { value: 'cash-management', label: 'Cash Management', icon: 'gantt_chart' },
+    { value: 'general-ledger', label: 'General Ledger', icon: 'list_bulleted' },
+    { value: 'purchase-orders', label: 'Purchase Orders', icon: 'shopping_cart' },
+    { value: 'payroll', label: 'Payroll', icon: 'people_group' },
+    { value: 'contracts', label: 'Contracts', icon: 'copy_content' },
+    { value: 'subcontract-ledger', label: 'Subcontract Ledger', icon: 'clipboard' },
+  ];
+  readonly activeSubPage = signal<string>('overview');
+  readonly finSubnavCollapsed = signal(false);
+  readonly finSubpageSearch = signal('');
+
+  // Financial data references
+  readonly invoices = INVOICES;
+  readonly billingSchedules = BILLING_SCHEDULES;
+  readonly billingEvents = BILLING_EVENTS;
+  readonly payables = PAYABLES;
+  readonly cashFlowHistory = CASH_FLOW_HISTORY;
+  readonly cashPosition = CASH_POSITION;
+  readonly glAccounts = GL_ACCOUNTS;
+  readonly glEntries = GL_ENTRIES;
+  readonly purchaseOrders = PURCHASE_ORDERS;
+  readonly payrollRecords = PAYROLL_RECORDS;
+  readonly contracts = CONTRACTS;
+  readonly subcontractLedger = SUBCONTRACT_LEDGER;
+
+  // Computed KPIs
+  readonly billedTotal = computed(() => this.billingEvents.filter(e => e.status !== 'scheduled').reduce((sum, e) => sum + e.amount, 0));
+  readonly collectedTotal = computed(() => this.billingEvents.filter(e => e.status === 'completed').reduce((sum, e) => sum + e.amount, 0));
+  readonly upcomingBillings = computed(() => getUpcomingBillings(30));
+  readonly arOutstanding = computed(() => this.invoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.amount - i.amountPaid, 0));
+  readonly arOverdue = computed(() => this.invoices.filter(i => i.status === 'overdue').reduce((sum, i) => sum + i.amount - i.amountPaid, 0));
+  readonly openInvoiceCount = computed(() => this.invoices.filter(i => i.status !== 'paid').length);
+  readonly dso = computed(() => getDSO());
+  readonly agingBuckets = computed(() => getInvoiceAgingBuckets());
+  readonly payablesSummary = computed(() => getPayablesSummary());
+  readonly cashRunway = computed(() => getCashRunway());
+  readonly netCashFlow = computed(() => this.cashFlowHistory.reduce((sum, cf) => sum + cf.netCash, 0));
+  readonly glBalanceSheet = computed(() => getGLBalanceSheet());
+  readonly glTotalAssets = computed(() => this.glBalanceSheet().assets.reduce((sum, a) => sum + a.balance, 0));
+  readonly glTotalLiabilities = computed(() => this.glBalanceSheet().liabilities.reduce((sum, a) => sum + a.balance, 0));
+  readonly glTotalRevenue = computed(() => this.glBalanceSheet().revenue.reduce((sum, a) => sum + a.balance, 0));
+  readonly glTotalExpenses = computed(() => this.glBalanceSheet().expenses.reduce((sum, a) => sum + a.balance, 0));
+  readonly poSummary = computed(() => getPOSummary());
+  readonly payrollSummary = computed(() => getPayrollSummary());
+  readonly monthlyPayroll = computed(() => getMonthlyPayrollTotals());
+  readonly contractSummary = computed(() => getContractSummary());
+  readonly subLedgerSummary = computed(() => getSubcontractLedgerSummary());
+
+  // Estimates sub-page KPIs
+  readonly estimatesTotalValue = computed(() => this.estimates().reduce((s, e) => s + e.valueRaw, 0));
+  readonly estimatesApprovedCount = computed(() => this.estimates().filter(e => e.status === 'Approved').length);
+  readonly estimatesUnderReviewCount = computed(() => this.estimates().filter(e => e.status === 'Under Review').length);
+  readonly estimatesOverdueCount = computed(() => this.estimates().filter(e => e.daysLeft < 0).length);
+
+  // Change orders sub-page KPIs
+  readonly coSubpageAll = computed(() => CHANGE_ORDERS);
+  readonly coSubpageTotalValue = computed(() => CHANGE_ORDERS.reduce((s, c) => s + c.amount, 0));
+  readonly coSubpageApproved = computed(() => CHANGE_ORDERS.filter(c => c.status === 'approved').length);
+  readonly coSubpagePending = computed(() => CHANGE_ORDERS.filter(c => c.status === 'pending').length);
+  readonly coSubpageRejected = computed(() => CHANGE_ORDERS.filter(c => c.status === 'rejected').length);
 
   readonly today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -860,15 +1797,19 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   private static readonly HEADER_HEIGHT = 160;
   private static readonly HEADER_OFFSET = FinancialsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly REVENUE_HEIGHT = 380;
+  private static readonly NAV_LINKS_HEIGHT = 560;
+  private static readonly NAV_LINKS_WIDTH = 240;
+  private static readonly CONTENT_LEFT = FinancialsPageComponent.NAV_LINKS_WIDTH + DashboardLayoutEngine.GAP_PX;
+  private static readonly CONTENT_WIDTH = 1280 - FinancialsPageComponent.CONTENT_LEFT;
+  private static readonly REVENUE_HEIGHT = 384;
   private static readonly REVENUE_OFFSET = FinancialsPageComponent.HEADER_OFFSET + FinancialsPageComponent.REVENUE_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly ESTIMATES_HEIGHT = 520;
+  private static readonly ESTIMATES_HEIGHT = 512;
   private static readonly ESTIMATES_OFFSET_DESKTOP = FinancialsPageComponent.REVENUE_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly ESTIMATES_OFFSET_CANVAS = FinancialsPageComponent.REVENUE_OFFSET + FinancialsPageComponent.ESTIMATES_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly BUDGET_HEIGHT = 520;
+  private static readonly BUDGET_HEIGHT = 512;
   private static readonly BUDGET_OFFSET_DESKTOP = FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP + FinancialsPageComponent.ESTIMATES_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly BUDGET_OFFSET_CANVAS = FinancialsPageComponent.ESTIMATES_OFFSET_CANVAS + FinancialsPageComponent.BUDGET_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly JOB_COSTS_HEIGHT = 580;
+  private static readonly JOB_COSTS_HEIGHT = 576;
   private static readonly JOB_COSTS_OFFSET_DESKTOP = FinancialsPageComponent.BUDGET_OFFSET_DESKTOP + FinancialsPageComponent.BUDGET_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly JOB_COSTS_OFFSET_CANVAS = FinancialsPageComponent.BUDGET_OFFSET_CANVAS + FinancialsPageComponent.JOB_COSTS_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly CO_HEIGHT = 560;
@@ -876,27 +1817,30 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private static readonly CO_OFFSET_CANVAS = FinancialsPageComponent.JOB_COSTS_OFFSET_CANVAS + FinancialsPageComponent.CO_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
+    const CL = FinancialsPageComponent.CONTENT_LEFT;
+    const CW = FinancialsPageComponent.CONTENT_WIDTH;
     return {
-      widgets: ['finHeader', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
-      layoutStorageKey: 'dashboard-financials:v5',
-      canvasStorageKey: 'canvas-layout:dashboard-financials:v6',
-      defaultColStarts: { finHeader: 1, finRevenueChart: 1, finOpenEstimates: 1, finBudgetByProject: 1, finJobCosts: 1, finChangeOrders: 1 },
-      defaultColSpans: { finHeader: 16, finRevenueChart: 16, finOpenEstimates: 16, finBudgetByProject: 16, finJobCosts: 16, finChangeOrders: 16 },
-      defaultTops: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP, finBudgetByProject: FinancialsPageComponent.BUDGET_OFFSET_DESKTOP, finJobCosts: FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP, finChangeOrders: FinancialsPageComponent.CO_OFFSET_DESKTOP },
-      defaultHeights: { finHeader: 0, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
-      defaultLefts: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
-      defaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
-      canvasDefaultLefts: { finHeader: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
-      canvasDefaultPixelWidths: { finHeader: 1280, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
+      widgets: ['finHeader', 'finNavLinks', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
+      layoutStorageKey: 'dashboard-financials:v6',
+      canvasStorageKey: 'canvas-layout:dashboard-financials:v8',
+      defaultColStarts: { finHeader: 1, finNavLinks: 1, finRevenueChart: 4, finOpenEstimates: 4, finBudgetByProject: 4, finJobCosts: 4, finChangeOrders: 4 },
+      defaultColSpans: { finHeader: 16, finNavLinks: 3, finRevenueChart: 13, finOpenEstimates: 13, finBudgetByProject: 13, finJobCosts: 13, finChangeOrders: 13 },
+      defaultTops: { finHeader: 0, finNavLinks: 0, finRevenueChart: 0, finOpenEstimates: FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP, finBudgetByProject: FinancialsPageComponent.BUDGET_OFFSET_DESKTOP, finJobCosts: FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP, finChangeOrders: FinancialsPageComponent.CO_OFFSET_DESKTOP },
+      defaultHeights: { finHeader: 0, finNavLinks: FinancialsPageComponent.NAV_LINKS_HEIGHT, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
+      defaultLefts: { finHeader: 0, finNavLinks: 0, finRevenueChart: CL, finOpenEstimates: CL, finBudgetByProject: CL, finJobCosts: CL, finChangeOrders: CL },
+      defaultPixelWidths: { finHeader: 1280, finNavLinks: FinancialsPageComponent.NAV_LINKS_WIDTH, finRevenueChart: CW, finOpenEstimates: CW, finBudgetByProject: CW, finJobCosts: CW, finChangeOrders: CW },
+      canvasDefaultLefts: { finHeader: 0, finNavLinks: 0, finRevenueChart: CL, finOpenEstimates: CL, finBudgetByProject: CL, finJobCosts: CL, finChangeOrders: CL },
+      canvasDefaultPixelWidths: { finHeader: 1280, finNavLinks: FinancialsPageComponent.NAV_LINKS_WIDTH, finRevenueChart: CW, finOpenEstimates: CW, finBudgetByProject: CW, finJobCosts: CW, finChangeOrders: CW },
       canvasDefaultTops: {
         finHeader: 0,
+        finNavLinks: FinancialsPageComponent.HEADER_OFFSET,
         finRevenueChart: FinancialsPageComponent.HEADER_OFFSET,
         finOpenEstimates: FinancialsPageComponent.REVENUE_OFFSET,
         finBudgetByProject: FinancialsPageComponent.ESTIMATES_OFFSET_CANVAS,
         finJobCosts: FinancialsPageComponent.BUDGET_OFFSET_CANVAS,
         finChangeOrders: FinancialsPageComponent.CO_OFFSET_CANVAS,
       },
-      canvasDefaultHeights: { finHeader: FinancialsPageComponent.HEADER_HEIGHT, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
+      canvasDefaultHeights: { finHeader: FinancialsPageComponent.HEADER_HEIGHT, finNavLinks: FinancialsPageComponent.NAV_LINKS_HEIGHT, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
       minColSpan: 1,
       canvasGridMinHeightOffset: 200,
       savesDesktopOnMobile: false,
@@ -905,13 +1849,15 @@ export class FinancialsPageComponent extends DashboardPageBase {
   }
 
   protected override applyInitialHeaderLock(): void {
-    this.engine.widgetLocked.update(l => ({ ...l, finHeader: true }));
+    this.engine.widgetLocked.update(l => ({ ...l, finHeader: true, finNavLinks: true }));
   }
 
   readonly projects = signal<Project[]>(PROJECTS);
   readonly totalProjects = computed(() => this.projects().length);
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
-  readonly financialsWidgets: DashboardWidgetId[] = ['finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
+  readonly financialsWidgets: DashboardWidgetId[] = ['finNavLinks', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
+
+  readonly finNavLinkItems = this.finSubNavItems.filter(i => i.value !== 'overview');
 
   readonly estimates = signal<Estimate[]>(ESTIMATES);
   readonly estimateBadgeColor = estimateBadgeColor;
@@ -956,16 +1902,62 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly coBadgeColor = coBadgeColor;
   readonly coTypeLabel = coTypeLabel;
 
-  capitalizeFirst(s: string): string {
-    return s.charAt(0).toUpperCase() + s.slice(1);
+  readonly capitalizeFirst = sharedCapitalizeFirst;
+
+  readonly invoiceStatusBadge = invoiceStatusBadge;
+  readonly billingFrequencyLabel = billingFrequencyLabel;
+  readonly payableStatusBadge = payableStatusBadge;
+  readonly poStatusBadge = poStatusBadge;
+  readonly payrollStatusBadge = payrollStatusBadge;
+  readonly contractStatusBadge = contractStatusBadge;
+  readonly contractTypeLabel = contractTypeLabel;
+  readonly contractTypeLabelShort = contractTypeLabelShort;
+  readonly ledgerTypeBadge = ledgerTypeBadge;
+  readonly ledgerTypeLabel = ledgerTypeLabel;
+
+  selectSubPage(value: string): void {
+    this.activeSubPage.set(value);
+    const url = new URL(window.location.href);
+    if (value === 'overview') {
+      url.searchParams.delete('subpage');
+    } else {
+      url.searchParams.set('subpage', value);
+    }
+    window.history.replaceState({}, '', url.toString());
   }
+
+  private readonly _restoreSubPage = effect(() => {
+    const params = this.route.snapshot.queryParamMap;
+    const sp = params.get('subpage');
+    if (sp && this.finSubNavItems.some(i => i.value === sp)) {
+      this.activeSubPage.set(sp);
+    }
+  });
 
   navigateToChangeOrder(id: string): void {
     this.router.navigate(['/financials/change-orders', id]);
   }
 
   private buildFinAgentState(): AgentDataState {
-    return { projects: PROJECTS, estimates: ESTIMATES, changeOrders: CHANGE_ORDERS, currentPage: 'financials' };
+    return {
+      projects: PROJECTS,
+      estimates: ESTIMATES,
+      changeOrders: CHANGE_ORDERS,
+      invoices: INVOICES,
+      billingSchedules: BILLING_SCHEDULES,
+      billingEvents: BILLING_EVENTS,
+      payables: PAYABLES,
+      cashFlowHistory: CASH_FLOW_HISTORY,
+      cashPosition: CASH_POSITION,
+      glAccounts: GL_ACCOUNTS,
+      glEntries: GL_ENTRIES,
+      purchaseOrders: PURCHASE_ORDERS,
+      payrollRecords: PAYROLL_RECORDS,
+      contracts: CONTRACTS,
+      subcontractLedger: SUBCONTRACT_LEDGER,
+      currentPage: 'financials',
+      currentSubPage: this.activeSubPage(),
+    };
   }
 
   getFinWidgetInsight(widgetId: string): string | null {
@@ -988,6 +1980,30 @@ export class FinancialsPageComponent extends DashboardPageBase {
     const state = this.buildFinAgentState();
     state.jobCostDetailProject = this.jobCostDetailProject() ?? undefined;
     return agent.insight?.(state) ?? null;
+  });
+
+  readonly finSubnavAlerts = computed<Record<string, AgentAlert | null>>(() => {
+    const state = this.buildFinAgentState();
+    const map: Record<string, string> = {
+      'estimates': 'openEstimates',
+      'change-orders': 'finChangeOrders',
+      'job-costs': 'financialsJobCostDetail',
+      'job-billing': 'finJobBilling',
+      'accounts-receivable': 'finAccountsReceivable',
+      'accounts-payable': 'finAccountsPayable',
+      'cash-management': 'finCashManagement',
+      'general-ledger': 'finGeneralLedger',
+      'purchase-orders': 'finPurchaseOrders',
+      'payroll': 'finPayroll',
+      'contracts': 'finContracts',
+      'subcontract-ledger': 'finSubcontractLedger',
+    };
+    const result: Record<string, AgentAlert | null> = {};
+    for (const [navValue, agentId] of Object.entries(map)) {
+      const agent = getAgent(agentId, 'financials');
+      result[navValue] = agent.alerts?.(state) ?? null;
+    }
+    return result;
   });
 
   readonly timeRanges: RevenueTimeRange[] = ['1M', 'YTD', '1Y', '3Y', '5Y'];
@@ -1152,11 +2168,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly projectJobCosts = computed(() => getProjectJobCosts());
   readonly jobCostCategories = JOB_COST_CATEGORIES;
 
-  formatJobCost(value: number): string {
-    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
-    return `$${value}`;
-  }
+  readonly formatJobCost = sharedFormatJobCost;
 
   getCost(costs: Record<JobCostCategory, number>, cat: JobCostCategory): number {
     return costs[cat];
