@@ -19,6 +19,7 @@ export interface DashboardLayoutConfig {
   canvasDefaultHeights?: Record<string, number>;
   minColSpan?: number;
   widgetMinColSpans?: Record<string, number>;
+  widgetMaxColSpans?: Record<string, number>;
   canvasGridMinHeightOffset?: number;
   savesDesktopOnMobile?: boolean;
   onBeforeMobileCompact?: () => void;
@@ -60,6 +61,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
   gridElAccessor: () => HTMLElement | undefined = () => undefined;
   headerElAccessor: () => HTMLElement | undefined = () => undefined;
+  zoomFn: () => number = () => 1;
 
   private _moveTarget: string | null = null;
   private _dragAxis: 'h' | 'v' | 'free' | null = null;
@@ -596,12 +598,15 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   private restoreSnapshot(snap: LayoutSnapshot): void {
+    const colSpans = { ...snap.colSpans };
+    const widths = { ...snap.widths };
+    this.enforceMaxColSpans(colSpans, widths);
     this.widgetTops.set(snap.tops);
     this.widgetHeights.set(snap.heights);
     this.widgetColStarts.set(snap.colStarts);
-    this.widgetColSpans.set(snap.colSpans);
+    this.widgetColSpans.set(colSpans);
     this.widgetLefts.set(snap.lefts);
-    this.widgetPixelWidths.set(snap.widths);
+    this.widgetPixelWidths.set(widths);
   }
 
   private handleWidgetMove(event: MouseEvent): void {
@@ -613,8 +618,9 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     if (this._dragAxis === 'free') {
       const gap = DashboardLayoutEngine.GAP_PX;
       const hStep = this.currentStep;
-      const rawTop = this._dragStartTop + (event.clientY - this._dragStartY);
-      const rawLeft = this._dragStartLeft + (event.clientX - this._dragStartX);
+      const z = this.zoomFn();
+      const rawTop = this._dragStartTop + (event.clientY - this._dragStartY) / z;
+      const rawLeft = this._dragStartLeft + (event.clientX - this._dragStartX) / z;
       let newTop = Math.round(rawTop / gap) * gap;
       let newLeft = Math.round(rawLeft / hStep) * hStep;
 
@@ -641,7 +647,8 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       this._dragAxis = 'v';
     }
 
-    let newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY));
+    const zV = this.zoomFn();
+    let newTop = Math.max(0, this._dragStartTop + (event.clientY - this._dragStartY) / zV);
     const currentLeft = this.widgetLefts()[id] ?? 0;
     const clamped = this.clampMoveAgainstLocked(id, newTop, currentLeft);
     newTop = clamped.top;
@@ -654,9 +661,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const id = this._resizeTarget!;
     const widgets = this.config.widgets;
     const gap = DashboardLayoutEngine.GAP_PX;
+    const z = this.zoomFn();
 
     if (this._resizeDir === 'v' || this._resizeDir === 'both') {
-      const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY));
+      const raw = Math.max(200, this._resizeStartH + (event.clientY - this._resizeStartY) / z);
       const newH = Math.round(raw / 16) * 16;
       this.widgetHeights.update((h) => ({ ...h, [id]: newH }));
     }
@@ -666,7 +674,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       const minW = minResizeCols * hStep - gap;
 
       if (this._resizeEdge === 'left') {
-        const dx = this._resizeStartX - event.clientX;
+        const dx = (this._resizeStartX - event.clientX) / z;
         const raw = Math.max(200, this._resizeStartW + dx);
         const snapped = Math.round((raw + gap) / hStep) * hStep - gap;
         let newW = Math.max(minW, snapped);
@@ -680,7 +688,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         this.widgetPixelWidths.update((w) => ({ ...w, [id]: newW }));
         this.widgetLefts.update((l) => ({ ...l, [id]: newL }));
       } else {
-        const raw = Math.max(200, this._resizeStartW + (event.clientX - this._resizeStartX));
+        const raw = Math.max(200, this._resizeStartW + (event.clientX - this._resizeStartX) / z);
         const snapped = Math.round((raw + gap) / hStep) * hStep - gap;
         let newW = Math.max(minW, snapped);
 
@@ -1215,6 +1223,27 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.widgetColSpans.set(colSpans);
   }
 
+  private enforceMaxColSpans(
+    colSpans: Record<string, number>,
+    pixelWidths: Record<string, number>,
+  ): void {
+    const maxSpans = this.config.widgetMaxColSpans;
+    if (!maxSpans) return;
+    const grid = this.activeGridEl;
+    const containerWidth = grid ? grid.clientWidth : 1280;
+    const step = (containerWidth + DashboardLayoutEngine.GAP_PX) / 16;
+    const gap = DashboardLayoutEngine.GAP_PX;
+    for (const [id, max] of Object.entries(maxSpans)) {
+      if (colSpans[id] != null && colSpans[id] > max) {
+        colSpans[id] = max;
+      }
+      const maxPx = Math.round(max * step - gap);
+      if (pixelWidths[id] != null && pixelWidths[id] > maxPx) {
+        pixelWidths[id] = maxPx;
+      }
+    }
+  }
+
   private syncColSpansFromPixelWidths(): void {
     const widths = this.widgetPixelWidths();
     const step = this.currentStep;
@@ -1223,7 +1252,8 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const spans: Record<string, number> = {};
     for (const id of this.config.widgets) {
       const perWidget = this.config.widgetMinColSpans?.[id] ?? minSpan;
-      spans[id] = Math.max(perWidget, Math.min(16, Math.round((widths[id] + gap) / step)));
+      const maxSpan = this.config.widgetMaxColSpans?.[id] ?? 16;
+      spans[id] = Math.max(perWidget, Math.min(maxSpan, Math.round((widths[id] + gap) / step)));
     }
     this.widgetColSpans.set(spans);
   }
@@ -1258,8 +1288,9 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const colStarts: Record<string, number> = {};
     const colSpans: Record<string, number> = {};
     for (const id of this.config.widgets) {
+      const maxSpan = this.config.widgetMaxColSpans?.[id] ?? 16;
       colStarts[id] = Math.max(1, Math.round(this.widgetLefts()[id] / step) + 1);
-      colSpans[id] = Math.max(4, Math.min(16, Math.round((this.widgetPixelWidths()[id] + gap) / step)));
+      colSpans[id] = Math.max(4, Math.min(maxSpan, Math.round((this.widgetPixelWidths()[id] + gap) / step)));
     }
 
     this.widgetColStarts.set(colStarts);
@@ -1324,6 +1355,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       if (saved.lefts?.[id] != null) lefts[id] = saved.lefts[id];
       if (saved.widths?.[id] != null) pixelWidths[id] = saved.widths[id];
     }
+    this.enforceMaxColSpans(colSpans, pixelWidths);
     this.widgetTops.set(tops);
     this.widgetHeights.set(heights);
     this.widgetColStarts.set(colStarts);
@@ -1362,12 +1394,14 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       const heights = { ...this.widgetHeights() };
       const lefts = { ...this.widgetLefts() };
       const widths = { ...this.widgetPixelWidths() };
+      const colSpans = { ...this.widgetColSpans() };
       for (const id of this.config.widgets) {
         if (layout.tops?.[id] != null) tops[id] = layout.tops[id];
         if (layout.heights?.[id] != null) heights[id] = layout.heights[id];
         if (layout.lefts?.[id] != null) lefts[id] = layout.lefts[id];
         if (layout.widths?.[id] != null) widths[id] = layout.widths[id];
       }
+      this.enforceMaxColSpans(colSpans, widths);
       this.widgetTops.set(tops);
       this.widgetHeights.set(heights);
       this.widgetLefts.set(lefts);

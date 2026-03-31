@@ -73,6 +73,94 @@ export const routes: Routes = [
         title: 'Change Order Detail',
       },
       {
+        path: 'financials/invoices/:id',
+        loadComponent: () =>
+          import('./pages/invoice-detail/invoice-detail-page.component').then(
+            (m) => m.InvoiceDetailPageComponent,
+          ),
+        title: 'Invoice Detail',
+      },
+      {
+        path: 'financials/payables/:id',
+        loadComponent: () =>
+          import('./pages/payable-detail/payable-detail-page.component').then(
+            (m) => m.PayableDetailPageComponent,
+          ),
+        title: 'Payable Detail',
+      },
+      {
+        path: 'financials/purchase-orders/:id',
+        loadComponent: () =>
+          import('./pages/purchase-order-detail/purchase-order-detail-page.component').then(
+            (m) => m.PurchaseOrderDetailPageComponent,
+          ),
+        title: 'Purchase Order Detail',
+      },
+      {
+        path: 'financials/contracts/:id',
+        loadComponent: () =>
+          import('./pages/contract-detail/contract-detail-page.component').then(
+            (m) => m.ContractDetailPageComponent,
+          ),
+        title: 'Contract Detail',
+      },
+      {
+        path: 'financials/billing/:id',
+        loadComponent: () =>
+          import('./pages/billing-event-detail/billing-event-detail-page.component').then(
+            (m) => m.BillingEventDetailPageComponent,
+          ),
+        title: 'Billing Event Detail',
+      },
+      {
+        path: 'financials/payroll/:id',
+        loadComponent: () =>
+          import('./pages/payroll-record-detail/payroll-record-detail-page.component').then(
+            (m) => m.PayrollRecordDetailPageComponent,
+          ),
+        title: 'Payroll Record Detail',
+      },
+      {
+        path: 'financials/payroll-monthly/:month',
+        loadComponent: () =>
+          import('./pages/payroll-monthly-detail/payroll-monthly-detail-page.component').then(
+            (m) => m.PayrollMonthlyDetailPageComponent,
+          ),
+        title: 'Payroll Monthly Detail',
+      },
+      {
+        path: 'financials/subcontract-ledger/:id',
+        loadComponent: () =>
+          import('./pages/subcontract-ledger-detail/subcontract-ledger-detail-page.component').then(
+            (m) => m.SubcontractLedgerDetailPageComponent,
+          ),
+        title: 'Subcontract Ledger Detail',
+      },
+      {
+        path: 'financials/gl-entries/:id',
+        loadComponent: () =>
+          import('./pages/gl-entry-detail/gl-entry-detail-page.component').then(
+            (m) => m.GlEntryDetailPageComponent,
+          ),
+        title: 'Journal Entry Detail',
+      },
+      {
+        path: 'financials/gl-accounts/:code',
+        loadComponent: () =>
+          import('./pages/gl-account-detail/gl-account-detail-page.component').then(
+            (m) => m.GlAccountDetailPageComponent,
+          ),
+        title: 'GL Account Detail',
+      },
+      {
+        path: 'financials/cash-flow/:month',
+        loadComponent: () =>
+          import('./pages/cash-flow-detail/cash-flow-detail-page.component').then(
+            (m) => m.CashFlowDetailPageComponent,
+          ),
+        title: 'Cash Flow Detail',
+      },
+      {
         path: 'rfi/:id',
         loadComponent: () =>
           import('./pages/rfi-detail/rfi-detail-page.component').then(

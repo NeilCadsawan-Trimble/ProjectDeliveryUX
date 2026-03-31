@@ -41,6 +41,7 @@ export class SubpageTileCanvas implements CanvasItemHost {
   readonly zIndices: WritableSignal<Record<string, number>>;
   readonly moveTargetId: WritableSignal<string | null>;
   readonly detailViews: WritableSignal<Record<string, TileDetailView>>;
+  zoomFn: () => number = () => 1;
 
   readonly hasDetails: Signal<boolean>;
   readonly canvasMinHeight: Signal<number>;
@@ -434,8 +435,9 @@ export class SubpageTileCanvas implements CanvasItemHost {
   private handleMove(event: MouseEvent): void {
     const id = this._moveTarget!;
     const gap = this.config.gap;
-    const dx = event.clientX - this._dragStartX;
-    const dy = event.clientY - this._dragStartY;
+    const z = this.zoomFn();
+    const dx = (event.clientX - this._dragStartX) / z;
+    const dy = (event.clientY - this._dragStartY) / z;
     const rawTop = this._dragStartTop + dy;
     const rawLeft = this._dragStartLeft + dx;
 
@@ -455,7 +457,8 @@ export class SubpageTileCanvas implements CanvasItemHost {
     const id = this._resizeTarget!;
     const step = SubpageTileCanvas.CANVAS_STEP;
     const gap = this.config.gap;
-    const dy = event.clientY - this._resizeStartY;
+    const z = this.zoomFn();
+    const dy = (event.clientY - this._resizeStartY) / z;
     const rawH = this._resizeStartH + dy;
     const newH = Math.max(gap * 6, Math.round(rawH / gap) * gap);
 
@@ -466,7 +469,7 @@ export class SubpageTileCanvas implements CanvasItemHost {
         [id]: { ...p[id], height: newH },
       }));
     } else {
-      const dx = event.clientX - this._resizeStartX;
+      const dx = (event.clientX - this._resizeStartX) / z;
       const rawW = this._resizeStartW + dx;
       const newW = Math.max(step * 2, Math.round(rawW / step) * step);
       this.positions.update(p => ({

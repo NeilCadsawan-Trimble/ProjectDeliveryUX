@@ -224,23 +224,23 @@
       @case ('drawings') {
         @if (isSubpageCanvasActive()) {
           <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()">
-            <!-- Locked: Section Subnav (toolbar) -->
-            <div class="absolute"
-              [style.top.px]="0"
-              [style.left.px]="0"
-              [style.width.px]="1280"
-              [style.height.px]="56"
-            >
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['drawings'] }" />
-            </div>
             <!-- Locked: Title -->
             <div class="absolute flex items-center justify-between"
-              [style.top.px]="72"
+              [style.top.px]="0"
               [style.left.px]="0"
               [style.width.px]="1280"
               [style.height.px]="40"
             >
               <div class="text-2xl font-bold text-foreground">Drawings ({{ drawingTiles().length }})</div>
+            </div>
+            <!-- Locked: Section Subnav (toolbar) -->
+            <div class="absolute"
+              [style.top.px]="56"
+              [style.left.px]="0"
+              [style.width.px]="1280"
+              [style.height.px]="56"
+            >
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['drawings'] }" />
             </div>
             <!-- Locked: List widget (list view mode) -->
             @if (subnavViewMode() === 'list') {
@@ -327,11 +327,11 @@
             }
           </div>
         } @else {
+        <div class="flex items-center justify-between mb-6">
+          <div class="text-2xl font-bold text-foreground">Drawings ({{ drawingTiles().length }})</div>
+        </div>
         <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['drawings'] }" />
         <div class="flex flex-col gap-6">
-          <div class="flex items-center justify-between">
-            <div class="text-2xl font-bold text-foreground">Drawings ({{ drawingTiles().length }})</div>
-          </div>
           @if (subnavViewMode() === 'grid') {
             <div class="grid gap-4" [style.grid-template-columns]="drawingTileGridStyle()">
               @for (drawing of drawingTiles(); track drawing.id) {
@@ -399,22 +399,22 @@
       @case ('models') {
         @if (isSubpageCanvasActive()) {
           <div class="relative overflow-visible" [style.min-height.px]="400">
-            <div class="absolute" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['models'] }" />
-            </div>
-            <div class="absolute flex items-center" [style.top.px]="72" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
+            <div class="absolute flex items-center" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
               <div class="text-2xl font-bold text-foreground">Models</div>
+            </div>
+            <div class="absolute" [style.top.px]="56" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['models'] }" />
             </div>
             <div class="absolute" [style.top.px]="128" [style.left.px]="0">
               <app-empty-state icon="cube" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
             </div>
           </div>
         } @else {
+        <div class="flex items-center justify-between mb-6">
+          <div class="text-2xl font-bold text-foreground">Models</div>
+        </div>
         <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['models'] }" />
         <div class="flex flex-col gap-6">
-          <div class="flex items-center justify-between">
-            <div class="text-2xl font-bold text-foreground">Models</div>
-          </div>
           <app-empty-state icon="cube" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
         </div>
         }
@@ -422,9 +422,18 @@
       @case ('records') {
         @if (isSubpageCanvasActive()) {
           <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()" #tileGrid>
+            <!-- Locked: Title -->
+            <div class="absolute flex items-center justify-between transition-all duration-200"
+              [style.top.px]="tilePos()['tc-title']?.top ?? 0"
+              [style.left.px]="tilePos()['tc-title']?.left ?? 0"
+              [style.width.px]="tilePos()['tc-title']?.width ?? 1280"
+              [style.height.px]="tilePos()['tc-title']?.height ?? 40"
+            >
+              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
+            </div>
             <!-- Side Subnav: high z-index when expanded so widgets pass beneath -->
             <div class="absolute overflow-visible transition-all duration-200"
-              [style.top.px]="tilePos()['tc-subnav']?.top ?? 0"
+              [style.top.px]="tilePos()['tc-subnav']?.top ?? 56"
               [style.left.px]="tilePos()['tc-subnav']?.left ?? 0"
               [style.width.px]="227"
               [style.z-index]="sideSubNavCollapsed() ? 10 : 9000"
@@ -444,21 +453,12 @@
             </div>
             <!-- Locked: Section Subnav (toolbar) - stays right of expanded subnav -->
             <div class="absolute transition-all duration-200"
-              [style.top.px]="tilePos()['tc-toolbar']?.top ?? 0"
+              [style.top.px]="tilePos()['tc-toolbar']?.top ?? 56"
               [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileToolbarLeft()"
               [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileToolbarWidth()"
               [style.height.px]="tilePos()['tc-toolbar']?.height ?? 56"
             >
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
-            </div>
-            <!-- Locked: Title -->
-            <div class="absolute flex items-center justify-between transition-all duration-200"
-              [style.top.px]="tilePos()['tc-title']?.top ?? 72"
-              [style.left.px]="tilePos()['tc-title']?.left ?? tileContentLeft()"
-              [style.width.px]="tilePos()['tc-title']?.width ?? tileContentWidth()"
-              [style.height.px]="tilePos()['tc-title']?.height ?? 40"
-            >
-              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
             </div>
             <!-- Locked: Weather forecast strip (daily reports only) -->
             @if (activeRecordsPage() === 'daily-reports') {
@@ -1268,6 +1268,9 @@
             }
           </div>
         } @else {
+        <div class="flex items-center justify-between mb-6">
+          <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
+        </div>
         <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
             <app-collapsible-subnav
               icon="clipboard"
@@ -1284,9 +1287,6 @@
           <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
             <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
-            </div>
-            <div class="flex items-center justify-between">
-              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
             </div>
             @if (activeRecordsPage() === 'rfis') {
               <div class="flex items-center gap-4 mb-4 flex-wrap">
@@ -1446,6 +1446,7 @@
                 (dailyReportClick)="navigateToDailyReport($event)"
                 (punchItemClick)="navigateToPunchItem($event)"
                 (inspectionClick)="navigateToInspection($event)"
+                (actionItemClick)="navigateToActionItem($event)"
               />
             } @else {
               <app-empty-state icon="clipboard" [title]="activeRecordsPageLabel()" [description]="activeRecordsPageDescription()" />
@@ -1457,22 +1458,22 @@
       @case ('field-captures') {
         @if (isSubpageCanvasActive()) {
           <div class="relative overflow-visible" [style.min-height.px]="400">
-            <div class="absolute" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['fieldCaptures'] }" />
-            </div>
-            <div class="absolute flex items-center" [style.top.px]="72" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
+            <div class="absolute flex items-center" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
               <div class="text-2xl font-bold text-foreground">Field Captures</div>
+            </div>
+            <div class="absolute" [style.top.px]="56" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['fieldCaptures'] }" />
             </div>
             <div class="absolute" [style.top.px]="128" [style.left.px]="0">
               <app-empty-state icon="camera" title="Field Captures" description="Browse photos, 360 captures, and site documentation from the field." />
             </div>
           </div>
         } @else {
+        <div class="flex items-center justify-between mb-6">
+          <div class="text-2xl font-bold text-foreground">Field Captures</div>
+        </div>
         <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['fieldCaptures'] }" />
         <div class="flex flex-col gap-6">
-          <div class="flex items-center justify-between">
-            <div class="text-2xl font-bold text-foreground">Field Captures</div>
-          </div>
           <app-empty-state icon="camera" title="Field Captures" description="Browse photos, 360 captures, and site documentation from the field." />
         </div>
         }
@@ -1480,9 +1481,15 @@
       @case ('financials') {
         @if (isSubpageCanvasActive()) {
           <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()">
+            <!-- Locked: Title -->
+            @if (!subledgerCategory()) {
+            <div class="absolute flex items-center justify-between transition-all duration-200" [style.top.px]="tilePos()['tc-title']?.top ?? 0" [style.left.px]="tilePos()['tc-title']?.left ?? 0" [style.width.px]="tilePos()['tc-title']?.width ?? 1280" [style.height.px]="40">
+              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'billings') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }@if (activeFinancialsPage() === 'purchase-orders') { ({{ projectPurchaseOrders().length }}) }@if (activeFinancialsPage() === 'contract-invoices') { ({{ projectInvoices().length }}) }@if (activeFinancialsPage() === 'general-invoices') { ({{ projectPayables().length }}) }</div>
+            </div>
+            }
             <!-- Side Subnav: high z-index when expanded so widgets pass beneath -->
             <div class="absolute overflow-visible transition-all duration-200"
-              [style.top.px]="0" [style.left.px]="0"
+              [style.top.px]="tilePos()['tc-subnav']?.top ?? 56" [style.left.px]="0"
               [style.width.px]="227"
               [style.z-index]="sideSubNavCollapsed() ? 10 : 9000"
             >
@@ -1500,20 +1507,14 @@
               />
             </div>
             <!-- Locked: Section Subnav (toolbar) - stays right of expanded subnav -->
-            <div class="absolute transition-all duration-200" [style.top.px]="tilePos()['tc-toolbar']?.top ?? 0" [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileToolbarLeft()" [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileToolbarWidth()" [style.height.px]="56">
+            <div class="absolute transition-all duration-200" [style.top.px]="tilePos()['tc-toolbar']?.top ?? 56" [style.left.px]="tilePos()['tc-toolbar']?.left ?? tileToolbarLeft()" [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileToolbarWidth()" [style.height.px]="56">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: activeFinancialsSubnavConfig() }" />
             </div>
-            <!-- Locked: Title -->
-            @if (!subledgerCategory()) {
-            <div class="absolute flex items-center justify-between transition-all duration-200" [style.top.px]="tilePos()['tc-title']?.top ?? 72" [style.left.px]="tilePos()['tc-title']?.left ?? tileContentLeft()" [style.width.px]="tilePos()['tc-title']?.width ?? tileContentWidth()" [style.height.px]="40">
-              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'billings') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }@if (activeFinancialsPage() === 'purchase-orders') { ({{ projectPurchaseOrders().length }}) }@if (activeFinancialsPage() === 'contract-invoices') { ({{ projectInvoices().length }}) }@if (activeFinancialsPage() === 'general-invoices') { ({{ projectPayables().length }}) }</div>
-            </div>
-            }
             @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
               @if (subledgerCategory()) {
                 <!-- Locked: Subledger header + KPIs -->
                 <div class="absolute transition-all duration-200"
-                  [style.top.px]="tilePos()['tc-subledger-header']?.top ?? 68"
+                  [style.top.px]="tilePos()['tc-subledger-header']?.top ?? 128"
                   [style.left.px]="tilePos()['tc-subledger-header']?.left ?? tileContentLeft()"
                   [style.width.px]="tilePos()['tc-subledger-header']?.width ?? tileContentWidth()">
                   <ng-container [ngTemplateOutlet]="subledgerHeaderKpis" />
@@ -2267,7 +2268,8 @@
                 </div>
                 <div class="overflow-y-auto flex-1">
                   @for (po of projectPurchaseOrders(); track po.id) {
-                    <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
+                    <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
+                      (click)="navigateToPurchaseOrder(po)" (keydown.enter)="navigateToPurchaseOrder(po)">
                       <div class="text-sm font-medium text-primary">{{ po.poNumber }}</div>
                       <div class="text-sm text-foreground truncate">{{ po.description }}</div>
                       <div class="text-sm text-foreground-60 truncate">{{ po.vendor }}</div>
@@ -2326,7 +2328,8 @@
                 </div>
                 <div class="overflow-y-auto flex-1">
                   @for (inv of projectInvoices(); track inv.id) {
-                    <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
+                    <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
+                      (click)="navigateToInvoice(inv)" (keydown.enter)="navigateToInvoice(inv)">
                       <div class="text-sm font-medium text-primary">{{ inv.invoiceNumber }}</div>
                       <div class="text-sm font-medium text-foreground">{{ formatCurrency(inv.amount) }}</div>
                       <div class="text-sm text-success">{{ formatCurrency(inv.amountPaid) }}</div>
@@ -2385,7 +2388,8 @@
                 </div>
                 <div class="overflow-y-auto flex-1">
                   @for (p of projectPayables(); track p.id) {
-                    <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
+                    <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
+                      (click)="navigateToPayable(p)" (keydown.enter)="navigateToPayable(p)">
                       <div class="text-sm font-medium text-primary">{{ p.invoiceNumber }}</div>
                       <div class="text-sm text-foreground truncate">{{ p.description }}</div>
                       <div class="text-sm text-foreground-60 truncate">{{ p.vendor }}</div>
@@ -2412,6 +2416,11 @@
             }
           </div>
         } @else {
+        @if (!subledgerCategory()) {
+          <div class="flex items-center justify-between mb-6">
+            <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'billings') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }@if (activeFinancialsPage() === 'purchase-orders') { ({{ projectPurchaseOrders().length }}) }@if (activeFinancialsPage() === 'contract-invoices') { ({{ projectInvoices().length }}) }@if (activeFinancialsPage() === 'general-invoices') { ({{ projectPayables().length }}) }</div>
+          </div>
+        }
         <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
             <app-collapsible-subnav
               icon="bar_graph"
@@ -2429,11 +2438,6 @@
             <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: activeFinancialsSubnavConfig() }" />
             </div>
-            @if (!subledgerCategory()) {
-              <div class="flex items-center justify-between">
-                <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'billings') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }@if (activeFinancialsPage() === 'purchase-orders') { ({{ projectPurchaseOrders().length }}) }@if (activeFinancialsPage() === 'contract-invoices') { ({{ projectInvoices().length }}) }@if (activeFinancialsPage() === 'general-invoices') { ({{ projectPayables().length }}) }</div>
-              </div>
-            }
             @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
               <ng-container [ngTemplateOutlet]="budgetDetailContent" />
             } @else if (activeFinancialsPage() === 'change-order-requests' || activeFinancialsPage() === 'billings' || activeFinancialsPage() === 'cost-forecasts' || activeFinancialsPage() === 'contracts' || activeFinancialsPage() === 'purchase-orders' || activeFinancialsPage() === 'contract-invoices' || activeFinancialsPage() === 'general-invoices') {
@@ -2441,6 +2445,7 @@
                 [activePage]="activeFinancialsPage()"
                 [viewMode]="subnavViewMode()"
                 [isMobile]="isMobile()"
+                [listMaxHeight]="finListTableMaxHeight()"
                 [changeOrders]="projectChangeOrders()"
                 [contracts]="projectContracts()"
                 [revenueData]="projectRevenueData()"
@@ -2452,6 +2457,9 @@
                 [subcontractLedger]="projectSubcontractLedger()"
                 (changeOrderClick)="navigateToChangeOrder($event)"
                 (contractClick)="navigateToContract($event)"
+                (purchaseOrderClick)="navigateToPurchaseOrder($event)"
+                (invoiceClick)="navigateToInvoice($event)"
+                (payableClick)="navigateToPayable($event)"
               />
             } @else if (activeFinancialsPage() === 'prime-contract-change-orders' || activeFinancialsPage() === 'potential-change-orders' || activeFinancialsPage() === 'subcontract-change-orders') {
               <ng-container [ngTemplateOutlet]="coTypeSubpage" />
@@ -2465,22 +2473,22 @@
       @case ('files') {
         @if (isSubpageCanvasActive()) {
           <div class="relative overflow-visible" [style.min-height.px]="400">
-            <div class="absolute" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['files'] }" />
-            </div>
-            <div class="absolute flex items-center" [style.top.px]="72" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
+            <div class="absolute flex items-center" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
               <div class="text-2xl font-bold text-foreground">Files</div>
+            </div>
+            <div class="absolute" [style.top.px]="56" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['files'] }" />
             </div>
             <div class="absolute" [style.top.px]="128" [style.left.px]="0">
               <app-empty-state icon="folder_closed" title="Project Files" description="Manage project documents, shared files, and folder structures." />
             </div>
           </div>
         } @else {
+        <div class="flex items-center justify-between mb-6">
+          <div class="text-2xl font-bold text-foreground">Files</div>
+        </div>
         <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['files'] }" />
         <div class="flex flex-col gap-6">
-          <div class="flex items-center justify-between">
-            <div class="text-2xl font-bold text-foreground">Files</div>
-          </div>
           <app-empty-state icon="folder_closed" title="Project Files" description="Manage project documents, shared files, and folder structures." />
         </div>
         }
@@ -2488,7 +2496,7 @@
       @default {
         @if (!isCanvas()) {
         <div class="flex items-center justify-between mb-6">
-          <div class="text-2xl font-bold text-foreground">Dashboard</div>
+          <div class="text-2xl font-bold text-foreground">{{ projectName() }}</div>
         </div>
         <div #pageHeader class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           @for (stat of summaryStats(); track stat.label) {
@@ -2522,7 +2530,7 @@
               [style.z-index]="wZIndices()['projHeader'] ?? 0"
             >
               <div class="flex items-center justify-between mb-4">
-                <div class="text-2xl font-bold text-foreground">Dashboard</div>
+                <div class="text-2xl font-bold text-foreground">{{ projectName() }}</div>
               </div>
               <div class="grid grid-cols-4 gap-3">
                 @for (stat of summaryStats(); track stat.label) {
@@ -3294,7 +3302,7 @@
         }
 
         <div class="canvas-content" [class.canvas-drawing-detail]="isCanvasDrawingDetail()" role="main" id="main-content" tabindex="-1"
-          [style.transform]="(panning.panOffsetX() || panning.panOffsetY()) ? 'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px)' : null">
+          [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
           <div [class]="isCanvasDrawingDetail() ? 'py-6 flex flex-col' : 'py-6 max-w-screen-xl mx-auto'"
             [style.height]="isCanvasDrawingDetail() ? 'calc(100vh - 80px)' : null">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
@@ -3698,7 +3706,7 @@
 
     <ng-template #subledgerLedgerRaw>
       @if (subledgerCategory(); as slCat) {
-        <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="isMobile() ? '75vh' : 'none'">
+        <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="finSubledgerTableMaxHeight()">
           <div class="flex items-center gap-2 px-5 py-4 border-bottom-default flex-shrink-0">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
             <div class="text-base font-semibold text-foreground">Transaction Ledger</div>
@@ -4286,10 +4294,11 @@
             }
           </div>
         } @else {
-          <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="finListTableMaxHeight()">
+            <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
               <div>ID</div><div>Description</div><div>Amount</div><div>Status</div><div>Requested By</div><div>Date</div>
             </div>
+            <div class="overflow-y-auto flex-1">
             @for (co of activeCoTypeList(); track co.id) {
               <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="navigateToChangeOrder(co)" (keydown.enter)="navigateToChangeOrder(co)">
@@ -4301,6 +4310,7 @@
                 <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
               </div>
             }
+            </div>
           </div>
         }
       } @else {

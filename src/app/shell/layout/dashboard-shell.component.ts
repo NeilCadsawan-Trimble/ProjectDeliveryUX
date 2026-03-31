@@ -274,7 +274,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         }
 
         <div class="canvas-content" role="main" id="main-content" tabindex="-1"
-          [style.transform]="(panning.panOffsetX() || panning.panOffsetY()) ? 'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px)' : null">
+          [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
           <router-outlet />
         </div>
 
@@ -564,6 +564,7 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly navExpanded = signal(false);
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
+  private readonly canvasResetService = inject(CanvasResetService);
 
   readonly panning = new CanvasPanning(() => this.isCanvas());
   private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
@@ -583,6 +584,10 @@ export class DashboardShellComponent implements AfterViewInit {
     this._canvasWheelEl = el;
     this._canvasWheelHandler = handler;
     this.destroyRef.onDestroy(() => el.removeEventListener('wheel', handler));
+  });
+
+  private readonly _syncZoomEffect = effect(() => {
+    this.canvasResetService.canvasZoom.set(this.panning.canvasZoom());
   });
 
   readonly activeNav = computed(() => {
@@ -605,7 +610,6 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly desktopResetMenuOpen = signal(false);
   readonly shellSelectorOpen = signal(false);
 
-  private readonly canvasResetService = inject(CanvasResetService);
   readonly widgetFocusService = inject(WidgetFocusService);
   readonly navHistory = inject(NavigationHistoryService);
   private readonly aiService = inject(AiService);

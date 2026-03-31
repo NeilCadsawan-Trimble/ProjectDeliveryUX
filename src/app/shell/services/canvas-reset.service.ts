@@ -10,6 +10,8 @@ export class CanvasResetService {
   private readonly _saveDefaultsTick = signal(0);
   readonly saveDefaultsTick = this._saveDefaultsTick.asReadonly();
 
+  readonly canvasZoom = signal(1);
+
   triggerResetWidgets(): void {
     this._resetWidgetsTick.update((n) => n + 1);
   }

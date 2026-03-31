@@ -196,7 +196,8 @@ type ViewMode = 'grid' | 'list';
         @if (viewMode() === 'grid') {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (item of actionItems(); track item.id) {
-              <div class="bg-card border-default rounded-lg overflow-hidden">
+              <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                tabindex="0" (click)="actionItemClick.emit(item)" (keydown.enter)="actionItemClick.emit(item)">
                 <div class="px-5 py-4 flex items-center gap-3 border-bottom-default">
                   <div class="w-9 h-9 rounded-lg flex items-center justify-center"
                     [class]="item.severity === 'critical' ? 'bg-destructive-20' : item.severity === 'warning' ? 'bg-warning-20' : 'bg-primary-20'">
@@ -224,7 +225,8 @@ type ViewMode = 'grid' | 'list';
               <div>Severity</div><div>Title</div><div>Description</div><div>Category</div>
             </div>
             @for (item of actionItems(); track item.id) {
-              <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center">
+              <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
+                tabindex="0" (click)="actionItemClick.emit(item)" (keydown.enter)="actionItemClick.emit(item)">
                 <div><modus-badge [color]="severityBadgeColor(item.severity)">{{ item.severity | titlecase }}</modus-badge></div>
                 <div class="text-sm font-medium text-foreground truncate">{{ item.title }}</div>
                 <div class="text-sm text-foreground-60 truncate">{{ item.subtitle }}</div>
@@ -254,6 +256,7 @@ export class RecordsSubpagesComponent {
   readonly dailyReportClick = output<DailyReport>();
   readonly punchItemClick = output<PunchListItem>();
   readonly inspectionClick = output<Inspection>();
+  readonly actionItemClick = output<ProjectAttentionItem>();
 
 
 

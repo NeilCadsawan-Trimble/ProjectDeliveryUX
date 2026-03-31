@@ -21,6 +21,10 @@ export abstract class DashboardPageBase {
 
   protected readonly engine = new DashboardLayoutEngine(this.getEngineConfig(), this.widgetLayoutService);
 
+  private readonly _wireEngineZoom = (() => {
+    this.engine.zoomFn = () => this.canvasResetService.canvasZoom();
+  })();
+
   private readonly _lockPinnedHeaders = (() => {
     this.applyInitialHeaderLock();
   })();

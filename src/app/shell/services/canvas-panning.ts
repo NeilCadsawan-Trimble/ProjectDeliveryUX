@@ -1,10 +1,15 @@
 import { computed, signal } from '@angular/core';
 
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 1.0;
+const ZOOM_STEP = 0.05;
+
 export class CanvasPanning {
   readonly isPanReady = signal(false);
   readonly isPanning = signal(false);
   readonly panOffsetX = signal(0);
   readonly panOffsetY = signal(0);
+  readonly canvasZoom = signal(1);
   readonly disabled = signal(false);
   readonly locked = signal(false);
   readonly panBlocked = computed(() => this.disabled() || this.locked());
@@ -82,8 +87,25 @@ export class CanvasPanning {
     if (this._isInsideScrollable(event.target as HTMLElement | null)) return;
     if (this._isInsideDetailView(event.target as HTMLElement | null)) return;
     event.preventDefault();
-    this.panOffsetX.update(x => x - event.deltaX);
-    this.panOffsetY.update(y => y - event.deltaY);
+
+    if (event.shiftKey) {
+      const oldZoom = this.canvasZoom();
+      const direction = event.deltaY > 0 ? -1 : 1;
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, oldZoom + direction * ZOOM_STEP));
+      if (newZoom === oldZoom) return;
+
+      const cursorX = event.clientX;
+      const cursorY = event.clientY;
+      const worldX = (cursorX - this.panOffsetX()) / oldZoom;
+      const worldY = (cursorY - this.panOffsetY()) / oldZoom;
+
+      this.canvasZoom.set(newZoom);
+      this.panOffsetX.set(cursorX - worldX * newZoom);
+      this.panOffsetY.set(cursorY - worldY * newZoom);
+    } else {
+      this.panOffsetX.update(x => x - event.deltaX);
+      this.panOffsetY.update(y => y - event.deltaY);
+    }
   }
 
   private _isInsideDetailView(el: HTMLElement | null): boolean {
@@ -131,5 +153,6 @@ export class CanvasPanning {
   resetView(): void {
     this.panOffsetX.set(0);
     this.panOffsetY.set(0);
+    this.canvasZoom.set(1);
   }
 }
