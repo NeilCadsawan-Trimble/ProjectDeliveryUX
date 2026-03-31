@@ -494,7 +494,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 aria-label="Settings"
               >
                 <i class="modus-icons text-xl" aria-hidden="true">settings</i>
-                @if (navExpanded()) {
+                @if (navExpanded() && !isMobile()) {
                   <div class="custom-side-nav-label">Settings</div>
                 }
               </div>
@@ -764,9 +764,9 @@ export class DashboardShellComponent implements AfterViewInit {
 
   private _hamburgerAttached = false;
 
-  onMainMenuToggle(_open: boolean): void {
+  onMainMenuToggle(open: boolean): void {
     if (!this._hamburgerAttached) {
-      this.navExpanded.set(!this.navExpanded());
+      this.navExpanded.set(open);
     }
   }
 
@@ -895,10 +895,9 @@ export class DashboardShellComponent implements AfterViewInit {
     const tryAttach = () => {
       if (abort.signal.aborted || ++attempts > 100) return;
       const shadow = navbarWc.shadowRoot;
-      if (!shadow) { requestAnimationFrame(tryAttach); return; }
       const btn =
-        shadow.querySelector('[aria-label="Main menu"]') ??
-        shadow.querySelector('modus-wc-button[aria-label="Main menu"]');
+        shadow?.querySelector('[aria-label="Main menu"]') ??
+        navbarWc.querySelector('[aria-label="Main menu"]');
       if (btn) {
         this._hamburgerAttached = true;
         btn.addEventListener('click', (e: Event) => {

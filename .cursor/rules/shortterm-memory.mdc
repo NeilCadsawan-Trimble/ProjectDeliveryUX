@@ -38,19 +38,32 @@ alwaysApply: true
   - All project data now uses construction domain terminology (roles, milestones, tasks).
   - Risks widget is the first widget below the locked project header in all project dashboards.
 
+### Session 10 (Mar 31)
+- **Topic**: Hamburger menu fix -- scoped encapsulation (no shadow DOM)
+- **What happened**:
+  1. Previous hamburger fix (PR #38) assumed `modus-wc-navbar` uses shadow DOM. It doesn't -- Stencil uses scoped encapsulation, so `shadowRoot` is always null.
+  2. `attachHamburgerListener` looped 100 rAF retries waiting for `shadowRoot`, never found it, gave up.
+  3. The fallback `onMainMenuToggle` toggled (`!navExpanded()`), but `mainMenuOpenChange` has `bubbles: true`, so Angular caught it twice (output + bubbling DOM event), producing a double-toggle = net no change.
+  4. Fix: search light DOM with `navbarWc.querySelector('[aria-label="Main menu"]')` when `shadowRoot` is null. Made fallback idempotent: `navExpanded.set(open)` instead of toggle.
+  5. Updated skill section 16 with Bug D (scoped encapsulation), new architecture, 8 rules.
+  6. Updated long-term memory fragile areas table.
+- **Decisions**:
+  - Never assume Modus web components use shadow DOM. Always check `shadowRoot` first, fall back to light DOM.
+  - Fallback event handlers must be idempotent (set value, not toggle) when events can bubble.
+
 ## Active Context
 
-- On `dev` branch, synced with `main` after PR #35 merge.
-- All tests pass: 84 unit, 325 static, type-check clean.
+- On `dev` branch, hamburger fix applied but not yet pushed.
+- Build passes, browser-verified on Home and Projects pages.
 - Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
 
 ## Pending Items
 
-- (none)
+- Push hamburger fix when user requests.
 
 ## Scratch Notes
 
-- Total PRs merged today: #34 (collision fix), #35 (construction data + layout)
+- Total PRs merged: #34 (collision fix), #35 (construction data + layout), #38 (hamburger shadow DOM selector -- incomplete fix)
 - Layout storage keys: desktop `project-${id}-v4`, canvas `canvas-layout:project-${id}:v6`
 - 84 unit tests (6 new collision regression tests)
 - 325 static tests across 9 files

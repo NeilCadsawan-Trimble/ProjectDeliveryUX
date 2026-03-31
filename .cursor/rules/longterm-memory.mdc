@@ -101,7 +101,7 @@ These areas have broken multiple times. Extra care required:
 
 | Area | Risk | Mitigation |
 |------|------|------------|
-| Hamburger/sidenav | DOM listener double-fires with Angular `(mainMenuOpenChange)` binding, toggling twice (net no change) | `onMainMenuToggle` must be a no-op; all toggle logic in `attachHamburgerListener()` only. See skill section 16 |
+| Hamburger/sidenav | Modus navbar has NO shadow DOM (scoped encapsulation); `shadowRoot` is always null; `mainMenuOpenChange` event bubbles and can double-fire | Search light DOM with `navbarWc.querySelector()`, not `shadowRoot.querySelector()`. Fallback must be idempotent `set(open)`, not toggle. See skill section 16 |
 | Canvas navbar overflow | Setting `overflow: hidden` clips dropdowns | Static test asserts `overflow: visible`; border-radius on inner element |
 | Push-squeeze ordering | Wrong cascade order causes incorrect widget relocation | Unit tests cover right-edge and left-edge squeeze ordering |
 | Collision after resize | Active vs relocated widget priority | `_pushSqueezeActive` set tracks active widgets; unit tests cover |
