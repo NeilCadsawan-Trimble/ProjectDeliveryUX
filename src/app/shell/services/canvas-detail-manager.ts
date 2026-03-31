@@ -43,6 +43,7 @@ export class CanvasDetailManager {
   readonly canvasDetailViews = signal<Record<string, DetailView>>({});
   readonly hasCanvasDetails = computed(() => Object.keys(this.canvasDetailViews()).length > 0);
   readonly canvasInteractingId = signal<string | null>(null);
+  zoomFn: () => number = () => 1;
 
   /**
    * Whether the given widget should have the smooth position transition.
@@ -101,9 +102,11 @@ export class CanvasDetailManager {
     const startLeft = engine.widgetLefts()[widgetId] ?? 0;
     this.canvasInteractingId.set(widgetId);
 
+    const zFn = this.zoomFn;
     const onMove = (e: MouseEvent) => {
-      const rawTop = startTop + (e.clientY - startY);
-      const rawLeft = startLeft + (e.clientX - startX);
+      const z = zFn();
+      const rawTop = startTop + (e.clientY - startY) / z;
+      const rawLeft = startLeft + (e.clientX - startX) / z;
       const newTop = Math.round(rawTop / SNAP_GAP) * SNAP_GAP;
       const newLeft = Math.round(rawLeft / SNAP_H_STEP) * SNAP_H_STEP;
       engine.widgetTops.update(t => ({ ...t, [widgetId]: newTop }));
@@ -130,9 +133,11 @@ export class CanvasDetailManager {
     const startH = engine.widgetHeights()[widgetId] ?? DETAIL_HEIGHT;
     this.canvasInteractingId.set(widgetId);
 
+    const zFnR = this.zoomFn;
     const onMove = (e: MouseEvent) => {
-      const rawW = Math.max(400, startW + (e.clientX - startX));
-      const rawH = Math.max(300, startH + (e.clientY - startY));
+      const z = zFnR();
+      const rawW = Math.max(400, startW + (e.clientX - startX) / z);
+      const rawH = Math.max(300, startH + (e.clientY - startY) / z);
       const newW = Math.round((rawW + SNAP_GAP) / SNAP_H_STEP) * SNAP_H_STEP - SNAP_GAP;
       const newH = Math.round(rawH / SNAP_GAP) * SNAP_GAP;
       engine.widgetPixelWidths.update(w => ({ ...w, [widgetId]: Math.max(400, newW) }));

@@ -177,6 +177,5 @@ export class CollapsibleSubnavComponent {
 
   onItemSelect(value: string): void {
     this.itemSelect.emit(value);
-    this.collapsedChange.emit(true);
   }
 }

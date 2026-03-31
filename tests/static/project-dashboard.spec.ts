@@ -327,10 +327,10 @@ describe('ProjectDashboardComponent (template regression)', () => {
   });
 
   describe('toolbar toggle icon correctness', () => {
-    it('financials config uses bar_graph for chart-based pages', () => {
+    it('financials parent config has empty viewToggles (sub-pages define their own)', () => {
       const financialsMatch = CONFIG_SRC.match(/financials:\s*\{[\s\S]*?viewToggles:\s*\[([\s\S]*?)\]/);
       expect(financialsMatch).toBeTruthy();
-      expect(financialsMatch![1]).toContain("icon: 'bar_graph'");
+      expect(financialsMatch![1].trim()).toBe('');
     });
 
     it('financials-tiles config uses apps for tile-based pages', () => {
