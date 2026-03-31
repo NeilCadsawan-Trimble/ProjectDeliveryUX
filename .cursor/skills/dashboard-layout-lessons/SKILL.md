@@ -754,28 +754,51 @@ When a compressed chain has no free internal space for the mover:
 
 ## 16. Hamburger / Side Nav Toggle -- Double-Fire Prevention
 
-### The bug
+### The bugs (two distinct failure modes)
 
-The Modus navbar emits a `mainMenuOpenChange` custom event when the hamburger button is clicked. The `DashboardShellComponent` also attaches a direct DOM click listener on the hamburger button via `attachHamburgerListener()` (capture phase, `stopImmediatePropagation`). Both handlers toggle `navExpanded`.
+**Bug A (double-fire):** The Modus navbar emits a `mainMenuOpenChange` custom event when the hamburger button is clicked. If `DashboardShellComponent` also attaches a direct DOM click listener via `attachHamburgerListener()`, both handlers toggle `navExpanded`. Two toggles = net no change.
 
-When both fire on the same click, `navExpanded` toggles twice (false→true→false), making the sidenav appear broken -- clicking the hamburger does nothing.
+**Bug B (selector mismatch):** The hamburger button inside `modus-wc-navbar`'s shadow DOM is a `<modus-wc-button aria-label="Main menu">`, NOT a native `<button>`. If the selector queries for `button[aria-label="Main menu"]`, it finds nothing. The direct listener never attaches, and since `onMainMenuToggle` was a no-op, nothing happens on click.
 
-### Why both exist
+**Bug C (mode-switch orphan):** The `@if (isCanvas())` conditional renders different navbars for canvas vs desktop mode. When the user resizes across the 2000px breakpoint, Angular destroys the old navbar and creates a new one. If `attachHamburgerListener` only runs once in `ngAfterViewInit`, the new navbar has no listener.
 
-The direct DOM listener was added because `(mainMenuOpenChange)` is unreliable -- Angular lifecycle re-renders can disconnect the binding from the Modus web component's internal shadow DOM button. The direct listener with `capture: true` is the reliable path.
+### Architecture
 
-### The fix
+Two complementary paths ensure the hamburger always works:
 
-`onMainMenuToggle` must be a **no-op**. The Angular `(mainMenuOpenChange)` binding is kept to avoid Angular logging unhandled events, but the handler body is empty:
+1. **Primary: `attachHamburgerListener()`** -- attaches a capture-phase click listener on the `modus-wc-button[aria-label="Main menu"]` inside the navbar's shadow DOM. Uses `stopImmediatePropagation()` to prevent the web component from also toggling. Sets `_hamburgerAttached = true` on success.
+
+2. **Fallback: `onMainMenuToggle()`** -- only toggles `navExpanded` when `_hamburgerAttached` is false (i.e., the direct listener failed to attach). Prevents the no-op problem when the selector can't find the button.
+
+3. **Re-attachment: `_reattachHamburgerEffect`** -- an `effect()` that watches `isCanvas()`. Whenever the mode changes (canvas ↔ desktop), it waits one microtask + one rAF for Angular to re-render, then re-runs `attachHamburgerListener()` on the new navbar DOM.
+
+### Key implementation details
 
 ```typescript
-onMainMenuToggle(_open: boolean): void {
-  // Intentionally empty — hamburger toggle is handled by the direct DOM
-  // listener in attachHamburgerListener() to avoid double-fire issues.
-}
-```
+// Selector: query shadow DOM for the modus-wc-button, NOT a native button
+const shadow = navbarWc.shadowRoot;
+const btn =
+  shadow.querySelector('[aria-label="Main menu"]') ??
+  shadow.querySelector('modus-wc-button[aria-label="Main menu"]');
 
-All toggle logic lives exclusively in `attachHamburgerListener()`.
+// Per-attachment AbortController prevents double listeners on re-attachment
+private _hamburgerAbort: AbortController | null = null;
+
+// Fallback: only toggles when direct listener failed
+onMainMenuToggle(_open: boolean): void {
+  if (!this._hamburgerAttached) {
+    this.navExpanded.set(!this.navExpanded());
+  }
+}
+
+// Re-attach on mode switch
+private readonly _reattachHamburgerEffect = effect(() => {
+  this.isCanvas();
+  queueMicrotask(() => {
+    requestAnimationFrame(() => this.attachHamburgerListener());
+  });
+});
+```
 
 ### Mobile side nav: icons only
 
@@ -783,10 +806,13 @@ On mobile (< 768px), the side nav renders at 56px width (icons only). The CSS ru
 
 ### Rules
 
-1. **Never put toggle logic in `onMainMenuToggle`** -- it will double-fire with the direct listener.
-2. **Always use `attachHamburgerListener`** for hamburger click handling (capture phase, `stopImmediatePropagation`).
-3. **Guard side nav labels** with `navExpanded() && !isMobile()` to prevent text in the 56px mobile column.
-4. **`@if (!isMobile() || navExpanded())`** controls side nav DOM presence on mobile -- completely removed when collapsed, rendered when expanded.
+1. **Never use `button[aria-label]` selectors** for Modus navbar hamburger -- it's a `<modus-wc-button>`, not `<button>`.
+2. **Always query shadow DOM** with `navbarWc.shadowRoot.querySelector('[aria-label="Main menu"]')`.
+3. **Keep `onMainMenuToggle` as a fallback** that only fires when `_hamburgerAttached` is false.
+4. **Re-attach on mode switch** via `_reattachHamburgerEffect` watching `isCanvas()`.
+5. **Use per-attachment AbortController** (`_hamburgerAbort`) to clean up old listeners before re-attaching.
+6. **Guard side nav labels** with `navExpanded() && !isMobile()` to prevent text in the 56px mobile column.
+7. **`@if (!isMobile() || navExpanded())`** controls side nav DOM presence on mobile.
 
 ## Quick Reference: Files and Regression Tests
 

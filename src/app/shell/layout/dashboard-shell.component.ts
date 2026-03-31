@@ -523,7 +523,9 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
   private readonly _abortCtrl = new AbortController();
+  private _hamburgerAbort: AbortController | null = null;
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
+    this._hamburgerAbort?.abort();
     this._abortCtrl.abort();
     this.ai.destroy();
   });
@@ -588,6 +590,16 @@ export class DashboardShellComponent implements AfterViewInit {
 
   private readonly _syncZoomEffect = effect(() => {
     this.canvasResetService.canvasZoom.set(this.panning.canvasZoom());
+  });
+
+  private readonly _reattachHamburgerEffect = effect(() => {
+    this.isCanvas();
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        this.attachHamburgerListener();
+        this.reorderNavbarEnd();
+      });
+    });
   });
 
   readonly activeNav = computed(() => {
@@ -750,9 +762,12 @@ export class DashboardShellComponent implements AfterViewInit {
     this.router.navigate([this.homeRoute()]);
   }
 
+  private _hamburgerAttached = false;
+
   onMainMenuToggle(_open: boolean): void {
-    // Intentionally empty — hamburger toggle is handled by the direct DOM
-    // listener in attachHamburgerListener() to avoid double-fire issues.
+    if (!this._hamburgerAttached) {
+      this.navExpanded.set(!this.navExpanded());
+    }
   }
 
   selectNavItem(value: string): void {
@@ -841,7 +856,6 @@ export class DashboardShellComponent implements AfterViewInit {
       if (canvas !== this.isCanvas()) onCanvasChange(mqCanvas);
     }, { signal: this._abortCtrl.signal });
 
-    this.attachHamburgerListener();
     this.reorderNavbarEnd();
   }
 
@@ -868,20 +882,29 @@ export class DashboardShellComponent implements AfterViewInit {
   }
 
   private attachHamburgerListener(): void {
+    if (this._hamburgerAbort) {
+      this._hamburgerAbort.abort();
+      this._hamburgerAbort = null;
+    }
+    this._hamburgerAttached = false;
     const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
     if (!navbarWc) return;
+    const abort = new AbortController();
+    this._hamburgerAbort = abort;
     let attempts = 0;
     const tryAttach = () => {
-      if (++attempts > 50) return;
+      if (abort.signal.aborted || ++attempts > 100) return;
+      const shadow = navbarWc.shadowRoot;
+      if (!shadow) { requestAnimationFrame(tryAttach); return; }
       const btn =
-        navbarWc.querySelector('button[aria-label="Main menu"]') ??
-        navbarWc.shadowRoot?.querySelector('button[aria-label="Main menu"]') ??
-        navbarWc.querySelector('.navbar-menu-btn');
+        shadow.querySelector('[aria-label="Main menu"]') ??
+        shadow.querySelector('modus-wc-button[aria-label="Main menu"]');
       if (btn) {
+        this._hamburgerAttached = true;
         btn.addEventListener('click', (e: Event) => {
           e.stopImmediatePropagation();
           this.navExpanded.set(!this.navExpanded());
-        }, { capture: true, signal: this._abortCtrl.signal });
+        }, { capture: true, signal: abort.signal });
         return;
       }
       requestAnimationFrame(tryAttach);
