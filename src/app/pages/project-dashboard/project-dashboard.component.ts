@@ -57,7 +57,7 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus } from '../../data/dashboard-data';
+import { PROJECTS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus, type TimeOffStatus } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
@@ -952,7 +952,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly milestones = computed(() => this.projectData().milestones);
   readonly tasks = computed(() => this.projectData().tasks);
   readonly risks = computed(() => this.projectData().risks);
-  readonly projectUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals()).filter(n => n.projectId === this.projectId()));
+  readonly projectUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals(), this.store.changeOrders()).filter(n => n.projectId === this.projectId()));
   readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
 
   readonly projectWeather = computed(() => getProjectWeather(this.projectId()));
@@ -1021,8 +1021,31 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
   readonly team = computed(() => this.projectData().team);
-  readonly projectTimeOffRequests = computed(() => getProjectTimeOff(this.projectId()));
-  readonly projectStaffingConflicts = computed(() => buildStaffingConflicts(this.projectId()));
+  readonly projectTimeOffRequests = computed(() => getProjectTimeOff(this.projectId(), this.store.timeOffRequests()));
+  readonly projectStaffingConflicts = computed(() => buildStaffingConflicts(this.projectId(), this.store.timeOffRequests()));
+
+  readonly timeOffStatusOpen = signal<number | null>(null);
+  readonly timeOffDropdownPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
+  readonly timeOffStatusOptions: readonly TimeOffStatus[] = ['Pending', 'Approved', 'Denied'] as const;
+
+  toggleTimeOffStatus(reqId: number, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.timeOffStatusOpen() === reqId) {
+      this.timeOffStatusOpen.set(null);
+      return;
+    }
+    const el = event.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    this.timeOffDropdownPos.set({ top: rect.bottom + 4, left: rect.right - 120 });
+    this.timeOffStatusOpen.set(reqId);
+  }
+
+  onTimeOffStatusSelect(reqId: number, newStatus: TimeOffStatus, event: MouseEvent): void {
+    event.stopPropagation();
+    this.timeOffStatusOpen.set(null);
+    this.store.updateTimeOffStatus(reqId, newStatus);
+  }
+
   readonly activity = computed(() => this.projectData().activity);
   readonly latestDrawing = computed(() => this.projectData().latestDrawing);
   readonly budgetBreakdown = computed(() => this.projectData().budgetBreakdown);
@@ -2025,6 +2048,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     if (this.tileHeaderStatusOpen() && !target.closest('[role="listbox"]') && !target.closest('[role="option"]')) {
       this.tileHeaderStatusOpen.set(null);
     }
+    if (this.timeOffStatusOpen() !== null && !target.closest('[data-timeoff-dropdown]')) {
+      this.timeOffStatusOpen.set(null);
+    }
     if (this.subledgerDropdownOpen() && !target.closest('[role="option"]') && !target.closest('[aria-label="Back to Budget"]')?.parentElement?.querySelector('[role="option"]')) {
       const clickedDropdownTrigger = target.closest('.select-none');
       const clickedDropdownOption = target.closest('[role="option"]');
@@ -2153,8 +2179,8 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       detailRfi: this.detailRfi() ?? undefined,
       detailSubmittal: this.detailSubmittal() ?? undefined,
       detailDrawing: this.detailDrawing() ?? undefined,
-      projectTimeOff: getProjectTimeOff(projId),
-      staffingConflicts: buildStaffingConflicts(projId),
+      projectTimeOff: getProjectTimeOff(projId, this.store.timeOffRequests()),
+      staffingConflicts: buildStaffingConflicts(projId, this.store.timeOffRequests()),
       currentPage: 'project-dashboard',
       currentSubPage: this.activeNavItem(),
     };

@@ -42,6 +42,14 @@ describe('DashboardShellComponent (regression)', () => {
     it('has onMainMenuToggle method', () => {
       expect(SRC).toContain('onMainMenuToggle');
     });
+
+    it('falls back to light DOM query when shadowRoot is null', () => {
+      expect(SRC).toContain('navbarWc.querySelector');
+    });
+
+    it('onMainMenuToggle uses idempotent set(open) not toggle', () => {
+      expect(SRC).toContain('navExpanded.set(open)');
+    });
   });
 
   describe('navExpanded signal', () => {

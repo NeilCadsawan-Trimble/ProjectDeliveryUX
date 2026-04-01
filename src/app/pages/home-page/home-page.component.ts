@@ -31,6 +31,7 @@ import type {
   GridPage,
   RfiStatus,
   SubmittalStatus,
+  TimeOffStatus,
   ApptType,
   CalendarAppointment,
   Rfi,
@@ -41,7 +42,6 @@ import {
   PROJECTS,
   ESTIMATES,
   ACTIVITIES,
-  TIME_OFF_REQUESTS,
   CALENDAR_APPOINTMENTS,
   CHANGE_ORDERS,
   INSPECTIONS,
@@ -139,13 +139,13 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
         }
         @for (widgetId of homeWidgets; track widgetId) {
           <div
-            [class]="(canvasDetailViews()[widgetId] ? 'absolute pointer-events-auto' : (isMobile() ? 'absolute left-0 right-0 pointer-events-auto' + (widgetId === 'homeUrgentNeeds' ? '' : ' overflow-hidden') : 'absolute pointer-events-auto' + (widgetId === 'homeUrgentNeeds' ? '' : ' overflow-hidden'))) + (shouldTransition(widgetId) ? ' widget-detail-transition' : '')"
+            [class]="(canvasDetailViews()[widgetId] ? 'absolute pointer-events-auto' : (isMobile() ? 'absolute left-0 right-0 pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden') : 'absolute pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden'))) + (shouldTransition(widgetId) ? ' widget-detail-transition' : '')"
             [attr.data-widget-id]="widgetId"
             [style.top.px]="widgetTops()[widgetId]"
             [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
             [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
             [style.height.px]="widgetHeights()[widgetId]"
-            [style.z-index]="canvasDetailViews()[widgetId] ? 9999 : (widgetZIndices()[widgetId] ?? 0)"
+            [style.z-index]="canvasDetailViews()[widgetId] ? 9999 : (widgetId === 'homeTimeOff' && timeOffStatusOpen() !== null) ? 9998 : (widgetZIndices()[widgetId] ?? 0)"
             (mousedown)="canvasDetailViews()[widgetId] ? selectDetailWidget(widgetId, $event) : null"
           >
           @if (canvasDetailViews()[widgetId]; as detail) {
@@ -377,7 +377,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
 
               @if (widgetId === 'homeTimeOff') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -545,12 +545,15 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                             <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit" role="cell">{{ req.type }}</div>
                             <div class="text-sm text-foreground-80" role="cell">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
                             <div class="text-sm text-foreground-60" role="cell">{{ req.days }}d</div>
-                            <div role="cell">
-                              <div class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full
+                            <div role="cell" data-timeoff-dropdown>
+                              <div class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full cursor-pointer select-none
                                 {{ req.status === 'Approved' ? 'bg-success-20 text-success' :
                                    req.status === 'Pending'  ? 'bg-warning-20 text-warning' :
-                                   'bg-destructive-20 text-destructive' }}">
+                                   'bg-destructive-20 text-destructive' }}"
+                                (click)="toggleTimeOffStatus(req.id, $event)"
+                                (mousedown)="$event.stopPropagation()">
                                 {{ req.status }}
+                                <i class="modus-icons text-2xs" aria-hidden="true">caret_down</i>
                               </div>
                             </div>
                           </div>
@@ -562,7 +565,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                       <div class="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-3">
                         <div class="grid grid-cols-4 gap-3">
                           <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
-                            <div class="text-2xl font-bold text-foreground">{{ timeOffRequests.length }}</div>
+                            <div class="text-2xl font-bold text-foreground">{{ timeOffRequests().length }}</div>
                             <div class="text-2xs text-foreground-60 text-center">Total Requests</div>
                           </div>
                           <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
@@ -709,6 +712,22 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                     }
                   }
                 </div>
+                @if (timeOffStatusOpen() !== null) {
+                  <div class="fixed z-[9999] bg-card border-default rounded-lg shadow-lg min-w-[120px] py-1"
+                    [style.top.px]="timeOffDropdownPos().top"
+                    [style.left.px]="timeOffDropdownPos().left"
+                    data-timeoff-dropdown
+                    (mousedown)="$event.stopPropagation()">
+                    @for (opt of timeOffStatusOptions; track opt) {
+                      <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors duration-150 text-xs"
+                        (click)="onTimeOffStatusSelect(timeOffStatusOpen()!, opt, $event)">
+                        <div class="w-2 h-2 rounded-full flex-shrink-0
+                          {{ opt === 'Approved' ? 'bg-success' : opt === 'Pending' ? 'bg-warning' : 'bg-destructive' }}"></div>
+                        {{ opt }}
+                      </div>
+                    }
+                  </div>
+                }
                 <widget-resize-handle
                   [isMobile]="isMobile()"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1581,7 +1600,7 @@ export class HomePageComponent extends DashboardPageBase {
     day: 'numeric',
   });
 
-  readonly timeOffRequests = TIME_OFF_REQUESTS;
+  readonly timeOffRequests = this.store.timeOffRequests;
   readonly activities: ActivityItem[] = ACTIVITIES;
   readonly rfis = this.store.rfis;
   readonly submittals = this.store.submittals;
@@ -1754,6 +1773,9 @@ export class HomePageComponent extends DashboardPageBase {
     if (this.canvasHeaderStatusOpen() && !target.closest('[role="listbox"]') && !target.closest('[role="option"]')) {
       this.canvasHeaderStatusOpen.set(null);
     }
+    if (this.timeOffStatusOpen() !== null && !target.closest('[data-timeoff-dropdown]')) {
+      this.timeOffStatusOpen.set(null);
+    }
   }
 
   private static readonly MOBILE_HEADER_H = 58;
@@ -1875,7 +1897,7 @@ export class HomePageComponent extends DashboardPageBase {
       status: 'Pending' | 'Approved' | 'Denied';
     }
     const dayMap = new Map<number, TimeOffEntry[]>();
-    for (const req of this.timeOffRequests) {
+    for (const req of this.timeOffRequests()) {
       const [startMon, startDayStr] = req.startDate.split(' ');
       const [endMon, endDayStr] = req.endDate.split(' ');
       const start = new Date(year, this._monthAbbr[startMon], parseInt(startDayStr, 10));
@@ -1928,7 +1950,7 @@ export class HomePageComponent extends DashboardPageBase {
     return 'bg-destructive text-destructive-foreground';
   }
 
-  readonly allUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals()));
+  readonly allUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals(), this.store.changeOrders()));
   readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
 
   readonly urgentSeverityFilter = signal<Set<string>>(new Set(['critical', 'warning', 'info']));
@@ -2109,10 +2131,10 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   readonly pendingTimeOffCount = computed(() =>
-    this.timeOffRequests.filter((r) => r.status === 'Pending').length
+    this.timeOffRequests().filter((r) => r.status === 'Pending').length
   );
 
-  readonly allStaffingConflicts = computed(() => buildStaffingConflicts());
+  readonly allStaffingConflicts = computed(() => buildStaffingConflicts(undefined, this.timeOffRequests()));
   readonly criticalStaffingConflicts = computed<StaffingConflict[]>(() =>
     this.allStaffingConflicts().filter(c => c.severity === 'critical' || c.severity === 'warning')
   );
@@ -2125,7 +2147,7 @@ export class HomePageComponent extends DashboardPageBase {
       submittals: this.store.submittals(),
       activities: ACTIVITIES,
       calendar: CALENDAR_APPOINTMENTS,
-      timeOffRequests: TIME_OFF_REQUESTS,
+      timeOffRequests: this.store.timeOffRequests(),
       currentPage: 'home',
     };
   }
@@ -2148,7 +2170,7 @@ export class HomePageComponent extends DashboardPageBase {
 
   readonly staffingByProject = computed(() => {
     const conflicts = this.allStaffingConflicts();
-    const active = this.timeOffRequests.filter(r => r.status !== 'Denied');
+    const active = this.timeOffRequests().filter(r => r.status !== 'Denied');
     const projectMap = new Map<number, { projectId: number; projectName: string; teamSize: number; requestCount: number; totalDaysOut: number; worstWeek: StaffingConflict | null; conflicts: StaffingConflict[] }>();
     for (const r of active) {
       if (!projectMap.has(r.projectId)) {
@@ -2187,17 +2209,39 @@ export class HomePageComponent extends DashboardPageBase {
   );
 
   readonly timeOffCounts = computed(() => ({
-    all: this.timeOffRequests.length,
-    Pending: this.timeOffRequests.filter((r) => r.status === 'Pending').length,
-    Approved: this.timeOffRequests.filter((r) => r.status === 'Approved').length,
-    Denied: this.timeOffRequests.filter((r) => r.status === 'Denied').length,
+    all: this.timeOffRequests().length,
+    Pending: this.timeOffRequests().filter((r) => r.status === 'Pending').length,
+    Approved: this.timeOffRequests().filter((r) => r.status === 'Approved').length,
+    Denied: this.timeOffRequests().filter((r) => r.status === 'Denied').length,
   }));
 
   readonly filteredTimeOff = computed(() => {
     const filter = this.timeOffActiveFilter();
-    if (filter === 'all') return this.timeOffRequests;
-    return this.timeOffRequests.filter((r) => r.status === filter);
+    if (filter === 'all') return this.timeOffRequests();
+    return this.timeOffRequests().filter((r) => r.status === filter);
   });
+
+  readonly timeOffStatusOpen = signal<number | null>(null);
+  readonly timeOffDropdownPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
+  readonly timeOffStatusOptions: readonly TimeOffStatus[] = ['Pending', 'Approved', 'Denied'] as const;
+
+  toggleTimeOffStatus(reqId: number, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.timeOffStatusOpen() === reqId) {
+      this.timeOffStatusOpen.set(null);
+      return;
+    }
+    const el = event.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    this.timeOffDropdownPos.set({ top: rect.bottom + 4, left: rect.right - 120 });
+    this.timeOffStatusOpen.set(reqId);
+  }
+
+  onTimeOffStatusSelect(reqId: number, newStatus: TimeOffStatus, event: MouseEvent): void {
+    event.stopPropagation();
+    this.timeOffStatusOpen.set(null);
+    this.store.updateTimeOffStatus(reqId, newStatus);
+  }
 
   expandTimeOffMobile(filter: 'all' | 'Pending' | 'Approved' | 'Denied'): void {
     this.timeOffActiveFilter.set(filter);
@@ -2620,6 +2664,9 @@ export class HomePageComponent extends DashboardPageBase {
 
   onCanvasDetailStatusChange(widgetId: string, newStatus: string): void {
     this._detailMgr.updateField(widgetId, 'status', newStatus);
+    const dv = this._detailMgr.canvasDetailViews()[widgetId];
+    if (dv?.type === 'rfi') this.store.updateRfiStatus(dv.item.id, newStatus as RfiStatus);
+    if (dv?.type === 'submittal') this.store.updateSubmittalStatus(dv.item.id, newStatus as SubmittalStatus);
   }
 
   onCanvasDetailAssigneeChange(widgetId: string, newAssignee: string): void {

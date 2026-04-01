@@ -88,20 +88,24 @@ export class CanvasPanning {
     if (this._isInsideDetailView(event.target as HTMLElement | null)) return;
     event.preventDefault();
 
-    if (event.shiftKey) {
+    const wantsZoom = event.shiftKey || event.ctrlKey || event.metaKey;
+    if (wantsZoom) {
       const oldZoom = this.canvasZoom();
-      const direction = event.deltaY > 0 ? -1 : 1;
+      // macOS swaps deltaY→deltaX when Shift is held; use whichever axis has the larger value
+      const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      if (delta === 0) return;
+      const direction = delta > 0 ? -1 : 1;
       const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, oldZoom + direction * ZOOM_STEP));
       if (newZoom === oldZoom) return;
 
-      const cursorX = event.clientX;
-      const cursorY = event.clientY;
-      const worldX = (cursorX - this.panOffsetX()) / oldZoom;
-      const worldY = (cursorY - this.panOffsetY()) / oldZoom;
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const worldX = (cx - this.panOffsetX()) / oldZoom;
+      const worldY = (cy - this.panOffsetY()) / oldZoom;
 
       this.canvasZoom.set(newZoom);
-      this.panOffsetX.set(cursorX - worldX * newZoom);
-      this.panOffsetY.set(cursorY - worldY * newZoom);
+      this.panOffsetX.set(cx - worldX * newZoom);
+      this.panOffsetY.set(cy - worldY * newZoom);
     } else {
       this.panOffsetX.update(x => x - event.deltaX);
       this.panOffsetY.update(y => y - event.deltaY);

@@ -4,6 +4,7 @@ import type {
   BillingEvent,
   BillingFrequency,
   CashFlowEntry,
+  ChangeOrder,
   ChangeOrderStatus,
   ChangeOrderType,
   ContractStatus,
@@ -66,13 +67,13 @@ function parseMonthDay(dateStr: string, year: number): Date {
   return new Date(year, MONTHS[mon], parseInt(dayStr, 10));
 }
 
-export function getProjectTimeOff(projectId: number): TimeOffRequest[] {
-  return TIME_OFF_REQUESTS.filter(r => r.projectId === projectId && r.status !== 'Denied');
+export function getProjectTimeOff(projectId: number, timeOff?: TimeOffRequest[]): TimeOffRequest[] {
+  return (timeOff ?? TIME_OFF_REQUESTS).filter(r => r.projectId === projectId && r.status !== 'Denied');
 }
 
-export function buildStaffingConflicts(projectId?: number): StaffingConflict[] {
+export function buildStaffingConflicts(projectId?: number, timeOff?: TimeOffRequest[]): StaffingConflict[] {
   const year = 2026;
-  const active = TIME_OFF_REQUESTS.filter(r => r.status !== 'Denied');
+  const active = (timeOff ?? TIME_OFF_REQUESTS).filter(r => r.status !== 'Denied');
   const byProject = new Map<number, TimeOffRequest[]>();
   for (const r of active) {
     if (projectId !== undefined && r.projectId !== projectId) continue;
@@ -419,7 +420,11 @@ export function getProjectMeta(id: number): { name: string; slug: string } {
   return _projectSlugMap.get(id) ?? { name: 'Unknown', slug: '' };
 }
 
-export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[]): UrgentNeedItem[] {
+export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[], changeOrders?: ChangeOrder[]): UrgentNeedItem[] {
+
+  const cos = changeOrders ?? CHANGE_ORDERS;
+  const resolvedStatuses = new Set(['closed']);
+  const resolvedCoStatuses = new Set(['approved', 'rejected']);
 
   const seen = new Set<string>();
   const items: UrgentNeedItem[] = [];
@@ -436,29 +441,41 @@ export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[]): UrgentNe
     const subpage = subpageMap[cat];
 
     let qp: Record<string, string> = subpage ? { page: pageGroup, subpage } : { page: 'dashboard' };
+    let resolved = false;
 
     const upperTitle = pa.title.toUpperCase();
     const rfiMatch = upperTitle.match(/RFI-(\d+)/);
     if (rfiMatch) {
       const rfiId = String(parseInt(rfiMatch[1], 10));
       const rfi = rfis.find(r => r.id === rfiId);
-      if (rfi) qp = { view: 'rfi', id: rfiId, page: 'records', subpage: 'rfis' };
+      if (rfi) {
+        qp = { view: 'rfi', id: rfiId, page: 'records', subpage: 'rfis' };
+        if (resolvedStatuses.has(rfi.status)) resolved = true;
+      }
       seen.add(`rfi-${rfiMatch[1]}`);
     }
     const subMatch = upperTitle.match(/SUB-(\d+)/);
     if (subMatch) {
       const subId = String(parseInt(subMatch[1], 10));
       const sub = submittals.find(s => s.id === subId);
-      if (sub) qp = { view: 'submittal', id: subId, page: 'records', subpage: 'submittals' };
+      if (sub) {
+        qp = { view: 'submittal', id: subId, page: 'records', subpage: 'submittals' };
+        if (resolvedStatuses.has(sub.status)) resolved = true;
+      }
       seen.add(`sub-${subMatch[1]}`);
     }
     const coMatch = upperTitle.match(/CO-(\d+)/);
     if (coMatch) {
       const coId = `CO-${coMatch[1]}`;
-      const co = CHANGE_ORDERS.find(c => c.id === coId);
-      if (co) qp = { view: 'changeOrder', id: coId, page: 'financials', subpage: 'change-orders' };
+      const co = cos.find(c => c.id === coId);
+      if (co) {
+        qp = { view: 'changeOrder', id: coId, page: 'financials', subpage: 'change-orders' };
+        if (resolvedCoStatuses.has(co.status)) resolved = true;
+      }
       seen.add(`co-${coMatch[1]}`);
     }
+
+    if (resolved) continue;
 
     const finRoute = (cat === 'budget' || cat === 'change-order') ? `/financials/job-costs/${meta.slug}` : undefined;
 
@@ -515,7 +532,7 @@ export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[]): UrgentNe
     });
   }
 
-  for (const co of CHANGE_ORDERS) {
+  for (const co of cos) {
     if (co.status !== 'pending') continue;
     if (seen.has(`co-${co.id.replace('CO-', '')}`)) continue;
     const meta = getProjectMeta(co.projectId);

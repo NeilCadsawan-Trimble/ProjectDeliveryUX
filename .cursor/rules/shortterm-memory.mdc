@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Short-Term Memory
 
-**Current window**: Mar 30, 2026
+**Current window**: Mar 31, 2026
 
 > **Lifecycle**:
 > 1. During each session, append interactions below under the current date.
@@ -51,15 +51,66 @@ alwaysApply: true
   - Never assume Modus web components use shadow DOM. Always check `shadowRoot` first, fall back to light DOM.
   - Fallback event handlers must be idempotent (set value, not toggle) when events can bubble.
 
+### Session 11 (Mar 31)
+- **Topic**: Canvas Shift+scroll zoom fix (macOS axis swap)
+- **What happened**:
+  1. Shift+scroll wheel zoom on canvas was non-functional on macOS. Root cause: macOS swaps deltaY→deltaX when Shift is held, so deltaY was always 0, direction resolved to +1, zoom tried to exceed MAX_ZOOM (1.0), and bailed immediately.
+  2. Fixed `onCanvasWheel` in `canvas-panning.ts`: now picks whichever axis (deltaY or deltaX) has the larger absolute value.
+  3. Also added Ctrl+scroll and Cmd+scroll as zoom triggers (standard for canvas apps, also catches trackpad pinch-to-zoom).
+  4. Changed zoom anchor point from cursor position to viewport center per user preference.
+- **Decisions**:
+  - Zoom anchors to viewport center, not cursor position.
+  - Zoom triggers: Shift+scroll, Ctrl+scroll, Cmd+scroll.
+  - Always use `Math.abs` comparison of both delta axes to handle OS-level axis swapping.
+
 ## Active Context
 
-- On `dev` branch, hamburger fix applied but not yet pushed.
-- Build passes, browser-verified on Home and Projects pages.
+- On `dev` branch, hamburger fix + canvas zoom fix applied but not yet pushed.
+- Build passes.
 - Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
 
 ## Pending Items
 
-- Push hamburger fix when user requests.
+- Push changes when user requests.
+
+## Future Feature Ideas
+
+### Webmail Widget (discussed Session 12, Mar 31)
+- **Concept**: Dashboard widget that connects to a webmail account (Gmail, Outlook) and shows unread count, recent messages, quick filters, click-to-open links.
+- **Key challenge**: OAuth2 authentication requires a server-side component (client secrets can't be in browser code).
+- **Recommended approach**:
+  1. Add Vercel serverless functions (`/api/email/auth`, `/api/email/inbox`, etc.) to handle OAuth token exchange and proxy API calls.
+  2. Pick one provider first (Gmail is best documented for web apps).
+  3. Register an OAuth2 app with Google Cloud Console.
+  4. Create an Angular `EmailService` that calls the serverless endpoints.
+  5. Build the widget component following existing widget patterns (signals, OnPush, Modus design system).
+  6. Store connection status in localStorage.
+- **Lighter alternatives**: Mock/demo widget with static data first; browser extension bridge; Gmail Atom feed (deprecated but functional).
+- **Provider APIs**: Gmail REST API (OAuth2 PKCE, partially browser-compatible), Microsoft Graph API (OAuth2 PKCE), generic IMAP (not browser-accessible).
+- **Sending email**: Same architecture works for sending. Gmail uses `POST /gmail/v1/users/me/messages/send` (scope: `gmail.send`), Outlook uses `POST /me/sendMail` (scope: `Mail.Send`). Requires broader OAuth scopes than read-only, which triggers stricter app verification from Google/Microsoft. Widget UI would need a compact compose form (To, Subject, Body, Send/Discard) or a Quick Reply mode. Must include user confirmation before sending. Main friction is provider app review process for send scopes, not the code itself.
+
+### Calendar Widget (discussed Session 12, Mar 31)
+- **Concept**: Replace simulated `CALENDAR_APPOINTMENTS` seed data with live Google Calendar / Outlook Calendar events. Full CRUD: read, create, edit, delete events.
+- **Provider APIs**: Google Calendar REST API (`/calendars/{id}/events`), Microsoft Graph (`/me/events`).
+- **OAuth scopes**: Google `calendar.readonly` / `calendar.events` (non-sensitive, no security review needed). Microsoft `Calendars.Read` / `Calendars.ReadWrite`.
+- **Data mapping**: Existing `CalendarAppointment` fields (title, date, startHour/endHour, type, projectSlug) map directly to Google/Outlook event objects. Thin mapping layer.
+- **Same Vercel serverless proxy**: `/api/calendar/auth`, `/api/calendar/events`, `/api/calendar/events/:id`.
+- **Calendar is the best first candidate** for real API integration -- simpler scopes, no app review, existing data model already fits.
+
+### Google Cloud Project Setup (discussed Session 12, Mar 31)
+- **Decision**: Going with Google Cloud route for both email and calendar integration.
+- **Setup steps**:
+  1. Create project at console.cloud.google.com
+  2. Enable Gmail API + Google Calendar API
+  3. Configure OAuth consent screen (External, add test users)
+  4. Add scopes: `gmail.readonly`, `gmail.send`, `calendar.readonly`, `calendar.events`
+  5. Create OAuth client ID (Web application type)
+  6. Authorized origins: `http://localhost:4200` + Vercel production domain
+  7. Redirect URIs: `http://localhost:4200/api/auth/callback` + Vercel production
+  8. Store Client ID (safe for browser) and Client Secret (Vercel env vars only)
+- **Cost**: Free tier -- 1B Gmail quota units/day, 1M Calendar queries/day.
+- **Testing**: Up to 100 test users immediately, no verification needed for internal use.
+- **After setup**: Build Vercel serverless functions for OAuth flow + API proxy, then Angular services + widget components.
 
 ## Scratch Notes
 
