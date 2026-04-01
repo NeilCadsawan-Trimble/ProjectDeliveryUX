@@ -418,15 +418,16 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const toolbarLeft = hasSideNav ? this.tileToolbarLeft() : 0;
     const toolbarWidth = hasSideNav ? this.tileToolbarWidth() : ProjectDashboardComponent.TILE_CANVAS_TOTAL;
 
+    const titleToolbarGap = ProjectDashboardComponent.TILE_TITLE_HEIGHT + ProjectDashboardComponent.TILE_CHROME_GAP;
     const lockedRects: Record<string, TileRect> = {
-      'tc-toolbar': { top: 0, left: toolbarLeft, width: toolbarWidth, height: ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT },
-      'tc-title': { top: ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT + ProjectDashboardComponent.TILE_CHROME_GAP, left: contentLeft, width: contentWidth, height: ProjectDashboardComponent.TILE_TITLE_HEIGHT },
+      'tc-title': { top: 0, left: 0, width: ProjectDashboardComponent.TILE_CANVAS_TOTAL, height: ProjectDashboardComponent.TILE_TITLE_HEIGHT },
+      'tc-toolbar': { top: titleToolbarGap, left: toolbarLeft, width: toolbarWidth, height: ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT },
     };
 
     if (hasSideNav) {
       const subnavCollapsed = this.sideSubNavCollapsed();
       lockedRects['tc-subnav'] = {
-        top: 0, left: 0,
+        top: titleToolbarGap, left: 0,
         width: subnavCollapsed ? ProjectDashboardComponent.TILE_SUBNAV_EXPANDED : subnavW,
         height: subnavCollapsed ? 48 : 600,
       };
@@ -499,7 +500,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       const isBudget = nav === 'financials' && this.activeFinancialsPage() === 'budget' && !this.subledgerCategory();
 
       if (isSubledger) {
-        const headerTop = ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT + ProjectDashboardComponent.TILE_CHROME_GAP;
+        const headerTop = titleToolbarGap + ProjectDashboardComponent.TILE_TOOLBAR_HEIGHT + ProjectDashboardComponent.TILE_CHROME_GAP;
         const headerH = 180;
         lockedRects['tc-subledger-header'] = { top: headerTop, left: contentLeft, width: contentWidth, height: headerH };
         this.tileCanvas.config.offsetTop = headerTop + headerH + ProjectDashboardComponent.TILE_CHROME_GAP;
@@ -638,10 +639,28 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     'change-order-requests', 'prime-contract-change-orders', 'potential-change-orders',
     'subcontract-change-orders', 'contracts',
   ]);
-  readonly activeFinancialsSubnavConfig = computed(() =>
-    ProjectDashboardComponent.FINANCIALS_TILE_PAGES.has(this.activeFinancialsPage())
-      ? this.subnavConfigs['financials-tiles']
-      : this.subnavConfigs['financials']
+  private static readonly FINANCIALS_INVOICE_PAGES = new Set(['contract-invoices', 'general-invoices']);
+  readonly activeFinancialsSubnavConfig = computed(() => {
+    const page = this.activeFinancialsPage();
+    if (ProjectDashboardComponent.FINANCIALS_TILE_PAGES.has(page)) return this.subnavConfigs['financials-tiles'];
+    if (ProjectDashboardComponent.FINANCIALS_INVOICE_PAGES.has(page)) return this.subnavConfigs['financials-invoices'];
+    return this.subnavConfigs['financials'];
+  });
+
+  private static readonly FIN_PAGES_WITH_KPIS = new Set([
+    'billings', 'cost-forecasts', 'contracts', 'purchase-orders',
+    'contract-invoices', 'general-invoices',
+  ]);
+
+  readonly finListTableMaxHeight = computed(() => {
+    if (this.isMobile()) return 'none';
+    return ProjectDashboardComponent.FIN_PAGES_WITH_KPIS.has(this.activeFinancialsPage())
+      ? 'calc(100dvh - 340px)'
+      : 'calc(100dvh - 240px)';
+  });
+
+  readonly finSubledgerTableMaxHeight = computed(() =>
+    this.isMobile() ? '75vh' : 'calc(100dvh - 316px)'
   );
 
   readonly weatherForecast = WEATHER_FORECAST;
@@ -1051,6 +1070,28 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.projectSubmittals().filter(s => s.status === 'overdue').length
   );
 
+  readonly rfiStatusCounts = computed(() => {
+    const list = this.projectRfis();
+    return {
+      total: list.length,
+      open: list.filter(r => r.status === 'open').length,
+      overdue: list.filter(r => r.status === 'overdue').length,
+      upcoming: list.filter(r => r.status === 'upcoming').length,
+      closed: list.filter(r => r.status === 'closed').length,
+    } as Record<string, number>;
+  });
+
+  readonly submittalStatusCounts = computed(() => {
+    const list = this.projectSubmittals();
+    return {
+      total: list.length,
+      open: list.filter(s => s.status === 'open').length,
+      overdue: list.filter(s => s.status === 'overdue').length,
+      upcoming: list.filter(s => s.status === 'upcoming').length,
+      closed: list.filter(s => s.status === 'closed').length,
+    } as Record<string, number>;
+  });
+
   readonly projectDailyReports = computed(() =>
     DAILY_REPORTS.filter(r => r.projectId === this.projectId())
   );
@@ -1400,12 +1441,31 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.projectNav.navigateToPunchItem(item);
   }
 
+  navigateToActionItem(ai: ProjectAttentionItem): void {
+    const match = this.projectUrgentNeeds().find(u => u.id === ai.id);
+    if (match) {
+      this.navigateToUrgentNeed(match);
+    }
+  }
+
   navigateToChangeOrder(co: ChangeOrder): void {
     this.projectNav.navigateToChangeOrder(co);
   }
 
   navigateToContract(ct: Contract): void {
     this.projectNav.navigateToContract(ct);
+  }
+
+  navigateToPurchaseOrder(po: PurchaseOrder): void {
+    this.router.navigate(['/financials/purchase-orders', po.id]);
+  }
+
+  navigateToInvoice(inv: Invoice): void {
+    this.router.navigate(['/financials/invoices', inv.id]);
+  }
+
+  navigateToPayable(p: Payable): void {
+    this.router.navigate(['/financials/payables', p.id]);
   }
 
   onLinkedCoClick(coId: string): void {
@@ -1557,6 +1617,11 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   });
 
   ngOnInit(): void {
+    const zFn = () => this.panning.canvasZoom();
+    this.engine.zoomFn = zFn;
+    this._detailMgr.zoomFn = zFn;
+    this.tileCanvas.zoomFn = zFn;
+
     this.projectNav.bindContext({
       detailView: this.detailView,
       detailSourceLabel: this.detailSourceLabel,
@@ -1891,7 +1956,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       'change-order-requests': 'financialsChangeOrders',
       'contract-invoices': 'financialsAR',
       'cost-forecasts': 'financialsCostForecasts',
-      'general-invoices': 'financialsAR',
+      'general-invoices': 'financialsAP',
       'prime-contract-change-orders': 'financialsChangeOrders',
     };
     const result: Record<string, AgentAlert | null> = {};
@@ -2021,10 +2086,14 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     if (nav === 'financials') {
       if (this.subledgerCategory()) return 'financialsSubledger';
       const sub = this.activeFinancialsPage();
-      if (sub === 'change-orders') return 'financialsChangeOrders';
       if (sub === 'contracts') return 'financialsContracts';
-      if (sub === 'revenue') return 'financialsRevenue';
       if (sub === 'cost-forecasts') return 'financialsCostForecasts';
+      if (sub === 'purchase-orders') return 'financialsPO';
+      if (sub === 'billings') return 'financialsRevenue';
+      if (sub === 'contract-invoices') return 'financialsAR';
+      if (sub === 'general-invoices') return 'financialsAP';
+      if (sub === 'change-order-requests' || sub === 'prime-contract-change-orders'
+        || sub === 'potential-change-orders' || sub === 'subcontract-change-orders') return 'financialsChangeOrders';
       return 'financialsBudget';
     }
     if (nav === 'drawings') return 'drawingsPage';

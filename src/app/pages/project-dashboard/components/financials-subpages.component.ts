@@ -58,11 +58,30 @@ type ViewMode = 'grid' | 'list';
               <app-empty-state extraClass="col-span-full" icon="document" title="No Change Orders" description="No change order requests found for this project." />
             }
           </div>
+        } @else if (isMobile()) {
+          <div class="flex flex-col gap-2">
+            @for (co of changeOrders(); track co.id) {
+              <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer active:bg-muted transition-colors" tabindex="0" (click)="changeOrderClick.emit(co)" (keydown.enter)="changeOrderClick.emit(co)">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-semibold text-primary">{{ co.id }}</div>
+                  <modus-badge [color]="changeOrderStatusBadge(co.status)">{{ co.status | titlecase }}</modus-badge>
+                </div>
+                <div class="text-sm text-foreground truncate">{{ co.description }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(co.amount) }}</div>
+                  <div class="text-xs text-foreground-60">{{ co.requestDate }}</div>
+                </div>
+              </div>
+            } @empty {
+              <app-empty-state icon="document" title="No Change Orders" description="No change order requests found for this project." />
+            }
+          </div>
         } @else {
-          <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
+            <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
               <div>ID</div><div>Description</div><div>Amount</div><div>Status</div><div>Requested By</div><div>Date</div>
             </div>
+            <div class="overflow-y-auto flex-1">
             @for (co of changeOrders(); track co.id) {
               <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="changeOrderClick.emit(co)" (keydown.enter)="changeOrderClick.emit(co)">
@@ -79,6 +98,7 @@ type ViewMode = 'grid' | 'list';
                 <div class="text-sm">No Change Orders for this project</div>
               </div>
             }
+            </div>
           </div>
         }
       }
@@ -103,26 +123,58 @@ type ViewMode = 'grid' | 'list';
             </div>
           }
         </div>
-        <div class="bg-card border-default rounded-lg overflow-hidden">
-          <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-            <div>Project</div><div>Contract</div><div>Invoiced</div><div>Collected</div><div>Outstanding</div><div>Retainage</div>
+        @if (isMobile()) {
+          <div class="flex flex-col gap-2">
+            @for (rev of revenueData(); track rev.projectId) {
+              <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2">
+                <div class="text-sm font-semibold text-foreground">{{ rev.projectName }}</div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                  <div class="flex items-center justify-between">
+                    <div class="text-xs text-foreground-60">Contract</div>
+                    <div class="text-sm text-foreground">{{ rev.contractValue }}</div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-xs text-foreground-60">Invoiced</div>
+                    <div class="text-sm text-foreground">{{ rev.invoiced }}</div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-xs text-foreground-60">Collected</div>
+                    <div class="text-sm text-success">{{ rev.collected }}</div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-xs text-foreground-60">Outstanding</div>
+                    <div class="text-sm" [class]="rev.outstandingRaw > 0 ? 'text-warning font-medium' : 'text-foreground-60'">{{ rev.outstanding }}</div>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <app-empty-state icon="bar_graph" title="No Revenue" description="No revenue data for this project." />
+            }
           </div>
-          @for (rev of revenueData(); track rev.projectId) {
-            <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center">
-              <div class="text-sm font-medium text-foreground">{{ rev.projectName }}</div>
-              <div class="text-sm text-foreground">{{ rev.contractValue }}</div>
-              <div class="text-sm text-foreground">{{ rev.invoiced }}</div>
-              <div class="text-sm text-success">{{ rev.collected }}</div>
-              <div class="text-sm" [class]="rev.outstandingRaw > 0 ? 'text-warning font-medium' : 'text-foreground-60'">{{ rev.outstanding }}</div>
-              <div class="text-sm text-foreground-60">{{ rev.retainage }}</div>
+        } @else {
+          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
+            <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+              <div>Project</div><div>Contract</div><div>Invoiced</div><div>Collected</div><div>Outstanding</div><div>Retainage</div>
             </div>
-          } @empty {
-            <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-              <i class="modus-icons text-3xl mb-2" aria-hidden="true">bar_graph</i>
-              <div class="text-sm">No revenue data for this project</div>
+            <div class="overflow-y-auto flex-1">
+            @for (rev of revenueData(); track rev.projectId) {
+              <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center">
+                <div class="text-sm font-medium text-foreground">{{ rev.projectName }}</div>
+                <div class="text-sm text-foreground">{{ rev.contractValue }}</div>
+                <div class="text-sm text-foreground">{{ rev.invoiced }}</div>
+                <div class="text-sm text-success">{{ rev.collected }}</div>
+                <div class="text-sm" [class]="rev.outstandingRaw > 0 ? 'text-warning font-medium' : 'text-foreground-60'">{{ rev.outstanding }}</div>
+                <div class="text-sm text-foreground-60">{{ rev.retainage }}</div>
+              </div>
+            } @empty {
+              <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                <i class="modus-icons text-3xl mb-2" aria-hidden="true">bar_graph</i>
+                <div class="text-sm">No revenue data for this project</div>
+              </div>
+            }
             </div>
-          }
-        </div>
+          </div>
+        }
       }
       @case ('contracts') {
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -175,11 +227,39 @@ type ViewMode = 'grid' | 'list';
               <app-empty-state extraClass="col-span-full" icon="copy_content" title="No Contracts" description="No contracts found for this project." />
             }
           </div>
+        } @else if (isMobile()) {
+          <div class="flex flex-col gap-2">
+            @for (ct of contracts(); track ct.id) {
+              <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer active:bg-muted transition-colors" tabindex="0" (click)="contractClick.emit(ct)" (keydown.enter)="contractClick.emit(ct)">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <i class="modus-icons text-sm" aria-hidden="true" [class]="ct.contractType === 'prime' ? 'text-primary' : 'text-foreground-60'">{{ contractIcon(ct.contractType) }}</i>
+                    <div class="text-sm font-semibold text-primary">{{ ct.id }}</div>
+                  </div>
+                  <modus-badge [color]="contractStatusColor(ct.status)">{{ ct.status | titlecase }}</modus-badge>
+                </div>
+                <div class="text-sm text-foreground truncate">{{ ct.title }}</div>
+                <div class="text-xs text-foreground-60">{{ ct.vendor }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(ct.revisedValue) }}</div>
+                  @if (ct.linkedChangeOrderIds.length > 0) {
+                    <div class="flex items-center gap-1 text-xs text-primary">
+                      <i class="modus-icons text-xs" aria-hidden="true">link</i>
+                      {{ ct.linkedChangeOrderIds.length }} CO{{ ct.linkedChangeOrderIds.length > 1 ? 's' : '' }}
+                    </div>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <app-empty-state icon="copy_content" title="No Contracts" description="No contracts found for this project." />
+            }
+          </div>
         } @else {
-          <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[80px_1fr_120px_100px_100px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
+            <div class="grid grid-cols-[80px_1fr_120px_100px_100px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
               <div>ID</div><div>Title / Vendor</div><div>Type</div><div>Original</div><div>Revised</div><div>Status</div><div>COs</div>
             </div>
+            <div class="overflow-y-auto flex-1">
             @for (ct of contracts(); track ct.id) {
               <div class="grid grid-cols-[80px_1fr_120px_100px_100px_80px_60px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="contractClick.emit(ct)" (keydown.enter)="contractClick.emit(ct)">
@@ -200,6 +280,7 @@ type ViewMode = 'grid' | 'list';
                 <div class="text-sm">No Contracts for this project</div>
               </div>
             }
+            </div>
           </div>
         }
       }
@@ -225,22 +306,54 @@ type ViewMode = 'grid' | 'list';
               <div class="text-lg font-bold text-foreground">{{ budgetHistory().length }}</div>
             </div>
           </div>
-          <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-              <div>Month</div><div>Planned</div><div>Actual</div><div>Forecast</div><div>Variance</div>
-            </div>
-            @for (point of budgetHistory(); track point.month) {
-              <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center">
-                <div class="text-sm font-medium text-foreground">{{ point.month }}</div>
-                <div class="text-sm text-foreground-60">{{ formatCurrency(point.planned) }}</div>
-                <div class="text-sm" [class]="point.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ point.actual > 0 ? formatCurrency(point.actual) : '--' }}</div>
-                <div class="text-sm text-foreground-60">{{ formatCurrency(point.forecast) }}</div>
-                <div class="text-sm" [class]="point.actual > 0 ? (point.actual > point.planned ? 'text-destructive font-medium' : 'text-success') : 'text-foreground-40'">
-                  {{ point.actual > 0 ? formatCurrency(point.actual - point.planned) : '--' }}
+          @if (isMobile()) {
+            <div class="flex flex-col gap-2">
+              @for (point of budgetHistory(); track point.month) {
+                <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2">
+                  <div class="text-sm font-semibold text-foreground">{{ point.month }}</div>
+                  <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs text-foreground-60">Planned</div>
+                      <div class="text-sm text-foreground-60">{{ formatCurrency(point.planned) }}</div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs text-foreground-60">Actual</div>
+                      <div class="text-sm" [class]="point.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ point.actual > 0 ? formatCurrency(point.actual) : '--' }}</div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs text-foreground-60">Forecast</div>
+                      <div class="text-sm text-foreground-60">{{ formatCurrency(point.forecast) }}</div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs text-foreground-60">Variance</div>
+                      <div class="text-sm" [class]="point.actual > 0 ? (point.actual > point.planned ? 'text-destructive font-medium' : 'text-success') : 'text-foreground-40'">
+                        {{ point.actual > 0 ? formatCurrency(point.actual - point.planned) : '--' }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              }
+            </div>
+          } @else {
+            <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
+              <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
+                <div>Month</div><div>Planned</div><div>Actual</div><div>Forecast</div><div>Variance</div>
               </div>
-            }
-          </div>
+              <div class="overflow-y-auto flex-1">
+              @for (point of budgetHistory(); track point.month) {
+                <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center">
+                  <div class="text-sm font-medium text-foreground">{{ point.month }}</div>
+                  <div class="text-sm text-foreground-60">{{ formatCurrency(point.planned) }}</div>
+                  <div class="text-sm" [class]="point.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ point.actual > 0 ? formatCurrency(point.actual) : '--' }}</div>
+                  <div class="text-sm text-foreground-60">{{ formatCurrency(point.forecast) }}</div>
+                  <div class="text-sm" [class]="point.actual > 0 ? (point.actual > point.planned ? 'text-destructive font-medium' : 'text-success') : 'text-foreground-40'">
+                    {{ point.actual > 0 ? formatCurrency(point.actual - point.planned) : '--' }}
+                  </div>
+                </div>
+              }
+              </div>
+            </div>
+          }
         } @else {
           <app-empty-state icon="bar_graph" title="Cost Forecasts" description="No budget history data available for this project." />
         }
@@ -267,7 +380,8 @@ type ViewMode = 'grid' | 'list';
         @if (viewMode() === 'grid') {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (po of purchaseOrders(); track po.id) {
-              <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0">
+              <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0"
+                (click)="purchaseOrderClick.emit(po)" (keydown.enter)="purchaseOrderClick.emit(po)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
                   <div class="text-base font-semibold text-foreground">{{ po.poNumber }}</div>
                   <modus-badge [color]="poStatusBadge(po.status)">{{ po.status | titlecase }}</modus-badge>
@@ -285,13 +399,35 @@ type ViewMode = 'grid' | 'list';
               <app-empty-state extraClass="col-span-full" icon="shopping_cart" title="No Purchase Orders" description="No purchase orders found for this project." />
             }
           </div>
+        } @else if (isMobile()) {
+          <div class="flex flex-col gap-2">
+            @for (po of purchaseOrders(); track po.id) {
+              <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer" tabindex="0"
+                (click)="purchaseOrderClick.emit(po)" (keydown.enter)="purchaseOrderClick.emit(po)">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-semibold text-primary">{{ po.poNumber }}</div>
+                  <modus-badge [color]="poStatusBadge(po.status)">{{ po.status | titlecase }}</modus-badge>
+                </div>
+                <div class="text-sm text-foreground truncate">{{ po.description }}</div>
+                <div class="text-xs text-foreground-60">{{ po.vendor }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(po.amount) }}</div>
+                  <div class="text-xs text-foreground-60">{{ po.issueDate }}</div>
+                </div>
+              </div>
+            } @empty {
+              <app-empty-state icon="shopping_cart" title="No Purchase Orders" description="No purchase orders found for this project." />
+            }
+          </div>
         } @else {
-          <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
+            <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
               <div>PO #</div><div>Description</div><div>Vendor</div><div>Amount</div><div>Received</div><div>Status</div><div>Date</div>
             </div>
+            <div class="overflow-y-auto flex-1">
             @for (po of purchaseOrders(); track po.id) {
-              <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
+              <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
+                (click)="purchaseOrderClick.emit(po)" (keydown.enter)="purchaseOrderClick.emit(po)">
                 <div class="text-sm font-medium text-primary">{{ po.poNumber }}</div>
                 <div class="text-sm text-foreground truncate">{{ po.description }}</div>
                 <div class="text-sm text-foreground-60 truncate">{{ po.vendor }}</div>
@@ -306,6 +442,7 @@ type ViewMode = 'grid' | 'list';
                 <div class="text-sm">No Purchase Orders for this project</div>
               </div>
             }
+            </div>
           </div>
         }
       }
@@ -331,7 +468,8 @@ type ViewMode = 'grid' | 'list';
         @if (viewMode() === 'grid') {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (inv of invoices(); track inv.id) {
-              <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0">
+              <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0"
+                (click)="invoiceClick.emit(inv)" (keydown.enter)="invoiceClick.emit(inv)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
                   <div class="text-base font-semibold text-foreground">{{ inv.invoiceNumber }}</div>
                   <modus-badge [color]="invStatusBadge(inv.status)">{{ inv.status | titlecase }}</modus-badge>
@@ -354,13 +492,37 @@ type ViewMode = 'grid' | 'list';
               <app-empty-state extraClass="col-span-full" icon="invoice" title="No Invoices" description="No contract invoices found for this project." />
             }
           </div>
+        } @else if (isMobile()) {
+          <div class="flex flex-col gap-2">
+            @for (inv of invoices(); track inv.id) {
+              <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer" tabindex="0"
+                (click)="invoiceClick.emit(inv)" (keydown.enter)="invoiceClick.emit(inv)">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-semibold text-primary">{{ inv.invoiceNumber }}</div>
+                  <modus-badge [color]="invStatusBadge(inv.status)">{{ inv.status | titlecase }}</modus-badge>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(inv.amount) }}</div>
+                  <div class="text-sm text-success">Paid {{ formatCurrency(inv.amountPaid) }}</div>
+                </div>
+                <div class="flex items-center justify-between text-xs text-foreground-60">
+                  <div>{{ inv.issueDate }} - {{ inv.dueDate }}</div>
+                  <div>{{ inv.terms }}</div>
+                </div>
+              </div>
+            } @empty {
+              <app-empty-state icon="invoice" title="No Invoices" description="No contract invoices found for this project." />
+            }
+          </div>
         } @else {
-          <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
+            <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
               <div>Invoice #</div><div>Amount</div><div>Paid</div><div>Status</div><div>Issued</div><div>Due</div><div>Terms</div>
             </div>
+            <div class="overflow-y-auto flex-1">
             @for (inv of invoices(); track inv.id) {
-              <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
+              <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
+                (click)="invoiceClick.emit(inv)" (keydown.enter)="invoiceClick.emit(inv)">
                 <div class="text-sm font-medium text-primary">{{ inv.invoiceNumber }}</div>
                 <div class="text-sm font-medium text-foreground">{{ formatCurrency(inv.amount) }}</div>
                 <div class="text-sm text-success">{{ formatCurrency(inv.amountPaid) }}</div>
@@ -375,6 +537,7 @@ type ViewMode = 'grid' | 'list';
                 <div class="text-sm">No Contract Invoices for this project</div>
               </div>
             }
+            </div>
           </div>
         }
       }
@@ -400,7 +563,8 @@ type ViewMode = 'grid' | 'list';
         @if (viewMode() === 'grid') {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (p of payables(); track p.id) {
-              <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0">
+              <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0"
+                (click)="payableClick.emit(p)" (keydown.enter)="payableClick.emit(p)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
                   <div class="text-base font-semibold text-foreground">{{ p.invoiceNumber }}</div>
                   <modus-badge [color]="payStatusBadge(p.status)">{{ p.status | titlecase }}</modus-badge>
@@ -418,13 +582,35 @@ type ViewMode = 'grid' | 'list';
               <app-empty-state extraClass="col-span-full" icon="invoice" title="No Payables" description="No vendor invoices found for this project." />
             }
           </div>
+        } @else if (isMobile()) {
+          <div class="flex flex-col gap-2">
+            @for (p of payables(); track p.id) {
+              <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer" tabindex="0"
+                (click)="payableClick.emit(p)" (keydown.enter)="payableClick.emit(p)">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-semibold text-primary">{{ p.invoiceNumber }}</div>
+                  <modus-badge [color]="payStatusBadge(p.status)">{{ p.status | titlecase }}</modus-badge>
+                </div>
+                <div class="text-sm text-foreground truncate">{{ p.description }}</div>
+                <div class="text-xs text-foreground-60">{{ p.vendor }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(p.amount) }}</div>
+                  <div class="text-xs text-foreground-60">Due {{ p.dueDate }}</div>
+                </div>
+              </div>
+            } @empty {
+              <app-empty-state icon="invoice" title="No Payables" description="No vendor invoices found for this project." />
+            }
+          </div>
         } @else {
-          <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
+            <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
               <div>Invoice #</div><div>Description</div><div>Vendor</div><div>Amount</div><div>Paid</div><div>Status</div><div>Due</div>
             </div>
+            <div class="overflow-y-auto flex-1">
             @for (p of payables(); track p.id) {
-              <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
+              <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
+                (click)="payableClick.emit(p)" (keydown.enter)="payableClick.emit(p)">
                 <div class="text-sm font-medium text-primary">{{ p.invoiceNumber }}</div>
                 <div class="text-sm text-foreground truncate">{{ p.description }}</div>
                 <div class="text-sm text-foreground-60 truncate">{{ p.vendor }}</div>
@@ -439,6 +625,7 @@ type ViewMode = 'grid' | 'list';
                 <div class="text-sm">No Vendor Invoices for this project</div>
               </div>
             }
+            </div>
           </div>
         }
       }
@@ -448,6 +635,8 @@ type ViewMode = 'grid' | 'list';
 export class FinancialsSubpagesComponent {
   readonly activePage = input.required<string>();
   readonly viewMode = input.required<ViewMode>();
+  readonly isMobile = input<boolean>(false);
+  readonly listMaxHeight = input<string>('none');
   readonly changeOrders = input<ChangeOrder[]>([]);
   readonly contracts = input<Contract[]>([]);
   readonly revenueData = input<ProjectRevenue[]>([]);
@@ -459,6 +648,9 @@ export class FinancialsSubpagesComponent {
 
   readonly changeOrderClick = output<ChangeOrder>();
   readonly contractClick = output<Contract>();
+  readonly purchaseOrderClick = output<PurchaseOrder>();
+  readonly invoiceClick = output<Invoice>();
+  readonly payableClick = output<Payable>();
 
   readonly lastBudgetPoint = input<BudgetHistoryPoint | null>(null);
 

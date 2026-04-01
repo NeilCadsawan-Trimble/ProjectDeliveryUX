@@ -957,6 +957,23 @@ export const BILLING_EVENTS: BillingEvent[] = [
   { id: 'BE-039', projectId: 8, billingDate: '2026-01-10', amount: 20000, description: 'Monthly billing - site prep', period: 'Jan 2026', status: 'completed' },
   { id: 'BE-040', projectId: 2, billingDate: '2025-11-10', amount: 67000, description: 'Milestone: excavation complete', period: 'Nov 2025', status: 'completed' },
   { id: 'BE-041', projectId: 5, billingDate: '2026-02-15', amount: 38000, description: 'Progress billing - mass grading', period: 'Feb 2026', status: 'completed' },
+  // Backfill: ensure every project has 6 months of completed billing history (Oct 2025 - Mar 2026)
+  { id: 'BE-042', projectId: 1, billingDate: '2026-03-05', amount: 128000, description: 'Monthly billing - elevator commissioning & lobby finishes', period: 'Mar 2026', status: 'completed', invoiceId: 'INV-042' },
+  { id: 'BE-043', projectId: 2, billingDate: '2025-10-08', amount: 58000, description: 'Milestone: site mobilization & layout', period: 'Oct 2025', status: 'completed', invoiceId: 'INV-043' },
+  { id: 'BE-044', projectId: 2, billingDate: '2026-01-12', amount: 72000, description: 'Milestone: concrete floor pour', period: 'Jan 2026', status: 'completed', invoiceId: 'INV-044' },
+  { id: 'BE-045', projectId: 3, billingDate: '2026-03-10', amount: 158000, description: 'Monthly progress - final inspections & turnover', period: 'Mar 2026', status: 'completed', invoiceId: 'INV-045' },
+  { id: 'BE-046', projectId: 4, billingDate: '2025-10-15', amount: 120000, description: 'Monthly billing - excavation & shoring', period: 'Oct 2025', status: 'completed', invoiceId: 'INV-046' },
+  { id: 'BE-047', projectId: 5, billingDate: '2025-10-10', amount: 32000, description: 'Progress billing - preconstruction & permits', period: 'Oct 2025', status: 'completed', invoiceId: 'INV-047' },
+  { id: 'BE-048', projectId: 5, billingDate: '2025-11-12', amount: 36000, description: 'Progress billing - site clearing & demo', period: 'Nov 2025', status: 'completed', invoiceId: 'INV-048' },
+  { id: 'BE-049', projectId: 5, billingDate: '2025-12-08', amount: 42000, description: 'Progress billing - temporary roads & drainage', period: 'Dec 2025', status: 'completed', invoiceId: 'INV-049' },
+  { id: 'BE-050', projectId: 6, billingDate: '2025-12-10', amount: 82000, description: 'Progress billing - bearing replacement', period: 'Dec 2025', status: 'completed', invoiceId: 'INV-050' },
+  { id: 'BE-051', projectId: 6, billingDate: '2026-03-05', amount: 78000, description: 'Progress billing - walkway widening', period: 'Mar 2026', status: 'completed', invoiceId: 'INV-051' },
+  { id: 'BE-052', projectId: 7, billingDate: '2025-10-05', amount: 38000, description: 'Milestone: design buyout & submittals', period: 'Oct 2025', status: 'completed', invoiceId: 'INV-052' },
+  { id: 'BE-053', projectId: 7, billingDate: '2025-12-12', amount: 50000, description: 'Milestone: utility connections', period: 'Dec 2025', status: 'completed', invoiceId: 'INV-053' },
+  { id: 'BE-054', projectId: 7, billingDate: '2026-02-10', amount: 55000, description: 'Milestone: concrete slabs poured', period: 'Feb 2026', status: 'completed', invoiceId: 'INV-054' },
+  { id: 'BE-055', projectId: 8, billingDate: '2025-10-05', amount: 18000, description: 'Monthly billing - geotechnical & survey', period: 'Oct 2025', status: 'completed', invoiceId: 'INV-055' },
+  { id: 'BE-056', projectId: 8, billingDate: '2025-11-10', amount: 22000, description: 'Monthly billing - foundation design & permitting', period: 'Nov 2025', status: 'completed', invoiceId: 'INV-056' },
+  { id: 'BE-057', projectId: 8, billingDate: '2025-12-08', amount: 28000, description: 'Monthly billing - pile driving', period: 'Dec 2025', status: 'completed', invoiceId: 'INV-057' },
 ];
 
 // ---------------------------------------------------------------------------

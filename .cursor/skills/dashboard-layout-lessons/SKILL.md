@@ -752,6 +752,80 @@ When a compressed chain has no free internal space for the mover:
 - `both columns: incremental drag of bottom column 1 widget never creates overlap`
 - `same-size widgets: mover with identical dimensions to neighbor produces no overlap`
 
+## 16. Hamburger / Side Nav Toggle -- Double-Fire Prevention
+
+### The bugs (four distinct failure modes)
+
+**Bug A (double-fire):** The Modus navbar emits a `mainMenuOpenChange` custom event when the hamburger button is clicked. If `DashboardShellComponent` also attaches a direct DOM click listener via `attachHamburgerListener()`, both handlers toggle `navExpanded`. Two toggles = net no change.
+
+**Bug B (selector mismatch):** The hamburger button inside `modus-wc-navbar` is a `<modus-wc-button aria-label="Main menu">`, NOT a native `<button>`. If the selector queries for `button[aria-label="Main menu"]`, it finds nothing. The direct listener never attaches, and since `onMainMenuToggle` was a no-op, nothing happens on click.
+
+**Bug C (mode-switch orphan):** The `@if (isCanvas())` conditional renders different navbars for canvas vs desktop mode. When the user resizes across the 2000px breakpoint, Angular destroys the old navbar and creates a new one. If `attachHamburgerListener` only runs once in `ngAfterViewInit`, the new navbar has no listener.
+
+**Bug D (scoped encapsulation -- no shadow DOM):** `modus-wc-navbar` uses Stencil's **scoped** encapsulation, NOT shadow DOM. `navbarWc.shadowRoot` is **always null**. If `attachHamburgerListener` checks `shadowRoot` and retries via rAF when null, it loops forever (up to 100 attempts) and gives up. The button must be found in the **light DOM** via `navbarWc.querySelector()`. The `mainMenuOpenChange` event has `bubbles: true, composed: true`, so the fallback `onMainMenuToggle` may fire, but if it uses a toggle (`!this.navExpanded()`), Angular may catch both the output and the bubbling DOM event, causing a double-toggle and net no change.
+
+### Architecture
+
+Two complementary paths ensure the hamburger always works:
+
+1. **Primary: `attachHamburgerListener()`** -- attaches a capture-phase click listener on the `modus-wc-button[aria-label="Main menu"]` inside the navbar. First checks shadow DOM (future-proofing), then falls back to light DOM. Uses `stopImmediatePropagation()` to prevent the web component from also toggling. Sets `_hamburgerAttached = true` on success.
+
+2. **Fallback: `onMainMenuToggle(open)`** -- sets `navExpanded` to the event's boolean value (idempotent) when `_hamburgerAttached` is false. Using `set(open)` instead of `set(!this.navExpanded())` prevents double-fire from bubbling DOM events because setting the same value twice is a no-op.
+
+3. **Re-attachment: `_reattachHamburgerEffect`** -- an `effect()` that watches `isCanvas()`. Whenever the mode changes (canvas ↔ desktop), it waits one microtask + one rAF for Angular to re-render, then re-runs `attachHamburgerListener()` on the new navbar DOM.
+
+### Key implementation details
+
+```typescript
+// Selector: try shadow DOM first (future-proofing), then light DOM (scoped encapsulation)
+const shadow = navbarWc.shadowRoot;
+const btn =
+  shadow?.querySelector('[aria-label="Main menu"]') ??
+  navbarWc.querySelector('[aria-label="Main menu"]');
+
+// Per-attachment AbortController prevents double listeners on re-attachment
+private _hamburgerAbort: AbortController | null = null;
+
+// Fallback: IDEMPOTENT set (not toggle!) when direct listener failed
+// Using set(open) prevents double-fire from bubbling mainMenuOpenChange events
+onMainMenuToggle(open: boolean): void {
+  if (!this._hamburgerAttached) {
+    this.navExpanded.set(open);
+  }
+}
+
+// Re-attach on mode switch
+private readonly _reattachHamburgerEffect = effect(() => {
+  this.isCanvas();
+  queueMicrotask(() => {
+    requestAnimationFrame(() => this.attachHamburgerListener());
+  });
+});
+```
+
+### Critical: scoped vs shadow DOM
+
+`modus-wc-navbar` (and `modus-wc-button`, `modus-wc-toolbar`) use Stencil's scoped encapsulation. Their `stencil.config.js` has no global `shadow` setting, and the component classes have no `static get encapsulation()` returning `"shadow"`. This means:
+- `element.shadowRoot` is always `null`
+- All child elements are in the **light DOM**
+- `querySelector` on the host element finds children normally
+- Events dispatched by Stencil (`mainMenuOpenChange`) bubble through the DOM with `bubbles: true, composed: true`
+
+### Mobile side nav: icons only
+
+On mobile (< 768px), the side nav renders at 56px width (icons only). The CSS rule `.custom-side-nav.expanded { width: 56px }` inside `@media (max-width: 767px)` enforces this. Template labels must be guarded with `navExpanded() && !isMobile()` to avoid text rendering in the narrow column.
+
+### Rules
+
+1. **Never use `button[aria-label]` selectors** for Modus navbar hamburger -- it's a `<modus-wc-button>`, not `<button>`.
+2. **Always search light DOM first** with `navbarWc.querySelector('[aria-label="Main menu"]')`. Shadow DOM is null for scoped-encapsulation components. Use `shadow?.querySelector() ?? navbarWc.querySelector()` for safety.
+3. **Fallback must be IDEMPOTENT** -- use `navExpanded.set(open)` (set the event value), NOT `navExpanded.set(!navExpanded())` (toggle). The `mainMenuOpenChange` event bubbles, so Angular may catch both the output and the DOM event, causing a double-invocation. Idempotent set is immune to this.
+4. **Re-attach on mode switch** via `_reattachHamburgerEffect` watching `isCanvas()`.
+5. **Use per-attachment AbortController** (`_hamburgerAbort`) to clean up old listeners before re-attaching.
+6. **Guard side nav labels** with `navExpanded() && !isMobile()` to prevent text in the 56px mobile column.
+7. **`@if (!isMobile() || navExpanded())`** controls side nav DOM presence on mobile.
+8. **Never assume Modus web components use shadow DOM.** Check `element.shadowRoot` before querying it. Most Modus components use scoped encapsulation (light DOM).
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -771,3 +845,4 @@ When a compressed chain has no free internal space for the mover:
 | Template private member access | all `.component.ts` | `tests/static/template-safety.spec.ts` |
 | Wall cascade post-cleanup (4+ widgets) | `canvas-push.ts` | `canvas-push.spec.ts` (4 new tests) |
 | Same-size oscillation & frozen pushback | `canvas-push.ts` | `canvas-push.spec.ts` (6 new tests) |
+| Hamburger double-fire prevention | `dashboard-shell.component.ts` | (manual test: hamburger toggles sidenav on mobile) |

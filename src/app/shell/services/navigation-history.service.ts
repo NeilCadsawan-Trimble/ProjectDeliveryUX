@@ -4,6 +4,7 @@ import { filter } from 'rxjs';
 import { PROJECTS } from '../../data/dashboard-data';
 
 export interface ShellBackButton {
+  label: string;
   action: () => void;
 }
 
@@ -51,6 +52,7 @@ export class NavigationHistoryService {
     if (path === '/' || path === '') return { route: '/', label: 'Home' };
     if (path === '/projects') return { route: '/projects', label: 'Projects' };
     if (path === '/financials') return { route: '/financials', label: 'Financials' };
+    if (path.startsWith('/financials/')) return { route: prev, label: 'Financials' };
     if (path.startsWith('/project/')) {
       const slug = path.replace('/project/', '');
       const project = PROJECTS.find(p => p.slug === slug);

@@ -6,41 +6,69 @@ import type { AgentAlert } from '../../../data/widget-agents';
   selector: 'app-collapsible-subnav',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (isMobile() && !collapsed()) {
+      <div class="fixed inset-0 z-[9998]"
+        (click)="collapsedChange.emit(true)"></div>
+    }
+
     <div class="flex-shrink-0 transition-all duration-200 relative"
-      [style.width.px]="collapsed() ? 0 : 227">
+      [style.width.px]="outerWidth()">
 
       <div class="bg-secondary flex flex-col overflow-hidden transition-all duration-200 absolute top-0 left-0"
-        [style.width.px]="227"
-        [style.z-index]="collapsed() ? 10 : 1"
+        [style.width.px]="innerWidth()"
+        [style.z-index]="innerZIndex()"
         [class.rounded-r-lg]="!canvasMode()"
-        [class.rounded-lg]="canvasMode()">
+        [class.rounded-lg]="canvasMode()"
+        [class.shadow-lg]="isMobile() && !collapsed()">
 
-        <div class="flex items-center py-3 pl-4 pr-2 justify-between flex-shrink-0 cursor-pointer hover:bg-muted transition-colors duration-150"
-          role="button" tabindex="0"
-          [attr.aria-label]="collapsed() ? 'Expand side navigation' : 'Collapse side navigation'"
-          (click)="toggleCollapsed()"
-          (keydown.enter)="toggleCollapsed()">
-          <div class="flex items-center gap-2 min-w-0">
-            <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">{{ icon() }}</i>
-            <div class="text-sm font-semibold truncate" [class]="collapsed() ? 'text-foreground' : 'text-primary'">
-              {{ collapsed() ? activeItemLabel() : title() }}
+        @if (mobileCompact()) {
+          <div class="flex flex-col items-center py-3 gap-1 cursor-pointer hover:bg-muted transition-colors duration-150"
+            role="button" tabindex="0"
+            aria-label="Expand side navigation"
+            (click)="toggleCollapsed()"
+            (keydown.enter)="toggleCollapsed()">
+            <div class="relative">
+              <i class="modus-icons text-lg text-primary" aria-hidden="true">{{ icon() }}</i>
+              @if (totalAlertCount() > 0) {
+                <div class="absolute -top-1.5 -right-2.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center text-2xs font-bold px-0.5"
+                  [class.bg-destructive]="hasCriticalAlerts()"
+                  [class.text-destructive-foreground]="hasCriticalAlerts()"
+                  [class.bg-warning]="!hasCriticalAlerts()"
+                  [class.text-warning-foreground]="!hasCriticalAlerts()">
+                  {{ totalAlertCount() }}
+                </div>
+              }
             </div>
-            @if (totalAlertCount() > 0) {
-              <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
-                [class.bg-destructive]="hasCriticalAlerts()"
-                [class.text-destructive-foreground]="hasCriticalAlerts()"
-                [class.bg-warning]="!hasCriticalAlerts()"
-                [class.text-warning-foreground]="!hasCriticalAlerts()">
-                {{ totalAlertCount() }}
+            <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">chevron_right</i>
+          </div>
+        } @else {
+          <div class="flex items-center py-3 pl-4 pr-2 justify-between flex-shrink-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+            role="button" tabindex="0"
+            [attr.aria-label]="collapsed() ? 'Expand side navigation' : 'Collapse side navigation'"
+            (click)="toggleCollapsed()"
+            (keydown.enter)="toggleCollapsed()">
+            <div class="flex items-center gap-2 min-w-0">
+              <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">{{ icon() }}</i>
+              <div class="text-sm font-semibold truncate" [class]="collapsed() ? 'text-foreground' : 'text-primary'">
+                {{ collapsed() ? activeItemLabel() : title() }}
               </div>
-            }
+              @if (totalAlertCount() > 0) {
+                <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
+                  [class.bg-destructive]="hasCriticalAlerts()"
+                  [class.text-destructive-foreground]="hasCriticalAlerts()"
+                  [class.bg-warning]="!hasCriticalAlerts()"
+                  [class.text-warning-foreground]="!hasCriticalAlerts()">
+                  {{ totalAlertCount() }}
+                </div>
+              }
+            </div>
+            <div class="flex items-center justify-center w-6 h-6 rounded flex-shrink-0">
+              <i class="modus-icons text-sm text-foreground-60 transition-transform duration-200" aria-hidden="true"
+                [style.transform]="collapsed() ? 'rotate(0deg)' : 'rotate(-90deg)'"
+              >chevron_left</i>
+            </div>
           </div>
-          <div class="flex items-center justify-center w-6 h-6 rounded flex-shrink-0">
-            <i class="modus-icons text-sm text-foreground-60 transition-transform duration-200" aria-hidden="true"
-              [style.transform]="collapsed() ? 'rotate(0deg)' : 'rotate(-90deg)'"
-            >chevron_left</i>
-          </div>
-        </div>
+        }
 
         <div class="overflow-hidden transition-all duration-200"
           [style.max-height.px]="collapsed() ? 0 : 600"
@@ -97,10 +125,28 @@ export class CollapsibleSubnavComponent {
   readonly activeItem = input.required<string>();
   readonly collapsed = input.required<boolean>();
   readonly canvasMode = input<boolean>(false);
+  readonly isMobile = input<boolean>(false);
   readonly alerts = input<Record<string, AgentAlert | null>>({});
 
   readonly itemSelect = output<string>();
   readonly collapsedChange = output<boolean>();
+
+  readonly mobileCompact = computed(() => this.isMobile() && this.collapsed());
+
+  readonly outerWidth = computed(() => {
+    if (this.isMobile()) return 48;
+    return this.collapsed() ? 0 : 227;
+  });
+
+  readonly innerWidth = computed(() => {
+    if (this.mobileCompact()) return 48;
+    return 227;
+  });
+
+  readonly innerZIndex = computed(() => {
+    if (this.isMobile() && !this.collapsed()) return 9999;
+    return this.collapsed() ? 10 : 1;
+  });
 
   readonly activeItemLabel = computed(() => {
     const active = this.activeItem();
@@ -131,6 +177,5 @@ export class CollapsibleSubnavComponent {
 
   onItemSelect(value: string): void {
     this.itemSelect.emit(value);
-    this.collapsedChange.emit(true);
   }
 }

@@ -119,9 +119,17 @@ export const SUBNAV_CONFIGS: Record<string, SubnavConfig> = {
       { icon: 'download', label: 'Export' },
       { icon: 'print', label: 'Print' },
     ],
+    viewToggles: [],
+  },
+  'financials-invoices': {
+    searchPlaceholder: 'Search invoices...',
+    actions: [
+      { icon: 'download', label: 'Export' },
+      { icon: 'print', label: 'Print' },
+    ],
     viewToggles: [
-      { icon: 'bar_graph', label: 'Chart view', value: 'grid' },
-      { icon: 'menu', label: 'Table view', value: 'list' },
+      { icon: 'apps', label: 'Grid view', value: 'grid' },
+      { icon: 'menu', label: 'List view', value: 'list' },
     ],
   },
   'financials-tiles': {

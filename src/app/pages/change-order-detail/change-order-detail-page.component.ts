@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { ChangeOrder, ChangeOrderStatus, ChangeOrderType } from '../../data/dashboard-data';
-import { CHANGE_ORDERS, coBadgeColor, coTypeLabel, coTypeIcon, formatCurrency as sharedFormatCurrency, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
+import { coBadgeColor, coTypeLabel, coTypeIcon, formatCurrency as sharedFormatCurrency, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
+import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 interface CostBreakdownItem {
   description: string;
@@ -15,6 +17,12 @@ interface HistoryEntry {
   actor: string;
   actorInitials: string;
 }
+
+const CO_STATUS_OPTIONS: { value: ChangeOrderStatus; label: string; dotClass: string }[] = [
+  { value: 'pending', label: 'Pending', dotClass: 'bg-warning' },
+  { value: 'approved', label: 'Approved', dotClass: 'bg-success' },
+  { value: 'rejected', label: 'Rejected', dotClass: 'bg-destructive' },
+];
 
 function buildCostBreakdown(co: ChangeOrder): CostBreakdownItem[] {
   const seed = co.id.charCodeAt(co.id.length - 1) + co.id.charCodeAt(co.id.length - 2);
@@ -80,7 +88,7 @@ function typeBgClass(coType: ChangeOrderType): string {
           (keydown.enter)="goBack()"
         >
           <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">Back to Financials</div>
+          <div class="text-sm font-medium">{{ backLabel }}</div>
         </div>
 
         <!-- Header card -->
@@ -99,9 +107,32 @@ function typeBgClass(coType: ChangeOrderType): string {
               <modus-badge [color]="typeBadgeColor()" variant="outlined" size="md">
                 {{ coTypeLabel(changeOrder()!.coType) }}
               </modus-badge>
-              <modus-badge [color]="coBadgeColor(changeOrder()!.status)" size="md">
-                {{ capitalizeFirst(changeOrder()!.status) }}
-              </modus-badge>
+              <div class="relative">
+                <div class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-muted transition-colors duration-150"
+                  role="button" tabindex="0"
+                  (click)="statusOpen.set(!statusOpen())"
+                  (keydown.enter)="statusOpen.set(!statusOpen())">
+                  <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
+                  <div class="text-sm font-medium text-foreground">{{ capitalizeFirst(changeOrder()!.status) }}</div>
+                  <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">chevron_down</i>
+                </div>
+                @if (statusOpen()) {
+                  <div class="fixed inset-0 z-[9998]" (click)="statusOpen.set(false)"></div>
+                  <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-[9999] min-w-[160px] py-1 overflow-hidden">
+                    @for (opt of coStatusOptions; track opt.value) {
+                      <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                        role="option" [attr.aria-selected]="opt.value === changeOrder()!.status"
+                        (click)="changeStatus(opt.value)">
+                        <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
+                        <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
+                        @if (opt.value === changeOrder()!.status) {
+                          <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
             </div>
           </div>
 
@@ -210,7 +241,7 @@ function typeBgClass(coType: ChangeOrderType): string {
             role="button" tabindex="0"
             (click)="goBack()"
             (keydown.enter)="goBack()"
-          >Return to Financials</div>
+          >Return to {{ backLabel }}</div>
         </div>
       }
     </div>
@@ -219,12 +250,20 @@ function typeBgClass(coType: ChangeOrderType): string {
 export class ChangeOrderDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly store = inject(DataStoreService);
+  private readonly navHistory = inject(NavigationHistoryService);
+
+  private readonly backInfo = this.navHistory.getBackInfo();
+  readonly backLabel = 'Back to ' + this.backInfo.label;
+
+  readonly coStatusOptions = CO_STATUS_OPTIONS;
+  readonly statusOpen = signal(false);
 
   private readonly coId = signal<string>('');
 
   readonly changeOrder = computed<ChangeOrder | null>(() => {
     const id = this.coId();
-    return CHANGE_ORDERS.find(co => co.id === id) ?? null;
+    return this.store.changeOrders().find(co => co.id === id) ?? null;
   });
 
   readonly costBreakdown = computed<CostBreakdownItem[]>(() => {
@@ -240,6 +279,13 @@ export class ChangeOrderDetailPageComponent {
   readonly statusBg = computed(() => {
     const co = this.changeOrder();
     return co ? statusBgClass(co.status) : '';
+  });
+
+  readonly statusDotClass = computed(() => {
+    const co = this.changeOrder();
+    if (!co) return '';
+    const map: Record<ChangeOrderStatus, string> = { approved: 'bg-success', pending: 'bg-warning', rejected: 'bg-destructive' };
+    return map[co.status] ?? 'bg-secondary';
   });
 
   readonly typeBadgeColor = computed(() => {
@@ -262,7 +308,25 @@ export class ChangeOrderDetailPageComponent {
 
   formatCurrency(value: number): string { return sharedFormatCurrency(value); }
 
+  changeStatus(newStatus: ChangeOrderStatus): void {
+    const co = this.changeOrder();
+    if (!co) return;
+    this.store.updateChangeOrderStatus(co.id, newStatus);
+    this.statusOpen.set(false);
+  }
+
   goBack(): void {
-    this.router.navigate(['/financials']);
+    const route = this.backInfo.route;
+    if (route.includes('?')) {
+      const [path, query] = route.split('?');
+      const qp: Record<string, string> = {};
+      for (const pair of query.split('&')) {
+        const [k, v] = pair.split('=');
+        if (k) qp[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
+      }
+      this.router.navigate([path || '/'], { queryParams: qp });
+    } else {
+      this.router.navigate([route]);
+    }
   }
 }

@@ -1757,6 +1757,7 @@ modus-wc-navbar .main-menu {
     padding-top: 72px; /* navbar (56px) + gap */
     padding-left: 0;
     padding-right: 0;
+    transform-origin: 0 0;
   }
 
   /* Remove max-width constraint and side padding from page wrappers in canvas mode;

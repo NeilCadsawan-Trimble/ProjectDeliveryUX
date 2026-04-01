@@ -19,8 +19,8 @@ describe('DashboardShellComponent (regression)', () => {
       expect(SRC).toContain('attachHamburgerListener');
     });
 
-    it('queries for button[aria-label="Main menu"]', () => {
-      expect(SRC).toContain('button[aria-label="Main menu"]');
+    it('queries for [aria-label="Main menu"]', () => {
+      expect(SRC).toContain('[aria-label="Main menu"]');
     });
 
     it('toggles navExpanded on hamburger click', () => {

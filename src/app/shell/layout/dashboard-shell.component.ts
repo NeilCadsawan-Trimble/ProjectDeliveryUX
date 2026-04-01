@@ -111,7 +111,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   (keydown.enter)="navHistory.shellBackButton()?.action()"
                 >
                   <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-                  <div class="text-sm">Back</div>
+                  <div class="text-sm">{{ navHistory.shellBackButton()?.label || 'Back' }}</div>
                 </div>
                 <div class="w-px h-5 bg-foreground-20"></div>
               }
@@ -274,7 +274,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         }
 
         <div class="canvas-content" role="main" id="main-content" tabindex="-1"
-          [style.transform]="(panning.panOffsetX() || panning.panOffsetY()) ? 'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px)' : null">
+          [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
           <router-outlet />
         </div>
 
@@ -303,7 +303,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   (keydown.enter)="navHistory.shellBackButton()?.action()"
                 >
                   <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-                  <div class="text-sm hidden md:block">Back</div>
+                  <div class="text-sm hidden md:block">{{ navHistory.shellBackButton()?.label || 'Back' }}</div>
                 </div>
                 <div class="w-px h-5 bg-foreground-20"></div>
               }
@@ -440,7 +440,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   [attr.aria-label]="item.label"
                 >
                   <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
-                  @if (navExpanded()) {
+                  @if (navExpanded() && !isMobile()) {
                     <div class="custom-side-nav-label">{{ item.label }}</div>
                   }
                 </div>
@@ -457,7 +457,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   [attr.aria-expanded]="desktopResetMenuOpen()"
                 >
                   <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
-                  @if (navExpanded()) {
+                  @if (navExpanded() && !isMobile()) {
                     <div class="custom-side-nav-label">Layout</div>
                   }
                   <svg class="absolute bottom-1 right-1 w-1.5 h-1.5 text-foreground-40" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true">
@@ -494,7 +494,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 aria-label="Settings"
               >
                 <i class="modus-icons text-xl" aria-hidden="true">settings</i>
-                @if (navExpanded()) {
+                @if (navExpanded() && !isMobile()) {
                   <div class="custom-side-nav-label">Settings</div>
                 }
               </div>
@@ -523,7 +523,9 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
   private readonly _abortCtrl = new AbortController();
+  private _hamburgerAbort: AbortController | null = null;
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
+    this._hamburgerAbort?.abort();
     this._abortCtrl.abort();
     this.ai.destroy();
   });
@@ -564,6 +566,7 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly navExpanded = signal(false);
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
+  private readonly canvasResetService = inject(CanvasResetService);
 
   readonly panning = new CanvasPanning(() => this.isCanvas());
   private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
@@ -583,6 +586,20 @@ export class DashboardShellComponent implements AfterViewInit {
     this._canvasWheelEl = el;
     this._canvasWheelHandler = handler;
     this.destroyRef.onDestroy(() => el.removeEventListener('wheel', handler));
+  });
+
+  private readonly _syncZoomEffect = effect(() => {
+    this.canvasResetService.canvasZoom.set(this.panning.canvasZoom());
+  });
+
+  private readonly _reattachHamburgerEffect = effect(() => {
+    this.isCanvas();
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        this.attachHamburgerListener();
+        this.reorderNavbarEnd();
+      });
+    });
   });
 
   readonly activeNav = computed(() => {
@@ -605,7 +622,6 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly desktopResetMenuOpen = signal(false);
   readonly shellSelectorOpen = signal(false);
 
-  private readonly canvasResetService = inject(CanvasResetService);
   readonly widgetFocusService = inject(WidgetFocusService);
   readonly navHistory = inject(NavigationHistoryService);
   private readonly aiService = inject(AiService);
@@ -746,8 +762,12 @@ export class DashboardShellComponent implements AfterViewInit {
     this.router.navigate([this.homeRoute()]);
   }
 
-  onMainMenuToggle(_open: boolean): void {
-    this.navExpanded.set(!this.navExpanded());
+  private _hamburgerAttached = false;
+
+  onMainMenuToggle(open: boolean): void {
+    if (!this._hamburgerAttached) {
+      this.navExpanded.set(open);
+    }
   }
 
   selectNavItem(value: string): void {
@@ -836,7 +856,6 @@ export class DashboardShellComponent implements AfterViewInit {
       if (canvas !== this.isCanvas()) onCanvasChange(mqCanvas);
     }, { signal: this._abortCtrl.signal });
 
-    this.attachHamburgerListener();
     this.reorderNavbarEnd();
   }
 
@@ -863,20 +882,28 @@ export class DashboardShellComponent implements AfterViewInit {
   }
 
   private attachHamburgerListener(): void {
+    if (this._hamburgerAbort) {
+      this._hamburgerAbort.abort();
+      this._hamburgerAbort = null;
+    }
+    this._hamburgerAttached = false;
     const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
     if (!navbarWc) return;
+    const abort = new AbortController();
+    this._hamburgerAbort = abort;
     let attempts = 0;
     const tryAttach = () => {
-      if (++attempts > 50) return;
+      if (abort.signal.aborted || ++attempts > 100) return;
+      const shadow = navbarWc.shadowRoot;
       const btn =
-        navbarWc.querySelector('button[aria-label="Main menu"]') ??
-        navbarWc.shadowRoot?.querySelector('button[aria-label="Main menu"]') ??
-        navbarWc.querySelector('.navbar-menu-btn');
+        shadow?.querySelector('[aria-label="Main menu"]') ??
+        navbarWc.querySelector('[aria-label="Main menu"]');
       if (btn) {
+        this._hamburgerAttached = true;
         btn.addEventListener('click', (e: Event) => {
           e.stopImmediatePropagation();
           this.navExpanded.set(!this.navExpanded());
-        }, { capture: true, signal: this._abortCtrl.signal });
+        }, { capture: true, signal: abort.signal });
         return;
       }
       requestAnimationFrame(tryAttach);

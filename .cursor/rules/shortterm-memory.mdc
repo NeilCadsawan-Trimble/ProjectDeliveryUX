@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Short-Term Memory
 
-**Current window**: Mar 29, 2026
+**Current window**: Mar 30, 2026
 
 > **Lifecycle**:
 > 1. During each session, append interactions below under the current date.
@@ -19,111 +19,51 @@ alwaysApply: true
 
 ## Today's Sessions
 
-### Session 7 (Mar 29)
-- **Topic**: Collapsible subnav redesign
+### Session 9 (Mar 30)
+- **Topic**: Canvas collision fix, construction domain data, risks widget promotion
 - **What happened**:
-  1. Rewrote `CollapsibleSubnavComponent` collapse behavior: items list rolls up/down via `max-height` animation instead of width collapse.
-  2. Chevron rotates: `chevron_left` at 0deg (points left, collapsed) and -90deg (points down, expanded), animated via `transition-transform duration-200`.
-  3. Collapsed header shows active item label instead of section title.
-  4. When collapsed, subnav layout width goes to 0 so title/widgets slide left (16px from edge). Subnav header floats visually at 227px via absolute positioning.
-  5. Top toolbar (childPageSubnav) stays pinned right of the subnav header -- never slides underneath when collapsed.
-  6. Fixed pre-existing build errors: `ViewMode` type mismatch (`signal<string>` -> `signal<'grid' | 'list'>`), severity type overlap in `widget-agents.ts`.
+  1. Fixed canvas collision detection for same-size widgets in compressed chains (3-part fix in `canvas-push.ts`):
+     - Excluded mover from all-pairs cleanup (prevents oscillation with same-size neighbors)
+     - Made Phase 2 wall cascade conditional (only runs when Phase 1 pushed mover back)
+     - Replaced two-candidate pushback with frozen-direction pushback (pushes mover away from frozen/locked boundary)
+  2. Added 6 regression tests in `canvas-push.spec.ts` covering exact project dashboard layouts with incremental dragging (5px/20px steps).
+  3. Updated `dashboard-layout-lessons` skill with section 15 documenting the three root causes and fixes.
+  4. Pushed, PR #34, merged to main.
+  5. Updated all team member roles to construction roles across all 8 projects in `project-data.ts`.
+  6. Updated all milestones and tasks to construction-oriented content for all 8 projects.
+  7. Moved Risks & Urgent Needs widget to top of Column 1 in project dashboard default layout (both desktop and canvas modes). Bumped storage keys v3→v4 (desktop), v5→v6 (canvas).
+  8. Pushed, PR #35, merged to main.
 - **Decisions**:
-  - `CollapsibleSubnavComponent` uses two nested divs: outer for layout width (0 or 227), inner absolute-positioned at 227px for visual rendering.
-  - Canvas mode: `tileSubnavWidth` is 0 when collapsed, `tileToolbarLeft`/`tileToolbarWidth` always use expanded width so toolbar doesn't shift.
-  - Non-canvas mode: toolbar wrapped in div with conditional `margin-left: 227px` when collapsed.
-  - Collapsed subnav locked rect: 227px wide, 48px tall (header only). Expanded: 227px wide, 600px tall.
-  - `onItemSelect` auto-collapses the subnav after selecting an item.
+  - Frozen-direction pushback: compute average center of frozen/locked widgets, push mover in opposite direction. Cascades through compressed chain until it exits.
+  - All project data now uses construction domain terminology (roles, milestones, tasks).
+  - Risks widget is the first widget below the locked project header in all project dashboards.
 
-### Session 8 (Mar 29)
-- **Topic**: Optimization, refactoring, PROGRESS.md update, skills update
+### Session 10 (Mar 31)
+- **Topic**: Hamburger menu fix -- scoped encapsulation (no shadow DOM)
 - **What happened**:
-  1. Analyzed codebase for optimization opportunities. Identified weather icon/color helpers duplicated across 4 files.
-  2. Consolidated shared utility functions into `dashboard-data.ts`: `weatherIcon()`, `weatherIconColor()`, `workImpactBadge()`. Removed duplicate static maps from `project-dashboard.component.ts`, `home-page.component.ts`, `records-subpages.component.ts`, `record-detail-views.component.ts`.
-  3. Updated `PROGRESS.md` with Phase 8 (18 items) covering agentic enhancements, AI navigation, financial deep-linking, smart home widgets, weather integration, and code quality. Test coverage updated to 184 static tests across 8 files.
-  4. Updated `dashboard-layout-lessons` skill with new section 12: shared utility functions pattern.
-  5. Created new `navigation-routing` skill covering dynamic back buttons, shell title overrides, route-based deep linking, agentic page wiring, and deep-linking from widgets.
-  6. Updated `agentic-widgets` skill with sections 9 (route-based actions) and 10 (domain-specific agents).
+  1. Previous hamburger fix (PR #38) assumed `modus-wc-navbar` uses shadow DOM. It doesn't -- Stencil uses scoped encapsulation, so `shadowRoot` is always null.
+  2. `attachHamburgerListener` looped 100 rAF retries waiting for `shadowRoot`, never found it, gave up.
+  3. The fallback `onMainMenuToggle` toggled (`!navExpanded()`), but `mainMenuOpenChange` has `bubbles: true`, so Angular caught it twice (output + bubbling DOM event), producing a double-toggle = net no change.
+  4. Fix: search light DOM with `navbarWc.querySelector('[aria-label="Main menu"]')` when `shadowRoot` is null. Made fallback idempotent: `navExpanded.set(open)` instead of toggle.
+  5. Updated skill section 16 with Bug D (scoped encapsulation), new architecture, 8 rules.
+  6. Updated long-term memory fragile areas table.
 - **Decisions**:
-  - All mapping functions (icon, color, badge) that appear in more than one component go in `dashboard-data.ts`.
-  - Components keep thin delegate methods that call the shared function (preserves template compatibility).
-
-### Session 9 (Mar 29)
-- **Topic**: Contracts integration, detail page layout fix, merged to main
-- **What happened**:
-  1. Generated 22 contracts (8 prime + 14 subcontracts) linked to existing change orders.
-  2. Created Contracts financials subpage with KPI strip, grid/list views.
-  3. Created Contract detail view with linked change order navigation.
-  4. Wired contract agents into agentic system (subpage, detail, general).
-  5. Created standalone change-order-detail and estimate-detail pages with routing.
-  6. Fixed detail page toolbar sliding beneath collapsed side subnav (margin-left adjustment).
-  7. Pushed to dev, created PR #29, merged to main.
-
-### Session 10 (Mar 29)
-- **Topic**: PROGRESS.md update, skill updates, deep refactoring
-- **What happened**:
-  1. Scanned codebase for duplicate helper functions across all components.
-  2. Added 5 new shared utilities to `dashboard-data.ts`: `formatCurrency`, `inspectionResultBadge`, `punchPriorityBadge`, `contractTypeLabelShort`, plus delegates.
-  3. Refactored 7 consumer files to use shared utilities instead of local duplicate implementations:
-     - `record-detail-views.component.ts`: 6 methods → thin delegates
-     - `financials-subpages.component.ts`: 5 methods → thin delegates
-     - `records-subpages.component.ts`: 2 methods → thin delegates
-     - `project-dashboard.component.ts`: 5 methods → thin delegates (statusBadgeColor, inspectionResultBadge, changeOrderStatusBadge, punchPriorityBadge, formatCurrency, formatCoAmount)
-     - `change-order-detail-page.component.ts`: formatCurrency → delegate
-     - `estimate-detail-page.component.ts`: formatCurrency → delegate
-     - `financials-page.component.ts`: formatCurrency → delegate
-  4. Updated `dashboard-layout-lessons` skill with section 13: collapsed subnav toolbar overlap.
-  5. Updated `PROGRESS.md` with Phase 9 (12 items). Test count updated to 186 static tests (90 template-safety).
-- **Decisions**:
-  - `contractTypeLabelShort()` added as separate function for financials-subpages short labels ('Prime', 'PO'), while `contractTypeLabel()` keeps full labels.
-  - All `formatCurrency` variants unified to `Math.abs`-based thresholds with `toLocaleString` on K values.
-
-### Session 11 (Mar 29)
-- **Topic**: Canvas mode parity fix + regression test
-- **What happened**:
-  1. User reported content not appearing in canvas mode for new financials sub-pages (purchase-orders, contract-invoices, general-invoices).
-  2. Root cause: canvas template had separate rendering path with `@else if` branches per page. New pages were added to desktop mode routing and `FINANCIALS_PAGES_WITH_CONTENT` but had NO canvas-mode rendering branch. They fell through to a gap where nothing rendered.
-  3. Added 3 new `@else if` branches in canvas template for purchase-orders, contract-invoices, general-invoices (KPI strip + scrollable list each).
-  4. Added computed signals (poTotalValue, poReceivedValue, poOpenCount, invTotalAmount, invPaidAmount, invOutstanding, payTotalAmount, payPaidAmount, payOutstanding) and status dot class helpers (poStatusDotClass, invStatusDotClass, payStatusDotClass) to project-dashboard.component.ts.
-  5. Added 17 new static regression tests in `project-dashboard.spec.ts` that auto-extract every page from FINANCIALS_PAGES_WITH_CONTENT and RECORDS_PAGES_WITH_CONTENT and verify each has a corresponding canvas-mode rendering branch. This ensures the bug can never recur.
-  6. Updated `dashboard-layout-lessons` skill section 10 with the new regression test reference and the new bug instance.
-- **Decisions**:
-  - Canvas parity is now enforced by static tests, not just skills/documentation.
-  - This was a known issue that should have been caught during original implementation per view-mode-parity and canvas-subpage-checklist skills.
-
-### Session 11 (Mar 29)
-- **Topic**: Financials expansion, icon compliance, optimization
-- **What happened**:
-  1. Massive financials data expansion: 6 months of data for all sub-pages, "Applications for Payment" → "Billings" rename, project-level financials data association.
-  2. Global Financials dashboard restructured: removed subnav on overview, added `finNavLinks` widget (3 cols, below KPIs).
-  3. Added icons to all subnav items (financials + records sub-pages).
-  4. Added agent alert badges to Financials subnav (both global and sub-page views).
-  5. Fixed canvas mode rendering parity for new financial sub-pages + 17 regression tests.
-  6. Fixed 46 invalid Modus icon names across 8 files.
-  7. Fixed invalid weather icon map entries (5 Material-style names → valid Modus names).
-  8. Mobile filter bar fix: `flex-wrap` on urgent needs, hidden dividers on mobile.
-  9. User name changed from "Alex Morgan" to "Frank Mendoza" across all UI.
-  10. Consolidated `formatJobCost` and `capitalizeFirst` into shared formatters (removed from 4 files).
-  11. Updated PROGRESS.md with Phase 11 (16 items).
-- **Decisions**:
-  - Weather icon map now uses only valid Modus icon names: `sun`, `raindrop`, `thunderstorm_heavy`, `snowflake`, `wind`.
-  - `formatJobCost` and `capitalizeFirst` live in `dashboard-data.formatters.ts`; consumer components use thin delegates or `readonly` property aliases.
+  - Never assume Modus web components use shadow DOM. Always check `shadowRoot` first, fall back to light DOM.
+  - Fallback event handlers must be idempotent (set value, not toggle) when events can bubble.
 
 ## Active Context
 
-- On `dev` branch, ahead of `main`.
-- All optimizations complete. Type-check, 325 static tests, and lint all pass cleanly.
-- Zero icon name violations (was 46).
+- On `dev` branch, hamburger fix applied but not yet pushed.
+- Build passes, browser-verified on Home and Projects pages.
 - Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
 
 ## Pending Items
 
-- (none)
+- Push hamburger fix when user requests.
 
 ## Scratch Notes
 
-- Total commits: 170+
-- Phase 11 added to PROGRESS.md: 16 new items, bringing total to 120/128 (94%)
-- Static tests: 325 across 9 files
-- Data layer sizes: types 552, seed 1,279, formatters 849
-- Shared utilities in `dashboard-data.formatters.ts`: weatherIcon, weatherIconColor, workImpactBadge, formatCurrency, formatJobCost, capitalizeFirst, inspectionResultBadge, punchPriorityBadge, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, contractTypeIcon, coBadgeColor, coTypeLabel, coTypeIcon, statusBadgeColor, estimateBadgeColor, budgetProgressClass, invoiceStatusBadge, payableStatusBadge, poStatusBadge, payrollStatusBadge, ledgerTypeBadge, ledgerTypeLabel
+- Total PRs merged: #34 (collision fix), #35 (construction data + layout), #38 (hamburger shadow DOM selector -- incomplete fix)
+- Layout storage keys: desktop `project-${id}-v4`, canvas `canvas-layout:project-${id}:v6`
+- 84 unit tests (6 new collision regression tests)
+- 325 static tests across 9 files

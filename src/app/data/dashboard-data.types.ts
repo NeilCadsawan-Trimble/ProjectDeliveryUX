@@ -3,6 +3,14 @@ export type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'A
 export type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
 export type DashboardWidgetId =
   | 'projects'
+  | 'proj1'
+  | 'proj2'
+  | 'proj3'
+  | 'proj4'
+  | 'proj5'
+  | 'proj6'
+  | 'proj7'
+  | 'proj8'
   | 'openEstimates'
   | 'recentActivity'
   | 'needsAttention'
