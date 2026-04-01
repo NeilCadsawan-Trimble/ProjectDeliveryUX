@@ -8,8 +8,9 @@ export const homeTimeOff: WidgetAgent = {
   name: 'Time Off Requests',
   systemPrompt: 'You are an HR scheduling assistant for a construction company. You help managers understand upcoming absences, PTO conflicts, staffing gaps across projects, and team availability.',
   suggestions(s) {
-    const pending = (s.timeOffRequests ?? []).filter(r => r.status === 'Pending').length;
-    const conflicts = buildStaffingConflicts();
+    const reqs = s.timeOffRequests ?? [];
+    const pending = reqs.filter(r => r.status === 'Pending').length;
+    const conflicts = buildStaffingConflicts(undefined, reqs);
     const critical = conflicts.filter(c => c.severity === 'critical').length;
     const base = ['Show staffing conflicts by project', 'Who is out this week?'];
     if (critical) return [`${critical} critical staffing conflict${critical === 1 ? '' : 's'} detected`, ...base];
@@ -17,15 +18,17 @@ export const homeTimeOff: WidgetAgent = {
     return ['Show upcoming PTO conflicts', ...base];
   },
   insight(s) {
-    const conflicts = buildStaffingConflicts();
+    const reqs = s.timeOffRequests ?? [];
+    const conflicts = buildStaffingConflicts(undefined, reqs);
     const critical = conflicts.filter(c => c.severity === 'critical');
     if (critical.length) return `${critical.length} project${critical.length === 1 ? '' : 's'} with critical staffing gaps`;
-    const pending = (s.timeOffRequests ?? []).filter(r => r.status === 'Pending').length;
+    const pending = reqs.filter(r => r.status === 'Pending').length;
     if (pending) return `${pending} pending request${pending === 1 ? '' : 's'} need review`;
     return null;
   },
-  alerts() {
-    const conflicts = buildStaffingConflicts();
+  alerts(s) {
+    const reqs = s.timeOffRequests ?? [];
+    const conflicts = buildStaffingConflicts(undefined, reqs);
     const critical = conflicts.filter(c => c.severity === 'critical').length;
     if (critical) return { level: 'critical' as const, count: critical, label: 'staffing conflicts' };
     const warnings = conflicts.filter(c => c.severity === 'warning').length;
@@ -37,8 +40,8 @@ export const homeTimeOff: WidgetAgent = {
       const n = (st.timeOffRequests ?? []).filter(r => r.status === 'Pending').length;
       return n ? `Approved ${n} pending time-off request(s).` : 'No pending requests to approve.';
     }},
-    { id: 'notify-managers', label: 'Notify managers of staffing conflicts', execute: () => {
-      const conflicts = buildStaffingConflicts();
+    { id: 'notify-managers', label: 'Notify managers of staffing conflicts', execute: (st) => {
+      const conflicts = buildStaffingConflicts(undefined, st.timeOffRequests ?? []);
       const critical = conflicts.filter(c => c.severity === 'critical');
       return critical.length
         ? `Sent staffing alerts to managers for ${critical.length} critical conflict(s): ${critical.map(c => `${c.projectName} (${c.week})`).join(', ')}`
@@ -50,14 +53,14 @@ export const homeTimeOff: WidgetAgent = {
     const reqs = s.timeOffRequests ?? [];
     if (!reqs.length) return 'No time-off requests.';
     const lines = reqs.map(r => `  ${r.name} (${r.projectName}): ${r.type}, ${r.startDate}-${r.endDate} (${r.days}d), ${r.status}`);
-    const conflicts = buildStaffingConflicts();
+    const conflicts = buildStaffingConflicts(undefined, reqs);
     const conflictLines = conflicts.map(c => `  ${c.projectName} ${c.week}: ${c.absentCount}/${c.teamSize} out (${c.absentPct}%) -- ${c.severity} -- ${c.absentees.join(', ')}`);
     return `Time off requests (${reqs.length}):\n${lines.join('\n')}\n\nStaffing conflicts (${conflicts.length}):\n${conflictLines.join('\n')}`;
   },
   localRespond(q, s) {
     const reqs = s.timeOffRequests ?? [];
     if (kw(q, 'conflict', 'staffing', 'gap', 'issue', 'problem', 'risk')) {
-      const conflicts = buildStaffingConflicts();
+      const conflicts = buildStaffingConflicts(undefined, reqs);
       if (!conflicts.length) return 'No staffing conflicts detected across projects.';
       const critical = conflicts.filter(c => c.severity === 'critical');
       const warning = conflicts.filter(c => c.severity === 'warning');
@@ -306,7 +309,7 @@ export const urgentNeedsAgent: WidgetAgent = {
     'Summarize schedule risks',
   ],
   insight: (s) => {
-    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []);
+    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? [], s.changeOrders ?? []);
     const critical = items.filter(i => i.severity === 'critical').length;
     const budgetCritical = items.filter(i => i.severity === 'critical' && i.category === 'budget').length;
     if (budgetCritical > 0 && critical >= 5) return `${critical} critical items including ${budgetCritical} budget alert(s) need attention`;
@@ -316,14 +319,14 @@ export const urgentNeedsAgent: WidgetAgent = {
     return null;
   },
   alerts: (s) => {
-    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []);
+    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? [], s.changeOrders ?? []);
     const critical = items.filter(i => i.severity === 'critical').length;
     if (critical >= 5) return { level: 'critical' as const, count: critical, label: `${critical} critical` };
     if (critical > 0) return { level: 'warning' as const, count: critical, label: `${critical} critical` };
     return null;
   },
   actions: (s) => {
-    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []);
+    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? [], s.changeOrders ?? []);
     const budgetItems = items.filter(i => (i.category === 'budget' || i.category === 'change-order') && i.financialsRoute);
     const projectsWithBudgetIssues = [...new Map(budgetItems.map(i => [i.projectId, i])).values()].slice(0, 3);
     const finActions: AgentAction[] = projectsWithBudgetIssues.map(i => ({
@@ -341,7 +344,7 @@ export const urgentNeedsAgent: WidgetAgent = {
     ];
   },
   buildContext(s) {
-    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? []);
+    const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? [], s.changeOrders ?? []);
     const critical = items.filter(i => i.severity === 'critical');
     const warnings = items.filter(i => i.severity === 'warning');
     const info = items.filter(i => i.severity === 'info');
@@ -350,7 +353,7 @@ export const urgentNeedsAgent: WidgetAgent = {
     return `Urgent needs across portfolio: ${critical.length} critical, ${warnings.length} warnings, ${info.length} info. ${budgetItems.length} financial items (budget/change-order) with direct job cost links.\n${lines.join('\n')}`;
   },
   localRespond(q, s) {
-    const items = buildUrgentNeeds(s?.rfis ?? [], s?.submittals ?? []);
+    const items = buildUrgentNeeds(s?.rfis ?? [], s?.submittals ?? [], s?.changeOrders ?? []);
     const critical = items.filter(i => i.severity === 'critical');
     const warnings = items.filter(i => i.severity === 'warning');
 

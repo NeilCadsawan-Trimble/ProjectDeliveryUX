@@ -130,6 +130,8 @@ export interface AiMessage {
   streaming?: boolean;
 }
 
+export type TimeOffStatus = 'Pending' | 'Approved' | 'Denied';
+
 export interface TimeOffRequest {
   id: number;
   name: string;
@@ -138,7 +140,7 @@ export interface TimeOffRequest {
   startDate: string;
   endDate: string;
   days: number;
-  status: 'Pending' | 'Approved' | 'Denied';
+  status: TimeOffStatus;
   projectId: number;
   projectName: string;
 }

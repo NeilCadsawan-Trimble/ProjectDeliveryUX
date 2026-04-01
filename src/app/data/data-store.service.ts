@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
-import type { Rfi, RfiStatus, Submittal, SubmittalStatus, ChangeOrder, ChangeOrderStatus, Estimate, EstimateStatus } from './dashboard-data.types';
-import { RFIS_SEED, SUBMITTALS_SEED, CHANGE_ORDERS, ESTIMATES } from './dashboard-data.seed';
+import type { Rfi, RfiStatus, Submittal, SubmittalStatus, ChangeOrder, ChangeOrderStatus, Estimate, EstimateStatus, TimeOffRequest, TimeOffStatus } from './dashboard-data.types';
+import { RFIS_SEED, SUBMITTALS_SEED, CHANGE_ORDERS, ESTIMATES, TIME_OFF_REQUESTS } from './dashboard-data.seed';
 
 @Injectable({ providedIn: 'root' })
 export class DataStoreService {
@@ -8,6 +8,7 @@ export class DataStoreService {
   readonly submittals = signal<Submittal[]>([...SUBMITTALS_SEED]);
   readonly changeOrders = signal<ChangeOrder[]>([...CHANGE_ORDERS]);
   readonly estimates = signal<Estimate[]>([...ESTIMATES]);
+  readonly timeOffRequests = signal<TimeOffRequest[]>([...TIME_OFF_REQUESTS]);
 
   updateRfiStatus(id: string, newStatus: RfiStatus): void {
     this.rfis.update(list =>
@@ -30,6 +31,12 @@ export class DataStoreService {
   updateEstimateStatus(id: string, newStatus: EstimateStatus): void {
     this.estimates.update(list =>
       list.map(e => e.id === id ? { ...e, status: newStatus } : e)
+    );
+  }
+
+  updateTimeOffStatus(id: number, newStatus: TimeOffStatus): void {
+    this.timeOffRequests.update(list =>
+      list.map(r => r.id === id ? { ...r, status: newStatus } : r)
     );
   }
 }
