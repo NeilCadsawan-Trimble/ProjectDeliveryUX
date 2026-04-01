@@ -19,9 +19,10 @@ import { CollapsibleSubnavComponent } from '../project-dashboard/components/coll
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
+import { DataStoreService } from '../../data/data-store.service';
 import type { NavItem } from '../project-dashboard/project-dashboard.config';
 import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost, ChangeOrder, ChangeOrderType, Invoice, BillingSchedule, BillingEvent, Payable, CashFlowEntry, GLAccount, GLEntry, PurchaseOrder, PayrollRecord, Contract, SubcontractLedgerEntry } from '../../data/dashboard-data';
-import { PROJECTS, ESTIMATES, budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS, CHANGE_ORDERS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, INVOICES, BILLING_SCHEDULES, BILLING_EVENTS, PAYABLES, CASH_FLOW_HISTORY, CASH_POSITION, GL_ACCOUNTS, GL_ENTRIES, PURCHASE_ORDERS, PAYROLL_RECORDS, CONTRACTS, SUBCONTRACT_LEDGER, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
+import { PROJECTS, budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, INVOICES, BILLING_SCHEDULES, BILLING_EVENTS, PAYABLES, CASH_FLOW_HISTORY, CASH_POSITION, GL_ACCOUNTS, GL_ENTRIES, PURCHASE_ORDERS, PAYROLL_RECORDS, CONTRACTS, SUBCONTRACT_LEDGER, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
 import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
 
 @Component({
@@ -1742,6 +1743,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private readonly navHistory = inject(NavigationHistoryService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly store = inject(DataStoreService);
 
   // Subnav configuration
   readonly finSubNavItems: NavItem[] = [
@@ -1808,11 +1810,11 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly estimatesOverdueCount = computed(() => this.estimates().filter(e => e.daysLeft < 0).length);
 
   // Change orders sub-page KPIs
-  readonly coSubpageAll = computed(() => CHANGE_ORDERS);
-  readonly coSubpageTotalValue = computed(() => CHANGE_ORDERS.reduce((s, c) => s + c.amount, 0));
-  readonly coSubpageApproved = computed(() => CHANGE_ORDERS.filter(c => c.status === 'approved').length);
-  readonly coSubpagePending = computed(() => CHANGE_ORDERS.filter(c => c.status === 'pending').length);
-  readonly coSubpageRejected = computed(() => CHANGE_ORDERS.filter(c => c.status === 'rejected').length);
+  readonly coSubpageAll = this.store.changeOrders;
+  readonly coSubpageTotalValue = computed(() => this.store.changeOrders().reduce((s, c) => s + c.amount, 0));
+  readonly coSubpageApproved = computed(() => this.store.changeOrders().filter(c => c.status === 'approved').length);
+  readonly coSubpagePending = computed(() => this.store.changeOrders().filter(c => c.status === 'pending').length);
+  readonly coSubpageRejected = computed(() => this.store.changeOrders().filter(c => c.status === 'rejected').length);
 
   readonly today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -1928,7 +1930,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
     return Object.values(a).some(v => v?.level === 'critical');
   });
 
-  readonly estimates = signal<Estimate[]>(ESTIMATES);
+  readonly estimates = this.store.estimates;
   readonly estimateBadgeColor = estimateBadgeColor;
   readonly dueDateClass = dueDateClass;
 
@@ -1963,10 +1965,12 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly activeCoTab = signal<ChangeOrderType | 'all'>('all');
   readonly filteredChangeOrders = computed(() => {
     const tab = this.activeCoTab();
-    return tab === 'all' ? CHANGE_ORDERS : CHANGE_ORDERS.filter(co => co.coType === tab);
+    const all = this.store.changeOrders();
+    return tab === 'all' ? all : all.filter(co => co.coType === tab);
   });
   coTabCount(tab: ChangeOrderType | 'all'): number {
-    return tab === 'all' ? CHANGE_ORDERS.length : CHANGE_ORDERS.filter(co => co.coType === tab).length;
+    const all = this.store.changeOrders();
+    return tab === 'all' ? all.length : all.filter(co => co.coType === tab).length;
   }
   readonly coBadgeColor = coBadgeColor;
   readonly coTypeLabel = coTypeLabel;
@@ -2014,8 +2018,8 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private buildFinAgentState(): AgentDataState {
     return {
       projects: PROJECTS,
-      estimates: ESTIMATES,
-      changeOrders: CHANGE_ORDERS,
+      estimates: this.store.estimates(),
+      changeOrders: this.store.changeOrders(),
       invoices: INVOICES,
       billingSchedules: BILLING_SCHEDULES,
       billingEvents: BILLING_EVENTS,
