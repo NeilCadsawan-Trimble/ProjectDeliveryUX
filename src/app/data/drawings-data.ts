@@ -87,3 +87,51 @@ export const ALL_DRAWINGS_BY_PROJECT: Record<number, DrawingTile[]> = {
     { id: 'drw-12', title: 'Lab Casework Layout', subtitle: 'Laboratory casework and fume hood layout with utility turret positions and emergency shower locations', thumbnail: '/assets/drawings/drawing-11.webp', file: '/assets/drawings/sample.pdf', revision: 'Rev 01', date: 'Dec 10, 2025' },
   ],
 };
+
+export interface SiteCapture {
+  id: string;
+  title: string;
+  subtitle: string;
+  thumbnail: string;
+  panoramaUrl: string;
+  captureDate: string;
+  location: string;
+  capturedBy: string;
+}
+
+const SAMPLE_PANORAMA = 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg';
+
+export const SITE_CAPTURES_BY_PROJECT: Record<number, SiteCapture[]> = {
+  1: [
+    { id: 'cap-1-1', title: 'Lobby Entrance - Progress', subtitle: 'Main lobby facing south entrance with curtain wall framing visible', thumbnail: '/assets/drawings/drawing-11.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 28, 2026', location: 'Level 1 - Main Lobby', capturedBy: 'Ryan Torres' },
+    { id: 'cap-1-2', title: 'Level 2 Corridor', subtitle: 'East wing corridor showing MEP rough-in above ceiling grid', thumbnail: '/assets/drawings/drawing-9.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 25, 2026', location: 'Level 2 - East Wing', capturedBy: 'Ryan Torres' },
+    { id: 'cap-1-3', title: 'Mechanical Room', subtitle: 'Penthouse mechanical room with AHU-1 and chiller piping installed', thumbnail: '/assets/drawings/drawing-10.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 20, 2026', location: 'Roof - Mechanical Room', capturedBy: 'Sarah Kim' },
+  ],
+  2: [
+    { id: 'cap-2-1', title: 'Foundation Pour Area', subtitle: 'Grade beam formwork in place, rebar tied and ready for inspection', thumbnail: '/assets/drawings/drawing-7.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 27, 2026', location: 'Grid A-D / 1-5', capturedBy: 'Marcus Rivera' },
+    { id: 'cap-2-2', title: 'Steel Erection - Level 2', subtitle: 'Structural steel columns and beams set at Level 2 east bay', thumbnail: '/assets/drawings/drawing-12.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 22, 2026', location: 'Level 2 - East Bay', capturedBy: 'Marcus Rivera' },
+  ],
+  3: [
+    { id: 'cap-3-1', title: 'Stairwell B Pressurization', subtitle: 'Stairwell B from Level 3 landing showing smoke control ductwork', thumbnail: '/assets/drawings/drawing-10.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 26, 2026', location: 'Stairwell B - Level 3', capturedBy: 'Lisa Chen' },
+    { id: 'cap-3-2', title: 'Loading Dock Area', subtitle: 'Service area with dock levelers installed and compactor pad poured', thumbnail: '/assets/drawings/drawing-5.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 19, 2026', location: 'Level B1 - Loading Dock', capturedBy: 'Lisa Chen' },
+    { id: 'cap-3-3', title: 'Telecom Room IDF-3', subtitle: 'IT room with cable tray installed and rack foundations set', thumbnail: '/assets/drawings/drawing-13.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 14, 2026', location: 'Level 3 - IDF Room', capturedBy: 'James Park' },
+  ],
+  4: [
+    { id: 'cap-4-1', title: 'Rooftop PV Array', subtitle: 'Solar panel rail system installed on south-facing roof section', thumbnail: '/assets/drawings/drawing-14.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 25, 2026', location: 'Roof - South Section', capturedBy: 'Anna Kowalski' },
+    { id: 'cap-4-2', title: 'Elevator Shaft - Car 1', subtitle: 'Elevator hoistway with guide rails and landing door frames set', thumbnail: '/assets/drawings/drawing-5.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 18, 2026', location: 'Elevator Shaft 1', capturedBy: 'Anna Kowalski' },
+  ],
+  5: [
+    { id: 'cap-5-1', title: 'Curtain Wall Mock-Up', subtitle: 'South elevation curtain wall mock-up panel installed for testing', thumbnail: '/assets/drawings/drawing-6.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 24, 2026', location: 'South Facade - Bay 3', capturedBy: 'David Nguyen' },
+  ],
+  6: [
+    { id: 'cap-6-1', title: 'Warehouse Bay A', subtitle: 'Clear-span warehouse bay with tilt-up wall panels and roof joists', thumbnail: '/assets/drawings/drawing-9.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 23, 2026', location: 'Bay A - Warehouse', capturedBy: 'Tom Bradley' },
+    { id: 'cap-6-2', title: 'Office Mezzanine', subtitle: 'Mezzanine framing for front office area over warehouse entrance', thumbnail: '/assets/drawings/drawing-11.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 17, 2026', location: 'Mezzanine - Front Office', capturedBy: 'Tom Bradley' },
+  ],
+  7: [
+    { id: 'cap-7-1', title: 'Lab Space - Wing B', subtitle: 'Laboratory wing with fume hood rough-in and benchtop utilities', thumbnail: '/assets/drawings/drawing-8.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 22, 2026', location: 'Level 2 - Lab Wing B', capturedBy: 'Rachel Foster' },
+  ],
+  8: [
+    { id: 'cap-8-1', title: 'Main Entry Canopy', subtitle: 'Entry canopy steel framing with standing seam roof substrate', thumbnail: '/assets/drawings/drawing-5.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 21, 2026', location: 'Main Entrance', capturedBy: 'Kevin Walsh' },
+    { id: 'cap-8-2', title: 'Parking Level B1', subtitle: 'Below-grade parking with concrete topping, column striping started', thumbnail: '/assets/drawings/drawing-12.webp', panoramaUrl: SAMPLE_PANORAMA, captureDate: 'Mar 15, 2026', location: 'Level B1 - Parking', capturedBy: 'Kevin Walsh' },
+  ],
+};

@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import type { DetailView } from '../../shell/services/canvas-detail-manager';
 import type { SubpageTileCanvas, TileDetailView } from '../../shell/services/subpage-tile-canvas';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
-import type { DrawingTile } from '../../data/drawings-data';
+import type { DrawingTile, SiteCapture } from '../../data/drawings-data';
 import { DataStoreService } from '../../data/data-store.service';
 import {
   CHANGE_ORDERS,
@@ -41,6 +41,7 @@ export interface ProjectDashboardNavigationBindings {
   isCanvas: () => boolean;
   currentPageLabel: () => string;
   drawingTiles: () => DrawingTile[];
+  siteCaptures: () => SiteCapture[];
   sideNavItems: readonly NavItem[];
   recordsSubNavItems: readonly NavItem[];
   financialsSubNavItems: readonly NavItem[];
@@ -104,6 +105,9 @@ export class ProjectDashboardNavigationService {
       } else if (view === 'changeOrder') {
         const co = CHANGE_ORDERS.find(c => c.id === id);
         if (co) this.ctx.detailView.set({ type: 'changeOrder', item: co });
+      } else if (view === 'panorama') {
+        const capture = this.ctx.siteCaptures().find(c => c.id === id);
+        if (capture) this.ctx.detailView.set({ type: 'panorama', item: capture });
       }
     }
   }
@@ -233,6 +237,12 @@ export class ProjectDashboardNavigationService {
     this.ctx.detailSourceLabel.set('Drawings');
     this.ctx.detailView.set({ type: 'drawing', item: drawing });
     this.pushDetailUrl('drawing', drawing.id);
+  }
+
+  navigateToPanorama(capture: SiteCapture): void {
+    this.ctx.detailSourceLabel.set('Field Captures');
+    this.ctx.detailView.set({ type: 'panorama', item: capture });
+    this.pushDetailUrl('panorama', capture.id);
   }
 
   navigateToProject(slug: string): void {
@@ -389,6 +399,12 @@ export class ProjectDashboardNavigationService {
         const co = CHANGE_ORDERS.find(c => c.id === id);
         if (co) {
           this.ctx.detailView.set({ type: 'changeOrder', item: co });
+          return;
+        }
+      } else if (view === 'panorama') {
+        const capture = this.ctx.siteCaptures().find(c => c.id === id);
+        if (capture) {
+          this.ctx.detailView.set({ type: 'panorama', item: capture });
           return;
         }
       }

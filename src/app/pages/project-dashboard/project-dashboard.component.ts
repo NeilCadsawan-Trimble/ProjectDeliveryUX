@@ -39,6 +39,7 @@ import {
 import { DrawingMarkupToolbarComponent, DRAWING_TOOLS } from '../../shared/detail/drawing-markup-toolbar.component';
 import { WidgetFrameComponent } from './components/widget-frame.component';
 import { PdfViewerComponent } from '../../shared/detail/pdf-viewer.component';
+import { PanoramaViewerComponent } from '../../shared/detail/panorama-viewer.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
 
 import { ThemeService } from '../../shell/services/theme.service';
@@ -57,8 +58,8 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus, type TimeOffStatus } from '../../data/dashboard-data';
-import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
+import { PROJECTS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus, type TimeOffStatus } from '../../data/dashboard-data';
+import { ALL_DRAWINGS_BY_PROJECT, SITE_CAPTURES_BY_PROJECT, type DrawingTile, type SiteCapture } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 import { ProjectDashboardNavigationService } from './project-dashboard-navigation.service';
@@ -100,7 +101,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -401,6 +402,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const dv = this.tileDetailViews()[tileId];
     if (dv?.type === 'rfi') this.store.updateRfiStatus((dv.item as Rfi).id, newStatus as RfiStatus);
     if (dv?.type === 'submittal') this.store.updateSubmittalStatus((dv.item as Submittal).id, newStatus as SubmittalStatus);
+    if (dv?.type === 'changeOrder') this.store.updateChangeOrderStatus((dv.item as ChangeOrder).id, newStatus as ChangeOrderStatus);
   }
   onTileDetailAssigneeChange(tileId: string, newAssignee: string): void { this.updateTileDetailField(tileId, 'assignee', newAssignee); }
   onTileDetailDueDateChange(tileId: string, newDate: string): void { this.updateTileDetailField(tileId, 'dueDate', newDate); }
@@ -904,6 +906,10 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   readonly newestDrawingTile = computed(() => this.drawingTiles()[0]);
 
+  readonly siteCaptures = computed(() =>
+    SITE_CAPTURES_BY_PROJECT[this.projectId()] ?? SITE_CAPTURES_BY_PROJECT[1]
+  );
+
   readonly subnavConfigs = SUBNAV_CONFIGS;
 
   private readonly gridRef = viewChild<ElementRef>('widgetGrid');
@@ -1132,7 +1138,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   );
 
   readonly projectChangeOrders = computed(() =>
-    CHANGE_ORDERS.filter(c => c.projectId === this.projectId())
+    this.store.changeOrders().filter(c => c.projectId === this.projectId())
   );
 
   readonly projectContracts = computed(() =>
@@ -1144,15 +1150,15 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly contractGrowth = computed(() => this.contractRevisedTotal() - this.contractOriginalTotal());
 
   readonly projectPrimeContractCOs = computed(() =>
-    CHANGE_ORDERS.filter(c => c.projectId === this.projectId() && c.coType === 'prime')
+    this.store.changeOrders().filter(c => c.projectId === this.projectId() && c.coType === 'prime')
   );
 
   readonly projectPotentialCOs = computed(() =>
-    CHANGE_ORDERS.filter(c => c.projectId === this.projectId() && c.coType === 'potential')
+    this.store.changeOrders().filter(c => c.projectId === this.projectId() && c.coType === 'potential')
   );
 
   readonly projectSubcontractCOs = computed(() =>
-    CHANGE_ORDERS.filter(c => c.projectId === this.projectId() && c.coType === 'subcontract')
+    this.store.changeOrders().filter(c => c.projectId === this.projectId() && c.coType === 'subcontract')
   );
 
   readonly projectRevenueData = computed(() =>
@@ -1262,10 +1268,17 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     return d?.type === 'contract' ? d.item : null;
   });
 
+  readonly detailPanorama = computed(() => {
+    const d = this.detailView();
+    return d?.type === 'panorama' ? d.item : null;
+  });
+
   readonly isCanvasDrawingDetail = computed(() => this.isCanvas() && !!this.detailDrawing());
+  readonly isCanvasPanoramaDetail = computed(() => this.isCanvas() && !!this.detailPanorama());
 
   private readonly _lockCanvasPanEffect = effect(() => {
     const locked = this.isCanvasDrawingDetail()
+      || this.isCanvasPanoramaDetail()
       || (this.isCanvas() && !!this.subledgerCategory());
     this.panning.disabled.set(locked);
   });
@@ -1409,6 +1422,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     if (d?.type === 'punchItem') return 'punch-item-detail';
     if (d?.type === 'changeOrder') return 'change-order-detail';
     if (d?.type === 'contract') return 'contract-detail';
+    if (d?.type === 'panorama') return 'panorama-detail';
     return 'rfi-detail';
   });
 
@@ -1492,7 +1506,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
   onLinkedCoClick(coId: string): void {
-    const co = CHANGE_ORDERS.find(c => c.id === coId);
+    const co = this.store.changeOrders().find(c => c.id === coId);
     if (co) this.navigateToChangeOrder(co);
   }
 
@@ -1557,6 +1571,10 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.projectNav.navigateToDrawingDetail(drawing);
   }
 
+  navigateToPanorama(capture: SiteCapture): void {
+    this.projectNav.navigateToPanorama(capture);
+  }
+
   private openCanvasDetail(sourceWidgetId: string, detail: DetailView): void {
     this._detailMgr.openDetail(sourceWidgetId, detail, this.engine);
   }
@@ -1581,6 +1599,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const dv = this.detailView();
     if (dv?.type === 'rfi') this.store.updateRfiStatus(dv.item.id, newStatus as RfiStatus);
     if (dv?.type === 'submittal') this.store.updateSubmittalStatus(dv.item.id, newStatus as SubmittalStatus);
+    if (dv?.type === 'changeOrder') this.store.updateChangeOrderStatus((dv.item as ChangeOrder).id, newStatus as ChangeOrderStatus);
   }
   onDetailAssigneeChange(newAssignee: string): void { this.updateDetailField('assignee', newAssignee); }
   onDetailDueDateChange(newDate: string): void { this.updateDetailField('dueDate', newDate); }
@@ -1614,6 +1633,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const dv = this._detailMgr.canvasDetailViews()[widgetId];
     if (dv?.type === 'rfi') this.store.updateRfiStatus(dv.item.id, newStatus as RfiStatus);
     if (dv?.type === 'submittal') this.store.updateSubmittalStatus(dv.item.id, newStatus as SubmittalStatus);
+    if (dv?.type === 'changeOrder') this.store.updateChangeOrderStatus((dv.item as ChangeOrder).id, newStatus as ChangeOrderStatus);
   }
 
   onCanvasDetailAssigneeChange(widgetId: string, newAssignee: string): void {
@@ -1658,6 +1678,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       isCanvas: () => this.isCanvas(),
       currentPageLabel: () => this.currentPageLabel(),
       drawingTiles: () => this.drawingTiles(),
+      siteCaptures: () => this.siteCaptures(),
       sideNavItems: this.sideNavItems,
       recordsSubNavItems: this.recordsSubNavItems,
       financialsSubNavItems: this.financialsSubNavItems,
@@ -2098,6 +2119,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     if (dv?.type === 'changeOrder') return 'changeOrderDetail';
     if (dv?.type === 'contract') return 'contractDetail';
     if (this.detailDrawing()) return 'drawingDetail';
+    if (this.detailPanorama()) return 'panoramaDetail';
 
     const nav = this.activeNavItem();
     if (nav === 'records') {
@@ -2167,7 +2189,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       jobCostCategories: jcCats,
       subledgerCategory: this.subledgerCategory() ?? undefined,
       subledgerTransactions: txns,
-      changeOrders: CHANGE_ORDERS.filter(co => co.projectId === projId),
+      changeOrders: this.store.changeOrders().filter(co => co.projectId === projId),
       contracts: CONTRACTS.filter(ct => ct.projectId === projId),
       dailyReports: DAILY_REPORTS.filter(dr => dr.projectId === projId),
       weatherForecast: this.projectWeather()?.forecast ?? WEATHER_FORECAST,

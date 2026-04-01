@@ -31,19 +31,21 @@ import type {
   GridPage,
   RfiStatus,
   SubmittalStatus,
+  ChangeOrderStatus,
+  EstimateStatus,
   TimeOffStatus,
   ApptType,
   CalendarAppointment,
   Rfi,
   Submittal,
   ActivityItem,
+  ChangeOrder,
+  Estimate,
 } from '../../data/dashboard-data';
 import {
   PROJECTS,
-  ESTIMATES,
   ACTIVITIES,
   CALENDAR_APPOINTMENTS,
-  CHANGE_ORDERS,
   INSPECTIONS,
   PUNCH_LIST_ITEMS,
   buildUrgentNeeds,
@@ -1606,7 +1608,7 @@ export class HomePageComponent extends DashboardPageBase {
   readonly submittals = this.store.submittals;
   readonly calendarAppointments: CalendarAppointment[] = CALENDAR_APPOINTMENTS;
   readonly projects = signal(PROJECTS);
-  readonly estimates = signal(ESTIMATES);
+  readonly estimates = this.store.estimates;
 
   readonly totalProjects = computed(() => this.projects().length);
   readonly atRiskProjects = computed(() =>
@@ -1624,14 +1626,14 @@ export class HomePageComponent extends DashboardPageBase {
   readonly overdueRfis = computed(() => this.rfis().filter(r => r.status === 'overdue'));
   readonly overdueSubmittals = computed(() => this.submittals().filter(s => s.status === 'overdue'));
   readonly overdueItemCount = computed(() => this.overdueRfis().length + this.overdueSubmittals().length);
-  readonly pendingChangeOrders = computed(() => CHANGE_ORDERS.filter(co => co.status === 'pending'));
+  readonly pendingChangeOrders = computed(() => this.store.changeOrders().filter(co => co.status === 'pending'));
   readonly pendingCoTotal = computed(() => this.pendingChangeOrders().reduce((s, co) => s + Math.abs(co.amount), 0));
   readonly failedInspections = computed(() => INSPECTIONS.filter(i => i.result === 'fail' || i.result === 'conditional'));
   readonly openPunchItems = computed(() => PUNCH_LIST_ITEMS.filter(p => p.status === 'open' || p.status === 'in-progress'));
   readonly approvedCosThisMonth = computed(() => {
     const now = new Date();
     const monthStr = now.toLocaleString('en-US', { month: 'short' });
-    return CHANGE_ORDERS
+    return this.store.changeOrders()
       .filter(co => co.status === 'approved' && co.requestDate.includes(monthStr))
       .reduce((s, co) => s + Math.abs(co.amount), 0);
   });
@@ -2142,7 +2144,7 @@ export class HomePageComponent extends DashboardPageBase {
   private buildHomeAgentState(): AgentDataState {
     return {
       projects: PROJECTS,
-      estimates: ESTIMATES,
+      estimates: this.store.estimates(),
       rfis: this.store.rfis(),
       submittals: this.store.submittals(),
       activities: ACTIVITIES,
@@ -2667,6 +2669,7 @@ export class HomePageComponent extends DashboardPageBase {
     const dv = this._detailMgr.canvasDetailViews()[widgetId];
     if (dv?.type === 'rfi') this.store.updateRfiStatus(dv.item.id, newStatus as RfiStatus);
     if (dv?.type === 'submittal') this.store.updateSubmittalStatus(dv.item.id, newStatus as SubmittalStatus);
+    if (dv?.type === 'changeOrder') this.store.updateChangeOrderStatus((dv.item as ChangeOrder).id, newStatus as ChangeOrderStatus);
   }
 
   onCanvasDetailAssigneeChange(widgetId: string, newAssignee: string): void {

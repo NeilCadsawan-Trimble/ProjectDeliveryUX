@@ -235,4 +235,12 @@ export const SUBNAV_CONFIGS: Record<string, SubnavConfig> = {
     ],
     viewToggles: [],
   },
+  'panorama-detail': {
+    searchPlaceholder: 'Search in capture...',
+    actions: [
+      { icon: 'download', label: 'Download' },
+      { icon: 'share', label: 'Share' },
+    ],
+    viewToggles: [],
+  },
 };
