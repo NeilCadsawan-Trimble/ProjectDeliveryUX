@@ -1787,7 +1787,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
   readonly navBackRoute = signal('/projects');
-  readonly navBackLabel = signal('Projects');
+  readonly navBackLabel = signal('Back');
 
   navigateBack(): void {
     const route = this.navBackRoute();

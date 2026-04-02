@@ -2411,7 +2411,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   private activateJobCostDetail(p: ProjectJobCost): void {
     this.jobCostDetailProject.set(p);
-    this.navHistory.shellBackButton.set({ label: 'Financials', action: () => this.closeJobCostDetail() });
+    this.navHistory.shellBackButton.set({ label: 'Back', action: () => this.closeJobCostDetail() });
     this.setTitleOverrideForProject(p);
   }
 

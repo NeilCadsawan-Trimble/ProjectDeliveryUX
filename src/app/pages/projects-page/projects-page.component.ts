@@ -28,6 +28,7 @@ import type {
   UrgentNeedItem,
   BudgetHistoryPoint,
   ProjectJobCost,
+  WeatherForecast,
 } from '../../data/dashboard-data';
 import {
   PROJECTS,
@@ -44,14 +45,54 @@ import {
   weatherIconColor,
 } from '../../data/dashboard-data';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
+import { PROJECT_DATA, type Milestone, type TeamMember, type Risk } from '../../data/project-data';
+import { TILE_IDS, TILE_PROJECT_MAP, buildProjectsLayoutConfig } from './projects-page-layout.config';
 
-type TileTier = 'compact' | 'standard' | 'expanded';
+type ContentBlock = 'owner' | 'schedule' | 'budget' | 'weather'
+  | 'urgentNeeds' | 'sparkline' | 'costBreakdown' | 'insight' | 'moreNeeds'
+  | 'forecast' | 'milestone' | 'teamSummary' | 'costDetail' | 'riskSummary'
+  | 'fadeGain';
 
-const TILE_IDS: DashboardWidgetId[] = ['proj1', 'proj2', 'proj3', 'proj4', 'proj5', 'proj6', 'proj7', 'proj8'];
-const TILE_PROJECT_MAP: Record<string, number> = {
-  proj1: 0, proj2: 1, proj3: 2, proj4: 3,
-  proj5: 4, proj6: 5, proj7: 6, proj8: 7,
+const CHROME_PX = 73;
+const CLIENT_PX = 18;
+
+const BLOCK_HEIGHTS: Record<ContentBlock, number> = {
+  owner: 28,
+  schedule: 36,
+  budget: 52,
+  weather: 28,
+  urgentNeeds: 56,
+  sparkline: 80,
+  costBreakdown: 50,
+  insight: 24,
+  moreNeeds: 40,
+  forecast: 36,
+  milestone: 36,
+  teamSummary: 32,
+  costDetail: 90,
+  riskSummary: 28,
+  fadeGain: 28,
 };
+
+const LARGE_BLOCK_HEIGHTS: Partial<Record<ContentBlock, number>> = {
+  sparkline: 100,
+  urgentNeeds: 96,
+  weather: 40,
+  owner: 40,
+  forecast: 70,
+  fadeGain: 52,
+};
+
+const SINGLE_COL_PRIORITY: ContentBlock[] = [
+  'owner', 'schedule', 'budget', 'weather', 'urgentNeeds',
+  'sparkline', 'fadeGain', 'costBreakdown', 'insight', 'moreNeeds',
+  'forecast', 'milestone', 'teamSummary', 'riskSummary',
+];
+const LEFT_COL_PRIORITY: ContentBlock[] = [
+  'owner', 'weather', 'forecast', 'urgentNeeds', 'moreNeeds',
+  'milestone', 'teamSummary', 'riskSummary',
+];
+const RIGHT_COL_PRIORITY: ContentBlock[] = ['schedule', 'budget', 'sparkline', 'fadeGain', 'costBreakdown', 'insight'];
 
 @Component({
   selector: 'app-projects-page',
@@ -62,400 +103,7 @@ const TILE_PROJECT_MAP: Record<string, number> = {
     '(document:mouseup)': 'onDocumentMouseUp()',
     '(document:touchend)': 'onDocumentTouchEnd()',
   },
-  template: `
-    <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
-
-      @if (!isCanvasMode()) {
-      <div #pageHeader class="flex items-start justify-between mb-6">
-        <div>
-          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
-          <div class="flex items-center gap-3 mt-1.5">
-            <div class="text-sm text-foreground-60">{{ today }}</div>
-            <div class="flex items-center gap-2">
-              <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-20">
-                <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
-                <div class="text-xs font-medium text-success">{{ onTrackCount() }} On Track</div>
-              </div>
-              <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-20">
-                <div class="w-1.5 h-1.5 rounded-full bg-warning"></div>
-                <div class="text-xs font-medium text-warning">{{ atRiskCount() }} At Risk</div>
-              </div>
-              <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive-20">
-                <div class="w-1.5 h-1.5 rounded-full bg-destructive"></div>
-                <div class="text-xs font-medium text-destructive">{{ overdueCount() }} Overdue</div>
-              </div>
-            </div>
-            @if (projectsInsight()) {
-              <div class="flex items-center gap-1.5">
-                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                <div class="text-xs text-foreground-60 truncate leading-none">{{ projectsInsight() }}</div>
-              </div>
-            }
-          </div>
-        </div>
-        <div class="flex items-center gap-2 flex-shrink-0 mt-1">
-          <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
-        </div>
-      </div>
-      }
-
-      <div
-        [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : 'relative mb-6'"
-        [style.height.px]="isMobile() ? mobileGridHeight() : null"
-        [style.min-height.px]="!isMobile() ? canvasGridMinHeight() : null"
-        #widgetGrid
-      >
-
-        @if (isCanvasMode()) {
-        <div
-          class="absolute overflow-hidden"
-          [attr.data-widget-id]="'projsHeader'"
-          [style.top.px]="widgetTops()['projsHeader']"
-          [style.left.px]="widgetLefts()['projsHeader']"
-          [style.width.px]="widgetPixelWidths()['projsHeader']"
-          [style.height.px]="widgetHeights()['projsHeader']"
-          [style.z-index]="widgetZIndices()['projsHeader'] ?? 0"
-        >
-          <div class="flex items-start justify-between">
-            <div>
-              <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
-              <div class="flex items-center gap-3 mt-1.5">
-                <div class="text-sm text-foreground-60">{{ today }}</div>
-                <div class="flex items-center gap-2">
-                  <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-20">
-                    <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
-                    <div class="text-xs font-medium text-success">{{ onTrackCount() }} On Track</div>
-                  </div>
-                  <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-20">
-                    <div class="w-1.5 h-1.5 rounded-full bg-warning"></div>
-                    <div class="text-xs font-medium text-warning">{{ atRiskCount() }} At Risk</div>
-                  </div>
-                  <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive-20">
-                    <div class="w-1.5 h-1.5 rounded-full bg-destructive"></div>
-                    <div class="text-xs font-medium text-destructive">{{ overdueCount() }} Overdue</div>
-                  </div>
-                </div>
-                @if (projectsInsight()) {
-                  <div class="flex items-center gap-1.5">
-                    <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                    <div class="text-xs text-foreground-60 truncate leading-none">{{ projectsInsight() }}</div>
-                  </div>
-                }
-              </div>
-            </div>
-            <div class="flex items-center gap-2 flex-shrink-0 mt-1">
-              <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
-            </div>
-          </div>
-        </div>
-        }
-
-        @for (widgetId of projectWidgets; track widgetId) {
-          @if (projectForWidget(widgetId); as project) {
-
-        <div
-          [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden'"
-          [attr.data-widget-id]="widgetId"
-          [style.top.px]="widgetTops()[widgetId]"
-          [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
-          [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
-          [style.height.px]="widgetHeights()[widgetId]"
-          [style.z-index]="widgetZIndices()[widgetId] ?? 0"
-        >
-          <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
-            <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
-
-            <div
-              class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full"
-              [class.border-default]="selectedWidgetId() !== widgetId"
-              [class.border-primary]="selectedWidgetId() === widgetId"
-            >
-              <div
-                class="flex items-center justify-between px-3 py-2 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-              >
-                <div class="flex items-center gap-1.5 min-w-0">
-                  <i class="modus-icons text-sm text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                  <div class="text-xs font-semibold text-foreground truncate">{{ project.name }}</div>
-                </div>
-                <modus-badge [color]="statusBadgeColor(project.status)" variant="filled" size="sm">
-                  {{ project.status }}
-                </modus-badge>
-              </div>
-
-              <div
-                class="flex-1 min-h-0 overflow-y-auto cursor-pointer hover:bg-muted transition-colors duration-150"
-                (click)="navigateToProject(project)"
-                (keydown.enter)="navigateToProject(project)"
-                role="link"
-                tabindex="0"
-                [attr.aria-label]="'Open ' + project.name + ' dashboard'"
-              >
-                <div class="h-1 w-full flex-shrink-0"
-                  [class.bg-success]="project.status === 'On Track'"
-                  [class.bg-warning]="project.status === 'At Risk'"
-                  [class.bg-destructive]="project.status === 'Overdue'"
-                  [class.bg-muted]="project.status === 'Planning'"
-                ></div>
-                <div class="p-4 flex flex-col gap-3">
-                  <div class="text-xs text-foreground-60">{{ project.client }}</div>
-
-                  <!-- COMPACT: schedule + budget text only -->
-                  @if (widgetTier()[widgetId] === 'compact') {
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-1 text-xs text-foreground-60">
-                        <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                        <div>{{ project.dueDate }}</div>
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <div class="text-2xs text-foreground-40 uppercase tracking-wide">Schedule</div>
-                      <div class="text-2xs font-medium" [class]="progressTextColor(project.status)">{{ project.progress }}%</div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget</div>
-                      <div class="text-2xs font-medium" [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</div>
-                    </div>
-                    <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
-                  }
-
-                  <!-- STANDARD + EXPANDED: full content -->
-                  @if (widgetTier()[widgetId] !== 'compact') {
-                    @if (getWeather(project.id); as pw) {
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5">
-                          <i class="modus-icons text-sm" [class]="weatherIconColor(pw.current.condition)" aria-hidden="true">{{ weatherIcon(pw.current.condition) }}</i>
-                          <div class="text-xs font-medium text-foreground">{{ pw.current.tempF }}&deg;F</div>
-                          <div class="text-2xs text-foreground-40">{{ project.city }}, {{ project.state }}</div>
-                        </div>
-                        @if (pw.forecast[0]?.workImpact === 'major') {
-                          <div class="text-2xs font-medium px-1.5 py-0.5 rounded bg-destructive-20 text-destructive">Stop Work</div>
-                        } @else if (pw.forecast[0]?.workImpact === 'minor') {
-                          <div class="text-2xs font-medium px-1.5 py-0.5 rounded bg-warning-20 text-warning">Caution</div>
-                        }
-                      </div>
-                    }
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-1.5">
-                        <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
-                          {{ project.ownerInitials }}
-                        </div>
-                        <div class="text-xs text-foreground-60 truncate max-w-[80px]">{{ project.owner }}</div>
-                      </div>
-                      <div class="flex items-center gap-1 text-xs text-foreground-60">
-                        <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                        <div>{{ project.dueDate }}</div>
-                      </div>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                      <div class="flex items-center justify-between">
-                        <div class="text-2xs text-foreground-40 uppercase tracking-wide">Schedule</div>
-                        <div class="text-2xs text-foreground-60 font-medium">{{ project.progress }}%</div>
-                      </div>
-                      <modus-progress [value]="project.progress" [max]="100" [className]="progressClass(project.status)" />
-                    </div>
-                    <div class="flex flex-col gap-1">
-                      <div class="flex items-center justify-between">
-                        <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget</div>
-                        <div class="text-2xs flex-shrink-0">
-                          <div [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</div>
-                        </div>
-                      </div>
-                      <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
-                      <div class="flex items-center justify-between">
-                        <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
-                        @if (getProjectAgent(project.id).budgetAlert) {
-                          <div
-                            class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary text-2xs font-medium cursor-pointer hover:bg-primary-40 transition-colors duration-150"
-                            (click)="navigateToJobCosts(project, $event)"
-                            role="link"
-                            [attr.aria-label]="'View ' + project.name + ' job costs'"
-                          >
-                            <i class="modus-icons text-2xs" aria-hidden="true">building_corporate</i>
-                            Job Costs
-                          </div>
-                        }
-                      </div>
-                    </div>
-
-                    <!-- EXPANDED: budget sparkline -->
-                    @if (widgetTier()[widgetId] === 'expanded') {
-                      @if (getBudgetHistory(project.id); as history) {
-                        <div class="border-top-default pt-3 mt-1 flex flex-col gap-1">
-                          <div class="flex items-center justify-between">
-                            <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget Trend</div>
-                            <div class="flex items-center gap-3">
-                              <div class="flex items-center gap-1">
-                                <div class="w-2 h-0.5 bg-foreground-40"></div>
-                                <div class="text-2xs text-foreground-40">Planned</div>
-                              </div>
-                              <div class="flex items-center gap-1">
-                                <div class="w-2 h-0.5 bg-primary"></div>
-                                <div class="text-2xs text-foreground-40">Actual</div>
-                              </div>
-                            </div>
-                          </div>
-                          <svg class="w-full" viewBox="0 0 200 50" preserveAspectRatio="none" aria-hidden="true">
-                            <path [attr.d]="sparklinePath(history, 'planned')" fill="none" stroke="var(--foreground)" stroke-opacity="0.3" stroke-width="1.5" />
-                            <path [attr.d]="sparklinePath(history, 'actual')" fill="none" stroke="var(--primary)" stroke-width="1.5" />
-                          </svg>
-                          @if (getProjectFadeGain(project.id); as fg) {
-                            <div class="flex items-center justify-end gap-1.5">
-                              <div class="text-2xs font-medium"
-                                [class.text-success]="fg.isGain"
-                                [class.text-destructive]="!fg.isGain"
-                              >
-                                <i class="modus-icons text-2xs" aria-hidden="true">{{ fg.isGain ? 'trending_up' : 'trending_down' }}</i>
-                                {{ fg.value }} {{ fg.label }}
-                              </div>
-                            </div>
-                          }
-                        </div>
-                      }
-
-                      <!-- EXPANDED: job cost breakdown mini-bars -->
-                      @if (getJobCostData(project.id); as jc) {
-                        <div class="flex flex-col gap-1">
-                          <div class="text-2xs text-foreground-40 uppercase tracking-wide">Cost Breakdown</div>
-                          <div class="flex h-2.5 w-full rounded-full overflow-hidden bg-muted">
-                            @for (cat of jobCostCategories(jc); track cat.label) {
-                              <div [class]="cat.colorClass" [style.width.%]="cat.pct" class="h-full"></div>
-                            }
-                          </div>
-                          <div class="flex flex-wrap gap-x-3 gap-y-0.5">
-                            @for (cat of jobCostCategories(jc); track cat.label) {
-                              <div class="flex items-center gap-1">
-                                <div class="w-1.5 h-1.5 rounded-full" [class]="cat.colorClass"></div>
-                                <div class="text-2xs text-foreground-40">{{ cat.label }} {{ cat.pct }}%</div>
-                              </div>
-                            }
-                          </div>
-                        </div>
-                      }
-
-                      <!-- EXPANDED: agentic insight -->
-                      @if (getProjectInsight(project.id); as insight) {
-                        <div class="flex items-center gap-1.5 border-top-default pt-2 mt-1">
-                          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                          <div class="text-2xs text-foreground-60 truncate leading-none">{{ insight }}</div>
-                        </div>
-                      }
-                    }
-
-                    <!-- STANDARD: single urgent need / drawing link -->
-                    @if (widgetTier()[widgetId] !== 'expanded') {
-                      @if (getProjectAgent(project.id).criticalCount > 0 || getProjectAgent(project.id).warningCount > 0) {
-                        <div class="border-top-default pt-3 mt-1 flex flex-col gap-2">
-                          <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5">
-                              <i class="modus-icons text-sm text-warning" aria-hidden="true">warning</i>
-                              <div class="text-2xs font-semibold text-foreground-60 uppercase tracking-wide">Urgent Needs</div>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                              @if (getProjectAgent(project.id).criticalCount > 0) {
-                                <div class="flex items-center px-1.5 py-0.5 rounded-full bg-destructive-20">
-                                  <div class="text-2xs font-medium text-destructive">{{ getProjectAgent(project.id).criticalCount }} critical</div>
-                                </div>
-                              }
-                              @if (getProjectAgent(project.id).warningCount > 0) {
-                                <div class="flex items-center px-1.5 py-0.5 rounded-full bg-warning-20">
-                                  <div class="text-2xs font-medium text-warning">{{ getProjectAgent(project.id).warningCount }} warning</div>
-                                </div>
-                              }
-                            </div>
-                          </div>
-                          @if (getProjectAgent(project.id).topNeed; as topNeed) {
-                            <div class="flex items-start gap-2">
-                              <div class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
-                                [class.bg-destructive]="topNeed.severity === 'critical'"
-                                [class.bg-warning]="topNeed.severity === 'warning'"
-                                [class.bg-primary]="topNeed.severity === 'info'"></div>
-                              <div class="flex-1 min-w-0">
-                                <div class="text-2xs font-medium text-foreground truncate">{{ topNeed.title }}</div>
-                                <div class="text-2xs text-foreground-40 truncate">{{ topNeed.subtitle }}</div>
-                              </div>
-                              <i class="modus-icons text-2xs text-foreground-40 flex-shrink-0 mt-0.5" aria-hidden="true">{{ urgentNeedCategoryIcon(topNeed.category) }}</i>
-                            </div>
-                          }
-                        </div>
-                      } @else {
-                        <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
-                          <i class="modus-icons text-sm text-primary" aria-hidden="true">file_new</i>
-                          <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project); $event.stopPropagation()">
-                            {{ project.latestDrawingName }}
-                          </div>
-                          <div class="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</div>
-                        </div>
-                      }
-                    }
-
-                    <!-- EXPANDED: top 3 urgent needs (replaces the single-need block above) -->
-                    @if (widgetTier()[widgetId] === 'expanded') {
-                      @if (getProjectAgent(project.id).criticalCount > 0 || getProjectAgent(project.id).warningCount > 0) {
-                        <div class="border-top-default pt-3 mt-1 flex flex-col gap-2">
-                          <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-1.5">
-                              <i class="modus-icons text-sm text-warning" aria-hidden="true">warning</i>
-                              <div class="text-2xs font-semibold text-foreground-60 uppercase tracking-wide">Urgent Needs</div>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                              @if (getProjectAgent(project.id).criticalCount > 0) {
-                                <div class="flex items-center px-1.5 py-0.5 rounded-full bg-destructive-20">
-                                  <div class="text-2xs font-medium text-destructive">{{ getProjectAgent(project.id).criticalCount }} critical</div>
-                                </div>
-                              }
-                              @if (getProjectAgent(project.id).warningCount > 0) {
-                                <div class="flex items-center px-1.5 py-0.5 rounded-full bg-warning-20">
-                                  <div class="text-2xs font-medium text-warning">{{ getProjectAgent(project.id).warningCount }} warning</div>
-                                </div>
-                              }
-                            </div>
-                          </div>
-                          @for (need of getTopNeeds(project.id); track need.title) {
-                            <div class="flex items-start gap-2">
-                              <div class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
-                                [class.bg-destructive]="need.severity === 'critical'"
-                                [class.bg-warning]="need.severity === 'warning'"
-                                [class.bg-primary]="need.severity === 'info'"></div>
-                              <div class="flex-1 min-w-0">
-                                <div class="text-2xs font-medium text-foreground truncate">{{ need.title }}</div>
-                                <div class="text-2xs text-foreground-40 truncate">{{ need.subtitle }}</div>
-                              </div>
-                              <i class="modus-icons text-2xs text-foreground-40 flex-shrink-0 mt-0.5" aria-hidden="true">{{ urgentNeedCategoryIcon(need.category) }}</i>
-                            </div>
-                          }
-                        </div>
-                      } @else {
-                        <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
-                          <i class="modus-icons text-sm text-primary" aria-hidden="true">file_new</i>
-                          <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project); $event.stopPropagation()">
-                            {{ project.latestDrawingName }}
-                          </div>
-                          <div class="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</div>
-                        </div>
-                      }
-                    }
-                  }
-                </div>
-              </div>
-              <widget-resize-handle
-                [isMobile]="isMobile()"
-                (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
-                (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
-              />
-            </div>
-
-          </div>
-        </div>
-
-          }
-        }
-
-      </div>
-
-    </div>
-  `,
+  templateUrl: './projects-page.component.html',
 })
 export class ProjectsPageComponent implements AfterViewInit {
   private readonly router = inject(Router);
@@ -464,70 +112,10 @@ export class ProjectsPageComponent implements AfterViewInit {
   private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
-  private static readonly HEADER_HEIGHT = 80;
-  private static readonly HEADER_OFFSET = ProjectsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly TILE_HEIGHT = 416;
-  private static readonly ROW_2_TOP = ProjectsPageComponent.TILE_HEIGHT + DashboardLayoutEngine.GAP_PX;
-
-  private readonly engine = new DashboardLayoutEngine({
-    widgets: ['projsHeader', ...TILE_IDS],
-    layoutStorageKey: 'dashboard-projects:v6',
-    canvasStorageKey: 'canvas-layout:dashboard-projects:v8',
-    defaultColStarts: {
-      projsHeader: 1,
-      proj1: 1, proj2: 5, proj3: 9, proj4: 13,
-      proj5: 1, proj6: 5, proj7: 9, proj8: 13,
-    },
-    defaultColSpans: {
-      projsHeader: 16,
-      proj1: 4, proj2: 4, proj3: 4, proj4: 4,
-      proj5: 4, proj6: 4, proj7: 4, proj8: 4,
-    },
-    defaultTops: {
-      projsHeader: 0,
-      proj1: 0, proj2: 0, proj3: 0, proj4: 0,
-      proj5: ProjectsPageComponent.ROW_2_TOP, proj6: ProjectsPageComponent.ROW_2_TOP, proj7: ProjectsPageComponent.ROW_2_TOP, proj8: ProjectsPageComponent.ROW_2_TOP,
-    },
-    defaultHeights: {
-      projsHeader: 0,
-      proj1: ProjectsPageComponent.TILE_HEIGHT, proj2: ProjectsPageComponent.TILE_HEIGHT, proj3: ProjectsPageComponent.TILE_HEIGHT, proj4: ProjectsPageComponent.TILE_HEIGHT,
-      proj5: ProjectsPageComponent.TILE_HEIGHT, proj6: ProjectsPageComponent.TILE_HEIGHT, proj7: ProjectsPageComponent.TILE_HEIGHT, proj8: ProjectsPageComponent.TILE_HEIGHT,
-    },
-    defaultLefts: {
-      projsHeader: 0,
-      proj1: 0, proj2: 324, proj3: 648, proj4: 972,
-      proj5: 0, proj6: 324, proj7: 648, proj8: 972,
-    },
-    defaultPixelWidths: {
-      projsHeader: 1280,
-      proj1: 308, proj2: 308, proj3: 308, proj4: 308,
-      proj5: 308, proj6: 308, proj7: 308, proj8: 308,
-    },
-    canvasDefaultLefts: {
-      projsHeader: 0,
-      proj1: 0, proj2: 324, proj3: 648, proj4: 972,
-      proj5: 0, proj6: 324, proj7: 648, proj8: 972,
-    },
-    canvasDefaultPixelWidths: {
-      projsHeader: 1280,
-      proj1: 308, proj2: 308, proj3: 308, proj4: 308,
-      proj5: 308, proj6: 308, proj7: 308, proj8: 308,
-    },
-    canvasDefaultTops: {
-      projsHeader: 0,
-      proj1: ProjectsPageComponent.HEADER_OFFSET, proj2: ProjectsPageComponent.HEADER_OFFSET, proj3: ProjectsPageComponent.HEADER_OFFSET, proj4: ProjectsPageComponent.HEADER_OFFSET,
-      proj5: ProjectsPageComponent.HEADER_OFFSET + ProjectsPageComponent.ROW_2_TOP, proj6: ProjectsPageComponent.HEADER_OFFSET + ProjectsPageComponent.ROW_2_TOP, proj7: ProjectsPageComponent.HEADER_OFFSET + ProjectsPageComponent.ROW_2_TOP, proj8: ProjectsPageComponent.HEADER_OFFSET + ProjectsPageComponent.ROW_2_TOP,
-    },
-    canvasDefaultHeights: {
-      projsHeader: ProjectsPageComponent.HEADER_HEIGHT,
-      proj1: ProjectsPageComponent.TILE_HEIGHT, proj2: ProjectsPageComponent.TILE_HEIGHT, proj3: ProjectsPageComponent.TILE_HEIGHT, proj4: ProjectsPageComponent.TILE_HEIGHT,
-      proj5: ProjectsPageComponent.TILE_HEIGHT, proj6: ProjectsPageComponent.TILE_HEIGHT, proj7: ProjectsPageComponent.TILE_HEIGHT, proj8: ProjectsPageComponent.TILE_HEIGHT,
-    },
-    minColSpan: 4,
-    canvasGridMinHeightOffset: 200,
-    savesDesktopOnMobile: true,
-    onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-  }, inject(WidgetLayoutService));
+  private readonly engine = new DashboardLayoutEngine(
+    buildProjectsLayoutConfig((id) => this.widgetFocusService.selectWidget(id)),
+    inject(WidgetLayoutService),
+  );
 
   private readonly _lockHeader = (() => {
     this.engine.widgetLocked.update(l => ({ ...l, projsHeader: true }));
@@ -627,25 +215,103 @@ export class ProjectsPageComponent implements AfterViewInit {
   readonly budgetProgressClass = budgetProgressClass;
   readonly budgetPctColor = budgetPctColor;
 
-  readonly widgetTier = computed<Record<string, TileTier>>(() => {
-    const widths = this.widgetPixelWidths();
+  readonly visibleBlocks = computed<Record<string, Set<ContentBlock>>>(() => {
     const heights = this.widgetHeights();
-    const tiers: Record<string, TileTier> = {};
+    const colSpans = this.widgetColSpans();
+    const result: Record<string, Set<ContentBlock>> = {};
     for (const id of this.projectWidgets) {
-      const w = widths[id] ?? 308;
       const h = heights[id] ?? 416;
-      if (w >= 500 && h >= 450) tiers[id] = 'expanded';
-      else if (w >= 350 && h >= 300) tiers[id] = 'standard';
-      else tiers[id] = 'compact';
+      const cols = colSpans[id] ?? 4;
+      const available = h - CHROME_PX - CLIENT_PX;
+      const wide = cols >= 6;
+      const large = wide && h >= 500;
+      const effectiveHeight = (b: ContentBlock): number =>
+        (large ? LARGE_BLOCK_HEIGHTS[b] : undefined) ?? BLOCK_HEIGHTS[b];
+      const blocks = new Set<ContentBlock>();
+      if (wide) {
+        const rightPriority: ContentBlock[] = large
+          ? RIGHT_COL_PRIORITY.map(b => b === 'costBreakdown' ? 'costDetail' : b)
+          : RIGHT_COL_PRIORITY;
+        const gap = 10;
+        let leftUsed = 0;
+        let leftN = 0;
+        for (const b of LEFT_COL_PRIORITY) {
+          if (large && b === 'moreNeeds') continue;
+          const cost = effectiveHeight(b) + (leftN > 0 ? gap : 0);
+          if (leftUsed + cost <= available) { blocks.add(b); leftUsed += cost; leftN++; }
+        }
+        let rightUsed = 0;
+        let rightN = 0;
+        for (const b of rightPriority) {
+          const cost = effectiveHeight(b) + (rightN > 0 ? gap : 0);
+          if (rightUsed + cost <= available) { blocks.add(b); rightUsed += cost; rightN++; }
+        }
+      } else {
+        const gap = 12;
+        let used = 0;
+        let n = 0;
+        for (const b of SINGLE_COL_PRIORITY) {
+          const cost = effectiveHeight(b) + (n > 0 ? gap : 0);
+          if (used + cost <= available) { blocks.add(b); used += cost; n++; }
+        }
+      }
+      result[id] = blocks;
     }
-    return tiers;
+    return result;
   });
 
-  progressTextColor(status: string): string {
-    if (status === 'On Track') return 'text-success font-medium';
-    if (status === 'At Risk') return 'text-warning font-medium';
-    if (status === 'Overdue') return 'text-destructive font-medium';
-    return 'text-foreground-60 font-medium';
+  showBlock(widgetId: string, block: ContentBlock): boolean {
+    return this.visibleBlocks()[widgetId]?.has(block) ?? false;
+  }
+
+  isWideWidget(widgetId: string): boolean {
+    return (this.widgetColSpans()[widgetId] ?? 4) >= 6;
+  }
+
+  isLargeWidget(widgetId: string): boolean {
+    return (this.widgetColSpans()[widgetId] ?? 4) >= 6 && (this.widgetHeights()[widgetId] ?? 416) >= 500;
+  }
+
+  widgetTextTier(widgetId: string): string {
+    const cols = this.widgetColSpans()[widgetId] ?? 4;
+    const h = this.widgetHeights()[widgetId] ?? 416;
+    if (cols >= 6 && h >= 500) return 'widget-text-lg';
+    if (cols >= 5 || h >= 480) return 'widget-text-md';
+    return '';
+  }
+
+  getNextMilestone(projectId: number): Milestone | null {
+    const data = PROJECT_DATA[projectId];
+    if (!data) return null;
+    const active = data.milestones.find(m => m.status === 'in-progress');
+    if (active) return active;
+    const upcoming = data.milestones.find(m => m.status === 'upcoming');
+    return upcoming ?? null;
+  }
+
+  getTeamSummary(projectId: number): { members: TeamMember[]; total: number } | null {
+    const data = PROJECT_DATA[projectId];
+    if (!data?.team?.length) return null;
+    return { members: data.team.slice(0, 3), total: data.team.length };
+  }
+
+  getTopRisk(projectId: number): Risk | null {
+    const data = PROJECT_DATA[projectId];
+    if (!data?.risks?.length) return null;
+    const high = data.risks.find(r => r.severity === 'high');
+    return high ?? data.risks[0];
+  }
+
+  getFirstImpactedForecast(projectId: number): WeatherForecast | null {
+    const pw = getProjectWeather(projectId);
+    if (!pw) return null;
+    return pw.forecast.find(d => d.workImpact !== 'none') ?? null;
+  }
+
+  formatJobCostAmount(amount: number): string {
+    if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
+    if (amount >= 1_000) return `$${(amount / 1_000).toFixed(0)}K`;
+    return `$${amount.toLocaleString()}`;
   }
 
   getBudgetHistory(projectId: number): BudgetHistoryPoint[] | null {
@@ -653,16 +319,15 @@ export class ProjectsPageComponent implements AfterViewInit {
     return pts?.length ? pts : null;
   }
 
-  sparklinePath(points: BudgetHistoryPoint[], field: 'planned' | 'actual'): string {
+  sparklinePath(points: BudgetHistoryPoint[], field: 'planned' | 'actual', svgHeight = 50): string {
     if (!points.length) return '';
     const vals = points.map(p => p[field]);
     const max = Math.max(...vals, 1);
     const w = 200;
-    const h = 50;
     const step = w / Math.max(vals.length - 1, 1);
     return vals.map((v, i) => {
       const x = i * step;
-      const y = h - (v / max) * (h - 4) - 2;
+      const y = svgHeight - (v / max) * (svgHeight - 4) - 2;
       return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
   }
@@ -692,12 +357,13 @@ export class ProjectsPageComponent implements AfterViewInit {
     Overhead: 'bg-foreground-40',
   };
 
-  jobCostCategories(jc: ProjectJobCost): { label: string; pct: number; colorClass: string }[] {
+  jobCostCategories(jc: ProjectJobCost): { label: string; pct: number; colorClass: string; amount: number }[] {
     const total = Object.values(jc.costs).reduce((a, b) => a + b, 0) || 1;
     return Object.entries(jc.costs).map(([label, val]) => ({
       label,
       pct: Math.round((val / total) * 100),
       colorClass: ProjectsPageComponent.JOB_COST_COLORS[label] ?? 'bg-muted',
+      amount: val,
     }));
   }
 

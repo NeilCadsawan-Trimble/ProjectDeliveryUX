@@ -48,3 +48,4 @@ Thumbs.db
 .env.*.local
 .vercel
 .env*.local
+public/assets/field-captures/

@@ -3,8 +3,8 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: March 30, 2026
-**Total Commits**: 175+
+**Last Updated**: April 1, 2026
+**Total Commits**: 180+
 
 ---
 
@@ -24,9 +24,11 @@
 | 10 | Optimization and Refactoring | Done | 7/7 |
 | 11 | Financials Expansion and Icon Quality | Done | 16/16 |
 | 12 | Reactive Data Store | Done | 5/5 |
-| 13 | Remaining Work | Not Started | 0/8 |
+| 13 | Canvas and Interaction Fixes | Done | 5/5 |
+| 14 | Adaptive Widget Content | Done | 7/7 |
+| 15 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 125/133 items (94%)
+**Completed**: 137/145 items (94%)
 
 ---
 
@@ -98,7 +100,7 @@ Route splitting, shared layout engine, and infinite canvas mode.
 
 - [x] Split monolithic HomeComponent into 3 route-based pages (Home, Projects, Financials)
 - [x] Extract shared `DashboardLayoutEngine` service (deduplicate templates)
-- [x] Infinite canvas mode with spacebar panning and reset view (viewport >= 2000px)
+- [x] Infinite canvas mode with spacebar panning and reset view (viewport >= 1920px, originally 2000px)
 - [x] Canvas mode added to project dashboard
 - [x] Widget z-index stacking and canvas overlap resolution
 - [x] Navbar dropdown clipping fixed in canvas mode
@@ -340,7 +342,53 @@ Centralized reactive state management for RFI and Submittal data, enabling agent
 
 ---
 
-## Phase 13: Remaining Work
+## Phase 13: Canvas and Interaction Fixes (Mar 30--31)
+
+Bug fixes for canvas collision, hamburger menu, zoom controls, and navigation labels.
+
+### Canvas Collision Fix (PR #34)
+- [x] Fixed canvas collision detection for same-size widgets in compressed chains (3-part fix in `canvas-push.ts`): excluded mover from all-pairs cleanup, conditional Phase 2 wall cascade, frozen-direction pushback
+- [x] Added 6 regression tests in `canvas-push.spec.ts` covering exact project dashboard layouts with incremental dragging (5px/20px steps)
+
+### Construction Domain Data (PR #35)
+- [x] Updated all team member roles to construction roles across all 8 projects
+- [x] Updated all milestones and tasks to construction-oriented content
+- [x] Promoted Risks & Urgent Needs widget to top of Column 1 in project dashboard default layout (desktop and canvas)
+
+### Hamburger and Canvas Zoom Fixes (Mar 31)
+- [x] Fixed hamburger menu for Modus scoped encapsulation (no shadow DOM): search light DOM with `querySelector`, idempotent fallback with `navExpanded.set(open)` instead of toggle
+- [x] Fixed canvas Shift+scroll zoom on macOS: picks larger axis (`deltaY` vs `deltaX`) to handle OS-level axis swap; added Ctrl/Cmd+scroll triggers; zoom anchors to viewport center
+
+**PRs**: #34, #35
+**Tests**: 90 unit tests (6 new collision regression), 325 static tests
+
+---
+
+## Phase 14: Adaptive Widget Content (Apr 1)
+
+Area-adaptive content disclosure for project widgets, fade/gain visualization, and progressive text scaling.
+
+### Area-Adaptive Widget Layout
+- [x] Replaced fixed widget tiers with area-adaptive content blocks (`ContentBlock` type) that dynamically fill available widget space based on pixel height budgeting
+- [x] Two-column (wide) layout for widgets at 6+ columns with separate left/right priority lists
+- [x] Content blocks: owner, schedule, budget, weather, urgentNeeds, sparkline, costBreakdown, insight, moreNeeds, forecast, milestone, teamSummary, costDetail, riskSummary, fadeGain
+
+### Enhanced Large Widget Content
+- [x] Large widget tier (6+ cols, 500px+ height) with expanded block heights, richer data display: taller sparkline, detailed weather with humidity/wind, full owner info, all urgent needs, next milestone, team summary, top risk, expanded job cost details
+- [x] Weather work impact scaling: color-coded forecast day pills, warning icons, work impact notes with severity badges at large size
+
+### Fade/Gain Visualization
+- [x] Standalone `fadeGain` content block separated from sparkline -- shows as own row at medium sizes, prominent circular badge display at large sizes; inline version suppressed when standalone block is visible
+
+### Progressive Text Scaling
+- [x] Three-tier text scaling (`widget-text-md`, `widget-text-lg`) via CSS descendant selectors on widget container; text-2xs/text-xs/text-sm/widget-title all step up as widget grows beyond default size (5+ cols or 480px+ height for medium, 6+ cols and 500px+ height for large)
+
+**Canvas breakpoint**: Lowered from 2000px to 1920px.
+**Back button**: Standardized to always display "Back" across all instances.
+
+---
+
+## Phase 15: Remaining Work
 
 Features and improvements not yet started.
 
@@ -382,7 +430,7 @@ Features and improvements not yet started.
 | Area | File | Tests |
 |------|------|-------|
 | Layout engine | `dashboard-layout-engine.spec.ts` | Push-squeeze (right/left), squeeze before push, far-end squeeze, resize min-width |
-| Canvas BFS push | `canvas-push.spec.ts` | 16 tests: basic push, cascade direction, mover immunity, post-BFS cleanup, locked widgets, off-screen clamping, axis selection, real-world detail expansion |
+| Canvas BFS push | `canvas-push.spec.ts` | 22 tests: basic push, cascade direction, mover immunity, post-BFS cleanup, locked widgets, off-screen clamping, axis selection, real-world detail expansion, same-size collision regression |
 | Widget layout | `widget-layout.service.spec.ts` | Save/load layout persistence |
 | Canvas reset | `canvas-reset.service.spec.ts` | Reset trigger signal |
 
@@ -409,6 +457,9 @@ Features and improvements not yet started.
 | Mar 27-29 | [Agentic and weather](6387a8f3-f2de-4dae-933b-eeec94687608) | Agentic widgets, AI navigation, urgent needs, financial routing, weather widgets, dynamic back button, refactoring |
 | Mar 29 | [Contracts and consolidation](76bc1c7e-999f-450e-9650-709afeb8457f) | Contracts integration, detail page layout fix, shared utility consolidation, skill updates, optimization and refactoring |
 | Mar 29 | [Financials expansion](b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8) | Financials data expansion, sub-page restructure, finNavLinks widget, agent badges, icon compliance, mobile filter fix, user rename, code consolidation, reactive data store |
+| Mar 30 | [Collision and domain data](b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8) | Canvas collision frozen-direction pushback, construction domain data, risks widget layout promotion |
+| Mar 31 | [Hamburger and zoom](331f2cb4-f365-4109-8821-f8801018796f) | Scoped encapsulation hamburger fix, canvas Shift+scroll zoom macOS fix, viewport center zoom |
+| Apr 1 | [Adaptive widgets](331f2cb4-f365-4109-8821-f8801018796f) | Area-adaptive content blocks, wide widget layout, large widget content, weather work impact, fade/gain visualization, text scaling, canvas breakpoint 1920px, back button standardization |
 
 ---
 

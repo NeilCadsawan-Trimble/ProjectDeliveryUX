@@ -1653,12 +1653,12 @@ modus-wc-navbar .main-menu {
 }
 
 /* ========================================
- * Infinite Canvas Layout (viewport >= 2000px)
+ * Infinite Canvas Layout (viewport >= 1920px)
  * Navbar pinned top-center at 1280px, sidenav pinned left-center at 1000px,
  * main content lives on a free-scrolling canvas.
  * ======================================== */
 
-@media (min-width: 2000px) {
+@media (min-width: 1920px) {
   /* The canvas host fills the viewport exactly; native scroll is disabled so all
      movement comes from CSS transforms on .canvas-content (spacebar+drag or wheel). */
   .canvas-host {
@@ -2024,6 +2024,19 @@ modus-wc-utility-panel .modus-wc-utility-panel-footer {
   stroke: var(--card);
   stroke-width: 2.5;
 }
+/* Widget text scaling — medium: 5+ cols or 480px+ height */
+.widget-text-md .text-2xs { font-size: var(--modus-wc-font-size-xs) !important; }
+.widget-text-md .text-xs { font-size: var(--modus-wc-font-size-sm) !important; }
+.widget-text-md .text-sm { font-size: var(--modus-wc-font-size-md) !important; }
+.widget-text-md .widget-title { font-size: var(--modus-wc-font-size-md) !important; }
+
+/* Widget text scaling — large: 6+ cols AND 500px+ height */
+.widget-text-lg .text-2xs { font-size: var(--modus-wc-font-size-sm) !important; }
+.widget-text-lg .text-xs { font-size: var(--modus-wc-font-size-md) !important; }
+.widget-text-lg .text-sm { font-size: var(--modus-wc-font-size-lg) !important; }
+.widget-text-lg .text-base { font-size: var(--modus-wc-font-size-xl) !important; }
+.widget-text-lg .widget-title { font-size: var(--modus-wc-font-size-lg) !important; }
+
 .pf-gradient-gain-start { stop-color: var(--success); stop-opacity: 0.35; }
 .pf-gradient-gain-end { stop-color: var(--success); stop-opacity: 0.02; }
 .pf-gradient-fade-start { stop-color: var(--destructive); stop-opacity: 0.35; }

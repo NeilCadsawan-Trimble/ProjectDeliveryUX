@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, or view-mode parity. Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, or canvas zoom. Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -826,6 +826,92 @@ On mobile (< 768px), the side nav renders at 56px width (icons only). The CSS ru
 7. **`@if (!isMobile() || navExpanded())`** controls side nav DOM presence on mobile.
 8. **Never assume Modus web components use shadow DOM.** Check `element.shadowRoot` before querying it. Most Modus components use scoped encapsulation (light DOM).
 
+## 17. Area-Adaptive Widget Content Blocks
+
+**File:** `src/app/pages/projects-page/projects-page.component.ts`
+
+### The pattern
+
+Instead of fixed breakpoints for widget content tiers, use a **pixel-height budgeting** system that dynamically selects which content blocks to show based on available area and aspect ratio.
+
+### Architecture
+
+1. **`ContentBlock` type** -- union of all possible content sections (e.g., `'owner' | 'schedule' | 'budget' | 'weather' | 'sparkline' | 'fadeGain' | ...`).
+2. **`BLOCK_HEIGHTS`** -- `Record<ContentBlock, number>` mapping each block to its approximate pixel height cost.
+3. **`LARGE_BLOCK_HEIGHTS`** -- `Partial<Record<ContentBlock, number>>` with inflated heights for blocks that expand at large sizes (e.g., sparkline: 80 → 100, weather: 28 → 40).
+4. **Priority lists** -- ordered arrays controlling which blocks are added first:
+   - `SINGLE_COL_PRIORITY` -- used when widget is narrow (< 6 cols)
+   - `LEFT_COL_PRIORITY` / `RIGHT_COL_PRIORITY` -- used when widget is wide (6+ cols), budgeted independently per column
+5. **`visibleBlocks` computed signal** -- iterates priority list, subtracts each block's height from remaining budget, builds a `Set<string>` of blocks that fit. For wide layout, runs two independent budget loops (left column, right column).
+6. **Template conditionals** -- `@if (showBlock(widgetId, 'blockName'))` guards every section. `@if (isWideWidget(widgetId))` splits into two-column vs single-column layout.
+
+### Key constants
+
+```
+CHROME_PX = 73   // header bar + status strip + padding
+CLIENT_PX = 18   // client name line (always shown)
+```
+
+Available height = `widgetHeights()[id] - CHROME_PX - CLIENT_PX`
+
+### Gotchas
+
+- **No scrollbars** -- container uses `overflow-hidden`, not `overflow-y-auto`. Content that doesn't fit is simply not rendered.
+- **Block height estimates are approximate** -- they include the block's own padding/gap contribution. Err on the side of slightly overestimating so blocks don't overflow.
+- **Large block swap** -- at large sizes, `costBreakdown` is swapped for `costDetail` (a more detailed variant). The `visibleBlocks` computed handles this conditionally.
+- **Inline-to-standalone promotion** -- when a content piece (like fade/gain) lives inline inside another block AND as a standalone block, suppress the inline version when the standalone fits: `@if (!showBlock(widgetId, 'fadeGain'))` around the inline version.
+
+## 18. CSS Text Scaling for Resizable Widgets
+
+**Files:** `src/styles.css`, `projects-page.component.ts`
+
+### The pattern
+
+Apply a tier class (`widget-text-md`, `widget-text-lg`) to the widget container, then use CSS descendant selectors to bump font sizes for all text elements within.
+
+### Gotchas
+
+1. **Thresholds must be ABOVE default widget size.** All widgets start at the same default dimensions (e.g., 4 cols, 416px). If the medium tier threshold is at or below this default, every widget scales simultaneously and there's no visual contrast. Set medium at `cols >= 5 || h >= 480` (above 416 default).
+
+2. **CSS specificity ordering matters for multi-class elements.** The project title has both `.widget-title` and `.text-xs` classes. Rules like `.widget-text-md .widget-title` and `.widget-text-md .text-xs` have equal specificity (two classes each). The **last rule in the file wins**. Always place `.widget-title` rules AFTER `.text-*` rules:
+
+```css
+/* text-* rules first */
+.widget-text-md .text-2xs { font-size: var(--modus-wc-font-size-xs) !important; }
+.widget-text-md .text-xs  { font-size: var(--modus-wc-font-size-sm) !important; }
+.widget-text-md .text-sm  { font-size: var(--modus-wc-font-size-md) !important; }
+/* widget-title LAST so it overrides text-xs on title elements */
+.widget-text-md .widget-title { font-size: var(--modus-wc-font-size-md) !important; }
+```
+
+3. **Never use `[class]="methodCall()"` on elements with static classes.** Angular's `[class]` binding replaces ALL classes on the element. Use individual `[class.widget-text-md]="condition"` bindings instead to ADD classes without removing static ones.
+
+4. **`!important` is required** because the base Modus font size overrides (`.text-2xs`, `.text-xs`, etc.) already use `!important`. Descendant selectors have higher specificity, but `!important` on the base rules means the override also needs `!important`.
+
+## 19. Canvas Zoom Axis Swap (macOS)
+
+**File:** `src/app/shell/services/canvas-panning.ts`
+
+### The bug
+
+macOS swaps `deltaY` → `deltaX` when Shift is held during scroll. Code that only checked `deltaY` for Shift+scroll zoom direction always got 0, causing zoom to stall at max.
+
+### The fix
+
+```typescript
+const rawDelta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+```
+
+Always pick whichever axis has the larger absolute value. This handles both macOS axis swap and standard deltaY-only systems.
+
+### Zoom triggers
+
+Shift+scroll, Ctrl+scroll, and Cmd+scroll all trigger zoom (covers trackpad pinch-to-zoom which fires as Ctrl+scroll).
+
+### Zoom anchor
+
+Anchored to viewport center (not cursor position) per user preference.
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -846,3 +932,6 @@ On mobile (< 768px), the side nav renders at 56px width (icons only). The CSS ru
 | Wall cascade post-cleanup (4+ widgets) | `canvas-push.ts` | `canvas-push.spec.ts` (4 new tests) |
 | Same-size oscillation & frozen pushback | `canvas-push.ts` | `canvas-push.spec.ts` (6 new tests) |
 | Hamburger double-fire prevention | `dashboard-shell.component.ts` | (manual test: hamburger toggles sidenav on mobile) |
+| Area-adaptive content blocks | `projects-page.component.ts` | (visual: resize widget, verify content fills) |
+| CSS text scaling tiers | `src/styles.css` + `projects-page.component.ts` | (visual: resize widget, verify text scales) |
+| Canvas zoom axis swap | `canvas-panning.ts` | (manual test: Shift+scroll on macOS) |

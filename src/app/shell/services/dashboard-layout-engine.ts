@@ -112,7 +112,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.widgetZIndices = signal<Record<string, number>>({});
     this.widgetLocked = signal<Record<string, boolean>>(this.loadLockedState());
     this.isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-    this.isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
+    this.isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 1920 : false);
 
     const offset = config.canvasGridMinHeightOffset ?? 200;
     this.canvasGridMinHeight = computed(() => {
@@ -204,7 +204,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
   init(): void {
     const startMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const startCanvas = typeof window !== 'undefined' && window.innerWidth >= 2000;
+    const startCanvas = typeof window !== 'undefined' && window.innerWidth >= 1920;
     this.isMobile.set(startMobile);
     this.isCanvasMode.set(startCanvas);
     this.applyModeLayout();
@@ -212,14 +212,14 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     if (typeof window === 'undefined') return;
 
     const mq = window.matchMedia('(max-width: 767px)');
-    const canvasQuery = window.matchMedia('(min-width: 2000px)');
+    const canvasQuery = window.matchMedia('(min-width: 1920px)');
 
     const onBreakpointChange = (): void => {
       const w = window.innerWidth;
       const wasMobile = this.isMobile();
       const wasCanvas = this.isCanvasMode();
       const nowMobile = w < 768;
-      const nowCanvas = w >= 2000;
+      const nowCanvas = w >= 1920;
 
       this.isMobile.set(nowMobile);
       this.isCanvasMode.set(nowCanvas);

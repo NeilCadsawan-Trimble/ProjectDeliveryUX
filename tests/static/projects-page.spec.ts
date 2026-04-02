@@ -7,6 +7,9 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const SRC = readFileSync(
   resolve(__dir, '../../src/app/pages/projects-page/projects-page.component.ts'),
   'utf-8',
+) + '\n' + readFileSync(
+  resolve(__dir, '../../src/app/pages/projects-page/projects-page.component.html'),
+  'utf-8',
 );
 
 describe('ProjectsPageComponent (template regression)', () => {

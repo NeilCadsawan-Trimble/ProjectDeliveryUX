@@ -13,7 +13,7 @@ const GAP = 16;
 const PAGE_FILES = [
   'src/app/pages/home-page/home-page.component.ts',
   'src/app/pages/financials-page/financials-page.component.ts',
-  'src/app/pages/projects-page/projects-page.component.ts',
+  'src/app/pages/projects-page/projects-page-layout.config.ts',
   'src/app/pages/project-dashboard/project-dashboard.component.ts',
 ];
 
@@ -35,7 +35,7 @@ function resolveConstants(src: string, expr: string): number | null {
   const cleaned = expr.replace(/\s/g, '');
   if (/^\d+$/.test(cleaned)) return parseInt(cleaned, 10);
 
-  const constPattern = /static\s+readonly\s+(\w+)\s*=\s*(\d+)\s*;/g;
+  const constPattern = /(?:static\s+readonly|const)\s+(\w+)\s*=\s*(\d+)\s*;/g;
   const constants: Record<string, number> = {};
   let m;
   while ((m = constPattern.exec(src)) !== null) {
