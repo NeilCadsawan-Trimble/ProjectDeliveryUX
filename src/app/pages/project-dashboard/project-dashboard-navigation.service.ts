@@ -336,12 +336,7 @@ export class ProjectDashboardNavigationService {
   }
 
   private resolveFromLabel(from: string): string {
-    const labels: Record<string, string> = {
-      home: 'Home',
-      projects: 'Projects',
-      financials: 'Financials',
-    };
-    return labels[from] ?? 'Home';
+    return 'Back';
   }
 
   private resolveFromPath(from: string): string {

@@ -565,7 +565,7 @@ export class DashboardShellComponent implements AfterViewInit {
 
   readonly navExpanded = signal(false);
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-  readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
+  readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 1920 : false);
   private readonly canvasResetService = inject(CanvasResetService);
 
   readonly panning = new CanvasPanning(() => this.isCanvas());
@@ -825,7 +825,7 @@ export class DashboardShellComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.isMobile.set(window.innerWidth < 768);
-    this.isCanvas.set(window.innerWidth >= 2000);
+    this.isCanvas.set(window.innerWidth >= 1920);
 
     this.router.events
       .pipe(
@@ -836,7 +836,7 @@ export class DashboardShellComponent implements AfterViewInit {
     this.currentUrl.set(this.router.url);
 
     const mq = window.matchMedia('(max-width: 767px)');
-    const mqCanvas = window.matchMedia('(min-width: 2000px)');
+    const mqCanvas = window.matchMedia('(min-width: 1920px)');
 
     const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList) => {
       this.isMobile.set(e.matches);
@@ -852,7 +852,7 @@ export class DashboardShellComponent implements AfterViewInit {
     window.addEventListener('resize', () => {
       const mobile = window.innerWidth < 768;
       if (mobile !== this.isMobile()) onBreakpointChange(mq);
-      const canvas = window.innerWidth >= 2000;
+      const canvas = window.innerWidth >= 1920;
       if (canvas !== this.isCanvas()) onCanvasChange(mqCanvas);
     }, { signal: this._abortCtrl.signal });
 
