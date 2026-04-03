@@ -18,6 +18,7 @@ import { filter } from 'rxjs/operators';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { AiIconComponent } from '../components/ai-icon.component';
 import { AiAssistantPanelComponent } from '../components/ai-assistant-panel.component';
+import { UserMenuComponent } from '../components/user-menu.component';
 import { ThemeService } from '../services/theme.service';
 import { CanvasResetService } from '../services/canvas-reset.service';
 import { WidgetFocusService } from '../services/widget-focus.service';
@@ -51,6 +52,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     ModusNavbarComponent,
     AiIconComponent,
     AiAssistantPanelComponent,
+    UserMenuComponent,
     RouterOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -172,6 +174,39 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
               </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="Search"
+                (click)="searchInputOpen.set(!searchInputOpen())"
+                (keydown.enter)="searchInputOpen.set(!searchInputOpen())"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">search</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="Notifications"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="Help"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">help</i>
+              </div>
+              <user-menu
+                [name]="userCard().name"
+                [email]="userCard().email"
+                [avatarSrc]="userCard().avatarSrc"
+                (menuAction)="onUserMenuAction($event)"
+                (signOut)="onUserSignOut()"
+              />
             </div>
           </modus-navbar>
         </div>
@@ -415,7 +450,41 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   </div>
                 }
               </div>
+            } @else {
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="Search"
+                (click)="searchInputOpen.set(!searchInputOpen())"
+                (keydown.enter)="searchInputOpen.set(!searchInputOpen())"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">search</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="Notifications"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="Help"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">help</i>
+              </div>
             }
+              <user-menu
+                [name]="userCard().name"
+                [email]="userCard().email"
+                [avatarSrc]="userCard().avatarSrc"
+                (menuAction)="onUserMenuAction($event)"
+                (signOut)="onUserSignOut()"
+              />
           </div>
         </modus-navbar>
 
@@ -549,17 +618,16 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly searchInputOpen = signal(false);
 
   readonly navbarVisibility = computed(() => {
-    const mobile = this.isMobile();
     const canvas = this.isCanvas();
     return {
-      user: true,
+      user: false,
       mainMenu: !canvas,
       ai: false,
-      notifications: !mobile,
+      notifications: false,
       apps: false,
-      help: !mobile,
-      search: !mobile,
-      searchInput: !mobile,
+      help: false,
+      search: false,
+      searchInput: false,
     };
   });
 
@@ -668,6 +736,14 @@ export class DashboardShellComponent implements AfterViewInit {
 
   toggleDarkMode(): void {
     this.themeService.toggleMode();
+  }
+
+  onUserMenuAction(actionId: string): void {
+    console.log('User menu action:', actionId);
+  }
+
+  onUserSignOut(): void {
+    console.log('Sign out requested');
   }
 
   toggleMoreMenu(): void {
@@ -865,18 +941,11 @@ export class DashboardShellComponent implements AfterViewInit {
     let attempts = 0;
     const tryReorder = () => {
       if (++attempts > 50) return;
-      const shadow = navbarWc.shadowRoot;
-      if (!shadow) { requestAnimationFrame(tryReorder); return; }
-      const endDiv = shadow.querySelector('div[slot="end"]') as HTMLElement | null;
+      const root = navbarWc.shadowRoot ?? navbarWc;
+      const endDiv = root.querySelector('div[slot="end"]') as HTMLElement | null;
       if (!endDiv) { requestAnimationFrame(tryReorder); return; }
       const endSlot = endDiv.querySelector(':scope > slot[name="end"]') as HTMLElement | null;
       if (endSlot) endSlot.style.order = '1';
-      for (const child of Array.from(endDiv.children)) {
-        const el = child as HTMLElement;
-        if (el.getAttribute('aria-label') === 'User profile') el.style.order = '2';
-      }
-      const userMenu = endDiv.querySelector(':scope > div.user') as HTMLElement | null;
-      if (userMenu) userMenu.style.order = '2';
     };
     requestAnimationFrame(tryReorder);
   }

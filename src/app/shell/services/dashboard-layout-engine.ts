@@ -11,8 +11,10 @@ export interface DashboardLayoutConfig {
   defaultColSpans: Record<string, number>;
   defaultTops: Record<string, number>;
   defaultHeights: Record<string, number>;
-  defaultLefts: Record<string, number>;
-  defaultPixelWidths: Record<string, number>;
+  /** @deprecated Desktop uses CSS Grid; pixel positions derived from columns at runtime. */
+  defaultLefts?: Record<string, number>;
+  /** @deprecated Desktop uses CSS Grid; pixel widths derived from columns at runtime. */
+  defaultPixelWidths?: Record<string, number>;
   canvasDefaultLefts: Record<string, number>;
   canvasDefaultPixelWidths: Record<string, number>;
   canvasDefaultTops?: Record<string, number>;
@@ -22,8 +24,44 @@ export interface DashboardLayoutConfig {
   widgetMaxColSpans?: Record<string, number>;
   canvasGridMinHeightOffset?: number;
   savesDesktopOnMobile?: boolean;
+  responsiveBreakpoints?: { minWidth: number; columns: number }[];
+  /** Per-widget slot counts at each responsive column count, e.g. { proj1: { 4: 2, 3: 2, 2: 2 } } */
+  responsiveSpanOverrides?: Record<string, Record<number, number>>;
   onBeforeMobileCompact?: () => void;
   onWidgetSelect?: (id: string) => void;
+  /**
+   * Desktop horizontal resize only. Widget ids in **layout priority** order: index 0 is highest
+   * (squeezed/relocated last). Lower-priority neighbors absorb overflow first so the hero and
+   * primary tiles stay stable. Omit to keep legacy far-end spatial squeeze/relocate.
+   */
+  desktopResizePriorityOrder?: string[];
+  /**
+   * Desktop only. After a widget **move** (not resize), snap non-locked tiles to canonical
+   * placement: literal `defaultCol*` / `defaultTops` at the widest breakpoint column count, or
+   * `reflowForColumns` at 2–3 columns using `desktopResizePriorityOrder` for flow sequence.
+   */
+  desktopSnapToDefaultLayoutAfterDrag?: boolean;
+  /**
+   * Desktop only. "Save as Default Layout" persists **colSpans + heights** only (ordering is not
+   * saved). `resetToDefaults` restores full app defaults and clears this blob. Pair with
+   * `applyModeLayout` merge: canonical placement + overlay saved sizing on load.
+   */
+  desktopSaveDefaultLayoutSizingOnly?: boolean;
+  /**
+   * Desktop only. After push-squeeze resolves, run a second pass that re-places all widgets
+   * in `desktopResizePriorityOrder` sequence using LTR-then-TTB flow. Widgets that no longer
+   * fit on the current line wrap to the next.
+   */
+  desktopReflowOnResize?: boolean;
+}
+
+/** Versioned desktop custom defaults: sizing only (no placement). */
+const DESKTOP_SIZING_DEFAULTS_VERSION = 2;
+
+interface DesktopSizingDefaultsV2 {
+  v: typeof DESKTOP_SIZING_DEFAULTS_VERSION;
+  colSpans: Record<string, number>;
+  heights: Record<string, number>;
 }
 
 interface LayoutSnapshot {
@@ -58,6 +96,14 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   readonly isMobile: WritableSignal<boolean>;
   readonly isCanvasMode: WritableSignal<boolean>;
   readonly canvasGridMinHeight: Signal<number>;
+  readonly desktopGridMinHeight: Signal<number>;
+
+  /** CSS Grid column placement strings for desktop mode (e.g. "1 / span 8"). */
+  readonly widgetGridColumns: Signal<Record<string, string>>;
+
+  /** Pixel rect of the widget being dragged in desktop grid mode. */
+  readonly dragLeft: WritableSignal<number>;
+  readonly dragWidth: WritableSignal<number>;
 
   gridElAccessor: () => HTMLElement | undefined = () => undefined;
   headerElAccessor: () => HTMLElement | undefined = () => undefined;
@@ -89,8 +135,17 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
   private _pushSqueezeActive: Set<string> = new Set();
 
+  /**
+   * While dragging/resizing, vertical collision order must not follow the mover's
+   * live `top` (that reorders every frame and recomputes the whole stack — tiles
+   * jump). Sort uses these frozen tops until mouseup/touchend.
+   */
+  private _collisionSortBaseline: Record<string, number> | null = null;
+
   private _savedDesktopForMobile: LayoutSnapshot | null = null;
   private _savedDesktopForCanvas: LayoutSnapshot | null = null;
+  private _currentDesktopColumns = 0;
+  readonly currentDesktopColumns = signal(0);
 
   readonly abortCtrl = new AbortController();
 
@@ -106,24 +161,37 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.widgetColSpans = signal({ ...config.defaultColSpans });
     this.widgetTops = signal({ ...config.defaultTops });
     this.widgetHeights = signal({ ...config.defaultHeights });
-    this.widgetLefts = signal({ ...config.defaultLefts });
-    this.widgetPixelWidths = signal({ ...config.defaultPixelWidths });
+    this.widgetLefts = signal({ ...(config.defaultLefts ?? {}) });
+    this.widgetPixelWidths = signal({ ...(config.defaultPixelWidths ?? {}) });
     this.moveTargetId = signal<string | null>(null);
     this.widgetZIndices = signal<Record<string, number>>({});
     this.widgetLocked = signal<Record<string, boolean>>(this.loadLockedState());
     this.isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
     this.isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 1920 : false);
+    this.dragLeft = signal(0);
+    this.dragWidth = signal(0);
+
+    this.widgetGridColumns = computed(() => {
+      const starts = this.widgetColStarts();
+      const spans = this.widgetColSpans();
+      const result: Record<string, string> = {};
+      for (const id of config.widgets) {
+        result[id] = `${starts[id]} / span ${spans[id]}`;
+      }
+      return result;
+    });
 
     const offset = config.canvasGridMinHeightOffset ?? 200;
-    this.canvasGridMinHeight = computed(() => {
+    this.desktopGridMinHeight = computed(() => {
       const tops = this.widgetTops();
       const heights = this.widgetHeights();
       let max = 0;
       for (const id of config.widgets) {
         max = Math.max(max, tops[id] + heights[id]);
       }
-      return max + offset;
+      return max;
     });
+    this.canvasGridMinHeight = computed(() => this.desktopGridMinHeight() + offset);
   }
 
   destroy(): void {
@@ -140,6 +208,12 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       this.persistLockedState(next);
       return next;
     });
+  }
+
+  /** Clears every lock flag and overwrites session storage (used when a page disables desktop locking). */
+  clearAllWidgetLocks(): void {
+    this.widgetLocked.set({});
+    this.persistLockedState({});
   }
 
   private get lockedKey(): string {
@@ -185,11 +259,82 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     return this.gridElAccessor();
   }
 
+  private widgetOrderIndex(id: string): number {
+    const i = this.config.widgets.indexOf(id);
+    return i === -1 ? 9999 : i;
+  }
+
+  /**
+   * Order for vertical gravity / compaction.
+   * Legacy: primary `top` (from `_collisionSortBaseline` when set), tie `config.widgets` index.
+   * With `desktopResizePriorityOrder`: primary reading order (list index ascending); unlisted ids
+   * sort after listed ones by `(top, left)` then `widgetOrderIndex`.
+   */
+  private sortWidgetsForCollisionPass(widgets: string[], tops: Record<string, number>): string[] {
+    const baseline = this._collisionSortBaseline;
+    const topOf = (id: string) => (baseline ? (baseline[id] ?? tops[id]) : tops[id]);
+
+    if (this.usesDesktopResizePriority()) {
+      const lefts = this.widgetLefts();
+      return [...widgets].sort((a, b) => {
+        const pa = this.desktopResizePriorityIndex(a);
+        const pb = this.desktopResizePriorityIndex(b);
+        if (pa !== pb) return pa - pb;
+        const ta = topOf(a);
+        const tb = topOf(b);
+        if (ta !== tb) return ta - tb;
+        const la = lefts[a] ?? 0;
+        const lb = lefts[b] ?? 0;
+        if (la !== lb) return la - lb;
+        return this.widgetOrderIndex(a) - this.widgetOrderIndex(b);
+      });
+    }
+
+    return [...widgets].sort((a, b) => {
+      const ta = topOf(a);
+      const tb = topOf(b);
+      if (ta !== tb) return ta - tb;
+      return this.widgetOrderIndex(a) - this.widgetOrderIndex(b);
+    });
+  }
+
   private get currentStep(): number {
     if (this.isCanvasMode()) return DashboardLayoutEngine.CANVAS_STEP;
     const grid = this.activeGridEl;
     const containerWidth = grid ? grid.clientWidth : 1280;
     return (containerWidth + DashboardLayoutEngine.GAP_PX) / 16;
+  }
+
+  /** Compute pixel left/width for a widget from its grid column position. */
+  _computeDesktopPixelRect(id: string): { left: number; width: number } {
+    const grid = this.activeGridEl;
+    const containerWidth = grid ? grid.clientWidth : 1280;
+    const gap = DashboardLayoutEngine.GAP_PX;
+    const step = (containerWidth + gap) / 16;
+    const start = this.widgetColStarts()[id];
+    const span = this.widgetColSpans()[id];
+    return {
+      left: Math.round((start - 1) * step),
+      width: Math.round(span * step - gap),
+    };
+  }
+
+  /** Compute pixel positions for ALL widgets from grid columns. Used for resize snapshots. */
+  _computeAllDesktopPixelRects(): Record<string, { left: number; width: number }> {
+    const grid = this.activeGridEl;
+    const containerWidth = grid ? grid.clientWidth : 1280;
+    const gap = DashboardLayoutEngine.GAP_PX;
+    const step = (containerWidth + gap) / 16;
+    const starts = this.widgetColStarts();
+    const spans = this.widgetColSpans();
+    const result: Record<string, { left: number; width: number }> = {};
+    for (const id of this.config.widgets) {
+      result[id] = {
+        left: Math.round((starts[id] - 1) * step),
+        width: Math.round(spans[id] * step - gap),
+      };
+    }
+    return result;
   }
 
   mobileGridHeight(): number {
@@ -221,8 +366,8 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       const nowMobile = w < 768;
       const nowCanvas = w >= 1920;
 
-      this.isMobile.set(nowMobile);
-      this.isCanvasMode.set(nowCanvas);
+      if (nowMobile !== wasMobile) this.isMobile.set(nowMobile);
+      if (nowCanvas !== wasCanvas) this.isCanvasMode.set(nowCanvas);
 
       if (wasCanvas && !nowCanvas) {
         this.persistCanvasLayout();
@@ -232,6 +377,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         } else {
           this.restoreDesktopLayout();
         }
+        this.applyResponsiveReflow(w);
       } else if (!wasCanvas && nowCanvas) {
         if (!wasMobile) {
           this._savedDesktopForCanvas = this.snapshotLayout();
@@ -260,9 +406,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         } else {
           this.restoreDesktopLayout();
         }
+        this.applyResponsiveReflow(w);
       } else if (!nowMobile && !nowCanvas) {
         if (!this._moveTarget && !this._resizeTarget) {
-          this.syncPixelWidthsFromCols();
+          this.applyResponsiveReflow(w);
         }
       }
     };
@@ -273,7 +420,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
     requestAnimationFrame(() => {
       if (!this.isMobile() && !this.isCanvasMode()) {
-        this.syncPixelWidthsFromCols();
+        this.applyResponsiveReflow(window.innerWidth);
       }
     });
 
@@ -292,12 +439,24 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.config.onWidgetSelect?.(id);
     if (this.isWidgetLocked(id)) return;
     event.preventDefault();
+    this._collisionSortBaseline = { ...this.widgetTops() };
     this._moveTarget = id;
     this._dragAxis = this.isMobile() ? null : 'free';
     this._dragStartX = event.clientX;
     this._dragStartY = event.clientY;
     this._dragStartTop = this.widgetTops()[id];
-    this._dragStartLeft = this.widgetLefts()[id] ?? 0;
+
+    if (!this.isMobile() && !this.isCanvasMode()) {
+      const rect = this._computeDesktopPixelRect(id);
+      this._dragStartLeft = rect.left;
+      this.widgetLefts.update(l => ({ ...l, [id]: rect.left }));
+      this.widgetPixelWidths.update(w => ({ ...w, [id]: rect.width }));
+      this.dragLeft.set(rect.left);
+      this.dragWidth.set(rect.width);
+    } else {
+      this._dragStartLeft = this.widgetLefts()[id] ?? 0;
+    }
+
     this.moveTargetId.set(id);
     this.bumpZIndex(id);
   }
@@ -316,12 +475,24 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       if (Math.abs(touch.clientX - cx) > 16 || Math.abs(touch.clientY - cy) > 16) return;
     }
     event.preventDefault();
+    this._collisionSortBaseline = { ...this.widgetTops() };
     this._moveTarget = id;
     this._dragAxis = this.isMobile() ? null : 'free';
     this._dragStartX = touch.clientX;
     this._dragStartY = touch.clientY;
     this._dragStartTop = this.widgetTops()[id];
-    this._dragStartLeft = this.widgetLefts()[id] ?? 0;
+
+    if (!this.isMobile() && !this.isCanvasMode()) {
+      const pixRect = this._computeDesktopPixelRect(id);
+      this._dragStartLeft = pixRect.left;
+      this.widgetLefts.update(l => ({ ...l, [id]: pixRect.left }));
+      this.widgetPixelWidths.update(w => ({ ...w, [id]: pixRect.width }));
+      this.dragLeft.set(pixRect.left);
+      this.dragWidth.set(pixRect.width);
+    } else {
+      this._dragStartLeft = this.widgetLefts()[id] ?? 0;
+    }
+
     this.moveTargetId.set(id);
     this.bumpZIndex(id);
   }
@@ -330,6 +501,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     if (this.isWidgetLocked(target)) return;
     event.preventDefault();
     event.stopPropagation();
+    this._collisionSortBaseline = { ...this.widgetTops() };
     this._resizeTarget = target;
     this._resizeDir = this.isMobile() ? 'v' : dir;
     this._resizeEdge = edge;
@@ -339,8 +511,16 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       this._resizeStartH = this.widgetHeights()[target] ?? 400;
     }
     if (dir === 'h' || dir === 'both') {
-      this._resizeStartW = this.widgetPixelWidths()[target] ?? 600;
-      this._resizeStartL = this.widgetLefts()[target] ?? 0;
+      if (!this.isMobile() && !this.isCanvasMode()) {
+        const rect = this._computeDesktopPixelRect(target);
+        this._resizeStartW = rect.width;
+        this._resizeStartL = rect.left;
+        this.widgetPixelWidths.update(w => ({ ...w, [target]: rect.width }));
+        this.widgetLefts.update(l => ({ ...l, [target]: rect.left }));
+      } else {
+        this._resizeStartW = this.widgetPixelWidths()[target] ?? 600;
+        this._resizeStartL = this.widgetLefts()[target] ?? 0;
+      }
     }
     this.bumpZIndex(target);
     this.captureResizeSnapshot();
@@ -352,6 +532,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     event.preventDefault();
     event.stopPropagation();
     const touch = event.touches[0];
+    this._collisionSortBaseline = { ...this.widgetTops() };
     this._resizeTarget = target;
     this._resizeDir = this.isMobile() ? 'v' : dir;
     this._resizeEdge = edge;
@@ -361,8 +542,16 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       this._resizeStartH = this.widgetHeights()[target] ?? 400;
     }
     if (this._resizeDir === 'h' || this._resizeDir === 'both') {
-      this._resizeStartW = this.widgetPixelWidths()[target] ?? 600;
-      this._resizeStartL = this.widgetLefts()[target] ?? 0;
+      if (!this.isMobile() && !this.isCanvasMode()) {
+        const rect = this._computeDesktopPixelRect(target);
+        this._resizeStartW = rect.width;
+        this._resizeStartL = rect.left;
+        this.widgetPixelWidths.update(w => ({ ...w, [target]: rect.width }));
+        this.widgetLefts.update(l => ({ ...l, [target]: rect.left }));
+      } else {
+        this._resizeStartW = this.widgetPixelWidths()[target] ?? 600;
+        this._resizeStartL = this.widgetLefts()[target] ?? 0;
+      }
     }
     this.bumpZIndex(target);
     this.captureResizeSnapshot();
@@ -373,10 +562,11 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const dir = this._resizeDir;
     if (dir !== 'h' && dir !== 'both') return;
     this._resizeSnapshot = {};
+    const rects = this._computeAllDesktopPixelRects();
     for (const id of this.config.widgets) {
       this._resizeSnapshot[id] = {
-        left: this.widgetLefts()[id],
-        width: this.widgetPixelWidths()[id],
+        left: rects[id].left,
+        width: rects[id].width,
         top: this.widgetTops()[id],
         height: this.widgetHeights()[id],
       };
@@ -392,7 +582,8 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   onDocumentMouseUp(): void {
-    const hadInteraction = !!this._moveTarget || !!this._resizeTarget;
+    const wasWidgetMove = !!this._moveTarget;
+    const hadInteraction = wasWidgetMove || !!this._resizeTarget;
     const interactedId = this._moveTarget ?? this._resizeTarget;
     this._moveTarget = null;
     this._dragAxis = null;
@@ -400,12 +591,27 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this._resizeTarget = null;
     this._resizeEdge = 'right';
     this._resizeSnapshot = null;
+    this._collisionSortBaseline = null;
     if (hadInteraction) {
       if (interactedId) {
         this._widgetLastInteraction[interactedId] = ++this._interactionSeq;
       }
       if (!this.isCanvasMode()) {
-        this.compactAll();
+        if (wasWidgetMove && interactedId) {
+          if (this.config.desktopSnapToDefaultLayoutAfterDrag) {
+            this.applyDesktopDefaultLayoutAfterDrag();
+          }
+          // One vertical pass at drop — avoids recomputing the whole stack every
+          // mousemove (twitchy neighbors) and avoids compactAll (which collapses gaps).
+          this.resolveCollisions(interactedId, this.config.widgets);
+        } else if (!wasWidgetMove) {
+          if (this.config.desktopReflowOnResize) {
+            this.syncColsFromPixelPositions();
+            this.applyDesktopReflow();
+          } else {
+            this.compactAll();
+          }
+        }
       }
       if (this.isCanvasMode()) {
         this.syncColSpansFromPixelWidths();
@@ -444,6 +650,18 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       }
       localStorage.removeItem(this.canvasKey);
       this.persistCanvasLayout();
+    } else if (this.config.desktopSaveDefaultLayoutSizingOnly) {
+      try {
+        localStorage.removeItem(this.desktopDefaultsKey);
+      } catch { /* ignore */ }
+      this.widgetTops.set({ ...this.config.defaultTops });
+      this.widgetHeights.set({ ...this.config.defaultHeights });
+      this.widgetColStarts.set({ ...this.config.defaultColStarts });
+      this.widgetColSpans.set({ ...this.config.defaultColSpans });
+      this.widgetLefts.set({ ...(this.config.defaultLefts ?? {}) });
+      this.widgetPixelWidths.set({ ...(this.config.defaultPixelWidths ?? {}) });
+      this.syncPixelWidthsFromCols();
+      this.persistLayout();
     } else {
       const saved = this._loadCustomDesktopDefaults();
       if (saved) {
@@ -451,17 +669,16 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         this.widgetHeights.set({ ...this.config.defaultHeights, ...saved.heights });
         this.widgetColStarts.set({ ...this.config.defaultColStarts, ...saved.colStarts });
         this.widgetColSpans.set({ ...this.config.defaultColSpans, ...saved.colSpans });
-        this.widgetLefts.set({ ...this.config.defaultLefts, ...saved.lefts });
-        this.widgetPixelWidths.set({ ...this.config.defaultPixelWidths, ...saved.widths });
+        this.widgetLefts.set({ ...(this.config.defaultLefts ?? {}), ...saved.lefts });
+        this.widgetPixelWidths.set({ ...(this.config.defaultPixelWidths ?? {}), ...saved.widths });
       } else {
         this.widgetTops.set({ ...this.config.defaultTops });
         this.widgetHeights.set({ ...this.config.defaultHeights });
         this.widgetColStarts.set({ ...this.config.defaultColStarts });
         this.widgetColSpans.set({ ...this.config.defaultColSpans });
-        this.widgetLefts.set({ ...this.config.defaultLefts });
-        this.widgetPixelWidths.set({ ...this.config.defaultPixelWidths });
+        this.widgetLefts.set({ ...(this.config.defaultLefts ?? {}) });
+        this.widgetPixelWidths.set({ ...(this.config.defaultPixelWidths ?? {}) });
       }
-      this.syncPixelWidthsFromCols();
       this.persistLayout();
     }
   }
@@ -479,6 +696,15 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       }
       try {
         localStorage.setItem(this.canvasDefaultsKey, JSON.stringify(layout));
+      } catch { /* quota exceeded */ }
+    } else if (this.config.desktopSaveDefaultLayoutSizingOnly) {
+      const payload: DesktopSizingDefaultsV2 = { v: DESKTOP_SIZING_DEFAULTS_VERSION, colSpans: {}, heights: {} };
+      for (const id of this.config.widgets) {
+        payload.colSpans[id] = this.widgetColSpans()[id];
+        payload.heights[id] = this.widgetHeights()[id];
+      }
+      try {
+        localStorage.setItem(this.desktopDefaultsKey, JSON.stringify(payload));
       } catch { /* quota exceeded */ }
     } else {
       const snapshot: LayoutSnapshot = {
@@ -516,6 +742,155 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     } catch {
       return null;
     }
+  }
+
+  private _loadDesktopSizingDefaultsV2(): DesktopSizingDefaultsV2 | null {
+    if (!this.config.desktopSaveDefaultLayoutSizingOnly) return null;
+    try {
+      const raw = localStorage.getItem(this.desktopDefaultsKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as unknown;
+      if (typeof parsed !== 'object' || parsed === null) return null;
+      const o = parsed as Record<string, unknown>;
+      if (o['v'] !== DESKTOP_SIZING_DEFAULTS_VERSION) return null;
+      return {
+        v: DESKTOP_SIZING_DEFAULTS_VERSION,
+        colSpans: (o['colSpans'] as Record<string, number>) ?? {},
+        heights: (o['heights'] as Record<string, number>) ?? {},
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private widestDesktopColumns(): number {
+    const bp = this.config.responsiveBreakpoints;
+    if (!bp?.length) return 0;
+    return Math.max(...bp.map((b) => b.columns));
+  }
+
+  /** Priority-aware flow order; falls back to `config.widgets` when no priority list. */
+  private resolveReflowPlacementOrder(): string[] | undefined {
+    const explicit = this.config.desktopResizePriorityOrder;
+    if (!explicit?.length) return undefined;
+    const widgets = this.config.widgets;
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const push = (id: string): void => {
+      if (!widgets.includes(id) || seen.has(id)) return;
+      seen.add(id);
+      out.push(id);
+    };
+    for (const id of explicit) push(id);
+    for (const id of widgets) push(id);
+    return out;
+  }
+
+  private snapshotLockedLayout(locked: Record<string, boolean>): {
+    colStarts: Record<string, number>;
+    colSpans: Record<string, number>;
+    tops: Record<string, number>;
+    heights: Record<string, number>;
+  } {
+    const cs = this.widgetColStarts();
+    const sp = this.widgetColSpans();
+    const tp = this.widgetTops();
+    const ht = this.widgetHeights();
+    const colStarts: Record<string, number> = {};
+    const colSpans: Record<string, number> = {};
+    const tops: Record<string, number> = {};
+    const heights: Record<string, number> = {};
+    for (const id of this.config.widgets) {
+      if (!locked[id]) continue;
+      colStarts[id] = cs[id];
+      colSpans[id] = sp[id];
+      tops[id] = tp[id];
+      heights[id] = ht[id];
+    }
+    return { colStarts, colSpans, tops, heights };
+  }
+
+  /**
+   * Canonical grid placement + optional sizing overlay from "Save as Default" (v2 blob).
+   * Used on projects desktop load and after drag when snap flag is set.
+   */
+  private reconcileDesktopCanonicalPlacementAndSavedSizing(): void {
+    if (this.isMobile() || this.isCanvasMode()) return;
+
+    const cfg = this.config;
+    const widgets = cfg.widgets;
+    const locked = this.widgetLocked();
+    const snapLocked = this.snapshotLockedLayout(locked);
+    const priorSpans = { ...this.widgetColSpans() };
+    const priorHeights = { ...this.widgetHeights() };
+
+    const colsRaw = this._currentDesktopColumns > 0
+      ? this._currentDesktopColumns
+      : (typeof window !== 'undefined' ? this.getResponsiveColumns(window.innerWidth) : 0);
+    const widest = this.widestDesktopColumns();
+    const cols = colsRaw > 0 ? colsRaw : (widest > 0 ? widest : 0);
+    const isLiteral = widest <= 0 || cols >= widest;
+
+    let colStarts: Record<string, number>;
+    let colSpans: Record<string, number>;
+    let tops: Record<string, number>;
+    let heights: Record<string, number>;
+
+    if (isLiteral) {
+      colStarts = { ...this.widgetColStarts() };
+      colSpans = { ...priorSpans };
+      tops = { ...this.widgetTops() };
+      heights = { ...priorHeights };
+      for (const id of widgets) {
+        if (locked[id]) continue;
+        colStarts[id] = cfg.defaultColStarts[id];
+        tops[id] = cfg.defaultTops[id];
+      }
+      for (const id of widgets) {
+        if (!locked[id]) continue;
+        colStarts[id] = snapLocked.colStarts[id];
+        colSpans[id] = snapLocked.colSpans[id];
+        tops[id] = snapLocked.tops[id];
+        heights[id] = snapLocked.heights[id];
+      }
+    } else {
+      this.widgetHeights.set({ ...priorHeights });
+      const flowOrder = this.resolveReflowPlacementOrder();
+      this.reflowForColumns(cols, { flowOrder });
+      colStarts = { ...this.widgetColStarts() };
+      colSpans = { ...this.widgetColSpans() };
+      tops = { ...this.widgetTops() };
+      heights = { ...this.widgetHeights() };
+      for (const id of widgets) {
+        if (!locked[id]) continue;
+        colStarts[id] = snapLocked.colStarts[id];
+        colSpans[id] = snapLocked.colSpans[id];
+        tops[id] = snapLocked.tops[id];
+        heights[id] = snapLocked.heights[id];
+      }
+    }
+
+    if (cfg.desktopSaveDefaultLayoutSizingOnly) {
+      const saved = this._loadDesktopSizingDefaultsV2();
+      if (saved) {
+        for (const id of widgets) {
+          if (saved.colSpans[id] != null) colSpans[id] = saved.colSpans[id];
+          if (saved.heights[id] != null) heights[id] = saved.heights[id];
+        }
+      }
+    }
+
+    this.enforceMaxColSpans(colSpans);
+    this.widgetColStarts.set(colStarts);
+    this.widgetColSpans.set(colSpans);
+    this.widgetTops.set(tops);
+    this.widgetHeights.set(heights);
+    this.syncPixelWidthsFromCols();
+  }
+
+  private applyDesktopDefaultLayoutAfterDrag(): void {
+    if (!this.config.desktopSnapToDefaultLayoutAfterDrag) return;
+    this.reconcileDesktopCanonicalPlacementAndSavedSizing();
   }
 
   reinitLayout(prevLayoutKey?: string, prevCanvasKey?: string): void {
@@ -577,7 +952,19 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       }
     } else {
       this.restoreDesktopLayout();
-      this.syncPixelWidthsFromCols();
+      const initialCols = this.getResponsiveColumns(window.innerWidth);
+      // Track breakpoint for templates (e.g. isNarrowGrid) but do NOT reflow here —
+      // reflowForColumns replaces authored defaultColStarts/defaultTops with a flow
+      // layout and was wiping the projects mosaic on every load. Responsive reflow
+      // still runs from window resize when the column count actually changes.
+      if (initialCols > 0) {
+        this._currentDesktopColumns = initialCols;
+        this.currentDesktopColumns.set(initialCols);
+      }
+      if (this.config.desktopSaveDefaultLayoutSizingOnly) {
+        this.reconcileDesktopCanonicalPlacementAndSavedSizing();
+        this.persistLayout();
+      }
     }
   }
 
@@ -637,7 +1024,17 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
       this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
       this.widgetLefts.update((l) => ({ ...l, [id]: newLeft }));
-      this.resolveCollisions(id, widgets);
+      if (!this.isCanvasMode()) {
+        this.dragLeft.set(newLeft);
+        const step = this.currentStep;
+        const newColStart = Math.max(1, Math.round(newLeft / step) + 1);
+        this.widgetColStarts.update(s => ({ ...s, [id]: newColStart }));
+      }
+      // Desktop free-drag: only move this widget until mouseup — live collision
+      // recomputes every other tile each frame and reads as constant jumping.
+      if (this.isCanvasMode() || this.isMobile()) {
+        this.resolveCollisions(id, widgets);
+      }
       return;
     }
 
@@ -860,6 +1257,12 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
     if (isHResize) {
       this.applyResizePushSqueeze(movedId, widgets);
+      this.syncColsFromPixelPositions();
+
+      if (this.config.desktopReflowOnResize) {
+        this.applyDesktopReflow();
+        return;
+      }
     }
 
     const tops = { ...this.widgetTops() };
@@ -876,12 +1279,16 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     if (mobile) {
       colOverlap = () => true;
     } else {
-      const lefts = this.widgetLefts();
-      const widths = this.widgetPixelWidths();
-      colOverlap = (a, b) => lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
+      const colStarts = this.widgetColStarts();
+      const colSpans = this.widgetColSpans();
+      colOverlap = (a, b) => {
+        const aEnd = colStarts[a] + colSpans[a];
+        const bEnd = colStarts[b] + colSpans[b];
+        return colStarts[a] < bEnd && colStarts[b] < aEnd;
+      };
     }
 
-    const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
+    const sorted = this.sortWidgetsForCollisionPass(widgets, tops);
     const placed: string[] = [movedId];
 
     const activeSet = isHResize ? this._pushSqueezeActive : new Set<string>();
@@ -950,15 +1357,67 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     if (leftsChanged) this.widgetLefts.set(lefts);
   }
 
+  private usesDesktopResizePriority(): boolean {
+    return (this.config.desktopResizePriorityOrder?.length ?? 0) > 0;
+  }
+
+  /** Higher index = lower layout priority (yields first on squeeze/relocate). */
+  private desktopResizePriorityIndex(id: string): number {
+    const order = this.config.desktopResizePriorityOrder!;
+    const i = order.indexOf(id);
+    return i < 0 ? order.length + 100 : i;
+  }
+
+  /**
+   * Order in which to apply width squeeze toward minWidth. Legacy: spatial far-end first.
+   * Priority mode: lowest-priority widget first.
+   */
+  private squeezeOrderForNeighbors(active: string[], edge: 'left' | 'right'): string[] {
+    if (this.usesDesktopResizePriority()) {
+      return [...active].sort(
+        (a, b) => this.desktopResizePriorityIndex(b) - this.desktopResizePriorityIndex(a),
+      );
+    }
+    if (edge === 'right') {
+      return [...active].reverse();
+    }
+    const out: string[] = [];
+    for (let i = active.length - 1; i >= 0; i--) {
+      out.push(active[i]!);
+    }
+    return out;
+  }
+
+  /** Widget to reset to snapshot and remove from the active chain when overflow cannot be squeezed away. */
+  private relocateTargetFromNeighbors(active: string[]): string {
+    if (this.usesDesktopResizePriority()) {
+      let worst = active[0]!;
+      let worstI = this.desktopResizePriorityIndex(worst);
+      for (let k = 1; k < active.length; k++) {
+        const id = active[k]!;
+        const i = this.desktopResizePriorityIndex(id);
+        if (i > worstI) {
+          worst = id;
+          worstI = i;
+        }
+      }
+      return worst;
+    }
+    return active[active.length - 1]!;
+  }
+
   /**
    * Two-phase push-then-squeeze for desktop horizontal resize.
    *
    * Phase 1 — Push all same-row neighbors outward, keeping original widths.
-   * Phase 2 — If the cascade overflows the container boundary, squeeze from
-   *           the far end inward (outermost widget absorbs first, then the
-   *           next, etc.) down to the 4-col minimum.  When all neighbors are
-   *           at minimum and overflow remains, relocate the outermost widget
-   *           and re-run with the remaining set.
+   * Phase 2 — If the cascade overflows the container boundary, squeeze inward
+   *           down to the 4-col minimum: legacy mode uses the spatial far end first;
+   *           with `desktopResizePriorityOrder`, lowest-priority neighbors yield first.
+   *           When all neighbors are at minimum and overflow remains, relocate the
+   *           same priority-chosen widget and re-run with the remaining set.
+   *
+   * When `desktopResizePriorityOrder` is set, squeeze/relocate use **priority** instead of
+   * pure spatial far-end ordering so high-priority tiles (e.g. hero) stay visually anchored.
    *
    * Uses _resizeSnapshot so that resizing back fully un-pushes / un-squeezes.
    */
@@ -1032,8 +1491,8 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         let underflow = Math.max(0, -lastLeft);
 
         if (underflow > 0) {
-          for (let i = active.length - 1; i >= 0 && underflow > 0; i--) {
-            const id = active[i];
+          for (const id of this.squeezeOrderForNeighbors(active, 'left')) {
+            if (underflow <= 0) break;
             const canSqueeze = Math.max(snap[id].width - minWidth, 0);
             const squeeze = Math.min(canSqueeze, underflow);
             if (squeeze > 0) {
@@ -1043,10 +1502,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
           }
 
           if (underflow > 0) {
-            const relocateId = active[active.length - 1];
+            const relocateId = this.relocateTargetFromNeighbors(active);
             lefts[relocateId] = snap[relocateId].left;
             widths[relocateId] = snap[relocateId].width;
-            active.pop();
+            active = active.filter((x) => x !== relocateId);
             settled = false;
             continue;
           }
@@ -1104,8 +1563,8 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         let overflow = Math.max(0, lastRight - containerWidth);
 
         if (overflow > 0) {
-          for (let i = active.length - 1; i >= 0 && overflow > 0; i--) {
-            const id = active[i];
+          for (const id of this.squeezeOrderForNeighbors(active, 'right')) {
+            if (overflow <= 0) break;
             const canSqueeze = Math.max(snap[id].width - minWidth, 0);
             const squeeze = Math.min(canSqueeze, overflow);
             if (squeeze > 0) {
@@ -1115,10 +1574,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
           }
 
           if (overflow > 0) {
-            const relocateId = active[active.length - 1];
+            const relocateId = this.relocateTargetFromNeighbors(active);
             lefts[relocateId] = snap[relocateId].left;
             widths[relocateId] = snap[relocateId].width;
-            active.pop();
+            active = active.filter((x) => x !== relocateId);
             settled = false;
             continue;
           }
@@ -1144,6 +1603,58 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.widgetPixelWidths.set(widths);
   }
 
+  /**
+   * LTR-TTB reflow: place all widgets in priority order, flowing left-to-right
+   * then top-to-bottom. Uses current `widgetColSpans` and `widgetHeights` to
+   * determine how widgets pack into 16-column lines.
+   */
+  applyDesktopReflow(): void {
+    const order = this.config.desktopResizePriorityOrder ?? this.config.widgets;
+    const totalCols = 16;
+    const gap = DashboardLayoutEngine.GAP_PX;
+    const colSpans = { ...this.widgetColSpans() };
+    const heights = this.widgetHeights();
+
+    const newColStarts: Record<string, number> = {};
+    const newTops: Record<string, number> = {};
+
+    let cursor = 1;
+    let lineTop = 0;
+    let lineMaxHeight = 0;
+
+    for (const id of order) {
+      const span = colSpans[id] ?? 4;
+      const h = heights[id] ?? 0;
+
+      if (span >= totalCols) {
+        if (lineMaxHeight > 0) {
+          lineTop += lineMaxHeight + gap;
+        }
+        newColStarts[id] = 1;
+        newTops[id] = lineTop;
+        lineTop += (h > 0 ? h + gap : 0);
+        cursor = 1;
+        lineMaxHeight = 0;
+        continue;
+      }
+
+      if (cursor + span - 1 > totalCols) {
+        lineTop += lineMaxHeight + gap;
+        cursor = 1;
+        lineMaxHeight = 0;
+      }
+
+      newColStarts[id] = cursor;
+      newTops[id] = lineTop;
+      cursor += span;
+      lineMaxHeight = Math.max(lineMaxHeight, h);
+    }
+
+    this.widgetColStarts.set(newColStarts);
+    this.widgetTops.set(newTops);
+    this.syncPixelWidthsFromCols();
+  }
+
   pushFromWidget(widgetId: string): void {
     if (this.isCanvasMode()) {
       this.resolveCanvasPush(widgetId, this.config.widgets);
@@ -1159,7 +1670,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
     const lockedState = this.widgetLocked();
     if (mobile) {
-      const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
+      const sorted = this.sortWidgetsForCollisionPass(widgets, tops);
       let y = 0;
       for (const id of sorted) {
         if (heights[id] <= 0) continue;
@@ -1170,12 +1681,15 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       return;
     }
 
-    const lefts = this.widgetLefts();
-    const widths = this.widgetPixelWidths();
-    const colOverlap = (a: string, b: string) =>
-      lefts[a] < lefts[b] + widths[b] && lefts[b] < lefts[a] + widths[a];
+    const colStarts = this.widgetColStarts();
+    const colSpans = this.widgetColSpans();
+    const colOverlap = (a: string, b: string) => {
+      const aEnd = colStarts[a] + colSpans[a];
+      const bEnd = colStarts[b] + colSpans[b];
+      return colStarts[a] < bEnd && colStarts[b] < aEnd;
+    };
 
-    const sorted = [...widgets].sort((a, b) => tops[a] - tops[b]);
+    const sorted = this.sortWidgetsForCollisionPass(widgets, tops);
     const placed: string[] = [];
 
     for (const id of sorted) {
@@ -1223,9 +1737,86 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.widgetColSpans.set(colSpans);
   }
 
+  private applyResponsiveReflow(width: number): void {
+    const cols = this.getResponsiveColumns(width);
+    if (cols > 0 && cols !== this._currentDesktopColumns) {
+      this.reflowForColumns(cols);
+    }
+  }
+
+  getResponsiveColumns(width: number): number {
+    const bp = this.config.responsiveBreakpoints;
+    if (!bp || bp.length === 0) return 0;
+    for (const entry of bp) {
+      if (width >= entry.minWidth) return entry.columns;
+    }
+    return 0;
+  }
+
+  reflowForColumns(columns: number, options?: { flowOrder?: string[] }): void {
+    const gap = DashboardLayoutEngine.GAP_PX;
+    const heights = this.widgetHeights();
+    const locked = this.widgetLocked();
+    const tops: Record<string, number> = {};
+    const colStarts: Record<string, number> = {};
+    const colSpans: Record<string, number> = {};
+
+    const baseSpan = Math.floor(16 / columns);
+    const ordered = options?.flowOrder?.length
+      ? [...options.flowOrder]
+      : [...this.config.widgets];
+    const seen = new Set<string>();
+    const flowWidgets: string[] = [];
+    for (const id of ordered) {
+      if (!this.config.widgets.includes(id) || seen.has(id)) continue;
+      seen.add(id);
+      if (heights[id] > 0 && !locked[id]) flowWidgets.push(id);
+    }
+    for (const id of this.config.widgets) {
+      if (seen.has(id)) continue;
+      if (heights[id] > 0 && !locked[id]) flowWidgets.push(id);
+    }
+
+    let col = 0;
+    let rowTop = 0;
+    let rowMaxH = 0;
+
+    for (const id of flowWidgets) {
+      const overrideSlots = this.config.responsiveSpanOverrides?.[id]?.[columns];
+      const defaultSpan = this.config.defaultColSpans[id] ?? baseSpan;
+      const slots = overrideSlots ?? Math.min(columns, Math.max(1, Math.round(defaultSpan / baseSpan)));
+      const widgetSpan = slots * baseSpan;
+
+      if (col + slots > columns) {
+        rowTop += rowMaxH + gap;
+        col = 0;
+        rowMaxH = 0;
+      }
+      colStarts[id] = col * baseSpan + 1;
+      colSpans[id] = widgetSpan;
+      tops[id] = rowTop;
+      rowMaxH = Math.max(rowMaxH, heights[id]);
+      col += slots;
+    }
+
+    for (const id of this.config.widgets) {
+      if (heights[id] <= 0 || locked[id]) {
+        colStarts[id] = this.widgetColStarts()[id];
+        colSpans[id] = this.widgetColSpans()[id];
+        tops[id] = this.widgetTops()[id];
+      }
+    }
+
+    this._currentDesktopColumns = columns;
+    this.currentDesktopColumns.set(columns);
+    this.widgetTops.set(tops);
+    this.widgetColStarts.set(colStarts);
+    this.widgetColSpans.set(colSpans);
+  }
+
   private enforceMaxColSpans(
     colSpans: Record<string, number>,
-    pixelWidths: Record<string, number>,
+    pixelWidths?: Record<string, number>,
   ): void {
     const maxSpans = this.config.widgetMaxColSpans;
     if (!maxSpans) return;
@@ -1237,9 +1828,11 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       if (colSpans[id] != null && colSpans[id] > max) {
         colSpans[id] = max;
       }
-      const maxPx = Math.round(max * step - gap);
-      if (pixelWidths[id] != null && pixelWidths[id] > maxPx) {
-        pixelWidths[id] = maxPx;
+      if (pixelWidths) {
+        const maxPx = Math.round(max * step - gap);
+        if (pixelWidths[id] != null && pixelWidths[id] > maxPx) {
+          pixelWidths[id] = maxPx;
+        }
       }
     }
   }
@@ -1303,23 +1896,17 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const heights: Record<string, number> = {};
     const colStarts: Record<string, number> = {};
     const colSpans: Record<string, number> = {};
-    const lefts: Record<string, number> = {};
-    const widths: Record<string, number> = {};
     for (const id of this.config.widgets) {
       tops[id] = this.widgetTops()[id];
       heights[id] = this.widgetHeights()[id];
       colStarts[id] = this.widgetColStarts()[id];
       colSpans[id] = this.widgetColSpans()[id];
-      lefts[id] = this.widgetLefts()[id];
-      widths[id] = this.widgetPixelWidths()[id];
     }
     this.layoutService.save(this.layoutKey, mobile, {
       tops,
       heights,
       colStarts,
       colSpans,
-      lefts,
-      widths,
     });
   }
 
@@ -1345,23 +1932,17 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const heights = { ...this.widgetHeights() };
     const colStarts = { ...this.widgetColStarts() };
     const colSpans = { ...this.widgetColSpans() };
-    const lefts = { ...this.widgetLefts() };
-    const pixelWidths = { ...this.widgetPixelWidths() };
     for (const id of this.config.widgets) {
       if (saved.tops[id] != null) tops[id] = saved.tops[id];
       if (saved.heights[id] != null) heights[id] = saved.heights[id];
       if (saved.colStarts[id] != null) colStarts[id] = saved.colStarts[id];
       if (saved.colSpans[id] != null) colSpans[id] = saved.colSpans[id];
-      if (saved.lefts?.[id] != null) lefts[id] = saved.lefts[id];
-      if (saved.widths?.[id] != null) pixelWidths[id] = saved.widths[id];
     }
-    this.enforceMaxColSpans(colSpans, pixelWidths);
+    this.enforceMaxColSpans(colSpans);
     this.widgetTops.set(tops);
     this.widgetHeights.set(heights);
     this.widgetColStarts.set(colStarts);
     this.widgetColSpans.set(colSpans);
-    this.widgetLefts.set(lefts);
-    this.widgetPixelWidths.set(pixelWidths);
     return true;
   }
 

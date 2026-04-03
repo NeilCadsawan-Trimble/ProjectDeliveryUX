@@ -64,6 +64,10 @@ export abstract class DashboardPageBase {
   readonly widgetLocked = this.engine.widgetLocked;
   readonly moveTargetId = this.engine.moveTargetId;
   readonly canvasGridMinHeight = this.engine.canvasGridMinHeight;
+  readonly desktopGridMinHeight = this.engine.desktopGridMinHeight;
+  readonly widgetGridColumns = this.engine.widgetGridColumns;
+  readonly dragLeft = this.engine.dragLeft;
+  readonly dragWidth = this.engine.dragWidth;
 
   ngAfterViewInit(): void {
     this.engine.gridElAccessor = () => this.resolveGridElement();

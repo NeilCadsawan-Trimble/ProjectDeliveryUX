@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, or canvas zoom. Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, or aligning page layouts with the shared DashboardPageBase. Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -912,6 +912,124 @@ Shift+scroll, Ctrl+scroll, and Cmd+scroll all trigger zoom (covers trackpad pinc
 
 Anchored to viewport center (not cursor position) per user preference.
 
+## 20. Desktop collision sort stability (twitchy tiles)
+
+**File:** `src/app/shell/services/dashboard-layout-engine.ts` -- `resolveCollisions`, `compactAll`, `applyModeLayout`, `handleWidgetMove`, `onDocumentMouseUp`
+
+### Bug A — sort order permuting every frame
+
+The vertical collision pass sorted widgets by **live** `widgetTops` on every `mousemove`. While dragging, the mover’s `top` crosses other widgets, so **sort order permutes** between frames. The greedy stacker recomputed every other widget from `y=0` in a different order.
+
+**Mitigation:** On drag/resize start, snapshot tops into `_collisionSortBaseline`; sort using baseline tops plus **`config.widgets` index** tie-break; clear on `mouseup`. On `window.resize`, only set `isMobile` / `isCanvasMode` when values change.
+
+### Bug B — whole stack recomputed every mousemove (desktop free-drag)
+
+Even with a stable sort, running full `resolveCollisions` on **every** `mousemove` recomputes **all** non-locked widgets’ tops each frame — neighbors **twitch**.
+
+**Mitigation:** For desktop **free** drag (`_dragAxis === 'free'`), **do not** call `resolveCollisions` during `mousemove`. Run **one** `resolveCollisions(movedId, …)` on `mouseup` to settle overlaps.
+
+### Bug C — `compactAll()` after every drag
+
+`compactAll()` after mouseup **collapsed** intentional vertical gaps and re-stacked the entire dashboard — a large **jump** on drop.
+
+**Mitigation:** Skip `compactAll` after a **widget move**; still run it after **resize** (desktop). After move, the single `resolveCollisions` at drop handles overlaps.
+
+### Bug D — wrong projects default on load
+
+`applyModeLayout` (desktop) called `reflowForColumns` whenever `responsiveBreakpoints` matched. That **replaced** authored `defaultColStarts` / `defaultTops` with the responsive **flow** layout on every load — the projects mosaic never appeared.
+
+**Mitigation:** On init, only set `_currentDesktopColumns` / `currentDesktopColumns` for templates; **do not** call `reflowForColumns` there. Reflow still runs from `applyResponsiveReflow` when the window **crosses** a breakpoint. Bump `layoutStorageKey` when shipping this so old session layouts do not linger.
+
+### Bug E — hero resize: spatial far-end squeeze feels random
+
+Horizontal push-squeeze used **outermost-in** column order for squeeze and relocate. On the projects row, that made **lower-priority** tiles (e.g. hero-adjacent) jump before **higher-priority** ones.
+
+**Mitigation:** Optional `DashboardLayoutConfig.desktopResizePriorityOrder`: list widget ids **highest priority first** (squeezed/relocated **last**). `applyResizePushSqueeze` uses `squeezeOrderForNeighbors` / `relocateTargetFromNeighbors` instead of pure spatial order when set. Projects page exports `PROJECTS_DESKTOP_RESIZE_PRIORITY` and passes it in `buildProjectsLayoutConfig()`.
+
+### Bug F — projects desktop drag leaves tiles out of mosaic order
+
+Free-drag only ran `resolveCollisions` on mouseup (vertical overlap), so **horizontal** placement stayed where the user dropped the tile.
+
+**Mitigation:** `desktopSnapToDefaultLayoutAfterDrag`: on move mouseup, `reconcileDesktopCanonicalPlacementAndSavedSizing()` runs before `resolveCollisions`. At the **widest** breakpoint column count, unlocked tiles get `defaultColStarts` / `defaultTops`; **narrower** desktop uses `reflowForColumns(cols, { flowOrder })` with `desktopResizePriorityOrder` merge. **Locked** tiles keep their four grid fields. **ColSpans/heights** keep session values unless `desktopSaveDefaultLayoutSizingOnly` + v2 blob overrides.
+
+### Bug G — Save as Default vs Reset on projects (desktop)
+
+Full snapshot save fought priority placement.
+
+**Mitigation:** `desktopSaveDefaultLayoutSizingOnly`: `saveAsDefaultLayout` writes `{ v: 2, colSpans, heights }` only. `resetToDefaults` clears that key and restores full `config.default*`. On load, `applyModeLayout` calls the same reconcile so canonical placement + saved sizing (or session sizing) apply.
+
+### Regression tests
+
+`dashboard-layout-engine.spec.ts`: `compactAll` tie order; identical consecutive drag `mousemove` leave tops stable; priority vs legacy squeeze order on horizontal resize; snap-after-drag + locked preserve; sizing-only save v2 + reset; `reflowForColumns` `flowOrder`.
+
+## 21. Projects Dashboard Layout Alignment with Home Dashboard
+
+**Files:** `src/app/pages/projects-page/projects-page.component.ts`, `src/app/pages/projects-page/projects-page-layout.config.ts`
+
+### The problem
+
+The Projects Dashboard had custom layout behavior that diverged from the Home Dashboard: no desktop drag, no widget locking, a bottom-left resize handle, responsive breakpoints with reflow, snap-after-drag to canonical positions, and sizing-only default saves. These flags were added in sections 20E-G to solve mosaic-order issues but made the Projects page behave fundamentally differently from Home.
+
+### The fix: extend DashboardPageBase and remove Projects-specific flags
+
+1. **Extend `DashboardPageBase`** -- `ProjectsPageComponent` now extends the same abstract base class as `HomePageComponent` and `FinancialsPageComponent`. This provides shared engine wiring, cleanup, effects, and signal aliases automatically.
+
+2. **Remove all Projects-specific layout flags** from `buildProjectsLayoutConfig()`:
+   - `responsiveBreakpoints` -- no more responsive column reflow
+   - `responsiveSpanOverrides` -- no hero tile 2-column override
+   - `desktopResizePriorityOrder` -- no priority-based squeeze ordering
+   - `desktopReflowOnResize` -- no reflow on window resize
+   - `desktopSnapToDefaultLayoutAfterDrag` -- no snap to canonical after drag
+   - `desktopSaveDefaultLayoutSizingOnly` -- no sizing-only save (full layout saves)
+
+3. **Enable desktop drag** -- removed the mobile/canvas-only guard on `onWidgetHeaderMouseDown` and `onWidgetHeaderTouchStart`, so tiles are draggable on desktop.
+
+4. **Enable widget locking** -- added `WidgetLockToggleComponent` to each project tile. Lock semantics: locks the **priority slot's position and size**, not the specific project. The project displayed in a slot can change based on the agentic ordering priority, but the locked slot's grid position and dimensions stay fixed during drag/resize operations.
+
+5. **Remove bottom-left resize handle** -- only the bottom-right handle remains (consistent with Home Dashboard pattern).
+
+### Capturing a layout from the browser as defaults
+
+When the user arranges tiles in the browser and wants that as the new default:
+
+1. **Get bounding boxes** via `browser_get_bounding_box` on identifiable elements (links, buttons) inside each tile.
+2. **Identify which tile ID occupies each position** by matching project names to `TILE_PROJECT_MAP` entries.
+3. **Calculate grid-relative positions**: subtract the grid container's viewport offset from each tile's top to get `margin-top` values.
+4. **Map pixel positions to grid columns**: divide tile x-positions by column width + gap to determine `defaultColStarts`.
+5. **Update `defaultColStarts`, `defaultTops`, `defaultHeights`** in the layout config.
+6. **Bump storage keys** (both desktop and canvas) to invalidate cached layouts.
+7. **Update canvas defaults** to match the desktop layout conceptually.
+
+### Key insight: reading order = priority order
+
+The Projects Dashboard uses an "agentic ordering priority" where `proj1` = highest priority, `proj2` = second, etc. The `TILE_PROJECT_MAP` maps each priority slot to a project by urgency score. The **default layout** must position tiles so that the visual reading order (left-to-right, top-to-bottom) matches the priority numbering. This ensures the most urgent project always appears at the first visual position.
+
+### Storage key bumping rule
+
+Every change to `defaultColStarts`, `defaultTops`, `defaultHeights`, or `defaultColSpans` **must** bump both `layoutStorageKey` and `canvasStorageKey`. Without bumping, users with cached layouts in sessionStorage will see the old layout, not the new defaults.
+
+```typescript
+layoutStorageKey: 'dashboard-projects:v16',   // was v15
+canvasStorageKey: 'canvas-layout:dashboard-projects:v17',  // was v16
+```
+
+### The layout structure (current defaults)
+
+```
+Row 1 (top=0, height=672):
+  proj1: cols 1-8  (hero, wide)
+  proj2: cols 9-12 (flanking, same height as hero)
+  proj3: cols 13-16
+
+Row 2 (top=688, height=384):
+  proj6: cols 1-4   proj7: cols 5-8   proj4: cols 9-12   proj5: cols 13-16
+
+Row 3 (top=1088, height=384):
+  proj8: cols 1-4
+```
+
+All top-row tiles are the same height (672px), eliminating the old "stacked under right tiles" pattern. Middle row is a full-width band of 4 equal tiles. Bottom row has one tile.
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -935,3 +1053,7 @@ Anchored to viewport center (not cursor position) per user preference.
 | Area-adaptive content blocks | `projects-page.component.ts` | (visual: resize widget, verify content fills) |
 | CSS text scaling tiers | `src/styles.css` + `projects-page.component.ts` | (visual: resize widget, verify text scales) |
 | Canvas zoom axis swap | `canvas-panning.ts` | (manual test: Shift+scroll on macOS) |
+| Collision sort stability (desktop) | `dashboard-layout-engine.ts` | `dashboard-layout-engine.spec.ts` (collision pass ordering) |
+| Desktop resize priority squeeze | `dashboard-layout-engine.ts` + page `desktopResizePriorityOrder` | `dashboard-layout-engine.spec.ts` (priority vs legacy) |
+| Desktop snap after drag + sizing-only defaults | `dashboard-layout-engine.ts` + `buildProjectsLayoutConfig` | `dashboard-layout-engine.spec.ts` (snap, locked, v2 save/reset, flowOrder) |
+| Projects layout alignment + DashboardPageBase | `projects-page.component.ts` + `projects-page-layout.config.ts` | Build verification; visual test |

@@ -40,11 +40,34 @@
               </div>
               <div class="w-px h-5 bg-foreground-20 mr-1"></div>
             }
-            @for (btn of config.actions; track btn.icon) {
-              <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
-                role="button" tabindex="0" [attr.aria-label]="btn.label">
-                <i class="modus-icons text-base" aria-hidden="true">{{ btn.icon }}</i>
+            @if (isCompactMobile() && config.actions.length > 0) {
+              <div class="relative">
+                <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                  role="button" tabindex="0" aria-label="More actions"
+                  [attr.aria-expanded]="toolbarMoreOpen()"
+                  (click)="toolbarMoreOpen.set(!toolbarMoreOpen()); $event.stopPropagation()">
+                  <i class="modus-icons text-base" aria-hidden="true">more_vertical</i>
+                </div>
+                @if (toolbarMoreOpen()) {
+                  <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[160px] py-1">
+                    @for (btn of config.actions; track btn.icon) {
+                      <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="toolbarMoreOpen.set(false)">
+                        <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ btn.icon }}</i>
+                        <div class="text-sm">{{ btn.label }}</div>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
+            } @else {
+              @for (btn of config.actions; track btn.icon) {
+                <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                  role="button" tabindex="0" [attr.aria-label]="btn.label">
+                  <i class="modus-icons text-base" aria-hidden="true">{{ btn.icon }}</i>
+                </div>
+              }
             }
             @if (config.viewToggles.length > 0) {
               <div class="flex items-center bg-secondary rounded ml-1">
@@ -65,16 +88,6 @@
 
     <ng-template #detailContent>
       <div [class]="isCanvasDrawingDetail() || isCanvasPanoramaDetail() ? 'canvas-detail-constrained' : ''">
-        @if ((!detailHasSubNav() || isMobile()) && !detailDrawing() && !detailPanorama()) {
-          <div class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
-            role="button" tabindex="0"
-            (click)="clearDetailView()"
-            (keydown.enter)="clearDetailView()"
-          >
-            <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-            <div class="text-sm font-medium">{{ detailBackLabel() }}</div>
-          </div>
-        }
         <div class="transition-all duration-200" [style.margin-left.px]="detailHasSubNav() && !isMobile() && sideSubNavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
         </div>
@@ -209,7 +222,17 @@
 
     <ng-template #dashboardContent>
       @if (detailView()) {
-        @if (detailHasSubNav()) {
+        @if (detailHasSubNav() && !isMobile()) {
+          @if (activeNavItem() === 'records') {
+            <div class="flex items-center justify-between mb-6">
+              <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
+            </div>
+          }
+          @if (activeNavItem() === 'financials' && !subledgerCategory()) {
+            <div class="flex items-center justify-between mb-6">
+              <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'billings') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }@if (activeFinancialsPage() === 'purchase-orders') { ({{ projectPurchaseOrders().length }}) }@if (activeFinancialsPage() === 'contract-invoices') { ({{ projectInvoices().length }}) }@if (activeFinancialsPage() === 'general-invoices') { ({{ projectPayables().length }}) }</div>
+            </div>
+          }
           <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
             @if (activeNavItem() === 'records') {
               <app-collapsible-subnav
@@ -1316,15 +1339,6 @@
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
             </div>
             @if (activeRecordsPage() === 'rfis') {
-              <div class="flex items-center gap-4 mb-4 flex-wrap">
-                <div class="flex items-center gap-1.5 text-sm font-medium text-foreground">{{ rfiStatusCounts()['total'] }} Total</div>
-                @for (opt of STATUS_OPTIONS; track opt.value) {
-                  <div class="flex items-center gap-1.5 text-sm text-foreground-60">
-                    <div class="w-2 h-2 rounded-full" [class]="opt.dotClass"></div>
-                    <div>{{ rfiStatusCounts()[opt.value] }} {{ opt.label }}</div>
-                  </div>
-                }
-              </div>
               @if (subnavViewMode() === 'grid') {
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   @for (rfi of projectRfis(); track rfi.id) {
@@ -1389,15 +1403,6 @@
                 </div>
               }
             } @else if (activeRecordsPage() === 'submittals') {
-              <div class="flex items-center gap-4 mb-4 flex-wrap">
-                <div class="flex items-center gap-1.5 text-sm font-medium text-foreground">{{ submittalStatusCounts()['total'] }} Total</div>
-                @for (opt of STATUS_OPTIONS; track opt.value) {
-                  <div class="flex items-center gap-1.5 text-sm text-foreground-60">
-                    <div class="w-2 h-2 rounded-full" [class]="opt.dotClass"></div>
-                    <div>{{ submittalStatusCounts()[opt.value] }} {{ opt.label }}</div>
-                  </div>
-                }
-              </div>
               @if (subnavViewMode() === 'grid') {
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   @for (sub of projectSubmittals(); track sub.id) {
@@ -2652,9 +2657,9 @@
 
         <!-- Widget grid -->
         <div
-          [class]="isCanvas() ? 'relative overflow-visible mb-6' : 'relative mb-6'"
+          [class]="isCanvas() ? 'relative overflow-visible mb-6' : isMobile() ? 'relative mb-6' : 'relative mb-6 widget-grid-desktop'"
           [style.height.px]="isMobile() ? mobileGridHeight() : null"
-          [style.min-height.px]="!isMobile() ? desktopGridMinHeight() : null"
+          [style.min-height.px]="isCanvas() ? canvasGridMinHeight() : (!isMobile() ? desktopGridMinHeight() : null)"
           #widgetGrid
         >
           @if (isCanvas()) {
@@ -2686,11 +2691,20 @@
           }
           @for (wId of widgets; track wId) {
             <div
-              [class]="(canvasDetailViews()[wId] ? 'absolute' : (isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden')) + (shouldTransition(wId) ? ' widget-detail-transition' : '')"
+              [class]="(canvasDetailViews()[wId] ? 'absolute'
+                     : isMobile() ? 'absolute left-0 right-0 overflow-hidden'
+                     : isCanvas() ? 'absolute overflow-hidden'
+                     : moveTargetId() === wId ? 'absolute overflow-hidden'
+                     : 'overflow-hidden')
+                     + (shouldTransition(wId) ? ' widget-detail-transition' : '')"
               [attr.data-widget-id]="wId"
-              [style.top.px]="wTops()[wId]"
-              [style.left.px]="!isMobile() ? wLefts()[wId] : null"
-              [style.width.px]="!isMobile() ? wPixelWidths()[wId] : null"
+              [style.grid-column]="!isMobile() && !isCanvas() && moveTargetId() !== wId ? wGridColumns()[wId] : null"
+              [style.grid-row]="!isMobile() && !isCanvas() && moveTargetId() !== wId ? '1' : null"
+              [style.align-self]="!isMobile() && !isCanvas() && moveTargetId() !== wId ? 'start' : null"
+              [style.margin-top.px]="!isMobile() && !isCanvas() && moveTargetId() !== wId ? wTops()[wId] : null"
+              [style.top.px]="isMobile() || isCanvas() || moveTargetId() === wId ? wTops()[wId] : null"
+              [style.left.px]="isCanvas() || moveTargetId() === wId ? wLefts()[wId] : null"
+              [style.width.px]="isCanvas() ? wPixelWidths()[wId] : (moveTargetId() === wId ? dragWidth() : null)"
               [style.height.px]="wHeights()[wId]"
               [style.z-index]="canvasDetailViews()[wId] ? 9999 : (wId === 'team' && timeOffStatusOpen() !== null) ? 9998 : (wZIndices()[wId] ?? 0)"
               (mousedown)="canvasDetailViews()[wId] ? $event.stopPropagation() : null"
@@ -3736,7 +3750,7 @@
               <div class="flex-1 overflow-y-auto min-h-0">
                 @for (item of recordsSubNavItems; track item.value) {
                   <div
-                    class="py-2.5 text-sm cursor-pointer transition-colors duration-150"
+                    class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150"
                     [class.bg-primary]="activeRecordsPage() === item.value"
                     [class.text-primary-foreground]="activeRecordsPage() === item.value"
                     [class.font-medium]="activeRecordsPage() === item.value"
@@ -3749,7 +3763,29 @@
                     role="button" tabindex="0"
                     (click)="selectRecordsSubPage(item.value)"
                     (keydown.enter)="selectRecordsSubPage(item.value)">
-                    {{ item.label }}
+                    <div class="flex items-center gap-2">
+                      @if (item.icon) {
+                        <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true"
+                          [class.text-primary-foreground]="activeRecordsPage() === item.value"
+                          [class.text-foreground-60]="activeRecordsPage() !== item.value"
+                        >{{ item.icon }}</i>
+                      }
+                      <div>{{ item.label }}</div>
+                    </div>
+                    @if (recordsAlerts()[item.value]; as alert) {
+                      <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1 mr-1"
+                        [class.bg-destructive]="alert.level === 'critical'"
+                        [class.text-destructive-foreground]="alert.level === 'critical'"
+                        [class.bg-warning]="alert.level === 'warning'"
+                        [class.text-warning-foreground]="alert.level === 'warning'"
+                        [class.bg-primary-foreground]="alert.level === 'info' && activeRecordsPage() === item.value"
+                        [class.text-primary]="alert.level === 'info' && activeRecordsPage() === item.value"
+                        [class.bg-primary]="alert.level === 'info' && activeRecordsPage() !== item.value"
+                        [class.text-primary-foreground]="alert.level === 'info' && activeRecordsPage() !== item.value"
+                        [attr.title]="alert.count + ' ' + alert.label">
+                        {{ alert.count }}
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -3762,7 +3798,7 @@
               <div class="flex-1 overflow-y-auto min-h-0">
                 @for (item of financialsSubNavItems; track item.value) {
                   <div
-                    class="py-2.5 text-sm cursor-pointer transition-colors duration-150"
+                    class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150"
                     [class.bg-primary]="activeFinancialsPage() === item.value"
                     [class.text-primary-foreground]="activeFinancialsPage() === item.value"
                     [class.font-medium]="activeFinancialsPage() === item.value"
@@ -3775,9 +3811,31 @@
                     role="button" tabindex="0"
                     (click)="selectFinancialsSubPage(item.value)"
                     (keydown.enter)="selectFinancialsSubPage(item.value)">
-                    {{ item.label }}
-                </div>
-              }
+                    <div class="flex items-center gap-2">
+                      @if (item.icon) {
+                        <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true"
+                          [class.text-primary-foreground]="activeFinancialsPage() === item.value"
+                          [class.text-foreground-60]="activeFinancialsPage() !== item.value"
+                        >{{ item.icon }}</i>
+                      }
+                      <div>{{ item.label }}</div>
+                    </div>
+                    @if (financialsAlerts()[item.value]; as alert) {
+                      <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1 mr-1"
+                        [class.bg-destructive]="alert.level === 'critical'"
+                        [class.text-destructive-foreground]="alert.level === 'critical'"
+                        [class.bg-warning]="alert.level === 'warning'"
+                        [class.text-warning-foreground]="alert.level === 'warning'"
+                        [class.bg-primary-foreground]="alert.level === 'info' && activeFinancialsPage() === item.value"
+                        [class.text-primary]="alert.level === 'info' && activeFinancialsPage() === item.value"
+                        [class.bg-primary]="alert.level === 'info' && activeFinancialsPage() !== item.value"
+                        [class.text-primary-foreground]="alert.level === 'info' && activeFinancialsPage() !== item.value"
+                        [attr.title]="alert.count + ' ' + alert.label">
+                        {{ alert.count }}
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             }
           }

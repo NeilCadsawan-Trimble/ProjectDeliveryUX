@@ -3,7 +3,7 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 1, 2026
+**Last Updated**: April 2, 2026
 **Total Commits**: 180+
 
 ---
@@ -26,9 +26,10 @@
 | 12 | Reactive Data Store | Done | 5/5 |
 | 13 | Canvas and Interaction Fixes | Done | 5/5 |
 | 14 | Adaptive Widget Content | Done | 7/7 |
-| 15 | Remaining Work | Not Started | 0/8 |
+| 15 | Projects Dashboard Layout Alignment | Done | 6/6 |
+| 16 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 137/145 items (94%)
+**Completed**: 143/151 items (95%)
 
 ---
 
@@ -388,7 +389,28 @@ Area-adaptive content disclosure for project widgets, fade/gain visualization, a
 
 ---
 
-## Phase 15: Remaining Work
+## Phase 15: Projects Dashboard Layout Alignment (Apr 2)
+
+Aligned the Projects Dashboard with the Home Dashboard layout engine rules, re-enabled desktop interactivity, and captured the user-designed layout as the default.
+
+### Layout Engine Alignment
+- [x] Extended `DashboardPageBase` for `ProjectsPageComponent` (was standalone with manual engine wiring)
+- [x] Removed Projects-specific layout flags: `responsiveBreakpoints`, `responsiveSpanOverrides`, `desktopResizePriorityOrder`, `desktopReflowOnResize`, `desktopSnapToDefaultLayoutAfterDrag`, `desktopSaveDefaultLayoutSizingOnly`
+
+### Desktop Interactivity
+- [x] Re-enabled desktop drag (removed mobile-only guard on `onWidgetHeaderMouseDown`/`onWidgetHeaderTouchStart`)
+- [x] Re-enabled widget lock toggle for all project tiles (locks priority slot position/size, not project assignment)
+- [x] Removed bottom-left resize handle (right/bottom handle only)
+
+### Default Layout Capture
+- [x] Captured tile positions from browser via bounding box inspection and set as new defaults: 3-row layout with hero + flanking tiles (all 672px), 4 equal middle-row tiles (384px), single bottom tile; storage keys bumped v15 to v16 (desktop) and v16 to v17 (canvas)
+
+**Key file**: `src/app/pages/projects-page/projects-page-layout.config.ts`
+**Tests**: Build passing, 325 static tests, 90 unit tests
+
+---
+
+## Phase 16: Remaining Work
 
 Features and improvements not yet started.
 
@@ -460,6 +482,7 @@ Features and improvements not yet started.
 | Mar 30 | [Collision and domain data](b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8) | Canvas collision frozen-direction pushback, construction domain data, risks widget layout promotion |
 | Mar 31 | [Hamburger and zoom](331f2cb4-f365-4109-8821-f8801018796f) | Scoped encapsulation hamburger fix, canvas Shift+scroll zoom macOS fix, viewport center zoom |
 | Apr 1 | [Adaptive widgets](331f2cb4-f365-4109-8821-f8801018796f) | Area-adaptive content blocks, wide widget layout, large widget content, weather work impact, fade/gain visualization, text scaling, canvas breakpoint 1920px, back button standardization |
+| Apr 2 | [Projects layout alignment](20b36c27-0715-4a36-9c40-ec6f32104d80) | Projects Dashboard layout alignment with Home rules, DashboardPageBase extension, desktop drag/resize/lock re-enabled, default layout capture from browser |
 
 ---
 

@@ -1475,6 +1475,12 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   pointer-events: none;
 }
 
+.shadow-navbar-menu {
+  box-shadow:
+    0 2px 6px rgba(36, 35, 45, 0.18),
+    0 6px 16px rgba(36, 35, 45, 0.10);
+}
+
 modus-wc-navbar .main-menu {
   visibility: hidden !important;
   pointer-events: none !important;
@@ -2046,3 +2052,10 @@ modus-wc-utility-panel .modus-wc-utility-panel-footer {
 .pf-baseline { stroke: var(--foreground); stroke-width: 1; stroke-dasharray: 6 4; opacity: 0.35; }
 .pf-dot-gain { fill: var(--success); stroke: var(--card); stroke-width: 2; }
 .pf-dot-fade { fill: var(--destructive); stroke: var(--card); stroke-width: 2; }
+
+/* ── CSS Grid widget container (desktop mode) ──────────────── */
+.widget-grid-desktop {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  column-gap: 16px;
+}
