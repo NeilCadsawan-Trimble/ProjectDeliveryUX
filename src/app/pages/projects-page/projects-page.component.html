@@ -6,9 +6,14 @@
       <div class="text-lg md:text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
       <div class="flex items-center gap-2 flex-shrink-0">
         @if (isNarrowMobile()) {
-          <modus-button color="primary" size="sm" icon="add" iconPosition="only" ariaLabel="Create"></modus-button>
+          <div class="flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded cursor-pointer hover:opacity-90 transition-opacity" role="button" tabindex="0" aria-label="Create">
+            <i class="modus-icons text-base" aria-hidden="true">add</i>
+          </div>
         } @else {
-          <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
+          <div class="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity" role="button" tabindex="0">
+            <i class="modus-icons text-sm" aria-hidden="true">add</i>
+            <div>Create</div>
+          </div>
         }
       </div>
     </div>
@@ -83,14 +88,18 @@
           </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 mt-1">
-          <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
+          <div class="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity" role="button" tabindex="0">
+            <i class="modus-icons text-sm" aria-hidden="true">add</i>
+            <div>Create</div>
+          </div>
         </div>
       </div>
     </div>
     }
 
     @for (widgetId of projectWidgets; track widgetId) {
-      @if (projectForWidget(widgetId); as project) {
+      @if (projectWidgetMap()[widgetId]; as project) {
+    @let wd = widgetDerived()[widgetId];
 
     <div
       [class]="isCanvasMode() ? 'absolute overflow-hidden'
@@ -142,10 +151,10 @@
 
             @if (isWideWidget(widgetId)) {
             <div class="p-4 flex flex-col gap-3 overflow-hidden">
-              @let agent = getProjectAgent(project.id);
+              @let agent = wd.agent;
               <div class="text-xs text-foreground-60 tile-block-link" (click)="navigateToBlock(project, 'owner', $event)">{{ project.client }}</div>
               <div class="flex gap-4">
-                <div class="flex flex-col gap-2.5 w-[45%] flex-shrink-0">
+                <div class="flex flex-col gap-2.5 flex-1 min-w-0">
                   @if (showBlock(widgetId, 'owner')) {
                     <div class="flex flex-col gap-2.5 tile-block-link" [style.order]="blockOrder(widgetId, 'owner')" (click)="navigateToBlock(project, 'owner', $event)">
                       @if (isLargeWidget(widgetId)) {
@@ -173,10 +182,10 @@
                     </div>
                   }
                   @if (showBlock(widgetId, 'weather')) {
-                    @if (getWeather(project.id); as pw) {
+                    @if (wd.weather; as pw) {
                       @if (isLargeWidget(widgetId)) {
                         <div class="flex flex-col gap-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'weather')" (click)="navigateToBlock(project, 'weather', $event)">
-                          <div class="flex items-center gap-1.5">
+                          <div class="flex items-center gap-1.5 flex-wrap">
                             <i class="modus-icons text-sm" [class]="weatherIconColor(pw.current.condition)" aria-hidden="true">{{ weatherIcon(pw.current.condition) }}</i>
                             <div class="text-xs font-medium text-foreground">{{ pw.current.tempF }}&deg;F</div>
                             <div class="text-2xs text-foreground-40">{{ project.city }}, {{ project.state }}</div>
@@ -206,10 +215,10 @@
                     }
                   }
                   @if (showBlock(widgetId, 'forecast')) {
-                    @if (getWeather(project.id); as pw) {
+                    @if (wd.weather; as pw) {
                       @if (isLargeWidget(widgetId)) {
                         <div class="flex flex-col gap-1.5 tile-block-link" [style.order]="blockOrder(widgetId, 'forecast')" (click)="navigateToBlock(project, 'forecast', $event)">
-                          <div class="flex items-center gap-2">
+                          <div class="flex items-center gap-2 flex-wrap">
                             @for (day of pw.forecast.slice(0, forecastDays()); track day.day) {
                               <div class="flex items-center gap-1 rounded px-1.5 py-0.5"
                                 [class.bg-destructive-20]="day.workImpact === 'major'"
@@ -227,7 +236,7 @@
                               </div>
                             }
                           </div>
-                          @if (getFirstImpactedForecast(project.id); as impact) {
+                          @if (wd.firstImpactedForecast; as impact) {
                             <div class="flex items-start gap-1.5">
                               <div class="text-2xs font-medium px-1.5 py-0.5 rounded flex-shrink-0"
                                 [class.bg-destructive-20]="impact.workImpact === 'major'" [class.text-destructive]="impact.workImpact === 'major'"
@@ -238,7 +247,7 @@
                           }
                         </div>
                       } @else {
-                        <div class="flex items-center gap-2 tile-block-link" [style.order]="blockOrder(widgetId, 'forecast')" (click)="navigateToBlock(project, 'forecast', $event)">
+                        <div class="flex items-center gap-2 flex-wrap tile-block-link" [style.order]="blockOrder(widgetId, 'forecast')" (click)="navigateToBlock(project, 'forecast', $event)">
                           @for (day of pw.forecast.slice(0, forecastDays()); track day.day) {
                             <div class="flex items-center gap-1 bg-muted rounded px-1.5 py-0.5">
                               <div class="text-2xs text-foreground-40">{{ day.day }}</div>
@@ -269,7 +278,7 @@
                           </div>
                         </div>
                         @if (isLargeWidget(widgetId)) {
-                          @for (need of getTopNeeds(project.id); track need.title) {
+                          @for (need of wd.topNeeds; track need.title) {
                             <div class="flex items-start gap-2">
                               <div class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" [class.bg-destructive]="need.severity === 'critical'" [class.bg-warning]="need.severity === 'warning'" [class.bg-primary]="need.severity === 'info'"></div>
                               <div class="flex-1 min-w-0">
@@ -302,7 +311,7 @@
                   }
                   @if (showBlock(widgetId, 'moreNeeds') && !isLargeWidget(widgetId)) {
                     <div class="flex flex-col gap-2.5 tile-block-link" [style.order]="blockOrder(widgetId, 'moreNeeds')" (click)="navigateToBlock(project, 'moreNeeds', $event)">
-                      @for (need of getTopNeeds(project.id).slice(1); track need.title) {
+                      @for (need of wd.moreNeeds; track need.title) {
                         <div class="flex items-start gap-2">
                           <div class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" [class.bg-destructive]="need.severity === 'critical'" [class.bg-warning]="need.severity === 'warning'" [class.bg-primary]="need.severity === 'info'"></div>
                           <div class="flex-1 min-w-0">
@@ -315,7 +324,7 @@
                     </div>
                   }
                   @if (showBlock(widgetId, 'milestone')) {
-                    @if (getNextMilestone(project.id); as ms) {
+                    @if (wd.nextMilestone; as ms) {
                       <div class="flex flex-col gap-1 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'milestone')" (click)="navigateToBlock(project, 'milestone', $event)">
                         <div class="flex items-center justify-between">
                           <div class="text-2xs text-foreground-40 uppercase tracking-wide">Next Milestone</div>
@@ -330,7 +339,7 @@
                     }
                   }
                   @if (showBlock(widgetId, 'teamSummary')) {
-                    @if (getTeamSummary(project.id); as team) {
+                    @if (wd.teamSummary; as team) {
                       <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'teamSummary')" (click)="navigateToBlock(project, 'teamSummary', $event)">
                         <div class="flex -space-x-1.5">
                           @for (member of team.members; track member.initials) {
@@ -345,7 +354,7 @@
                     }
                   }
                   @if (showBlock(widgetId, 'riskSummary')) {
-                    @if (getTopRisk(project.id); as risk) {
+                    @if (wd.topRisk; as risk) {
                       <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'riskSummary')" (click)="navigateToBlock(project, 'riskSummary', $event)">
                         <i class="modus-icons text-xs flex-shrink-0" [class.text-destructive]="risk.severity === 'high'" [class.text-warning]="risk.severity === 'medium'" [class.text-foreground-40]="risk.severity === 'low'" aria-hidden="true">warning</i>
                         <div class="text-2xs font-medium text-foreground truncate">{{ risk.title }}</div>
@@ -386,7 +395,7 @@
                     </div>
                   }
                   @if (showBlock(widgetId, 'sparkline')) {
-                    @if (getBudgetHistory(project.id); as history) {
+                    @if (wd.budgetHistory; as history) {
                       <div class="border-top-default pt-3 mt-1 flex flex-col gap-1 tile-block-link" [style.order]="blockOrder(widgetId, 'sparkline')" (click)="navigateToBlock(project, 'sparkline', $event)">
                         <div class="flex items-center justify-between">
                           <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget Trend</div>
@@ -407,7 +416,7 @@
                           </svg>
                         }
                         @if (!showBlock(widgetId, 'fadeGain')) {
-                          @if (getProjectFadeGain(project.id); as fg) {
+                          @if (wd.fadeGain; as fg) {
                             <div class="flex items-center justify-end gap-1.5">
                               <div class="text-2xs font-medium" [class.text-success]="fg.isGain" [class.text-destructive]="!fg.isGain">
                                 <i class="modus-icons text-2xs" aria-hidden="true">{{ fg.isGain ? 'trending_up' : 'trending_down' }}</i>
@@ -420,7 +429,7 @@
                     }
                   }
                   @if (showBlock(widgetId, 'fadeGain')) {
-                    @if (getProjectFadeGain(project.id); as fg) {
+                    @if (wd.fadeGain; as fg) {
                       @if (isLargeWidget(widgetId)) {
                         <div class="flex items-center gap-3 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'fadeGain')" (click)="navigateToBlock(project, 'fadeGain', $event)">
                           <div class="flex items-center gap-1.5">
@@ -445,7 +454,7 @@
                     }
                   }
                   @if (showBlock(widgetId, 'costDetail')) {
-                    @if (getJobCostData(project.id); as jc) {
+                    @if (wd.jobCost; as jc) {
                       @let cats = jobCostCategories(jc);
                       <div class="flex flex-col gap-1.5 tile-block-link" [style.order]="blockOrder(widgetId, 'costDetail')" (click)="navigateToBlock(project, 'costDetail', $event)">
                         <div class="text-2xs text-foreground-40 uppercase tracking-wide">Cost Breakdown</div>
@@ -463,7 +472,7 @@
                     }
                   }
                   @if (showBlock(widgetId, 'costBreakdown') && !showBlock(widgetId, 'costDetail')) {
-                    @if (getJobCostData(project.id); as jc) {
+                    @if (wd.jobCost; as jc) {
                       @let cats = jobCostCategories(jc);
                       <div class="flex flex-col gap-1 tile-block-link" [style.order]="blockOrder(widgetId, 'costBreakdown')" (click)="navigateToBlock(project, 'costBreakdown', $event)">
                         <div class="text-2xs text-foreground-40 uppercase tracking-wide">Cost Breakdown</div>
@@ -481,7 +490,7 @@
                     }
                   }
                   @if (showBlock(widgetId, 'insight')) {
-                    @if (getProjectInsight(project.id); as insight) {
+                    @if (wd.insight; as insight) {
                       <div class="flex items-center gap-1.5 border-top-default pt-2 mt-1 tile-block-link" [style.order]="blockOrder(widgetId, 'insight')" (click)="navigateToBlock(project, 'insight', $event)">
                         <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                         <div class="text-2xs text-foreground-60 truncate leading-none">{{ insight }}</div>
@@ -493,7 +502,7 @@
             </div>
             } @else {
             <div class="p-4 flex flex-col gap-3 overflow-hidden">
-              @let agent = getProjectAgent(project.id);
+              @let agent = wd.agent;
               <div class="text-xs text-foreground-60 tile-block-link" style="order:-1" (click)="navigateToBlock(project, 'owner', $event)">{{ project.client }}</div>
               @if (showBlock(widgetId, 'owner')) {
                 <div class="flex items-center justify-between tile-block-link" [style.order]="blockOrder(widgetId, 'owner')" (click)="navigateToBlock(project, 'owner', $event)">
@@ -534,7 +543,7 @@
                 </div>
               }
               @if (showBlock(widgetId, 'weather')) {
-                @if (getWeather(project.id); as pw) {
+                @if (wd.weather; as pw) {
                   <div class="flex items-center justify-between tile-block-link" [style.order]="blockOrder(widgetId, 'weather')" (click)="navigateToBlock(project, 'weather', $event)">
                     <div class="flex items-center gap-1.5">
                       <i class="modus-icons text-sm" [class]="weatherIconColor(pw.current.condition)" aria-hidden="true">{{ weatherIcon(pw.current.condition) }}</i>
@@ -588,7 +597,7 @@
                 }
               }
               @if (showBlock(widgetId, 'sparkline')) {
-                @if (getBudgetHistory(project.id); as history) {
+                @if (wd.budgetHistory; as history) {
                   <div class="border-top-default pt-3 mt-1 flex flex-col gap-1 tile-block-link" [style.order]="blockOrder(widgetId, 'sparkline')" (click)="navigateToBlock(project, 'sparkline', $event)">
                     <div class="flex items-center justify-between">
                       <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget Trend</div>
@@ -602,7 +611,7 @@
                       <path [attr.d]="sparklinePath(history, 'actual')" fill="none" stroke="var(--primary)" stroke-width="1.5" />
                     </svg>
                     @if (!showBlock(widgetId, 'fadeGain')) {
-                      @if (getProjectFadeGain(project.id); as fg) {
+                      @if (wd.fadeGain; as fg) {
                         <div class="flex items-center justify-end gap-1.5">
                           <div class="text-2xs font-medium" [class.text-success]="fg.isGain" [class.text-destructive]="!fg.isGain">
                             <i class="modus-icons text-2xs" aria-hidden="true">{{ fg.isGain ? 'trending_up' : 'trending_down' }}</i>
@@ -615,7 +624,7 @@
                 }
               }
               @if (showBlock(widgetId, 'fadeGain')) {
-                @if (getProjectFadeGain(project.id); as fg) {
+                @if (wd.fadeGain; as fg) {
                   <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'fadeGain')" (click)="navigateToBlock(project, 'fadeGain', $event)">
                     <i class="modus-icons text-sm" [class.text-success]="fg.isGain" [class.text-destructive]="!fg.isGain" aria-hidden="true">{{ fg.isGain ? 'trending_up' : 'trending_down' }}</i>
                     <div class="text-2xs font-medium" [class.text-success]="fg.isGain" [class.text-destructive]="!fg.isGain">{{ fg.value }} {{ fg.label }}</div>
@@ -624,7 +633,7 @@
                 }
               }
               @if (showBlock(widgetId, 'costBreakdown')) {
-                @if (getJobCostData(project.id); as jc) {
+                @if (wd.jobCost; as jc) {
                   @let cats = jobCostCategories(jc);
                   <div class="flex flex-col gap-1 tile-block-link" [style.order]="blockOrder(widgetId, 'costBreakdown')" (click)="navigateToBlock(project, 'costBreakdown', $event)">
                     <div class="text-2xs text-foreground-40 uppercase tracking-wide">Cost Breakdown</div>
@@ -642,7 +651,7 @@
                 }
               }
               @if (showBlock(widgetId, 'insight')) {
-                @if (getProjectInsight(project.id); as insight) {
+                @if (wd.insight; as insight) {
                   <div class="flex items-center gap-1.5 border-top-default pt-2 mt-1 tile-block-link" [style.order]="blockOrder(widgetId, 'insight')" (click)="navigateToBlock(project, 'insight', $event)">
                     <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                     <div class="text-2xs text-foreground-60 truncate leading-none">{{ insight }}</div>
@@ -651,7 +660,7 @@
               }
               @if (showBlock(widgetId, 'moreNeeds')) {
                 <div class="flex flex-col gap-3 tile-block-link" [style.order]="blockOrder(widgetId, 'moreNeeds')" (click)="navigateToBlock(project, 'moreNeeds', $event)">
-                  @for (need of getTopNeeds(project.id).slice(1); track need.title) {
+                  @for (need of wd.moreNeeds; track need.title) {
                     <div class="flex items-start gap-2">
                       <div class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" [class.bg-destructive]="need.severity === 'critical'" [class.bg-warning]="need.severity === 'warning'" [class.bg-primary]="need.severity === 'info'"></div>
                       <div class="flex-1 min-w-0">
@@ -664,7 +673,7 @@
                 </div>
               }
               @if (showBlock(widgetId, 'forecast')) {
-                @if (getWeather(project.id); as pw) {
+                @if (wd.weather; as pw) {
                   @if (isLargeWidget(widgetId)) {
                     <div class="flex flex-col gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'forecast')" (click)="navigateToBlock(project, 'forecast', $event)">
                       <div class="flex items-center gap-2">
@@ -685,7 +694,7 @@
                           </div>
                         }
                       </div>
-                      @if (getFirstImpactedForecast(project.id); as impact) {
+                      @if (wd.firstImpactedForecast; as impact) {
                         <div class="flex items-start gap-1.5">
                           <div class="text-2xs font-medium px-1.5 py-0.5 rounded flex-shrink-0"
                             [class.bg-destructive-20]="impact.workImpact === 'major'" [class.text-destructive]="impact.workImpact === 'major'"
@@ -709,7 +718,7 @@
                 }
               }
               @if (showBlock(widgetId, 'milestone')) {
-                @if (getNextMilestone(project.id); as ms) {
+                @if (wd.nextMilestone; as ms) {
                   <div class="flex flex-col gap-1 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'milestone')" (click)="navigateToBlock(project, 'milestone', $event)">
                     <div class="flex items-center justify-between">
                       <div class="text-2xs text-foreground-40 uppercase tracking-wide">Next Milestone</div>
@@ -724,7 +733,7 @@
                 }
               }
               @if (showBlock(widgetId, 'teamSummary')) {
-                @if (getTeamSummary(project.id); as team) {
+                @if (wd.teamSummary; as team) {
                   <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'teamSummary')" (click)="navigateToBlock(project, 'teamSummary', $event)">
                     <div class="flex -space-x-1.5">
                       @for (member of team.members; track member.initials) {
@@ -739,7 +748,7 @@
                 }
               }
               @if (showBlock(widgetId, 'riskSummary')) {
-                @if (getTopRisk(project.id); as risk) {
+                @if (wd.topRisk; as risk) {
                   <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'riskSummary')" (click)="navigateToBlock(project, 'riskSummary', $event)">
                     <i class="modus-icons text-xs flex-shrink-0" [class.text-destructive]="risk.severity === 'high'" [class.text-warning]="risk.severity === 'medium'" [class.text-foreground-40]="risk.severity === 'low'" aria-hidden="true">warning</i>
                     <div class="text-2xs font-medium text-foreground truncate">{{ risk.title }}</div>

@@ -27,6 +27,8 @@ export interface DashboardLayoutConfig {
   responsiveBreakpoints?: { minWidth: number; columns: number }[];
   /** Per-widget slot counts at each responsive column count, e.g. { proj1: { 4: 2, 3: 2, 2: 2 } } */
   responsiveSpanOverrides?: Record<string, Record<number, number>>;
+  /** Force all flowing widgets to a uniform height at specific column counts, e.g. { 2: 672 } */
+  responsiveUniformHeight?: Record<number, number>;
   onBeforeMobileCompact?: () => void;
   onWidgetSelect?: (id: string) => void;
   /**
@@ -613,9 +615,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
           if (this.config.desktopSnapToDefaultLayoutAfterDrag) {
             this.applyDesktopDefaultLayoutAfterDrag();
           }
-          // One vertical pass at drop — avoids recomputing the whole stack every
-          // mousemove (twitchy neighbors) and avoids compactAll (which collapses gaps).
-          this.resolveCollisions(interactedId, this.config.widgets);
+          this.compactAll();
         } else if (!wasWidgetMove) {
           if (this.config.desktopReflowOnResize) {
             this.syncColsFromPixelPositions();
@@ -672,6 +672,12 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       this.widgetColSpans.set({ ...this.config.defaultColSpans });
       this.widgetLefts.set({ ...(this.config.defaultLefts ?? {}) });
       this.widgetPixelWidths.set({ ...(this.config.defaultPixelWidths ?? {}) });
+      const cols = typeof window !== 'undefined' ? this.getResponsiveColumns(window.innerWidth) : 0;
+      const widest = this.widestDesktopColumns();
+      if (cols > 0 && widest > 0 && cols < widest) {
+        const flowOrder = this.resolveReflowPlacementOrder();
+        this.reflowForColumns(cols, { flowOrder });
+      }
       this.syncPixelWidthsFromCols();
       this.persistLayout();
     } else {
@@ -690,6 +696,12 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         this.widgetColSpans.set({ ...this.config.defaultColSpans });
         this.widgetLefts.set({ ...(this.config.defaultLefts ?? {}) });
         this.widgetPixelWidths.set({ ...(this.config.defaultPixelWidths ?? {}) });
+      }
+      const cols = typeof window !== 'undefined' ? this.getResponsiveColumns(window.innerWidth) : 0;
+      const widest = this.widestDesktopColumns();
+      if (cols > 0 && widest > 0 && cols < widest) {
+        const flowOrder = this.resolveReflowPlacementOrder();
+        this.reflowForColumns(cols, { flowOrder });
       }
       this.persistLayout();
     }
@@ -977,6 +989,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         this.reconcileDesktopCanonicalPlacementAndSavedSizing();
         this.persistLayout();
       }
+      this.compactAll();
     }
   }
 
@@ -1734,9 +1747,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const tops = { ...this.widgetTops() };
     const colStarts = { ...this.widgetColStarts() };
     const colSpans = { ...this.widgetColSpans() };
+    const ordered = this.resolveReflowPlacementOrder() ?? this.config.widgets;
 
     let y = 0;
-    for (const id of this.config.widgets) {
+    for (const id of ordered) {
       if (heights[id] <= 0) continue;
       tops[id] = y;
       colStarts[id] = 1;
@@ -1752,7 +1766,8 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   private applyResponsiveReflow(width: number): void {
     const cols = this.getResponsiveColumns(width);
     if (cols > 0 && cols !== this._currentDesktopColumns) {
-      this.reflowForColumns(cols);
+      const flowOrder = this.resolveReflowPlacementOrder();
+      this.reflowForColumns(cols, { flowOrder });
     }
   }
 
@@ -1767,8 +1782,9 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
   reflowForColumns(columns: number, options?: { flowOrder?: string[] }): void {
     const gap = DashboardLayoutEngine.GAP_PX;
-    const heights = this.widgetHeights();
+    const heights = { ...this.widgetHeights() };
     const locked = this.widgetLocked();
+    const uniformH = this.config.responsiveUniformHeight?.[columns];
     const tops: Record<string, number> = {};
     const colStarts: Record<string, number> = {};
     const colSpans: Record<string, number> = {};
@@ -1787,6 +1803,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     for (const id of this.config.widgets) {
       if (seen.has(id)) continue;
       if (heights[id] > 0 && !locked[id]) flowWidgets.push(id);
+    }
+
+    if (uniformH) {
+      for (const id of flowWidgets) heights[id] = uniformH;
     }
 
     let col = 0;
@@ -1824,6 +1844,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.widgetTops.set(tops);
     this.widgetColStarts.set(colStarts);
     this.widgetColSpans.set(colSpans);
+    if (uniformH) this.widgetHeights.set(heights);
   }
 
   private enforceMaxColSpans(

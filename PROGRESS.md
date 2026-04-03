@@ -3,7 +3,7 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 2, 2026
+**Last Updated**: April 3, 2026
 **Total Commits**: 180+
 
 ---
@@ -27,9 +27,10 @@
 | 13 | Canvas and Interaction Fixes | Done | 5/5 |
 | 14 | Adaptive Widget Content | Done | 7/7 |
 | 15 | Projects Dashboard Layout Alignment | Done | 6/6 |
-| 16 | Remaining Work | Not Started | 0/8 |
+| 16 | Risk Tuning, Priority Sort, and Widget Compact Mode | Done | 7/7 |
+| 17 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 143/151 items (95%)
+**Completed**: 150/158 items (95%)
 
 ---
 
@@ -410,7 +411,31 @@ Aligned the Projects Dashboard with the Home Dashboard layout engine rules, re-e
 
 ---
 
-## Phase 16: Remaining Work
+## Phase 16: Risk Tuning, Priority Sort, and Widget Compact Mode (Apr 3)
+
+Corrected project risk distribution, fixed urgency-based tile ordering, added a "Sort by Priority" layout action, and ported compact mode to project dashboard widgets.
+
+### Risk Distribution Fixes
+- [x] Fixed `seen` key normalization in `buildUrgentNeeds` -- leading-zero mismatch caused duplicate urgent need items and inflated critical counts
+- [x] Fixed year-less submittal dates in `dashboard-data.seed.ts` (`SUB-002`, `SUB-006`, `SUB-011`) -- ambiguous JS date parsing made items appear 1,400+ days overdue
+- [x] Introduced `coreWarningCount` (excludes change-order warnings) for badge and sort determination -- routine pending COs no longer inflate risk badges
+
+### Tile Ordering Fixes
+- [x] Created `TILE_VISUAL_ORDER` constant in `projects-page-layout.config.ts` matching actual grid layout (proj1, proj2, proj3, proj6, proj7, proj4, proj5, proj8) -- numeric tile IDs don't match visual left-to-right, top-to-bottom order in the grid
+
+### Layout Menu
+- [x] Added "Sort by Priority" to canvas and desktop Layout flyout menus (visible only on `/projects` page) -- resets tile positions to default priority order; removed "Save All Layouts as Defaults"
+
+### Widget Compact Mode (Project Dashboard)
+- [x] Added `isRfiCompact` and `isSubmittalCompact` computed signals to `ProjectDashboardComponent` -- triggers when widget column span <= 5 or mobile, matching the home page pattern
+- [x] RFI and Submittal widgets switch to compact status summary tiles (Open, Overdue, Upcoming, Closed counts with colored icon badges) when narrow; clicking navigates to Records sub-page
+
+**Target distribution achieved**: 1 High, 1 Moderate, 3 Low, 3 None
+**Tests**: 54 sort utility tests passing, build clean
+
+---
+
+## Phase 17: Remaining Work
 
 Features and improvements not yet started.
 
@@ -455,6 +480,7 @@ Features and improvements not yet started.
 | Canvas BFS push | `canvas-push.spec.ts` | 22 tests: basic push, cascade direction, mover immunity, post-BFS cleanup, locked widgets, off-screen clamping, axis selection, real-world detail expansion, same-size collision regression |
 | Widget layout | `widget-layout.service.spec.ts` | Save/load layout persistence |
 | Canvas reset | `canvas-reset.service.spec.ts` | Reset trigger signal |
+| Projects sort | `projects-page-utils.spec.ts` | 54 tests: sort-by-urgency, rewriteDynamicNeeds, CO approval, budget threshold, status change |
 
 ### Not Yet Covered
 
@@ -483,6 +509,8 @@ Features and improvements not yet started.
 | Mar 31 | [Hamburger and zoom](331f2cb4-f365-4109-8821-f8801018796f) | Scoped encapsulation hamburger fix, canvas Shift+scroll zoom macOS fix, viewport center zoom |
 | Apr 1 | [Adaptive widgets](331f2cb4-f365-4109-8821-f8801018796f) | Area-adaptive content blocks, wide widget layout, large widget content, weather work impact, fade/gain visualization, text scaling, canvas breakpoint 1920px, back button standardization |
 | Apr 2 | [Projects layout alignment](20b36c27-0715-4a36-9c40-ec6f32104d80) | Projects Dashboard layout alignment with Home rules, DashboardPageBase extension, desktop drag/resize/lock re-enabled, default layout capture from browser |
+| Apr 3 | [Risk tuning and priority sort](a29bd855-b58b-4bf6-91ef-c3a10be2e2a3) | Risk distribution fixes (seen keys, year-less dates, coreWarningCount), TILE_VISUAL_ORDER, Sort by Priority menu |
+| Apr 3 | [Widget compact mode](328a8c37-da05-488d-86ec-0a6b40525f96) | RFI/Submittal compact mode ported to project dashboard, colSpan-based responsive switching |
 
 ---
 
@@ -500,7 +528,9 @@ Features and improvements not yet started.
 | `src/app/shell/services/canvas-reset.service.ts` | Reset trigger signal |
 | `src/app/shell/services/theme.service.ts` | Theme switching and persistence |
 | `src/app/pages/home-page/home-page.component.ts` | Home dashboard (RFIs, Submittals, Calendar, Time Off, Urgent Needs, Weather Outlook) |
-| `src/app/pages/projects-page/projects-page.component.ts` | Projects portfolio dashboard |
+| `src/app/pages/projects-page/projects-page.component.ts` | Projects portfolio dashboard (risk badges, priority sorting) |
+| `src/app/pages/projects-page/projects-page-layout.config.ts` | Projects tile grid layout config and visual order |
+| `src/app/pages/projects-page/projects-page-utils.ts` | Sort-by-urgency, risk distribution helpers |
 | `src/app/pages/financials-page/financials-page.component.ts` | Financials dashboard |
 | `src/app/pages/project-dashboard/project-dashboard.component.ts` | Shared project detail dashboard (used by 8 project routes) |
 | `src/app/pages/project-dashboard/components/records-subpages.component.ts` | Extracted Records sub-page views (daily reports, punch items, inspections, action items) |

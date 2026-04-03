@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { Payable } from '../../data/dashboard-data';
-import { PAYABLES, payableStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { payableStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 @Component({
@@ -134,6 +135,7 @@ export class PayableDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -142,7 +144,7 @@ export class PayableDetailPageComponent {
 
   readonly payable = computed<Payable | null>(() => {
     const id = this.payableId();
-    return PAYABLES.find(p => p.id === id) ?? null;
+    return this.store.payables().find(p => p.id === id) ?? null;
   });
 
   readonly remaining = computed(() => {

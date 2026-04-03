@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { GLAccount, GLAccountType, GLEntry } from '../../data/dashboard-data';
-import { GL_ACCOUNTS, GL_ENTRIES, formatCurrency, capitalizeFirst } from '../../data/dashboard-data';
+import { formatCurrency, capitalizeFirst } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 import type { ModusBadgeColor } from '../../components/modus-badge.component';
@@ -127,6 +128,7 @@ export class GlAccountDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -135,13 +137,13 @@ export class GlAccountDetailPageComponent {
 
   readonly account = computed<GLAccount | null>(() => {
     const c = this.code();
-    return GL_ACCOUNTS.find(acct => acct.code === c) ?? null;
+    return this.store.glAccounts().find(acct => acct.code === c) ?? null;
   });
 
   readonly entries = computed<GLEntry[]>(() => {
     const acct = this.account();
     if (!acct) return [];
-    return GL_ENTRIES.filter(e => e.accountCode === acct.code);
+    return this.store.glEntries().filter(e => e.accountCode === acct.code);
   });
 
   readonly typeBadgeColor = computed(() => {

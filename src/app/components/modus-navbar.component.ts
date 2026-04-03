@@ -1,7 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, input, output, ElementRef, AfterViewInit, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModusWcNavbar } from '@trimble-oss/moduswebcomponents-angular';
-import type { Components } from '@trimble-oss/moduswebcomponents';
 
 /**
  * Text replacements for the navbar.
@@ -61,29 +59,17 @@ export interface INavbarUserCard {
  * Props supported by the {@link ModusNavbarComponent}.
  */
 export interface ModusNavbarProps {
-  /** The open state of the apps menu. */
-  appsMenuOpen?: Components.ModusWcNavbar['appsMenuOpen'];
-  /** Applies condensed layout and styling. */
-  condensed?: Components.ModusWcNavbar['condensed'];
-  /** The open state of the condensed menu. */
-  condensedMenuOpen?: Components.ModusWcNavbar['condensedMenuOpen'];
-  /** Custom CSS class applied to the host element. */
-  className?: Components.ModusWcNavbar['customClass'];
-  /** The open state of the main menu. */
-  mainMenuOpen?: Components.ModusWcNavbar['mainMenuOpen'];
-  /** The open state of the notifications menu. */
-  notificationsMenuOpen?: Components.ModusWcNavbar['notificationsMenuOpen'];
-  /** Debounce time in milliseconds for search input changes. */
-  searchDebounceMs?: Components.ModusWcNavbar['searchDebounceMs'];
-  /** The open state of the search input. */
-  searchInputOpen?: Components.ModusWcNavbar['searchInputOpen'];
-  /** Text replacements for the navbar. */
+  appsMenuOpen?: boolean;
+  condensed?: boolean;
+  condensedMenuOpen?: boolean;
+  className?: string;
+  mainMenuOpen?: boolean;
+  notificationsMenuOpen?: boolean;
+  searchDebounceMs?: number;
+  searchInputOpen?: boolean;
   textOverrides?: INavbarTextOverrides;
-  /** User information used to render the user card. */
   userCard: INavbarUserCard;
-  /** The open state of the user menu. */
-  userMenuOpen?: Components.ModusWcNavbar['userMenuOpen'];
-  /** The visibility of individual navbar buttons. */
+  userMenuOpen?: boolean;
   visibility?: INavbarVisibility;
 }
 
@@ -109,38 +95,11 @@ export interface ModusNavbarProps {
  */
 @Component({
   selector: 'modus-navbar',
-  imports: [CommonModule, ModusWcNavbar],
+  imports: [CommonModule],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <modus-wc-navbar
-      [appsMenuOpen]="appsMenuOpen()"
-      [condensed]="condensed()"
-      [condensedMenuOpen]="condensedMenuOpen()"
-      [customClass]="className()"
-      [mainMenuOpen]="mainMenuOpen()"
-      [notificationsMenuOpen]="notificationsMenuOpen()"
-      [searchDebounceMs]="searchDebounceMs()"
-      [searchInputOpen]="searchInputOpen()"
-      [textOverrides]="textOverrides()"
-      [userCard]="userCard()"
-      [userMenuOpen]="userMenuOpen()"
-      [visibility]="visibility()"
-      (aiClick)="handleAiClick($event)"
-      (appsClick)="handleAppsClick($event)"
-      (appsMenuOpenChange)="handleAppsMenuOpenChange($event)"
-      (condensedMenuOpenChange)="handleCondensedMenuOpenChange($event)"
-      (helpClick)="handleHelpClick($event)"
-      (mainMenuOpenChange)="handleMainMenuOpenChange($event)"
-      (myTrimbleClick)="handleMyTrimbleClick($event)"
-      (notificationsClick)="handleNotificationsClick($event)"
-      (notificationsMenuOpenChange)="handleNotificationsMenuOpenChange($event)"
-      (searchChange)="handleSearchChange($event)"
-      (searchClick)="handleSearchClick($event)"
-      (searchInputOpenChange)="handleSearchInputOpenChange($event)"
-      (signOutClick)="handleSignOutClick($event)"
-      (trimbleLogoClick)="handleTrimbleLogoClick($event)"
-      (userMenuOpenChange)="handleUserMenuOpenChange($event)"
-    >
+    <modus-wc-navbar>
       <ng-content select="[slot='main-menu']" slot="main-menu" />
       <ng-content select="[slot='notifications']" slot="notifications" />
       <ng-content select="[slot='apps']" slot="apps" />
@@ -150,7 +109,9 @@ export interface ModusNavbarProps {
     </modus-wc-navbar>
   `,
 })
-export class ModusNavbarComponent {
+export class ModusNavbarComponent implements AfterViewInit {
+  private readonly elRef = inject(ElementRef);
+
   /** The open state of the apps menu. */
   readonly appsMenuOpen = input<boolean | undefined>(false);
 
@@ -195,6 +156,54 @@ export class ModusNavbarComponent {
     searchInput: false,
     user: true,
   });
+
+  private wcEl: HTMLElement | null = null;
+
+  constructor() {
+    effect(() => { this.syncProp('appsMenuOpen', this.appsMenuOpen()); });
+    effect(() => { this.syncProp('condensed', this.condensed()); });
+    effect(() => { this.syncProp('condensedMenuOpen', this.condensedMenuOpen()); });
+    effect(() => { this.syncProp('customClass', this.className()); });
+    effect(() => { this.syncProp('mainMenuOpen', this.mainMenuOpen()); });
+    effect(() => { this.syncProp('notificationsMenuOpen', this.notificationsMenuOpen()); });
+    effect(() => { this.syncProp('searchDebounceMs', this.searchDebounceMs()); });
+    effect(() => { this.syncProp('searchInputOpen', this.searchInputOpen()); });
+    effect(() => { this.syncProp('textOverrides', this.textOverrides()); });
+    effect(() => { this.syncProp('userCard', this.userCard()); });
+    effect(() => { this.syncProp('userMenuOpen', this.userMenuOpen()); });
+    effect(() => { this.syncProp('visibility', this.visibility()); });
+  }
+
+  ngAfterViewInit(): void {
+    this.wcEl = this.elRef.nativeElement.querySelector('modus-wc-navbar');
+    if (!this.wcEl) return;
+
+    const el = this.wcEl;
+    const listen = <T,>(evtName: string, emitter: { emit(value: T): void }) => {
+      el.addEventListener(evtName, ((e: CustomEvent) => emitter.emit(e.detail)) as EventListener);
+    };
+    listen('aiClick', this.aiClick);
+    listen('appsClick', this.appsClick);
+    listen('appsMenuOpenChange', this.appsMenuOpenChange);
+    listen('condensedMenuOpenChange', this.condensedMenuOpenChange);
+    listen('helpClick', this.helpClick);
+    listen('mainMenuOpenChange', this.mainMenuOpenChange);
+    listen('myTrimbleClick', this.myTrimbleClick);
+    listen('notificationsClick', this.notificationsClick);
+    listen('notificationsMenuOpenChange', this.notificationsMenuOpenChange);
+    listen('searchChange', this.searchChange);
+    listen('searchClick', this.searchClick);
+    listen('searchInputOpenChange', this.searchInputOpenChange);
+    listen('signOutClick', this.signOutClick);
+    listen('trimbleLogoClick', this.trimbleLogoClick);
+    listen('userMenuOpenChange', this.userMenuOpenChange);
+  }
+
+  private syncProp(name: string, value: unknown): void {
+    if (this.wcEl) {
+      (this.wcEl as unknown as Record<string, unknown>)[name] = value;
+    }
+  }
 
   /** Emits when the AI button is clicked or activated via keyboard. */
   readonly aiClick = output<MouseEvent | KeyboardEvent>();
@@ -241,63 +250,4 @@ export class ModusNavbarComponent {
   /** Emits when the user menu open state changes. */
   readonly userMenuOpenChange = output<boolean>();
 
-  handleAiClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
-    this.aiClick.emit(event.detail);
-  }
-
-  handleAppsClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
-    this.appsClick.emit(event.detail);
-  }
-
-  handleAppsMenuOpenChange(event: CustomEvent<boolean>): void {
-    this.appsMenuOpenChange.emit(event.detail);
-  }
-
-  handleCondensedMenuOpenChange(event: CustomEvent<boolean>): void {
-    this.condensedMenuOpenChange.emit(event.detail);
-  }
-
-  handleHelpClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
-    this.helpClick.emit(event.detail);
-  }
-
-  handleMainMenuOpenChange(event: CustomEvent<boolean>): void {
-    this.mainMenuOpenChange.emit(event.detail);
-  }
-
-  handleMyTrimbleClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
-    this.myTrimbleClick.emit(event.detail);
-  }
-
-  handleNotificationsClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
-    this.notificationsClick.emit(event.detail);
-  }
-
-  handleNotificationsMenuOpenChange(event: CustomEvent<boolean>): void {
-    this.notificationsMenuOpenChange.emit(event.detail);
-  }
-
-  handleSearchChange(event: CustomEvent<{ value: string }>): void {
-    this.searchChange.emit(event.detail);
-  }
-
-  handleSearchClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
-    this.searchClick.emit(event.detail);
-  }
-
-  handleSearchInputOpenChange(event: CustomEvent<boolean>): void {
-    this.searchInputOpenChange.emit(event.detail);
-  }
-
-  handleSignOutClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
-    this.signOutClick.emit(event.detail);
-  }
-
-  handleTrimbleLogoClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
-    this.trimbleLogoClick.emit(event.detail);
-  }
-
-  handleUserMenuOpenChange(event: CustomEvent<boolean>): void {
-    this.userMenuOpenChange.emit(event.detail);
-  }
 }

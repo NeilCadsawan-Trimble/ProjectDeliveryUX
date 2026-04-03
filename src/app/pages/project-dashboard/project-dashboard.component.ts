@@ -41,6 +41,7 @@ import { WidgetFrameComponent } from './components/widget-frame.component';
 import { PdfViewerComponent } from '../../shared/detail/pdf-viewer.component';
 import { PanoramaViewerComponent } from '../../shared/detail/panorama-viewer.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
+import { UserMenuComponent } from '../../shell/components/user-menu.component';
 
 import { ThemeService } from '../../shell/services/theme.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
@@ -48,6 +49,7 @@ import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { SubpageTileCanvas, type TileRect, type TileDetailView } from '../../shell/services/subpage-tile-canvas';
 import { AiService } from '../../services/ai.service';
+import { AiToolsService } from '../../services/ai-tools.service';
 import { AiPanelController } from '../../shell/services/ai-panel-controller';
 import { CanvasPanning } from '../../shell/services/canvas-panning';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
@@ -57,8 +59,10 @@ import {
   type MilestoneStatus,
   type TaskPriority,
   type RiskSeverity,
+  type SummaryStat,
 } from '../../data/project-data';
-import { type Rfi, type Submittal, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus, type TimeOffStatus } from '../../data/dashboard-data';
+import { rewriteDynamicNeeds, rewriteBudgetRisk } from '../projects-page/projects-page-utils';
+import { type Rfi, type Submittal, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, type StaffingConflict, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus, type TimeOffStatus } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, SITE_CAPTURES_BY_PROJECT, type DrawingTile, type SiteCapture } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
@@ -101,7 +105,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -130,6 +134,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   private readonly navHistory = inject(NavigationHistoryService);
   private readonly elementRef = inject(ElementRef);
   private readonly aiService = inject(AiService);
+  private readonly aiToolsService = inject(AiToolsService);
   private readonly injector = inject(Injector);
 
   readonly projectData = input.required<ProjectDashboardData>();
@@ -666,7 +671,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.isMobile() ? '75vh' : 'calc(100dvh - 316px)'
   );
 
-  readonly weatherForecast = WEATHER_FORECAST;
+  readonly weatherForecast = computed(() => this.projectWeather()?.forecast ?? this.store.weatherForecast());
 
   private static readonly RECORDS_PAGES_WITH_CONTENT = new Set(['rfis', 'submittals', 'daily-reports', 'punch-items', 'inspections', 'action-items']);
   private static readonly FINANCIALS_PAGES_WITH_CONTENT = new Set(['budget', 'change-order-requests', 'billings', 'cost-forecasts', 'prime-contract-change-orders', 'potential-change-orders', 'subcontract-change-orders', 'contracts', 'purchase-orders', 'contract-invoices', 'general-invoices']);
@@ -928,20 +933,16 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
-  readonly navbarVisibility = computed(() => {
-    const mobile = this.isMobile();
-    const canvas = this.isCanvas();
-    return {
-      user: true,
-      mainMenu: !canvas,
-      ai: false,
-      notifications: !mobile,
-      apps: false,
-      help: !mobile,
-      search: !mobile,
-      searchInput: !mobile,
-    };
-  });
+  readonly navbarVisibility = computed(() => ({
+    user: false,
+    mainMenu: false,
+    ai: false,
+    notifications: false,
+    apps: false,
+    help: false,
+    search: false,
+    searchInput: false,
+  }));
 
   readonly userCard: INavbarUserCard = {
     name: 'Frank Mendoza',
@@ -955,11 +956,64 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly otherProjects = computed(() =>
     this.store.projects().filter(p => p.id !== this.projectId())
   );
-  readonly summaryStats = computed(() => this.projectData().summaryStats);
+  readonly summaryStats = computed<SummaryStat[]>(() => {
+    const base = this.projectData().summaryStats;
+    const proj = this.store.findProjectById(this.projectId());
+    if (!proj) return base;
+
+    return base.map(stat => {
+      if (stat.label === 'Budget Used') {
+        const pct = proj.budgetPct;
+        const cls = pct >= 90 ? 'text-destructive font-medium' : 'text-foreground-60';
+        return { ...stat, value: proj.budgetUsed, subtext: `${pct}% of ${proj.budgetTotal}`, subtextClass: cls };
+      }
+      if (stat.label === 'Due Date') {
+        const due = new Date(proj.dueDate);
+        const now = new Date();
+        const diffDays = Math.round((due.getTime() - now.getTime()) / 86_400_000);
+        const monthDay = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        let subtext: string;
+        let cls: string;
+        if (diffDays < 0) {
+          subtext = `${Math.abs(diffDays)} days overdue`;
+          cls = 'text-destructive font-medium';
+        } else if (diffDays <= 7) {
+          subtext = diffDays === 0 ? 'Due today' : `${diffDays} days remaining`;
+          cls = 'text-warning font-medium';
+        } else {
+          subtext = `${diffDays} days remaining`;
+          cls = 'text-foreground-60';
+        }
+        return { ...stat, value: monthDay, subtext, subtextClass: cls };
+      }
+      if (stat.label === 'Schedule') {
+        const statusMap: Record<string, { subtext: string; cls: string }> = {
+          'On Track': { subtext: 'On track', cls: 'text-success' },
+          'At Risk': { subtext: 'At risk', cls: 'text-warning' },
+          'Overdue': { subtext: 'Overdue', cls: 'text-destructive font-medium' },
+          'Planning': { subtext: 'Planning', cls: 'text-foreground-60' },
+        };
+        const info = statusMap[proj.status] ?? { subtext: proj.status, cls: 'text-foreground-60' };
+        return { ...stat, value: `${proj.progress}%`, subtext: info.subtext, subtextClass: info.cls };
+      }
+      return stat;
+    });
+  });
   readonly milestones = computed(() => this.projectData().milestones);
   readonly tasks = computed(() => this.projectData().tasks);
-  readonly risks = computed(() => this.projectData().risks);
-  readonly projectUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals(), this.store.changeOrders()).filter(n => n.projectId === this.projectId()));
+  readonly risks = computed(() => {
+    const raw = this.projectData().risks;
+    const proj = this.store.findProjectById(this.projectId());
+    if (!proj) return raw;
+    return raw.map(r => rewriteBudgetRisk(r, proj));
+  });
+  readonly projectUrgentNeeds = computed(() => {
+    const raw = buildUrgentNeeds(this.store.rfis(), this.store.submittals(), this.store.changeOrders())
+      .filter(n => n.projectId === this.projectId());
+    const proj = this.store.findProjectById(this.projectId());
+    if (!proj) return raw;
+    return rewriteDynamicNeeds(raw, proj, this.store.changeOrders());
+  });
   readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
 
   readonly projectWeather = computed(() => this.store.getProjectWeather(this.projectId()));
@@ -1053,6 +1107,91 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.store.updateTimeOffStatus(reqId, newStatus);
   }
 
+  readonly teamView = signal<'list' | 'staffing' | 'calendar'>('list');
+  readonly isTeamCompact = computed(
+    () => this.isMobile() || (this.wColSpans()['team'] ?? 16) <= 5
+  );
+  readonly teamCompactItems: readonly { key: 'members' | 'conflicts' | 'timeOff' | 'pending'; label: string; icon: string; colorBg: string; colorText: string }[] = [
+    { key: 'members', label: 'Team Members', icon: 'people_group', colorBg: 'bg-primary-20', colorText: 'text-primary' },
+    { key: 'conflicts', label: 'Staffing Gaps', icon: 'warning', colorBg: 'bg-warning-20', colorText: 'text-warning' },
+    { key: 'timeOff', label: 'Time Off', icon: 'calendar', colorBg: 'bg-primary-20', colorText: 'text-primary' },
+    { key: 'pending', label: 'Pending Requests', icon: 'clock', colorBg: 'bg-warning-20', colorText: 'text-warning' },
+  ];
+  readonly teamCompactCounts = computed<Record<'members' | 'conflicts' | 'timeOff' | 'pending', number>>(() => ({
+    members: this.team().length,
+    conflicts: this.projectStaffingConflicts().length,
+    timeOff: this.projectTimeOffRequests().length,
+    pending: this.projectTimeOffRequests().filter(r => r.status === 'Pending').length,
+  }));
+
+  readonly pendingTimeOffCount = computed(() =>
+    this.projectTimeOffRequests().filter(r => r.status === 'Pending').length
+  );
+  readonly criticalStaffingCount = computed(() =>
+    this.projectStaffingConflicts().filter(c => c.severity === 'critical').length
+  );
+
+  readonly calendarYear = signal(2026);
+  readonly calendarMonth = signal(3);
+  private readonly _monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  private readonly _monthAbbr: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+  readonly calendarMonthLabel = computed(() => `${this._monthNames[this.calendarMonth()]} ${this.calendarYear()}`);
+
+  readonly calendarDays = computed(() => {
+    const year = this.calendarYear();
+    const month = this.calendarMonth();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const dayMap = new Map<number, typeof reqs>();
+    const reqs = this.projectTimeOffRequests();
+    for (const req of reqs) {
+      const [startMon, startDayStr] = req.startDate.split(' ');
+      const [endMon, endDayStr] = req.endDate.split(' ');
+      const start = new Date(year, this._monthAbbr[startMon], parseInt(startDayStr, 10));
+      const end = new Date(year, this._monthAbbr[endMon], parseInt(endDayStr, 10));
+      const cur = new Date(start);
+      while (cur <= end) {
+        if (cur.getFullYear() === year && cur.getMonth() === month) {
+          const d = cur.getDate();
+          if (!dayMap.has(d)) dayMap.set(d, []);
+          dayMap.get(d)!.push(req);
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+
+    const cells: { day: number | null; requests: typeof reqs }[] = [];
+    for (let i = 0; i < firstWeekday; i++) cells.push({ day: null, requests: [] });
+    for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, requests: dayMap.get(d) ?? [] });
+    while (cells.length % 7 !== 0) cells.push({ day: null, requests: [] });
+    return cells;
+  });
+
+  prevCalendarMonth(): void {
+    const m = this.calendarMonth();
+    if (m === 0) {
+      this.calendarMonth.set(11);
+      this.calendarYear.update(y => y - 1);
+    } else {
+      this.calendarMonth.update(v => v - 1);
+    }
+  }
+
+  nextCalendarMonth(): void {
+    const m = this.calendarMonth();
+    if (m === 11) {
+      this.calendarMonth.set(0);
+      this.calendarYear.update(y => y + 1);
+    } else {
+      this.calendarMonth.update(v => v + 1);
+    }
+  }
+
+  timeOffStatusColor(status: TimeOffStatus): string {
+    return status === 'Approved' ? 'bg-success-20 text-success' : status === 'Pending' ? 'bg-warning-20 text-warning' : 'bg-destructive-20 text-destructive';
+  }
+
   readonly activity = computed(() => this.projectData().activity);
   readonly latestDrawing = computed(() => this.projectData().latestDrawing);
   readonly budgetBreakdown = computed(() => this.projectData().budgetBreakdown);
@@ -1082,7 +1221,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     return `$${Math.round(diff)}`;
   });
 
-  readonly budgetHealthy = computed(() => this.budgetPct() < 90);
+  readonly budgetHealthy = computed(() => this.budgetPct() < 95);
 
   readonly projectRfis = computed(() =>
     this.store.rfis().filter(r => r.project === this.projectName())
@@ -1122,20 +1261,56 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     } as Record<string, number>;
   });
 
+  readonly isRfiCompact = computed(
+    () => this.isMobile() || (this.wColSpans()['rfis'] ?? 16) <= 5
+  );
+
+  readonly isSubmittalCompact = computed(
+    () => this.isMobile() || (this.wColSpans()['submittals'] ?? 16) <= 5
+  );
+
+  readonly rfiCompactItems: readonly { key: string; label: string; icon: string; destructive: boolean }[] = [
+    { key: 'open', label: 'Open', icon: 'clipboard', destructive: false },
+    { key: 'overdue', label: 'Overdue', icon: 'warning', destructive: true },
+    { key: 'upcoming', label: 'Upcoming', icon: 'clock', destructive: false },
+    { key: 'closed', label: 'Closed', icon: 'check_circle', destructive: false },
+  ];
+
+  readonly submittalCompactItems: readonly { key: string; label: string; icon: string; destructive: boolean }[] = [
+    { key: 'open', label: 'Open', icon: 'document', destructive: false },
+    { key: 'overdue', label: 'Overdue', icon: 'warning', destructive: true },
+    { key: 'upcoming', label: 'Upcoming', icon: 'clock', destructive: false },
+    { key: 'closed', label: 'Closed', icon: 'check_circle', destructive: false },
+  ];
+
+  navigateToRfiList(): void {
+    this.activeNavItem.set('records');
+    this.activeRecordsPage.set('rfis');
+    this.navExpanded.set(false);
+    this.projectNav.pushPageUrl();
+  }
+
+  navigateToSubmittalList(): void {
+    this.activeNavItem.set('records');
+    this.activeRecordsPage.set('submittals');
+    this.navExpanded.set(false);
+    this.projectNav.pushPageUrl();
+  }
+
   readonly projectDailyReports = computed(() =>
-    DAILY_REPORTS.filter(r => r.projectId === this.projectId())
+    this.store.dailyReports().filter(r => r.projectId === this.projectId())
   );
 
   readonly projectInspections = computed(() =>
-    INSPECTIONS.filter(i => i.projectId === this.projectId())
+    this.store.inspections().filter(i => i.projectId === this.projectId())
   );
 
   readonly projectPunchItems = computed(() =>
-    PUNCH_LIST_ITEMS.filter(p => p.projectId === this.projectId())
+    this.store.punchListItems().filter(p => p.projectId === this.projectId())
   );
 
   readonly projectAttentionItems = computed(() =>
-    PROJECT_ATTENTION_ITEMS.filter(a => a.projectId === this.projectId())
+    this.store.projectAttentionItems().filter(a => a.projectId === this.projectId())
   );
 
   readonly projectChangeOrders = computed(() =>
@@ -1143,7 +1318,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   );
 
   readonly projectContracts = computed(() =>
-    CONTRACTS.filter(c => c.projectId === this.projectId())
+    this.store.contracts().filter(c => c.projectId === this.projectId())
   );
 
   readonly contractOriginalTotal = computed(() => this.projectContracts().reduce((sum, c) => sum + c.originalValue, 0));
@@ -1163,7 +1338,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   );
 
   readonly projectRevenueData = computed(() =>
-    PROJECT_REVENUE.filter(r => r.projectId === this.projectId())
+    this.store.projectRevenue().filter(r => r.projectId === this.projectId())
   );
 
   readonly projectBudgetHistory = computed(() =>
@@ -1176,19 +1351,19 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   });
 
   readonly projectInvoices = computed(() =>
-    INVOICES.filter(inv => inv.projectId === this.projectId())
+    this.store.invoices().filter(inv => inv.projectId === this.projectId())
   );
 
   readonly projectPayables = computed(() =>
-    PAYABLES.filter(p => p.projectId === this.projectId())
+    this.store.payables().filter(p => p.projectId === this.projectId())
   );
 
   readonly projectPurchaseOrders = computed(() =>
-    PURCHASE_ORDERS.filter(po => po.projectId === this.projectId())
+    this.store.purchaseOrders().filter(po => po.projectId === this.projectId())
   );
 
   readonly projectSubcontractLedger = computed(() =>
-    SUBCONTRACT_LEDGER.filter(sl => sl.projectId === this.projectId())
+    this.store.subcontractLedger().filter(sl => sl.projectId === this.projectId())
   );
 
   readonly poTotalValue = computed(() => this.projectPurchaseOrders().reduce((s, po) => s + po.amount, 0));
@@ -1913,9 +2088,16 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
 
+  private readonly aiContextKey = computed(() => {
+    const id = this.projectId();
+    const sub = this.getSubPageAgentContext() ?? 'dashboard';
+    return `project:${id}:${sub}`;
+  });
+
   readonly ai = new AiPanelController({
     widgetFocusService: this.widgetFocusService,
     aiService: this.aiService,
+    aiToolsService: this.aiToolsService,
     router: this.router,
     defaultSuggestions: computed(() => {
       const widgetId = this.widgetFocusService.selectedWidgetId();
@@ -1930,6 +2112,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       const agent = getAgent(widgetId, 'project-dashboard', subContext);
       const state = this.buildAgentDataState();
       return this.aiService.buildContext('project-dashboard', {
+        projectId: this.projectId(),
         projectName: this.projectName(),
         projectData: agent.buildContext(state),
         agentPrompt: agent.systemPrompt,
@@ -1949,10 +2132,68 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       const state = this.buildAgentDataState();
       return agent.actions?.(state) ?? [];
     },
+    contextKey: this.aiContextKey,
     injector: this.injector,
   });
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
+
+  readonly aiContextLabel = computed(() => {
+    const name = this.projectName();
+    const nav = this.activeNavItem();
+    const detail = this.detailView();
+
+    if (detail) {
+      const item = detail.item as unknown as Record<string, unknown>;
+      const itemLabel = (item['number'] as string) ?? (item['title'] as string) ?? '';
+      const typeLabels: Record<string, string> = {
+        rfi: 'RFI', submittal: 'Submittal', drawing: 'Drawing',
+        dailyReport: 'Daily Report', inspection: 'Inspection',
+        punchItem: 'Punch Item', changeOrder: 'Change Order',
+        contract: 'Contract', panorama: 'Site Capture',
+      };
+      const typeLabel = typeLabels[detail.type] ?? detail.type;
+      const suffix = itemLabel ? `${typeLabel} ${itemLabel}` : typeLabel;
+      return `${name} / ${suffix}`;
+    }
+
+    if (nav === 'dashboard') return name;
+    if (nav === 'drawings') return `${name} / Drawings`;
+
+    if (nav === 'records') {
+      const sub = this.activeRecordsPageLabel();
+      return `${name} / ${sub}`;
+    }
+
+    if (nav === 'financials') {
+      const slCat = this.subledgerCategory();
+      if (slCat) return `${name} / Budget / ${slCat}`;
+      const sub = this.activeFinancialsPageLabel();
+      return `${name} / ${sub}`;
+    }
+
+    const sideItem = this.sideNavItems.find(i => i.value === nav);
+    return sideItem ? `${name} / ${sideItem.label}` : name;
+  });
+
+  readonly aiWelcomeMessage = computed(() => {
+    const nav = this.activeNavItem();
+    const name = this.projectName();
+    if (nav === 'dashboard') return `Ask me about ${name} -- milestones, budget, risks, or team status.`;
+    if (nav === 'records') return `Ask me about ${this.activeRecordsPageLabel().toLowerCase()} for ${name}.`;
+    if (nav === 'financials') {
+      const sl = this.subledgerCategory();
+      if (sl) return `Ask me about ${sl} cost details for ${name}.`;
+      return `Ask me about ${this.activeFinancialsPageLabel().toLowerCase()} for ${name}.`;
+    }
+    if (nav === 'drawings') return `Ask me about drawings and revisions for ${name}.`;
+    return `Ask me about ${name}.`;
+  });
+
+  private readonly _aiContextEffect = effect(() => {
+    const label = this.aiContextLabel();
+    this.widgetFocusService.setDefaults('Trimble AI', label);
+  });
 
   readonly activeInsight = computed(() => {
     const widgetId = this.widgetFocusService.selectedWidgetId();
@@ -2207,14 +2448,19 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       subledgerCategory: this.subledgerCategory() ?? undefined,
       subledgerTransactions: txns,
       changeOrders: this.store.changeOrders().filter(co => co.projectId === projId),
-      contracts: CONTRACTS.filter(ct => ct.projectId === projId),
-      dailyReports: DAILY_REPORTS.filter(dr => dr.projectId === projId),
-      weatherForecast: this.projectWeather()?.forecast ?? WEATHER_FORECAST,
-      projectAttentionItems: PROJECT_ATTENTION_ITEMS.filter(a => a.projectId === projId),
+      contracts: this.store.contracts().filter(ct => ct.projectId === projId),
+      invoices: this.store.invoices().filter(inv => inv.projectId === projId),
+      payables: this.store.payables().filter(p => p.projectId === projId),
+      purchaseOrders: this.store.purchaseOrders().filter(po => po.projectId === projId),
+      billingSchedules: this.store.billingSchedules().filter(bs => bs.projectId === projId),
+      billingEvents: this.store.billingEvents().filter(be => be.projectId === projId),
+      dailyReports: this.store.dailyReports().filter(dr => dr.projectId === projId),
+      weatherForecast: this.projectWeather()?.forecast ?? this.store.weatherForecast(),
+      projectAttentionItems: this.store.projectAttentionItems().filter(a => a.projectId === projId),
       budgetHistory: this.store.getProjectBudgetHistory(projId),
-      inspections: INSPECTIONS.filter(i => i.projectId === projId),
-      punchListItems: PUNCH_LIST_ITEMS.filter(p => p.projectId === projId),
-      projectRevenue: PROJECT_REVENUE.filter(r => r.projectId === projId),
+      inspections: this.store.inspections().filter(i => i.projectId === projId),
+      punchListItems: this.store.punchListItems().filter(p => p.projectId === projId),
+      projectRevenue: this.store.projectRevenue().filter(r => r.projectId === projId),
       detailRfi: this.detailRfi() ?? undefined,
       detailSubmittal: this.detailSubmittal() ?? undefined,
       detailDrawing: this.detailDrawing() ?? undefined,

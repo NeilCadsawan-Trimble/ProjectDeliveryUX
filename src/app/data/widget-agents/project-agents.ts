@@ -15,9 +15,12 @@ export const milestonesAgent: WidgetAgent = {
       : ['Which milestones are coming up?', 'Summarize milestone completion rate', 'Are any milestones at risk?'];
   },
   insight(s) {
-    const overdue = (s.milestones ?? []).filter(m => m.status === 'overdue');
-    if (!overdue.length) return null;
-    return `${overdue.length} overdue milestone${overdue.length === 1 ? '' : 's'}`;
+    const ms = s.milestones ?? [];
+    const overdue = ms.filter(m => m.status === 'overdue');
+    if (overdue.length) return `${overdue.length} overdue milestone${overdue.length === 1 ? '' : 's'}`;
+    const completed = ms.filter(m => m.status === 'completed').length;
+    if (ms.length) return `${completed} of ${ms.length} milestones completed`;
+    return null;
   },
   alerts(s) {
     const overdue = (s.milestones ?? []).filter(m => m.status === 'overdue').length;
@@ -62,13 +65,14 @@ export const tasksAgent: WidgetAgent = {
   },
   insight(s) {
     const tasks = s.tasks ?? [];
+    if (!tasks.length) return null;
     const high = tasks.filter(t => t.priority === 'high').length;
     const overdue = tasks.filter(t => t.status.toLowerCase().includes('overdue') || t.status.toLowerCase().includes('delayed')).length;
-    if (!high && !overdue) return null;
     const parts: string[] = [];
-    if (high) parts.push(`${high} high-priority task${high === 1 ? '' : 's'}`);
+    if (high) parts.push(`${high} high-priority`);
     if (overdue) parts.push(`${overdue} overdue`);
-    return parts.join(', ');
+    if (parts.length) return parts.join(', ') + ` of ${tasks.length} tasks`;
+    return `${s.openTaskCount ?? tasks.length} open of ${tasks.length} tasks`;
   },
   alerts(s) {
     const overdue = (s.tasks ?? []).filter(t => t.status.toLowerCase().includes('overdue') || t.status.toLowerCase().includes('delayed')).length;
@@ -122,11 +126,14 @@ export const risksAgent: WidgetAgent = {
     const projId = s.projects?.[0]?.id;
     const urgent = projId ? buildUrgentNeeds(s.rfis ?? [], s.submittals ?? [], s.changeOrders ?? []).filter(n => n.projectId === projId) : [];
     const critical = urgent.filter(n => n.severity === 'critical').length;
-    const high = (s.risks ?? []).filter(r => r.severity === 'high').length;
+    const risks = s.risks ?? [];
+    const high = risks.filter(r => r.severity === 'high').length;
     const parts: string[] = [];
     if (critical) parts.push(`${critical} critical urgent need${critical === 1 ? '' : 's'}`);
     if (high) parts.push(`${high} high-severity risk${high === 1 ? '' : 's'}`);
-    return parts.length ? parts.join(', ') : null;
+    if (parts.length) return parts.join(', ');
+    if (risks.length || urgent.length) return `${risks.length} risks, ${urgent.length} needs tracked`;
+    return null;
   },
   alerts(s) {
     const projId = s.projects?.[0]?.id;
@@ -357,7 +364,9 @@ export const projectDefault: WidgetAgent = {
     if (failed) return `${failed} failed inspection${failed === 1 ? '' : 's'} need follow-up`;
     if (overdueTasks) return `${overdueTasks} overdue task${overdueTasks === 1 ? '' : 's'}`;
     if (!(s.budgetHealthy ?? true)) return 'Budget status critical';
-    return null;
+    const pct = s.budgetPct ?? 0;
+    if (pct > 0) return `${s.projectStatus ?? 'Active'} -- budget ${pct}% utilized`;
+    return s.projectStatus ? `Status: ${s.projectStatus}` : null;
   },
   alerts: () => null,
   actions: () => [
@@ -432,7 +441,7 @@ export const recordsRfis: WidgetAgent = {
   },
   alerts(s) {
     const overdue = (s.rfis ?? []).filter(r => r.status === 'overdue').length;
-    return overdue ? { level: 'critical', count: overdue, label: 'overdue' } : null;
+    return overdue ? { level: 'warning', count: overdue, label: 'overdue' } : null;
   },
   actions: () => [
     { id: 'nudge-assignees', label: 'Nudge assignees on overdue RFIs', execute: (st) => {
@@ -466,7 +475,7 @@ export const recordsSubmittals: WidgetAgent = {
   },
   alerts(s) {
     const overdue = (s.submittals ?? []).filter(sub => sub.status === 'overdue').length;
-    return overdue ? { level: 'critical', count: overdue, label: 'overdue' } : null;
+    return overdue ? { level: 'warning', count: overdue, label: 'overdue' } : null;
   },
   actions: () => [
     { id: 'expedite-subs', label: 'Expedite overdue reviews', execute: (st) => {

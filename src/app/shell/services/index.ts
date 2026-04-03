@@ -13,3 +13,4 @@ export { CanvasPanning } from './canvas-panning';
 export type { CanvasItemHost } from './canvas-item-host';
 export { NavigationHistoryService } from './navigation-history.service';
 export type { ShellBackButton, ShellTitleOverride, ShellTitleItem } from './navigation-history.service';
+export { LayoutDefaultsService } from './layout-defaults.service';

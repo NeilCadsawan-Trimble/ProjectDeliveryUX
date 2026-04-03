@@ -36,38 +36,6 @@ export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
 };
 
 export const PROJECTS_WIDGETS: Record<string, WidgetRegistration> = {
-  proj1: {
-    name: 'Riverside Office Complex',
-    suggestions: ['How is this project tracking?', 'Show budget status', 'What are the urgent needs?'],
-  },
-  proj2: {
-    name: 'Harbor View Condominiums',
-    suggestions: ['Why is this project at risk?', 'Show budget breakdown', 'What needs attention?'],
-  },
-  proj3: {
-    name: 'Downtown Transit Hub',
-    suggestions: ['Why is this project overdue?', 'Show budget utilization', 'What are the blockers?'],
-  },
-  proj4: {
-    name: 'Lakeside Medical Center',
-    suggestions: ['How is this project tracking?', 'Show schedule progress', 'Any risks?'],
-  },
-  proj5: {
-    name: 'Westfield Shopping Center',
-    suggestions: ['What is the planning status?', 'Show project timeline', 'When does construction start?'],
-  },
-  proj6: {
-    name: 'Metro Bridge Rehabilitation',
-    suggestions: ['How close to completion?', 'Show budget status', 'Any remaining risks?'],
-  },
-  proj7: {
-    name: 'Sunset Ridge Apartments',
-    suggestions: ['Why is this project overdue?', 'Show budget breakdown', 'What are the blockers?'],
-  },
-  proj8: {
-    name: 'Industrial Park Warehouse',
-    suggestions: ['How is this project tracking?', 'Show schedule progress', 'Any early risks?'],
-  },
   openEstimates: {
     name: 'Open Estimates',
     suggestions: [

@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { CashFlowEntry } from '../../data/dashboard-data';
-import { CASH_FLOW_HISTORY, formatCurrency } from '../../data/dashboard-data';
+import { formatCurrency } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 interface BreakdownItem {
@@ -169,6 +170,7 @@ export class CashFlowDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -179,7 +181,7 @@ export class CashFlowDetailPageComponent {
     const month = this.monthParam();
     if (!month) return null;
     const decoded = decodeURIComponent(month);
-    return CASH_FLOW_HISTORY.find(cf => cf.month === decoded) ?? null;
+    return this.store.cashFlowHistory().find(cf => cf.month === decoded) ?? null;
   });
 
   readonly breakdown = computed<BreakdownItem[]>(() => {

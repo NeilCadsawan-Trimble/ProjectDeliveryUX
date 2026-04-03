@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { PurchaseOrder } from '../../data/dashboard-data';
-import { PURCHASE_ORDERS, poStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { poStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 interface LineItem {
@@ -166,6 +167,7 @@ export class PurchaseOrderDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -176,7 +178,7 @@ export class PurchaseOrderDetailPageComponent {
 
   readonly po = computed<PurchaseOrder | null>(() => {
     const id = this.poId();
-    return PURCHASE_ORDERS.find(p => p.id === id) ?? null;
+    return this.store.purchaseOrders().find(p => p.id === id) ?? null;
   });
 
   readonly lineItems = computed<LineItem[]>(() => {

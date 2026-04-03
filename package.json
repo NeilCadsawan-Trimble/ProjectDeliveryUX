@@ -46,7 +46,7 @@
     "@photo-sphere-viewer/core": "^5.14.1",
     "@tailwindcss/postcss": "^4.1.16",
     "@trimble-oss/modus-icons": "^1.18.0",
-    "@trimble-oss/moduswebcomponents": "^1.0.6",
+    "@trimble-oss/moduswebcomponents": "1.0.6",
     "@trimble-oss/moduswebcomponents-angular": "^1.0.6-ng19",
     "pdfjs-dist": "^4.10.38",
     "postcss": "^8.5.6",

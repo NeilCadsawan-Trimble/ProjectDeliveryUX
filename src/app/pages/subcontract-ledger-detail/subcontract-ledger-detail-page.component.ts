@@ -4,11 +4,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { SubcontractLedgerEntry } from '../../data/dashboard-data';
 import {
-  SUBCONTRACT_LEDGER,
   ledgerTypeBadge,
   ledgerTypeLabel,
   formatCurrency as sharedFormatCurrency,
 } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 @Component({
@@ -115,6 +115,7 @@ export class SubcontractLedgerDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -123,7 +124,7 @@ export class SubcontractLedgerDetailPageComponent {
 
   readonly entry = computed<SubcontractLedgerEntry | null>(() => {
     const id = this.entryId();
-    return SUBCONTRACT_LEDGER.find(e => e.id === id) ?? null;
+    return this.store.subcontractLedger().find(e => e.id === id) ?? null;
   });
 
   readonly badgeColor = computed(() => {

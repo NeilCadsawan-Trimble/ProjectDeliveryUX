@@ -11,6 +11,10 @@ const SRC = readFileSync(
   resolve(__dir, '../../src/app/pages/projects-page/projects-page.component.html'),
   'utf-8',
 );
+const UTILS_SRC = readFileSync(
+  resolve(__dir, '../../src/app/pages/projects-page/projects-page-utils.ts'),
+  'utf-8',
+);
 
 describe('ProjectsPageComponent (template regression)', () => {
   describe('desktop padding', () => {
@@ -51,6 +55,34 @@ describe('ProjectsPageComponent (template regression)', () => {
   describe('no deprecated features', () => {
     it('does NOT contain cleanupOverlaps', () => {
       expect(SRC).not.toContain('cleanupOverlaps');
+    });
+  });
+
+  describe('dynamic urgent need rewriting (regression guard)', () => {
+    it('rewriteDynamicNeeds handles budget category', () => {
+      expect(UTILS_SRC).toContain("n.category === 'budget'");
+    });
+
+    it('rewriteDynamicNeeds handles schedule overdue category', () => {
+      expect(UTILS_SRC).toContain("n.category === 'schedule'");
+    });
+
+    it('rewriteDynamicNeeds handles change-order category', () => {
+      expect(UTILS_SRC).toContain("n.category === 'change-order'");
+    });
+
+    it('component delegates to rewriteDynamicNeeds from utils', () => {
+      expect(SRC).toContain('rewriteDynamicNeeds');
+      expect(SRC).toContain("from './projects-page-utils'");
+    });
+
+    it('sortProjectsByUrgency uses criticalCount and warningCount', () => {
+      expect(UTILS_SRC).toContain('criticalCount');
+      expect(UTILS_SRC).toContain('warningCount');
+    });
+
+    it('component delegates to sortProjectsByUrgency from utils', () => {
+      expect(SRC).toContain('sortProjectsByUrgency');
     });
   });
 });

@@ -4,7 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { ModusBadgeColor } from '../../components/modus-badge.component';
 import type { BillingEvent, BillingEventStatus, BillingSchedule } from '../../data/dashboard-data';
-import { BILLING_EVENTS, BILLING_SCHEDULES, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 function billingStatusBadgeColor(status: BillingEventStatus): ModusBadgeColor {
@@ -151,6 +152,7 @@ export class BillingEventDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -159,13 +161,13 @@ export class BillingEventDetailPageComponent {
 
   readonly event = computed<BillingEvent | null>(() => {
     const id = this.eventId();
-    return BILLING_EVENTS.find(ev => ev.id === id) ?? null;
+    return this.store.billingEvents().find(ev => ev.id === id) ?? null;
   });
 
   readonly schedule = computed<BillingSchedule | null>(() => {
     const ev = this.event();
     if (!ev) return null;
-    return BILLING_SCHEDULES.find(bs => bs.projectId === ev.projectId) ?? null;
+    return this.store.billingSchedules().find(bs => bs.projectId === ev.projectId) ?? null;
   });
 
   readonly statusColor = computed(() => {

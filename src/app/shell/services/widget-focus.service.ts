@@ -52,8 +52,8 @@ export class WidgetFocusService {
   }
 
   registerWidgets(widgets: Record<string, WidgetRegistration>): void {
-    const names: Record<string, string> = { ...this._widgetNames() };
-    const suggestions: Record<string, string[]> = { ...this._widgetSuggestions() };
+    const names: Record<string, string> = {};
+    const suggestions: Record<string, string[]> = {};
     for (const [id, entry] of Object.entries(widgets)) {
       names[id] = entry.name;
       suggestions[id] = entry.suggestions;

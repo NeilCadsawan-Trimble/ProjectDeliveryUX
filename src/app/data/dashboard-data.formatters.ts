@@ -105,7 +105,7 @@ export function buildStaffingConflicts(projectId?: number, timeOff?: TimeOffRequ
         const pct = Math.round((absentSet.size / teamSize) * 100);
         let severity: StaffingConflict['severity'] = 'info';
         let reason = `${absentSet.size} of ${teamSize} team members out`;
-        if (pct >= 50) { severity = 'critical'; reason = `${pct}% of team absent -- project at risk of delays`; }
+        if (pct >= 70) { severity = 'critical'; reason = `${pct}% of team absent -- project at risk of delays`; }
         else if (pct >= 30) { severity = 'warning'; reason = `${pct}% of team absent -- reduced capacity`; }
         const mon = cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         conflicts.push({
@@ -175,12 +175,14 @@ export function dueDateClass(daysLeft: number): string {
   if (daysLeft <= 3) return 'text-warning font-medium';
   return 'text-foreground-40';
 }
-export function getRevenueData(range: RevenueTimeRange): RevenueDataPoint[] {
-  return MONTHLY_REVENUE[range];
+export function getRevenueData(range: RevenueTimeRange, data?: Record<RevenueTimeRange, RevenueDataPoint[]>): RevenueDataPoint[] {
+  const src = data ?? MONTHLY_REVENUE;
+  return src[range];
 }
 
-export function getRevenueSummary(range: RevenueTimeRange): { current: number; previous: number; label: string; growthPct: number } {
-  const t = ANNUAL_TOTALS[range];
+export function getRevenueSummary(range: RevenueTimeRange, data?: Record<RevenueTimeRange, { current: number; previous: number; label: string }>): { current: number; previous: number; label: string; growthPct: number } {
+  const src = data ?? ANNUAL_TOTALS;
+  const t = src[range];
   const growthPct = Math.round(((t.current - t.previous) / t.previous) * 100);
   return { ...t, growthPct };
 }
@@ -304,8 +306,8 @@ export function getProjectJobCosts(): ProjectJobCost[] {
   return _projectJobCosts;
 }
 
-export function getJobCostSummary(): { categories: JobCostCategorySummary[]; grandTotal: number } {
-  const costs = getProjectJobCosts();
+export function getJobCostSummary(jobCosts?: ProjectJobCost[]): { categories: JobCostCategorySummary[]; grandTotal: number } {
+  const costs = jobCosts ?? getProjectJobCosts();
   const totals: Record<string, number> = {};
   let grandTotal = 0;
   for (const cat of JOB_COST_CATEGORIES) totals[cat] = 0;
@@ -452,7 +454,7 @@ export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[], changeOrd
         qp = { view: 'rfi', id: rfiId, page: 'records', subpage: 'rfis' };
         if (resolvedStatuses.has(rfi.status)) resolved = true;
       }
-      seen.add(`rfi-${rfiMatch[1]}`);
+      seen.add(`rfi-${rfiId}`);
     }
     const subMatch = upperTitle.match(/SUB-(\d+)/);
     if (subMatch) {
@@ -462,7 +464,7 @@ export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[], changeOrd
         qp = { view: 'submittal', id: subId, page: 'records', subpage: 'submittals' };
         if (resolvedStatuses.has(sub.status)) resolved = true;
       }
-      seen.add(`sub-${subMatch[1]}`);
+      seen.add(`sub-${subId}`);
     }
     const coMatch = upperTitle.match(/CO-(\d+)/);
     if (coMatch) {
@@ -499,6 +501,7 @@ export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[], changeOrd
     if (seen.has(`rfi-${rfi.id}`)) continue;
     const proj = PROJECTS.find(p => p.name === rfi.project);
     if (!proj) continue;
+    const daysOverdue = rfi.dueDate ? Math.floor((Date.now() - new Date(rfi.dueDate).getTime()) / 86_400_000) : 0;
     items.push({
       id: `rfi-${rfi.id}`,
       projectId: proj.id,
@@ -506,7 +509,7 @@ export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[], changeOrd
       projectSlug: proj.slug,
       title: `${rfi.number} overdue`,
       subtitle: `${rfi.subject} -- assigned to ${rfi.assignee}`,
-      severity: 'critical',
+      severity: daysOverdue > 14 ? 'critical' : 'warning',
       category: 'rfi',
       route: `/project/${proj.slug}`,
       queryParams: { view: 'rfi', id: rfi.id, page: 'records', subpage: 'rfis' },
@@ -518,6 +521,7 @@ export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[], changeOrd
     if (seen.has(`sub-${sub.id}`)) continue;
     const proj = PROJECTS.find(p => p.name === sub.project);
     if (!proj) continue;
+    const daysOverdue = sub.dueDate ? Math.floor((Date.now() - new Date(sub.dueDate).getTime()) / 86_400_000) : 0;
     items.push({
       id: `sub-${sub.id}`,
       projectId: proj.id,
@@ -525,7 +529,7 @@ export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[], changeOrd
       projectSlug: proj.slug,
       title: `${sub.number} overdue`,
       subtitle: `${sub.subject} -- assigned to ${sub.assignee}`,
-      severity: 'critical',
+      severity: daysOverdue > 14 ? 'critical' : 'warning',
       category: 'submittal',
       route: `/project/${proj.slug}`,
       queryParams: { view: 'submittal', id: sub.id, page: 'records', subpage: 'submittals' },
@@ -555,7 +559,7 @@ export function buildUrgentNeeds(rfis: Rfi[], submittals: Submittal[], changeOrd
   for (const p of PROJECTS) {
     if (budgetProjectIds.has(p.id)) continue;
     if (p.budgetPct >= 75) {
-      const sev = p.budgetPct >= 90 ? 'critical' as const : 'warning' as const;
+      const sev = p.budgetPct >= 95 ? 'critical' as const : 'warning' as const;
       items.push({
         id: `budget-auto-${p.id}`,
         projectId: p.id,

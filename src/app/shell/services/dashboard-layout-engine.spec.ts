@@ -620,6 +620,65 @@ describe('DashboardLayoutEngine', () => {
     });
   });
 
+  describe('desktop gravity', () => {
+    const GAP = DashboardLayoutEngine.GAP_PX;
+
+    it('desktop init compacts gaps from restored layout', () => {
+      const layoutService = createMockLayoutService();
+      (layoutService.load as ReturnType<typeof vi.fn>).mockReturnValue({
+        tops: { w1: 500, w2: 0, w3: 1000 },
+        heights: { w1: 100, w2: 100, w3: 100 },
+        colStarts: { w1: 1, w2: 1, w3: 1 },
+        colSpans: { w1: 16, w2: 16, w3: 16 },
+      });
+
+      const engine = createEngine({
+        defaultColStarts: { w1: 1, w2: 1, w3: 1 },
+        defaultColSpans: { w1: 16, w2: 16, w3: 16 },
+        defaultTops: { w1: 0, w2: 116, w3: 232 },
+        defaultHeights: { w1: 100, w2: 100, w3: 100 },
+      }, layoutService);
+      engine.isMobile.set(false);
+      engine.isCanvasMode.set(false);
+
+      engine.reinitLayout();
+
+      const tops = engine.widgetTops();
+      expect(tops['w2']).toBe(0);
+      expect(tops['w1']).toBe(100 + GAP);
+      expect(tops['w3']).toBe(200 + GAP * 2);
+    });
+
+    it('desktop move-end compacts all widgets to top', () => {
+      const engine = createEngine({
+        defaultColStarts: { w1: 1, w2: 1, w3: 1 },
+        defaultColSpans: { w1: 16, w2: 16, w3: 16 },
+        defaultTops: { w1: 0, w2: 100 + GAP, w3: 200 + GAP * 2 },
+        defaultHeights: { w1: 100, w2: 100, w3: 100 },
+      });
+      engine.isMobile.set(false);
+      engine.isCanvasMode.set(false);
+
+      engine.widgetTops.set({ w1: 500, w2: 100 + GAP, w3: 200 + GAP * 2 });
+
+      const fakeGrid = { clientWidth: 1280 } as HTMLElement;
+      engine.gridElAccessor = () => fakeGrid;
+
+      engine.onWidgetHeaderMouseDown('w1', {
+        clientX: 100,
+        clientY: 500,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent);
+      engine.onDocumentMouseUp();
+
+      const tops = engine.widgetTops();
+      expect(tops['w2']).toBe(0);
+      expect(tops['w3']).toBe(100 + GAP);
+      expect(tops['w1']).toBe(200 + GAP * 2);
+    });
+  });
+
   describe('canvasGridMinHeight', () => {
     it('computes max bottom + offset', () => {
       const engine = createEngine({ canvasGridMinHeightOffset: 100 });
