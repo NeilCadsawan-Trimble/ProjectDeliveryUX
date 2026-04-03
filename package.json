@@ -44,16 +44,16 @@
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
     "@photo-sphere-viewer/core": "^5.14.1",
-    "@tailwindcss/postcss": "^4.1.16",
-    "@trimble-oss/modus-icons": "^1.18.0",
-    "@trimble-oss/moduswebcomponents": "^1.0.6",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@trimble-oss/modus-icons": "^1.21.0",
+    "@trimble-oss/moduswebcomponents": "^1.2.0",
     "@trimble-oss/moduswebcomponents-angular": "^1.0.6-ng19",
     "pdfjs-dist": "^4.10.38",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.8",
     "rxjs": "~7.8.0",
     "tailwindcss": "^4.1.16",
     "tslib": "^2.3.0",
-    "zone.js": "~0.15.0"
+    "zone.js": "~0.16.1"
   },
   "peerDependencies": {
     "three": ">=0.179.0"
@@ -67,7 +67,7 @@
     "@angular/build": "^20.3.8",
     "@angular/cli": "^20.3.8",
     "@angular/compiler-cli": "^20.3.0",
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.59.1",
     "@types/node": "^25.5.0",
     "@types/three": "^0.183.1",
     "glob": "^11.0.0",
