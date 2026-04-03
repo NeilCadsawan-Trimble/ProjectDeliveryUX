@@ -88,9 +88,10 @@
 
     <ng-template #detailContent>
       <div [class]="isCanvasDrawingDetail() || isCanvasPanoramaDetail() ? 'canvas-detail-constrained' : ''">
-        <div class="transition-all duration-200" [style.margin-left.px]="detailHasSubNav() && !isMobile() && sideSubNavCollapsed() ? 227 : 0">
+        <div class="transition-all duration-200 md:pl-4" [style.margin-left.px]="detailHasSubNav() && !isMobile() && sideSubNavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
         </div>
+        <div class="transition-[padding] duration-200" [class.md:pl-4]="!sideSubNavCollapsed()">
         @if (detailRfi(); as rfi) {
           <app-item-detail-view
             icon="clipboard"
@@ -146,6 +147,7 @@
           (assigneeChange)="onDetailAssigneeChange($event)"
           (linkedCoClick)="onLinkedCoClick($event)"
         />
+        </div>
       </div>
       @if (detailDrawing(); as drawing) {
         <div class="flex flex-col flex-1 min-h-0" data-detail-view>
@@ -233,7 +235,7 @@
               <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'billings') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }@if (activeFinancialsPage() === 'purchase-orders') { ({{ projectPurchaseOrders().length }}) }@if (activeFinancialsPage() === 'contract-invoices') { ({{ projectInvoices().length }}) }@if (activeFinancialsPage() === 'general-invoices') { ({{ projectPayables().length }}) }</div>
             </div>
           }
-          <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
+          <div class="flex min-h-[calc(100vh-12rem)]">
             @if (activeNavItem() === 'records') {
               <app-collapsible-subnav
                 icon="clipboard"
@@ -262,7 +264,7 @@
                 (collapsedChange)="sideSubNavCollapsed.set($event)"
               />
             }
-            <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
+            <div class="flex-1 flex flex-col gap-6 min-w-0">
               <ng-container [ngTemplateOutlet]="detailContent" />
             </div>
           </div>
@@ -519,7 +521,7 @@
                 [style.height.px]="tilePos()['tc-weather']?.height ?? 80"
                 [style.z-index]="2"
               >
-                <div class="bg-card border-default rounded-lg p-4 flex gap-3 overflow-hidden h-full items-center">
+                <div class="bg-card border-default rounded-lg p-4 flex justify-center gap-3 overflow-hidden h-full items-center">
                   @for (day of weatherForecast; track day.date) {
                     <div class="flex flex-col items-center gap-1 min-w-[72px] px-3 py-3 rounded-lg"
                       [class]="day.workImpact === 'major' ? 'bg-destructive-20' : day.workImpact === 'minor' ? 'bg-warning-20' : 'bg-muted'">
@@ -1321,7 +1323,7 @@
         <div class="flex items-center justify-between mb-6">
           <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
         </div>
-        <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
+        <div class="flex min-h-[calc(100vh-12rem)]">
             <app-collapsible-subnav
               icon="clipboard"
               title="Records"
@@ -1334,10 +1336,11 @@
               (itemSelect)="activeRecordsPage.set($event)"
               (collapsedChange)="sideSubNavCollapsed.set($event)"
             />
-          <div class="flex-1 flex flex-col gap-6 min-w-0 md:pl-4">
-            <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
+          <div class="flex-1 flex flex-col gap-6 min-w-0">
+            <div class="transition-all duration-200 md:pl-4" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
             </div>
+            <div class="transition-[padding] duration-200" [class.md:pl-4]="!sideSubNavCollapsed()">
             @if (activeRecordsPage() === 'rfis') {
               @if (subnavViewMode() === 'grid') {
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1483,6 +1486,7 @@
             } @else {
               <app-empty-state icon="clipboard" [title]="activeRecordsPageLabel()" [description]="activeRecordsPageDescription()" />
             }
+            </div>
           </div>
         </div>
         }
@@ -2565,7 +2569,7 @@
             <div class="text-2xl font-bold text-foreground">{{ activeFinancialsPageLabel() }}@if (activeFinancialsPage() === 'change-order-requests') { ({{ projectChangeOrders().length }}) }@if (activeFinancialsPage() === 'billings') { ({{ projectRevenueData().length }}) }@if (activeFinancialsPage() === 'cost-forecasts') { ({{ projectBudgetHistory().length }}) }@if (activeFinancialsPage() === 'prime-contract-change-orders') { ({{ projectPrimeContractCOs().length }}) }@if (activeFinancialsPage() === 'potential-change-orders') { ({{ projectPotentialCOs().length }}) }@if (activeFinancialsPage() === 'subcontract-change-orders') { ({{ projectSubcontractCOs().length }}) }@if (activeFinancialsPage() === 'contracts') { ({{ projectContracts().length }}) }@if (activeFinancialsPage() === 'purchase-orders') { ({{ projectPurchaseOrders().length }}) }@if (activeFinancialsPage() === 'contract-invoices') { ({{ projectInvoices().length }}) }@if (activeFinancialsPage() === 'general-invoices') { ({{ projectPayables().length }}) }</div>
           </div>
         }
-        <div class="flex min-h-[calc(100vh-12rem)] md:-ml-4">
+        <div class="flex min-h-[calc(100vh-12rem)]">
             <app-collapsible-subnav
               icon="bar_graph"
               title="Financials"
@@ -2578,10 +2582,13 @@
               (itemSelect)="selectFinancialsSubPage($event)"
               (collapsedChange)="sideSubNavCollapsed.set($event)"
             />
-          <div class="flex-1 flex flex-col min-w-0 md:pl-4" [class]="subledgerCategory() ? 'gap-3' : 'gap-6'">
-            <div class="transition-all duration-200" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
+          <div class="flex-1 flex flex-col min-w-0"
+            [class.gap-3]="subledgerCategory()"
+            [class.gap-6]="!subledgerCategory()">
+            <div class="transition-all duration-200 md:pl-4" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: activeFinancialsSubnavConfig() }" />
             </div>
+            <div class="transition-[padding] duration-200" [class.md:pl-4]="!sideSubNavCollapsed()">
             @if (activeFinancialsPage() === 'budget' && projectJobCost(); as jcProject) {
               <ng-container [ngTemplateOutlet]="budgetDetailContent" />
             } @else if (activeFinancialsPage() === 'change-order-requests' || activeFinancialsPage() === 'billings' || activeFinancialsPage() === 'cost-forecasts' || activeFinancialsPage() === 'contracts' || activeFinancialsPage() === 'purchase-orders' || activeFinancialsPage() === 'contract-invoices' || activeFinancialsPage() === 'general-invoices') {
@@ -2610,6 +2617,7 @@
             } @else {
               <app-empty-state icon="bar_graph" [title]="activeFinancialsPageLabel()" [description]="activeFinancialsPageDescription()" />
             }
+            </div>
           </div>
         </div>
         }
@@ -3659,7 +3667,7 @@
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
         <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
-          <div [class]="detailDrawing() ? 'p-4 max-w-[1920px] mx-auto flex flex-col h-full' : 'px-4 py-4 md:py-6 max-w-[1920px] mx-auto'">
+          <div [class]="detailDrawing() ? 'p-4 max-w-screen-xl mx-auto flex flex-col h-full' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
         </div>

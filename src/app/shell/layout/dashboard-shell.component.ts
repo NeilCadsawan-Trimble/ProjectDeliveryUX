@@ -28,10 +28,10 @@ import { CanvasPanning } from '../services/canvas-panning';
 import { NavigationHistoryService } from '../services/navigation-history.service';
 import { DataStoreService } from '../../data/data-store.service';
 import {
-  PROJECTS, ESTIMATES, ACTIVITIES, ATTENTION_ITEMS,
+  ESTIMATES, ACTIVITIES, ATTENTION_ITEMS,
   TIME_OFF_REQUESTS, CALENDAR_APPOINTMENTS,
   CHANGE_ORDERS, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS,
-  INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, getProjectJobCosts,
+  INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE,
 } from '../../data/dashboard-data';
 import { getAgent, getSuggestions, type AgentDataState } from '../../data/widget-agents';
 
@@ -805,7 +805,7 @@ export class DashboardShellComponent implements AfterViewInit {
   private buildAgentDataState(): AgentDataState {
     const page = this.getPageName();
     const state: AgentDataState = {
-      projects: PROJECTS,
+      projects: this.store.projects(),
       estimates: ESTIMATES,
       activities: ACTIVITIES,
       attentionItems: ATTENTION_ITEMS,
@@ -820,14 +820,16 @@ export class DashboardShellComponent implements AfterViewInit {
       inspections: INSPECTIONS,
       punchListItems: PUNCH_LIST_ITEMS,
       projectRevenue: PROJECT_REVENUE,
+      allWeatherData: this.store.weatherData(),
+      allJobCosts: this.store.projectJobCosts(),
       currentPage: page,
     };
     if (page === 'financials-job-cost-detail') {
       const url = this.currentUrl();
       const slug = url.replace('/financials/job-costs/', '').split('?')[0];
-      const proj = PROJECTS.find(p => p.slug === slug);
+      const proj = this.store.findProjectBySlug(slug);
       if (proj) {
-        state.jobCostDetailProject = getProjectJobCosts().find(p => p.projectId === proj.id) ?? undefined;
+        state.jobCostDetailProject = this.store.projectJobCosts().find(p => p.projectId === proj.id) ?? undefined;
         state.projectName = proj.name;
       }
     }

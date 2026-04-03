@@ -2043,6 +2043,16 @@ modus-wc-utility-panel .modus-wc-utility-panel-footer {
 .widget-text-lg .text-base { font-size: var(--modus-wc-font-size-xl) !important; }
 .widget-text-lg .widget-title { font-size: var(--modus-wc-font-size-lg) !important; }
 
+/* Tile block deep-link hover affordance */
+.tile-block-link {
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: background-color 150ms;
+}
+.tile-block-link:hover {
+  background-color: color-mix(in srgb, var(--color-muted) 50%, transparent);
+}
+
 .pf-gradient-gain-start { stop-color: var(--success); stop-opacity: 0.35; }
 .pf-gradient-gain-end { stop-color: var(--success); stop-opacity: 0.02; }
 .pf-gradient-fade-start { stop-color: var(--destructive); stop-opacity: 0.35; }

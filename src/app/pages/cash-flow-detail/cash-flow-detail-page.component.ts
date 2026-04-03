@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { CashFlowEntry } from '../../data/dashboard-data';
 import { CASH_FLOW_HISTORY, formatCurrency } from '../../data/dashboard-data';
@@ -187,7 +188,7 @@ export class CashFlowDetailPageComponent {
   });
 
   constructor() {
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
       this.monthParam.set(params.get('month') ?? '');
     });
   }

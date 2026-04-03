@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { DataStoreService } from '../../data/data-store.service';
-import { ModusBadgeComponent } from '../../components/modus-badge.component';
+import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
@@ -26,21 +26,17 @@ import type {
   WeatherForecast,
 } from '../../data/dashboard-data';
 import {
-  PROJECTS,
-  BUDGET_HISTORY_BY_PROJECT,
   statusBadgeColor,
   progressClass,
   budgetProgressClass,
   budgetPctColor,
   buildUrgentNeeds,
   urgentNeedCategoryIcon,
-  getProjectJobCosts,
-  getProjectWeather,
   weatherIcon,
   weatherIconColor,
 } from '../../data/dashboard-data';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
-import { PROJECT_DATA, type Milestone, type TeamMember, type Risk } from '../../data/project-data';
+import type { Milestone, TeamMember, Risk } from '../../data/project-data';
 import { TILE_IDS, TILE_PROJECT_MAP, buildProjectsLayoutConfig } from './projects-page-layout.config';
 
 type ContentBlock = 'owner' | 'schedule' | 'budget' | 'weather'
@@ -129,7 +125,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     day: 'numeric',
   });
 
-  readonly projects = signal<Project[]>(PROJECTS);
+  readonly projects = this.store.projects;
 
   readonly totalProjects = computed(() => this.projects().length);
   readonly onTrackCount = computed(() => this.projects().filter((p) => p.status === 'On Track').length);
@@ -141,7 +137,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   readonly weatherIconColor = weatherIconColor;
 
   getWeather(projectId: number) {
-    return getProjectWeather(projectId);
+    return this.store.getProjectWeather(projectId);
   }
 
   private readonly allUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals(), this.store.changeOrders()));
@@ -154,7 +150,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
       const warning = needs.filter(n => n.severity === 'warning');
       const topNeed = critical[0] ?? warning[0] ?? needs[0] ?? null;
       const budgetAlert = needs.some(n => n.category === 'budget' || n.category === 'change-order');
-      const jc = this._allJobCostData.find(j => j.projectId === p.id);
+      const jc = this.store.projectJobCosts().find(j => j.projectId === p.id);
       const jobCostSpend = jc ? jc.budgetUsed : null;
       map.set(p.id, { urgentNeeds: needs, criticalCount: critical.length, warningCount: warning.length, topNeed, budgetAlert, jobCostSpend });
     }
@@ -179,10 +175,96 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     this.router.navigate(['/project', project.slug]);
   }
 
+  private static readonly WIDGET_BLOCK_MAP: Record<string, string> = {
+    urgentNeeds: 'risks', moreNeeds: 'risks', riskSummary: 'risks',
+    weather: 'weather', forecast: 'weather',
+    milestone: 'milestones', teamSummary: 'team',
+    schedule: 'milestones',
+  };
+  private static readonly FINANCIALS_BLOCKS = new Set([
+    'budget', 'sparkline', 'costBreakdown', 'costDetail', 'fadeGain',
+  ]);
+
+  navigateToBlock(project: Project, block: ContentBlock, event: MouseEvent): void {
+    event.stopPropagation();
+    const slug = project.slug;
+    const widgetId = ProjectsPageComponent.WIDGET_BLOCK_MAP[block];
+    if (widgetId) {
+      this.router.navigate(['/project', slug], { queryParams: { widget: widgetId } });
+    } else if (ProjectsPageComponent.FINANCIALS_BLOCKS.has(block)) {
+      this.router.navigate(['/project', slug], { queryParams: { page: 'financials', subpage: 'budget' } });
+    } else {
+      this.router.navigate(['/project', slug]);
+    }
+  }
+
   readonly statusBadgeColor = statusBadgeColor;
   readonly progressClass = progressClass;
   readonly budgetProgressClass = budgetProgressClass;
   readonly budgetPctColor = budgetPctColor;
+
+  private actionBadgeForProject(project: Project): { label: string; color: ModusBadgeColor } {
+    const agent = this.getProjectAgent(project.id);
+    const topRisk = this.getTopRisk(project.id);
+    const weatherImpact = this.getFirstImpactedForecast(project.id);
+    const nextMs = this.getNextMilestone(project.id);
+
+    if (agent.criticalCount > 0)
+      return { label: `${agent.criticalCount} Critical`, color: 'danger' };
+
+    if (project.budgetPct > 90)
+      return { label: `Budget ${project.budgetPct}%`, color: 'danger' };
+
+    if (project.status === 'Overdue') {
+      const due = new Date(project.dueDate);
+      const now = new Date();
+      const daysLate = Math.max(1, Math.round((now.getTime() - due.getTime()) / 86_400_000));
+      return { label: `${daysLate}d Late`, color: 'danger' };
+    }
+
+    if (project.budgetPct > 75)
+      return { label: `Budget ${project.budgetPct}%`, color: 'warning' };
+
+    if (agent.warningCount > 0)
+      return { label: `${agent.warningCount} Warning${agent.warningCount > 1 ? 's' : ''}`, color: 'warning' };
+
+    if (topRisk?.severity === 'high')
+      return { label: 'High Risk', color: 'warning' };
+
+    if (nextMs?.status === 'overdue')
+      return { label: 'Milestone Slip', color: 'warning' };
+
+    if (weatherImpact)
+      return { label: 'Weather Alert', color: 'warning' };
+
+    if (project.status === 'Planning')
+      return { label: 'Pre-Construction', color: 'secondary' };
+
+    return { label: 'On Track', color: 'success' };
+  }
+
+  readonly actionBadges = computed<Map<number, { label: string; color: ModusBadgeColor }>>(() => {
+    this.projectAgentData();
+    const map = new Map<number, { label: string; color: ModusBadgeColor }>();
+    for (const p of this.projects()) {
+      map.set(p.id, this.actionBadgeForProject(p));
+    }
+    return map;
+  });
+
+  getActionBadge(projectId: number): { label: string; color: ModusBadgeColor } {
+    return this.actionBadges().get(projectId) ?? { label: 'On Track', color: 'success' };
+  }
+
+  actionBadgeBarClass(projectId: number): string {
+    const badge = this.getActionBadge(projectId);
+    switch (badge.color) {
+      case 'danger': return 'bg-destructive';
+      case 'warning': return 'bg-warning';
+      case 'secondary': return 'bg-muted';
+      default: return 'bg-success';
+    }
+  }
 
   private scoreBlocksForProject(project: Project): ContentBlock[] {
     const agent = this.getProjectAgent(project.id);
@@ -302,7 +384,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   }
 
   getNextMilestone(projectId: number): Milestone | null {
-    const data = PROJECT_DATA[projectId];
+    const data = this.store.projectDetailData()[projectId];
     if (!data) return null;
     const active = data.milestones.find(m => m.status === 'in-progress');
     if (active) return active;
@@ -311,20 +393,20 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   }
 
   getTeamSummary(projectId: number): { members: TeamMember[]; total: number } | null {
-    const data = PROJECT_DATA[projectId];
+    const data = this.store.projectDetailData()[projectId];
     if (!data?.team?.length) return null;
     return { members: data.team.slice(0, 3), total: data.team.length };
   }
 
   getTopRisk(projectId: number): Risk | null {
-    const data = PROJECT_DATA[projectId];
+    const data = this.store.projectDetailData()[projectId];
     if (!data?.risks?.length) return null;
     const high = data.risks.find(r => r.severity === 'high');
     return high ?? data.risks[0];
   }
 
   getFirstImpactedForecast(projectId: number): WeatherForecast | null {
-    const pw = getProjectWeather(projectId);
+    const pw = this.store.getProjectWeather(projectId);
     if (!pw) return null;
     return pw.forecast.find(d => d.workImpact !== 'none') ?? null;
   }
@@ -336,7 +418,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   }
 
   getBudgetHistory(projectId: number): BudgetHistoryPoint[] | null {
-    const pts = BUDGET_HISTORY_BY_PROJECT[projectId];
+    const pts = this.store.getProjectBudgetHistory(projectId);
     return pts?.length ? pts : null;
   }
 
@@ -353,14 +435,12 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     }).join(' ');
   }
 
-  private readonly _allJobCostData = getProjectJobCosts();
-
   getJobCostData(projectId: number): ProjectJobCost | null {
-    return this._allJobCostData.find(j => j.projectId === projectId) ?? null;
+    return this.store.projectJobCosts().find(j => j.projectId === projectId) ?? null;
   }
 
   getProjectFadeGain(projectId: number): { label: string; value: string; isGain: boolean } | null {
-    const pts = BUDGET_HISTORY_BY_PROJECT[projectId];
+    const pts = this.store.getProjectBudgetHistory(projectId);
     if (!pts?.length) return null;
     const latest = pts[pts.length - 1];
     const diff = latest.planned - latest.actual;
@@ -408,7 +488,12 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   }
 
   private buildProjectsAgentState(): AgentDataState {
-    return { projects: PROJECTS, currentPage: 'projects' };
+    return {
+      projects: this.store.projects(),
+      allWeatherData: this.store.weatherData(),
+      allJobCosts: this.store.projectJobCosts(),
+      currentPage: 'projects',
+    };
   }
   getProjectsWidgetInsight(widgetId: string): string | null {
     const agent = getAgent(widgetId, 'projects');

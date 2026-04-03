@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { Payable } from '../../data/dashboard-data';
@@ -152,7 +153,7 @@ export class PayableDetailPageComponent {
   readonly payableStatusBadge = payableStatusBadge;
 
   constructor() {
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
       this.payableId.set(params.get('id') ?? '');
     });
   }

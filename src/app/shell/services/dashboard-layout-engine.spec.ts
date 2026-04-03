@@ -890,6 +890,86 @@ describe('DashboardLayoutEngine', () => {
     });
   });
 
+  describe('widget header click without drag', () => {
+    it('click-and-release on widget header does not corrupt colStarts or colSpans', () => {
+      const engine = createEngine({ responsiveBreakpoints: undefined });
+      engine.isMobile.set(false);
+      engine.isCanvasMode.set(false);
+      const fakeGrid = { clientWidth: 1280 } as HTMLElement;
+      engine.gridElAccessor = () => fakeGrid;
+
+      const origColStarts = { ...engine.widgetColStarts() };
+      const origColSpans = { ...engine.widgetColSpans() };
+
+      engine.onWidgetHeaderMouseDown('w2', {
+        clientX: 400,
+        clientY: 100,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent);
+      engine.onDocumentMouseUp();
+
+      expect(engine.widgetColStarts()).toEqual(origColStarts);
+      expect(engine.widgetColSpans()).toEqual(origColSpans);
+    });
+
+    it('click-and-release does not produce NaN in colStarts when widgetLefts was empty', () => {
+      const engine = createEngine({ responsiveBreakpoints: undefined });
+      engine.isMobile.set(false);
+      engine.isCanvasMode.set(false);
+      const fakeGrid = { clientWidth: 1280 } as HTMLElement;
+      engine.gridElAccessor = () => fakeGrid;
+
+      expect(engine.widgetLefts()).toEqual({});
+      expect(engine.widgetPixelWidths()).toEqual({});
+
+      engine.onWidgetHeaderMouseDown('w1', {
+        clientX: 100,
+        clientY: 50,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent);
+      engine.onDocumentMouseUp();
+
+      const colStarts = engine.widgetColStarts();
+      const colSpans = engine.widgetColSpans();
+      for (const id of ['w1', 'w2', 'w3']) {
+        expect(Number.isNaN(colStarts[id])).toBe(false);
+        expect(Number.isNaN(colSpans[id])).toBe(false);
+        expect(colStarts[id]).toBeGreaterThanOrEqual(1);
+        expect(colSpans[id]).toBeGreaterThanOrEqual(4);
+      }
+    });
+
+    it('all widgets get pixel positions populated after header mousedown in desktop mode', () => {
+      const engine = createEngine({ responsiveBreakpoints: undefined });
+      engine.isMobile.set(false);
+      engine.isCanvasMode.set(false);
+      const fakeGrid = { clientWidth: 1280 } as HTMLElement;
+      engine.gridElAccessor = () => fakeGrid;
+
+      expect(engine.widgetLefts()).toEqual({});
+
+      engine.onWidgetHeaderMouseDown('w2', {
+        clientX: 400,
+        clientY: 100,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent);
+
+      const lefts = engine.widgetLefts();
+      const widths = engine.widgetPixelWidths();
+      for (const id of ['w1', 'w2', 'w3']) {
+        expect(lefts[id]).toBeDefined();
+        expect(widths[id]).toBeDefined();
+        expect(typeof lefts[id]).toBe('number');
+        expect(typeof widths[id]).toBe('number');
+      }
+
+      engine.onDocumentMouseUp();
+    });
+  });
+
   describe('destroy', () => {
     it('aborts the AbortController', () => {
       const engine = createEngine();

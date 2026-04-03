@@ -87,12 +87,20 @@ export class AiPanelController {
     }, { injector: config.injector });
   }
 
+  private static readonly MAX_CONVERSATIONS = 50;
+
   private saveConversation(): void {
     const agentKey = this.widgetFocusService.selectedWidgetId() ?? '__default__';
+    this.conversationMemory.delete(agentKey);
     this.conversationMemory.set(agentKey, {
       messages: this.messages(),
       counter: this.messageCounter,
     });
+
+    if (this.conversationMemory.size > AiPanelController.MAX_CONVERSATIONS) {
+      const oldest = this.conversationMemory.keys().next().value;
+      if (oldest !== undefined) this.conversationMemory.delete(oldest);
+    }
   }
 
   toggle(): void {

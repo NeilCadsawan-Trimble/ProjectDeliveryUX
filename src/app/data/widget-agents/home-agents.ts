@@ -1,4 +1,4 @@
-import { buildStaffingConflicts, buildUrgentNeeds, PROJECTS, getProjectWeather } from '../dashboard-data';
+import { buildStaffingConflicts, buildUrgentNeeds } from '../dashboard-data';
 import type { AgentAction, WidgetAgent } from './shared';
 import { fmtProjects, kw, maxDaysPastDue } from './shared';
 import { changeOrdersAgent, weatherAgent } from './financials-agents';
@@ -403,24 +403,30 @@ export const homeWeatherAgent: WidgetAgent = {
     'Show me the 7-day outlook for all projects',
     'Which projects should shift to interior work?',
   ],
-  insight() {
-    const impacted = PROJECTS.map(p => ({ p, w: getProjectWeather(p.id) })).filter(({ w }) => w && w.forecast.some(f => f.workImpact !== 'none'));
+  insight(s) {
+    const projects = s.projects ?? [];
+    const allWeather = s.allWeatherData ?? [];
+    const impacted = projects.map(p => ({ p, w: allWeather.find(w => w.projectId === p.id) })).filter(({ w }) => w && w.forecast.some(f => f.workImpact !== 'none'));
     const major = impacted.filter(({ w }) => w!.forecast.some(f => f.workImpact === 'major'));
     if (major.length) return `${major.length} site${major.length !== 1 ? 's' : ''} facing work stoppages this week`;
     if (impacted.length) return `${impacted.length} site${impacted.length !== 1 ? 's' : ''} with weather advisories`;
     return null;
   },
-  alerts() {
-    const major = PROJECTS.filter(p => { const w = getProjectWeather(p.id); return w && w.forecast.some(f => f.workImpact === 'major'); });
+  alerts(s) {
+    const projects = s.projects ?? [];
+    const allWeather = s.allWeatherData ?? [];
+    const major = projects.filter(p => { const w = allWeather.find(w => w.projectId === p.id); return w && w.forecast.some(f => f.workImpact === 'major'); });
     return major.length ? { level: 'warning' as const, count: major.length, label: 'sites with work stoppages' } : null;
   },
   actions: () => [
     { id: 'alert-all-subs', label: 'Alert all subcontractors', execute: () => 'Sent weather lookahead to all subcontractors across impacted sites.' },
     { id: 'export-weather', label: 'Export weather report', execute: () => 'Exported portfolio weather outlook PDF.' },
   ],
-  buildContext() {
-    const lines = PROJECTS.map(p => {
-      const w = getProjectWeather(p.id);
+  buildContext(s) {
+    const projects = s.projects ?? [];
+    const weatherData = s.allWeatherData ?? [];
+    const lines = projects.map(p => {
+      const w = weatherData.find(w => w.projectId === p.id);
       if (!w) return `  ${p.name} (${p.city}, ${p.state}): No weather data`;
       const impact = w.forecast.filter(f => f.workImpact !== 'none');
       const impactStr = impact.length ? `${impact.length} impact day(s): ${impact.map(f => `${f.day} ${f.date} ${f.workImpact}`).join(', ')}` : 'no impact';
@@ -428,8 +434,10 @@ export const homeWeatherAgent: WidgetAgent = {
     });
     return `Portfolio weather outlook:\n${lines.join('\n')}`;
   },
-  localRespond(q) {
-    const allWeather = PROJECTS.map(p => ({ p, w: getProjectWeather(p.id)! })).filter(({ w }) => !!w);
+  localRespond(q, s) {
+    const projects = s.projects ?? [];
+    const weatherData = s.allWeatherData ?? [];
+    const allWeather = projects.map(p => ({ p, w: weatherData.find(w => w.projectId === p.id)! })).filter(({ w }) => !!w);
     const impacted = allWeather.filter(({ w }) => w.forecast.some(f => f.workImpact !== 'none'));
     const major = allWeather.filter(({ w }) => w.forecast.some(f => f.workImpact === 'major'));
 

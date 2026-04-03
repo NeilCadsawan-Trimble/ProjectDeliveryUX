@@ -27,6 +27,7 @@ import type {
   StaffingConflict,
   Submittal,
   TimeOffRequest,
+  ProjectWeather,
   WeatherForecast,
 } from '../dashboard-data';
 import type { Milestone, TeamMember, Task, Risk, ActivityEntry, Drawing, BudgetBreakdown } from '../project-data';
@@ -81,6 +82,8 @@ export interface AgentDataState {
   detailDrawing?: DrawingTile;
 
   jobCostDetailProject?: ProjectJobCost;
+  allJobCosts?: ProjectJobCost[];
+  allWeatherData?: ProjectWeather[];
 
   invoices?: Invoice[];
   billingSchedules?: BillingSchedule[];

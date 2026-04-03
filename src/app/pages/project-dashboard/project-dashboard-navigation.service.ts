@@ -76,6 +76,19 @@ export class ProjectDashboardNavigationService {
    */
   restoreFromUrl(params: URLSearchParams): void {
     this.restorePageContext(params);
+
+    const widgetTarget = params.get('widget');
+    if (widgetTarget) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        this.ctx.widgetFocus.selectWidget(widgetTarget);
+        const el = document.querySelector(`[data-widget-id="${widgetTarget}"]`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete('widget');
+        window.history.replaceState(null, '', clean.toString());
+      }));
+    }
+
     const view = params.get('view');
     const id = params.get('id');
     const from = params.get('from');
