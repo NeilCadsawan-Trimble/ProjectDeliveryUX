@@ -8,6 +8,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
@@ -22,7 +23,7 @@ import { NavigationHistoryService } from '../../shell/services/navigation-histor
 import { DataStoreService } from '../../data/data-store.service';
 import type { NavItem } from '../project-dashboard/project-dashboard.config';
 import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost, ChangeOrder, ChangeOrderType, Invoice, BillingSchedule, BillingEvent, Payable, CashFlowEntry, GLAccount, GLEntry, PurchaseOrder, PayrollRecord, Contract, SubcontractLedgerEntry } from '../../data/dashboard-data';
-import { PROJECTS, budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, getProjectJobCosts, JOB_COST_CATEGORIES, CATEGORY_COLORS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, INVOICES, BILLING_SCHEDULES, BILLING_EVENTS, PAYABLES, CASH_FLOW_HISTORY, CASH_POSITION, GL_ACCOUNTS, GL_ENTRIES, PURCHASE_ORDERS, PAYROLL_RECORDS, CONTRACTS, SUBCONTRACT_LEDGER, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
+import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, JOB_COST_CATEGORIES, CATEGORY_COLORS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, INVOICES, BILLING_SCHEDULES, BILLING_EVENTS, PAYABLES, CASH_FLOW_HISTORY, CASH_POSITION, GL_ACCOUNTS, GL_ENTRIES, PURCHASE_ORDERS, PAYROLL_RECORDS, CONTRACTS, SUBCONTRACT_LEDGER, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
 import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
 
 @Component({
@@ -1886,7 +1887,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
     this.engine.widgetLocked.update(l => ({ ...l, finHeader: true }));
   }
 
-  readonly projects = signal<Project[]>(PROJECTS);
+  readonly projects = this.store.projects;
   readonly totalProjects = computed(() => this.projects().length);
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
   readonly financialsWidgets: DashboardWidgetId[] = ['finNavLinks', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
@@ -2022,7 +2023,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   private buildFinAgentState(): AgentDataState {
     return {
-      projects: PROJECTS,
+      projects: this.store.projects(),
       estimates: this.store.estimates(),
       changeOrders: this.store.changeOrders(),
       invoices: INVOICES,
@@ -2037,6 +2038,8 @@ export class FinancialsPageComponent extends DashboardPageBase {
       payrollRecords: PAYROLL_RECORDS,
       contracts: CONTRACTS,
       subcontractLedger: SUBCONTRACT_LEDGER,
+      allWeatherData: this.store.weatherData(),
+      allJobCosts: this.store.projectJobCosts(),
       currentPage: 'financials',
       currentSubPage: this.activeSubPage(),
     };
@@ -2247,7 +2250,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly budgetProgressClass = budgetProgressClass;
 
   readonly jobCostSummary = computed(() => getJobCostSummary());
-  readonly projectJobCosts = computed(() => getProjectJobCosts());
+  readonly projectJobCosts = this.store.projectJobCosts;
   readonly jobCostCategories = JOB_COST_CATEGORIES;
 
   readonly formatJobCost = sharedFormatJobCost;
@@ -2409,7 +2412,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   });
 
   openJobCostDetail(p: ProjectJobCost): void {
-    const proj = PROJECTS.find(pr => pr.id === p.projectId);
+    const proj = this.store.findProjectById(p.projectId);
     const slug = proj?.slug ?? String(p.projectId);
     this.router.navigate(['/financials/job-costs', slug]);
   }
@@ -2432,11 +2435,11 @@ export class FinancialsPageComponent extends DashboardPageBase {
     this.navHistory.shellTitleOverride.set({
       text: current.projectName,
       items: otherProjects.map(p => {
-        const proj = PROJECTS.find(pr => pr.id === p.projectId);
+        const proj = this.store.findProjectById(p.projectId);
         return { id: p.projectId, label: p.projectName, sublabel: p.budgetUsed, slug: proj?.slug ?? '' };
       }),
       onSelect: (id: number) => {
-        const proj = PROJECTS.find(pr => pr.id === id);
+        const proj = this.store.findProjectById(id);
         if (proj) this.router.navigate(['/financials/job-costs', proj.slug]);
       },
     });
@@ -2538,7 +2541,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   }
 
   private resolveSlugToProject(slug: string): ProjectJobCost | null {
-    const proj = PROJECTS.find(p => p.slug === slug);
+    const proj = this.store.findProjectBySlug(slug);
     if (!proj) return null;
     return this.projectJobCosts().find(p => p.projectId === proj.id) ?? null;
   }
@@ -2546,7 +2549,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   override ngAfterViewInit(): void {
     super.ngAfterViewInit();
 
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const slug = params.get('slug');
       if (slug) {
         const match = this.resolveSlugToProject(slug);

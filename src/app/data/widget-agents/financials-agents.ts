@@ -1,5 +1,5 @@
 import type { ChangeOrder, Contract, SubcontractLedgerEntry } from '../dashboard-data';
-import { PROJECTS, JOB_COST_CATEGORIES, getProjectJobCosts, formatCurrency } from '../dashboard-data';
+import { JOB_COST_CATEGORIES, formatCurrency } from '../dashboard-data';
 import type { AgentAction, WidgetAgent } from './shared';
 import { getSuggestions, kw } from './shared';
 
@@ -649,11 +649,11 @@ export const financialsJobCostDetail: WidgetAgent = {
     return null;
   },
   actions(s) {
-    const allCosts = getProjectJobCosts();
+    const allCosts = s.allJobCosts ?? [];
     const currentId = s.jobCostDetailProject?.projectId;
     const others = allCosts.filter(p => p.projectId !== currentId).slice(0, 4);
     const navActions: AgentAction[] = others.map(p => {
-      const proj = PROJECTS.find(pr => pr.id === p.projectId);
+      const proj = (s.projects ?? []).find(pr => pr.id === p.projectId);
       return {
         id: `nav-jc-${p.projectId}`,
         label: `Open ${p.projectName} job costs`,
@@ -689,7 +689,7 @@ export const financialsJobCostDetail: WidgetAgent = {
       return `${p.projectName}: ${p.budgetUsed} spent of ${p.budgetTotal} (${p.budgetPct}%). Remaining: $${Math.round(remaining / 1000)}K (${100 - p.budgetPct}%). ${p.budgetPct >= 90 ? 'Critical -- immediate review needed.' : p.budgetPct >= 75 ? 'Approaching budget threshold.' : 'Within healthy range.'}`;
     }
     if (kw(q, 'compare', 'portfolio', 'average', 'other project')) {
-      const allCosts = getProjectJobCosts();
+      const allCosts = s.allJobCosts ?? [];
       const portfolioTotal = allCosts.reduce((sum, pr) => sum + cats.reduce((s2, cat) => s2 + pr.costs[cat], 0), 0);
       const avgBudgetPct = Math.round(allCosts.reduce((s2, pr) => s2 + pr.budgetPct, 0) / allCosts.length);
       return `${p.projectName} budget utilization: ${p.budgetPct}% vs portfolio average: ${avgBudgetPct}%. Portfolio total spend: $${Math.round(portfolioTotal / 1000)}K across ${allCosts.length} projects.`;
@@ -848,7 +848,7 @@ export const financialsBilling: WidgetAgent = {
     if (kw(q, 'due', 'upcoming', 'next')) {
       const sorted = [...schedules].sort((a, b) => new Date(a.nextBillingDate).getTime() - new Date(b.nextBillingDate).getTime());
       const lines = sorted.slice(0, 5).map(bs => {
-        const proj = PROJECTS.find(p => p.id === bs.projectId);
+        const proj = (s.projects ?? []).find(p => p.id === bs.projectId);
         return `${proj?.name ?? `Project ${bs.projectId}`}: ${bs.nextBillingDate} (${bs.frequency})`;
       });
       return `Upcoming billing:\n${lines.join('\n')}`;

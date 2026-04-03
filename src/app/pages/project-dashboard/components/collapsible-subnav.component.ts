@@ -18,8 +18,7 @@ import type { AgentAlert } from '../../../data/widget-agents';
         [style.width.px]="innerWidth()"
         [style.max-height]="panelMaxHeight()"
         [style.z-index]="innerZIndex()"
-        [class.rounded-r-lg]="!canvasMode()"
-        [class.rounded-lg]="canvasMode()"
+        [class.rounded-lg]="true"
         [class.shadow-lg]="isMobile() && !collapsed()">
 
         @if (mobileCompact()) {

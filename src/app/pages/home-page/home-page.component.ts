@@ -43,20 +43,18 @@ import type {
   Estimate,
 } from '../../data/dashboard-data';
 import {
-  PROJECTS,
   ACTIVITIES,
   CALENDAR_APPOINTMENTS,
   INSPECTIONS,
   PUNCH_LIST_ITEMS,
   buildUrgentNeeds,
   urgentNeedCategoryIcon,
-  getProjectWeather,
   weatherIcon,
   weatherIconColor,
   buildStaffingConflicts,
   formatCurrency,
 } from '../../data/dashboard-data';
-import type { UrgentNeedItem, UrgentNeedCategory, ProjectWeather, WeatherCondition, StaffingConflict } from '../../data/dashboard-data';
+import type { Project, UrgentNeedItem, UrgentNeedCategory, ProjectWeather, WeatherCondition, StaffingConflict } from '../../data/dashboard-data';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards.component';
@@ -1614,7 +1612,7 @@ export class HomePageComponent extends DashboardPageBase {
   readonly rfis = this.store.rfis;
   readonly submittals = this.store.submittals;
   readonly calendarAppointments: CalendarAppointment[] = CALENDAR_APPOINTMENTS;
-  readonly projects = signal(PROJECTS);
+  readonly projects = this.store.projects;
   readonly estimates = this.store.estimates;
 
   readonly totalProjects = computed(() => this.projects().length);
@@ -1713,7 +1711,7 @@ export class HomePageComponent extends DashboardPageBase {
 
   readonly recentDrawings = computed(() => {
     const results: { projectId: number; projectName: string; drawing: DrawingTile }[] = [];
-    for (const project of PROJECTS) {
+    for (const project of this.store.projects()) {
       const drawings = ALL_DRAWINGS_BY_PROJECT[project.id];
       if (drawings?.length) {
         results.push({ projectId: project.id, projectName: project.name, drawing: drawings[0] });
@@ -2020,7 +2018,7 @@ export class HomePageComponent extends DashboardPageBase {
 
   readonly urgentProjectOptions = computed(() => {
     const projectIds = new Set(this.allUrgentNeeds().map(i => i.projectId));
-    return PROJECTS
+    return this.store.projects()
       .filter(p => projectIds.has(p.id))
       .map(p => ({
         id: p.id,
@@ -2099,14 +2097,14 @@ export class HomePageComponent extends DashboardPageBase {
   private readonly _cleanupUrgentDropdown = this.destroyRef.onDestroy(() => this._urgentDropdownAbort.abort());
 
   readonly allProjectWeather = computed(() => {
-    return PROJECTS.map(p => {
-      const w = getProjectWeather(p.id);
+    return this.store.projects().map(p => {
+      const w = this.store.getProjectWeather(p.id);
       if (!w) return null;
       const impactDays = w.forecast.filter(f => f.workImpact !== 'none');
       const majorDays = w.forecast.filter(f => f.workImpact === 'major');
       const minorDays = w.forecast.filter(f => f.workImpact === 'minor');
       return { project: p, weather: w, impactDays: impactDays.length, majorDays: majorDays.length, minorDays: minorDays.length };
-    }).filter(Boolean) as { project: typeof PROJECTS[0]; weather: ProjectWeather; impactDays: number; majorDays: number; minorDays: number }[];
+    }).filter(Boolean) as { project: Project; weather: ProjectWeather; impactDays: number; majorDays: number; minorDays: number }[];
   });
 
   readonly weatherImpactProjects = computed(() =>
@@ -2132,7 +2130,7 @@ export class HomePageComponent extends DashboardPageBase {
 
   navigateToProject(slugOrId: string | number): void {
     if (typeof slugOrId === 'number') {
-      const proj = PROJECTS.find(p => p.id === slugOrId);
+      const proj = this.store.findProjectById(slugOrId);
       if (proj) this.router.navigate(['/project', proj.slug]);
     } else {
       this.router.navigate(['/project', slugOrId]);
@@ -2150,13 +2148,15 @@ export class HomePageComponent extends DashboardPageBase {
 
   private buildHomeAgentState(): AgentDataState {
     return {
-      projects: PROJECTS,
+      projects: this.store.projects(),
       estimates: this.store.estimates(),
       rfis: this.store.rfis(),
       submittals: this.store.submittals(),
       activities: ACTIVITIES,
       calendar: CALENDAR_APPOINTMENTS,
       timeOffRequests: this.store.timeOffRequests(),
+      allWeatherData: this.store.weatherData(),
+      allJobCosts: this.store.projectJobCosts(),
       currentPage: 'home',
     };
   }
@@ -2462,7 +2462,7 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   private findProjectSlug(projectName: string): string | null {
-    const project = PROJECTS.find(p => p.name === projectName);
+    const project = this.store.projects().find(p => p.name === projectName);
     return project ? project.slug : null;
   }
 
@@ -2601,7 +2601,7 @@ export class HomePageComponent extends DashboardPageBase {
       this.openCanvasDetail('homeDrawings', { type: 'drawing', item: drawing });
       return;
     }
-    const project = PROJECTS.find(p => p.id === projectId);
+    const project = this.store.findProjectById(projectId);
     if (project) {
       this.router.navigate(['/project', project.slug], {
         queryParams: { page: 'drawings', view: 'drawing', id: drawing.id },

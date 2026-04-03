@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { PayrollRecord } from '../../data/dashboard-data';
@@ -135,7 +136,7 @@ export class PayrollMonthlyDetailPageComponent {
   readonly payrollStatusBadge = payrollStatusBadge;
 
   constructor() {
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
       const raw = params.get('month') ?? '';
       this.monthParam.set(decodeURIComponent(raw));
     });

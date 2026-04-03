@@ -58,7 +58,7 @@ import {
   type TaskPriority,
   type RiskSeverity,
 } from '../../data/project-data';
-import { PROJECTS, type Rfi, type Submittal, getProjectJobCosts, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, BUDGET_HISTORY_BY_PROJECT, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, getProjectWeather, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus, type TimeOffStatus } from '../../data/dashboard-data';
+import { type Rfi, type Submittal, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, DAILY_REPORTS, WEATHER_FORECAST, PROJECT_ATTENTION_ITEMS, INSPECTIONS, PUNCH_LIST_ITEMS, PROJECT_REVENUE, CONTRACTS, INVOICES, PAYABLES, PURCHASE_ORDERS, SUBCONTRACT_LEDGER, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus, type TimeOffStatus } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, SITE_CAPTURES_BY_PROJECT, type DrawingTile, type SiteCapture } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
@@ -682,7 +682,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly budgetProgressClass = budgetProgressClass;
 
   readonly projectJobCost = computed<ProjectJobCost | null>(() => {
-    const costs = getProjectJobCosts();
+    const costs = this.store.projectJobCosts();
     return costs.find(c => c.projectId === this.projectId()) ?? null;
   });
 
@@ -953,7 +953,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   readonly projectSelectorOpen = signal(false);
   readonly otherProjects = computed(() =>
-    PROJECTS.filter(p => p.id !== this.projectId())
+    this.store.projects().filter(p => p.id !== this.projectId())
   );
   readonly summaryStats = computed(() => this.projectData().summaryStats);
   readonly milestones = computed(() => this.projectData().milestones);
@@ -962,9 +962,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly projectUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals(), this.store.changeOrders()).filter(n => n.projectId === this.projectId()));
   readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
 
-  readonly projectWeather = computed(() => getProjectWeather(this.projectId()));
+  readonly projectWeather = computed(() => this.store.getProjectWeather(this.projectId()));
   readonly projectCity = computed(() => {
-    const proj = PROJECTS.find(p => p.id === this.projectId());
+    const proj = this.store.findProjectById(this.projectId());
     return proj ? `${proj.city}, ${proj.state}` : '';
   });
 
@@ -1167,7 +1167,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   );
 
   readonly projectBudgetHistory = computed(() =>
-    BUDGET_HISTORY_BY_PROJECT[this.projectId()] ?? []
+    this.store.getProjectBudgetHistory(this.projectId())
   );
 
   readonly lastBudgetPoint = computed(() => {
@@ -2181,6 +2181,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
     const projId = this.projectId();
     return {
+      projects: this.store.projects(),
+      allWeatherData: this.store.weatherData(),
+      allJobCosts: this.store.projectJobCosts(),
       projectName: this.projectName(),
       projectStatus: this.projectStatus(),
       budgetUsed: this.budgetUsed(),
@@ -2208,7 +2211,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       dailyReports: DAILY_REPORTS.filter(dr => dr.projectId === projId),
       weatherForecast: this.projectWeather()?.forecast ?? WEATHER_FORECAST,
       projectAttentionItems: PROJECT_ATTENTION_ITEMS.filter(a => a.projectId === projId),
-      budgetHistory: BUDGET_HISTORY_BY_PROJECT[projId] ?? [],
+      budgetHistory: this.store.getProjectBudgetHistory(projId),
       inspections: INSPECTIONS.filter(i => i.projectId === projId),
       punchListItems: PUNCH_LIST_ITEMS.filter(p => p.projectId === projId),
       projectRevenue: PROJECT_REVENUE.filter(r => r.projectId === projId),

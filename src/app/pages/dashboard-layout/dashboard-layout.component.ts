@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { DashboardShellComponent } from '../../shell/layout/dashboard-shell.component';
 import type { ShellNavItem, AiResponseFn } from '../../shell/layout/dashboard-shell.component';
 import type { INavbarUserCard } from '../../components/modus-navbar.component';
 import type { Project, Estimate } from '../../data/dashboard-data';
-import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data';
+import { ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -23,6 +24,7 @@ import { PROJECTS, ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data'
   `,
 })
 export class DashboardLayoutComponent {
+  private readonly store = inject(DataStoreService);
   readonly appTitle = 'Project Delivery';
 
   readonly userCard: INavbarUserCard = {
@@ -45,7 +47,7 @@ export class DashboardLayoutComponent {
 
   readonly aiResponseFn: AiResponseFn = (input: string): string => {
     const q = input.toLowerCase();
-    const projects: Project[] = PROJECTS;
+    const projects: Project[] = this.store.projects();
     const estimates: Estimate[] = ESTIMATES;
 
     if (q.includes('at risk') || q.includes('risk')) {

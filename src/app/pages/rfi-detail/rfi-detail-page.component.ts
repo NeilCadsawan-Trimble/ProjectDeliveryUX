@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { Rfi, RfiStatus } from '../../data/dashboard-data';
 import { DataStoreService } from '../../data/data-store.service';
@@ -154,7 +155,7 @@ export class RfiDetailPageComponent {
   });
 
   constructor() {
-    this.route.paramMap.subscribe((params) => {
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       this.rfiId.set(params.get('id') ?? '');
     });
   }

@@ -1,7 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
-import { PROJECTS } from '../../data/dashboard-data';
 
 export interface ShellBackButton {
   label: string;

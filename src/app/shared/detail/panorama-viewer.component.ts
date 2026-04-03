@@ -10,7 +10,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Viewer } from '@photo-sphere-viewer/core';
+import type { Viewer } from '@photo-sphere-viewer/core';
 
 @Component({
   selector: 'app-panorama-viewer',
@@ -120,9 +120,10 @@ export class PanoramaViewerComponent {
     this._createViewer(url, container);
   }
 
-  private _createViewer(url: string, container: HTMLElement): void {
+  private async _createViewer(url: string, container: HTMLElement): Promise<void> {
     try {
-      const viewer = new Viewer({
+      const { Viewer: ViewerClass } = await import('@photo-sphere-viewer/core');
+      const viewer = new ViewerClass({
         container,
         panorama: url,
         defaultYaw: this.defaultYaw(),

@@ -447,12 +447,18 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this._dragStartTop = this.widgetTops()[id];
 
     if (!this.isMobile() && !this.isCanvasMode()) {
-      const rect = this._computeDesktopPixelRect(id);
-      this._dragStartLeft = rect.left;
-      this.widgetLefts.update(l => ({ ...l, [id]: rect.left }));
-      this.widgetPixelWidths.update(w => ({ ...w, [id]: rect.width }));
-      this.dragLeft.set(rect.left);
-      this.dragWidth.set(rect.width);
+      const allRects = this._computeAllDesktopPixelRects();
+      const lefts: Record<string, number> = {};
+      const widths: Record<string, number> = {};
+      for (const wId of this.config.widgets) {
+        lefts[wId] = allRects[wId].left;
+        widths[wId] = allRects[wId].width;
+      }
+      this._dragStartLeft = allRects[id].left;
+      this.widgetLefts.set(lefts);
+      this.widgetPixelWidths.set(widths);
+      this.dragLeft.set(allRects[id].left);
+      this.dragWidth.set(allRects[id].width);
     } else {
       this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     }
@@ -483,12 +489,18 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this._dragStartTop = this.widgetTops()[id];
 
     if (!this.isMobile() && !this.isCanvasMode()) {
-      const pixRect = this._computeDesktopPixelRect(id);
-      this._dragStartLeft = pixRect.left;
-      this.widgetLefts.update(l => ({ ...l, [id]: pixRect.left }));
-      this.widgetPixelWidths.update(w => ({ ...w, [id]: pixRect.width }));
-      this.dragLeft.set(pixRect.left);
-      this.dragWidth.set(pixRect.width);
+      const allRects = this._computeAllDesktopPixelRects();
+      const lefts: Record<string, number> = {};
+      const widths: Record<string, number> = {};
+      for (const wId of this.config.widgets) {
+        lefts[wId] = allRects[wId].left;
+        widths[wId] = allRects[wId].width;
+      }
+      this._dragStartLeft = allRects[id].left;
+      this.widgetLefts.set(lefts);
+      this.widgetPixelWidths.set(widths);
+      this.dragLeft.set(allRects[id].left);
+      this.dragWidth.set(allRects[id].width);
     } else {
       this._dragStartLeft = this.widgetLefts()[id] ?? 0;
     }
@@ -1877,13 +1889,22 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const containerWidth = grid.clientWidth;
     const step = (containerWidth + DashboardLayoutEngine.GAP_PX) / 16;
     const gap = DashboardLayoutEngine.GAP_PX;
+    const existingStarts = this.widgetColStarts();
+    const existingSpans = this.widgetColSpans();
 
     const colStarts: Record<string, number> = {};
     const colSpans: Record<string, number> = {};
     for (const id of this.config.widgets) {
       const maxSpan = this.config.widgetMaxColSpans?.[id] ?? 16;
-      colStarts[id] = Math.max(1, Math.round(this.widgetLefts()[id] / step) + 1);
-      colSpans[id] = Math.max(4, Math.min(maxSpan, Math.round((this.widgetPixelWidths()[id] + gap) / step)));
+      const left = this.widgetLefts()[id];
+      const width = this.widgetPixelWidths()[id];
+      if (left == null || width == null) {
+        colStarts[id] = existingStarts[id] ?? 1;
+        colSpans[id] = existingSpans[id] ?? 4;
+      } else {
+        colStarts[id] = Math.max(1, Math.round(left / step) + 1);
+        colSpans[id] = Math.max(4, Math.min(maxSpan, Math.round((width + gap) / step)));
+      }
     }
 
     this.widgetColStarts.set(colStarts);
