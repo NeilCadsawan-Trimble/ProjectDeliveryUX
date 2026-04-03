@@ -15,7 +15,7 @@ const SRC = readFileSync(
 describe('ProjectsPageComponent (template regression)', () => {
   describe('desktop padding', () => {
     it('has px-4 on the root content wrapper', () => {
-      expect(SRC).toContain('class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto"');
+      expect(SRC).toContain('class="px-4 py-3 md:pt-4 md:pb-1 max-w-screen-xl mx-auto"');
     });
 
     it('does NOT have md:px-0 which removes desktop padding', () => {
@@ -33,9 +33,18 @@ describe('ProjectsPageComponent (template regression)', () => {
     });
   });
 
-  describe('reset effect', () => {
-    it('calls resetToDefaults', () => {
-      expect(SRC).toContain('resetToDefaults()');
+  describe('DashboardPageBase integration', () => {
+    it('extends DashboardPageBase for shared engine wiring', () => {
+      expect(SRC).toContain('extends DashboardPageBase');
+    });
+
+    it('has widget-lock-toggle available on all modes (desktop, mobile, canvas)', () => {
+      expect(SRC).toContain('<widget-lock-toggle');
+      expect(SRC).not.toContain('@if (isMobile() || isCanvasMode())\n');
+    });
+
+    it('does NOT clear widget locks on desktop init (locks persist)', () => {
+      expect(SRC).not.toContain('clearAllWidgetLocks()');
     });
   });
 

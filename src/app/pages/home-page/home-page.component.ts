@@ -106,9 +106,9 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
       }
 
       <div
-        [class]="isCanvasMode() ? 'relative overflow-visible pointer-events-none' : 'relative'"
+        [class]="isCanvasMode() ? 'relative overflow-visible pointer-events-none' : isMobile() ? 'relative' : 'relative widget-grid-desktop'"
         [style.height.px]="isMobile() ? mobileGridHeight('home') : null"
-        [style.min-height.px]="!isMobile() ? canvasGridMinHeight() : null"
+        [style.min-height.px]="isCanvasMode() ? canvasGridMinHeight() : (!isMobile() ? desktopGridMinHeight() : null)"
         #homeWidgetGrid
       >
         @if (isCanvasMode()) {
@@ -141,11 +141,20 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
         }
         @for (widgetId of homeWidgets; track widgetId) {
           <div
-            [class]="(canvasDetailViews()[widgetId] ? 'absolute pointer-events-auto' : (isMobile() ? 'absolute left-0 right-0 pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden') : 'absolute pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden'))) + (shouldTransition(widgetId) ? ' widget-detail-transition' : '')"
+            [class]="(canvasDetailViews()[widgetId] ? 'absolute pointer-events-auto'
+                   : isMobile() ? 'absolute left-0 right-0 pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden')
+                   : isCanvasMode() ? 'absolute pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden')
+                   : moveTargetId() === widgetId ? 'absolute pointer-events-auto overflow-hidden'
+                   : 'pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden'))
+                   + (shouldTransition(widgetId) ? ' widget-detail-transition' : '')"
             [attr.data-widget-id]="widgetId"
-            [style.top.px]="widgetTops()[widgetId]"
-            [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
-            [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
+            [style.grid-column]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? widgetGridColumns()[widgetId] : null"
+            [style.grid-row]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? '1' : null"
+            [style.align-self]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? 'start' : null"
+            [style.margin-top.px]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? widgetTops()[widgetId] : null"
+            [style.top.px]="isMobile() || isCanvasMode() || moveTargetId() === widgetId ? widgetTops()[widgetId] : null"
+            [style.left.px]="isCanvasMode() || moveTargetId() === widgetId ? widgetLefts()[widgetId] : null"
+            [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : (moveTargetId() === widgetId ? dragWidth() : null)"
             [style.height.px]="widgetHeights()[widgetId]"
             [style.z-index]="canvasDetailViews()[widgetId] ? 9999 : (widgetId === 'homeTimeOff' && timeOffStatusOpen() !== null) ? 9998 : (widgetZIndices()[widgetId] ?? 0)"
             (mousedown)="canvasDetailViews()[widgetId] ? selectDetailWidget(widgetId, $event) : null"
@@ -1561,14 +1570,12 @@ export class HomePageComponent extends DashboardPageBase {
   protected override getEngineConfig(): DashboardLayoutConfig {
     return {
       widgets: ['homeHeader', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
-      layoutStorageKey: 'dashboard-home-v6',
+      layoutStorageKey: 'dashboard-home-v7',
       canvasStorageKey: 'canvas-layout:dashboard-home:v13',
       defaultColStarts: { homeHeader: 1, homeUrgentNeeds: 1, homeWeather: 11, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11, homeRecentActivity: 1 },
       defaultColSpans: { homeHeader: 16, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 16 },
       defaultTops: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 0, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP, homeTimeOff: HomePageComponent.ROW_2_TOP, homeCalendar: HomePageComponent.ROW_3_TOP, homeDrawings: HomePageComponent.ROW_3_TOP, homeRecentActivity: HomePageComponent.ACTIVITY_ROW_TOP },
       defaultHeights: { homeHeader: 0, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT, homeWeather: HomePageComponent.ROW_1_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT, homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT, homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: 384 },
-      defaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
-      defaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470, homeRecentActivity: 1280 },
       canvasDefaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 810, homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0, homeDrawings: 810, homeRecentActivity: 0 },
       canvasDefaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 794, homeWeather: 470, homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 794, homeDrawings: 470, homeRecentActivity: 1280 },
       canvasDefaultTops: {

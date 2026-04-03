@@ -147,14 +147,12 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   protected override getEngineConfig(): DashboardLayoutConfig {
     return {
       widgets: ['projHeader', 'risks', 'milestones', 'tasks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'],
-      layoutStorageKey: () => `project-${this.projectId()}-v4`,
+      layoutStorageKey: () => `project-${this.projectId()}-v5`,
       canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v6`,
       defaultColStarts: { projHeader: 1, risks: 1, milestones: 1, tasks: 1, rfis: 1, submittals: 1, drawing: 12, weather: 12, budget: 12, team: 12, activity: 12 },
       defaultColSpans: { projHeader: 16, risks: 11, milestones: 11, tasks: 11, rfis: 11, submittals: 11, drawing: 5, weather: 5, budget: 5, team: 5, activity: 5 },
       defaultTops: { projHeader: 0, risks: 0, milestones: 368, tasks: 896, rfis: 1312, submittals: 1648, drawing: 0, weather: 432, budget: 688, team: 1152, activity: 1568 },
       defaultHeights: { projHeader: 0, milestones: 512, tasks: 400, risks: 352, rfis: 320, submittals: 320, drawing: 416, weather: 240, budget: 448, team: 400, activity: 352 },
-      defaultLefts: { projHeader: 0, risks: 0, milestones: 0, tasks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
-      defaultPixelWidths: { projHeader: 1280, risks: 875, milestones: 875, tasks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
       canvasDefaultLefts: { projHeader: 0, risks: 0, milestones: 0, tasks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
       canvasDefaultPixelWidths: { projHeader: 1280, risks: 875, milestones: 875, tasks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
       canvasDefaultTops: {
@@ -215,12 +213,13 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly wHeights = this.widgetHeights;
   readonly wLefts = this.widgetLefts;
   readonly wPixelWidths = this.widgetPixelWidths;
+  readonly wGridColumns = this.widgetGridColumns;
   readonly wZIndices = this.widgetZIndices;
   readonly wLocked = this.widgetLocked;
   readonly wColStarts = this.widgetColStarts;
   readonly wColSpans = this.widgetColSpans;
   readonly mobileGridHeight = computed(() => this.engine.mobileGridHeight());
-  readonly desktopGridMinHeight = this.canvasGridMinHeight;
+  override readonly desktopGridMinHeight = this.engine.desktopGridMinHeight;
 
   // --- Subpage tile canvas (tiles become widgets in canvas mode) ---
   private static readonly TILE_SUBNAV_EXPANDED = 227;
@@ -615,6 +614,8 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   readonly subnavSearch = signal('');
   readonly subnavViewMode = signal<'grid' | 'list'>('grid');
+  readonly isCompactMobile = signal(typeof window !== 'undefined' ? window.innerWidth <= 580 : false);
+  readonly toolbarMoreOpen = signal(false);
 
   readonly recordsSubNavItems = RECORDS_SUB_NAV_ITEMS;
   readonly sideSubNavCollapsed = signal(false);
@@ -1697,12 +1698,22 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.projectNav.restoreFromUrl(params);
   }
 
+  private _compactMq: MediaQueryList | null = null;
+  private readonly _compactMqHandler = (e: MediaQueryListEvent) => this.isCompactMobile.set(e.matches);
+
   override ngAfterViewInit(): void {
     super.ngAfterViewInit();
 
     this.fixNavbarLayout();
     this.reorderNavbarEnd();
     this.attachHamburgerListener();
+
+    if (typeof window !== 'undefined') {
+      this._compactMq = window.matchMedia('(max-width: 580px)');
+      this.isCompactMobile.set(this._compactMq.matches);
+      this._compactMq.addEventListener('change', this._compactMqHandler);
+      this.destroyRef.onDestroy(() => this._compactMq?.removeEventListener('change', this._compactMqHandler));
+    }
   }
 
   private attachHamburgerListener(): void {
@@ -2062,6 +2073,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     }
     if (this.moreMenuOpen() && !target.closest('[aria-label="More options"]') && !target.closest('[role="menuitem"]')) {
       this.moreMenuOpen.set(false);
+    }
+    if (this.toolbarMoreOpen() && !target.closest('[aria-label="More actions"]') && !target.closest('[role="menuitem"]')) {
+      this.toolbarMoreOpen.set(false);
     }
     if (this.projectSelectorOpen() && !target.closest('[role="listbox"]') && !target.closest('[aria-expanded]')) {
       this.projectSelectorOpen.set(false);

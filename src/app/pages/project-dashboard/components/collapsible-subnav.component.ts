@@ -16,6 +16,7 @@ import type { AgentAlert } from '../../../data/widget-agents';
 
       <div class="bg-secondary flex flex-col overflow-hidden transition-all duration-200 absolute top-0 left-0"
         [style.width.px]="innerWidth()"
+        [style.max-height]="panelMaxHeight()"
         [style.z-index]="innerZIndex()"
         [class.rounded-r-lg]="!canvasMode()"
         [class.rounded-lg]="canvasMode()"
@@ -70,10 +71,10 @@ import type { AgentAlert } from '../../../data/widget-agents';
           </div>
         }
 
-        <div class="overflow-hidden transition-all duration-200"
-          [style.max-height.px]="collapsed() ? 0 : 600"
+        <div class="overflow-hidden transition-all duration-200 flex-1 min-h-0 flex flex-col"
+          [style.max-height]="collapsed() ? '0px' : 'none'"
           [style.opacity]="collapsed() ? 0 : 1">
-          <div class="overflow-y-auto min-h-0">
+          <div class="overflow-y-auto min-h-0 flex-1 pb-2">
             @for (item of items(); track item.value) {
               <div
                 class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150 whitespace-nowrap"
@@ -146,6 +147,11 @@ export class CollapsibleSubnavComponent {
   readonly innerZIndex = computed(() => {
     if (this.isMobile() && !this.collapsed()) return 9999;
     return this.collapsed() ? 10 : 1;
+  });
+
+  readonly panelMaxHeight = computed(() => {
+    if (this.isMobile() || this.canvasMode()) return 'none';
+    return 'calc(100dvh - 102px)';
   });
 
   readonly activeItemLabel = computed(() => {

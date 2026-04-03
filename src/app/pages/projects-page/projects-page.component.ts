@@ -2,13 +2,10 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
   computed,
-  effect,
   signal,
   inject,
-  untracked,
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -16,12 +13,10 @@ import { DataStoreService } from '../../data/data-store.service';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
-import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
-import { WidgetLayoutService } from '../../shell/services/widget-layout.service';
-import { CanvasResetService } from '../../shell/services/canvas-reset.service';
-import { WidgetFocusService } from '../../shell/services/widget-focus.service';
-import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
+import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
+import type { DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import type {
   DashboardWidgetId,
   Project,
@@ -83,20 +78,17 @@ const LARGE_BLOCK_HEIGHTS: Partial<Record<ContentBlock, number>> = {
   fadeGain: 52,
 };
 
-const SINGLE_COL_PRIORITY: ContentBlock[] = [
+const SINGLE_COL_FALLBACK: ContentBlock[] = [
   'owner', 'schedule', 'budget', 'weather', 'urgentNeeds',
   'sparkline', 'fadeGain', 'costBreakdown', 'insight', 'moreNeeds',
   'forecast', 'milestone', 'teamSummary', 'riskSummary',
 ];
-const LEFT_COL_PRIORITY: ContentBlock[] = [
-  'owner', 'weather', 'forecast', 'urgentNeeds', 'moreNeeds',
-  'milestone', 'teamSummary', 'riskSummary',
-];
-const RIGHT_COL_PRIORITY: ContentBlock[] = ['schedule', 'budget', 'sparkline', 'fadeGain', 'costBreakdown', 'insight'];
+const LEFT_COL_BLOCKS = new Set<ContentBlock>(['owner', 'weather', 'forecast', 'urgentNeeds', 'moreNeeds', 'milestone', 'teamSummary', 'riskSummary']);
+const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline', 'fadeGain', 'costBreakdown', 'costDetail', 'insight']);
 
 @Component({
   selector: 'app-projects-page',
-  imports: [ModusBadgeComponent, ModusProgressComponent, ModusButtonComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, ModusButtonComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -105,53 +97,30 @@ const RIGHT_COL_PRIORITY: ContentBlock[] = ['schedule', 'budget', 'sparkline', '
   },
   templateUrl: './projects-page.component.html',
 })
-export class ProjectsPageComponent implements AfterViewInit {
+export class ProjectsPageComponent extends DashboardPageBase implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
-  private readonly canvasResetService = inject(CanvasResetService);
-  private readonly widgetFocusService = inject(WidgetFocusService);
-  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly engine = new DashboardLayoutEngine(
-    buildProjectsLayoutConfig((id) => this.widgetFocusService.selectWidget(id)),
-    inject(WidgetLayoutService),
-  );
+  protected override getEngineConfig(): DashboardLayoutConfig {
+    return buildProjectsLayoutConfig((id) => this.widgetFocusService.selectWidget(id));
+  }
 
-  private readonly _lockHeader = (() => {
+  protected override applyInitialHeaderLock(): void {
     this.engine.widgetLocked.update(l => ({ ...l, projsHeader: true }));
-  })();
+  }
 
-  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
+  protected override resolveGridElement(): HTMLElement | undefined {
+    return this.gridContainerRef()?.nativeElement as HTMLElement | undefined;
+  }
 
-  private readonly _resetWidgetsEffect = effect(() => {
-    const tick = this.canvasResetService.resetWidgetsTick();
-    if (tick > 0) {
-      untracked(() => {
-        this.engine.resetToDefaults();
-        this.engine.widgetLocked.update(l => ({ ...l, projsHeader: true }));
-      });
-    }
-  });
+  protected override resolveHeaderElement(): HTMLElement | undefined {
+    return this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
+  }
 
-  private readonly _saveDefaultsEffect = effect(() => {
-    const tick = this.canvasResetService.saveDefaultsTick();
-    if (tick > 0) {
-      untracked(() => this.engine.saveAsDefaultLayout());
-    }
-  });
-
-  readonly isMobile = this.engine.isMobile;
-  readonly isCanvasMode = this.engine.isCanvasMode;
-  readonly widgetColStarts = this.engine.widgetColStarts;
-  readonly widgetColSpans = this.engine.widgetColSpans;
-  readonly widgetTops = this.engine.widgetTops;
-  readonly widgetHeights = this.engine.widgetHeights;
-  readonly widgetLefts = this.engine.widgetLefts;
-  readonly widgetPixelWidths = this.engine.widgetPixelWidths;
-  readonly widgetZIndices = this.engine.widgetZIndices;
-  readonly widgetLocked = this.engine.widgetLocked;
-  readonly moveTargetId = this.engine.moveTargetId;
-  readonly canvasGridMinHeight = this.engine.canvasGridMinHeight;
+  readonly isNarrowMobile = signal(typeof window !== 'undefined' ? window.innerWidth <= 400 : false);
+  readonly isCompactMobile = signal(typeof window !== 'undefined' ? window.innerWidth <= 560 : false);
+  readonly isNarrowGrid = signal(false);
+  readonly forecastDays = signal(3);
 
   readonly today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -215,9 +184,57 @@ export class ProjectsPageComponent implements AfterViewInit {
   readonly budgetProgressClass = budgetProgressClass;
   readonly budgetPctColor = budgetPctColor;
 
+  private scoreBlocksForProject(project: Project): ContentBlock[] {
+    const agent = this.getProjectAgent(project.id);
+    const topRisk = this.getTopRisk(project.id);
+    const weatherImpact = this.getFirstImpactedForecast(project.id);
+    const fg = this.getProjectFadeGain(project.id);
+    const nextMs = this.getNextMilestone(project.id);
+
+    const scored: [ContentBlock, number][] = [
+      ['urgentNeeds', agent.criticalCount > 0 ? 100 : agent.warningCount > 0 ? 60 : 30],
+      ['budget', project.budgetPct > 90 ? 80 : project.budgetPct > 75 ? 50 : 25],
+      ['schedule', project.status === 'Overdue' ? 70 : project.status === 'At Risk' ? 40 : 35],
+      ['weather', weatherImpact ? 60 : 15],
+      ['riskSummary', topRisk?.severity === 'high' ? 50 : 10],
+      ['fadeGain', fg ? 45 : 12],
+      ['owner', 40],
+      ['costBreakdown', agent.budgetAlert ? 40 : 18],
+      ['costDetail', agent.budgetAlert ? 40 : 18],
+      ['milestone', nextMs?.status === 'overdue' ? 35 : 16],
+      ['forecast', weatherImpact ? 30 : 14],
+      ['insight', 22],
+      ['sparkline', 20],
+      ['teamSummary', 8],
+      ['moreNeeds', 5],
+    ];
+
+    return scored.sort((a, b) => b[1] - a[1]).map(([block]) => block);
+  }
+
+  readonly projectBlockPriorities = computed<Record<string, ContentBlock[]>>(() => {
+    this.projectAgentData();
+    const result: Record<string, ContentBlock[]> = {};
+    for (const id of this.projectWidgets) {
+      const project = this.projectForWidget(id);
+      if (project) {
+        result[id] = this.scoreBlocksForProject(project);
+      }
+    }
+    return result;
+  });
+
+  blockOrder(widgetId: string, block: ContentBlock): number {
+    const order = this.projectBlockPriorities()[widgetId];
+    if (!order) return 0;
+    const idx = order.indexOf(block);
+    return idx >= 0 ? idx : 99;
+  }
+
   readonly visibleBlocks = computed<Record<string, Set<ContentBlock>>>(() => {
     const heights = this.widgetHeights();
     const colSpans = this.widgetColSpans();
+    const priorities = this.projectBlockPriorities();
     const result: Record<string, Set<ContentBlock>> = {};
     for (const id of this.projectWidgets) {
       const h = heights[id] ?? 416;
@@ -228,14 +245,17 @@ export class ProjectsPageComponent implements AfterViewInit {
       const effectiveHeight = (b: ContentBlock): number =>
         (large ? LARGE_BLOCK_HEIGHTS[b] : undefined) ?? BLOCK_HEIGHTS[b];
       const blocks = new Set<ContentBlock>();
+      const projPriority = priorities[id] ?? SINGLE_COL_FALLBACK;
       if (wide) {
-        const rightPriority: ContentBlock[] = large
-          ? RIGHT_COL_PRIORITY.map(b => b === 'costBreakdown' ? 'costDetail' : b)
-          : RIGHT_COL_PRIORITY;
+        const leftPriority = projPriority.filter(b => LEFT_COL_BLOCKS.has(b));
+        const rightPriority = projPriority.filter(b => {
+          if (!RIGHT_COL_BLOCKS.has(b)) return false;
+          return large ? b !== 'costBreakdown' : b !== 'costDetail';
+        });
         const gap = 10;
         let leftUsed = 0;
         let leftN = 0;
-        for (const b of LEFT_COL_PRIORITY) {
+        for (const b of leftPriority) {
           if (large && b === 'moreNeeds') continue;
           const cost = effectiveHeight(b) + (leftN > 0 ? gap : 0);
           if (leftUsed + cost <= available) { blocks.add(b); leftUsed += cost; leftN++; }
@@ -247,10 +267,11 @@ export class ProjectsPageComponent implements AfterViewInit {
           if (rightUsed + cost <= available) { blocks.add(b); rightUsed += cost; rightN++; }
         }
       } else {
+        const singlePriority = projPriority.filter(b => b !== 'costDetail');
         const gap = 12;
         let used = 0;
         let n = 0;
-        for (const b of SINGLE_COL_PRIORITY) {
+        for (const b of singlePriority) {
           const cost = effectiveHeight(b) + (n > 0 ? gap : 0);
           if (used + cost <= available) { blocks.add(b); used += cost; n++; }
         }
@@ -425,21 +446,24 @@ export class ProjectsPageComponent implements AfterViewInit {
     this.engine.toggleWidgetLock(id);
   }
 
-  onDocumentMouseMove(event: MouseEvent): void {
-    this.engine.onDocumentMouseMove(event);
-  }
+  private _narrowMq: MediaQueryList | null = null;
+  private _compactMq: MediaQueryList | null = null;
+  private _narrowMqHandler = (e: MediaQueryListEvent) => this.isNarrowMobile.set(e.matches);
+  private _compactMqHandler = (e: MediaQueryListEvent) => this.isCompactMobile.set(e.matches);
 
-  onDocumentMouseUp(): void {
-    this.engine.onDocumentMouseUp();
-  }
+  override ngAfterViewInit(): void {
+    super.ngAfterViewInit();
 
-  onDocumentTouchEnd(): void {
-    this.engine.onDocumentTouchEnd();
-  }
+    if (typeof window !== 'undefined') {
+      this._narrowMq = window.matchMedia('(max-width: 400px)');
+      this.isNarrowMobile.set(this._narrowMq.matches);
+      this._narrowMq.addEventListener('change', this._narrowMqHandler);
+      this.destroyRef.onDestroy(() => this._narrowMq?.removeEventListener('change', this._narrowMqHandler));
 
-  ngAfterViewInit(): void {
-    this.engine.gridElAccessor = () => this.gridContainerRef()?.nativeElement as HTMLElement | undefined;
-    this.engine.headerElAccessor = () => this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
-    this.engine.init();
+      this._compactMq = window.matchMedia('(max-width: 560px)');
+      this.isCompactMobile.set(this._compactMq.matches);
+      this._compactMq.addEventListener('change', this._compactMqHandler);
+      this.destroyRef.onDestroy(() => this._compactMq?.removeEventListener('change', this._compactMqHandler));
+    }
   }
 }

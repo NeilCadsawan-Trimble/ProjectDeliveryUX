@@ -390,9 +390,9 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
 
       <!-- Widget area -->
       <div
-        [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : 'relative mb-6'"
+        [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : isMobile() ? 'relative mb-6' : 'relative mb-6 widget-grid-desktop'"
         [style.height.px]="isMobile() ? mobileGridHeight() : null"
-        [style.min-height.px]="!isMobile() ? canvasGridMinHeight() : null"
+        [style.min-height.px]="isCanvasMode() ? canvasGridMinHeight() : (!isMobile() ? desktopGridMinHeight() : null)"
         #financialsWidgetGrid
       >
         @if (isCanvasMode()) {
@@ -453,11 +453,18 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         }
         @for (widgetId of financialsWidgets; track widgetId) {
           <div
-            [class]="isMobile() ? 'absolute left-0 right-0 overflow-hidden' : 'absolute overflow-hidden'"
+            [class]="isCanvasMode() ? 'absolute overflow-hidden'
+                   : isMobile() ? 'absolute left-0 right-0 overflow-hidden'
+                   : moveTargetId() === widgetId ? 'absolute overflow-hidden'
+                   : 'overflow-hidden'"
             [attr.data-widget-id]="widgetId"
-            [style.top.px]="widgetTops()[widgetId]"
-            [style.left.px]="!isMobile() ? widgetLefts()[widgetId] : null"
-            [style.width.px]="!isMobile() ? widgetPixelWidths()[widgetId] : null"
+            [style.grid-column]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? widgetGridColumns()[widgetId] : null"
+            [style.grid-row]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? '1' : null"
+            [style.align-self]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? 'start' : null"
+            [style.margin-top.px]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? widgetTops()[widgetId] : null"
+            [style.top.px]="isMobile() || isCanvasMode() || moveTargetId() === widgetId ? widgetTops()[widgetId] : null"
+            [style.left.px]="isCanvasMode() || moveTargetId() === widgetId ? widgetLefts()[widgetId] : null"
+            [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : (moveTargetId() === widgetId ? dragWidth() : null)"
             [style.height.px]="widgetHeights()[widgetId]"
             [style.z-index]="widgetZIndices()[widgetId] ?? 0"
           >
@@ -1849,14 +1856,12 @@ export class FinancialsPageComponent extends DashboardPageBase {
     const CW = FinancialsPageComponent.CONTENT_WIDTH;
     return {
       widgets: ['finHeader', 'finNavLinks', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
-      layoutStorageKey: 'dashboard-financials:v8',
+      layoutStorageKey: 'dashboard-financials:v9',
       canvasStorageKey: 'canvas-layout:dashboard-financials:v10',
       defaultColStarts: { finHeader: 1, finNavLinks: 1, finRevenueChart: 4, finOpenEstimates: 4, finBudgetByProject: 4, finJobCosts: 4, finChangeOrders: 4 },
       defaultColSpans: { finHeader: 16, finNavLinks: 3, finRevenueChart: 13, finOpenEstimates: 13, finBudgetByProject: 13, finJobCosts: 13, finChangeOrders: 13 },
       defaultTops: { finHeader: 0, finNavLinks: 0, finRevenueChart: 0, finOpenEstimates: FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP, finBudgetByProject: FinancialsPageComponent.BUDGET_OFFSET_DESKTOP, finJobCosts: FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP, finChangeOrders: FinancialsPageComponent.CO_OFFSET_DESKTOP },
       defaultHeights: { finHeader: 0, finNavLinks: FinancialsPageComponent.NAV_LINKS_HEIGHT, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
-      defaultLefts: { finHeader: 0, finNavLinks: 0, finRevenueChart: CL, finOpenEstimates: CL, finBudgetByProject: CL, finJobCosts: CL, finChangeOrders: CL },
-      defaultPixelWidths: { finHeader: 1280, finNavLinks: FinancialsPageComponent.NAV_LINKS_WIDTH, finRevenueChart: CW, finOpenEstimates: CW, finBudgetByProject: CW, finJobCosts: CW, finChangeOrders: CW },
       canvasDefaultLefts: { finHeader: 0, finNavLinks: 0, finRevenueChart: CL, finOpenEstimates: CL, finBudgetByProject: CL, finJobCosts: CL, finChangeOrders: CL },
       canvasDefaultPixelWidths: { finHeader: 1280, finNavLinks: FinancialsPageComponent.NAV_LINKS_WIDTH, finRevenueChart: CW, finOpenEstimates: CW, finBudgetByProject: CW, finJobCosts: CW, finChangeOrders: CW },
       canvasDefaultTops: {

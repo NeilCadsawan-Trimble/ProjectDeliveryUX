@@ -27,7 +27,7 @@ export class DashboardLayoutComponent {
 
   readonly userCard: INavbarUserCard = {
     name: 'Frank Mendoza',
-    email: 'frank.mendoza@trimble.com',
+    email: 'frank.mendoza@rockymtncontracting.com',
   };
 
   readonly sideNavItems: ShellNavItem[] = [
