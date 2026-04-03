@@ -8,9 +8,8 @@ import {
   contractTypeLabelShort,
   formatCurrency as sharedFormatCurrency,
   capitalizeFirst as sharedCapitalizeFirst,
-  CONTRACTS,
-  CHANGE_ORDERS,
 } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 function statusBgClass(status: ContractStatus): string {
@@ -157,6 +156,7 @@ export class ContractDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -165,7 +165,7 @@ export class ContractDetailPageComponent {
 
   readonly contract = computed<Contract | null>(() => {
     const id = this.contractId();
-    return CONTRACTS.find(c => c.id === id) ?? null;
+    return this.store.contracts().find(c => c.id === id) ?? null;
   });
 
   readonly delta = computed(() => {
@@ -177,7 +177,7 @@ export class ContractDetailPageComponent {
     const c = this.contract();
     if (!c || !c.linkedChangeOrderIds.length) return [];
     return c.linkedChangeOrderIds
-      .map(coId => CHANGE_ORDERS.find(co => co.id === coId))
+      .map(coId => this.store.changeOrders().find(co => co.id === coId))
       .filter((co): co is NonNullable<typeof co> => !!co);
   });
 

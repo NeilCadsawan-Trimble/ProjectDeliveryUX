@@ -23,7 +23,7 @@ import { NavigationHistoryService } from '../../shell/services/navigation-histor
 import { DataStoreService } from '../../data/data-store.service';
 import type { NavItem } from '../project-dashboard/project-dashboard.config';
 import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost, ChangeOrder, ChangeOrderType, Invoice, BillingSchedule, BillingEvent, Payable, CashFlowEntry, GLAccount, GLEntry, PurchaseOrder, PayrollRecord, Contract, SubcontractLedgerEntry } from '../../data/dashboard-data';
-import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, JOB_COST_CATEGORIES, CATEGORY_COLORS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, INVOICES, BILLING_SCHEDULES, BILLING_EVENTS, PAYABLES, CASH_FLOW_HISTORY, CASH_POSITION, GL_ACCOUNTS, GL_ENTRIES, PURCHASE_ORDERS, PAYROLL_RECORDS, CONTRACTS, SUBCONTRACT_LEDGER, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
+import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, JOB_COST_CATEGORIES, CATEGORY_COLORS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
 import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
 
 @Component({
@@ -354,7 +354,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
               <i class="modus-icons text-lg text-primary" aria-hidden="true">payment_instant</i>
             </div>
           </div>
-          <div class="text-4xl font-bold text-foreground">$3.7M</div>
+          <div class="text-4xl font-bold text-foreground">{{ portfolioBudgetTotalFmt() }}</div>
           <div class="text-xs text-foreground-60">Across {{ totalProjects() }} active projects</div>
         </div>
         <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
@@ -364,8 +364,8 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
               <i class="modus-icons text-lg text-warning" aria-hidden="true">bar_graph_line</i>
             </div>
           </div>
-          <div class="text-4xl font-bold text-foreground">$2.1M</div>
-          <div class="text-xs text-warning font-medium">57% of total budget consumed</div>
+          <div class="text-4xl font-bold text-foreground">{{ portfolioBudgetUsedFmt() }}</div>
+          <div class="text-xs text-warning font-medium">{{ portfolioBudgetPct() }}% of total budget consumed</div>
         </div>
         <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
           <div class="flex items-center justify-between">
@@ -374,8 +374,8 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
               <i class="modus-icons text-lg text-success" aria-hidden="true">bar_graph</i>
             </div>
           </div>
-          <div class="text-4xl font-bold text-success">$1.6M</div>
-          <div class="text-xs text-success font-medium">43% remaining budget</div>
+          <div class="text-4xl font-bold text-success">{{ portfolioBudgetRemainingFmt() }}</div>
+          <div class="text-xs text-success font-medium">{{ 100 - portfolioBudgetPct() }}% remaining budget</div>
         </div>
       </div>
       @if (finKpiInsight()) {
@@ -421,7 +421,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
                   <i class="modus-icons text-2xl text-primary" aria-hidden="true">payment_instant</i>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="text-2xl font-bold text-foreground">$3.7M</div>
+                  <div class="text-2xl font-bold text-foreground">{{ portfolioBudgetTotalFmt() }}</div>
                   <div class="text-sm text-foreground-60">Total Budget</div>
                 </div>
               </div>
@@ -430,7 +430,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
                   <i class="modus-icons text-2xl text-warning" aria-hidden="true">bar_graph_line</i>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="text-2xl font-bold text-foreground">$2.1M</div>
+                  <div class="text-2xl font-bold text-foreground">{{ portfolioBudgetUsedFmt() }}</div>
                   <div class="text-sm text-foreground-60">Total Spent</div>
                 </div>
               </div>
@@ -439,7 +439,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
                   <i class="modus-icons text-2xl text-success" aria-hidden="true">bar_graph</i>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="text-2xl font-bold text-success">$1.6M</div>
+                  <div class="text-2xl font-bold text-success">{{ portfolioBudgetRemainingFmt() }}</div>
                   <div class="text-sm text-foreground-60">Remaining</div>
                 </div>
               </div>
@@ -1193,7 +1193,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
             <div class="text-xs text-foreground-60 mb-1">Active Schedules</div>
-            <div class="text-2xl font-bold text-foreground">{{ billingSchedules.length }}</div>
+            <div class="text-2xl font-bold text-foreground">{{ billingSchedules().length }}</div>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
             <div class="text-xs text-foreground-60 mb-1">Billed (6 mo)</div>
@@ -1215,13 +1215,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">invoice</i>
               <div class="text-base font-semibold text-foreground">Billing Events</div>
-              <modus-badge color="secondary" size="sm">{{ billingEvents.length }}</modus-badge>
+              <modus-badge color="secondary" size="sm">{{ billingEvents().length }}</modus-badge>
             </div>
           </div>
           <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Description</div><div>Period</div><div class="text-right">Amount</div><div>Status</div><div>Date</div>
           </div>
-          @for (ev of billingEvents; track ev.id) {
+          @for (ev of billingEvents(); track ev.id) {
             <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToBillingEvent(ev.id)">
               <div class="text-sm text-foreground truncate">{{ ev.description }}</div>
               <div class="text-sm text-foreground-60">{{ ev.period }}</div>
@@ -1277,13 +1277,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
               <div class="text-base font-semibold text-foreground">Invoices</div>
-              <modus-badge color="secondary" size="sm">{{ invoices.length }}</modus-badge>
+              <modus-badge color="secondary" size="sm">{{ invoices().length }}</modus-badge>
             </div>
           </div>
           <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Invoice #</div><div class="text-right">Amount</div><div class="text-right">Paid</div><div>Status</div><div>Terms</div><div>Due</div>
           </div>
-          @for (inv of invoices; track inv.id) {
+          @for (inv of invoices(); track inv.id) {
             <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToInvoice(inv.id)">
               <div class="text-sm font-medium text-primary">{{ inv.invoiceNumber }}</div>
               <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(inv.amount) }}</div>
@@ -1329,13 +1329,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">credit_card</i>
               <div class="text-base font-semibold text-foreground">Payables</div>
-              <modus-badge color="secondary" size="sm">{{ payables.length }}</modus-badge>
+              <modus-badge color="secondary" size="sm">{{ payables().length }}</modus-badge>
             </div>
           </div>
           <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Vendor</div><div>Description</div><div class="text-right">Amount</div><div>Status</div><div>Due</div><div>Cost Code</div>
           </div>
-          @for (p of payables; track p.id) {
+          @for (p of payables(); track p.id) {
             <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayable(p.id)">
               <div class="text-sm text-foreground truncate">{{ p.vendor }}</div>
               <div class="text-sm text-foreground truncate">{{ p.description }}</div>
@@ -1359,11 +1359,11 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
             <div class="text-xs text-foreground-60 mb-1">Cash on Hand</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(cashPosition.currentBalance) }}</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(cashPosition().currentBalance) }}</div>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
             <div class="text-xs text-foreground-60 mb-1">30-Day Forecast</div>
-            <div class="text-2xl font-bold text-primary">{{ formatCurrency(cashPosition.thirtyDayForecast) }}</div>
+            <div class="text-2xl font-bold text-primary">{{ formatCurrency(cashPosition().thirtyDayForecast) }}</div>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
             <div class="text-xs text-foreground-60 mb-1">Runway</div>
@@ -1386,7 +1386,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
           <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Month</div><div class="text-right">Inflow</div><div class="text-right">Outflow</div><div class="text-right">Net</div>
           </div>
-          @for (cf of cashFlowHistory; track cf.month) {
+          @for (cf of cashFlowHistory(); track cf.month) {
             <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToCashFlow(cf.month)">
               <div class="text-sm font-medium text-foreground">{{ cf.month }}</div>
               <div class="text-sm text-success text-right">{{ formatCurrency(cf.inflows) }}</div>
@@ -1430,13 +1430,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
               <div class="text-base font-semibold text-foreground">Chart of Accounts</div>
-              <modus-badge color="secondary" size="sm">{{ glAccounts.length }}</modus-badge>
+              <modus-badge color="secondary" size="sm">{{ glAccounts().length }}</modus-badge>
             </div>
           </div>
           <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Acct #</div><div>Name</div><div>Type</div><div class="text-right">Balance</div>
           </div>
-          @for (acct of glAccounts; track acct.code) {
+          @for (acct of glAccounts(); track acct.code) {
             <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToGlAccount(acct.code)">
               <div class="text-sm font-medium text-primary">{{ acct.code }}</div>
               <div class="text-sm text-foreground">{{ acct.name }}</div>
@@ -1452,13 +1452,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">file_edit</i>
               <div class="text-base font-semibold text-foreground">Recent Journal Entries</div>
-              <modus-badge color="secondary" size="sm">{{ glEntries.length }}</modus-badge>
+              <modus-badge color="secondary" size="sm">{{ glEntries().length }}</modus-badge>
             </div>
           </div>
           <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Entry #</div><div>Account</div><div>Description</div><div class="text-right">Debit</div><div class="text-right">Credit</div><div>Date</div>
           </div>
-          @for (entry of glEntries; track entry.id) {
+          @for (entry of glEntries(); track entry.id) {
             <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToGlEntry(entry.id)">
               <div class="text-sm font-medium text-primary">{{ entry.id }}</div>
               <div class="text-sm text-foreground-60">{{ entry.accountCode }}</div>
@@ -1508,13 +1508,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">shopping_cart</i>
               <div class="text-base font-semibold text-foreground">Purchase Orders</div>
-              <modus-badge color="secondary" size="sm">{{ purchaseOrders.length }}</modus-badge>
+              <modus-badge color="secondary" size="sm">{{ purchaseOrders().length }}</modus-badge>
             </div>
           </div>
           <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>PO #</div><div>Vendor</div><div>Description</div><div class="text-right">Amount</div><div>Status</div><div>Delivery</div><div>Project</div>
           </div>
-          @for (po of purchaseOrders; track po.id) {
+          @for (po of purchaseOrders(); track po.id) {
             <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPurchaseOrder(po.id)">
               <div class="text-sm font-medium text-primary">{{ po.poNumber }}</div>
               <div class="text-sm text-foreground truncate">{{ po.vendor }}</div>
@@ -1598,13 +1598,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">people_group</i>
               <div class="text-base font-semibold text-foreground">Weekly Payroll Detail</div>
-              <modus-badge color="secondary" size="sm">{{ payrollRecords.length }}</modus-badge>
+              <modus-badge color="secondary" size="sm">{{ payrollRecords().length }}</modus-badge>
             </div>
           </div>
           <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Period</div><div class="text-right">Gross</div><div class="text-right">Net</div><div>Status</div><div class="text-right">Emp</div><div class="text-right">Hours</div><div class="text-right">OT</div>
           </div>
-          @for (pr of payrollRecords; track pr.id) {
+          @for (pr of payrollRecords(); track pr.id) {
             <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayrollRecord(pr.id)">
               <div class="text-sm font-medium text-foreground">{{ pr.period }}</div>
               <div class="text-sm text-foreground text-right">{{ formatCurrency(pr.grossPay) }}</div>
@@ -1628,7 +1628,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg border-default p-4 text-center">
             <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Contracts</div>
-            <div class="text-2xl font-bold text-foreground">{{ contracts.length }}</div>
+            <div class="text-2xl font-bold text-foreground">{{ contracts().length }}</div>
             <div class="text-xs text-foreground-40">{{ contractSummary().primeCount }} prime / {{ contractSummary().subCount }} sub</div>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
@@ -1662,7 +1662,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             <div>Status</div>
             <div>Project</div>
           </div>
-          @for (c of contracts; track c.id) {
+          @for (c of contracts(); track c.id) {
             <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="navigateToContract(c.id)">
               <div>
                 <div class="text-sm font-medium text-foreground truncate">{{ c.title }}</div>
@@ -1721,7 +1721,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             <div>Date</div>
             <div class="text-right">Balance</div>
           </div>
-          @for (entry of subcontractLedger; track entry.id) {
+          @for (entry of subcontractLedger(); track entry.id) {
             <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="navigateToSubcontractLedgerEntry(entry.id)">
               <div>
                 <div class="text-sm font-medium text-foreground truncate">{{ entry.description }}</div>
@@ -1774,42 +1774,42 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly finNavLinksCollapsed = signal(false);
   readonly finSubpageSearch = signal('');
 
-  // Financial data references
-  readonly invoices = INVOICES;
-  readonly billingSchedules = BILLING_SCHEDULES;
-  readonly billingEvents = BILLING_EVENTS;
-  readonly payables = PAYABLES;
-  readonly cashFlowHistory = CASH_FLOW_HISTORY;
-  readonly cashPosition = CASH_POSITION;
-  readonly glAccounts = GL_ACCOUNTS;
-  readonly glEntries = GL_ENTRIES;
-  readonly purchaseOrders = PURCHASE_ORDERS;
-  readonly payrollRecords = PAYROLL_RECORDS;
-  readonly contracts = CONTRACTS;
-  readonly subcontractLedger = SUBCONTRACT_LEDGER;
+  // Financial data references (reactive via store signals)
+  readonly invoices = this.store.invoices;
+  readonly billingSchedules = this.store.billingSchedules;
+  readonly billingEvents = this.store.billingEvents;
+  readonly payables = this.store.payables;
+  readonly cashFlowHistory = this.store.cashFlowHistory;
+  readonly cashPosition = this.store.cashPosition;
+  readonly glAccounts = this.store.glAccounts;
+  readonly glEntries = this.store.glEntries;
+  readonly purchaseOrders = this.store.purchaseOrders;
+  readonly payrollRecords = this.store.payrollRecords;
+  readonly contracts = this.store.contracts;
+  readonly subcontractLedger = this.store.subcontractLedger;
 
-  // Computed KPIs
-  readonly billedTotal = computed(() => this.billingEvents.filter(e => e.status !== 'scheduled').reduce((sum, e) => sum + e.amount, 0));
-  readonly collectedTotal = computed(() => this.billingEvents.filter(e => e.status === 'completed').reduce((sum, e) => sum + e.amount, 0));
-  readonly upcomingBillings = computed(() => getUpcomingBillings(30));
-  readonly arOutstanding = computed(() => this.invoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.amount - i.amountPaid, 0));
-  readonly arOverdue = computed(() => this.invoices.filter(i => i.status === 'overdue').reduce((sum, i) => sum + i.amount - i.amountPaid, 0));
-  readonly openInvoiceCount = computed(() => this.invoices.filter(i => i.status !== 'paid').length);
-  readonly dso = computed(() => getDSO());
-  readonly agingBuckets = computed(() => getInvoiceAgingBuckets());
-  readonly payablesSummary = computed(() => getPayablesSummary());
-  readonly cashRunway = computed(() => getCashRunway());
-  readonly netCashFlow = computed(() => this.cashFlowHistory.reduce((sum, cf) => sum + cf.netCash, 0));
-  readonly glBalanceSheet = computed(() => getGLBalanceSheet());
+  // Computed KPIs (reactive to store signal changes)
+  readonly billedTotal = computed(() => this.billingEvents().filter(e => e.status !== 'scheduled').reduce((sum, e) => sum + e.amount, 0));
+  readonly collectedTotal = computed(() => this.billingEvents().filter(e => e.status === 'completed').reduce((sum, e) => sum + e.amount, 0));
+  readonly upcomingBillings = computed(() => getUpcomingBillings(30, this.billingEvents()));
+  readonly arOutstanding = computed(() => this.invoices().filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.amount - i.amountPaid, 0));
+  readonly arOverdue = computed(() => this.invoices().filter(i => i.status === 'overdue').reduce((sum, i) => sum + i.amount - i.amountPaid, 0));
+  readonly openInvoiceCount = computed(() => this.invoices().filter(i => i.status !== 'paid').length);
+  readonly dso = computed(() => getDSO(this.invoices()));
+  readonly agingBuckets = computed(() => getInvoiceAgingBuckets(this.invoices()));
+  readonly payablesSummary = computed(() => getPayablesSummary(this.payables()));
+  readonly cashRunway = computed(() => getCashRunway(this.cashPosition()));
+  readonly netCashFlow = computed(() => this.cashFlowHistory().reduce((sum, cf) => sum + cf.netCash, 0));
+  readonly glBalanceSheet = computed(() => getGLBalanceSheet(this.glAccounts()));
   readonly glTotalAssets = computed(() => this.glBalanceSheet().assets.reduce((sum, a) => sum + a.balance, 0));
   readonly glTotalLiabilities = computed(() => this.glBalanceSheet().liabilities.reduce((sum, a) => sum + a.balance, 0));
   readonly glTotalRevenue = computed(() => this.glBalanceSheet().revenue.reduce((sum, a) => sum + a.balance, 0));
   readonly glTotalExpenses = computed(() => this.glBalanceSheet().expenses.reduce((sum, a) => sum + a.balance, 0));
-  readonly poSummary = computed(() => getPOSummary());
-  readonly payrollSummary = computed(() => getPayrollSummary());
-  readonly monthlyPayroll = computed(() => getMonthlyPayrollTotals());
-  readonly contractSummary = computed(() => getContractSummary());
-  readonly subLedgerSummary = computed(() => getSubcontractLedgerSummary());
+  readonly poSummary = computed(() => getPOSummary(this.purchaseOrders()));
+  readonly payrollSummary = computed(() => getPayrollSummary(this.payrollRecords()));
+  readonly monthlyPayroll = computed(() => getMonthlyPayrollTotals(this.payrollRecords()));
+  readonly contractSummary = computed(() => getContractSummary(this.contracts()));
+  readonly subLedgerSummary = computed(() => getSubcontractLedgerSummary(this.subcontractLedger()));
 
   // Estimates sub-page KPIs
   readonly estimatesTotalValue = computed(() => this.estimates().reduce((s, e) => s + e.valueRaw, 0));
@@ -1889,6 +1889,41 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   readonly projects = this.store.projects;
   readonly totalProjects = computed(() => this.projects().length);
+
+  private parseAmt(s: string): number {
+    const clean = s.replace(/[^0-9.KMkm]/g, '');
+    if (clean.endsWith('K') || clean.endsWith('k')) return parseFloat(clean) * 1000;
+    if (clean.endsWith('M') || clean.endsWith('m')) return parseFloat(clean) * 1_000_000;
+    return parseFloat(clean) || 0;
+  }
+
+  private fmtCurrency(val: number): string {
+    if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
+    if (val >= 1_000) return `$${(val / 1_000).toFixed(0)}K`;
+    return `$${val.toFixed(0)}`;
+  }
+
+  readonly portfolioBudgetTotal = computed(() =>
+    this.projects().reduce((sum, p) => sum + this.parseAmt(p.budgetTotal), 0),
+  );
+
+  readonly portfolioBudgetUsed = computed(() =>
+    this.projects().reduce((sum, p) => sum + this.parseAmt(p.budgetUsed), 0),
+  );
+
+  readonly portfolioBudgetRemaining = computed(() =>
+    this.portfolioBudgetTotal() - this.portfolioBudgetUsed(),
+  );
+
+  readonly portfolioBudgetPct = computed(() => {
+    const total = this.portfolioBudgetTotal();
+    return total > 0 ? Math.round((this.portfolioBudgetUsed() / total) * 100) : 0;
+  });
+
+  readonly portfolioBudgetTotalFmt = computed(() => this.fmtCurrency(this.portfolioBudgetTotal()));
+  readonly portfolioBudgetUsedFmt = computed(() => this.fmtCurrency(this.portfolioBudgetUsed()));
+  readonly portfolioBudgetRemainingFmt = computed(() => this.fmtCurrency(this.portfolioBudgetRemaining()));
+
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
   readonly financialsWidgets: DashboardWidgetId[] = ['finNavLinks', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
 
@@ -2026,18 +2061,18 @@ export class FinancialsPageComponent extends DashboardPageBase {
       projects: this.store.projects(),
       estimates: this.store.estimates(),
       changeOrders: this.store.changeOrders(),
-      invoices: INVOICES,
-      billingSchedules: BILLING_SCHEDULES,
-      billingEvents: BILLING_EVENTS,
-      payables: PAYABLES,
-      cashFlowHistory: CASH_FLOW_HISTORY,
-      cashPosition: CASH_POSITION,
-      glAccounts: GL_ACCOUNTS,
-      glEntries: GL_ENTRIES,
-      purchaseOrders: PURCHASE_ORDERS,
-      payrollRecords: PAYROLL_RECORDS,
-      contracts: CONTRACTS,
-      subcontractLedger: SUBCONTRACT_LEDGER,
+      invoices: this.store.invoices(),
+      billingSchedules: this.store.billingSchedules(),
+      billingEvents: this.store.billingEvents(),
+      payables: this.store.payables(),
+      cashFlowHistory: this.store.cashFlowHistory(),
+      cashPosition: this.store.cashPosition(),
+      glAccounts: this.store.glAccounts(),
+      glEntries: this.store.glEntries(),
+      purchaseOrders: this.store.purchaseOrders(),
+      payrollRecords: this.store.payrollRecords(),
+      contracts: this.store.contracts(),
+      subcontractLedger: this.store.subcontractLedger(),
       allWeatherData: this.store.weatherData(),
       allJobCosts: this.store.projectJobCosts(),
       currentPage: 'financials',
@@ -2094,8 +2129,8 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly timeRanges: RevenueTimeRange[] = ['1M', 'YTD', '1Y', '3Y', '5Y'];
   readonly selectedRange = signal<RevenueTimeRange>('1Y');
 
-  readonly revenueData = computed(() => getRevenueData(this.selectedRange()));
-  readonly revenueSummary = computed(() => getRevenueSummary(this.selectedRange()));
+  readonly revenueData = computed(() => getRevenueData(this.selectedRange(), this.store.monthlyRevenue()));
+  readonly revenueSummary = computed(() => getRevenueSummary(this.selectedRange(), this.store.annualTotals()));
 
   readonly chartWidth = 600;
   readonly chartHeight = 200;
@@ -2249,7 +2284,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   readonly budgetProgressClass = budgetProgressClass;
 
-  readonly jobCostSummary = computed(() => getJobCostSummary());
+  readonly jobCostSummary = computed(() => getJobCostSummary(this.store.projectJobCosts()));
   readonly projectJobCosts = this.store.projectJobCosts;
   readonly jobCostCategories = JOB_COST_CATEGORIES;
 

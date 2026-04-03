@@ -4,15 +4,16 @@ import {
   Component,
   ElementRef,
   computed,
+  effect,
   signal,
   inject,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { DataStoreService } from '../../data/data-store.service';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
-import { ModusButtonComponent } from '../../components/modus-button.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
@@ -20,6 +21,7 @@ import type { DashboardLayoutConfig } from '../../shell/services/dashboard-layou
 import type {
   DashboardWidgetId,
   Project,
+  ProjectWeather,
   UrgentNeedItem,
   BudgetHistoryPoint,
   ProjectJobCost,
@@ -37,7 +39,8 @@ import {
 } from '../../data/dashboard-data';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import type { Milestone, TeamMember, Risk } from '../../data/project-data';
-import { TILE_IDS, TILE_PROJECT_MAP, buildProjectsLayoutConfig } from './projects-page-layout.config';
+import { TILE_IDS, TILE_VISUAL_ORDER, buildProjectsLayoutConfig } from './projects-page-layout.config';
+import { rewriteDynamicNeeds, injectScheduleOverdue, sortProjectsByUrgency, rewriteBudgetRisk } from './projects-page-utils';
 
 type ContentBlock = 'owner' | 'schedule' | 'budget' | 'weather'
   | 'urgentNeeds' | 'sparkline' | 'costBreakdown' | 'insight' | 'moreNeeds'
@@ -82,9 +85,10 @@ const SINGLE_COL_FALLBACK: ContentBlock[] = [
 const LEFT_COL_BLOCKS = new Set<ContentBlock>(['owner', 'weather', 'forecast', 'urgentNeeds', 'moreNeeds', 'milestone', 'teamSummary', 'riskSummary']);
 const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline', 'fadeGain', 'costBreakdown', 'costDetail', 'insight']);
 
+
 @Component({
   selector: 'app-projects-page',
-  imports: [ModusBadgeComponent, ModusProgressComponent, ModusButtonComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -96,6 +100,10 @@ const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline
 export class ProjectsPageComponent extends DashboardPageBase implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
+
+  constructor() {
+    super();
+  }
 
   protected override getEngineConfig(): DashboardLayoutConfig {
     return buildProjectsLayoutConfig((id) => this.widgetFocusService.selectWidget(id));
@@ -115,7 +123,10 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
   readonly isNarrowMobile = signal(typeof window !== 'undefined' ? window.innerWidth <= 400 : false);
   readonly isCompactMobile = signal(typeof window !== 'undefined' ? window.innerWidth <= 560 : false);
-  readonly isNarrowGrid = signal(false);
+  readonly isNarrowGrid = computed(() => {
+    const cols = this.engine.currentDesktopColumns();
+    return cols > 0 && cols < 4;
+  });
   readonly forecastDays = signal(3);
 
   readonly today = new Date().toLocaleDateString('en-US', {
@@ -143,27 +154,130 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   private readonly allUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals(), this.store.changeOrders()));
 
   readonly projectAgentData = computed(() => {
-    const map = new Map<number, { urgentNeeds: UrgentNeedItem[]; criticalCount: number; warningCount: number; topNeed: UrgentNeedItem | null; budgetAlert: boolean; jobCostSpend: string | null }>();
+    const changeOrders = this.store.changeOrders();
+    const map = new Map<number, { urgentNeeds: UrgentNeedItem[]; criticalCount: number; warningCount: number; coreWarningCount: number; topNeed: UrgentNeedItem | null; budgetAlert: boolean; jobCostSpend: string | null }>();
     for (const p of this.projects()) {
-      const needs = this.allUrgentNeeds().filter(n => n.projectId === p.id);
+      const rawNeeds = this.allUrgentNeeds().filter(n => n.projectId === p.id);
+      const needs = injectScheduleOverdue(rewriteDynamicNeeds(rawNeeds, p, changeOrders), p);
       const critical = needs.filter(n => n.severity === 'critical');
       const warning = needs.filter(n => n.severity === 'warning');
+      const coreWarning = warning.filter(n => n.category !== 'change-order');
       const topNeed = critical[0] ?? warning[0] ?? needs[0] ?? null;
       const budgetAlert = needs.some(n => n.category === 'budget' || n.category === 'change-order');
       const jc = this.store.projectJobCosts().find(j => j.projectId === p.id);
       const jobCostSpend = jc ? jc.budgetUsed : null;
-      map.set(p.id, { urgentNeeds: needs, criticalCount: critical.length, warningCount: warning.length, topNeed, budgetAlert, jobCostSpend });
+      map.set(p.id, { urgentNeeds: needs, criticalCount: critical.length, warningCount: warning.length, coreWarningCount: coreWarning.length, topNeed, budgetAlert, jobCostSpend });
     }
     return map;
   });
 
   getProjectAgent(projectId: number) {
-    return this.projectAgentData().get(projectId) ?? { urgentNeeds: [], criticalCount: 0, warningCount: 0, topNeed: null, budgetAlert: false, jobCostSpend: null };
+    return this.projectAgentData().get(projectId) ?? { urgentNeeds: [], criticalCount: 0, warningCount: 0, coreWarningCount: 0, topNeed: null, budgetAlert: false, jobCostSpend: null };
+  }
+
+  readonly sortedTileMap = computed<Record<string, number>>(() => {
+    const projs = this.projects();
+    const agentData = this.projectAgentData();
+    const indices = sortProjectsByUrgency(projs, agentData);
+    const map: Record<string, number> = {};
+    for (let i = 0; i < TILE_VISUAL_ORDER.length && i < indices.length; i++) {
+      map[TILE_VISUAL_ORDER[i]] = indices[i];
+    }
+    return map;
+  });
+
+  readonly projectWidgetMap = computed<Record<string, Project | undefined>>(() => {
+    const projs = this.projects();
+    const tileMap = this.sortedTileMap();
+    const map: Record<string, Project | undefined> = {};
+    for (const widgetId of TILE_IDS) {
+      const idx = tileMap[widgetId];
+      map[widgetId] = idx !== undefined ? projs[idx] : undefined;
+    }
+    return map;
+  });
+
+  readonly widgetDerived = computed<Record<string, {
+    agent: { urgentNeeds: UrgentNeedItem[]; criticalCount: number; warningCount: number; coreWarningCount: number; topNeed: UrgentNeedItem | null; budgetAlert: boolean; jobCostSpend: string | null };
+    weather: ProjectWeather | undefined;
+    firstImpactedForecast: WeatherForecast | null;
+    topNeeds: UrgentNeedItem[];
+    moreNeeds: UrgentNeedItem[];
+    nextMilestone: Milestone | null;
+    teamSummary: { members: TeamMember[]; total: number } | null;
+    topRisk: Risk | null;
+    budgetHistory: BudgetHistoryPoint[] | null;
+    fadeGain: { label: string; value: string; isGain: boolean } | null;
+    jobCost: ProjectJobCost | null;
+    insight: string | null;
+  }>>(() => {
+    const widgetMap = this.projectWidgetMap();
+    const result: Record<string, {
+      agent: { urgentNeeds: UrgentNeedItem[]; criticalCount: number; warningCount: number; coreWarningCount: number; topNeed: UrgentNeedItem | null; budgetAlert: boolean; jobCostSpend: string | null };
+      weather: ProjectWeather | undefined;
+      firstImpactedForecast: WeatherForecast | null;
+      topNeeds: UrgentNeedItem[];
+      moreNeeds: UrgentNeedItem[];
+      nextMilestone: Milestone | null;
+      teamSummary: { members: TeamMember[]; total: number } | null;
+      topRisk: Risk | null;
+      budgetHistory: BudgetHistoryPoint[] | null;
+      fadeGain: { label: string; value: string; isGain: boolean } | null;
+      jobCost: ProjectJobCost | null;
+      insight: string | null;
+    }> = {};
+    for (const widgetId of TILE_IDS) {
+      const project = widgetMap[widgetId];
+      if (!project) continue;
+      const agent = this.getProjectAgent(project.id);
+      const topNeeds = agent.urgentNeeds.slice(0, 3);
+      result[widgetId] = {
+        agent,
+        weather: this.store.getProjectWeather(project.id),
+        firstImpactedForecast: this.getFirstImpactedForecast(project.id),
+        topNeeds,
+        moreNeeds: topNeeds.slice(1),
+        nextMilestone: this.getNextMilestone(project.id),
+        teamSummary: this.getTeamSummary(project.id),
+        topRisk: this.getTopRisk(project.id),
+        budgetHistory: this.getBudgetHistory(project.id),
+        fadeGain: this.getProjectFadeGain(project.id),
+        jobCost: this.getJobCostData(project.id),
+        insight: this.getProjectInsight(project.id),
+      };
+    }
+    return result;
+  });
+
+  private readonly _syncWidgetRegistrations = effect(() => {
+    const widgetMap = this.projectWidgetMap();
+    const registrations: Record<string, { name: string; suggestions: string[] }> = {};
+    for (const widgetId of TILE_IDS) {
+      const project = widgetMap[widgetId];
+      if (!project) continue;
+      const suggestions = this.buildProjectSuggestions(project);
+      registrations[widgetId] = { name: project.name, suggestions };
+    }
+    untracked(() => this.widgetFocusService.registerWidgets(registrations));
+  });
+
+  private buildProjectSuggestions(project: Project): string[] {
+    const agent = this.getProjectAgent(project.id);
+    if (project.status === 'Overdue')
+      return ['Why is this project overdue?', 'Show budget utilization', 'What are the blockers?'];
+    if (project.status === 'At Risk')
+      return ['Why is this project at risk?', 'Show budget breakdown', 'What needs attention?'];
+    if (agent.criticalCount > 0)
+      return ['What are the critical issues?', 'Show budget status', 'What are the urgent needs?'];
+    if (project.budgetPct > 75)
+      return ['How is the budget tracking?', 'Show cost breakdown', 'Any budget risks?'];
+    if (project.status === 'Planning')
+      return ['What is the planning status?', 'Show project timeline', 'When does construction start?'];
+    return ['How is this project tracking?', 'Show budget status', 'Any risks?'];
   }
 
   projectForWidget(widgetId: string): Project | undefined {
-    const idx = TILE_PROJECT_MAP[widgetId];
-    return idx !== undefined ? this.projects()[idx] : undefined;
+    return this.projectWidgetMap()[widgetId];
   }
 
   navigateToJobCosts(project: Project, event: MouseEvent): void {
@@ -209,38 +323,29 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     const weatherImpact = this.getFirstImpactedForecast(project.id);
     const nextMs = this.getNextMilestone(project.id);
 
-    if (agent.criticalCount > 0)
-      return { label: `${agent.criticalCount} Critical`, color: 'danger' };
+    const isHigh =
+      agent.criticalCount > 0 ||
+      project.budgetPct >= 95;
 
-    if (project.budgetPct > 90)
-      return { label: `Budget ${project.budgetPct}%`, color: 'danger' };
+    if (isHigh)
+      return { label: 'Risk: High', color: 'danger' };
 
-    if (project.status === 'Overdue') {
-      const due = new Date(project.dueDate);
-      const now = new Date();
-      const daysLate = Math.max(1, Math.round((now.getTime() - due.getTime()) / 86_400_000));
-      return { label: `${daysLate}d Late`, color: 'danger' };
-    }
+    const isModerate =
+      (project.status === 'At Risk' && project.budgetPct > 75) ||
+      agent.coreWarningCount >= 3;
 
-    if (project.budgetPct > 75)
-      return { label: `Budget ${project.budgetPct}%`, color: 'warning' };
+    if (isModerate)
+      return { label: 'Risk: Moderate', color: 'warning' };
 
-    if (agent.warningCount > 0)
-      return { label: `${agent.warningCount} Warning${agent.warningCount > 1 ? 's' : ''}`, color: 'warning' };
+    const isLow =
+      agent.coreWarningCount > 0 ||
+      project.status === 'At Risk' ||
+      project.status === 'Overdue';
 
-    if (topRisk?.severity === 'high')
-      return { label: 'High Risk', color: 'warning' };
+    if (isLow)
+      return { label: 'Risk: Low', color: 'secondary' };
 
-    if (nextMs?.status === 'overdue')
-      return { label: 'Milestone Slip', color: 'warning' };
-
-    if (weatherImpact)
-      return { label: 'Weather Alert', color: 'warning' };
-
-    if (project.status === 'Planning')
-      return { label: 'Pre-Construction', color: 'secondary' };
-
-    return { label: 'On Track', color: 'success' };
+    return { label: 'Risk: None', color: 'success' };
   }
 
   readonly actionBadges = computed<Map<number, { label: string; color: ModusBadgeColor }>>(() => {
@@ -275,7 +380,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
     const scored: [ContentBlock, number][] = [
       ['urgentNeeds', agent.criticalCount > 0 ? 100 : agent.warningCount > 0 ? 60 : 30],
-      ['budget', project.budgetPct > 90 ? 80 : project.budgetPct > 75 ? 50 : 25],
+      ['budget', project.budgetPct >= 95 ? 80 : project.budgetPct > 75 ? 50 : 25],
       ['schedule', project.status === 'Overdue' ? 70 : project.status === 'At Risk' ? 40 : 35],
       ['weather', weatherImpact ? 60 : 15],
       ['riskSummary', topRisk?.severity === 'high' ? 50 : 10],
@@ -401,8 +506,9 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   getTopRisk(projectId: number): Risk | null {
     const data = this.store.projectDetailData()[projectId];
     if (!data?.risks?.length) return null;
-    const high = data.risks.find(r => r.severity === 'high');
-    return high ?? data.risks[0];
+    const project = this.projects().find(p => p.id === projectId);
+    const pick = data.risks.find(r => r.severity === 'high') ?? data.risks[0];
+    return project ? rewriteBudgetRisk(pick, project) : pick;
   }
 
   getFirstImpactedForecast(projectId: number): WeatherForecast | null {
@@ -417,9 +523,19 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     return `$${amount.toLocaleString()}`;
   }
 
+  private readonly budgetHistoryMap = computed<Map<number, BudgetHistoryPoint[] | null>>(() => {
+    const history = this.store.budgetHistory();
+    const projs = this.projects();
+    const map = new Map<number, BudgetHistoryPoint[] | null>();
+    for (const p of projs) {
+      const pts = history[p.id] ?? [];
+      map.set(p.id, pts.length ? pts : null);
+    }
+    return map;
+  });
+
   getBudgetHistory(projectId: number): BudgetHistoryPoint[] | null {
-    const pts = this.store.getProjectBudgetHistory(projectId);
-    return pts?.length ? pts : null;
+    return this.budgetHistoryMap().get(projectId) ?? null;
   }
 
   sparklinePath(points: BudgetHistoryPoint[], field: 'planned' | 'actual', svgHeight = 50): string {
@@ -435,19 +551,37 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     }).join(' ');
   }
 
+  private readonly jobCostDataMap = computed<Map<number, ProjectJobCost | null>>(() => {
+    const jcList = this.store.projectJobCosts();
+    const map = new Map<number, ProjectJobCost | null>();
+    for (const jc of jcList) {
+      map.set(jc.projectId, jc);
+    }
+    return map;
+  });
+
   getJobCostData(projectId: number): ProjectJobCost | null {
-    return this.store.projectJobCosts().find(j => j.projectId === projectId) ?? null;
+    return this.jobCostDataMap().get(projectId) ?? null;
   }
 
+  private readonly fadeGainMap = computed<Map<number, { label: string; value: string; isGain: boolean } | null>>(() => {
+    const history = this.store.budgetHistory();
+    const projs = this.projects();
+    const map = new Map<number, { label: string; value: string; isGain: boolean } | null>();
+    for (const p of projs) {
+      const pts = history[p.id] ?? [];
+      if (!pts.length) { map.set(p.id, null); continue; }
+      const latest = pts[pts.length - 1];
+      const diff = latest.planned - latest.actual;
+      const abs = Math.abs(diff);
+      const formatted = abs >= 1000 ? `$${(abs / 1000).toFixed(0)}K` : `$${abs.toLocaleString()}`;
+      map.set(p.id, Math.abs(diff) < 500 ? null : { label: diff > 0 ? 'Gain' : 'Fade', value: formatted, isGain: diff > 0 });
+    }
+    return map;
+  });
+
   getProjectFadeGain(projectId: number): { label: string; value: string; isGain: boolean } | null {
-    const pts = this.store.getProjectBudgetHistory(projectId);
-    if (!pts?.length) return null;
-    const latest = pts[pts.length - 1];
-    const diff = latest.planned - latest.actual;
-    const abs = Math.abs(diff);
-    const formatted = abs >= 1000 ? `$${(abs / 1000).toFixed(0)}K` : `$${abs.toLocaleString()}`;
-    if (Math.abs(diff) < 500) return null;
-    return { label: diff > 0 ? 'Gain' : 'Fade', value: formatted, isGain: diff > 0 };
+    return this.fadeGainMap().get(projectId) ?? null;
   }
 
   private static readonly JOB_COST_COLORS: Record<string, string> = {
@@ -473,18 +607,25 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     return data.urgentNeeds.slice(0, 3);
   }
 
+  private readonly projectInsightMap = computed<Map<number, string | null>>(() => {
+    const projs = this.projects();
+    const map = new Map<number, string | null>();
+    for (const p of projs) {
+      const state: AgentDataState = {
+        projects: [p],
+        currentPage: 'projects',
+        projectName: p.name,
+        budgetPct: p.budgetPct,
+        budgetHealthy: p.budgetPct < 95,
+      };
+      const agent = getAgent('projectDefault', 'projects');
+      map.set(p.id, agent.insight?.(state) ?? null);
+    }
+    return map;
+  });
+
   getProjectInsight(projectId: number): string | null {
-    const project = this.projects().find(p => p.id === projectId);
-    if (!project) return null;
-    const state: AgentDataState = {
-      projects: [project],
-      currentPage: 'projects',
-      projectName: project.name,
-      budgetPct: project.budgetPct,
-      budgetHealthy: project.budgetPct <= 90,
-    };
-    const agent = getAgent('projectDefault', 'projects');
-    return agent.insight?.(state) ?? null;
+    return this.projectInsightMap().get(projectId) ?? null;
   }
 
   private buildProjectsAgentState(): AgentDataState {

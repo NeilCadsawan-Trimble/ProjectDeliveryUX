@@ -4,7 +4,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { PayrollRecord } from '../../data/dashboard-data';
-import { PAYROLL_RECORDS, formatCurrency as sharedFormatCurrency, payrollStatusBadge } from '../../data/dashboard-data';
+import { formatCurrency as sharedFormatCurrency, payrollStatusBadge } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 @Component({
@@ -110,6 +111,7 @@ export class PayrollMonthlyDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -119,7 +121,7 @@ export class PayrollMonthlyDetailPageComponent {
   readonly records = computed<PayrollRecord[]>(() => {
     const month = this.monthParam();
     if (!month) return [];
-    return PAYROLL_RECORDS.filter(r => r.period.split(' - ')[0] === month);
+    return this.store.payrollRecords().filter(r => r.period.split(' - ')[0] === month);
   });
 
   readonly totals = computed(() => {

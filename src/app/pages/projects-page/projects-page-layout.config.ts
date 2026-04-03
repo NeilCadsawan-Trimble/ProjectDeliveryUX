@@ -4,34 +4,24 @@ import type { DashboardWidgetId } from '../../data/dashboard-data';
 
 export const TILE_IDS: DashboardWidgetId[] = ['proj1', 'proj2', 'proj3', 'proj4', 'proj5', 'proj6', 'proj7', 'proj8'];
 
-/** Tiles ordered by urgency: critical count DESC, warning count DESC, status severity DESC, budget% DESC */
-export const TILE_PROJECT_MAP: Record<string, number> = {
-  proj1: 2, // Downtown Transit Hub    – 3 crit, Overdue, 95% budget
-  proj2: 1, // Harbor View Condominiums – 2 crit + 1 warn, At Risk, 82%
-  proj3: 6, // Sunset Ridge Apartments  – 1 crit + 1 warn, Overdue, 55%
-  proj4: 0, // Riverside Office Complex – 1 crit + 1 warn, On Track, 68%
-  proj5: 5, // Metro Bridge Rehab       – 1 warn, On Track, 72%
-  proj6: 3, // Lakeside Medical Center  – 1 warn, On Track, 30%
-  proj7: 7, // Industrial Park Warehouse – 1 warn, On Track, 18%
-  proj8: 4, // Westfield Shopping Center – info only, Planning, 8%
-};
+export const TILE_VISUAL_ORDER: DashboardWidgetId[] = ['proj1', 'proj2', 'proj3', 'proj6', 'proj7', 'proj4', 'proj5', 'proj8'];
 
 const GAP = DashboardLayoutEngine.GAP_PX;
 const HEADER_HEIGHT = 80;
 const HEADER_OFFSET = HEADER_HEIGHT + GAP;
 
-const H_HERO = 672;  // proj1-3: top row (hero + flanking tiles, all same height)
-const H_STD  = 384;  // proj4-8: middle and bottom row tiles
+const H_HERO = 672;
+const H_STD  = 384;
 
-const ROW2 = H_HERO + GAP;          // 688  – middle row (proj6, proj7, proj4, proj5)
-const ROW3 = ROW2 + H_STD + GAP;    // 1088 – bottom row (proj8)
+const ROW2 = H_HERO + GAP;
+const ROW3 = ROW2 + H_STD + GAP;
 
 export function buildProjectsLayoutConfig(
   onWidgetSelect: (id: string) => void,
 ): DashboardLayoutConfig {
   return {
     widgets: ['projsHeader', ...TILE_IDS],
-    layoutStorageKey: 'dashboard-projects:v16',
+    layoutStorageKey: 'dashboard-projects:v18',
     canvasStorageKey: 'canvas-layout:dashboard-projects:v17',
     defaultColStarts: {
       projsHeader: 1,
@@ -84,6 +74,15 @@ export function buildProjectsLayoutConfig(
       proj6: H_STD,  proj7: H_STD,
       proj8: H_STD,
     },
+    responsiveBreakpoints: [
+      { minWidth: 1280, columns: 4 },
+      { minWidth: 1020, columns: 3 },
+      { minWidth: 848, columns: 2 },
+    ],
+    responsiveUniformHeight: { 2: H_HERO },
+    desktopResizePriorityOrder: [...TILE_VISUAL_ORDER],
+    desktopSnapToDefaultLayoutAfterDrag: true,
+    desktopSaveDefaultLayoutSizingOnly: true,
     minColSpan: 4,
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: true,

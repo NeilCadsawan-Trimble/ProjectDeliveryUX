@@ -55,7 +55,7 @@ describe('styles.css regression', () => {
     it('applies border-radius to inner modus-wc-navbar', () => {
       expect(CSS).toContain('.canvas-navbar modus-wc-navbar .modus-wc-navbar');
       const match = CSS.match(
-        /\.canvas-navbar\s+modus-wc-navbar\s+\.modus-wc-navbar\s*\{([^}]*)\}/m,
+        /\.canvas-navbar\s+modus-wc-navbar\s+\.modus-wc-navbar[\s\S]*?\{([^}]*)\}/m,
       );
       expect(match).toBeTruthy();
       expect(match![1]).toContain('border-radius');

@@ -1490,6 +1490,79 @@ modus-wc-navbar .main-menu {
   overflow: hidden !important;
 }
 
+/*
+ * Navbar fallback layout: ensures the navbar renders as a horizontal flex bar
+ * even if the internal Stencil toolbar render fails (DOMException with
+ * Angular 20 + scoped encapsulation slot relocation).
+ * Theme-specific backgrounds replicate the original Modus navbar colors.
+ */
+modus-wc-navbar {
+  display: flex !important;
+  align-items: center;
+  width: 100%;
+  height: 56px;
+  min-height: 56px;
+  background-color: var(--modus-wc-color-base-page);
+  padding: 0 var(--modus-wc-spacing-md, 16px);
+}
+[data-theme="modus-classic-dark"] modus-wc-navbar {
+  background-color: var(--modus-wc-color-gray-10);
+}
+[data-theme="modus-modern-dark"] modus-wc-navbar {
+  background-color: var(--modus-wc-color-trimble-gray);
+}
+[data-theme="connect-light"] modus-wc-navbar,
+[data-theme="connect-dark"] modus-wc-navbar {
+  border-bottom: 1px solid var(--modus-wc-color-base-200);
+}
+modus-wc-navbar > [slot="start"] {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+modus-wc-navbar > [slot="end"] {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+modus-wc-navbar > [slot="center"] {
+  flex-shrink: 0;
+}
+.navbar-trimble-logo svg {
+  height: 24px;
+  width: auto;
+}
+.navbar-trimble-logo svg path {
+  fill: var(--modus-wc-color-primary);
+}
+[data-theme="modus-classic-dark"] .navbar-trimble-logo svg path {
+  fill: #ffffff;
+}
+[data-theme="modus-modern-dark"] .navbar-trimble-logo svg path {
+  fill: #ffffff;
+}
+.navbar-hamburger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--modus-wc-color-base-100);
+  color: var(--modus-wc-color-base-content);
+  border: none;
+  flex-shrink: 0;
+}
+[data-theme="modus-classic-dark"] .navbar-hamburger {
+  background: transparent;
+  color: #ffffff;
+}
+.navbar-hamburger:hover {
+  opacity: 0.85;
+}
+
 /* ========================================
  * Navbar "More" Dropdown (mobile)
  * ======================================== */
@@ -1705,7 +1778,8 @@ modus-wc-navbar .main-menu {
     overflow: visible;
   }
 
-  .canvas-navbar modus-wc-navbar .modus-wc-navbar {
+  .canvas-navbar modus-wc-navbar .modus-wc-navbar,
+  .canvas-navbar modus-wc-navbar {
     border-radius: 0 0 12px 12px;
   }
 
@@ -2069,3 +2143,39 @@ modus-wc-utility-panel .modus-wc-utility-panel-footer {
   grid-template-columns: repeat(16, 1fr);
   column-gap: 16px;
 }
+
+/* ── Modus badge host-level overrides ────────────────────────
+   The inner <span> rendered by modus-wc-badge's Stencil runtime
+   doesn't appear when used through the Angular proxy component.
+   Style the host element directly using reflected data-* attrs. ── */
+modus-wc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  white-space: nowrap;
+  font-weight: var(--modus-wc-font-weight-semibold, 600);
+  border-radius: var(--modus-wc-border-radius-md, 0.25rem);
+}
+modus-wc-badge[data-size="sm"] {
+  font-size: var(--modus-wc-font-size-xs, 10px);
+  height: 18px;
+  padding: 0 var(--modus-wc-spacing-xs, 0.25rem);
+}
+modus-wc-badge[data-size="md"] {
+  font-size: var(--modus-wc-font-size-sm, 12px);
+  height: 22px;
+  padding: 0 var(--modus-wc-spacing-sm, 0.5rem);
+}
+modus-wc-badge[data-size="lg"] {
+  font-size: var(--modus-wc-font-size-md, 14px);
+  height: 28px;
+  padding: 0 var(--modus-wc-spacing-md, 0.75rem);
+}
+modus-wc-badge[data-color="primary"] { background-color: var(--modus-wc-color-info); color: var(--modus-wc-color-base-page); }
+modus-wc-badge[data-color="secondary"] { background-color: var(--modus-wc-color-base-300); color: var(--modus-wc-color-base-content); }
+modus-wc-badge[data-color="tertiary"] { background-color: var(--modus-wc-color-base-200); color: var(--modus-wc-color-base-content); }
+modus-wc-badge[data-color="success"] { background-color: var(--modus-wc-color-success); color: var(--modus-wc-color-base-page); }
+modus-wc-badge[data-color="warning"] { background-color: var(--modus-wc-color-warning); color: var(--modus-wc-color-base-content); }
+modus-wc-badge[data-color="danger"] { background-color: var(--modus-wc-color-error); color: var(--modus-wc-color-base-page); }
+modus-wc-badge[data-color="high-contrast"] { background-color: var(--modus-wc-color-black, #000); color: var(--modus-wc-color-white, #fff); }

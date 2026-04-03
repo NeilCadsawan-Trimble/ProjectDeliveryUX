@@ -1,9 +1,11 @@
 ---
-description: Long-term memory for AI assistant. Consult BEFORE asking the user any question. Contains user preferences, decisions made, workflow conventions, and project context accumulated across all sessions.
+description: "Long-term memory for AI assistant. IMPORTANT: At the start of every conversation, check if shortterm-memory.mdc needs consolidation (its 'Current window' date is stale). If stale, consolidate it BEFORE doing anything else."
 alwaysApply: true
 ---
 
 # Long-Term Memory
+
+**REMINDER**: Have you checked `shortterm-memory.mdc`? If its "Current window" date is older than today, consolidate it NOW before proceeding. This has been missed repeatedly and is a mandatory first action.
 
 Consult this file before asking the user a question. If the answer is here, act on it directly.
 
@@ -55,6 +57,8 @@ Consult this file before asking the user a question. If the answer is here, act 
 - **Dashboard shell**: `DashboardShellComponent` provides navbar, sidenav, AI panel, and document-level event handling for all pages.
 - **Canvas mode**: Activates at viewport >= 2000px with fixed navbar (1280px centered), spacebar panning, and overlap resolution.
 - **Widget persistence**: sessionStorage per-page/per-project. Not server-side yet.
+- **Canvas zoom**: Anchors to viewport center (not cursor). Triggers: Shift+scroll, Ctrl+scroll, Cmd+scroll. Uses `Math.abs` comparison of both delta axes to handle macOS axis swapping.
+- **Layout storage keys**: desktop `project-${id}-v4`, canvas `canvas-layout:project-${id}:v6`.
 
 ### Design System
 - **9-color system only**: background, foreground, card, muted, secondary, primary, success, warning, destructive.
@@ -79,8 +83,8 @@ Consult this file before asking the user a question. If the answer is here, act 
 - Other themes: default `var(--background)` is correct.
 
 ### Testing Strategy
-- **Unit tests** (`ng test`): 58 tests covering layout engine, canvas BFS push, widget layout service, canvas reset.
-- **Static tests** (`npm run test:static` via Vitest): 59 tests scanning source files for structural regressions.
+- **Unit tests** (`ng test`): 84 tests covering layout engine, canvas BFS push, widget layout service, canvas reset, collision regression.
+- **Static tests** (`npm run test:static` via Vitest): 325 tests across 9 files scanning source files for structural regressions.
 - **E2E tests** (Playwright): 8 specs, minimal coverage. Configured but not primary gate.
 - **Lint checks** (`npm run lint:all`): Colors, borders, opacity, icons, icon names, inline styles.
 - **Type checking** (`npm run type-check`): Strict TypeScript validation.
@@ -89,6 +93,11 @@ Consult this file before asking the user a question. If the answer is here, act 
 - **Author name**: `NeilCadsawan-Trimble` (local config for this repo).
 - **Author email**: `neil_cadsawan@trimble.com` (local config for this repo).
 - **GitHub account**: `NeilCadsawan-Trimble`. All pushes/PRs under this account.
+
+### Merged PRs
+- PR #34: Canvas collision frozen-direction pushback fix
+- PR #35: Construction domain data + risks widget layout promotion
+- PR #38: Hamburger shadow DOM selector (incomplete fix, superseded by scoped encapsulation fix)
 
 ### Deployment
 - **Vercel**: Connected to GitHub repo. Auto-deploys on push.
@@ -108,6 +117,7 @@ These areas have broken multiple times. Extra care required:
 | Widget deselection | Missing `data-widget-id` attribute breaks click-outside | All widget containers must have `[attr.data-widget-id]` |
 | Canvas BFS cascade direction | Cascade pusher uses own center for direction, bouncing widgets back toward mover | Direction always references mover center; 16 unit tests in `canvas-push.spec.ts` |
 | Canvas detail double rAF | Single rAF reads stale dimensions, pushes incorrectly | Always use double `requestAnimationFrame` before push; see skill section 7 |
+| Canvas zoom macOS axis swap | macOS swaps deltaY→deltaX when Shift held; deltaY is 0, zoom direction resolves wrong | Use `Math.abs` comparison of both axes; pick whichever is larger |
 
 ## Project File Map
 
@@ -128,6 +138,28 @@ These areas have broken multiple times. Extra care required:
 | Dashboard data | `src/app/data/dashboard-data.ts` |
 | Routes | `src/app/app.routes.ts` |
 | Theme service | `src/app/shell/services/theme.service.ts` |
+| Canvas panning/zoom | `src/app/shell/services/canvas-panning.ts` |
+| AI service | `src/app/services/ai.service.ts` |
+| AI tools service | `src/app/services/ai-tools.service.ts` |
+
+## Planned Features (Not Yet Implemented)
+
+### Google Cloud Integration (decided Mar 31)
+- **Decision**: Using Google Cloud for both email and calendar widget integration.
+- **APIs**: Gmail REST API + Google Calendar REST API.
+- **OAuth scopes**: `gmail.readonly`, `gmail.send`, `calendar.readonly`, `calendar.events`.
+- **Architecture**: Vercel serverless functions for OAuth token exchange and API proxy. Angular services call serverless endpoints.
+- **Cost**: Free tier (1B Gmail quota units/day, 1M Calendar queries/day).
+- **Priority**: Calendar widget first (simpler scopes, no app review, existing data model fits).
+- **Status**: Google Cloud project not yet created. No code written.
+
+### Webmail Widget (discussed Mar 31)
+- Dashboard widget connecting to Gmail/Outlook. Unread count, recent messages, quick filters, click-to-open links.
+- Requires Vercel serverless proxy for OAuth. Sending requires broader scopes and stricter app verification.
+
+### Calendar Widget (discussed Mar 31)
+- Replace simulated `CALENDAR_APPOINTMENTS` seed data with live Google Calendar / Outlook Calendar events.
+- Full CRUD: read, create, edit, delete. Existing `CalendarAppointment` fields map directly to provider event objects.
 
 ## Memory System
 
@@ -147,4 +179,5 @@ These areas have broken multiple times. Extra care required:
 | 6 (Mar 26) | `b3ea14f9-5bd7-453f-8329-20bad1e7cc3a` | Short-term memory, detail view navigation, URL state |
 | 7 (Mar 26-29) | `6387a8f3-f2de-4dae-933b-eeec94687608` | Canvas detail expansion, BFS push, AI agents, agentic widgets, urgent needs, financial routing, weather widgets, dynamic back button, skills, refactoring |
 | 8 (Mar 29) | `b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8` | Collapsible subnav, shared utilities refactoring, contracts integration, canvas parity tests, financials expansion, icon compliance, collision fix for same-size widgets |
-| 9 (Mar 30) | *(current session)* | Canvas collision frozen-direction pushback, construction domain data, risks widget layout promotion |
+| 9 (Mar 30) | `b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8` | Canvas collision frozen-direction pushback, construction domain data, risks widget layout promotion |
+| 10 (Mar 31) | *(multi-session)* | Hamburger scoped encapsulation fix, canvas Shift+scroll zoom macOS fix, webmail/calendar widget planning, Google Cloud project planning |

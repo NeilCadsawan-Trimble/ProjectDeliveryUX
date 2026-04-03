@@ -3,7 +3,7 @@ import { DashboardShellComponent } from '../../shell/layout/dashboard-shell.comp
 import type { ShellNavItem, AiResponseFn } from '../../shell/layout/dashboard-shell.component';
 import type { INavbarUserCard } from '../../components/modus-navbar.component';
 import type { Project, Estimate } from '../../data/dashboard-data';
-import { ESTIMATES, ATTENTION_ITEMS } from '../../data/dashboard-data';
+import { ATTENTION_ITEMS } from '../../data/dashboard-data';
 import { DataStoreService } from '../../data/data-store.service';
 
 @Component({
@@ -48,7 +48,7 @@ export class DashboardLayoutComponent {
   readonly aiResponseFn: AiResponseFn = (input: string): string => {
     const q = input.toLowerCase();
     const projects: Project[] = this.store.projects();
-    const estimates: Estimate[] = ESTIMATES;
+    const estimates: Estimate[] = this.store.estimates();
 
     if (q.includes('at risk') || q.includes('risk')) {
       const atRisk = projects.filter((p) => p.status === 'At Risk').map((p) => p.name);

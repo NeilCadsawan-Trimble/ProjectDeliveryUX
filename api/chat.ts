@@ -4,7 +4,7 @@ export const config = {
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-20250514';
-const MAX_TOKENS = 1024;
+const MAX_TOKENS = 2048;
 
 const SYSTEM_PROMPT = `You are Trimble AI, a project delivery assistant for construction and infrastructure projects. You help project managers understand status, risks, budgets, schedules, and team allocation.
 
@@ -14,11 +14,15 @@ Rules:
 - When no context is available, give helpful general guidance.
 - Do not use markdown formatting (no bold, headers, or bullet lists). Use plain text only since your responses display in a chat bubble.
 - If you don't know something, say so honestly rather than fabricating data.
-- When relevant, suggest a follow-up question the user could ask.`;
+- When relevant, suggest a follow-up question the user could ask.
+- When tools are available and the user asks to change, update, or set a value, you MUST use the appropriate tool immediately. Use the Project ID from the context to populate the projectId parameter. Briefly explain what you are changing, then call the tool in the same response.
+- Parse human-friendly amounts: "$2M" means 2000000, "$500K" means 500000, "$1.5M" means 1500000.`;
 
 interface ChatRequestBody {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   context?: string;
+  agentPrompt?: string;
+  tools?: Array<{ name: string; description: string; input_schema: object }>;
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -58,7 +62,7 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  const { messages, context } = body;
+  const { messages, context, agentPrompt, tools } = body;
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return new Response(JSON.stringify({ error: 'messages array is required' }), {
       status: 400,
@@ -66,17 +70,21 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  const systemPrompt = context
-    ? `${SYSTEM_PROMPT}\n\nCurrent context:\n${context}`
-    : SYSTEM_PROMPT;
+  let systemPrompt = SYSTEM_PROMPT;
+  if (agentPrompt) systemPrompt = `${agentPrompt}\n\n${systemPrompt}`;
+  if (context) systemPrompt = `${systemPrompt}\n\nCurrent context:\n${context}`;
 
-  const anthropicBody = {
+  const anthropicBody: Record<string, unknown> = {
     model: MODEL,
     max_tokens: MAX_TOKENS,
     system: systemPrompt,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     stream: true,
   };
+
+  if (tools && tools.length > 0) {
+    anthropicBody['tools'] = tools;
+  }
 
   const anthropicRes = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
@@ -103,6 +111,9 @@ export default async function handler(req: Request): Promise<Response> {
     async start(controller) {
       const reader = anthropicRes.body!.getReader();
       let buffer = '';
+      let toolName = '';
+      let toolJsonBuffer = '';
+      let inToolUse = false;
 
       try {
         while (true) {
@@ -120,8 +131,23 @@ export default async function handler(req: Request): Promise<Response> {
 
             try {
               const event = JSON.parse(data);
-              if (event.type === 'content_block_delta' && event.delta?.text) {
-                controller.enqueue(encoder.encode(event.delta.text));
+
+              if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
+                inToolUse = true;
+                toolName = event.content_block.name || '';
+                toolJsonBuffer = '';
+              } else if (event.type === 'content_block_delta') {
+                if (inToolUse && event.delta?.type === 'input_json_delta') {
+                  toolJsonBuffer += event.delta.partial_json || '';
+                } else if (event.delta?.type === 'text_delta' && event.delta?.text) {
+                  controller.enqueue(encoder.encode(event.delta.text));
+                }
+              } else if (event.type === 'content_block_stop' && inToolUse) {
+                const marker = `\n<!--TOOL_CALL:${JSON.stringify({ name: toolName, args: JSON.parse(toolJsonBuffer || '{}') })}-->\n`;
+                controller.enqueue(encoder.encode(marker));
+                inToolUse = false;
+                toolName = '';
+                toolJsonBuffer = '';
               }
             } catch {
               // skip malformed JSON lines

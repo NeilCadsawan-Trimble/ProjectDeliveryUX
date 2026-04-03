@@ -1,120 +1,70 @@
 ---
-description: Short-term memory for the current 24-hour session window. Records interactions, decisions, and context from today. At the start of a new day, consolidate meaningful entries into longterm-memory.mdc, then reset this file.
+description: "MANDATORY FIRST ACTION: Check if 'Current window' date below is older than today. If stale, you MUST consolidate BEFORE doing anything else. This is not optional. Read the STALENESS CHECK section immediately."
 alwaysApply: true
 ---
 
+# STALENESS CHECK — DO THIS FIRST
+
+**Current window**: Apr 3, 2026
+
+**TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
+
+**IF THE DATE ABOVE IS OLDER THAN TODAY, STOP. You MUST consolidate before responding to the user's query.**
+
+Consolidation steps (do all of these NOW, before anything else):
+1. Read `longterm-memory.mdc`.
+2. Move any lasting decisions, preferences, or patterns from the sessions below into the appropriate section of `longterm-memory.mdc`.
+3. Add each session to the Chat Session History table in `longterm-memory.mdc`.
+4. Clear everything below the `---` separator in THIS file.
+5. Update "Current window" above to today's date.
+6. Start a fresh "Today's Sessions" section.
+7. THEN proceed with the user's request.
+
+If the date matches today, skip this section and proceed normally.
+
 # Short-Term Memory
 
-**Current window**: Mar 31, 2026
-
-> **Lifecycle**:
-> 1. During each session, append interactions below under the current date.
-> 2. When the date in "Current window" is older than today, **consolidate first**:
->    - Move any lasting decisions, preferences, or patterns into `longterm-memory.mdc` under the appropriate section.
->    - Add the session to the Chat Session History table in `longterm-memory.mdc`.
->    - Clear everything below the `---` separator in this file and update "Current window" to today's date.
-> 3. Only keep entries that are relevant to the *current* working day below.
+> During each session, append interactions below under the current date.
+> Only keep entries that are relevant to the *current* working day below.
 
 ---
 
 ## Today's Sessions
 
-### Session 9 (Mar 30)
-- **Topic**: Canvas collision fix, construction domain data, risks widget promotion
+### Session 11 (Apr 3)
+- **Topic**: Memory consolidation
 - **What happened**:
-  1. Fixed canvas collision detection for same-size widgets in compressed chains (3-part fix in `canvas-push.ts`):
-     - Excluded mover from all-pairs cleanup (prevents oscillation with same-size neighbors)
-     - Made Phase 2 wall cascade conditional (only runs when Phase 1 pushed mover back)
-     - Replaced two-candidate pushback with frozen-direction pushback (pushes mover away from frozen/locked boundary)
-  2. Added 6 regression tests in `canvas-push.spec.ts` covering exact project dashboard layouts with incremental dragging (5px/20px steps).
-  3. Updated `dashboard-layout-lessons` skill with section 15 documenting the three root causes and fixes.
-  4. Pushed, PR #34, merged to main.
-  5. Updated all team member roles to construction roles across all 8 projects in `project-data.ts`.
-  6. Updated all milestones and tasks to construction-oriented content for all 8 projects.
-  7. Moved Risks & Urgent Needs widget to top of Column 1 in project dashboard default layout (both desktop and canvas modes). Bumped storage keys v3→v4 (desktop), v5→v6 (canvas).
-  8. Pushed, PR #35, merged to main.
-- **Decisions**:
-  - Frozen-direction pushback: compute average center of frozen/locked widgets, push mover in opposite direction. Cascades through compressed chain until it exits.
-  - All project data now uses construction domain terminology (roles, milestones, tasks).
-  - Risks widget is the first widget below the locked project header in all project dashboards.
+ 1. Consolidated short-term memory (stale since Mar 31) into long-term memory.
+ 2. Moved sessions 9-10 to history table. Added canvas zoom decisions, planned features (Google Cloud / webmail / calendar), updated test counts (84 unit / 325 static), added file map entries, added canvas zoom macOS fragile area.
 
-### Session 10 (Mar 31)
-- **Topic**: Hamburger menu fix -- scoped encapsulation (no shadow DOM)
+### Session 12 (Apr 3)
+- **Topic**: Project risk distribution, sort ordering, "Sort by Priority" menu
 - **What happened**:
-  1. Previous hamburger fix (PR #38) assumed `modus-wc-navbar` uses shadow DOM. It doesn't -- Stencil uses scoped encapsulation, so `shadowRoot` is always null.
-  2. `attachHamburgerListener` looped 100 rAF retries waiting for `shadowRoot`, never found it, gave up.
-  3. The fallback `onMainMenuToggle` toggled (`!navExpanded()`), but `mainMenuOpenChange` has `bubbles: true`, so Angular caught it twice (output + bubbling DOM event), producing a double-toggle = net no change.
-  4. Fix: search light DOM with `navbarWc.querySelector('[aria-label="Main menu"]')` when `shadowRoot` is null. Made fallback idempotent: `navExpanded.set(open)` instead of toggle.
-  5. Updated skill section 16 with Bug D (scoped encapsulation), new architecture, 8 rules.
-  6. Updated long-term memory fragile areas table.
-- **Decisions**:
-  - Never assume Modus web components use shadow DOM. Always check `shadowRoot` first, fall back to light DOM.
-  - Fallback event handlers must be idempotent (set value, not toggle) when events can bubble.
+ 1. Fixed project risk distribution to match target: 3 None, 3 Low, 1 Moderate, 1 High.
+   - Fixed `seen` key normalization in `buildUrgentNeeds` (leading zeros mismatch).
+   - Fixed year-less submittal dates in `dashboard-data.seed.ts`.
+   - Introduced `coreWarningCount` (excludes change-order warnings) for badge determination.
+ 2. Fixed tile visual ordering: created `TILE_VISUAL_ORDER` constant matching grid layout (proj1, proj2, proj3, proj6, proj7, proj4, proj5, proj8) since proj4-7 positions don't follow numeric order in the grid.
+ 3. Updated sort function to use `coreWarningCount` instead of full `warningCount`, aligning sort order with badge logic.
+ 4. Added `AgentProjectData.coreWarningCount` to the interface and updated all tests (54 pass).
+ 5. Added "Sort by Priority" menu item to both canvas and desktop Layout flyout menus. Only visible on `/projects` page. Resets tile positions to default priority order.
 
-### Session 11 (Mar 31)
-- **Topic**: Canvas Shift+scroll zoom fix (macOS axis swap)
+### Session 13 (Apr 3)
+- **Topic**: RFI/Submittal compact mode on project dashboard
 - **What happened**:
-  1. Shift+scroll wheel zoom on canvas was non-functional on macOS. Root cause: macOS swaps deltaY→deltaX when Shift is held, so deltaY was always 0, direction resolved to +1, zoom tried to exceed MAX_ZOOM (1.0), and bailed immediately.
-  2. Fixed `onCanvasWheel` in `canvas-panning.ts`: now picks whichever axis (deltaY or deltaX) has the larger absolute value.
-  3. Also added Ctrl+scroll and Cmd+scroll as zoom triggers (standard for canvas apps, also catches trackpad pinch-to-zoom).
-  4. Changed zoom anchor point from cursor position to viewport center per user preference.
-- **Decisions**:
-  - Zoom anchors to viewport center, not cursor position.
-  - Zoom triggers: Shift+scroll, Ctrl+scroll, Cmd+scroll.
-  - Always use `Math.abs` comparison of both delta axes to handle OS-level axis swapping.
+  1. Ported compact mode from home page to project dashboard for RFI and Submittal widgets.
+  2. Added `isRfiCompact` / `isSubmittalCompact` computed signals (colSpan <= 5 or mobile).
+  3. Added `rfiCompactItems` / `submittalCompactItems` data arrays and `rfiStatusCounts` / `submittalStatusCounts` computed signals.
+  4. Updated HTML template with `@if (isRfiCompact())` branching -- compact shows status summary tiles, full shows table.
+  5. Added `navigateToRfiList()` / `navigateToSubmittalList()` methods for compact tile click actions.
+  6. Updated skills (`dashboard-layout-lessons` section 22) and PROGRESS.md (Phase 16 expanded to 7 items).
 
 ## Active Context
 
-- On `dev` branch, hamburger fix + canvas zoom fix applied but not yet pushed.
-- Build passes.
+- On `dev` branch.
+- Hamburger fix + canvas zoom fix + risk distribution + sort ordering + Sort by Priority menu + RFI/Submittal compact mode all applied but not yet pushed.
 - Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
 
 ## Pending Items
 
 - Push changes when user requests.
-
-## Future Feature Ideas
-
-### Webmail Widget (discussed Session 12, Mar 31)
-- **Concept**: Dashboard widget that connects to a webmail account (Gmail, Outlook) and shows unread count, recent messages, quick filters, click-to-open links.
-- **Key challenge**: OAuth2 authentication requires a server-side component (client secrets can't be in browser code).
-- **Recommended approach**:
-  1. Add Vercel serverless functions (`/api/email/auth`, `/api/email/inbox`, etc.) to handle OAuth token exchange and proxy API calls.
-  2. Pick one provider first (Gmail is best documented for web apps).
-  3. Register an OAuth2 app with Google Cloud Console.
-  4. Create an Angular `EmailService` that calls the serverless endpoints.
-  5. Build the widget component following existing widget patterns (signals, OnPush, Modus design system).
-  6. Store connection status in localStorage.
-- **Lighter alternatives**: Mock/demo widget with static data first; browser extension bridge; Gmail Atom feed (deprecated but functional).
-- **Provider APIs**: Gmail REST API (OAuth2 PKCE, partially browser-compatible), Microsoft Graph API (OAuth2 PKCE), generic IMAP (not browser-accessible).
-- **Sending email**: Same architecture works for sending. Gmail uses `POST /gmail/v1/users/me/messages/send` (scope: `gmail.send`), Outlook uses `POST /me/sendMail` (scope: `Mail.Send`). Requires broader OAuth scopes than read-only, which triggers stricter app verification from Google/Microsoft. Widget UI would need a compact compose form (To, Subject, Body, Send/Discard) or a Quick Reply mode. Must include user confirmation before sending. Main friction is provider app review process for send scopes, not the code itself.
-
-### Calendar Widget (discussed Session 12, Mar 31)
-- **Concept**: Replace simulated `CALENDAR_APPOINTMENTS` seed data with live Google Calendar / Outlook Calendar events. Full CRUD: read, create, edit, delete events.
-- **Provider APIs**: Google Calendar REST API (`/calendars/{id}/events`), Microsoft Graph (`/me/events`).
-- **OAuth scopes**: Google `calendar.readonly` / `calendar.events` (non-sensitive, no security review needed). Microsoft `Calendars.Read` / `Calendars.ReadWrite`.
-- **Data mapping**: Existing `CalendarAppointment` fields (title, date, startHour/endHour, type, projectSlug) map directly to Google/Outlook event objects. Thin mapping layer.
-- **Same Vercel serverless proxy**: `/api/calendar/auth`, `/api/calendar/events`, `/api/calendar/events/:id`.
-- **Calendar is the best first candidate** for real API integration -- simpler scopes, no app review, existing data model already fits.
-
-### Google Cloud Project Setup (discussed Session 12, Mar 31)
-- **Decision**: Going with Google Cloud route for both email and calendar integration.
-- **Setup steps**:
-  1. Create project at console.cloud.google.com
-  2. Enable Gmail API + Google Calendar API
-  3. Configure OAuth consent screen (External, add test users)
-  4. Add scopes: `gmail.readonly`, `gmail.send`, `calendar.readonly`, `calendar.events`
-  5. Create OAuth client ID (Web application type)
-  6. Authorized origins: `http://localhost:4200` + Vercel production domain
-  7. Redirect URIs: `http://localhost:4200/api/auth/callback` + Vercel production
-  8. Store Client ID (safe for browser) and Client Secret (Vercel env vars only)
-- **Cost**: Free tier -- 1B Gmail quota units/day, 1M Calendar queries/day.
-- **Testing**: Up to 100 test users immediately, no verification needed for internal use.
-- **After setup**: Build Vercel serverless functions for OAuth flow + API proxy, then Angular services + widget components.
-
-## Scratch Notes
-
-- Total PRs merged: #34 (collision fix), #35 (construction data + layout), #38 (hamburger shadow DOM selector -- incomplete fix)
-- Layout storage keys: desktop `project-${id}-v4`, canvas `canvas-layout:project-${id}:v6`
-- 84 unit tests (6 new collision regression tests)
-- 325 static tests across 9 files

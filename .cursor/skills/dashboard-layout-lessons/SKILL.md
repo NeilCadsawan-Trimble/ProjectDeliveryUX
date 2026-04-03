@@ -928,11 +928,16 @@ Even with a stable sort, running full `resolveCollisions` on **every** `mousemov
 
 **Mitigation:** For desktop **free** drag (`_dragAxis === 'free'`), **do not** call `resolveCollisions` during `mousemove`. Run **one** `resolveCollisions(movedId, …)` on `mouseup` to settle overlaps.
 
-### Bug C — `compactAll()` after every drag
+### Bug C — desktop gravity: `compactAll()` is REQUIRED after moves and on init
 
-`compactAll()` after mouseup **collapsed** intentional vertical gaps and re-stacked the entire dashboard — a large **jump** on drop.
+`compactAll()` provides vertical gravity — floating all widgets to the top of the grid. Removing it after moves caused gaps to persist and get saved to sessionStorage. On next load, the gaps reappeared because the desktop init path also lacked `compactAll()`.
 
-**Mitigation:** Skip `compactAll` after a **widget move**; still run it after **resize** (desktop). After move, the single `resolveCollisions` at drop handles overlaps.
+**Rule:** `compactAll()` MUST run:
+1. After every desktop widget **move** (in `onDocumentMouseUp`)
+2. After every desktop widget **resize** (in `onDocumentMouseUp`)
+3. During desktop initialization (in `applyModeLayout`, after `restoreDesktopLayout`)
+
+The "twitchy neighbors" issue (Bug B) was caused by running `resolveCollisions` during **mousemove**, NOT by `compactAll()` at mouseup. `_collisionSortBaseline` fixes sort stability during drag. `compactAll()` at mouseup is a single post-drop pass and does not cause twitching.
 
 ### Bug D — wrong projects default on load
 
@@ -960,7 +965,7 @@ Full snapshot save fought priority placement.
 
 ### Regression tests
 
-`dashboard-layout-engine.spec.ts`: `compactAll` tie order; identical consecutive drag `mousemove` leave tops stable; priority vs legacy squeeze order on horizontal resize; snap-after-drag + locked preserve; sizing-only save v2 + reset; `reflowForColumns` `flowOrder`.
+`dashboard-layout-engine.spec.ts`: `compactAll` tie order; identical consecutive drag `mousemove` leave tops stable; priority vs legacy squeeze order on horizontal resize; snap-after-drag + locked preserve; sizing-only save v2 + reset; `reflowForColumns` `flowOrder`; **desktop init compacts gaps from restored layout**; **desktop move-end compacts all widgets to top**.
 
 ## 21. Projects Dashboard Layout Alignment with Home Dashboard
 
@@ -1030,6 +1035,113 @@ Row 3 (top=1088, height=384):
 
 All top-row tiles are the same height (672px), eliminating the old "stacked under right tiles" pattern. Middle row is a full-width band of 4 equal tiles. Bottom row has one tile.
 
+## 22. Compact Mode for Narrow Widgets (ColSpan-Based Responsive Content)
+
+**Files:** `project-dashboard.component.ts`, `project-dashboard.component.html`, `home-page.component.ts`
+
+### The bug
+
+The RFI and Submittal widgets on the project dashboard rendered a full 4-column table (`grid-cols-[1fr_2fr_1fr_1fr]`) regardless of widget width. When a user resized the widget to 5 or fewer grid columns (~300px), the table became unreadable with text truncated and columns crushed.
+
+The home page already had `isRfiCompact` / `isSubmittalCompact` logic that switched to summary tiles when narrow, but this was never ported to the project dashboard.
+
+### The pattern: colSpan-based compact mode
+
+Use `widgetColSpans` (from `DashboardLayoutEngine` via `DashboardPageBase`) to determine when a widget is too narrow for its full table layout. Switch to a compact summary view at a threshold of 5 or fewer columns:
+
+```typescript
+readonly isRfiCompact = computed(
+  () => this.isMobile() || (this.wColSpans()['rfis'] ?? 16) <= 5
+);
+```
+
+### Compact view content
+
+When compact, show **status summary tiles** instead of the table. Each tile shows:
+- Colored icon badge (Open=primary, Overdue=destructive, Upcoming=warning, Closed=success)
+- Status label
+- Count (from existing `rfiStatusCounts()` / `submittalStatusCounts()`)
+- Chevron right (indicates clickable)
+
+Clicking a compact tile navigates to the full Records sub-page (e.g., Records > RFIs) where the user gets the full table view with filtering.
+
+### Template branching pattern
+
+```html
+@if (isRfiCompact()) {
+  <!-- compact status tiles -->
+  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+    @for (item of rfiCompactItems; track item.key) { ... }
+  </div>
+} @else {
+  <!-- full table with column headers and rows -->
+}
+```
+
+### The rule
+
+When adding a table-based widget to the project dashboard (or any dashboard page), always implement a compact mode that triggers at `colSpan <= 5`. The compact view should:
+
+1. Show aggregate counts (status breakdowns) instead of individual rows
+2. Use the existing `widgetColSpans` signal -- no new resize observers needed
+3. Provide a click action to navigate to the full-featured page for that data
+4. Match the visual pattern of the home page's compact items (colored icon badge + label + count + chevron)
+
+### Existing compact mode widgets
+
+| Widget | Page | Signal | Threshold |
+|--------|------|--------|-----------|
+| RFIs | Home | `isRfiCompact` | `homeRfis` colSpan <= 5 or mobile |
+| Submittals | Home | `isSubmittalCompact` | `homeSubmittals` colSpan <= 5 or mobile |
+| Time Off | Home | `isTimeOffCompact` | `homeTimeOff` colSpan <= 6 or mobile |
+| RFIs | Project Dashboard | `isRfiCompact` | `rfis` colSpan <= 5 or mobile |
+| Submittals | Project Dashboard | `isSubmittalCompact` | `submittals` colSpan <= 5 or mobile |
+
+## 18. Respect Explicit User Constraints -- Never Apply Parent-Level Changes That Cascade Into Protected Elements
+
+**Context:** When the user says "don't touch X" or "don't mess with X," that is an absolute constraint. Every proposed change must be evaluated against it before execution.
+
+### The mistake
+
+User said: "don't mess with the toolbar." The toolbar wrapper div had `md:pl-4`. Instead of scoping the fix to only the content area below the toolbar, `[class.md:pl-4]` was applied to the **parent container** -- which is the toolbar's parent too. This changed the toolbar's padding behavior, directly violating the constraint.
+
+### Why it happened
+
+Applying the change to the parent was fewer lines of code than wrapping the content in its own div. The shortcut was chosen over correctness.
+
+### The rule
+
+**When a user marks an element as off-limits:**
+
+1. **Never modify the element itself** -- no class changes, no attribute changes, no restructuring.
+2. **Never modify an ancestor** in a way that cascades into the protected element -- adding/removing/conditionalizing classes on a parent affects ALL children, including the protected one.
+3. **Always scope changes to siblings or new wrapper divs** that exclude the protected element.
+4. **Before executing, trace the DOM tree** and confirm the protected element is outside the blast radius of every proposed change.
+
+### Correct pattern
+
+```html
+<!-- WRONG: conditional padding on parent affects toolbar too -->
+<div class="flex-1 flex flex-col gap-6" [class.md:pl-4]="condition">
+    <div class="toolbar md:pl-4">...</div>   <!-- affected by parent! -->
+    <app-content />                           <!-- affected by parent -->
+</div>
+
+<!-- RIGHT: toolbar untouched, content wrapped separately -->
+<div class="flex-1 flex flex-col gap-6">
+    <div class="toolbar md:pl-4">...</div>   <!-- untouched -->
+    <div [class.md:pl-4]="condition">         <!-- only content affected -->
+        <app-content />
+    </div>
+</div>
+```
+
+### General principle
+
+**An explicit user constraint outranks code brevity, always.** If respecting the constraint requires more wrapper divs, more lines, or a less elegant solution -- that is the correct solution. Taking shortcuts that violate stated constraints is never acceptable.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1057,3 +1169,4 @@ All top-row tiles are the same height (672px), eliminating the old "stacked unde
 | Desktop resize priority squeeze | `dashboard-layout-engine.ts` + page `desktopResizePriorityOrder` | `dashboard-layout-engine.spec.ts` (priority vs legacy) |
 | Desktop snap after drag + sizing-only defaults | `dashboard-layout-engine.ts` + `buildProjectsLayoutConfig` | `dashboard-layout-engine.spec.ts` (snap, locked, v2 save/reset, flowOrder) |
 | Projects layout alignment + DashboardPageBase | `projects-page.component.ts` + `projects-page-layout.config.ts` | Build verification; visual test |
+| Compact mode for narrow widgets | `project-dashboard.component.ts` + `.html`, `home-page.component.ts` | (visual: resize widget to 5 cols, verify compact tiles) |

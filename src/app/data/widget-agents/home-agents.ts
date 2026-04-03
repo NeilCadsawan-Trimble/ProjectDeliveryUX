@@ -141,14 +141,20 @@ export const homeRfis: WidgetAgent = {
       : ['Summarize RFI status', 'How many RFIs are open?', 'Which RFIs are overdue?'];
   },
   insight(s) {
-    const overdue = (s.rfis ?? []).filter(r => r.status === 'overdue');
-    if (!overdue.length) return null;
-    const oldest = maxDaysPastDue(overdue);
-    return `${overdue.length} overdue, oldest ${oldest} day${oldest === 1 ? '' : 's'} past due`;
+    const rfis = s.rfis ?? [];
+    const overdue = rfis.filter(r => r.status === 'overdue');
+    if (overdue.length) {
+      const oldest = maxDaysPastDue(overdue);
+      return `${overdue.length} overdue, oldest ${oldest} day${oldest === 1 ? '' : 's'} past due`;
+    }
+    const open = rfis.filter(r => r.status === 'open');
+    if (open.length) return `${open.length} open RFI${open.length === 1 ? '' : 's'} across portfolio`;
+    if (rfis.length) return `${rfis.length} RFIs tracked across portfolio`;
+    return null;
   },
   alerts(s) {
     const overdue = (s.rfis ?? []).filter(r => r.status === 'overdue');
-    return overdue.length ? { level: 'critical', count: overdue.length, label: 'overdue' } : null;
+    return overdue.length ? { level: 'warning', count: overdue.length, label: 'overdue' } : null;
   },
   actions: () => [
     { id: 'escalate-overdue', label: 'Escalate overdue RFIs', execute: (st) => {
@@ -189,14 +195,20 @@ export const homeSubmittals: WidgetAgent = {
       : ['Summarize submittal status', 'How many submittals are pending review?', 'Which submittals are overdue?'];
   },
   insight(s) {
-    const overdue = (s.submittals ?? []).filter(sub => sub.status === 'overdue');
-    if (!overdue.length) return null;
-    const oldest = maxDaysPastDue(overdue);
-    return `${overdue.length} overdue submittal${overdue.length === 1 ? '' : 's'}, oldest ${oldest} day${oldest === 1 ? '' : 's'} past due`;
+    const subs = s.submittals ?? [];
+    const overdue = subs.filter(sub => sub.status === 'overdue');
+    if (overdue.length) {
+      const oldest = maxDaysPastDue(overdue);
+      return `${overdue.length} overdue submittal${overdue.length === 1 ? '' : 's'}, oldest ${oldest} day${oldest === 1 ? '' : 's'} past due`;
+    }
+    const open = subs.filter(sub => sub.status === 'open');
+    if (open.length) return `${open.length} open submittal${open.length === 1 ? '' : 's'} across portfolio`;
+    if (subs.length) return `${subs.length} submittals tracked across portfolio`;
+    return null;
   },
   alerts(s) {
     const overdue = (s.submittals ?? []).filter(sub => sub.status === 'overdue');
-    return overdue.length ? { level: 'critical', count: overdue.length, label: 'overdue' } : null;
+    return overdue.length ? { level: 'warning', count: overdue.length, label: 'overdue' } : null;
   },
   actions: () => [
     { id: 'escalate-subs', label: 'Escalate overdue submittals', execute: (st) => {
@@ -241,8 +253,14 @@ export const homeDefault: WidgetAgent = {
     const atRisk = projects.filter(p => p.status === 'At Risk').length;
     const overdueProj = projects.filter(p => p.status === 'Overdue').length;
     const overdueRfi = (s.rfis ?? []).filter(r => r.status === 'overdue').length;
-    if (atRisk || overdueProj) return `${atRisk} project${atRisk === 1 ? '' : 's'} at risk, ${overdueProj} overdue project${overdueProj === 1 ? '' : 's'}`;
+    const highBudget = projects.filter(p => p.budgetPct > 80).length;
+    if (atRisk || overdueProj) return `${atRisk} at risk, ${overdueProj} overdue across ${projects.length} projects`;
+    if (highBudget) return `${highBudget} project${highBudget === 1 ? '' : 's'} over 80% budget`;
     if (overdueRfi) return `${overdueRfi} portfolio RFI(s) overdue`;
+    if (projects.length) {
+      const avgPct = Math.round(projects.reduce((sum, p) => sum + p.budgetPct, 0) / projects.length);
+      return `${projects.length} projects, avg ${avgPct}% budget utilization`;
+    }
     return null;
   },
   alerts: () => null,
@@ -312,17 +330,21 @@ export const urgentNeedsAgent: WidgetAgent = {
     const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? [], s.changeOrders ?? []);
     const critical = items.filter(i => i.severity === 'critical').length;
     const budgetCritical = items.filter(i => i.severity === 'critical' && i.category === 'budget').length;
-    if (budgetCritical > 0 && critical >= 5) return `${critical} critical items including ${budgetCritical} budget alert(s) need attention`;
-    if (critical >= 5) return `${critical} critical items across the portfolio need attention`;
+    if (budgetCritical > 0 && critical >= 3) return `${critical} critical items including ${budgetCritical} budget alert(s) need attention`;
+    if (critical >= 3) return `${critical} critical items across the portfolio need attention`;
     if (budgetCritical > 0) return `${budgetCritical} budget alert(s) flagged -- review job costs`;
     if (critical > 0) return `${critical} critical item(s) flagged`;
+    const warnings = items.filter(i => i.severity === 'warning').length;
+    if (warnings > 0) return `${warnings} item(s) need attention`;
     return null;
   },
   alerts: (s) => {
     const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? [], s.changeOrders ?? []);
     const critical = items.filter(i => i.severity === 'critical').length;
-    if (critical >= 5) return { level: 'critical' as const, count: critical, label: `${critical} critical` };
+    if (critical >= 3) return { level: 'critical' as const, count: critical, label: `${critical} critical` };
     if (critical > 0) return { level: 'warning' as const, count: critical, label: `${critical} critical` };
+    const warnings = items.filter(i => i.severity === 'warning').length;
+    if (warnings > 0) return { level: 'warning' as const, count: warnings, label: `${warnings} warnings` };
     return null;
   },
   actions: (s) => {

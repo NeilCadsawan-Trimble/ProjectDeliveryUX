@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { Invoice, InvoiceStatus } from '../../data/dashboard-data';
-import { INVOICES, invoiceStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { invoiceStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 interface PaymentLine {
@@ -185,6 +186,7 @@ export class InvoiceDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -193,7 +195,7 @@ export class InvoiceDetailPageComponent {
 
   readonly invoice = computed<Invoice | null>(() => {
     const id = this.invoiceId();
-    return INVOICES.find(inv => inv.id === id) ?? null;
+    return this.store.invoices().find(inv => inv.id === id) ?? null;
   });
 
   readonly remainingAmount = computed(() => {

@@ -15,11 +15,12 @@ export const budgetAgent: WidgetAgent = {
   },
   insight(s) {
     const pct = s.budgetPct ?? 0;
-    if (pct <= 80 && (s.budgetHealthy ?? true)) return null;
-    const history = s.budgetHistory ?? [];
-    const last = history.filter(h => h.actual != null && h.actual > 0).pop();
-    const trend = last && last.actual > last.planned ? 'trending above plan' : 'watch burn rate';
-    return `${pct}% utilized -- ${trend}`;
+    const used = s.budgetUsed ?? '$0';
+    const total = s.budgetTotal ?? '$0';
+    if (pct > 90) return `${pct}% utilized (${used} of ${total}) -- over threshold`;
+    if (pct > 80) return `${pct}% utilized (${used} of ${total}) -- nearing limit`;
+    if (pct > 0) return `${pct}% utilized (${used} of ${total})`;
+    return null;
   },
   alerts(s) {
     const pct = s.budgetPct ?? 0;
@@ -97,7 +98,11 @@ export const changeOrdersAgent: WidgetAgent = {
   insight(s) {
     const cos = s.changeOrders ?? [];
     const pending = cos.filter(co => co.status === 'pending');
-    if (!pending.length) return null;
+    if (!pending.length) {
+      if (!cos.length) return null;
+      const totalAll = cos.reduce((sum, co) => sum + co.amount, 0);
+      return `${cos.length} COs totaling ${formatCurrency(totalAll)} -- none pending`;
+    }
     const total = pending.reduce((sum, co) => sum + co.amount, 0);
     const prime = pending.filter(co => co.coType === 'prime').length;
     const potential = pending.filter(co => co.coType === 'potential').length;
@@ -223,8 +228,11 @@ export const revenueAgent: WidgetAgent = {
   },
   insight(s) {
     const rev = s.projectRevenue ?? [];
-    const top = [...rev].sort((a, b) => b.outstandingRaw - a.outstandingRaw)[0];
-    if (top && top.outstandingRaw > 15000) return `Largest AR: ${top.projectName} ($${(top.outstandingRaw / 1000).toFixed(0)}K outstanding)`;
+    const invoices = s.invoices ?? [];
+    const overdueInv = invoices.filter(i => i.status === 'overdue');
+    const totalOutstanding = rev.reduce((sum, r) => sum + r.outstandingRaw, 0);
+    if (overdueInv.length > 0) return `${overdueInv.length} overdue invoice${overdueInv.length === 1 ? '' : 's'}, ${formatCurrency(totalOutstanding)} outstanding`;
+    if (totalOutstanding > 0) return `${formatCurrency(totalOutstanding)} outstanding AR across portfolio`;
     return null;
   },
   alerts(s) {
@@ -275,14 +283,19 @@ export const finBudgetByProject: WidgetAgent = {
       : ['Show budget utilization summary', 'Which projects are over budget?', 'What is the total spend vs. forecast?'];
   },
   insight(s) {
-    const high = (s.projects ?? []).filter(p => p.budgetPct > 80);
-    if (!high.length) return null;
-    const maxPct = Math.max(...high.map(p => p.budgetPct));
-    return `${high.length} project${high.length === 1 ? '' : 's'} over 80% utilization (peak ${maxPct}%)`;
+    const projects = s.projects ?? [];
+    if (!projects.length) return null;
+    const high = projects.filter(p => p.budgetPct > 80);
+    if (high.length) {
+      const maxPct = Math.max(...high.map(p => p.budgetPct));
+      return `${high.length} project${high.length === 1 ? '' : 's'} over 80% utilization (peak ${maxPct}%)`;
+    }
+    const avgPct = Math.round(projects.reduce((sum, p) => sum + p.budgetPct, 0) / projects.length);
+    return `${projects.length} projects, avg ${avgPct}% budget utilization`;
   },
   alerts(s) {
-    const high = (s.projects ?? []).filter(p => p.budgetPct > 90).length;
-    return high ? { level: 'critical', count: high, label: 'over 90% budget' } : null;
+    const high = (s.projects ?? []).filter(p => p.budgetPct >= 95).length;
+    return high ? { level: 'critical', count: high, label: 'over 95% budget' } : null;
   },
   actions(s) {
     const projects = s.projects ?? [];
@@ -329,9 +342,17 @@ export const financialsDefault: WidgetAgent = {
   },
   insight(s) {
     const pendingCo = (s.changeOrders ?? []).filter(c => c.status === 'pending').length;
-    const out = (s.projectRevenue ?? []).reduce((sum, r) => sum + r.outstandingRaw, 0);
-    if (out > 50000) return `$${(out / 1000).toFixed(0)}K outstanding AR across portfolio`;
+    const invoices = s.invoices ?? [];
+    const outstandingInv = invoices.filter(i => ['sent', 'overdue', 'partially-paid'].includes(i.status));
+    const totalAR = outstandingInv.reduce((sum, i) => sum + i.amount - i.amountPaid, 0);
+    const payables = s.payables ?? [];
+    const unpaidAP = payables.filter(p => p.status !== 'paid');
+    const totalAP = unpaidAP.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
+    if (totalAR > 0 && pendingCo) return `${formatCurrency(totalAR)} AR outstanding, ${pendingCo} pending CO${pendingCo === 1 ? '' : 's'}`;
+    if (totalAR > 0) return `${formatCurrency(totalAR)} AR outstanding, ${formatCurrency(totalAP)} AP pending`;
     if (pendingCo) return `${pendingCo} change order${pendingCo === 1 ? '' : 's'} pending approval`;
+    const rev = (s.projectRevenue ?? []).reduce((sum, r) => sum + r.outstandingRaw, 0);
+    if (rev > 0) return `${formatCurrency(rev)} outstanding revenue across portfolio`;
     return null;
   },
   alerts: () => null,
@@ -584,8 +605,11 @@ export const financialsCostForecasts: WidgetAgent = {
   insight(s) {
     const history = s.budgetHistory ?? [];
     const over = history.filter(h => h.actual != null && h.actual > h.planned);
-    if (!over.length) return null;
-    return `${over.length} month${over.length === 1 ? '' : 's'} ran over planned spend`;
+    if (over.length) return `${over.length} month${over.length === 1 ? '' : 's'} ran over planned spend`;
+    const totalActual = history.reduce((sum, h) => sum + (h.actual ?? 0), 0);
+    const totalPlanned = history.reduce((sum, h) => sum + h.planned, 0);
+    if (totalPlanned > 0) return `${Math.round((totalActual / totalPlanned) * 100)}% of planned spend to date`;
+    return null;
   },
   alerts(s) {
     const over = (s.budgetHistory ?? []).filter(h => h.actual != null && h.actual > h.planned).length;
@@ -637,14 +661,14 @@ export const financialsJobCostDetail: WidgetAgent = {
   insight(s) {
     const p = s.jobCostDetailProject;
     if (!p) return null;
-    if (p.budgetPct >= 90) return `Budget critically high at ${p.budgetPct}% -- immediate review recommended`;
+    if (p.budgetPct >= 95) return `Budget critically high at ${p.budgetPct}% -- immediate review recommended`;
     if (p.budgetPct >= 75) return `Budget utilization at ${p.budgetPct}% -- approaching threshold`;
     return null;
   },
   alerts(s) {
     const p = s.jobCostDetailProject;
     if (!p) return null;
-    if (p.budgetPct >= 90) return { level: 'critical', count: 1, label: 'budget critical' };
+    if (p.budgetPct >= 95) return { level: 'critical', count: 1, label: 'budget critical' };
     if (p.budgetPct >= 75) return { level: 'warning', count: 1, label: 'budget high' };
     return null;
   },
@@ -686,7 +710,7 @@ export const financialsJobCostDetail: WidgetAgent = {
     if (kw(q, 'budget', 'over', 'under', 'remaining')) {
       const budgetTotal = parseFloat(p.budgetTotal.replace(/[^0-9.]/g, '')) * (p.budgetTotal.includes('M') ? 1_000_000 : p.budgetTotal.includes('K') ? 1_000 : 1);
       const remaining = budgetTotal - totalSpend;
-      return `${p.projectName}: ${p.budgetUsed} spent of ${p.budgetTotal} (${p.budgetPct}%). Remaining: $${Math.round(remaining / 1000)}K (${100 - p.budgetPct}%). ${p.budgetPct >= 90 ? 'Critical -- immediate review needed.' : p.budgetPct >= 75 ? 'Approaching budget threshold.' : 'Within healthy range.'}`;
+      return `${p.projectName}: ${p.budgetUsed} spent of ${p.budgetTotal} (${p.budgetPct}%). Remaining: $${Math.round(remaining / 1000)}K (${100 - p.budgetPct}%). ${p.budgetPct >= 95 ? 'Critical -- immediate review needed.' : p.budgetPct >= 75 ? 'Approaching budget threshold.' : 'Within healthy range.'}`;
     }
     if (kw(q, 'compare', 'portfolio', 'average', 'other project')) {
       const allCosts = s.allJobCosts ?? [];
@@ -724,7 +748,16 @@ export const financialsAR: WidgetAgent = {
     const overdue = invoices.filter(i => i.status === 'overdue');
     if (overdue.length > 0) {
       const total = overdue.reduce((sum, i) => sum + i.amount - i.amountPaid, 0);
-      return `${overdue.length} overdue invoices totaling ${formatCurrency(total)}`;
+      return `${overdue.length} overdue invoice${overdue.length === 1 ? '' : 's'} totaling ${formatCurrency(total)}`;
+    }
+    const outstanding = invoices.filter(i => ['sent', 'partially-paid'].includes(i.status));
+    if (outstanding.length > 0) {
+      const total = outstanding.reduce((sum, i) => sum + i.amount - i.amountPaid, 0);
+      return `${outstanding.length} outstanding invoice${outstanding.length === 1 ? '' : 's'} (${formatCurrency(total)})`;
+    }
+    if (invoices.length > 0) {
+      const totalBilled = invoices.reduce((sum, i) => sum + i.amount, 0);
+      return `${invoices.length} invoices totaling ${formatCurrency(totalBilled)}`;
     }
     return null;
   },
@@ -775,7 +808,16 @@ export const financialsAP: WidgetAgent = {
     const overdue = payables.filter(p => p.status === 'overdue');
     if (overdue.length > 0) {
       const total = overdue.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
-      return `${overdue.length} overdue payables totaling ${formatCurrency(total)}`;
+      return `${overdue.length} overdue payable${overdue.length === 1 ? '' : 's'} totaling ${formatCurrency(total)}`;
+    }
+    const unpaid = payables.filter(p => p.status !== 'paid');
+    if (unpaid.length > 0) {
+      const total = unpaid.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
+      return `${unpaid.length} unpaid payable${unpaid.length === 1 ? '' : 's'} (${formatCurrency(total)})`;
+    }
+    if (payables.length > 0) {
+      const total = payables.reduce((sum, p) => sum + p.amount, 0);
+      return `${payables.length} payables totaling ${formatCurrency(total)}`;
     }
     return null;
   },
@@ -832,7 +874,12 @@ export const financialsBilling: WidgetAgent = {
     const dueSoon = schedules.filter(bs => new Date(bs.nextBillingDate) <= cutoff);
     if (dueSoon.length > 0) {
       const total = dueSoon.reduce((sum, bs) => sum + bs.lastBilledAmount, 0);
-      return `${dueSoon.length} projects due for billing this week (~${formatCurrency(total)})`;
+      return `${dueSoon.length} project${dueSoon.length === 1 ? '' : 's'} due for billing this week (~${formatCurrency(total)})`;
+    }
+    if (schedules.length > 0) {
+      const totalBilled = schedules.reduce((sum, bs) => sum + bs.totalBilled, 0);
+      const totalRemaining = schedules.reduce((sum, bs) => sum + bs.totalRemaining, 0);
+      return `${formatCurrency(totalBilled)} billed, ${formatCurrency(totalRemaining)} remaining`;
     }
     return null;
   },

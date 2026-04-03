@@ -9,6 +9,9 @@ import type { AgentAction } from '../../data/widget-agents';
 @Component({
   selector: 'ai-assistant-panel',
   imports: [ModusUtilityPanelComponent, AiIconComponent],
+  host: {
+    '(click)': '$event.stopPropagation()',
+  },
   template: `
     <modus-utility-panel
       [expanded]="controller().panelOpen()"
@@ -116,10 +119,39 @@ import type { AgentAction } from '../../data/widget-agents';
                   <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <ai-icon variant="solid-colored" size="xs" />
                   </div>
-                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed whitespace-pre-wrap ai-msg-body"
-                    [innerHTML]="renderMessage(msg.text)"
-                    (click)="onMessageClick($event)"
-                  ></div>
+                  <div class="flex flex-col gap-2 max-w-[85%]">
+                    @if (msg.text) {
+                      <div class="px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed whitespace-pre-wrap ai-msg-body"
+                        [innerHTML]="renderMessage(msg.text)"
+                        (click)="onMessageClick($event)"
+                      ></div>
+                    }
+                    @if (msg.pendingAction) {
+                      <div class="rounded-xl border-primary bg-primary-20 p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                          <i class="modus-icons text-sm text-primary" aria-hidden="true">edit</i>
+                          <div class="text-xs font-semibold text-primary uppercase tracking-wider">Proposed Change</div>
+                        </div>
+                        <div class="text-sm text-foreground mb-3">{{ msg.pendingAction.description }}</div>
+                        <div class="flex items-center gap-2">
+                          <div
+                            class="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity"
+                            role="button"
+                            tabindex="0"
+                            (click)="controller().confirmAction(msg.id)"
+                            (keydown.enter)="controller().confirmAction(msg.id)"
+                          >Confirm</div>
+                          <div
+                            class="px-3 py-1.5 rounded-lg border-default bg-card text-foreground text-xs font-medium cursor-pointer hover:bg-muted transition-colors"
+                            role="button"
+                            tabindex="0"
+                            (click)="controller().cancelAction(msg.id)"
+                            (keydown.enter)="controller().cancelAction(msg.id)"
+                          >Cancel</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
                 </div>
               }
             }
@@ -161,25 +193,27 @@ import type { AgentAction } from '../../data/widget-agents';
         <div class="flex items-end gap-2 px-2 pt-2 pb-1">
           <textarea
             class="flex-1 min-h-[36px] max-h-[80px] px-3 py-1.5 text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40"
-            [placeholder]="placeholder()"
+            [class.opacity-50]="controller().hasPendingAction()"
+            [placeholder]="controller().hasPendingAction() ? 'Confirm or cancel the pending action first' : placeholder()"
             rows="1"
             [value]="controller().inputText()"
             (input)="controller().inputText.set($any($event.target).value)"
             (keydown)="controller().handleKeydown($event)"
+            [attr.disabled]="controller().hasPendingAction() ? '' : null"
             aria-label="Message input"
           ></textarea>
           <div
             class="w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center cursor-pointer transition-colors duration-150"
-            [class.bg-primary]="controller().inputText().trim().length > 0 && !controller().thinking()"
-            [class.bg-muted]="!controller().inputText().trim().length || controller().thinking()"
+            [class.bg-primary]="controller().inputText().trim().length > 0 && !controller().thinking() && !controller().hasPendingAction()"
+            [class.bg-muted]="!controller().inputText().trim().length || controller().thinking() || controller().hasPendingAction()"
             (click)="controller().send()"
             role="button"
             aria-label="Send message"
           >
             <i
               class="modus-icons text-sm"
-              [class.text-primary-foreground]="controller().inputText().trim().length > 0 && !controller().thinking()"
-              [class.text-foreground-40]="!controller().inputText().trim().length || controller().thinking()"
+              [class.text-primary-foreground]="controller().inputText().trim().length > 0 && !controller().thinking() && !controller().hasPendingAction()"
+              [class.text-foreground-40]="!controller().inputText().trim().length || controller().thinking() || controller().hasPendingAction()"
               aria-hidden="true"
             >send</i>
           </div>

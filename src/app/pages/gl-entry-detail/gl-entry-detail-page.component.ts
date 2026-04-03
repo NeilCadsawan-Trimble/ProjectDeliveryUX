@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { GLEntry, GLCategory } from '../../data/dashboard-data';
-import { GL_ENTRIES, formatCurrency, capitalizeFirst } from '../../data/dashboard-data';
+import { formatCurrency, capitalizeFirst } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 import type { ModusBadgeColor } from '../../components/modus-badge.component';
@@ -123,6 +124,7 @@ export class GlEntryDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -131,7 +133,7 @@ export class GlEntryDetailPageComponent {
 
   readonly entry = computed<GLEntry | null>(() => {
     const id = this.entryId();
-    return GL_ENTRIES.find(e => e.id === id) ?? null;
+    return this.store.glEntries().find(e => e.id === id) ?? null;
   });
 
   readonly categoryBadgeColor = computed(() => {

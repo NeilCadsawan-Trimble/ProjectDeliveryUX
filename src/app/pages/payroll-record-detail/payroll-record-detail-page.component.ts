@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
 import type { PayrollRecord } from '../../data/dashboard-data';
-import { PAYROLL_RECORDS, payrollStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { payrollStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import { DataStoreService } from '../../data/data-store.service';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 
 interface DeductionRow {
@@ -140,6 +141,7 @@ export class PayrollRecordDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly navHistory = inject(NavigationHistoryService);
+  private readonly store = inject(DataStoreService);
 
   private readonly backInfo = this.navHistory.getBackInfo();
   readonly backLabel = 'Back to ' + this.backInfo.label;
@@ -150,7 +152,7 @@ export class PayrollRecordDetailPageComponent {
 
   readonly record = computed<PayrollRecord | null>(() => {
     const id = this.recordId();
-    return PAYROLL_RECORDS.find(pr => pr.id === id) ?? null;
+    return this.store.payrollRecords().find(pr => pr.id === id) ?? null;
   });
 
   readonly deductions = computed<DeductionRow[]>(() => {

@@ -43,10 +43,6 @@ import type {
   Estimate,
 } from '../../data/dashboard-data';
 import {
-  ACTIVITIES,
-  CALENDAR_APPOINTMENTS,
-  INSPECTIONS,
-  PUNCH_LIST_ITEMS,
   buildUrgentNeeds,
   urgentNeedCategoryIcon,
   weatherIcon,
@@ -56,6 +52,7 @@ import {
 } from '../../data/dashboard-data';
 import type { Project, UrgentNeedItem, UrgentNeedCategory, ProjectWeather, WeatherCondition, StaffingConflict } from '../../data/dashboard-data';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
+import { rewriteDynamicNeeds } from '../projects-page/projects-page-utils';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards.component';
 import { HomeWidgetFrameComponent } from './components/home-widget-frame.component';
@@ -1521,7 +1518,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
                     </div>
                   }
                   <div class="overflow-y-auto flex-1">
-                    @for (activity of activities; track activity.id) {
+                    @for (activity of activities(); track activity.id) {
                       <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
                         <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
                           <i class="modus-icons text-sm {{ activity.iconColor }}" aria-hidden="true">{{ activity.icon }}</i>
@@ -1608,10 +1605,10 @@ export class HomePageComponent extends DashboardPageBase {
   });
 
   readonly timeOffRequests = this.store.timeOffRequests;
-  readonly activities: ActivityItem[] = ACTIVITIES;
+  readonly activities = this.store.activities;
   readonly rfis = this.store.rfis;
   readonly submittals = this.store.submittals;
-  readonly calendarAppointments: CalendarAppointment[] = CALENDAR_APPOINTMENTS;
+  readonly calendarAppointments = this.store.calendarAppointments;
   readonly projects = this.store.projects;
   readonly estimates = this.store.estimates;
 
@@ -1633,8 +1630,8 @@ export class HomePageComponent extends DashboardPageBase {
   readonly overdueItemCount = computed(() => this.overdueRfis().length + this.overdueSubmittals().length);
   readonly pendingChangeOrders = computed(() => this.store.changeOrders().filter(co => co.status === 'pending'));
   readonly pendingCoTotal = computed(() => this.pendingChangeOrders().reduce((s, co) => s + Math.abs(co.amount), 0));
-  readonly failedInspections = computed(() => INSPECTIONS.filter(i => i.result === 'fail' || i.result === 'conditional'));
-  readonly openPunchItems = computed(() => PUNCH_LIST_ITEMS.filter(p => p.status === 'open' || p.status === 'in-progress'));
+  readonly failedInspections = computed(() => this.store.inspections().filter(i => i.result === 'fail' || i.result === 'conditional'));
+  readonly openPunchItems = computed(() => this.store.punchListItems().filter(p => p.status === 'open' || p.status === 'in-progress'));
   readonly approvedCosThisMonth = computed(() => {
     const now = new Date();
     const monthStr = now.toLocaleString('en-US', { month: 'short' });
@@ -1957,7 +1954,17 @@ export class HomePageComponent extends DashboardPageBase {
     return 'bg-destructive text-destructive-foreground';
   }
 
-  readonly allUrgentNeeds = computed(() => buildUrgentNeeds(this.store.rfis(), this.store.submittals(), this.store.changeOrders()));
+  readonly allUrgentNeeds = computed(() => {
+    const raw = buildUrgentNeeds(this.store.rfis(), this.store.submittals(), this.store.changeOrders());
+    const projects = this.store.projects();
+    const changeOrders = this.store.changeOrders();
+    const projectMap = new Map(projects.map(p => [p.id, p]));
+    return raw.map(n => {
+      const proj = projectMap.get(n.projectId);
+      if (!proj) return n;
+      return rewriteDynamicNeeds([n], proj, changeOrders)[0];
+    });
+  });
   readonly urgentNeedCategoryIcon = urgentNeedCategoryIcon;
 
   readonly urgentSeverityFilter = signal<Set<string>>(new Set(['critical', 'warning', 'info']));
@@ -2152,11 +2159,22 @@ export class HomePageComponent extends DashboardPageBase {
       estimates: this.store.estimates(),
       rfis: this.store.rfis(),
       submittals: this.store.submittals(),
-      activities: ACTIVITIES,
-      calendar: CALENDAR_APPOINTMENTS,
+      changeOrders: this.store.changeOrders(),
+      activities: this.store.activities(),
+      calendar: this.store.calendarAppointments(),
       timeOffRequests: this.store.timeOffRequests(),
       allWeatherData: this.store.weatherData(),
       allJobCosts: this.store.projectJobCosts(),
+      invoices: this.store.invoices(),
+      payables: this.store.payables(),
+      contracts: this.store.contracts(),
+      purchaseOrders: this.store.purchaseOrders(),
+      billingSchedules: this.store.billingSchedules(),
+      billingEvents: this.store.billingEvents(),
+      payrollRecords: this.store.payrollRecords(),
+      projectRevenue: this.store.projectRevenue(),
+      cashFlowHistory: this.store.cashFlowHistory(),
+      cashPosition: this.store.cashPosition(),
       currentPage: 'home',
     };
   }
@@ -2344,15 +2362,15 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   readonly calendarDay1Appts = computed(() =>
-    this.calendarAppointments
-      .filter((a) => this.isSameCalDay(a.date, this.calendarDay1()))
-      .sort((a, b) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin))
+    this.calendarAppointments()
+      .filter((a: CalendarAppointment) => this.isSameCalDay(a.date, this.calendarDay1()))
+      .sort((a: CalendarAppointment, b: CalendarAppointment) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin))
   );
 
   readonly calendarDay2Appts = computed(() =>
-    this.calendarAppointments
-      .filter((a) => this.isSameCalDay(a.date, this.calendarDay2()))
-      .sort((a, b) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin))
+    this.calendarAppointments()
+      .filter((a: CalendarAppointment) => this.isSameCalDay(a.date, this.calendarDay2()))
+      .sort((a: CalendarAppointment, b: CalendarAppointment) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin))
   );
 
   readonly currentTimeTop = computed(() => {

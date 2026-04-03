@@ -6,10 +6,6 @@ import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import type { DrawingTile, SiteCapture } from '../../data/drawings-data';
 import { DataStoreService } from '../../data/data-store.service';
 import {
-  CHANGE_ORDERS,
-  DAILY_REPORTS,
-  INSPECTIONS,
-  PUNCH_LIST_ITEMS,
   JOB_COST_CATEGORIES,
   type Rfi,
   type Submittal,
@@ -107,16 +103,16 @@ export class ProjectDashboardNavigationService {
         const drawing = this.ctx.drawingTiles().find(d => d.id === id);
         if (drawing) this.ctx.detailView.set({ type: 'drawing', item: drawing });
       } else if (view === 'dailyReport') {
-        const report = DAILY_REPORTS.find(r => r.id === id);
+        const report = this.store.dailyReports().find(r => r.id === id);
         if (report) this.ctx.detailView.set({ type: 'dailyReport', item: report });
       } else if (view === 'inspection') {
-        const insp = INSPECTIONS.find(i => i.id === id);
+        const insp = this.store.inspections().find(i => i.id === id);
         if (insp) this.ctx.detailView.set({ type: 'inspection', item: insp });
       } else if (view === 'punchItem') {
-        const punch = PUNCH_LIST_ITEMS.find(p => p.id === id);
+        const punch = this.store.punchListItems().find(p => p.id === id);
         if (punch) this.ctx.detailView.set({ type: 'punchItem', item: punch });
       } else if (view === 'changeOrder') {
-        const co = CHANGE_ORDERS.find(c => c.id === id);
+        const co = this.store.changeOrders().find(c => c.id === id);
         if (co) this.ctx.detailView.set({ type: 'changeOrder', item: co });
       } else if (view === 'panorama') {
         const capture = this.ctx.siteCaptures().find(c => c.id === id);
@@ -196,7 +192,7 @@ export class ProjectDashboardNavigationService {
           return;
         }
       } else if (view === 'changeOrder') {
-        const co = CHANGE_ORDERS.find(c => c.id === id);
+        const co = this.store.changeOrders().find(c => c.id === id);
         if (co) {
           if (this.ctx.isCanvas()) {
             this.ctx.openCanvasDetail('risks', { type: 'changeOrder', item: co } as DetailView);
@@ -386,25 +382,25 @@ export class ProjectDashboardNavigationService {
           return;
         }
       } else if (view === 'dailyReport') {
-        const report = DAILY_REPORTS.find(r => r.id === id);
+        const report = this.store.dailyReports().find(r => r.id === id);
         if (report) {
           this.ctx.detailView.set({ type: 'dailyReport', item: report });
           return;
         }
       } else if (view === 'inspection') {
-        const insp = INSPECTIONS.find(i => i.id === id);
+        const insp = this.store.inspections().find(i => i.id === id);
         if (insp) {
           this.ctx.detailView.set({ type: 'inspection', item: insp });
           return;
         }
       } else if (view === 'punchItem') {
-        const punch = PUNCH_LIST_ITEMS.find(p => p.id === id);
+        const punch = this.store.punchListItems().find(p => p.id === id);
         if (punch) {
           this.ctx.detailView.set({ type: 'punchItem', item: punch });
           return;
         }
       } else if (view === 'changeOrder') {
-        const co = CHANGE_ORDERS.find(c => c.id === id);
+        const co = this.store.changeOrders().find(c => c.id === id);
         if (co) {
           this.ctx.detailView.set({ type: 'changeOrder', item: co });
           return;

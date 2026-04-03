@@ -522,7 +522,7 @@
                 [style.z-index]="2"
               >
                 <div class="bg-card border-default rounded-lg p-4 flex justify-center gap-3 overflow-hidden h-full items-center">
-                  @for (day of weatherForecast; track day.date) {
+                  @for (day of weatherForecast(); track day.date) {
                     <div class="flex flex-col items-center gap-1 min-w-[72px] px-3 py-3 rounded-lg"
                       [class]="day.workImpact === 'major' ? 'bg-destructive-20' : day.workImpact === 'minor' ? 'bg-warning-20' : 'bg-muted'">
                       <div class="text-xs font-medium text-foreground">{{ day.day }}</div>
@@ -1477,7 +1477,7 @@
                 [punchItems]="projectPunchItems()"
                 [inspections]="projectInspections()"
                 [actionItems]="projectAttentionItems()"
-                [weatherForecast]="weatherForecast"
+                [weatherForecast]="weatherForecast()"
                 (dailyReportClick)="navigateToDailyReport($event)"
                 (punchItemClick)="navigateToPunchItem($event)"
                 (inspectionClick)="navigateToInspection($event)"
@@ -2979,6 +2979,39 @@
                   </div>
                 }
                 <div headerMeta class="text-xs text-foreground-60">{{ projectRfis().length }} Total</div>
+                @if (isRfiCompact()) {
+                  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                    @for (item of rfiCompactItems; track item.key) {
+                      <div
+                        class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                        role="button" tabindex="0"
+                        [attr.aria-label]="item.label + ': ' + rfiStatusCounts()[item.key]"
+                        (click)="navigateToRfiList()"
+                        (keydown.enter)="navigateToRfiList()"
+                        (mousedown)="$event.stopPropagation()"
+                      >
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                          [class.bg-primary-20]="!item.destructive && item.key !== 'upcoming' && item.key !== 'closed'"
+                          [class.bg-destructive-20]="item.destructive"
+                          [class.bg-warning-20]="item.key === 'upcoming'"
+                          [class.bg-success-20]="item.key === 'closed'">
+                          <i class="modus-icons text-base" aria-hidden="true"
+                            [class.text-primary]="item.key === 'open'"
+                            [class.text-destructive]="item.destructive"
+                            [class.text-warning]="item.key === 'upcoming'"
+                            [class.text-success]="item.key === 'closed'">{{ item.icon }}</i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-xs text-foreground-60">{{ item.label }}</div>
+                        </div>
+                        <div class="text-lg font-bold"
+                          [class.text-foreground]="item.key !== 'overdue'"
+                          [class.text-destructive]="item.destructive">{{ rfiStatusCounts()[item.key] }}</div>
+                        <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
+                      </div>
+                    }
+                  </div>
+                } @else {
                 <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
                   <div role="columnheader">RFI #</div>
                   <div role="columnheader">Subject</div>
@@ -3003,6 +3036,7 @@
                     </div>
                   }
                 </div>
+                }
               </app-widget-frame>
                 }
 
@@ -3016,6 +3050,39 @@
                   </div>
                 }
                 <div headerMeta class="text-xs text-foreground-60">{{ projectSubmittals().length }} Total</div>
+                @if (isSubmittalCompact()) {
+                  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                    @for (item of submittalCompactItems; track item.key) {
+                      <div
+                        class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                        role="button" tabindex="0"
+                        [attr.aria-label]="item.label + ': ' + submittalStatusCounts()[item.key]"
+                        (click)="navigateToSubmittalList()"
+                        (keydown.enter)="navigateToSubmittalList()"
+                        (mousedown)="$event.stopPropagation()"
+                      >
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                          [class.bg-primary-20]="!item.destructive && item.key !== 'upcoming' && item.key !== 'closed'"
+                          [class.bg-destructive-20]="item.destructive"
+                          [class.bg-warning-20]="item.key === 'upcoming'"
+                          [class.bg-success-20]="item.key === 'closed'">
+                          <i class="modus-icons text-base" aria-hidden="true"
+                            [class.text-primary]="item.key === 'open'"
+                            [class.text-destructive]="item.destructive"
+                            [class.text-warning]="item.key === 'upcoming'"
+                            [class.text-success]="item.key === 'closed'">{{ item.icon }}</i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-xs text-foreground-60">{{ item.label }}</div>
+                        </div>
+                        <div class="text-lg font-bold"
+                          [class.text-foreground]="item.key !== 'overdue'"
+                          [class.text-destructive]="item.destructive">{{ submittalStatusCounts()[item.key] }}</div>
+                        <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
+                      </div>
+                    }
+                  </div>
+                } @else {
                 <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
                   <div role="columnheader">SUB #</div>
                   <div role="columnheader">Subject</div>
@@ -3040,6 +3107,7 @@
                     </div>
                   }
                 </div>
+                }
               </app-widget-frame>
                 }
 
@@ -3110,8 +3178,7 @@
               <app-widget-frame icon="people_group" title="Team" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('team')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="flex items-center gap-2">
-                  <div class="text-xs text-foreground-60">{{ team().length }} Members</div>
+                <div headerMeta class="flex items-center gap-3">
                   @if (projectStaffingConflicts().length) {
                     <div class="flex items-center gap-1 px-2 py-0.5 rounded-full"
                       [class.bg-destructive-20]="projectStaffingConflicts()[0].severity === 'critical'"
@@ -3121,103 +3188,302 @@
                         [class.text-warning]="projectStaffingConflicts()[0].severity !== 'critical'">warning</i>
                       <div class="text-2xs font-medium"
                         [class.text-destructive]="projectStaffingConflicts()[0].severity === 'critical'"
-                        [class.text-warning]="projectStaffingConflicts()[0].severity !== 'critical'">{{ projectStaffingConflicts().length }} staffing gap{{ projectStaffingConflicts().length === 1 ? '' : 's' }}</div>
+                        [class.text-warning]="projectStaffingConflicts()[0].severity !== 'critical'">{{ projectStaffingConflicts().length }} gap{{ projectStaffingConflicts().length === 1 ? '' : 's' }}</div>
+                    </div>
+                  } @else if (pendingTimeOffCount() > 0) {
+                    <div class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
+                      <div class="text-2xs font-medium text-warning">{{ pendingTimeOffCount() }} pending</div>
+                    </div>
+                  }
+                  @if (!isTeamCompact()) {
+                    <div
+                      class="flex items-center rounded-lg border-default overflow-hidden flex-shrink-0"
+                      role="tablist"
+                      aria-label="Team view"
+                      (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
+                    >
+                      <div
+                        class="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                        [class.bg-primary]="teamView() === 'list'"
+                        [class.text-primary-foreground]="teamView() === 'list'"
+                        [class.text-foreground-60]="teamView() !== 'list'"
+                        role="tab" tabindex="0"
+                        [attr.aria-selected]="teamView() === 'list'"
+                        (click)="teamView.set('list')"
+                        (keydown.enter)="teamView.set('list')"
+                        (keydown.space)="$event.preventDefault(); teamView.set('list')"
+                      >
+                        <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
+                        <div>List</div>
+                      </div>
+                      <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
+                      <div
+                        class="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                        [class.bg-primary]="teamView() === 'staffing'"
+                        [class.text-primary-foreground]="teamView() === 'staffing'"
+                        [class.text-foreground-60]="teamView() !== 'staffing'"
+                        role="tab" tabindex="0"
+                        [attr.aria-selected]="teamView() === 'staffing'"
+                        (click)="teamView.set('staffing')"
+                        (keydown.enter)="teamView.set('staffing')"
+                        (keydown.space)="$event.preventDefault(); teamView.set('staffing')"
+                      >
+                        <i class="modus-icons text-sm" aria-hidden="true">people_group</i>
+                        <div>Staffing</div>
+                      </div>
+                      <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
+                      <div
+                        class="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                        [class.bg-primary]="teamView() === 'calendar'"
+                        [class.text-primary-foreground]="teamView() === 'calendar'"
+                        [class.text-foreground-60]="teamView() !== 'calendar'"
+                        role="tab" tabindex="0"
+                        [attr.aria-selected]="teamView() === 'calendar'"
+                        (click)="teamView.set('calendar')"
+                        (keydown.enter)="teamView.set('calendar')"
+                        (keydown.space)="$event.preventDefault(); teamView.set('calendar')"
+                      >
+                        <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                        <div>Calendar</div>
+                      </div>
                     </div>
                   }
                 </div>
-                <div class="flex flex-col overflow-y-auto flex-1">
-                  @if (projectStaffingConflicts().length) {
-                    <div class="px-4 pt-3 pb-2">
+
+                @if (isTeamCompact()) {
+                  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                    @for (item of teamCompactItems; track item.key) {
+                      <div
+                        class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
+                        role="button" tabindex="0"
+                        [attr.aria-label]="item.label + ': ' + teamCompactCounts()[item.key]"
+                      >
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 {{ item.colorBg }}">
+                          <i class="modus-icons text-base {{ item.colorText }}" aria-hidden="true">{{ item.icon }}</i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-xs text-foreground-60">{{ item.label }}</div>
+                        </div>
+                        <div class="text-lg font-bold text-foreground">{{ teamCompactCounts()[item.key] }}</div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  @if (teamView() === 'list') {
+                    <div class="flex flex-col overflow-y-auto flex-1">
+                      @if (projectStaffingConflicts().length) {
+                        <div class="px-4 py-2 border-bottom-default flex flex-col gap-1.5">
+                          @for (conflict of projectStaffingConflicts(); track conflict.week) {
+                            <div class="flex items-start gap-2 px-3 py-2 rounded-lg"
+                              [class.bg-destructive-20]="conflict.severity === 'critical'"
+                              [class.bg-warning-20]="conflict.severity === 'warning'"
+                              [class.bg-primary-20]="conflict.severity === 'info'">
+                              <i class="modus-icons text-sm mt-0.5 flex-shrink-0" aria-hidden="true"
+                                [class.text-destructive]="conflict.severity === 'critical'"
+                                [class.text-warning]="conflict.severity === 'warning'"
+                                [class.text-primary]="conflict.severity === 'info'">warning</i>
+                              <div class="min-w-0">
+                                <div class="text-xs font-semibold text-foreground">{{ conflict.week }}</div>
+                                <div class="text-2xs text-foreground-60">{{ conflict.reason }}</div>
+                                <div class="text-2xs text-foreground-40 mt-0.5">{{ conflict.absentees.join(', ') }}</div>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      }
+                      @if (projectTimeOffRequests().length) {
+                        <div class="px-4 pt-2 pb-1 flex items-center gap-1.5">
+                          <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">calendar</i>
+                          <div class="text-2xs font-semibold text-foreground-40 uppercase tracking-wide">Upcoming Time Off</div>
+                        </div>
+                        @for (req of projectTimeOffRequests(); track req.id) {
+                          <div class="flex items-center gap-3 px-4 py-2 hover:bg-muted transition-colors duration-150">
+                            <div class="w-6 h-6 rounded-full bg-primary-20 text-primary text-2xs font-semibold flex items-center justify-center flex-shrink-0">{{ req.initials }}</div>
+                            <div class="flex-1 min-w-0">
+                              <div class="text-xs font-medium text-foreground truncate">{{ req.name }}</div>
+                              <div class="text-2xs text-foreground-40">{{ req.startDate }} - {{ req.endDate }} ({{ req.days }}d)</div>
+                            </div>
+                            <div class="flex-shrink-0" data-timeoff-dropdown>
+                              <div class="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full cursor-pointer select-none"
+                                [class.bg-warning-20]="req.status === 'Pending'"
+                                [class.text-warning]="req.status === 'Pending'"
+                                [class.bg-success-20]="req.status === 'Approved'"
+                                [class.text-success]="req.status === 'Approved'"
+                                [class.bg-destructive-20]="req.status === 'Denied'"
+                                [class.text-destructive]="req.status === 'Denied'"
+                                (click)="toggleTimeOffStatus(req.id, $event)"
+                                (mousedown)="$event.stopPropagation()">
+                                {{ req.status }}
+                                <i class="modus-icons text-2xs" aria-hidden="true">caret_down</i>
+                              </div>
+                            </div>
+                          </div>
+                        }
+                        @if (timeOffStatusOpen() !== null) {
+                          <div class="fixed z-[9999] bg-card border-default rounded-lg shadow-lg min-w-[120px] py-1"
+                            [style.top.px]="timeOffDropdownPos().top"
+                            [style.left.px]="timeOffDropdownPos().left"
+                            data-timeoff-dropdown
+                            (mousedown)="$event.stopPropagation()">
+                            @for (opt of timeOffStatusOptions; track opt) {
+                              <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors duration-150 text-xs"
+                                (click)="onTimeOffStatusSelect(timeOffStatusOpen()!, opt, $event)">
+                                <div class="w-2 h-2 rounded-full flex-shrink-0"
+                                  [class.bg-success]="opt === 'Approved'"
+                                  [class.bg-warning]="opt === 'Pending'"
+                                  [class.bg-destructive]="opt === 'Denied'"></div>
+                                {{ opt }}
+                              </div>
+                            }
+                          </div>
+                        }
+                      }
+                      <div class="px-4 pt-2 pb-1 flex items-center gap-1.5">
+                        <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">people_group</i>
+                        <div class="text-2xs font-semibold text-foreground-40 uppercase tracking-wide">Team Members</div>
+                      </div>
+                      <div class="px-4 pb-4 flex flex-col gap-2">
+                        @for (member of team(); track member.id) {
+                          <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
+                            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
+                              {{ member.initials }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                              <div class="text-sm font-medium text-foreground truncate">{{ member.name }}</div>
+                              <div class="text-xs text-foreground-60">{{ member.role }}</div>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                              <div class="text-xs text-foreground-80 font-medium">{{ member.tasksCompleted }}/{{ member.tasksTotal }}</div>
+                              <div class="text-2xs text-foreground-40">tasks</div>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  @if (teamView() === 'staffing') {
+                    <div class="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-3">
+                      <div class="grid grid-cols-4 gap-3">
+                        <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
+                          <div class="text-2xl font-bold text-foreground">{{ team().length }}</div>
+                          <div class="text-2xs text-foreground-60 text-center">Team Size</div>
+                        </div>
+                        <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
+                          <div class="text-2xl font-bold" [class.text-warning]="pendingTimeOffCount() > 0" [class.text-foreground]="pendingTimeOffCount() === 0">{{ pendingTimeOffCount() }}</div>
+                          <div class="text-2xs text-foreground-60 text-center">Pending</div>
+                        </div>
+                        <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
+                          <div class="text-2xl font-bold text-foreground">{{ projectStaffingConflicts().length }}</div>
+                          <div class="text-2xs text-foreground-60 text-center">Conflict Weeks</div>
+                        </div>
+                        <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
+                          <div class="text-2xl font-bold"
+                            [class.text-destructive]="criticalStaffingCount() > 0"
+                            [class.text-foreground]="criticalStaffingCount() === 0">{{ criticalStaffingCount() }}</div>
+                          <div class="text-2xs text-foreground-60 text-center">Critical</div>
+                        </div>
+                      </div>
+
                       @for (conflict of projectStaffingConflicts(); track conflict.week) {
-                        <div class="flex items-start gap-2 mb-2 px-3 py-2 rounded-lg"
+                        <div class="rounded-lg p-3 flex flex-col gap-2"
                           [class.bg-destructive-20]="conflict.severity === 'critical'"
                           [class.bg-warning-20]="conflict.severity === 'warning'"
-                          [class.bg-primary-20]="conflict.severity === 'info'">
-                          <i class="modus-icons text-sm mt-0.5 flex-shrink-0" aria-hidden="true"
-                            [class.text-destructive]="conflict.severity === 'critical'"
-                            [class.text-warning]="conflict.severity === 'warning'"
-                            [class.text-primary]="conflict.severity === 'info'">warning</i>
-                          <div class="min-w-0">
-                            <div class="text-xs font-semibold text-foreground">{{ conflict.week }}</div>
-                            <div class="text-2xs text-foreground-60">{{ conflict.reason }}</div>
-                            <div class="text-2xs text-foreground-40 mt-0.5">{{ conflict.absentees.join(', ') }}</div>
+                          [class.bg-muted]="conflict.severity === 'info'">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 min-w-0">
+                              <div class="text-sm font-semibold text-foreground">{{ conflict.week }}</div>
+                              @if (conflict.severity === 'critical') {
+                                <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-destructive-20 flex-shrink-0">
+                                  <i class="modus-icons text-2xs text-destructive" aria-hidden="true">warning</i>
+                                  <div class="text-2xs font-medium text-destructive">Critical</div>
+                                </div>
+                              } @else if (conflict.severity === 'warning') {
+                                <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning-20 flex-shrink-0">
+                                  <i class="modus-icons text-2xs text-warning" aria-hidden="true">warning</i>
+                                  <div class="text-2xs font-medium text-warning">Reduced</div>
+                                </div>
+                              }
+                            </div>
+                            <div class="text-xs text-foreground-60 flex-shrink-0">{{ conflict.absentCount }}/{{ conflict.teamSize }} absent</div>
                           </div>
+                          <div class="flex items-center gap-2">
+                            <div class="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                              <div
+                                class="h-full rounded-full transition-all duration-300"
+                                [class.bg-destructive]="conflict.severity === 'critical'"
+                                [class.bg-warning]="conflict.severity === 'warning'"
+                                [class.bg-success]="conflict.severity === 'info'"
+                                [style.width.%]="conflict.absentPct"
+                              ></div>
+                            </div>
+                            <div class="text-2xs text-foreground-60 w-10 text-right flex-shrink-0">{{ conflict.absentPct }}%</div>
+                          </div>
+                          <div class="text-2xs text-foreground-60">{{ conflict.reason }} -- {{ conflict.absentees.join(', ') }}</div>
+                        </div>
+                      }
+
+                      @if (!projectStaffingConflicts().length) {
+                        <div class="flex flex-col items-center justify-center py-8 text-foreground-40">
+                          <i class="modus-icons text-3xl mb-2" aria-hidden="true">check_circle</i>
+                          <div class="text-sm font-medium">No Staffing Conflicts</div>
+                          <div class="text-xs">All weeks are fully staffed</div>
                         </div>
                       }
                     </div>
                   }
-                  @if (projectTimeOffRequests().length) {
-                    <div class="px-4 pt-2 pb-1 flex items-center gap-1.5">
-                      <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">calendar</i>
-                      <div class="text-2xs font-semibold text-foreground-40 uppercase tracking-wide">Upcoming Time Off</div>
-                    </div>
-                    @for (req of projectTimeOffRequests().slice(0, 4); track req.id) {
-                      <div class="flex items-center gap-3 px-4 py-2">
-                        <div class="w-6 h-6 rounded-full bg-primary-20 text-primary text-2xs font-semibold flex items-center justify-center flex-shrink-0">{{ req.initials }}</div>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-xs font-medium text-foreground truncate">{{ req.name }}</div>
-                          <div class="text-2xs text-foreground-40">{{ req.startDate }} - {{ req.endDate }} ({{ req.days }}d)</div>
+
+                  @if (teamView() === 'calendar') {
+                    <div class="flex flex-col flex-1">
+                      <div class="flex items-center justify-between px-5 py-3 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                        <div
+                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          role="button" tabindex="0" aria-label="Previous month"
+                          (click)="prevCalendarMonth()"
+                          (keydown.enter)="prevCalendarMonth()"
+                          (keydown.space)="$event.preventDefault(); prevCalendarMonth()"
+                        >
+                          <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
                         </div>
-                        <div class="flex-shrink-0" data-timeoff-dropdown>
-                          <div class="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full cursor-pointer select-none"
-                            [class.bg-warning-20]="req.status === 'Pending'"
-                            [class.text-warning]="req.status === 'Pending'"
-                            [class.bg-success-20]="req.status === 'Approved'"
-                            [class.text-success]="req.status === 'Approved'"
-                            [class.bg-destructive-20]="req.status === 'Denied'"
-                            [class.text-destructive]="req.status === 'Denied'"
-                            (click)="toggleTimeOffStatus(req.id, $event)"
-                            (mousedown)="$event.stopPropagation()">
-                            {{ req.status }}
-                            <i class="modus-icons text-2xs" aria-hidden="true">caret_down</i>
-                          </div>
+                        <div class="text-sm font-semibold text-foreground" aria-live="polite">{{ calendarMonthLabel() }}</div>
+                        <div
+                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          role="button" tabindex="0" aria-label="Next month"
+                          (click)="nextCalendarMonth()"
+                          (keydown.enter)="nextCalendarMonth()"
+                          (keydown.space)="$event.preventDefault(); nextCalendarMonth()"
+                        >
+                          <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_right</i>
                         </div>
                       </div>
-                    }
-                    @if (projectTimeOffRequests().length > 4) {
-                      <div class="px-4 py-1 text-2xs text-foreground-40">+{{ projectTimeOffRequests().length - 4 }} more</div>
-                    }
-                    @if (timeOffStatusOpen() !== null) {
-                      <div class="fixed z-[9999] bg-card border-default rounded-lg shadow-lg min-w-[120px] py-1"
-                        [style.top.px]="timeOffDropdownPos().top"
-                        [style.left.px]="timeOffDropdownPos().left"
-                        data-timeoff-dropdown
-                        (mousedown)="$event.stopPropagation()">
-                        @for (opt of timeOffStatusOptions; track opt) {
-                          <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors duration-150 text-xs"
-                            (click)="onTimeOffStatusSelect(timeOffStatusOpen()!, opt, $event)">
-                            <div class="w-2 h-2 rounded-full flex-shrink-0"
-                              [class.bg-success]="opt === 'Approved'"
-                              [class.bg-warning]="opt === 'Pending'"
-                              [class.bg-destructive]="opt === 'Denied'"></div>
-                            {{ opt }}
+                      <div class="grid grid-cols-7 px-3 pt-2 pb-1 flex-shrink-0">
+                        @for (d of ['Su','Mo','Tu','We','Th','Fr','Sa']; track d) {
+                          <div class="text-center text-2xs font-semibold text-foreground-40 uppercase py-1">{{ d }}</div>
+                        }
+                      </div>
+                      <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1">
+                        @for (cell of calendarDays(); track cell.day ?? $index) {
+                          <div class="min-h-[52px] rounded-lg p-1 flex flex-col gap-0.5"
+                            [class.bg-muted]="cell.day !== null && cell.requests.length === 0"
+                            [class.bg-primary-20]="cell.requests.length > 0"
+                          >
+                            @if (cell.day !== null) {
+                              <div class="text-xs font-medium text-foreground-60 text-center leading-4">{{ cell.day }}</div>
+                              @for (req of cell.requests.slice(0, 2); track req.id) {
+                                <div class="flex items-center gap-1 rounded px-1 py-0.5 {{ timeOffStatusColor(req.status) }}">
+                                  <div class="text-2xs font-semibold leading-none truncate">{{ req.initials }}</div>
+                                </div>
+                              }
+                              @if (cell.requests.length > 2) {
+                                <div class="text-center text-2xs text-foreground-40">+{{ cell.requests.length - 2 }}</div>
+                              }
+                            }
                           </div>
                         }
                       </div>
-                    }
+                    </div>
                   }
-                  <div class="px-4 pt-2 pb-1 flex items-center gap-1.5">
-                    <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">people_group</i>
-                    <div class="text-2xs font-semibold text-foreground-40 uppercase tracking-wide">Team Members</div>
-                  </div>
-                  <div class="px-4 pb-4 flex flex-col gap-2">
-                    @for (member of team(); track member.id) {
-                      <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
-                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xs font-semibold flex-shrink-0">
-                          {{ member.initials }}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <div class="text-sm font-medium text-foreground truncate">{{ member.name }}</div>
-                          <div class="text-xs text-foreground-60">{{ member.role }}</div>
-                        </div>
-                        <div class="text-right flex-shrink-0">
-                          <div class="text-xs text-foreground-80 font-medium">{{ member.tasksCompleted }}/{{ member.tasksTotal }}</div>
-                          <div class="text-2xs text-foreground-40">tasks</div>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
+                }
               </app-widget-frame>
                 }
 
@@ -3322,6 +3588,12 @@
             (trimbleLogoClick)="navigateHome()"
           >
             <div slot="start" class="flex items-center gap-3 w-full min-w-0">
+              <div class="navbar-trimble-logo flex-shrink-0 cursor-pointer" role="button" aria-label="Trimble Home" tabindex="0" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 444.68 100">
+                  <path d="M115.85,87.13v-62H93V11.21h62.57v14h-23v62Z"/><path d="M141.9,87.13V32.74h16.52v8.84h.1c3-4.62,8.21-10.26,18.47-10.26h.51V46c-.61-.11-3.49-.31-4.51-.31a18.27,18.27,0,0,0-14.57,7.49v34Z"/><path d="M182.72,25V11.72h16.62V25Zm.11,62.17V32.44h16.41V87.13Z"/><path d="M205.7,87.13V32.44h16.51v8.62c3.29-4.31,9.34-9.74,18-9.74,9.13,0,13.44,3.79,15,9.74,3.28-4.2,9.44-9.74,18-9.74,11.08,0,16,7,16,16.72V87.13H272.69V52.45c0-4.92-1.13-7.49-5.95-7.49-4.1,0-7.39,2.26-11,5.44V87.13H239.25V52.45c0-4.92-1.13-7.49-6-7.49-4.1,0-7.38,2.26-11.08,5.44V87.13Z"/><path d="M312,80.66v6.47H295.45V11.21H312V40.86c3.59-5,8.72-9.54,16.82-9.54,12.42,0,21,9.54,21,28.41S341.11,88,328.59,88C321.2,88,316.07,85.28,312,80.66Zm21.34-20.82c0-9.13-3.18-14.88-10.57-14.88-4.21,0-8,2.57-10.77,5.34V70.51c3.59,3.38,6.56,5,11,5C329.82,75.53,333.31,69.79,333.31,59.84Z"/><path d="M354.94,87.13V11.21h16.41V87.13Z"/><path d="M376.47,59.84c0-21.24,16.21-28.52,27.49-28.52S429.1,37,429.1,61.79v2.46H392.88c.83,9,5.85,12.51,12.73,12.51a25.16,25.16,0,0,0,16.21-6.56l6.36,9.85c-6.36,5.44-14.26,8.21-23.8,8.21C390.11,88.26,376.47,81,376.47,59.84Zm37.86-5.34c-.82-7.69-4.31-11.39-10.47-11.39-5.13,0-9.54,3.39-10.77,11.39Z"/><path d="M432.22,81a6.19,6.19,0,0,1,6.26-6.26A6.26,6.26,0,1,1,432.22,81Zm11.38,0a5.14,5.14,0,1,0-5.12,5.23A5.12,5.12,0,0,0,443.6,81Zm-7.55-3.56h2.56c1.62,0,2.56.7,2.56,2.1a1.84,1.84,0,0,1-1.34,1.94l1.48,2.81h-1.43l-1.38-2.62h-1.08v2.62h-1.37Zm2.48,3.18c.84,0,1.3-.27,1.3-1s-.46-1-1.33-1h-1.08v2Z"/>
+                  <path d="M6.19,76.41V100L26.71,88.16A39.1,39.1,0,0,1,6.19,76.41Z"/><path d="M26.56,11.74,6.19,0V23.45A39.33,39.33,0,0,1,26.56,11.74Z"/><path d="M92.8,50,72.29,38.16a39.27,39.27,0,0,1-.06,23.72Z"/><path d="M19.7,17.92c2.94-.65,9.05,0,12.28.89a18.68,18.68,0,0,1,10.37-3.45A41.12,41.12,0,0,0,19.7,17.92Z"/><path d="M58.79,60.84a53.07,53.07,0,0,0-3.21-13.13c-7,3.18-15.72,1.13-21.53-3.9A95.93,95.93,0,0,0,22.62,58.32C32.47,66.35,48.67,68.46,58.79,60.84Z"/><path d="M17.23,59.09C8.55,50.19,5.52,37.22,8.3,27.25a35,35,0,0,0,2,47.47A63.4,63.4,0,0,1,17.23,59.09Z"/><path d="M54,43.94a47.18,47.18,0,0,0-7-10.78A80.73,80.73,0,0,0,37,40.93C42.26,45.3,49.14,46.16,54,43.94Z"/><path d="M47.47,27.72a36.33,36.33,0,0,1,7.62-4.23c-5.56-5.62-14.5-5.47-18.39-3A37.17,37.17,0,0,1,47.47,27.72Z"/><path d="M20.4,62c-4.32,7.47-5.9,13-6.48,15.87A35,35,0,0,0,57.1,77a30,30,0,0,0,2-11.33C47.14,72.79,30.66,70.07,20.4,62Z"/><path d="M57.4,41.45c3.83-4,3.06-10.84.15-14.78a29.6,29.6,0,0,0-7.13,4.18A52.73,52.73,0,0,1,57.4,41.45Z"/><path d="M64,32.85a14.1,14.1,0,0,1-4.84,12.59A57.37,57.37,0,0,1,62.49,57.2C67.74,50.38,67.58,40.64,64,32.85Z"/><path d="M34.16,37.9A83.13,83.13,0,0,1,44,30.11a33.17,33.17,0,0,0-10.82-6.59C29.92,27.89,30.92,33.53,34.16,37.9Z"/><path d="M63.12,62.69a49.42,49.42,0,0,1-.43,8.88A35.37,35.37,0,0,0,70,47.07,26.82,26.82,0,0,1,63.12,62.69Z"/><path d="M29.1,22.28a28.42,28.42,0,0,0-13.9.09c-6.89,9.77-3.69,24.08,4.33,33A100.8,100.8,0,0,1,31.18,40.79C27.1,35.72,25.48,27.89,29.1,22.28Z"/>
+                </svg>
+              </div>
               <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               <div
                 class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
@@ -3388,6 +3660,36 @@
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
               </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="Search"
+                (click)="searchInputOpen.set(!searchInputOpen())"
+                (keydown.enter)="searchInputOpen.set(!searchInputOpen())"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">search</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="Notifications"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button"
+                aria-label="Help"
+                tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">help</i>
+              </div>
+              <user-menu
+                [name]="userCard.name"
+                [email]="userCard.email"
+              />
             </div>
           </modus-navbar>
         </div>
@@ -3511,6 +3813,21 @@
         (trimbleLogoClick)="navigateHome()"
       >
         <div slot="start" class="flex items-center gap-3 w-full min-w-0">
+          <div class="navbar-hamburger" role="button" aria-label="Main menu" tabindex="0" (click)="navExpanded.set(!navExpanded())" (keydown.enter)="navExpanded.set(!navExpanded())">
+            <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+          </div>
+          <div class="navbar-trimble-logo flex-shrink-0 cursor-pointer" role="button" aria-label="Trimble Home" tabindex="0" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+            @if (isMobile()) {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 732.03 788.85" class="navbar-trimble-globe">
+                <path d="M48.86,602.72V788.85l161.81-93.42A308.1,308.1,0,0,1,48.86,602.72Z"/><path d="M209.49,92.58,48.86,0V185A310.2,310.2,0,0,1,209.49,92.58Z"/><path d="M732,394.43,570.25,301a309.33,309.33,0,0,1-.48,187.08Z"/><path d="M155.4,141.39c23.23-5.16,71.39-.27,96.87,7,20.38-16.21,51.17-25.6,81.82-27.15C263.63,108.52,198.45,123.29,155.4,141.39Z"/><path d="M463.74,479.92a416.8,416.8,0,0,0-25.28-103.53c-55.43,25-124,8.88-169.86-30.79-33.41,34.15-65.75,76.68-90.16,114.49C256.15,523.44,384,540.08,463.74,479.92Z"/><path d="M135.94,466.1C67.43,396,43.55,293.61,65.49,215A276,276,0,0,0,81.65,589.43C92.86,547,113.62,503.71,135.94,466.1Z"/><path d="M425.64,346.65a372.77,372.77,0,0,0-55.49-85.1,635.36,635.36,0,0,0-78.09,61.34C333.35,357.34,387.67,364.1,425.64,346.65Z"/><path d="M374.48,218.63c17.78-12.93,42.42-26.76,60.09-33.32-43.84-44.38-114.38-43.2-145-23.94A293.6,293.6,0,0,1,374.48,218.63Z"/><path d="M160.91,488.67c-34.09,58.94-46.53,102.19-51.06,125.2a276,276,0,0,0,340.58-6.21c10.24-24.74,15.47-55.53,15.45-89.38C371.89,574.22,241.89,552.71,160.91,488.67Z"/><path d="M452.81,327c30.17-31.7,24.12-85.56,1.17-116.62-14.14,4.78-43.57,21.94-56.26,33A413.64,413.64,0,0,1,452.81,327Z"/><path d="M505,259.11c4.65,40.7-10.79,75.93-38.17,99.35A448.73,448.73,0,0,1,493,451.19C534.36,397.38,533.1,320.63,505,259.11Z"/><path d="M269.45,299a672.54,672.54,0,0,1,77.22-61.49,262,262,0,0,0-85.35-52C236.05,220,243.94,264.52,269.45,299Z"/><path d="M497.94,494.52c1.4,23.09-.72,49.29-3.42,70,47.34-60.32,63.34-135,57.75-193.22C546.6,420.33,528.65,461.35,497.94,494.52Z"/><path d="M229.55,175.76c-34.94-8.54-75.63-8.91-109.67.72-54.33,77-29.1,189.94,34.2,260.64C178.13,400.5,213,354.9,246,321.75,213.77,281.81,201,220,229.55,175.76Z"/>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 444.68 100">
+                <path d="M115.85,87.13v-62H93V11.21h62.57v14h-23v62Z"/><path d="M141.9,87.13V32.74h16.52v8.84h.1c3-4.62,8.21-10.26,18.47-10.26h.51V46c-.61-.11-3.49-.31-4.51-.31a18.27,18.27,0,0,0-14.57,7.49v34Z"/><path d="M182.72,25V11.72h16.62V25Zm.11,62.17V32.44h16.41V87.13Z"/><path d="M205.7,87.13V32.44h16.51v8.62c3.29-4.31,9.34-9.74,18-9.74,9.13,0,13.44,3.79,15,9.74,3.28-4.2,9.44-9.74,18-9.74,11.08,0,16,7,16,16.72V87.13H272.69V52.45c0-4.92-1.13-7.49-5.95-7.49-4.1,0-7.39,2.26-11,5.44V87.13H239.25V52.45c0-4.92-1.13-7.49-6-7.49-4.1,0-7.38,2.26-11.08,5.44V87.13Z"/><path d="M312,80.66v6.47H295.45V11.21H312V40.86c3.59-5,8.72-9.54,16.82-9.54,12.42,0,21,9.54,21,28.41S341.11,88,328.59,88C321.2,88,316.07,85.28,312,80.66Zm21.34-20.82c0-9.13-3.18-14.88-10.57-14.88-4.21,0-8,2.57-10.77,5.34V70.51c3.59,3.38,6.56,5,11,5C329.82,75.53,333.31,69.79,333.31,59.84Z"/><path d="M354.94,87.13V11.21h16.41V87.13Z"/><path d="M376.47,59.84c0-21.24,16.21-28.52,27.49-28.52S429.1,37,429.1,61.79v2.46H392.88c.83,9,5.85,12.51,12.73,12.51a25.16,25.16,0,0,0,16.21-6.56l6.36,9.85c-6.36,5.44-14.26,8.21-23.8,8.21C390.11,88.26,376.47,81,376.47,59.84Zm37.86-5.34c-.82-7.69-4.31-11.39-10.47-11.39-5.13,0-9.54,3.39-10.77,11.39Z"/><path d="M432.22,81a6.19,6.19,0,0,1,6.26-6.26A6.26,6.26,0,1,1,432.22,81Zm11.38,0a5.14,5.14,0,1,0-5.12,5.23A5.12,5.12,0,0,0,443.6,81Zm-7.55-3.56h2.56c1.62,0,2.56.7,2.56,2.1a1.84,1.84,0,0,1-1.34,1.94l1.48,2.81h-1.43l-1.38-2.62h-1.08v2.62h-1.37Zm2.48,3.18c.84,0,1.3-.27,1.3-1s-.46-1-1.33-1h-1.08v2Z"/>
+                <path d="M6.19,76.41V100L26.71,88.16A39.1,39.1,0,0,1,6.19,76.41Z"/><path d="M26.56,11.74,6.19,0V23.45A39.33,39.33,0,0,1,26.56,11.74Z"/><path d="M92.8,50,72.29,38.16a39.27,39.27,0,0,1-.06,23.72Z"/><path d="M19.7,17.92c2.94-.65,9.05,0,12.28.89a18.68,18.68,0,0,1,10.37-3.45A41.12,41.12,0,0,0,19.7,17.92Z"/><path d="M58.79,60.84a53.07,53.07,0,0,0-3.21-13.13c-7,3.18-15.72,1.13-21.53-3.9A95.93,95.93,0,0,0,22.62,58.32C32.47,66.35,48.67,68.46,58.79,60.84Z"/><path d="M17.23,59.09C8.55,50.19,5.52,37.22,8.3,27.25a35,35,0,0,0,2,47.47A63.4,63.4,0,0,1,17.23,59.09Z"/><path d="M54,43.94a47.18,47.18,0,0,0-7-10.78A80.73,80.73,0,0,0,37,40.93C42.26,45.3,49.14,46.16,54,43.94Z"/><path d="M47.47,27.72a36.33,36.33,0,0,1,7.62-4.23c-5.56-5.62-14.5-5.47-18.39-3A37.17,37.17,0,0,1,47.47,27.72Z"/><path d="M20.4,62c-4.32,7.47-5.9,13-6.48,15.87A35,35,0,0,0,57.1,77a30,30,0,0,0,2-11.33C47.14,72.79,30.66,70.07,20.4,62Z"/><path d="M57.4,41.45c3.83-4,3.06-10.84.15-14.78a29.6,29.6,0,0,0-7.13,4.18A52.73,52.73,0,0,1,57.4,41.45Z"/><path d="M64,32.85a14.1,14.1,0,0,1-4.84,12.59A57.37,57.37,0,0,1,62.49,57.2C67.74,50.38,67.58,40.64,64,32.85Z"/><path d="M34.16,37.9A83.13,83.13,0,0,1,44,30.11a33.17,33.17,0,0,0-10.82-6.59C29.92,27.89,30.92,33.53,34.16,37.9Z"/><path d="M63.12,62.69a49.42,49.42,0,0,1-.43,8.88A35.37,35.37,0,0,0,70,47.07,26.82,26.82,0,0,1,63.12,62.69Z"/><path d="M29.1,22.28a28.42,28.42,0,0,0-13.9.09c-6.89,9.77-3.69,24.08,4.33,33A100.8,100.8,0,0,1,31.18,40.79C27.1,35.72,25.48,27.89,29.1,22.28Z"/>
+              </svg>
+            }
+          </div>
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
           <div
             class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
@@ -3557,7 +3874,6 @@
           </div>
         </div>
         <div slot="end" class="flex items-center gap-1">
-          <!-- AI assistant button -->
           <div
             class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
             role="button"
@@ -3566,35 +3882,8 @@
             (keydown.enter)="ai.toggle()"
             tabindex="0"
           >
-            @if (isDark()) {
-              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <radialGradient id="ai-nav-grad-dark" cx="18%" cy="18%" r="70%">
-                    <stop offset="0%" stop-color="#FF00FF" />
-                    <stop offset="50%" stop-color="#9933FF" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </radialGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#fff"/>
-                <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-nav-grad-dark)" transform="translate(-256, 0)"/>
-              </svg>
-            } @else {
-              <svg style="height:16px;width:auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="ai-nav-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="20%" stop-color="#FF00FF" />
-                    <stop offset="60%" stop-color="#0066CC" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </linearGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#FF00FF"/>
-                <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-nav-grad-light)"/>
-              </svg>
-            }
+            <ai-icon variant="nav" [isDark]="isDark()" />
           </div>
-          <!-- Desktop: dark mode toggle -->
           <div
             class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
             role="button"
@@ -3605,11 +3894,10 @@
           >
             <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
           </div>
-          <!-- Mobile: more menu with dark mode + other actions -->
           @if (isMobile()) {
             <div class="relative">
               <div
-                class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
                 aria-label="More options"
                 [attr.aria-expanded]="moreMenuOpen()"
@@ -3657,7 +3945,38 @@
                 </div>
               }
             </div>
+          } @else {
+            <div
+              class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+              role="button"
+              aria-label="Search"
+              (click)="searchInputOpen.set(!searchInputOpen())"
+              (keydown.enter)="searchInputOpen.set(!searchInputOpen())"
+              tabindex="0"
+            >
+              <i class="modus-icons text-lg" aria-hidden="true">search</i>
+            </div>
+            <div
+              class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+              role="button"
+              aria-label="Notifications"
+              tabindex="0"
+            >
+              <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
+            </div>
+            <div
+              class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+              role="button"
+              aria-label="Help"
+              tabindex="0"
+            >
+              <i class="modus-icons text-lg" aria-hidden="true">help</i>
+            </div>
           }
+          <user-menu
+            [name]="userCard.name"
+            [email]="userCard.email"
+          />
         </div>
       </modus-navbar>
 
@@ -3859,8 +4178,8 @@
 
     <ai-assistant-panel
       [controller]="ai"
-      welcomeText="Ask me about this project, milestones, budget, or team status."
-      placeholder="Ask about this project..."
+      [welcomeText]="aiWelcomeMessage()"
+      [placeholder]="'Ask about ' + projectName() + '...'"
       [showDisclaimer]="false"
     />
 
