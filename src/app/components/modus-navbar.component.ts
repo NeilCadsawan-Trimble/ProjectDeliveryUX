@@ -140,7 +140,7 @@ export class ModusNavbarComponent implements AfterViewInit {
     notifications: false,
     search: false,
     searchInput: false,
-    user: true,
+    user: false,
   });
 
   private wcEl: HTMLElement | null = null;
@@ -163,6 +163,10 @@ export class ModusNavbarComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     this.wcEl = this.elRef.nativeElement.querySelector('modus-wc-navbar');
     if (!this.wcEl) return;
+
+    // Effects run before wcEl exists; first syncProp calls no-op. Stencil then keeps
+    // internal defaults (e.g. user: true, mainMenu: false) until we push once.
+    this.flushPropsToWc();
 
     const el = this.wcEl;
     const listen = <T,>(evtName: string, emitter: { emit(value: T): void }) => {
@@ -218,6 +222,23 @@ export class ModusNavbarComponent implements AfterViewInit {
     if (this.wcEl) {
       (this.wcEl as unknown as Record<string, unknown>)[name] = value;
     }
+  }
+
+  /** Apply every bound prop after wcEl is ready (see ngAfterViewInit). */
+  private flushPropsToWc(): void {
+    if (!this.wcEl) return;
+    this.syncProp('appsMenuOpen', this.appsMenuOpen());
+    this.syncProp('condensed', this.condensed());
+    this.syncProp('condensedMenuOpen', this.condensedMenuOpen());
+    this.syncProp('customClass', this.className());
+    this.syncProp('mainMenuOpen', this.mainMenuOpen());
+    this.syncProp('notificationsMenuOpen', this.notificationsMenuOpen());
+    this.syncProp('searchDebounceMs', this.searchDebounceMs());
+    this.syncProp('searchInputOpen', this.searchInputOpen());
+    this.syncProp('textOverrides', this.textOverrides());
+    this.syncProp('userCard', this.userCard());
+    this.syncProp('userMenuOpen', this.userMenuOpen());
+    this.syncProp('visibility', this.visibility());
   }
 
   /** Emits when the AI button is clicked or activated via keyboard. */

@@ -1251,6 +1251,14 @@ The SVG is the `TrimbleLogoFullIcon` from `modus-wc-navbar`'s bundled source (`v
 
 The project dashboard component also has its own `navbarNativeRendered` signal and `detectNativeNavbarRender()` method, called in `ngAfterViewInit`. Both dashboard-shell and project-dashboard must detect independently because they render separate `modus-navbar` instances.
 
+### ModusNavbarComponent: `flushPropsToWc` (mandatory)
+
+Angular `effect()` callbacks that call `syncProp` often run **before** `ngAfterViewInit` assigns `this.wcEl`. The first run no-ops; if parent inputs never change again, **`modus-wc-navbar` keeps Stencil defaults** (`user: true`, `mainMenu: false`, etc.) even though the template passes `[visibility]="..."`.
+
+**Symptoms on Vercel/production:** duplicate native user control next to `<user-menu>`, missing hamburger, wrong native utilities.
+
+**Fix:** `modus-navbar.component.ts` must call `flushPropsToWc()` once at the start of `ngAfterViewInit` after `wcEl` is set, pushing `visibility`, `userCard`, and every other mirrored prop. Static test: `tests/static/modus-navbar-wrapper.spec.ts`.
+
 ### Rules (mandatory)
 
 1. **Never remove fallback elements** thinking native rendering "just works" -- it fails in dev mode.
@@ -1291,4 +1299,4 @@ The project dashboard component also has its own `navbarNativeRendered` signal a
 | Desktop snap after drag + sizing-only defaults | `dashboard-layout-engine.ts` + `buildProjectsLayoutConfig` | `dashboard-layout-engine.spec.ts` (snap, locked, v2 save/reset, flowOrder) |
 | Projects layout alignment + DashboardPageBase | `projects-page.component.ts` + `projects-page-layout.config.ts` | Build verification; visual test |
 | Compact mode for narrow widgets | `project-dashboard.component.ts` + `.html`, `home-page.component.ts` | (visual: resize widget to 5 cols, verify compact tiles) |
-| Navbar native rendering fallback | `dashboard-shell.component.ts`, `project-dashboard.component.html`, `modus-navbar.component.ts`, `trimble-logo.component.ts` | Build + verify locally (fallbacks visible) and on Vercel (native renders, no duplicates) |
+| Navbar native rendering fallback | `dashboard-shell.component.ts`, `project-dashboard.component.html`, `modus-navbar.component.ts`, `trimble-logo.component.ts` | Build + `tests/static/modus-navbar-wrapper.spec.ts` + verify on Vercel |
