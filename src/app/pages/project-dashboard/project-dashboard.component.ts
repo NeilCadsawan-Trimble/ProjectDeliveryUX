@@ -19,6 +19,7 @@ import { DataStoreService } from '../../data/data-store.service';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
+import { ModusTextInputComponent } from '../../components/modus-text-input.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { AiAssistantPanelComponent } from '../../shell/components/ai-assistant-panel.component';
@@ -106,7 +107,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusTextInputComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -936,14 +937,21 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   readonly navbarVisibility = computed(() => ({
     user: false,
-    mainMenu: !this.isCanvas(),
+    mainMenu: true,
     ai: false,
-    notifications: true,
+    notifications: false,
     apps: false,
-    help: true,
-    search: true,
-    searchInput: true,
+    help: false,
+    search: false,
+    searchInput: false,
   }));
+
+  readonly navbarSearchQuery = signal('');
+
+  handleNavbarSearchInput(event: InputEvent): void {
+    const target = event.target as HTMLInputElement;
+    this.navbarSearchQuery.set(target?.value ?? '');
+  }
 
   readonly navbarNativeRendered = signal(false);
 

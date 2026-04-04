@@ -58,6 +58,24 @@ describe('DashboardShellComponent (regression)', () => {
     });
   });
 
+  describe('navbar visibility (slot end order vs native utilities)', () => {
+    it('keeps mainMenu true so hamburger renders in canvas and desktop', () => {
+      expect(SRC).toMatch(/mainMenu:\s*true/);
+    });
+
+    it('disables native search notifications help user so Angular slot owns utilities', () => {
+      expect(SRC).toMatch(/search:\s*false/);
+      expect(SRC).toMatch(/notifications:\s*false/);
+      expect(SRC).toMatch(/help:\s*false/);
+      expect(SRC).toMatch(/user:\s*false/);
+    });
+
+    it('renders modus-text-input for navbar search when expanded', () => {
+      expect(SRC).toContain('modus-text-input');
+      expect(SRC).toContain('navbarSearchQuery');
+    });
+  });
+
   describe('desktop reset flyout', () => {
     it('has desktop-reset-flyout class in template', () => {
       expect(SRC).toContain('desktop-reset-flyout');

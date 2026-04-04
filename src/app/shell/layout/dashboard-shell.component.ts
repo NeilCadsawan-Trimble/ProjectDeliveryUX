@@ -16,6 +16,7 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
+import { ModusTextInputComponent } from '../../components/modus-text-input.component';
 import { AiIconComponent } from '../components/ai-icon.component';
 import { AiAssistantPanelComponent } from '../components/ai-assistant-panel.component';
 import { UserMenuComponent } from '../components/user-menu.component';
@@ -48,6 +49,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
   selector: 'app-dashboard-shell',
   imports: [
     ModusNavbarComponent,
+    ModusTextInputComponent,
     AiIconComponent,
     AiAssistantPanelComponent,
     UserMenuComponent,
@@ -178,27 +180,37 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
               </div>
-              @if (!navbarNativeRendered()) {
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Search" tabindex="0"
-                  (click)="searchInputOpen.set(!searchInputOpen())"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">search</i>
-                </div>
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Notifications" tabindex="0"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
-                </div>
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Help" tabindex="0"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">help</i>
-                </div>
+              @if (searchInputOpen()) {
+                <modus-text-input
+                  class="w-44 min-w-[10rem] max-w-xs shrink"
+                  inputId="shell-navbar-search-canvas"
+                  placeholder="Search"
+                  size="sm"
+                  [includeSearch]="true"
+                  [includeClear]="true"
+                  [value]="navbarSearchQuery()"
+                  (inputChange)="handleNavbarSearchInput($event)"
+                />
               }
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Search" tabindex="0"
+                (click)="searchInputOpen.set(!searchInputOpen())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">search</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Notifications" tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Help" tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">help</i>
+              </div>
               <user-menu
                 [name]="userCard().name"
                 [email]="userCard().email"
@@ -421,7 +433,19 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
               </div>
-              @if (!navbarNativeRendered() && !isMobile()) {
+              @if (searchInputOpen() && !isMobile()) {
+                <modus-text-input
+                  class="w-44 min-w-[10rem] max-w-xs shrink hidden md:block"
+                  inputId="shell-navbar-search-desktop"
+                  placeholder="Search"
+                  size="sm"
+                  [includeSearch]="true"
+                  [includeClear]="true"
+                  [value]="navbarSearchQuery()"
+                  (inputChange)="handleNavbarSearchInput($event)"
+                />
+              }
+              @if (!isMobile()) {
                 <div
                   class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                   role="button" aria-label="Search" tabindex="0"
@@ -441,6 +465,18 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 >
                   <i class="modus-icons text-lg" aria-hidden="true">help</i>
                 </div>
+              }
+              @if (searchInputOpen() && isMobile()) {
+                <modus-text-input
+                  class="min-w-0 flex-1 max-w-[220px]"
+                  inputId="shell-navbar-search-mobile"
+                  placeholder="Search"
+                  size="sm"
+                  [includeSearch]="true"
+                  [includeClear]="true"
+                  [value]="navbarSearchQuery()"
+                  (inputChange)="handleNavbarSearchInput($event)"
+                />
               }
             @if (isMobile()) {
               <div class="relative">
@@ -642,20 +678,23 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly currentUrl = signal('/');
 
   readonly searchInputOpen = signal(false);
+  readonly navbarSearchQuery = signal('');
 
-  readonly navbarVisibility = computed(() => {
-    const canvas = this.isCanvas();
-    return {
-      user: false,
-      mainMenu: !canvas,
-      ai: false,
-      notifications: true,
-      apps: false,
-      help: true,
-      search: true,
-      searchInput: true,
-    };
-  });
+  /**
+   * modus-wc-navbar renders slot="end" before built-in search/notifications/help.
+   * Those natives are off; we render utilities in the slot so order is
+   * AI, theme, search, notifications, help, user-menu (user: false on WC).
+   */
+  readonly navbarVisibility = computed(() => ({
+    user: false,
+    mainMenu: true,
+    ai: false,
+    notifications: false,
+    apps: false,
+    help: false,
+    search: false,
+    searchInput: false,
+  }));
 
   readonly navExpanded = signal(false);
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
@@ -779,6 +818,11 @@ export class DashboardShellComponent implements AfterViewInit {
 
   toggleDarkMode(): void {
     this.themeService.toggleMode();
+  }
+
+  handleNavbarSearchInput(event: InputEvent): void {
+    const target = event.target as HTMLInputElement;
+    this.navbarSearchQuery.set(target?.value ?? '');
   }
 
   onUserMenuAction(actionId: string): void {

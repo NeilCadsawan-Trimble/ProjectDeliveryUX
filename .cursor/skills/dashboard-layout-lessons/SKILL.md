@@ -1176,48 +1176,47 @@ private detectNativeNavbarRender(): void {
 
 The double `requestAnimationFrame` is required because Stencil components render asynchronously after Angular's change detection.
 
+### Critical: `slot="end"` is projected *before* native utilities
+
+In `modus-wc-navbar` source, the toolbar **`slot="end"` content comes first**, then native Search / Notifications / Help / User (per `visibility`). If you leave `search`, `notifications`, `help` **true** on the web component while putting **`<user-menu>`** in `slot="end"`, the visual order becomes AI, theme, **user**, then search/help/notifications — wrong, and you can see duplicate or misplaced profile chrome.
+
+**Stable pattern (dashboard shell + project dashboard):**
+
+- Set `visibility` to **`search: false`, `notifications: false`, `help: false`, `user: false`, `mainMenu: true`** (canvas included — hamburger must not be tied to `!isCanvas()` for this reason).
+- Render **search, notifications, and help** only inside Angular `slot="end"` (always, not gated by `navbarNativeRendered()`), in fixed order before `<user-menu>`.
+- When search panel opens, use **`modus-text-input`** in that same slot (bound to a local signal); native expandable search is off.
+- Use **`navbarNativeRendered` only for `slot="start"`** (fallback hamburger + Trimble when the internal toolbar failed to render — dev mode).
+
 ### What the native Modus navbar renders internally
 
 When working correctly, `modus-wc-navbar` renders a `modus-wc-toolbar` containing:
 
-| Position | Element | Condition |
-|----------|---------|-----------|
-| `slot="start"` first | Hamburger button (`aria-label="Main menu"`) | `visibility.mainMenu === true` |
-| `slot="start"` second | Trimble logo button (globe icon, `class="trimble-logo"`) | Always |
-| `slot="start"` third | `<slot name="start">` (our custom content) | Always |
-| `slot="end"` | Search, Notifications, Help, Apps, AI, User buttons | Per `visibility` flags |
-| `slot="end"` last | `<slot name="end">` (our custom content) | Always |
+| Region | Order | Notes |
+|--------|--------|--------|
+| `slot="start"` | Hamburger (if `mainMenu`) | Then native Trimble button (always), then `<slot name="start">` |
+| `slot="end"` | **`<slot name="end">` first** | Then native AI, search, notifications, help, apps, user per `visibility` |
 
-### Fallback elements required when native rendering fails
+So: **never rely on native search/help/notifications if you need user last** — turn those flags off and own the icons in the Angular slot.
 
-All fallback elements are wrapped in `@if (!navbarNativeRendered())` and placed inside the `slot="start"` or `slot="end"` divs.
+### Fallback elements when native toolbar fails (`navbarNativeRendered === false`)
 
-**slot="start" fallbacks (before custom content):**
+**slot="start" only** — wrap in `@if (!navbarNativeRendered())` before your title/back content:
 
 | Element | Views | Class |
 |---------|-------|-------|
-| Hamburger button (`menu` icon) | Desktop only (not canvas -- canvas has its own side nav) | `bg-card text-foreground hover:bg-muted` |
-| Trimble logo + wordmark (`<app-trimble-logo />`) | All views | `text-primary` |
-| Separator (`w-px h-5 bg-foreground-20`) | All views | -- |
+| Hamburger (`menu` icon) | Desktop shell when native menu missing; native provides when `mainMenu: true` | `bg-card text-foreground hover:bg-muted` |
+| Trimble logo (`<app-trimble-logo />`) | Canvas + desktop when duplicate would show | `text-primary` |
+| Separator | | `w-px h-5 bg-foreground-20` |
 
-**slot="end" fallbacks (after AI + dark mode, before user menu):**
-
-| Element | Views | Class |
-|---------|-------|-------|
-| Search button | Desktop (not mobile, not canvas when mobile) | `bg-card text-foreground hover:bg-muted` |
-| Notifications button | Same | Same |
-| Help button | Same | Same |
+**slot="end"** — search / notifications / help: **always** from Angular (see stable pattern above); optional `modus-text-input` when `searchInputOpen()`.
 
 ### Correct icon order in slot="end"
 
-All navbar instances must follow this order (left to right):
-
-1. **AI assistant** (always visible)
-2. **Dark mode toggle** (always visible, `hidden md:flex` on desktop mobile)
-3. **Search** (fallback only)
-4. **Notifications** (fallback only)
-5. **Help** (fallback only)
-6. **User menu** / mobile "more menu" (always visible)
+1. **AI assistant**
+2. **Dark mode toggle** (`hidden md:flex` where applicable)
+3. **Search field** (when `searchInputOpen()`)
+4. **Search, Notifications, Help** icon buttons (desktop; mobile uses more menu + optional inline field)
+5. **User menu** / mobile more menu last
 
 ### Background color consistency
 
@@ -1239,14 +1238,14 @@ The SVG is the `TrimbleLogoFullIcon` from `modus-wc-navbar`'s bundled source (`v
 
 ### 4 navbar instances that must stay in sync
 
-| File | View | Has hamburger fallback | Has logo fallback |
-|------|------|----------------------|-------------------|
-| `dashboard-shell.component.ts` | Canvas navbar | No (canvas has side nav) | Yes |
-| `dashboard-shell.component.ts` | Desktop navbar | Yes (`mainMenu: !canvas`) | Yes |
-| `project-dashboard.component.html` | Canvas navbar | No | Yes |
-| `project-dashboard.component.html` | Desktop navbar | Yes | Yes |
+| File | View | Start fallbacks (`!navbarNativeRendered`) | End utilities |
+|------|------|-------------------------------------------|---------------|
+| `dashboard-shell.component.ts` | Canvas | Logo + divider | Always Angular (search/notif/help + optional input) |
+| `dashboard-shell.component.ts` | Desktop | Hamburger + logo + divider | Always Angular |
+| `project-dashboard.component.html` | Canvas | Logo + divider | Always Angular |
+| `project-dashboard.component.html` | Desktop | Hamburger + logo + divider | Always Angular |
 
-**All 4 instances must have identical fallback structure.** When modifying fallback elements, update all 4 at once. Never update one without the others.
+**All 4 instances must match visibility flags and end-slot structure.** When modifying navbar chrome, update all 4 at once.
 
 ### Detection in project-dashboard
 

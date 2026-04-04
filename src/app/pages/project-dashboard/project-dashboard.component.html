@@ -3659,27 +3659,37 @@
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
               </div>
-              @if (!navbarNativeRendered()) {
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Search" tabindex="0"
-                  (click)="searchInputOpen.set(!searchInputOpen())"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">search</i>
-                </div>
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Notifications" tabindex="0"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
-                </div>
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Help" tabindex="0"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">help</i>
-                </div>
+              @if (searchInputOpen()) {
+                <modus-text-input
+                  class="w-44 min-w-[10rem] max-w-xs shrink"
+                  inputId="proj-navbar-search-canvas"
+                  placeholder="Search"
+                  size="sm"
+                  [includeSearch]="true"
+                  [includeClear]="true"
+                  [value]="navbarSearchQuery()"
+                  (inputChange)="handleNavbarSearchInput($event)"
+                />
               }
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Search" tabindex="0"
+                (click)="searchInputOpen.set(!searchInputOpen())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">search</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Notifications" tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Help" tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">help</i>
+              </div>
               <user-menu
                 [name]="userCard.name"
                 [email]="userCard.email"
@@ -3886,7 +3896,19 @@
           >
             <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
           </div>
-          @if (!navbarNativeRendered() && !isMobile()) {
+          @if (searchInputOpen() && !isMobile()) {
+            <modus-text-input
+              class="w-44 min-w-[10rem] max-w-xs shrink hidden md:block"
+              inputId="proj-navbar-search-desktop"
+              placeholder="Search"
+              size="sm"
+              [includeSearch]="true"
+              [includeClear]="true"
+              [value]="navbarSearchQuery()"
+              (inputChange)="handleNavbarSearchInput($event)"
+            />
+          }
+          @if (!isMobile()) {
             <div
               class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
               role="button" aria-label="Search" tabindex="0"
@@ -3906,6 +3928,18 @@
             >
               <i class="modus-icons text-lg" aria-hidden="true">help</i>
             </div>
+          }
+          @if (searchInputOpen() && isMobile()) {
+            <modus-text-input
+              class="min-w-0 flex-1 max-w-[220px]"
+              inputId="proj-navbar-search-mobile"
+              placeholder="Search"
+              size="sm"
+              [includeSearch]="true"
+              [includeClear]="true"
+              [value]="navbarSearchQuery()"
+              (inputChange)="handleNavbarSearchInput($event)"
+            />
           }
           @if (isMobile()) {
             <div class="relative">
