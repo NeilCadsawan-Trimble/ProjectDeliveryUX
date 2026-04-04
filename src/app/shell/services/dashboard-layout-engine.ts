@@ -34,7 +34,7 @@ export interface DashboardLayoutConfig {
   /**
    * Desktop horizontal resize only. Widget ids in **layout priority** order: index 0 is highest
    * (squeezed/relocated last). Lower-priority neighbors absorb overflow first so the hero and
-   * primary tiles stay stable. Omit to keep legacy far-end spatial squeeze/relocate.
+   * primary tiles stay stable. Omit to keep legacy tail edge spatial squeeze/relocate.
    */
   desktopResizePriorityOrder?: string[];
   /**
@@ -1394,7 +1394,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   /**
-   * Order in which to apply width squeeze toward minWidth. Legacy: spatial far-end first.
+   * Order in which to apply width squeeze toward minWidth. Legacy: spatial tail edge first.
    * Priority mode: lowest-priority widget first.
    */
   private squeezeOrderForNeighbors(active: string[], edge: 'left' | 'right'): string[] {
@@ -1442,7 +1442,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
    *           same priority-chosen widget and re-run with the remaining set.
    *
    * When `desktopResizePriorityOrder` is set, squeeze/relocate use **priority** instead of
-   * pure spatial far-end ordering so high-priority tiles (e.g. hero) stay visually anchored.
+   * pure spatial tail edge ordering so high-priority tiles (e.g. hero) stay visually anchored.
    *
    * Uses _resizeSnapshot so that resizing back fully un-pushes / un-squeezes.
    */

@@ -1,12 +1,12 @@
     <svg aria-hidden="true" class="svg-defs-hidden">
       <defs>
         <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="20%" stop-color="#FF00FF" />
+          <stop offset="20%" stop-color="hsl(300, 100%, 50%)" />
           <stop offset="60%" stop-color="#0066CC" />
           <stop offset="100%" stop-color="#0066CC" />
         </linearGradient>
         <radialGradient id="ai-grad-dark" cx="18%" cy="18%" r="70%">
-          <stop offset="0%" stop-color="#FF00FF" />
+          <stop offset="0%" stop-color="hsl(300, 100%, 50%)" />
           <stop offset="50%" stop-color="#9933FF" />
           <stop offset="100%" stop-color="#0066CC" />
         </radialGradient>
@@ -2796,7 +2796,7 @@
                           <div class="text-sm text-foreground-60">{{ $any(detail.item).revision }} &middot; {{ $any(detail.item).date }}</div>
                         </div>
                       </div>
-                      <div class="bg-secondary rounded-lg overflow-hidden flex items-center justify-center p-4" style="min-height: 300px">
+                      <div class="bg-secondary rounded-lg overflow-hidden flex items-center justify-center p-4 min-h-[300px]">
                         <img [src]="$any(detail.item).thumbnail" [alt]="$any(detail.item).title" class="max-w-full max-h-[60vh] object-contain rounded" />
                       </div>
                       <div class="text-sm text-foreground-60">{{ $any(detail.item).subtitle }}</div>
@@ -3578,6 +3578,7 @@
     @if (isCanvas()) {
       <div class="canvas-host bg-background text-foreground canvas-mode" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
         <div class="canvas-navbar">
+          <div [class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()">
           <modus-navbar
             [userCard]="userCard"
             [visibility]="navbarVisibility()"
@@ -3589,6 +3590,14 @@
           >
             <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               @if (!navbarNativeRendered()) {
+                <div
+                  class="flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                  role="button" aria-label="Main menu" tabindex="0"
+                  (click)="navExpanded.set(!navExpanded())"
+                  (keydown.enter)="navExpanded.set(!navExpanded())"
+                >
+                  <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+                </div>
                 <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
                   <app-trimble-logo />
                 </div>
@@ -3638,7 +3647,7 @@
                 }
               </div>
             </div>
-            <div slot="end" class="flex items-center gap-1">
+            <div slot="end" class="flex w-full min-w-0 items-center justify-end gap-1">
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
@@ -3696,6 +3705,7 @@
               />
             </div>
           </modus-navbar>
+          </div>
         </div>
         <div class="canvas-navbar-shadow navbar-shadow"></div>
 
@@ -3807,6 +3817,7 @@
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
     <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
       <!-- Navbar -->
+      <div [class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()">
       <modus-navbar
         [userCard]="userCard"
         [visibility]="navbarVisibility()"
@@ -3875,7 +3886,7 @@
             }
           </div>
         </div>
-        <div slot="end" class="flex items-center gap-1">
+        <div slot="end" class="flex w-full min-w-0 items-center justify-end gap-1">
           <div
             class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
             role="button"
@@ -3999,6 +4010,7 @@
           />
         </div>
       </modus-navbar>
+      </div>
 
       <div class="navbar-shadow"></div>
 
@@ -4487,8 +4499,8 @@
               <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
             </div>
           </div>
-          <div class="relative" style="padding-left:36px;padding-bottom:20px">
-            <svg class="w-full" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none" style="height:160px">
+          <div class="relative pl-9 pb-5">
+            <svg class="w-full h-40" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none">
               <defs>
                 <linearGradient [attr.id]="'pfGradProjRaw' + projectId()" x1="0" y1="0" x2="0" y2="1">
                   @if (jcProfitFadeData()?.isFade) {
@@ -4702,8 +4714,8 @@
               <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
             </div>
           </div>
-          <div class="relative" style="padding-left:36px;padding-bottom:20px">
-            <svg class="w-full" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none" style="height:160px">
+          <div class="relative pl-9 pb-5">
+            <svg class="w-full h-40" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none">
               <defs>
                 <linearGradient [attr.id]="'pfGradProj' + projectId()" x1="0" y1="0" x2="0" y2="1">
                   @if (jcProfitFadeData()?.isFade) {

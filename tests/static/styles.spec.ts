@@ -36,6 +36,19 @@ describe('styles.css regression', () => {
     });
   });
 
+  describe('modus-wc-navbar host layout', () => {
+    it('uses display block on host by default so toolbar 50/50 layout is not overridden', () => {
+      const match = CSS.match(/modus-wc-navbar\s*\{([^}]*)\}/m);
+      expect(match).toBeTruthy();
+      expect(match![1]).toContain('display: block');
+    });
+
+    it('scopes host flex fallback to .modus-wc-navbar-host-fallback', () => {
+      expect(CSS).toContain('.modus-wc-navbar-host-fallback modus-wc-navbar');
+      expect(CSS).toContain('.modus-wc-navbar-host-fallback modus-wc-navbar > [slot="start"]');
+    });
+  });
+
   describe('.canvas-navbar', () => {
     it('has overflow: visible so dropdowns are not clipped', () => {
       const match = CSS.match(/\.canvas-navbar\s*\{([^}]*)\}/m);

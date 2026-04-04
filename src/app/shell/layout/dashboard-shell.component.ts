@@ -75,12 +75,12 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     <svg aria-hidden="true" class="svg-defs-hidden">
       <defs>
         <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="20%" stop-color="#FF00FF" />
+          <stop offset="20%" stop-color="hsl(300, 100%, 50%)" />
           <stop offset="60%" stop-color="#0066CC" />
           <stop offset="100%" stop-color="#0066CC" />
         </linearGradient>
         <radialGradient id="ai-grad-dark" cx="18%" cy="18%" r="70%">
-          <stop offset="0%" stop-color="#FF00FF" />
+          <stop offset="0%" stop-color="hsl(300, 100%, 50%)" />
           <stop offset="50%" stop-color="#9933FF" />
           <stop offset="100%" stop-color="#0066CC" />
         </radialGradient>
@@ -92,6 +92,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       <div class="canvas-host bg-background text-foreground canvas-mode select-none" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
 
         <div class="canvas-navbar">
+          <div [class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()">
           <modus-navbar
             [userCard]="userCard()"
             [visibility]="navbarVisibility()"
@@ -105,6 +106,14 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
           >
             <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               @if (!navbarNativeRendered()) {
+                <div
+                  class="flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                  role="button" aria-label="Main menu" tabindex="0"
+                  (click)="navExpanded.set(!navExpanded())"
+                  (keydown.enter)="navExpanded.set(!navExpanded())"
+                >
+                  <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+                </div>
                 <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
                   <app-trimble-logo />
                 </div>
@@ -159,7 +168,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 <div class="text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
               }
             </div>
-            <div slot="end" class="flex items-center gap-1">
+            <div slot="end" class="flex w-full min-w-0 items-center justify-end gap-1">
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
@@ -220,6 +229,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               />
             </div>
           </modus-navbar>
+          </div>
         </div>
         <div class="canvas-navbar-shadow"></div>
 
@@ -337,6 +347,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       </div>
     } @else {
       <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
+          <div [class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()">
           <modus-navbar
             [userCard]="userCard()"
             [visibility]="navbarVisibility()"
@@ -412,7 +423,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
               }
             </div>
-            <div slot="end" class="flex items-center gap-1">
+            <div slot="end" class="flex w-full min-w-0 items-center justify-end gap-1">
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
@@ -539,6 +550,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               />
           </div>
         </modus-navbar>
+          </div>
 
         <div class="navbar-shadow"></div>
 

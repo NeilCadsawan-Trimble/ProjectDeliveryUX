@@ -58,6 +58,13 @@ describe('DashboardShellComponent (regression)', () => {
     });
   });
 
+  describe('navbar host fallback wrapper', () => {
+    it('wraps modus-navbar with modus-wc-navbar-host-fallback when native toolbar is missing', () => {
+      expect(SRC).toContain('modus-wc-navbar-host-fallback');
+      expect(SRC).toContain('[class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()"');
+    });
+  });
+
   describe('navbar visibility (slot end order vs native utilities)', () => {
     it('keeps mainMenu true so hamburger renders in canvas and desktop', () => {
       expect(SRC).toMatch(/mainMenu:\s*true/);

@@ -1482,33 +1482,40 @@ modus-wc-progress.progress-primary .modus-wc-progress {
 }
 
 /*
- * Navbar host fallback: when the Stencil-rendered toolbar does not appear
- * (Angular 20 scoped-encapsulation slot relocation issue in dev mode),
- * the host still behaves as a horizontal flex bar.  When the native
- * toolbar DOES render, content is projected into its shadow DOM and
- * these rules are inert.
+ * Navbar host: default block layout so Modus toolbar shadow flex (50% start / 50% end)
+ * is not fighting host-level flex + flex:1 on slot start (that broke end-slot
+ * right alignment when the native toolbar renders).
+ *
+ * Host flex is applied only under .modus-wc-navbar-host-fallback when the
+ * Stencil toolbar is missing (Angular 20 slot relocation in dev mode).
  */
 modus-wc-navbar {
-  display: flex;
-  align-items: center;
+  display: block;
   width: 100%;
   height: 56px;
   min-height: 56px;
   background-color: var(--modus-wc-color-base-page);
   padding: 0 var(--modus-wc-spacing-md, 16px);
 }
-modus-wc-navbar > [slot="start"] {
+.modus-wc-navbar-host-fallback modus-wc-navbar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 56px;
+  min-height: 56px;
+}
+.modus-wc-navbar-host-fallback modus-wc-navbar > [slot="start"] {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
 }
-modus-wc-navbar > [slot="end"] {
+.modus-wc-navbar-host-fallback modus-wc-navbar > [slot="end"] {
   flex-shrink: 0;
   display: flex;
   align-items: center;
 }
-modus-wc-navbar > [slot="center"] {
+.modus-wc-navbar-host-fallback modus-wc-navbar > [slot="center"] {
   flex-shrink: 0;
 }
 [data-theme="modus-classic-dark"] modus-wc-navbar {

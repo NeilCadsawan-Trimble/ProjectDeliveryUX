@@ -143,7 +143,7 @@ const SECTION_2_ITEMS: UserMenuItem[] = [
           (click)="onSignOut()"
           (keydown.enter)="onSignOut()"
         >
-          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">exit_to_app</i>
+          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">sign_out</i>
           <div class="text-sm text-foreground">Sign out</div>
         </div>
 
