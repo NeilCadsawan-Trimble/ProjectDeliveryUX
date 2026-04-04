@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ModusBadgeComponent } from '../../components/modus-badge.component';
-import { ModusProgressComponent } from '../../components/modus-progress.component';
 import type { Estimate, EstimateStatus } from '../../data/dashboard-data';
 import { estimateBadgeColor, dueDateClass, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
 import { DataStoreService } from '../../data/data-store.service';
@@ -82,7 +80,7 @@ function buildHistory(est: Estimate): HistoryEntry[] {
 
 @Component({
   selector: 'app-estimate-detail-page',
-  imports: [ModusBadgeComponent, ModusProgressComponent],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="px-4 py-6 md:py-8 max-w-screen-lg mx-auto">

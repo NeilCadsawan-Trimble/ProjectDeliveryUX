@@ -58,7 +58,7 @@
       [style.left.px]="widgetLefts()['projsHeader']"
       [style.width.px]="widgetPixelWidths()['projsHeader']"
       [style.height.px]="widgetHeights()['projsHeader']"
-      [style.z-index]="widgetZIndices()['projsHeader'] ?? 0"
+      [style.z-index]="widgetZIndices()['projsHeader']"
     >
       <div class="flex items-start justify-between">
         <div>
@@ -115,7 +115,7 @@
       [style.left.px]="isCanvasMode() || moveTargetId() === widgetId ? widgetLefts()[widgetId] : null"
       [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : (moveTargetId() === widgetId ? dragWidth() : null)"
       [style.height.px]="widgetHeights()[widgetId]"
-      [style.z-index]="widgetZIndices()[widgetId] ?? 0"
+      [style.z-index]="widgetZIndices()[widgetId]"
     >
       <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
         <div

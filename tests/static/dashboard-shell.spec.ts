@@ -59,6 +59,10 @@ describe('DashboardShellComponent (regression)', () => {
   });
 
   describe('navbar host fallback wrapper', () => {
+    it('marks fallback hamburger for side-rail alignment CSS', () => {
+      expect(SRC).toContain('shell-navbar-hamburger');
+    });
+
     it('wraps modus-navbar with modus-wc-navbar-host-fallback when native toolbar is missing', () => {
       expect(SRC).toContain('modus-wc-navbar-host-fallback');
       expect(SRC).toContain('[class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()"');

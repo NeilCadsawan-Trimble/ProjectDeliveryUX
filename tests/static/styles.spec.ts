@@ -47,6 +47,16 @@ describe('styles.css regression', () => {
       expect(CSS).toContain('.modus-wc-navbar-host-fallback modus-wc-navbar');
       expect(CSS).toContain('.modus-wc-navbar-host-fallback modus-wc-navbar > [slot="start"]');
     });
+
+    it('loads Modus icon font rules via styles.css import', () => {
+      expect(CSS).toContain("@import '../public/modus-icons.css'");
+    });
+
+    it('scopes canvas hamburger rail alignment to .canvas-navbar and min-width 1920px', () => {
+      expect(CSS).toContain('.canvas-navbar .shell-navbar-hamburger');
+      expect(CSS).toMatch(/@media\s*\(\s*min-width:\s*1920px\s*\)[\s\S]*\.canvas-navbar[\s\S]*padding-left:\s*56px/);
+      expect(CSS).toContain("modus-wc-button[aria-label='Main menu']");
+    });
   });
 
   describe('.canvas-navbar', () => {
@@ -68,7 +78,7 @@ describe('styles.css regression', () => {
     it('applies border-radius to inner modus-wc-navbar', () => {
       expect(CSS).toContain('.canvas-navbar modus-wc-navbar .modus-wc-navbar');
       const match = CSS.match(
-        /\.canvas-navbar\s+modus-wc-navbar\s+\.modus-wc-navbar[\s\S]*?\{([^}]*)\}/m,
+        /\.canvas-navbar\s+modus-wc-navbar\s+\.modus-wc-navbar,\s*\n\s*\.canvas-navbar\s+modus-wc-navbar\s*\{([^}]*)\}/m,
       );
       expect(match).toBeTruthy();
       expect(match![1]).toContain('border-radius');

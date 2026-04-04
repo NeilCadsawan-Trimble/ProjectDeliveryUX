@@ -343,7 +343,7 @@
                   [style.left.px]="tilePos()['tile-drawing-' + drawing.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-drawing-' + drawing.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-drawing-' + drawing.id]?.height ?? 260"
-                  [style.z-index]="tileZ()['tile-drawing-' + drawing.id] ?? 0"
+                  [style.z-index]="tileZ()['tile-drawing-' + drawing.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-drawing-' + drawing.id"
                   (mousedown)="selectTileWidget('tile-drawing-' + drawing.id)"
                 >
@@ -915,7 +915,7 @@
                   [style.left.px]="tilePos()['tile-dr-' + dr.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-dr-' + dr.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-dr-' + dr.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-dr-' + dr.id] ? 9999 : (tileZ()['tile-dr-' + dr.id] ?? 0)"
+                  [style.z-index]="tileDetailViews()['tile-dr-' + dr.id] ? 9999 : tileZ()['tile-dr-' + dr.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-dr-' + dr.id"
                   (mousedown)="selectTileWidget('tile-dr-' + dr.id); tileDetailViews()['tile-dr-' + dr.id] ? $event.stopPropagation() : null"
                 >
@@ -1025,7 +1025,7 @@
                   [style.left.px]="tilePos()['tile-pl-' + pl.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-pl-' + pl.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-pl-' + pl.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-pl-' + pl.id] ? 9999 : (tileZ()['tile-pl-' + pl.id] ?? 0)"
+                  [style.z-index]="tileDetailViews()['tile-pl-' + pl.id] ? 9999 : tileZ()['tile-pl-' + pl.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-pl-' + pl.id"
                   (mousedown)="selectTileWidget('tile-pl-' + pl.id); tileDetailViews()['tile-pl-' + pl.id] ? $event.stopPropagation() : null"
                 >
@@ -1130,7 +1130,7 @@
                   [style.left.px]="tilePos()['tile-ins-' + ins.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-ins-' + ins.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-ins-' + ins.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-ins-' + ins.id] ? 9999 : (tileZ()['tile-ins-' + ins.id] ?? 0)"
+                  [style.z-index]="tileDetailViews()['tile-ins-' + ins.id] ? 9999 : tileZ()['tile-ins-' + ins.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-ins-' + ins.id"
                   (mousedown)="selectTileWidget('tile-ins-' + ins.id); tileDetailViews()['tile-ins-' + ins.id] ? $event.stopPropagation() : null"
                 >
@@ -1231,7 +1231,7 @@
                   [style.left.px]="tilePos()['tile-ai-' + ai.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-ai-' + ai.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-ai-' + ai.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-ai-' + ai.id] ? 9999 : (tileZ()['tile-ai-' + ai.id] ?? 0)"
+                  [style.z-index]="tileDetailViews()['tile-ai-' + ai.id] ? 9999 : tileZ()['tile-ai-' + ai.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-ai-' + ai.id"
                   (mousedown)="selectTileWidget('tile-ai-' + ai.id); tileDetailViews()['tile-ai-' + ai.id] ? $event.stopPropagation() : null"
                 >
@@ -1674,7 +1674,7 @@
                   [style.left.px]="tilePos()['tile-subledger-ledger']?.left"
                   [style.width.px]="tilePos()['tile-subledger-ledger']?.width"
                   [style.height.px]="tilePos()['tile-subledger-ledger']?.height"
-                  [style.z-index]="tileZ()['tile-subledger-ledger'] ?? 0">
+                  [style.z-index]="tileZ()['tile-subledger-ledger']">
                   <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
                     <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
                     <div class="text-base font-semibold text-foreground">Transaction Ledger</div>
@@ -1701,7 +1701,7 @@
                     [style.left.px]="tilePos()[btId]?.left"
                     [style.width.px]="tilePos()[btId]?.width"
                     [style.height.px]="tilePos()[btId]?.height"
-                    [style.z-index]="tileZ()[btId] ?? 0"
+                    [style.z-index]="tileZ()[btId]"
                     [class.opacity-30]="tileMoveTargetId() === btId">
                     @switch (btId) {
                       @case ('tile-budget-breakdown') {
@@ -1893,7 +1893,7 @@
                     [style.left.px]="tilePos()['tile-' + activeCoTilePrefix() + co.id]?.left ?? 0"
                     [style.width.px]="tilePos()['tile-' + activeCoTilePrefix() + co.id]?.width ?? 308"
                     [style.height.px]="tilePos()['tile-' + activeCoTilePrefix() + co.id]?.height ?? 220"
-                    [style.z-index]="tileDetailViews()['tile-' + activeCoTilePrefix() + co.id] ? 9999 : (tileZ()['tile-' + activeCoTilePrefix() + co.id] ?? 0)"
+                    [style.z-index]="tileDetailViews()['tile-' + activeCoTilePrefix() + co.id] ? 9999 : tileZ()['tile-' + activeCoTilePrefix() + co.id]"
                     [class.opacity-30]="tileMoveTargetId() === 'tile-' + activeCoTilePrefix() + co.id"
                     (mousedown)="selectTileWidget('tile-' + activeCoTilePrefix() + co.id); tileDetailViews()['tile-' + activeCoTilePrefix() + co.id] ? $event.stopPropagation() : null">
                   @if (tileDetailViews()['tile-' + activeCoTilePrefix() + co.id]; as detail) {
@@ -2047,7 +2047,7 @@
                     [style.left.px]="tilePos()['tile-rev-' + rev.projectId]?.left ?? 0"
                     [style.width.px]="tilePos()['tile-rev-' + rev.projectId]?.width ?? 308"
                     [style.height.px]="tilePos()['tile-rev-' + rev.projectId]?.height ?? 220"
-                    [style.z-index]="tileZ()['tile-rev-' + rev.projectId] ?? 0"
+                    [style.z-index]="tileZ()['tile-rev-' + rev.projectId]"
                     [class.opacity-30]="tileMoveTargetId() === 'tile-rev-' + rev.projectId"
                     (mousedown)="selectTileWidget('tile-rev-' + rev.projectId)">
                     <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
@@ -2142,7 +2142,7 @@
                     [style.left.px]="tilePos()['tile-cf-' + i]?.left ?? 0"
                     [style.width.px]="tilePos()['tile-cf-' + i]?.width ?? 308"
                     [style.height.px]="tilePos()['tile-cf-' + i]?.height ?? 220"
-                    [style.z-index]="tileZ()['tile-cf-' + i] ?? 0"
+                    [style.z-index]="tileZ()['tile-cf-' + i]"
                     [class.opacity-30]="tileMoveTargetId() === 'tile-cf-' + i"
                     (mousedown)="selectTileWidget('tile-cf-' + i)">
                     <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
@@ -2679,7 +2679,7 @@
               [style.left.px]="wLefts()['projHeader']"
               [style.width.px]="wPixelWidths()['projHeader']"
               [style.height.px]="wHeights()['projHeader']"
-              [style.z-index]="wZIndices()['projHeader'] ?? 0"
+              [style.z-index]="wZIndices()['projHeader']"
             >
               <div class="flex items-center justify-between mb-4">
                 <div class="text-2xl font-bold text-foreground">{{ projectName() }}</div>
@@ -2714,7 +2714,7 @@
               [style.left.px]="isCanvas() || moveTargetId() === wId ? wLefts()[wId] : null"
               [style.width.px]="isCanvas() ? wPixelWidths()[wId] : (moveTargetId() === wId ? dragWidth() : null)"
               [style.height.px]="wHeights()[wId]"
-              [style.z-index]="canvasDetailViews()[wId] ? 9999 : (wId === 'team' && timeOffStatusOpen() !== null) ? 9998 : (wZIndices()[wId] ?? 0)"
+              [style.z-index]="canvasDetailViews()[wId] ? 9999 : (wId === 'team' && timeOffStatusOpen() !== null) ? 9998 : wZIndices()[wId]"
               (mousedown)="canvasDetailViews()[wId] ? $event.stopPropagation() : null"
             >
             @if (canvasDetailViews()[wId]; as detail) {
@@ -3591,7 +3591,7 @@
             <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               @if (!navbarNativeRendered()) {
                 <div
-                  class="flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                  class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
                   role="button" aria-label="Main menu" tabindex="0"
                   (click)="navExpanded.set(!navExpanded())"
                   (keydown.enter)="navExpanded.set(!navExpanded())"
@@ -3830,7 +3830,7 @@
         <div slot="start" class="flex items-center gap-3 w-full min-w-0">
           @if (!navbarNativeRendered()) {
             <div
-              class="flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+              class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
               role="button" aria-label="Main menu" tabindex="0"
               (click)="navExpanded.set(!navExpanded())"
               (keydown.enter)="navExpanded.set(!navExpanded())"

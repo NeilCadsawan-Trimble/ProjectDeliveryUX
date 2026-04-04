@@ -404,7 +404,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             [style.left.px]="widgetLefts()['finHeader']"
             [style.width.px]="widgetPixelWidths()['finHeader']"
             [style.height.px]="widgetHeights()['finHeader']"
-            [style.z-index]="widgetZIndices()['finHeader'] ?? 0"
+            [style.z-index]="widgetZIndices()['finHeader']"
           >
             <div class="flex items-start justify-between mb-4">
               <div>
@@ -467,7 +467,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             [style.left.px]="isCanvasMode() || moveTargetId() === widgetId ? widgetLefts()[widgetId] : null"
             [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : (moveTargetId() === widgetId ? dragWidth() : null)"
             [style.height.px]="widgetHeights()[widgetId]"
-            [style.z-index]="widgetZIndices()[widgetId] ?? 0"
+            [style.z-index]="widgetZIndices()[widgetId]"
           >
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />

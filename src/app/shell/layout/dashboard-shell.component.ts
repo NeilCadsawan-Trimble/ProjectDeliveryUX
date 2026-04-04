@@ -107,7 +107,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               @if (!navbarNativeRendered()) {
                 <div
-                  class="flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                  class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
                   role="button" aria-label="Main menu" tabindex="0"
                   (click)="navExpanded.set(!navExpanded())"
                   (keydown.enter)="navExpanded.set(!navExpanded())"
@@ -362,7 +362,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               @if (!navbarNativeRendered()) {
                 <div
-                  class="flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                  class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
                   role="button" aria-label="Main menu" tabindex="0"
                   (click)="navExpanded.set(!navExpanded())"
                   (keydown.enter)="navExpanded.set(!navExpanded())"
