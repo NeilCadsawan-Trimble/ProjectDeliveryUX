@@ -190,12 +190,28 @@ export class ModusNavbarComponent implements AfterViewInit {
   private detectNativeRender(): void {
     if (!this.wcEl) return;
     const wcEl = this.wcEl;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
+    const ready = (wcEl as unknown as { componentOnReady?: () => Promise<void> }).componentOnReady;
+    if (typeof ready === 'function') {
+      ready.call(wcEl).then(() => {
         const toolbar = wcEl.querySelector('.modus-wc-toolbar') ?? wcEl.querySelector('modus-wc-toolbar');
         this.nativeRendered.set(!!toolbar);
       });
-    });
+      return;
+    }
+    let attempts = 0;
+    const poll = () => {
+      if (++attempts > 30) {
+        this.nativeRendered.set(false);
+        return;
+      }
+      const toolbar = wcEl.querySelector('.modus-wc-toolbar') ?? wcEl.querySelector('modus-wc-toolbar');
+      if (toolbar) {
+        this.nativeRendered.set(true);
+      } else {
+        requestAnimationFrame(poll);
+      }
+    };
+    requestAnimationFrame(poll);
   }
 
   private syncProp(name: string, value: unknown): void {

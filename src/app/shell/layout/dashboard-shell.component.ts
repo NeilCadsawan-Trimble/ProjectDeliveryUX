@@ -986,15 +986,35 @@ export class DashboardShellComponent implements AfterViewInit {
   }
 
   private detectNativeNavbarRender(): void {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const toolbar = this.elementRef.nativeElement.querySelector('modus-wc-toolbar');
+    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
+    if (!navbarWc) {
+      this.navbarNativeRendered.set(false);
+      return;
+    }
+    const ready = (navbarWc as unknown as { componentOnReady?: () => Promise<void> }).componentOnReady;
+    if (typeof ready === 'function') {
+      ready.call(navbarWc).then(() => {
+        const toolbar = navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar');
         this.navbarNativeRendered.set(!!toolbar);
-        if (!toolbar) {
-          this.attachHamburgerListener();
-        }
+        if (!toolbar) this.attachHamburgerListener();
       });
-    });
+      return;
+    }
+    let attempts = 0;
+    const poll = () => {
+      if (++attempts > 30) {
+        this.navbarNativeRendered.set(false);
+        this.attachHamburgerListener();
+        return;
+      }
+      const toolbar = navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar');
+      if (toolbar) {
+        this.navbarNativeRendered.set(true);
+      } else {
+        requestAnimationFrame(poll);
+      }
+    };
+    requestAnimationFrame(poll);
   }
 
   private attachHamburgerListener(): void {
