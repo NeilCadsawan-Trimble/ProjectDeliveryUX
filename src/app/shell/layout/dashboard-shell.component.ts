@@ -15,7 +15,7 @@ import {
 import { Router, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
-import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
+import type { INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusTextInputComponent } from '../../components/modus-text-input.component';
 import { AiIconComponent } from '../components/ai-icon.component';
 import { AiAssistantPanelComponent } from '../components/ai-assistant-panel.component';
@@ -29,6 +29,10 @@ import { AiToolsService } from '../../services/ai-tools.service';
 import { AiPanelController } from '../services/ai-panel-controller';
 import { CanvasPanning } from '../services/canvas-panning';
 import { NavigationHistoryService } from '../services/navigation-history.service';
+import {
+  coerceMainMenuOpenPayload,
+  isClickInsideSideNavChrome,
+} from '../utils/side-nav-click.util';
 import { LayoutDefaultsService } from '../services/layout-defaults.service';
 import { DataStoreService } from '../../data/data-store.service';
 import { WeatherService } from '../../services/weather.service';
@@ -48,7 +52,6 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 @Component({
   selector: 'app-dashboard-shell',
   imports: [
-    ModusNavbarComponent,
     ModusTextInputComponent,
     AiIconComponent,
     AiAssistantPanelComponent,
@@ -91,34 +94,20 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       <div class="canvas-host bg-background text-foreground canvas-mode select-none" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
 
         <div class="canvas-navbar">
-          <div [class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()">
-          <modus-navbar
-            [userCard]="userCard()"
-            [visibility]="navbarVisibility()"
-            [condensed]="false"
-            [mainMenuOpen]="navExpanded()"
-            [searchInputOpen]="searchInputOpen()"
-            (searchClick)="searchInputOpen.set(!searchInputOpen())"
-            (searchInputOpenChange)="searchInputOpen.set($event)"
-            (trimbleLogoClick)="navigateHome()"
-            (aiClick)="ai.toggle()"
-            (mainMenuOpenChange)="onMainMenuToggle($event)"
-          >
-            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-              @if (!navbarNativeRendered()) {
-                <div
-                  class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
-                  role="button" aria-label="Main menu" tabindex="0"
-                  (click)="navExpanded.set(!navExpanded())"
-                  (keydown.enter)="navExpanded.set(!navExpanded())"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">menu</i>
-                </div>
-                <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
-                  <app-trimble-logo />
-                </div>
-                <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              }
+          <div class="app-navbar">
+            <div class="app-navbar-start">
+              <div
+                class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                role="button" aria-label="Main menu" tabindex="0"
+                (click)="navExpanded.set(!navExpanded())"
+                (keydown.enter)="navExpanded.set(!navExpanded())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+              </div>
+              <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+                <app-trimble-logo />
+              </div>
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               @if (navHistory.shellBackButton()) {
                 <div
                   class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
@@ -168,7 +157,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 <div class="text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
               }
             </div>
-            <div slot="end" class="flex w-full min-w-0 items-center justify-end gap-1">
+            <div class="app-navbar-end">
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
@@ -228,7 +217,6 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 (signOut)="onUserSignOut()"
               />
             </div>
-          </modus-navbar>
           </div>
         </div>
         <div class="canvas-navbar-shadow"></div>
@@ -244,7 +232,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 role="button"
                 [attr.aria-label]="item.label"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                </div>
                 @if (navExpanded()) {
                   <div class="custom-side-nav-label">{{ item.label }}</div>
                 }
@@ -261,7 +251,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 aria-label="Layout options"
                 [attr.aria-expanded]="resetMenuOpen()"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                </div>
                 @if (panning.locked()) {
                   <i class="modus-icons absolute top-1 right-1 text-2xs text-primary" aria-hidden="true">lock</i>
                 }
@@ -328,7 +320,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               role="button"
               aria-label="Settings"
             >
-              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              <div class="custom-side-nav-icon-slot">
+                <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              </div>
               @if (navExpanded()) {
                 <div class="custom-side-nav-label">Settings</div>
               }
@@ -347,34 +341,20 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       </div>
     } @else {
       <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
-          <div [class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()">
-          <modus-navbar
-            [userCard]="userCard()"
-            [visibility]="navbarVisibility()"
-            [condensed]="isMobile()"
-            [mainMenuOpen]="navExpanded()"
-            [searchInputOpen]="searchInputOpen()"
-            (searchClick)="searchInputOpen.set(!searchInputOpen())"
-            (searchInputOpenChange)="searchInputOpen.set($event)"
-            (trimbleLogoClick)="navigateHome()"
-            (aiClick)="ai.toggle()"
-            (mainMenuOpenChange)="onMainMenuToggle($event)"
-          >
-            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-              @if (!navbarNativeRendered()) {
-                <div
-                  class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
-                  role="button" aria-label="Main menu" tabindex="0"
-                  (click)="navExpanded.set(!navExpanded())"
-                  (keydown.enter)="navExpanded.set(!navExpanded())"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">menu</i>
-                </div>
-                <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
-                  <app-trimble-logo />
-                </div>
-                <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              }
+          <div class="app-navbar">
+            <div class="app-navbar-start">
+              <div
+                class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                role="button" aria-label="Main menu" tabindex="0"
+                (click)="navExpanded.set(!navExpanded())"
+                (keydown.enter)="navExpanded.set(!navExpanded())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+              </div>
+              <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+                <app-trimble-logo />
+              </div>
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               @if (navHistory.shellBackButton()) {
                 <div
                   class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
@@ -424,7 +404,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
               }
             </div>
-            <div slot="end" class="flex w-full min-w-0 items-center justify-end gap-1">
+            <div class="app-navbar-end">
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
@@ -550,13 +530,18 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 (signOut)="onUserSignOut()"
               />
           </div>
-        </modus-navbar>
           </div>
 
         <div class="navbar-shadow"></div>
 
         <div class="flex flex-1 overflow-hidden">
-          <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+          <div
+            class="flex-1 overflow-auto bg-background"
+            [class.pl-14]="!isMobile()"
+            role="main"
+            id="main-content"
+            tabindex="-1"
+          >
             <ng-content />
           </div>
         </div>
@@ -573,7 +558,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   role="button"
                   [attr.aria-label]="item.label"
                 >
-                  <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                  <div class="custom-side-nav-icon-slot">
+                    <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                  </div>
                   @if (navExpanded() && !isMobile()) {
                     <div class="custom-side-nav-label">{{ item.label }}</div>
                   }
@@ -590,7 +577,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   aria-label="Layout options"
                   [attr.aria-expanded]="desktopResetMenuOpen()"
                 >
-                  <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                  <div class="custom-side-nav-icon-slot">
+                    <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                  </div>
                   @if (navExpanded() && !isMobile()) {
                     <div class="custom-side-nav-label">Layout</div>
                   }
@@ -637,7 +626,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 role="button"
                 aria-label="Settings"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+                </div>
                 @if (navExpanded() && !isMobile()) {
                   <div class="custom-side-nav-label">Settings</div>
                 }
@@ -691,26 +682,9 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly searchInputOpen = signal(false);
   readonly navbarSearchQuery = signal('');
 
-  /**
-   * modus-wc-navbar renders slot="end" before built-in search/notifications/help.
-   * Those natives are off; we render utilities in the slot so order is
-   * AI, theme, search, notifications, help, user-menu (user: false on WC).
-   */
-  readonly navbarVisibility = computed(() => ({
-    user: false,
-    mainMenu: true,
-    ai: false,
-    notifications: false,
-    apps: false,
-    help: false,
-    search: false,
-    searchInput: false,
-  }));
-
   readonly navExpanded = signal(false);
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 1920 : false);
-  readonly navbarNativeRendered = signal(false);
   private readonly canvasResetService = inject(CanvasResetService);
 
   readonly panning = new CanvasPanning(() => this.isCanvas());
@@ -939,8 +913,9 @@ export class DashboardShellComponent implements AfterViewInit {
   }
 
   onMainMenuToggle(open: unknown): void {
-    if (typeof open === 'boolean') {
-      this.navExpanded.set(open);
+    const next = coerceMainMenuOpenPayload(open);
+    if (next !== undefined) {
+      this.navExpanded.set(next);
     }
   }
 
@@ -978,6 +953,9 @@ export class DashboardShellComponent implements AfterViewInit {
 
 
   onDocumentClick(event: MouseEvent): void {
+    if (this.navExpanded() && !isClickInsideSideNavChrome(event)) {
+      this.navExpanded.set(false);
+    }
     const target = event.target as HTMLElement;
     const insideAiPanel = !!target.closest('ai-assistant-panel') || !!target.closest('modus-utility-panel') || !!target.closest('modus-wc-utility-panel');
     if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !insideAiPanel) {
@@ -1001,7 +979,6 @@ export class DashboardShellComponent implements AfterViewInit {
     this.isMobile.set(window.innerWidth < 768);
     this.isCanvas.set(window.innerWidth >= 1920);
     this.weatherService.initialize();
-    this.detectNativeNavbarRender();
 
     this.router.events
       .pipe(
@@ -1034,34 +1011,4 @@ export class DashboardShellComponent implements AfterViewInit {
 
   }
 
-  private detectNativeNavbarRender(): void {
-    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
-    if (!navbarWc) {
-      this.navbarNativeRendered.set(false);
-      return;
-    }
-    const hasToolbar = (): boolean =>
-      !!(navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar'));
-
-    const pollAfterStencil = (attempt: number): void => {
-      requestAnimationFrame(() => {
-        if (hasToolbar()) {
-          this.navbarNativeRendered.set(true);
-          return;
-        }
-        if (attempt >= 48) {
-          this.navbarNativeRendered.set(false);
-          return;
-        }
-        pollAfterStencil(attempt + 1);
-      });
-    };
-
-    const ready = (navbarWc as unknown as { componentOnReady?: () => Promise<void> }).componentOnReady;
-    if (typeof ready === 'function') {
-      void ready.call(navbarWc).then(() => pollAfterStencil(0));
-      return;
-    }
-    pollAfterStencil(0);
-  }
 }

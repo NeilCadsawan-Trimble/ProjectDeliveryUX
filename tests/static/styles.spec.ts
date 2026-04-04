@@ -36,16 +36,21 @@ describe('styles.css regression', () => {
     });
   });
 
-  describe('modus-wc-navbar host layout', () => {
-    it('uses display block on host by default so toolbar 50/50 layout is not overridden', () => {
-      const match = CSS.match(/modus-wc-navbar\s*\{([^}]*)\}/m);
+  describe('.app-navbar layout', () => {
+    it('defines .app-navbar with flex layout and 56px height', () => {
+      const match = CSS.match(/\.app-navbar\s*\{([^}]*)\}/m);
       expect(match).toBeTruthy();
-      expect(match![1]).toContain('display: block');
+      expect(match![1]).toContain('display: flex');
+      expect(match![1]).toContain('height: 56px');
     });
 
-    it('scopes host flex fallback to .modus-wc-navbar-host-fallback', () => {
-      expect(CSS).toContain('.modus-wc-navbar-host-fallback modus-wc-navbar');
-      expect(CSS).toContain('.modus-wc-navbar-host-fallback modus-wc-navbar > [slot="start"]');
+    it('defines .app-navbar-start and .app-navbar-end layout classes', () => {
+      expect(CSS).toContain('.app-navbar-start');
+      expect(CSS).toContain('.app-navbar-end');
+    });
+
+    it('does not use modus-wc-navbar-host-fallback (removed)', () => {
+      expect(CSS).not.toContain('.modus-wc-navbar-host-fallback');
     });
 
     it('loads Modus icon font rules via styles.css import', () => {
@@ -55,7 +60,6 @@ describe('styles.css regression', () => {
     it('scopes canvas hamburger rail alignment to .canvas-navbar and min-width 1920px', () => {
       expect(CSS).toContain('.canvas-navbar .shell-navbar-hamburger');
       expect(CSS).toMatch(/@media\s*\(\s*min-width:\s*1920px\s*\)[\s\S]*\.canvas-navbar[\s\S]*padding-left:\s*56px/);
-      expect(CSS).toContain("modus-wc-button[aria-label='Main menu']");
     });
   });
 
@@ -75,13 +79,51 @@ describe('styles.css regression', () => {
       expect(match![1]).toContain('border-radius');
     });
 
-    it('applies border-radius to inner modus-wc-navbar', () => {
-      expect(CSS).toContain('.canvas-navbar modus-wc-navbar .modus-wc-navbar');
-      const match = CSS.match(
-        /\.canvas-navbar\s+modus-wc-navbar\s+\.modus-wc-navbar,\s*\n\s*\.canvas-navbar\s+modus-wc-navbar\s*\{([^}]*)\}/m,
-      );
+    it('applies border-radius to inner .app-navbar', () => {
+      const match = CSS.match(/\.canvas-navbar\s+\.app-navbar\s*\{([^}]*)\}/m);
       expect(match).toBeTruthy();
       expect(match![1]).toContain('border-radius');
+    });
+
+    it('uses canvas-host::after full-width top band so the navbar rail reads continuous at 1920px+', () => {
+      expect(CSS).toMatch(
+        /@media\s*\(\s*min-width:\s*1920px\s*\)[\s\S]*\.canvas-host::after[\s\S]*height:\s*56px/,
+      );
+    });
+  });
+
+  describe('desktop shell navbar (non-canvas)', () => {
+    it('.app-navbar uses min-height 56px so the bar does not collapse', () => {
+      const match = CSS.match(/\.app-navbar\s*\{([^}]*)\}/m);
+      expect(match).toBeTruthy();
+      expect(match![1]).toContain('min-height: 56px');
+    });
+  });
+
+  describe('side-nav consistent row heights', () => {
+    it('sets height: 56px on base .custom-side-nav-item', () => {
+      const block = extractBlock(CSS, '.custom-side-nav-item');
+      expect(block).toContain('height: 56px');
+    });
+
+    it('sets height: 56px on expanded selected items (desktop)', () => {
+      expect(CSS).toMatch(/\.custom-side-nav\.expanded\s+\.custom-side-nav-item\.selected[\s\S]*?height:\s*56px/);
+    });
+  });
+
+  describe('expanded side-nav icon alignment', () => {
+    it('resets border-radius to 0 for expanded selected items', () => {
+      expect(CSS).toMatch(/\.custom-side-nav\.expanded\s+\.custom-side-nav-item\.selected[\s\S]*?border-radius:\s*0/);
+    });
+  });
+
+  describe('mobile side-nav centering', () => {
+    it('centers selected items with margin auto in mobile breakpoint', () => {
+      expect(CSS).toMatch(/@media[\s\S]*max-width:\s*767px[\s\S]*\.custom-side-nav\s+\.custom-side-nav-item\.selected[\s\S]*?margin:\s*4px auto/);
+    });
+
+    it('sets icon-slot to auto-fill width in mobile selected items', () => {
+      expect(CSS).toMatch(/@media[\s\S]*max-width:\s*767px[\s\S]*\.custom-side-nav-icon-slot[\s\S]*?flex:\s*1 1 auto/);
     });
   });
 

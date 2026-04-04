@@ -44,6 +44,12 @@ const CANVAS_TILE_SHELL_SRC = readFileSync(
 );
 
 describe('ProjectDashboardComponent (template regression)', () => {
+  it('always offsets main for the collapsed rail width when not mobile (overlay, no push)', () => {
+    expect(TEMPLATE_SRC).toContain('[class.pl-14]="!isMobile()"');
+    expect(TEMPLATE_SRC).not.toContain('pl-60');
+    expect(TEMPLATE_SRC).not.toContain('md:pl-14');
+  });
+
   it('uses external template file', () => {
     expect(TS_SRC).toContain("templateUrl: './project-dashboard.component.html'");
     expect(TS_SRC).not.toMatch(/^\s*template:\s*`/m);

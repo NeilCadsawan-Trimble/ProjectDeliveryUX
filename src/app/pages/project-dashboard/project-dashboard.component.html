@@ -3578,33 +3578,20 @@
     @if (isCanvas()) {
       <div class="canvas-host bg-background text-foreground canvas-mode" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
         <div class="canvas-navbar">
-          <div [class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()">
-          <modus-navbar
-            [userCard]="userCard"
-            [visibility]="navbarVisibility()"
-            [condensed]="false"
-            [mainMenuOpen]="navExpanded()"
-            [searchInputOpen]="searchInputOpen()"
-            (searchClick)="searchInputOpen.set(!searchInputOpen())"
-            (searchInputOpenChange)="searchInputOpen.set($event)"
-            (trimbleLogoClick)="navigateHome()"
-            (mainMenuOpenChange)="onMainMenuToggle($event)"
-          >
-            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-              @if (!navbarNativeRendered()) {
-                <div
-                  class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
-                  role="button" aria-label="Main menu" tabindex="0"
-                  (click)="navExpanded.set(!navExpanded())"
-                  (keydown.enter)="navExpanded.set(!navExpanded())"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">menu</i>
-                </div>
-                <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
-                  <app-trimble-logo />
-                </div>
-                <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              }
+          <div class="app-navbar">
+            <div class="app-navbar-start">
+              <div
+                class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                role="button" aria-label="Main menu" tabindex="0"
+                (click)="navExpanded.set(!navExpanded())"
+                (keydown.enter)="navExpanded.set(!navExpanded())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+              </div>
+              <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+                <app-trimble-logo />
+              </div>
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               <div
                 class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
                 (click)="navigateBack()"
@@ -3649,7 +3636,7 @@
                 }
               </div>
             </div>
-            <div slot="end" class="flex w-full min-w-0 items-center justify-end gap-1">
+            <div class="app-navbar-end">
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
@@ -3706,7 +3693,6 @@
                 [email]="userCard.email"
               />
             </div>
-          </modus-navbar>
           </div>
         </div>
         <div class="canvas-navbar-shadow navbar-shadow"></div>
@@ -3722,7 +3708,9 @@
                 role="button"
                 [attr.aria-label]="item.label"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                </div>
                 @if (navExpanded()) {
                   <div class="custom-side-nav-label">{{ item.label }}</div>
                 }
@@ -3739,7 +3727,9 @@
                 [attr.aria-label]="detailDrawing() ? 'Reset Layout' : 'Layout options'"
                 [attr.aria-expanded]="detailDrawing() ? null : resetMenuOpen()"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                </div>
                 @if (panning.locked()) {
                   <i class="modus-icons absolute top-1 right-1 text-2xs text-primary" aria-hidden="true">lock</i>
                 }
@@ -3796,7 +3786,9 @@
               role="button"
               aria-label="Settings"
             >
-              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              <div class="custom-side-nav-icon-slot">
+                <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              </div>
               @if (navExpanded()) {
                 <div class="custom-side-nav-label">Settings</div>
               }
@@ -3819,33 +3811,20 @@
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
     <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
       <!-- Navbar -->
-      <div [class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()">
-      <modus-navbar
-        [userCard]="userCard"
-        [visibility]="navbarVisibility()"
-        [condensed]="isMobile()"
-        [mainMenuOpen]="navExpanded()"
-        [searchInputOpen]="searchInputOpen()"
-        (searchClick)="searchInputOpen.set(!searchInputOpen())"
-        (searchInputOpenChange)="searchInputOpen.set($event)"
-        (trimbleLogoClick)="navigateHome()"
-        (mainMenuOpenChange)="onMainMenuToggle($event)"
-      >
-        <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-          @if (!navbarNativeRendered()) {
-            <div
-              class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
-              role="button" aria-label="Main menu" tabindex="0"
-              (click)="navExpanded.set(!navExpanded())"
-              (keydown.enter)="navExpanded.set(!navExpanded())"
-            >
-              <i class="modus-icons text-lg" aria-hidden="true">menu</i>
-            </div>
-            <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
-              <app-trimble-logo />
-            </div>
-            <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-          }
+      <div class="app-navbar">
+        <div class="app-navbar-start">
+          <div
+            class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+            role="button" aria-label="Main menu" tabindex="0"
+            (click)="navExpanded.set(!navExpanded())"
+            (keydown.enter)="navExpanded.set(!navExpanded())"
+          >
+            <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+          </div>
+          <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+            <app-trimble-logo />
+          </div>
+          <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
           <div
             class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
             (click)="navigateBack()"
@@ -3890,7 +3869,7 @@
             }
           </div>
         </div>
-        <div slot="end" class="flex w-full min-w-0 items-center justify-end gap-1">
+        <div class="app-navbar-end">
           <div
             class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
             role="button"
@@ -4013,7 +3992,6 @@
             [email]="userCard.email"
           />
         </div>
-      </modus-navbar>
       </div>
 
       <div class="navbar-shadow"></div>
@@ -4021,7 +3999,13 @@
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
-        <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+        <div
+          class="flex-1 overflow-auto bg-background"
+          [class.pl-14]="!isMobile()"
+          role="main"
+          id="main-content"
+          tabindex="-1"
+        >
           <div [class]="detailDrawing() ? 'p-4 max-w-screen-xl mx-auto flex flex-col h-full' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
@@ -4041,7 +4025,9 @@
                 role="button"
                 [attr.aria-label]="item.label"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                </div>
                 @if (navExpanded() && !isMobile()) {
                   <div class="custom-side-nav-label">{{ item.label }}</div>
                 }
@@ -4058,7 +4044,9 @@
                 aria-label="Layout options"
                 [attr.aria-expanded]="desktopLayoutMenuOpen()"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                </div>
                 @if (navExpanded() && !isMobile()) {
                   <div class="custom-side-nav-label">Layout</div>
                 }
@@ -4093,7 +4081,9 @@
               role="button"
               aria-label="Settings"
             >
-              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              <div class="custom-side-nav-icon-slot">
+                <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              </div>
               @if (navExpanded() && !isMobile()) {
                 <div class="custom-side-nav-label">Settings</div>
               }

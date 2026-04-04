@@ -15,37 +15,29 @@ const ENGINE_SRC = readFileSync(
 
 describe('DashboardShellComponent (regression)', () => {
   describe('hamburger button', () => {
-    it('does not reattach DOM hamburger listeners (avoids blocking mainMenuOpenChange)', () => {
+    it('does not reattach DOM hamburger listeners', () => {
       expect(SRC).not.toContain('attachHamburgerListener');
       expect(SRC).not.toContain('_reattachHamburgerEffect');
     });
 
-    it('fallback hamburger has Main menu aria-label', () => {
+    it('hamburger has Main menu aria-label', () => {
       expect(SRC).toContain('aria-label="Main menu"');
     });
 
-    it('toggles navExpanded on fallback hamburger click', () => {
+    it('toggles navExpanded on hamburger click', () => {
       expect(SRC).toContain('navExpanded.set(!navExpanded())');
-    });
-
-    it('binds mainMenuOpenChange on modus-navbar for native toolbar', () => {
-      expect(SRC).toContain('(mainMenuOpenChange)="onMainMenuToggle($event)"');
-    });
-
-    it('binds mainMenuOpen to navExpanded for two-way sync with modus-wc-navbar', () => {
-      expect(SRC).toContain('[mainMenuOpen]="navExpanded()"');
     });
 
     it('has onMainMenuToggle method', () => {
       expect(SRC).toContain('onMainMenuToggle');
     });
 
-    it('falls back to light DOM query when shadowRoot is null', () => {
-      expect(SRC).toContain('navbarWc.querySelector');
+    it('normalizes mainMenuOpenChange via coerceMainMenuOpenPayload', () => {
+      expect(SRC).toContain('coerceMainMenuOpenPayload');
     });
 
-    it('onMainMenuToggle uses idempotent set(open)', () => {
-      expect(SRC).toContain('navExpanded.set(open)');
+    it('onMainMenuToggle sets navExpanded from coerced boolean', () => {
+      expect(SRC).toContain('navExpanded.set(next)');
     });
   });
 
@@ -55,27 +47,28 @@ describe('DashboardShellComponent (regression)', () => {
     });
   });
 
-  describe('navbar host fallback wrapper', () => {
-    it('marks fallback hamburger for side-rail alignment CSS', () => {
-      expect(SRC).toContain('shell-navbar-hamburger');
+  describe('main content vs fixed side rail', () => {
+    it('always offsets main for the collapsed rail width when not mobile', () => {
+      expect(SRC).toContain('[class.pl-14]="!isMobile()"');
     });
 
-    it('wraps modus-navbar with modus-wc-navbar-host-fallback when native toolbar is missing', () => {
-      expect(SRC).toContain('modus-wc-navbar-host-fallback');
-      expect(SRC).toContain('[class.modus-wc-navbar-host-fallback]="!navbarNativeRendered()"');
+    it('does NOT push content when sidenav expands (overlay only)', () => {
+      expect(SRC).not.toContain('pl-60');
+      expect(SRC).not.toContain('md:pl-14');
     });
   });
 
-  describe('navbar visibility (slot end order vs native utilities)', () => {
-    it('keeps mainMenu true so hamburger renders in canvas and desktop', () => {
-      expect(SRC).toMatch(/mainMenu:\s*true/);
+  describe('app-navbar layout', () => {
+    it('marks hamburger for side-rail alignment CSS', () => {
+      expect(SRC).toContain('shell-navbar-hamburger');
     });
 
-    it('disables native search notifications help user so Angular slot owns utilities', () => {
-      expect(SRC).toMatch(/search:\s*false/);
-      expect(SRC).toMatch(/notifications:\s*false/);
-      expect(SRC).toMatch(/help:\s*false/);
-      expect(SRC).toMatch(/user:\s*false/);
+    it('uses div.app-navbar instead of modus-navbar', () => {
+      expect(SRC).toContain('class="app-navbar"');
+      expect(SRC).toContain('class="app-navbar-start"');
+      expect(SRC).toContain('class="app-navbar-end"');
+      expect(SRC).not.toContain('modus-wc-navbar-host-fallback');
+      expect(SRC).not.toContain('navbarNativeRendered');
     });
 
     it('renders modus-text-input for navbar search when expanded', () => {

@@ -332,6 +332,12 @@ export const routes: Routes = [
       ]
     : []),
   {
+    path: 'project/:slug',
+    loadComponent: () =>
+      import('./pages/project-dashboard/project-slug-page.component').then((m) => m.ProjectSlugPageComponent),
+    title: 'Project',
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./pages/dashboard-layout/dashboard-layout.component').then((m) => m.DashboardLayoutComponent),
@@ -444,12 +450,6 @@ export const routes: Routes = [
             title: 'Cash flow',
           },
         ],
-      },
-      {
-        path: 'project/:slug',
-        loadComponent: () =>
-          import('./pages/project-dashboard/project-slug-page.component').then((m) => m.ProjectSlugPageComponent),
-        title: 'Project',
       },
     ],
   },

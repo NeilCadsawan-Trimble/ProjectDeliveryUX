@@ -18,7 +18,7 @@ import { Router } from '@angular/router';
 import { DataStoreService } from '../../data/data-store.service';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
-import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
+import type { INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusTextInputComponent } from '../../components/modus-text-input.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
@@ -69,6 +69,10 @@ import { ALL_DRAWINGS_BY_PROJECT, SITE_CAPTURES_BY_PROJECT, type DrawingTile, ty
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 import { ProjectDashboardNavigationService } from './project-dashboard-navigation.service';
+import {
+  coerceMainMenuOpenPayload,
+  isClickInsideSideNavChrome,
+} from '../../shell/utils/side-nav-click.util';
 
 type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather';
 
@@ -107,7 +111,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusTextInputComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -920,25 +924,12 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
-  readonly navbarVisibility = computed(() => ({
-    user: false,
-    mainMenu: true,
-    ai: false,
-    notifications: false,
-    apps: false,
-    help: false,
-    search: false,
-    searchInput: false,
-  }));
-
   readonly navbarSearchQuery = signal('');
 
   handleNavbarSearchInput(event: InputEvent): void {
     const target = event.target as HTMLInputElement;
     this.navbarSearchQuery.set(target?.value ?? '');
   }
-
-  readonly navbarNativeRendered = signal(false);
 
   readonly userCard: INavbarUserCard = {
     name: 'Frank Mendoza',
@@ -1875,8 +1866,6 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   override ngAfterViewInit(): void {
     super.ngAfterViewInit();
 
-    this.detectNativeNavbarRender();
-
     if (typeof window !== 'undefined') {
       this._compactMq = window.matchMedia('(max-width: 580px)');
       this.isCompactMobile.set(this._compactMq.matches);
@@ -1885,40 +1874,10 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     }
   }
 
-  private detectNativeNavbarRender(): void {
-    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
-    if (!navbarWc) {
-      this.navbarNativeRendered.set(false);
-      return;
-    }
-    const hasToolbar = (): boolean =>
-      !!(navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar'));
-
-    const pollAfterStencil = (attempt: number): void => {
-      requestAnimationFrame(() => {
-        if (hasToolbar()) {
-          this.navbarNativeRendered.set(true);
-          return;
-        }
-        if (attempt >= 48) {
-          this.navbarNativeRendered.set(false);
-          return;
-        }
-        pollAfterStencil(attempt + 1);
-      });
-    };
-
-    const ready = (navbarWc as unknown as { componentOnReady?: () => Promise<void> }).componentOnReady;
-    if (typeof ready === 'function') {
-      void ready.call(navbarWc).then(() => pollAfterStencil(0));
-      return;
-    }
-    pollAfterStencil(0);
-  }
-
   onMainMenuToggle(open: unknown): void {
-    if (typeof open === 'boolean') {
-      this.navExpanded.set(open);
+    const next = coerceMainMenuOpenPayload(open);
+    if (next !== undefined) {
+      this.navExpanded.set(next);
     }
   }
 
@@ -2260,6 +2219,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
   onDocumentClick(event: MouseEvent): void {
+    if (this.navExpanded() && !isClickInsideSideNavChrome(event)) {
+      this.navExpanded.set(false);
+    }
     const target = event.target as HTMLElement;
     const insideAiPanel = !!target.closest('modus-utility-panel');
     if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !target.closest('[data-tile-id]') && !insideAiPanel) {
