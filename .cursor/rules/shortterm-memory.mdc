@@ -82,12 +82,25 @@ If the date matches today, skip this section and proceed normally.
   1. In `src/styles.css` (canvas `@media (min-width: 1920px)`), fixed hamburger used `left: 12px` and 32px hit target while `.custom-side-nav-item.selected` uses 4px margin + 48px tile on the 56px rail, so the menu sat ~8px to the right of the home tile.
   2. Updated native `modus-wc-button[aria-label='Main menu']` and `.shell-navbar-hamburger` to `left: 4px; top: 4px;` with 48x48 box and `border-radius: 0.375rem` on fallback to match selected rail tiles; kept `padding-left: 56px` on start slot.
 
+### Session 17 (Apr 3)
+- **Topic**: Sidenav overlay, consistent row heights, mobile icon centering, button/title alignment
+- **What happened**:
+  1. Removed `pl-60` push behavior from `dashboard-shell.component.ts` and `project-dashboard.component.html` -- expanded sidenav now overlays via z-index.
+  2. Set `height: 56px; padding: 0;` on `.custom-side-nav-item` for consistent row heights between collapsed (56px = 48px tile + 4px margin each side) and expanded (56px explicit height) states.
+  3. Scoped expanded icon-slot override to desktop (`min-width: 768px`); added mobile-specific icon-slot rule (`flex: 1 1 auto; padding-left: 10px`) to center icons in 48px selected tile.
+  4. Replaced custom div-based "Create" buttons on Projects page with `<modus-button>` matching Financials "Export" button. Added `ModusButtonComponent` import.
+  5. Matched projects page outer padding (`py-4 md:py-6`) to home page for consistent title y-coordinate.
+  6. Updated static tests (390 passing), all lint/type-check/build clean.
+  7. Added section 24 to `dashboard-layout-lessons` SKILL.md.
+  8. Updated `PROGRESS.md` with Phase 17 (5 items), updated test counts to 390, added chat session entry.
+  9. Pushed to GitHub, created PR #56, merged to main.
+
 ## Active Context
 
-- On `dev` branch.
-- Hamburger / mainMenuOpenChange fix (session 15) + prior unpushed work; verify in browser after pull.
+- On `dev` branch, up to date with origin/dev.
+- PR #56 merged to main. Vercel should auto-deploy.
 - Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
 
 ## Pending Items
 
-- Push changes when user requests.
+- None currently.

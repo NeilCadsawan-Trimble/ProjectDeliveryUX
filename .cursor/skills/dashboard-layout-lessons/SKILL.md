@@ -1238,6 +1238,53 @@ Angular `effect()` callbacks that call `syncProp` often run **before** `ngAfterV
 
 ---
 
+## 24. Sidenav Overlay, Consistent Row Heights, and Mobile Icon Centering
+
+### Sidenav overlay (not push)
+
+The main content area must use a **fixed** `pl-14` offset for the collapsed 56px rail and **never** add `pl-60` when the sidenav expands. The expanded sidenav overlays content via `position: fixed; z-index: 999`. This applies in both `dashboard-shell.component.ts` and `project-dashboard.component.html`.
+
+**Pattern (main content div):**
+```html
+[class.pl-14]="!isMobile()"
+<!-- NEVER: [class.pl-60]="navExpanded()" -->
+```
+
+### Consistent 56px row heights
+
+All `.custom-side-nav-item` elements use `height: 56px; padding: 0;` with `align-items: center` for vertical centering. The selected tile (48px + 4px margin each side = 56px total) and non-selected items both occupy exactly 56px, so icons stay at identical vertical positions when toggling between collapsed and expanded states.
+
+**Before (broken):** Non-selected items were `padding: 0.875rem 0` = ~46px, selected was 56px. Expanding collapsed the 10px gap, causing a visible icon shift.
+
+### Expanded selected item (desktop)
+
+In expanded state (desktop `min-width: 768px`), the selected item switches to `height: 56px; margin: 0; border-radius: 0; padding: 0; padding-right: 0.75rem;` -- a full-width highlighted bar matching non-selected row heights.
+
+### Mobile icon centering
+
+The expanded icon-slot override (`flex: 0 0 56px; width: 56px;`) must be **scoped to desktop** (`@media (min-width: 768px)`) because in mobile the sidenav always has `.expanded` class when visible, but the selected tile is still 48px. A 56px icon-slot inside a 48px tile pushes the icon off-center.
+
+Mobile selected items use:
+```css
+@media (max-width: 767px) {
+  .custom-side-nav .custom-side-nav-item.selected .custom-side-nav-icon-slot {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    padding-left: 10px; /* visually tuned */
+  }
+}
+```
+
+### Rules (mandatory)
+
+1. **Never use `pl-60`** on main content -- sidenav always overlays.
+2. **All nav items must be 56px tall** -- set via `height: 56px` on base `.custom-side-nav-item`.
+3. **Scope expanded icon-slot overrides to desktop** -- mobile uses `flex: 1 1 auto` to fill the 48px tile.
+4. **The `padding-left: 10px` on mobile icon-slot was pixel-tuned** -- don't change without visual verification.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1267,3 +1314,6 @@ Angular `effect()` callbacks that call `syncProp` often run **before** `ngAfterV
 | Projects layout alignment + DashboardPageBase | `projects-page.component.ts` + `projects-page-layout.config.ts` | Build verification; visual test |
 | Compact mode for narrow widgets | `project-dashboard.component.ts` + `.html`, `home-page.component.ts` | (visual: resize widget to 5 cols, verify compact tiles) |
 | Navbar native rendering fallback | `dashboard-shell.component.ts`, `project-dashboard.component.html`, `modus-navbar.component.ts`, `trimble-logo.component.ts` | Build + `tests/static/modus-navbar-wrapper.spec.ts` + verify on Vercel |
+| Sidenav overlay (no push) | `dashboard-shell.component.ts`, `project-dashboard.component.html` | `tests/static/dashboard-shell.spec.ts`, `tests/static/project-dashboard.spec.ts` |
+| Consistent 56px nav row height | `src/styles.css` | `tests/static/styles.spec.ts` |
+| Mobile icon centering | `src/styles.css` | `tests/static/styles.spec.ts` (mobile icon-slot auto-fill) |

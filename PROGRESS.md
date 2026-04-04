@@ -4,7 +4,7 @@
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
 **Last Updated**: April 3, 2026
-**Total Commits**: 180+
+**Total Commits**: 193+
 
 ---
 
@@ -28,9 +28,10 @@
 | 14 | Adaptive Widget Content | Done | 7/7 |
 | 15 | Projects Dashboard Layout Alignment | Done | 6/6 |
 | 16 | Risk Tuning, Priority Sort, and Widget Compact Mode | Done | 7/7 |
-| 17 | Remaining Work | Not Started | 0/8 |
+| 17 | Sidenav Polish and UI Consistency | Done | 5/5 |
+| 18 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 150/158 items (95%)
+**Completed**: 155/163 items (95%)
 
 ---
 
@@ -435,7 +436,28 @@ Corrected project risk distribution, fixed urgency-based tile ordering, added a 
 
 ---
 
-## Phase 17: Remaining Work
+## Phase 17: Sidenav Polish and UI Consistency (Apr 3)
+
+Side navigation overlay behavior, consistent spacing, mobile centering, button standardization, and cross-page title alignment.
+
+### Sidenav Overlay
+- [x] Removed `pl-60` push behavior from dashboard shell and project dashboard -- expanded sidenav now overlays content via `position: fixed; z-index: 999` instead of shifting it
+- [x] Set fixed 56px row height on all `.custom-side-nav-item` elements so collapsed and expanded states have identical vertical rhythm (was 46px vs 56px mismatch causing icon shift on toggle)
+
+### Mobile Icon Centering
+- [x] Scoped expanded icon-slot override (`flex: 0 0 56px`) to desktop only (`min-width: 768px`) -- in mobile, the `.expanded` class is always present when visible but the selected tile is still 48px, so a 56px slot caused overflow and off-center icons
+- [x] Added mobile-specific `padding-left: 10px` on selected item icon-slot (pixel-tuned iteratively)
+
+### UI Consistency
+- [x] Replaced custom div-based "Create" buttons on Projects page with `<modus-button color="primary" size="sm" icon="add" iconPosition="left">` matching the "Export" button on Financials
+- [x] Aligned projects page outer padding (`py-4 md:py-6`) to match home page so titles sit at the same y-coordinate
+
+**PRs**: #56
+**Tests**: 390 static tests, type-check, lint, and build all passing
+
+---
+
+## Phase 18: Remaining Work
 
 Features and improvements not yet started.
 
@@ -458,19 +480,22 @@ Features and improvements not yet started.
 
 ## Regression Test Coverage
 
-### Covered (Static Tests -- `tests/static/` -- 325 tests)
+### Covered (Static Tests -- `tests/static/` -- 390 tests)
 
 | Area | File | Tests |
 |------|------|-------|
-| Dashboard shell | `dashboard-shell.spec.ts` | 28 tests: hamburger, navExpanded, reset flyout, labels, dynamic back button |
+| Dashboard shell | `dashboard-shell.spec.ts` | 32 tests: hamburger, navExpanded, reset flyout, labels, dynamic back button, overlay behavior |
 | Home page | `home-page.spec.ts` | 11 tests: widgets, urgent needs, weather outlook |
-| Projects page | `projects-page.spec.ts` | 6 structural tests |
+| Projects page | `projects-page.spec.ts` | 14 structural tests |
 | Financials page | `financials-page.spec.ts` | 6 structural tests |
-| Project dashboard | `project-dashboard.spec.ts` | 110 tests: widgets, weather, tile detail, subnav, layout menu, per-prefix canvas completeness, grid/list parity, toolbar icons, canvas rendering parity |
-| CSS regressions | `styles.spec.ts` | 10 tests: side nav overflow, reset flyout, canvas navbar |
+| Project dashboard | `project-dashboard.spec.ts` | 112 tests: widgets, weather, tile detail, subnav, layout menu, per-prefix canvas completeness, grid/list parity, toolbar icons, canvas rendering parity, overlay behavior |
+| CSS regressions | `styles.spec.ts` | 22 tests: side nav overflow, reset flyout, canvas navbar, row heights, expanded alignment, mobile centering |
 | Canvas panning | `canvas-panning.spec.ts` | 10 tests: spacebar panning, lock canvas |
-| Canvas grid alignment | `canvas-grid-alignment.spec.ts` | 58 tests: grid alignment, column parity, canvas structure |
-| Template safety | `template-safety.spec.ts` | 86 tests: arrow function prevention, private member access |
+| Canvas grid alignment | `canvas-grid-alignment.spec.ts` | 72 tests: grid alignment, column parity, canvas structure |
+| Template safety | `template-safety.spec.ts` | 100 tests: arrow function prevention, private member access |
+| Side nav click util | `side-nav-click.util.spec.ts` | 7 tests: navigation click handling |
+| Signal safety | `signal-safety.spec.ts` | 2 tests: signal initialization patterns |
+| Modus navbar wrapper | `modus-navbar-wrapper.spec.ts` | 2 tests: flushPropsToWc, native rendering |
 
 ### Covered (Unit Tests -- `src/app/shell/services/`)
 
@@ -511,6 +536,7 @@ Features and improvements not yet started.
 | Apr 2 | [Projects layout alignment](20b36c27-0715-4a36-9c40-ec6f32104d80) | Projects Dashboard layout alignment with Home rules, DashboardPageBase extension, desktop drag/resize/lock re-enabled, default layout capture from browser |
 | Apr 3 | [Risk tuning and priority sort](a29bd855-b58b-4bf6-91ef-c3a10be2e2a3) | Risk distribution fixes (seen keys, year-less dates, coreWarningCount), TILE_VISUAL_ORDER, Sort by Priority menu |
 | Apr 3 | [Widget compact mode](328a8c37-da05-488d-86ec-0a6b40525f96) | RFI/Submittal compact mode ported to project dashboard, colSpan-based responsive switching |
+| Apr 3 | [Sidenav polish](a54ba709-8451-4a34-a90f-ccb02aad30e5) | Sidenav overlay (no push), consistent 56px row heights, mobile icon centering, Create button standardization, title y-coordinate alignment |
 
 ---
 
