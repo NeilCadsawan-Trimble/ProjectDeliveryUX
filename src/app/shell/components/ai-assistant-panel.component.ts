@@ -129,7 +129,7 @@ import type { AgentAction } from '../../data/widget-agents';
                     @if (msg.pendingAction) {
                       <div class="rounded-xl border-primary bg-primary-20 p-3">
                         <div class="flex items-center gap-2 mb-2">
-                          <i class="modus-icons text-sm text-primary" aria-hidden="true">edit</i>
+                          <i class="modus-icons text-sm text-primary" aria-hidden="true">file_edit</i>
                           <div class="text-xs font-semibold text-primary uppercase tracking-wider">Proposed Change</div>
                         </div>
                         <div class="text-sm text-foreground mb-3">{{ msg.pendingAction.description }}</div>

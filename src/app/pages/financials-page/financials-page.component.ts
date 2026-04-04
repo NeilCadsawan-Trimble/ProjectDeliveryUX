@@ -228,8 +228,8 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
 
             <!-- Chart -->
-            <div class="relative" style="padding-left:36px;padding-bottom:20px">
-              <svg class="w-full" [attr.viewBox]="'0 0 ' + pfW + ' ' + pfH" preserveAspectRatio="none" style="height:160px">
+            <div class="relative pl-9 pb-5">
+              <svg class="w-full h-40" [attr.viewBox]="'0 0 ' + pfW + ' ' + pfH" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="pfGrad" x1="0" y1="0" x2="0" y2="1">
                     @if (profitFadeData()?.isFade) {
@@ -404,7 +404,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             [style.left.px]="widgetLefts()['finHeader']"
             [style.width.px]="widgetPixelWidths()['finHeader']"
             [style.height.px]="widgetHeights()['finHeader']"
-            [style.z-index]="widgetZIndices()['finHeader'] ?? 0"
+            [style.z-index]="widgetZIndices()['finHeader']"
           >
             <div class="flex items-start justify-between mb-4">
               <div>
@@ -467,7 +467,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             [style.left.px]="isCanvasMode() || moveTargetId() === widgetId ? widgetLefts()[widgetId] : null"
             [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : (moveTargetId() === widgetId ? dragWidth() : null)"
             [style.height.px]="widgetHeights()[widgetId]"
-            [style.z-index]="widgetZIndices()[widgetId] ?? 0"
+            [style.z-index]="widgetZIndices()[widgetId]"
           >
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
@@ -599,7 +599,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
                       <div class="text-xs text-foreground-40">{{ revenueSummary().label }}</div>
                     </div>
 
-                    <div class="flex-1 min-h-0 relative" style="padding-left:36px;padding-bottom:20px"
+                    <div class="flex-1 min-h-0 relative pl-9 pb-5"
                       #chartArea
                       (mousemove)="onChartMouseMove($event)"
                       (mouseleave)="onChartMouseLeave()">

@@ -115,7 +115,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
             [style.left.px]="widgetLefts()['homeHeader']"
             [style.width.px]="widgetPixelWidths()['homeHeader']"
             [style.height.px]="widgetHeights()['homeHeader']"
-            [style.z-index]="widgetZIndices()['homeHeader'] ?? 0"
+            [style.z-index]="widgetZIndices()['homeHeader']"
           >
             <div class="flex items-start justify-between mb-4">
               <div>
@@ -151,7 +151,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
             [style.left.px]="isCanvasMode() || moveTargetId() === widgetId ? widgetLefts()[widgetId] : null"
             [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : (moveTargetId() === widgetId ? dragWidth() : null)"
             [style.height.px]="widgetHeights()[widgetId]"
-            [style.z-index]="canvasDetailViews()[widgetId] ? 9999 : (widgetId === 'homeTimeOff' && timeOffStatusOpen() !== null) ? 9998 : (widgetZIndices()[widgetId] ?? 0)"
+            [style.z-index]="canvasDetailViews()[widgetId] ? 9999 : (widgetId === 'homeTimeOff' && timeOffStatusOpen() !== null) ? 9998 : widgetZIndices()[widgetId]"
             (mousedown)="canvasDetailViews()[widgetId] ? selectDetailWidget(widgetId, $event) : null"
           >
           @if (canvasDetailViews()[widgetId]; as detail) {

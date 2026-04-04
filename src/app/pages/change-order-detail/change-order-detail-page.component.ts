@@ -115,7 +115,7 @@ function typeBgClass(coType: ChangeOrderType): string {
                   (keydown.enter)="statusOpen.set(!statusOpen())">
                   <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
                   <div class="text-sm font-medium text-foreground">{{ capitalizeFirst(changeOrder()!.status) }}</div>
-                  <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">chevron_down</i>
+                  <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
                 </div>
                 @if (statusOpen()) {
                   <div class="fixed inset-0 z-[9998]" (click)="statusOpen.set(false)"></div>

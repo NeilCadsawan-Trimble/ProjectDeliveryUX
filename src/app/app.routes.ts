@@ -5,238 +5,10 @@ import { environment } from '../environments/environment.development';
  * Application routes.
  *
  * Structure:
- * - / : User's home page
- * - /dev/* : Development routes (only available when devPanel is enabled)
- *   - /dev/colors : Color palette reference
- *   - /dev/icons : Icon library browser
- *   - /dev/components : Component gallery
- *   - /dev/demos/* : Individual component demos
- *
- * Getting Started:
- * 1. Add your application routes below the home route
- * 2. Use Ctrl+Shift+D to open the Dev Panel for component reference
- * 3. Dev routes are automatically excluded from production builds
+ * - /, /projects, /financials/*, /project/:slug : App shell (dashboard layout + page content)
+ * - /dev/* : Development routes (only when devPanel is enabled in environment)
  */
 export const routes: Routes = [
-  // User routes - add your application routes here
-  {
-    path: '',
-    loadComponent: () =>
-      import('./pages/dashboard-layout/dashboard-layout.component').then(
-        (m) => m.DashboardLayoutComponent,
-      ),
-    children: [
-      {
-        path: '',
-        loadComponent: () =>
-          import('./pages/home-page/home-page.component').then((m) => m.HomePageComponent),
-        title: 'Home',
-      },
-      {
-        path: 'projects',
-        loadComponent: () =>
-          import('./pages/projects-page/projects-page.component').then(
-            (m) => m.ProjectsPageComponent,
-          ),
-        title: 'Projects',
-      },
-      {
-        path: 'financials',
-        loadComponent: () =>
-          import('./pages/financials-page/financials-page.component').then(
-            (m) => m.FinancialsPageComponent,
-          ),
-        title: 'Financials',
-      },
-      {
-        path: 'financials/job-costs/:slug',
-        loadComponent: () =>
-          import('./pages/financials-page/financials-page.component').then(
-            (m) => m.FinancialsPageComponent,
-          ),
-        title: 'Job Costs',
-      },
-      {
-        path: 'financials/estimates/:id',
-        loadComponent: () =>
-          import('./pages/estimate-detail/estimate-detail-page.component').then(
-            (m) => m.EstimateDetailPageComponent,
-          ),
-        title: 'Estimate Detail',
-      },
-      {
-        path: 'financials/change-orders/:id',
-        loadComponent: () =>
-          import('./pages/change-order-detail/change-order-detail-page.component').then(
-            (m) => m.ChangeOrderDetailPageComponent,
-          ),
-        title: 'Change Order Detail',
-      },
-      {
-        path: 'financials/invoices/:id',
-        loadComponent: () =>
-          import('./pages/invoice-detail/invoice-detail-page.component').then(
-            (m) => m.InvoiceDetailPageComponent,
-          ),
-        title: 'Invoice Detail',
-      },
-      {
-        path: 'financials/payables/:id',
-        loadComponent: () =>
-          import('./pages/payable-detail/payable-detail-page.component').then(
-            (m) => m.PayableDetailPageComponent,
-          ),
-        title: 'Payable Detail',
-      },
-      {
-        path: 'financials/purchase-orders/:id',
-        loadComponent: () =>
-          import('./pages/purchase-order-detail/purchase-order-detail-page.component').then(
-            (m) => m.PurchaseOrderDetailPageComponent,
-          ),
-        title: 'Purchase Order Detail',
-      },
-      {
-        path: 'financials/contracts/:id',
-        loadComponent: () =>
-          import('./pages/contract-detail/contract-detail-page.component').then(
-            (m) => m.ContractDetailPageComponent,
-          ),
-        title: 'Contract Detail',
-      },
-      {
-        path: 'financials/billing/:id',
-        loadComponent: () =>
-          import('./pages/billing-event-detail/billing-event-detail-page.component').then(
-            (m) => m.BillingEventDetailPageComponent,
-          ),
-        title: 'Billing Event Detail',
-      },
-      {
-        path: 'financials/payroll/:id',
-        loadComponent: () =>
-          import('./pages/payroll-record-detail/payroll-record-detail-page.component').then(
-            (m) => m.PayrollRecordDetailPageComponent,
-          ),
-        title: 'Payroll Record Detail',
-      },
-      {
-        path: 'financials/payroll-monthly/:month',
-        loadComponent: () =>
-          import('./pages/payroll-monthly-detail/payroll-monthly-detail-page.component').then(
-            (m) => m.PayrollMonthlyDetailPageComponent,
-          ),
-        title: 'Payroll Monthly Detail',
-      },
-      {
-        path: 'financials/subcontract-ledger/:id',
-        loadComponent: () =>
-          import('./pages/subcontract-ledger-detail/subcontract-ledger-detail-page.component').then(
-            (m) => m.SubcontractLedgerDetailPageComponent,
-          ),
-        title: 'Subcontract Ledger Detail',
-      },
-      {
-        path: 'financials/gl-entries/:id',
-        loadComponent: () =>
-          import('./pages/gl-entry-detail/gl-entry-detail-page.component').then(
-            (m) => m.GlEntryDetailPageComponent,
-          ),
-        title: 'Journal Entry Detail',
-      },
-      {
-        path: 'financials/gl-accounts/:code',
-        loadComponent: () =>
-          import('./pages/gl-account-detail/gl-account-detail-page.component').then(
-            (m) => m.GlAccountDetailPageComponent,
-          ),
-        title: 'GL Account Detail',
-      },
-      {
-        path: 'financials/cash-flow/:month',
-        loadComponent: () =>
-          import('./pages/cash-flow-detail/cash-flow-detail-page.component').then(
-            (m) => m.CashFlowDetailPageComponent,
-          ),
-        title: 'Cash Flow Detail',
-      },
-      {
-        path: 'rfi/:id',
-        loadComponent: () =>
-          import('./pages/rfi-detail/rfi-detail-page.component').then(
-            (m) => m.RfiDetailPageComponent,
-          ),
-        title: 'RFI Detail',
-      },
-    ],
-  },
-
-  {
-    path: 'project/riverside-office-complex',
-    loadComponent: () =>
-      import('./pages/projects/cloud-infrastructure-migration/cloud-infrastructure-migration-page.component').then(
-        (m) => m.CloudInfrastructureMigrationPageComponent,
-      ),
-    title: 'Riverside Office Complex',
-  },
-  {
-    path: 'project/harbor-view-condominiums',
-    loadComponent: () =>
-      import('./pages/projects/mobile-app-redesign/mobile-app-redesign-page.component').then(
-        (m) => m.MobileAppRedesignPageComponent,
-      ),
-    title: 'Harbor View Condominiums',
-  },
-  {
-    path: 'project/downtown-transit-hub',
-    loadComponent: () =>
-      import('./pages/projects/erp-system-upgrade/erp-system-upgrade-page.component').then(
-        (m) => m.ErpSystemUpgradePageComponent,
-      ),
-    title: 'Downtown Transit Hub',
-  },
-  {
-    path: 'project/lakeside-medical-center',
-    loadComponent: () =>
-      import('./pages/projects/data-analytics-platform/data-analytics-platform-page.component').then(
-        (m) => m.DataAnalyticsPlatformPageComponent,
-      ),
-    title: 'Lakeside Medical Center',
-  },
-  {
-    path: 'project/westfield-shopping-center',
-    loadComponent: () =>
-      import('./pages/projects/customer-portal-v3/customer-portal-v3-page.component').then(
-        (m) => m.CustomerPortalV3PageComponent,
-      ),
-    title: 'Westfield Shopping Center',
-  },
-  {
-    path: 'project/metro-bridge-rehabilitation',
-    loadComponent: () =>
-      import('./pages/projects/security-compliance-audit/security-compliance-audit-page.component').then(
-        (m) => m.SecurityComplianceAuditPageComponent,
-      ),
-    title: 'Metro Bridge Rehabilitation',
-  },
-  {
-    path: 'project/sunset-ridge-apartments',
-    loadComponent: () =>
-      import('./pages/projects/api-gateway-modernization/api-gateway-modernization-page.component').then(
-        (m) => m.ApiGatewayModernizationPageComponent,
-      ),
-    title: 'Sunset Ridge Apartments',
-  },
-  {
-    path: 'project/industrial-park-warehouse',
-    loadComponent: () =>
-      import('./pages/projects/ml-model-deployment-pipeline/ml-model-deployment-pipeline-page.component').then(
-        (m) => m.MlModelDeploymentPipelinePageComponent,
-      ),
-    title: 'Industrial Park Warehouse',
-  },
-
-  // Dev routes - conditionally added based on environment
   ...(environment.devPanel
     ? [
         {
@@ -559,4 +331,126 @@ export const routes: Routes = [
         },
       ]
     : []),
+  {
+    path: 'project/:slug',
+    loadComponent: () =>
+      import('./pages/project-dashboard/project-slug-page.component').then((m) => m.ProjectSlugPageComponent),
+    title: 'Project',
+  },
+  {
+    path: '',
+    loadComponent: () =>
+      import('./pages/dashboard-layout/dashboard-layout.component').then((m) => m.DashboardLayoutComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./pages/home-page/home-page.component').then((m) => m.HomePageComponent),
+        title: 'Home',
+      },
+      {
+        path: 'projects',
+        loadComponent: () =>
+          import('./pages/projects-page/projects-page.component').then((m) => m.ProjectsPageComponent),
+        title: 'Projects',
+      },
+      {
+        path: 'financials',
+        loadComponent: () =>
+          import('./pages/financials-page/financials-shell.component').then((m) => m.FinancialsShellComponent),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Financials',
+          },
+          {
+            path: 'job-costs/:slug',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Job costs',
+          },
+          {
+            path: 'change-orders/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Change orders',
+          },
+          {
+            path: 'estimates/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Estimates',
+          },
+          {
+            path: 'invoices/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Invoices',
+          },
+          {
+            path: 'payables/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Payables',
+          },
+          {
+            path: 'purchase-orders/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Purchase orders',
+          },
+          {
+            path: 'contracts/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Contracts',
+          },
+          {
+            path: 'billing/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Billing',
+          },
+          {
+            path: 'payroll/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Payroll',
+          },
+          {
+            path: 'payroll-monthly/:month',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Payroll',
+          },
+          {
+            path: 'subcontract-ledger/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Subcontract ledger',
+          },
+          {
+            path: 'gl-entries/:id',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'GL entries',
+          },
+          {
+            path: 'gl-accounts/:code',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'GL accounts',
+          },
+          {
+            path: 'cash-flow/:month',
+            loadComponent: () =>
+              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+            title: 'Cash flow',
+          },
+        ],
+      },
+    ],
+  },
 ];

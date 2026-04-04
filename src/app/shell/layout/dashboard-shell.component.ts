@@ -12,10 +12,11 @@ import {
   input,
   viewChild,
 } from '@angular/core';
-import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
-import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
+import type { INavbarUserCard } from '../../components/modus-navbar.component';
+import { ModusTextInputComponent } from '../../components/modus-text-input.component';
 import { AiIconComponent } from '../components/ai-icon.component';
 import { AiAssistantPanelComponent } from '../components/ai-assistant-panel.component';
 import { UserMenuComponent } from '../components/user-menu.component';
@@ -28,6 +29,10 @@ import { AiToolsService } from '../../services/ai-tools.service';
 import { AiPanelController } from '../services/ai-panel-controller';
 import { CanvasPanning } from '../services/canvas-panning';
 import { NavigationHistoryService } from '../services/navigation-history.service';
+import {
+  coerceMainMenuOpenPayload,
+  isClickInsideSideNavChrome,
+} from '../utils/side-nav-click.util';
 import { LayoutDefaultsService } from '../services/layout-defaults.service';
 import { DataStoreService } from '../../data/data-store.service';
 import { WeatherService } from '../../services/weather.service';
@@ -47,12 +52,11 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 @Component({
   selector: 'app-dashboard-shell',
   imports: [
-    ModusNavbarComponent,
+    ModusTextInputComponent,
     AiIconComponent,
     AiAssistantPanelComponent,
     UserMenuComponent,
     TrimbleLogoComponent,
-    RouterOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -73,12 +77,12 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     <svg aria-hidden="true" class="svg-defs-hidden">
       <defs>
         <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="20%" stop-color="#FF00FF" />
+          <stop offset="20%" stop-color="hsl(300, 100%, 50%)" />
           <stop offset="60%" stop-color="#0066CC" />
           <stop offset="100%" stop-color="#0066CC" />
         </linearGradient>
         <radialGradient id="ai-grad-dark" cx="18%" cy="18%" r="70%">
-          <stop offset="0%" stop-color="#FF00FF" />
+          <stop offset="0%" stop-color="hsl(300, 100%, 50%)" />
           <stop offset="50%" stop-color="#9933FF" />
           <stop offset="100%" stop-color="#0066CC" />
         </radialGradient>
@@ -90,24 +94,20 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       <div class="canvas-host bg-background text-foreground canvas-mode select-none" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
 
         <div class="canvas-navbar">
-          <modus-navbar
-            [userCard]="userCard()"
-            [visibility]="navbarVisibility()"
-            [condensed]="false"
-            [searchInputOpen]="searchInputOpen()"
-            (searchClick)="searchInputOpen.set(!searchInputOpen())"
-            (searchInputOpenChange)="searchInputOpen.set($event)"
-            (trimbleLogoClick)="navigateHome()"
-            (aiClick)="ai.toggle()"
-            (mainMenuOpenChange)="onMainMenuToggle($event)"
-          >
-            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-              @if (!navbarNativeRendered()) {
-                <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
-                  <app-trimble-logo />
-                </div>
-                <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              }
+          <div class="app-navbar">
+            <div class="app-navbar-start">
+              <div
+                class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                role="button" aria-label="Main menu" tabindex="0"
+                (click)="navExpanded.set(!navExpanded())"
+                (keydown.enter)="navExpanded.set(!navExpanded())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+              </div>
+              <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+                <app-trimble-logo />
+              </div>
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               @if (navHistory.shellBackButton()) {
                 <div
                   class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
@@ -157,7 +157,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 <div class="text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
               }
             </div>
-            <div slot="end" class="flex items-center gap-1">
+            <div class="app-navbar-end">
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
@@ -178,27 +178,37 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
               </div>
-              @if (!navbarNativeRendered()) {
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Search" tabindex="0"
-                  (click)="searchInputOpen.set(!searchInputOpen())"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">search</i>
-                </div>
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Notifications" tabindex="0"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
-                </div>
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Help" tabindex="0"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">help</i>
-                </div>
+              @if (searchInputOpen()) {
+                <modus-text-input
+                  class="w-44 min-w-[10rem] max-w-xs shrink"
+                  inputId="shell-navbar-search-canvas"
+                  placeholder="Search"
+                  size="sm"
+                  [includeSearch]="true"
+                  [includeClear]="true"
+                  [value]="navbarSearchQuery()"
+                  (inputChange)="handleNavbarSearchInput($event)"
+                />
               }
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Search" tabindex="0"
+                (click)="searchInputOpen.set(!searchInputOpen())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">search</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Notifications" tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Help" tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">help</i>
+              </div>
               <user-menu
                 [name]="userCard().name"
                 [email]="userCard().email"
@@ -207,7 +217,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 (signOut)="onUserSignOut()"
               />
             </div>
-          </modus-navbar>
+          </div>
         </div>
         <div class="canvas-navbar-shadow"></div>
 
@@ -222,7 +232,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 role="button"
                 [attr.aria-label]="item.label"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                </div>
                 @if (navExpanded()) {
                   <div class="custom-side-nav-label">{{ item.label }}</div>
                 }
@@ -239,7 +251,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 aria-label="Layout options"
                 [attr.aria-expanded]="resetMenuOpen()"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                </div>
                 @if (panning.locked()) {
                   <i class="modus-icons absolute top-1 right-1 text-2xs text-primary" aria-hidden="true">lock</i>
                 }
@@ -306,7 +320,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               role="button"
               aria-label="Settings"
             >
-              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              <div class="custom-side-nav-icon-slot">
+                <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              </div>
               @if (navExpanded()) {
                 <div class="custom-side-nav-label">Settings</div>
               }
@@ -319,38 +335,26 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 
         <div class="canvas-content" role="main" id="main-content" tabindex="-1"
           [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
-          <router-outlet />
+          <ng-content />
         </div>
 
       </div>
     } @else {
       <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
-          <modus-navbar
-            [userCard]="userCard()"
-            [visibility]="navbarVisibility()"
-            [condensed]="isMobile()"
-            [searchInputOpen]="searchInputOpen()"
-            (searchClick)="searchInputOpen.set(!searchInputOpen())"
-            (searchInputOpenChange)="searchInputOpen.set($event)"
-            (trimbleLogoClick)="navigateHome()"
-            (aiClick)="ai.toggle()"
-            (mainMenuOpenChange)="onMainMenuToggle($event)"
-          >
-            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-              @if (!navbarNativeRendered()) {
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
-                  role="button" aria-label="Main menu" tabindex="0"
-                  (click)="navExpanded.set(!navExpanded())"
-                  (keydown.enter)="navExpanded.set(!navExpanded())"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">menu</i>
-                </div>
-                <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
-                  <app-trimble-logo />
-                </div>
-                <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              }
+          <div class="app-navbar">
+            <div class="app-navbar-start">
+              <div
+                class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                role="button" aria-label="Main menu" tabindex="0"
+                (click)="navExpanded.set(!navExpanded())"
+                (keydown.enter)="navExpanded.set(!navExpanded())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+              </div>
+              <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+                <app-trimble-logo />
+              </div>
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               @if (navHistory.shellBackButton()) {
                 <div
                   class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
@@ -400,7 +404,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
               }
             </div>
-            <div slot="end" class="flex items-center gap-1">
+            <div class="app-navbar-end">
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
@@ -421,7 +425,19 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
               </div>
-              @if (!navbarNativeRendered() && !isMobile()) {
+              @if (searchInputOpen() && !isMobile()) {
+                <modus-text-input
+                  class="w-44 min-w-[10rem] max-w-xs shrink hidden md:block"
+                  inputId="shell-navbar-search-desktop"
+                  placeholder="Search"
+                  size="sm"
+                  [includeSearch]="true"
+                  [includeClear]="true"
+                  [value]="navbarSearchQuery()"
+                  (inputChange)="handleNavbarSearchInput($event)"
+                />
+              }
+              @if (!isMobile()) {
                 <div
                   class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                   role="button" aria-label="Search" tabindex="0"
@@ -441,6 +457,18 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 >
                   <i class="modus-icons text-lg" aria-hidden="true">help</i>
                 </div>
+              }
+              @if (searchInputOpen() && isMobile()) {
+                <modus-text-input
+                  class="min-w-0 flex-1 max-w-[220px]"
+                  inputId="shell-navbar-search-mobile"
+                  placeholder="Search"
+                  size="sm"
+                  [includeSearch]="true"
+                  [includeClear]="true"
+                  [value]="navbarSearchQuery()"
+                  (inputChange)="handleNavbarSearchInput($event)"
+                />
               }
             @if (isMobile()) {
               <div class="relative">
@@ -502,13 +530,19 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 (signOut)="onUserSignOut()"
               />
           </div>
-        </modus-navbar>
+          </div>
 
         <div class="navbar-shadow"></div>
 
         <div class="flex flex-1 overflow-hidden">
-          <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
-            <router-outlet />
+          <div
+            class="flex-1 overflow-auto bg-background"
+            [class.pl-14]="!isMobile()"
+            role="main"
+            id="main-content"
+            tabindex="-1"
+          >
+            <ng-content />
           </div>
         </div>
 
@@ -524,7 +558,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   role="button"
                   [attr.aria-label]="item.label"
                 >
-                  <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                  <div class="custom-side-nav-icon-slot">
+                    <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                  </div>
                   @if (navExpanded() && !isMobile()) {
                     <div class="custom-side-nav-label">{{ item.label }}</div>
                   }
@@ -541,7 +577,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   aria-label="Layout options"
                   [attr.aria-expanded]="desktopResetMenuOpen()"
                 >
-                  <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                  <div class="custom-side-nav-icon-slot">
+                    <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                  </div>
                   @if (navExpanded() && !isMobile()) {
                     <div class="custom-side-nav-label">Layout</div>
                   }
@@ -588,7 +626,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 role="button"
                 aria-label="Settings"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+                </div>
                 @if (navExpanded() && !isMobile()) {
                   <div class="custom-side-nav-label">Settings</div>
                 }
@@ -618,9 +658,7 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
   private readonly _abortCtrl = new AbortController();
-  private _hamburgerAbort: AbortController | null = null;
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
-    this._hamburgerAbort?.abort();
     this._abortCtrl.abort();
     this.ai.destroy();
   });
@@ -642,25 +680,11 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly currentUrl = signal('/');
 
   readonly searchInputOpen = signal(false);
-
-  readonly navbarVisibility = computed(() => {
-    const canvas = this.isCanvas();
-    return {
-      user: false,
-      mainMenu: !canvas,
-      ai: false,
-      notifications: true,
-      apps: false,
-      help: true,
-      search: true,
-      searchInput: true,
-    };
-  });
+  readonly navbarSearchQuery = signal('');
 
   readonly navExpanded = signal(false);
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 1920 : false);
-  readonly navbarNativeRendered = signal(false);
   private readonly canvasResetService = inject(CanvasResetService);
 
   readonly panning = new CanvasPanning(() => this.isCanvas());
@@ -687,18 +711,13 @@ export class DashboardShellComponent implements AfterViewInit {
     this.canvasResetService.canvasZoom.set(this.panning.canvasZoom());
   });
 
-  private readonly _reattachHamburgerEffect = effect(() => {
-    this.isCanvas();
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        this.attachHamburgerListener();
-      });
-    });
-  });
-
   readonly activeNav = computed(() => {
     const url = this.currentUrl();
     const items = this.sideNavItems();
+    if (url.startsWith('/project/')) {
+      const projects = items.find((i) => i.route === '/projects');
+      return projects?.value ?? 'projects';
+    }
     for (const item of items) {
       if (item.route && item.route !== '/') {
         if (url.startsWith(item.route)) return item.value;
@@ -781,6 +800,11 @@ export class DashboardShellComponent implements AfterViewInit {
     this.themeService.toggleMode();
   }
 
+  handleNavbarSearchInput(event: InputEvent): void {
+    const target = event.target as HTMLInputElement;
+    this.navbarSearchQuery.set(target?.value ?? '');
+  }
+
   onUserMenuAction(actionId: string): void {
     console.log('User menu action:', actionId);
   }
@@ -844,6 +868,7 @@ export class DashboardShellComponent implements AfterViewInit {
   private getPageName(): string {
     const url = this.currentUrl();
     if (url.startsWith('/projects')) return 'projects';
+    if (url.startsWith('/project/')) return 'project-dashboard';
     if (url.startsWith('/financials/job-costs/')) return 'financials-job-cost-detail';
     if (url.startsWith('/financials')) return 'financials';
     return 'home';
@@ -887,11 +912,10 @@ export class DashboardShellComponent implements AfterViewInit {
     this.router.navigate([this.homeRoute()]);
   }
 
-  private _hamburgerAttached = false;
-
-  onMainMenuToggle(open: boolean): void {
-    if (!this._hamburgerAttached) {
-      this.navExpanded.set(open);
+  onMainMenuToggle(open: unknown): void {
+    const next = coerceMainMenuOpenPayload(open);
+    if (next !== undefined) {
+      this.navExpanded.set(next);
     }
   }
 
@@ -929,6 +953,9 @@ export class DashboardShellComponent implements AfterViewInit {
 
 
   onDocumentClick(event: MouseEvent): void {
+    if (this.navExpanded() && !isClickInsideSideNavChrome(event)) {
+      this.navExpanded.set(false);
+    }
     const target = event.target as HTMLElement;
     const insideAiPanel = !!target.closest('ai-assistant-panel') || !!target.closest('modus-utility-panel') || !!target.closest('modus-wc-utility-panel');
     if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !insideAiPanel) {
@@ -952,7 +979,6 @@ export class DashboardShellComponent implements AfterViewInit {
     this.isMobile.set(window.innerWidth < 768);
     this.isCanvas.set(window.innerWidth >= 1920);
     this.weatherService.initialize();
-    this.detectNativeNavbarRender();
 
     this.router.events
       .pipe(
@@ -985,45 +1011,4 @@ export class DashboardShellComponent implements AfterViewInit {
 
   }
 
-  private detectNativeNavbarRender(): void {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const toolbar = this.elementRef.nativeElement.querySelector('modus-wc-toolbar');
-        this.navbarNativeRendered.set(!!toolbar);
-        if (!toolbar) {
-          this.attachHamburgerListener();
-        }
-      });
-    });
-  }
-
-  private attachHamburgerListener(): void {
-    if (this._hamburgerAbort) {
-      this._hamburgerAbort.abort();
-      this._hamburgerAbort = null;
-    }
-    this._hamburgerAttached = false;
-    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
-    if (!navbarWc) return;
-    const abort = new AbortController();
-    this._hamburgerAbort = abort;
-    let attempts = 0;
-    const tryAttach = () => {
-      if (abort.signal.aborted || ++attempts > 100) return;
-      const shadow = navbarWc.shadowRoot;
-      const btn =
-        shadow?.querySelector('[aria-label="Main menu"]') ??
-        navbarWc.querySelector('[aria-label="Main menu"]');
-      if (btn) {
-        this._hamburgerAttached = true;
-        btn.addEventListener('click', (e: Event) => {
-          e.stopImmediatePropagation();
-          this.navExpanded.set(!this.navExpanded());
-        }, { capture: true, signal: abort.signal });
-        return;
-      }
-      requestAnimationFrame(tryAttach);
-    };
-    tryAttach();
-  }
 }

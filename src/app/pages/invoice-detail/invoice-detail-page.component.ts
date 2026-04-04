@@ -78,7 +78,7 @@ function statusLabel(status: InvoiceStatus): string {
           <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
             <div class="flex items-center gap-4">
               <div class="w-11 h-11 rounded-lg bg-primary-20 flex items-center justify-center">
-                <i class="modus-icons text-xl text-primary" aria-hidden="true">receipt</i>
+                <i class="modus-icons text-xl text-primary" aria-hidden="true">invoice</i>
               </div>
               <div>
                 <div class="text-xl font-semibold text-foreground">{{ invoice()!.invoiceNumber }}</div>
@@ -134,7 +134,7 @@ function statusLabel(status: InvoiceStatus): string {
         <!-- Payment Summary -->
         <div class="bg-card border-default rounded-lg overflow-hidden">
           <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payments</i>
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payment_instant</i>
             <div class="text-base font-semibold text-foreground">Payment Summary</div>
           </div>
 
@@ -168,7 +168,7 @@ function statusLabel(status: InvoiceStatus): string {
         </div>
       } @else {
         <div class="flex flex-col items-center justify-center py-20 text-foreground-40">
-          <i class="modus-icons text-4xl mb-3" aria-hidden="true">receipt</i>
+          <i class="modus-icons text-4xl mb-3" aria-hidden="true">invoice</i>
           <div class="text-lg font-medium mb-1">Invoice Not Found</div>
           <div class="text-sm mb-4">The requested invoice could not be found.</div>
           <div

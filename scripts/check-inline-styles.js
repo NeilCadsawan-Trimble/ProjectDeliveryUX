@@ -185,15 +185,16 @@ async function checkFile(filePath) {
         continue;
       }
 
-      // Skip if it's a dynamic value (contains template expressions)
-      if (isDynamicValue(styleContent)) {
+      // Angular [style.foo.px] bindings are almost always dynamic; the regex only captures the attribute key.
+      const lineStart = content.lastIndexOf('\n', match.index - 1) + 1;
+      const lineEndIdx = content.indexOf('\n', match.index);
+      const fullLine = content.substring(lineStart, lineEndIdx === -1 ? content.length : lineEndIdx);
+      if (fullLine.includes(']="') || fullLine.includes("]='")) {
         continue;
       }
 
-      // Skip [style.prop.unit] bindings that are followed by = (Angular dynamic binding)
-      // e.g. [style.height.px]="someSignal()" is a legitimate dynamic value
-      const charAfterMatch = content[match.index + styleContent.length];
-      if (charAfterMatch === '=') {
+      // Skip if it's a dynamic value (contains template expressions)
+      if (isDynamicValue(styleContent)) {
         continue;
       }
 

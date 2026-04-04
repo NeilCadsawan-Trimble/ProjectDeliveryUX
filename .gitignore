@@ -28,6 +28,10 @@ yarn-error.log
 !.vscode/extensions.json
 .history/*
 
+# Local secrets
+.env
+.env.*.local
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/
@@ -41,11 +45,3 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
-
-# Environment variables — never commit secrets
-.env
-.env.local
-.env.*.local
-.vercel
-.env*.local
-public/assets/field-captures/

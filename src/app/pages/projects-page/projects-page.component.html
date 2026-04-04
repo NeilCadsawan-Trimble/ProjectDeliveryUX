@@ -1,20 +1,11 @@
-<div class="px-4 py-3 md:pt-4 md:pb-1 max-w-screen-xl mx-auto">
+<div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
 
   @if (!isCanvasMode()) {
   <div #pageHeader class="mb-3">
     <div class="flex items-start justify-between">
       <div class="text-lg md:text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
       <div class="flex items-center gap-2 flex-shrink-0">
-        @if (isNarrowMobile()) {
-          <div class="flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded cursor-pointer hover:opacity-90 transition-opacity" role="button" tabindex="0" aria-label="Create">
-            <i class="modus-icons text-base" aria-hidden="true">add</i>
-          </div>
-        } @else {
-          <div class="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity" role="button" tabindex="0">
-            <i class="modus-icons text-sm" aria-hidden="true">add</i>
-            <div>Create</div>
-          </div>
-        }
+        <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
       </div>
     </div>
     <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 mt-1.5">
@@ -58,7 +49,7 @@
       [style.left.px]="widgetLefts()['projsHeader']"
       [style.width.px]="widgetPixelWidths()['projsHeader']"
       [style.height.px]="widgetHeights()['projsHeader']"
-      [style.z-index]="widgetZIndices()['projsHeader'] ?? 0"
+      [style.z-index]="widgetZIndices()['projsHeader']"
     >
       <div class="flex items-start justify-between">
         <div>
@@ -88,10 +79,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 mt-1">
-          <div class="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity" role="button" tabindex="0">
-            <i class="modus-icons text-sm" aria-hidden="true">add</i>
-            <div>Create</div>
-          </div>
+          <modus-button color="primary" size="sm" icon="add" iconPosition="left">Create</modus-button>
         </div>
       </div>
     </div>
@@ -115,7 +103,7 @@
       [style.left.px]="isCanvasMode() || moveTargetId() === widgetId ? widgetLefts()[widgetId] : null"
       [style.width.px]="isCanvasMode() ? widgetPixelWidths()[widgetId] : (moveTargetId() === widgetId ? dragWidth() : null)"
       [style.height.px]="widgetHeights()[widgetId]"
-      [style.z-index]="widgetZIndices()[widgetId] ?? 0"
+      [style.z-index]="widgetZIndices()[widgetId]"
     >
       <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
         <div

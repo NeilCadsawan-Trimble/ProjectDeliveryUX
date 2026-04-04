@@ -475,7 +475,7 @@ describe('DashboardLayoutEngine', () => {
       expect(engine.widgetLefts()['w2']).toBeGreaterThanOrEqual(origW2Left);
     });
 
-    it('squeezes the far-end neighbor first at the container edge', () => {
+    it('squeezes the tail edge neighbor first at the container edge', () => {
       const engine = createEngine({
         widgets: ['w1', 'w2'],
         defaultColStarts: { w1: 1, w2: 6 },
@@ -569,7 +569,7 @@ describe('DashboardLayoutEngine', () => {
       expect(engine.widgetLefts()['w2']).toBeLessThanOrEqual(origW2Left);
     });
 
-    it('squeezes the far-end neighbor first at left boundary', () => {
+    it('squeezes the tail edge neighbor first at left boundary', () => {
       const engine = createEngine({
         widgets: ['w1', 'w2'],
         defaultColStarts: { w1: 1, w2: 10 },

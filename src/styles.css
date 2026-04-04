@@ -1,4 +1,5 @@
 @import '@trimble-oss/moduswebcomponents/modus-wc-styles.css';
+@import '../public/modus-icons.css';
 @import '@photo-sphere-viewer/core/index.css';
 @import 'tailwindcss';
 
@@ -1481,45 +1482,68 @@ modus-wc-progress.progress-primary .modus-wc-progress {
     0 6px 16px rgba(36, 35, 45, 0.10);
 }
 
-/*
- * Navbar host fallback: when the Stencil-rendered toolbar does not appear
- * (Angular 20 scoped-encapsulation slot relocation issue in dev mode),
- * the host still behaves as a horizontal flex bar.  When the native
- * toolbar DOES render, content is projected into its shadow DOM and
- * these rules are inert.
- */
-modus-wc-navbar {
+/* ========================================
+ * App Navbar — pure div-based replacement for modus-wc-navbar.
+ * 56px bar with card background and bottom border.
+ * ======================================== */
+.app-navbar {
   display: flex;
   align-items: center;
   width: 100%;
   height: 56px;
   min-height: 56px;
-  background-color: var(--modus-wc-color-base-page);
-  padding: 0 var(--modus-wc-spacing-md, 16px);
+  flex-shrink: 0;
+  background-color: var(--modus-wc-color-base-100);
+  border-bottom: 1px solid var(--modus-wc-color-base-200);
+  padding: 0 16px;
 }
-modus-wc-navbar > [slot="start"] {
+
+@media (min-width: 768px) {
+  .app-navbar {
+    padding: 0 16px 0 12px;
+  }
+}
+
+.app-navbar-start {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
+  gap: 0.75rem;
 }
-modus-wc-navbar > [slot="end"] {
+
+.app-navbar-end {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  gap: 0.25rem;
 }
-modus-wc-navbar > [slot="center"] {
-  flex-shrink: 0;
+
+/*
+ * Canvas only (>=1920px): pad the start slot to clear the 56px side-nav rail,
+ * and pin the hamburger to that rail.
+ */
+@media (min-width: 1920px) {
+  .canvas-navbar .app-navbar-start {
+    padding-left: 56px;
+  }
+
+  .canvas-navbar .shell-navbar-hamburger {
+    position: fixed;
+    left: 4px;
+    top: 4px;
+    width: 48px;
+    height: 48px;
+    border-radius: 0.375rem;
+    z-index: 1002;
+  }
 }
-[data-theme="modus-classic-dark"] modus-wc-navbar {
+
+[data-theme="modus-classic-dark"] .app-navbar {
   background-color: var(--modus-wc-color-gray-10);
 }
-[data-theme="modus-modern-dark"] modus-wc-navbar {
+[data-theme="modus-modern-dark"] .app-navbar {
   background-color: var(--modus-wc-color-trimble-gray);
-}
-[data-theme="connect-light"] modus-wc-navbar,
-[data-theme="connect-dark"] modus-wc-navbar {
-  border-bottom: 1px solid var(--modus-wc-color-base-200);
 }
 
 /* ========================================
@@ -1589,14 +1613,17 @@ modus-wc-navbar > [slot="center"] {
 }
 
 @media (min-width: 768px) {
-  .custom-side-nav.expanded .custom-side-nav-item {
-    justify-content: flex-start;
-  }
-
-  .custom-side-nav.expanded .custom-side-nav-item.selected {
+  /* Full-width row + no tile margin so icons align with non-selected items when expanded. */
+  .custom-side-nav.expanded .custom-side-nav-item.selected,
+  .canvas-side-nav.expanded .custom-side-nav-item.selected {
     width: auto;
-    height: auto;
-    padding: 0.875rem 0.75rem;
+    height: 56px;
+    max-width: none;
+    margin: 0;
+    align-self: stretch;
+    border-radius: 0;
+    padding: 0;
+    padding-right: 0.75rem;
   }
 }
 
@@ -1610,16 +1637,47 @@ modus-wc-navbar > [slot="center"] {
   background: var(--modus-wc-color-trimble-gray);
 }
 
-.custom-side-nav-item {
+/* Fixed-width icon column (56px rail) keeps glyphs aligned collapsed vs expanded. */
+.custom-side-nav-icon-slot {
+  flex: 0 0 56px;
+  width: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  padding: 0.875rem 1rem;
+  flex-shrink: 0;
+}
+
+.custom-side-nav:not(.expanded) .custom-side-nav-item.selected .custom-side-nav-icon-slot,
+.canvas-side-nav:not(.expanded) .custom-side-nav-item.selected .custom-side-nav-icon-slot {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .custom-side-nav.expanded .custom-side-nav-item.selected .custom-side-nav-icon-slot,
+  .canvas-side-nav.expanded .custom-side-nav-item.selected .custom-side-nav-icon-slot {
+    flex: 0 0 56px;
+    width: 56px;
+  }
+}
+
+.custom-side-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  height: 56px;
+  padding: 0;
   cursor: pointer;
   color: var(--foreground);
   white-space: nowrap;
   transition: background-color 0.15s ease;
+}
+
+.custom-side-nav.expanded .custom-side-nav-item,
+.canvas-side-nav.expanded .custom-side-nav-item {
+  padding-right: 0.75rem;
 }
 
 .custom-side-nav-item:hover {
@@ -1640,6 +1698,8 @@ modus-wc-navbar > [slot="center"] {
   font-size: var(--modus-wc-font-size-lg);
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .custom-side-nav-backdrop {
@@ -1674,6 +1734,17 @@ modus-wc-navbar > [slot="center"] {
 
   .custom-side-nav.expanded {
     width: 56px;
+  }
+
+  .custom-side-nav .custom-side-nav-item.selected {
+    margin: 4px auto;
+  }
+
+  .custom-side-nav .custom-side-nav-item.selected .custom-side-nav-icon-slot {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    padding-left: 10px;
   }
 
   .grid[style*="grid-auto-rows"] {
@@ -1725,6 +1796,32 @@ modus-wc-navbar > [slot="center"] {
     opacity: 0.5;
   }
 
+  /*
+   * Full-viewport top band behind the centered navbar strip. Without this, only the 1280px
+   * navbar paints while the hamburger is fixed to the left rail -- the rest of the top edge
+   * looks empty and the shell reads as broken.
+   */
+  .canvas-host::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    z-index: 999;
+    pointer-events: none;
+    background-color: var(--modus-wc-color-base-page);
+    border-bottom: 1px solid var(--border);
+  }
+
+  [data-theme='modus-classic-dark'] .canvas-host::after {
+    background-color: var(--modus-wc-color-gray-10);
+  }
+
+  [data-theme='modus-modern-dark'] .canvas-host::after {
+    background-color: var(--modus-wc-color-trimble-gray);
+  }
+
   /* Navbar: fixed top-center, 1280px */
   .canvas-navbar {
     position: fixed;
@@ -1737,8 +1834,7 @@ modus-wc-navbar > [slot="center"] {
     overflow: visible;
   }
 
-  .canvas-navbar modus-wc-navbar .modus-wc-navbar,
-  .canvas-navbar modus-wc-navbar {
+  .canvas-navbar .app-navbar {
     border-radius: 0 0 12px 12px;
   }
 

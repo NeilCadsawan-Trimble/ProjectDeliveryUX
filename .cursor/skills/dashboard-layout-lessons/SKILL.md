@@ -752,64 +752,33 @@ When a compressed chain has no free internal space for the mover:
 - `both columns: incremental drag of bottom column 1 widget never creates overlap`
 - `same-size widgets: mover with identical dimensions to neighbor produces no overlap`
 
-## 16. Hamburger / Side Nav Toggle -- Double-Fire Prevention
+## 16. Hamburger / Side Nav Toggle -- mainMenuOpenChange Only
 
-### The bugs (four distinct failure modes)
+### Failure modes (historical)
 
-**Bug A (double-fire):** The Modus navbar emits a `mainMenuOpenChange` custom event when the hamburger button is clicked. If `DashboardShellComponent` also attaches a direct DOM click listener via `attachHamburgerListener()`, both handlers toggle `navExpanded`. Two toggles = net no change.
+**Blocked sync:** An `effect()` that always called `attachHamburgerListener()` found the native main-menu control and set `_hamburgerAttached = true`. `onMainMenuToggle` then skipped `navExpanded.set(open)` when `_hamburgerAttached` was true, while a capture listener used `stopImmediatePropagation()` -- net result: sidenav did not track the Modus open state reliably.
 
-**Bug B (selector mismatch):** The hamburger button inside `modus-wc-navbar` is a `<modus-wc-button aria-label="Main menu">`, NOT a native `<button>`. If the selector queries for `button[aria-label="Main menu"]`, it finds nothing. The direct listener never attaches, and since `onMainMenuToggle` was a no-op, nothing happens on click.
+**Wrong target:** `attachHamburgerListener` queried `[aria-label="Main menu"]` on the navbar host. That matches the **Angular fallback** `div` in `slot="start"` before any native control, attaching duplicate handlers and blocking `mainMenuOpenChange`.
 
-**Bug C (mode-switch orphan):** The `@if (isCanvas())` conditional renders different navbars for canvas vs desktop mode. When the user resizes across the 2000px breakpoint, Angular destroys the old navbar and creates a new one. If `attachHamburgerListener` only runs once in `ngAfterViewInit`, the new navbar has no listener.
+**Missing binding:** `ProjectDashboardComponent` had no `(mainMenuOpenChange)` on `modus-navbar`. With native toolbar rendering, only Modus toggled internal state; `navExpanded` never updated.
 
-**Bug D (scoped encapsulation -- no shadow DOM):** `modus-wc-navbar` uses Stencil's **scoped** encapsulation, NOT shadow DOM. `navbarWc.shadowRoot` is **always null**. If `attachHamburgerListener` checks `shadowRoot` and retries via rAF when null, it loops forever (up to 100 attempts) and gives up. The button must be found in the **light DOM** via `navbarWc.querySelector()`. The `mainMenuOpenChange` event has `bubbles: true, composed: true`, so the fallback `onMainMenuToggle` may fire, but if it uses a toggle (`!this.navExpanded()`), Angular may catch both the output and the bubbling DOM event, causing a double-toggle and net no change.
+### Current architecture (do this)
 
-### Architecture
+1. **Native toolbar:** Bind `(mainMenuOpenChange)="onMainMenuToggle($event)"` and **`[mainMenuOpen]="navExpanded()"`** on every app `modus-navbar` (shell **and** project dashboard, canvas **and** desktop). The input keeps `modus-wc-navbar` in sync with the custom side nav; without it, Stencil state and `navExpanded` can diverge.
 
-Two complementary paths ensure the hamburger always works:
+2. **`ModusNavbarComponent`** listens with native `addEventListener` on `modus-wc-navbar`. Those callbacks must run inside **`NgZone.run()`** before emitting Angular outputs, or change detection may not run and the UI will not update.
 
-1. **Primary: `attachHamburgerListener()`** -- attaches a capture-phase click listener on the `modus-wc-button[aria-label="Main menu"]` inside the navbar. First checks shadow DOM (future-proofing), then falls back to light DOM. Uses `stopImmediatePropagation()` to prevent the web component from also toggling. Sets `_hamburgerAttached = true` on success.
+3. **Do not** sync `mainMenuOpen` to the WC when the input is `undefined` (skip in `flushPropsToWc` / effect) so consumers without a binding do not overwrite Stencil defaults.
 
-2. **Fallback: `onMainMenuToggle(open)`** -- sets `navExpanded` to the event's boolean value (idempotent) when `_hamburgerAttached` is false. Using `set(open)` instead of `set(!this.navExpanded())` prevents double-fire from bubbling DOM events because setting the same value twice is a no-op.
+4. **`onMainMenuToggle`:** Use `if (typeof open === 'boolean') this.navExpanded.set(open)` in case `CustomEvent.detail` is ever malformed.
 
-3. **Re-attachment: `_reattachHamburgerEffect`** -- an `effect()` that watches `isCanvas()`. Whenever the mode changes (canvas ↔ desktop), it waits one microtask + one rAF for Angular to re-render, then re-runs `attachHamburgerListener()` on the new navbar DOM.
+5. **Fallback (`@if (!navbarNativeRendered())`):** The template `div.shell-navbar-hamburger` uses `(click)="navExpanded.set(!navExpanded())"` -- that path does not use `mainMenuOpenChange`.
 
-### Key implementation details
-
-```typescript
-// Selector: try shadow DOM first (future-proofing), then light DOM (scoped encapsulation)
-const shadow = navbarWc.shadowRoot;
-const btn =
-  shadow?.querySelector('[aria-label="Main menu"]') ??
-  navbarWc.querySelector('[aria-label="Main menu"]');
-
-// Per-attachment AbortController prevents double listeners on re-attachment
-private _hamburgerAbort: AbortController | null = null;
-
-// Fallback: IDEMPOTENT set (not toggle!) when direct listener failed
-// Using set(open) prevents double-fire from bubbling mainMenuOpenChange events
-onMainMenuToggle(open: boolean): void {
-  if (!this._hamburgerAttached) {
-    this.navExpanded.set(open);
-  }
-}
-
-// Re-attach on mode switch
-private readonly _reattachHamburgerEffect = effect(() => {
-  this.isCanvas();
-  queueMicrotask(() => {
-    requestAnimationFrame(() => this.attachHamburgerListener());
-  });
-});
-```
+6. **Do not** add `attachHamburgerListener`, `_reattachHamburgerEffect`, or capture-phase click hacks on the Modus main menu. Canvas/desktop switch already destroys and recreates the navbar; Angular re-binds outputs on the new instance.
 
 ### Critical: scoped vs shadow DOM
 
-`modus-wc-navbar` (and `modus-wc-button`, `modus-wc-toolbar`) use Stencil's scoped encapsulation. Their `stencil.config.js` has no global `shadow` setting, and the component classes have no `static get encapsulation()` returning `"shadow"`. This means:
-- `element.shadowRoot` is always `null`
-- All child elements are in the **light DOM**
-- `querySelector` on the host element finds children normally
-- Events dispatched by Stencil (`mainMenuOpenChange`) bubble through the DOM with `bubbles: true, composed: true`
+`modus-wc-navbar` (and `modus-wc-button`, `modus-wc-toolbar`) use Stencil scoped encapsulation: `shadowRoot` is usually `null`; children live in light DOM. The Angular wrapper listens for `mainMenuOpenChange` from the web component -- rely on that output, not manual DOM listeners.
 
 ### Mobile side nav: icons only
 
@@ -817,14 +786,12 @@ On mobile (< 768px), the side nav renders at 56px width (icons only). The CSS ru
 
 ### Rules
 
-1. **Never use `button[aria-label]` selectors** for Modus navbar hamburger -- it's a `<modus-wc-button>`, not `<button>`.
-2. **Always search light DOM first** with `navbarWc.querySelector('[aria-label="Main menu"]')`. Shadow DOM is null for scoped-encapsulation components. Use `shadow?.querySelector() ?? navbarWc.querySelector()` for safety.
-3. **Fallback must be IDEMPOTENT** -- use `navExpanded.set(open)` (set the event value), NOT `navExpanded.set(!navExpanded())` (toggle). The `mainMenuOpenChange` event bubbles, so Angular may catch both the output and the DOM event, causing a double-invocation. Idempotent set is immune to this.
-4. **Re-attach on mode switch** via `_reattachHamburgerEffect` watching `isCanvas()`.
-5. **Use per-attachment AbortController** (`_hamburgerAbort`) to clean up old listeners before re-attaching.
-6. **Guard side nav labels** with `navExpanded() && !isMobile()` to prevent text in the 56px mobile column.
-7. **`@if (!isMobile() || navExpanded())`** controls side nav DOM presence on mobile.
-8. **Never assume Modus web components use shadow DOM.** Check `element.shadowRoot` before querying it. Most Modus components use scoped encapsulation (light DOM).
+1. **Every `modus-navbar` that can show the native main menu** must wire `(mainMenuOpenChange)` **and** `[mainMenuOpen]="navExpanded()"` to sync `navExpanded`.
+2. **`onMainMenuToggle`** should set `navExpanded` only when `typeof open === 'boolean'`; the wrapper emits from `NgZone.run()`.
+3. **Do not** attach capture listeners to the Modus hamburger or to `[aria-label="Main menu"]` on the navbar host (conflicts with fallback slot content).
+4. **Guard side nav labels** with `navExpanded() && !isMobile()` to prevent text in the 56px mobile column.
+5. **`@if (!isMobile() || navExpanded())`** controls side nav DOM presence on mobile.
+6. **Never assume Modus web components use shadow DOM.** Scoped encapsulation is the norm; prefer wrapper outputs over querying internals.
 
 ## 17. Area-Adaptive Widget Content Blocks
 
@@ -1176,48 +1143,47 @@ private detectNativeNavbarRender(): void {
 
 The double `requestAnimationFrame` is required because Stencil components render asynchronously after Angular's change detection.
 
+### Critical: `slot="end"` is projected *before* native utilities
+
+In `modus-wc-navbar` source, the toolbar **`slot="end"` content comes first**, then native Search / Notifications / Help / User (per `visibility`). If you leave `search`, `notifications`, `help` **true** on the web component while putting **`<user-menu>`** in `slot="end"`, the visual order becomes AI, theme, **user**, then search/help/notifications — wrong, and you can see duplicate or misplaced profile chrome.
+
+**Stable pattern (dashboard shell + project dashboard):**
+
+- Set `visibility` to **`search: false`, `notifications: false`, `help: false`, `user: false`, `mainMenu: true`** (canvas included — hamburger must not be tied to `!isCanvas()` for this reason).
+- Render **search, notifications, and help** only inside Angular `slot="end"` (always, not gated by `navbarNativeRendered()`), in fixed order before `<user-menu>`.
+- When search panel opens, use **`modus-text-input`** in that same slot (bound to a local signal); native expandable search is off.
+- Use **`navbarNativeRendered` only for `slot="start"`** (fallback hamburger + Trimble when the internal toolbar failed to render — dev mode).
+
 ### What the native Modus navbar renders internally
 
 When working correctly, `modus-wc-navbar` renders a `modus-wc-toolbar` containing:
 
-| Position | Element | Condition |
-|----------|---------|-----------|
-| `slot="start"` first | Hamburger button (`aria-label="Main menu"`) | `visibility.mainMenu === true` |
-| `slot="start"` second | Trimble logo button (globe icon, `class="trimble-logo"`) | Always |
-| `slot="start"` third | `<slot name="start">` (our custom content) | Always |
-| `slot="end"` | Search, Notifications, Help, Apps, AI, User buttons | Per `visibility` flags |
-| `slot="end"` last | `<slot name="end">` (our custom content) | Always |
+| Region | Order | Notes |
+|--------|--------|--------|
+| `slot="start"` | Hamburger (if `mainMenu`) | Then native Trimble button (always), then `<slot name="start">` |
+| `slot="end"` | **`<slot name="end">` first** | Then native AI, search, notifications, help, apps, user per `visibility` |
 
-### Fallback elements required when native rendering fails
+So: **never rely on native search/help/notifications if you need user last** — turn those flags off and own the icons in the Angular slot.
 
-All fallback elements are wrapped in `@if (!navbarNativeRendered())` and placed inside the `slot="start"` or `slot="end"` divs.
+### Fallback elements when native toolbar fails (`navbarNativeRendered === false`)
 
-**slot="start" fallbacks (before custom content):**
+**slot="start" only** — wrap in `@if (!navbarNativeRendered())` before your title/back content:
 
 | Element | Views | Class |
 |---------|-------|-------|
-| Hamburger button (`menu` icon) | Desktop only (not canvas -- canvas has its own side nav) | `bg-card text-foreground hover:bg-muted` |
-| Trimble logo + wordmark (`<app-trimble-logo />`) | All views | `text-primary` |
-| Separator (`w-px h-5 bg-foreground-20`) | All views | -- |
+| Hamburger (`menu` icon) | Desktop shell when native menu missing; native provides when `mainMenu: true` | `bg-card text-foreground hover:bg-muted` |
+| Trimble logo (`<app-trimble-logo />`) | Canvas + desktop when duplicate would show | `text-primary` |
+| Separator | | `w-px h-5 bg-foreground-20` |
 
-**slot="end" fallbacks (after AI + dark mode, before user menu):**
-
-| Element | Views | Class |
-|---------|-------|-------|
-| Search button | Desktop (not mobile, not canvas when mobile) | `bg-card text-foreground hover:bg-muted` |
-| Notifications button | Same | Same |
-| Help button | Same | Same |
+**slot="end"** — search / notifications / help: **always** from Angular (see stable pattern above); optional `modus-text-input` when `searchInputOpen()`.
 
 ### Correct icon order in slot="end"
 
-All navbar instances must follow this order (left to right):
-
-1. **AI assistant** (always visible)
-2. **Dark mode toggle** (always visible, `hidden md:flex` on desktop mobile)
-3. **Search** (fallback only)
-4. **Notifications** (fallback only)
-5. **Help** (fallback only)
-6. **User menu** / mobile "more menu" (always visible)
+1. **AI assistant**
+2. **Dark mode toggle** (`hidden md:flex` where applicable)
+3. **Search field** (when `searchInputOpen()`)
+4. **Search, Notifications, Help** icon buttons (desktop; mobile uses more menu + optional inline field)
+5. **User menu** / mobile more menu last
 
 ### Background color consistency
 
@@ -1239,18 +1205,26 @@ The SVG is the `TrimbleLogoFullIcon` from `modus-wc-navbar`'s bundled source (`v
 
 ### 4 navbar instances that must stay in sync
 
-| File | View | Has hamburger fallback | Has logo fallback |
-|------|------|----------------------|-------------------|
-| `dashboard-shell.component.ts` | Canvas navbar | No (canvas has side nav) | Yes |
-| `dashboard-shell.component.ts` | Desktop navbar | Yes (`mainMenu: !canvas`) | Yes |
-| `project-dashboard.component.html` | Canvas navbar | No | Yes |
-| `project-dashboard.component.html` | Desktop navbar | Yes | Yes |
+| File | View | Start fallbacks (`!navbarNativeRendered`) | End utilities |
+|------|------|-------------------------------------------|---------------|
+| `dashboard-shell.component.ts` | Canvas | Logo + divider | Always Angular (search/notif/help + optional input) |
+| `dashboard-shell.component.ts` | Desktop | Hamburger + logo + divider | Always Angular |
+| `project-dashboard.component.html` | Canvas | Logo + divider | Always Angular |
+| `project-dashboard.component.html` | Desktop | Hamburger + logo + divider | Always Angular |
 
-**All 4 instances must have identical fallback structure.** When modifying fallback elements, update all 4 at once. Never update one without the others.
+**All 4 instances must match visibility flags and end-slot structure.** When modifying navbar chrome, update all 4 at once.
 
 ### Detection in project-dashboard
 
 The project dashboard component also has its own `navbarNativeRendered` signal and `detectNativeNavbarRender()` method, called in `ngAfterViewInit`. Both dashboard-shell and project-dashboard must detect independently because they render separate `modus-navbar` instances.
+
+### ModusNavbarComponent: `flushPropsToWc` (mandatory)
+
+Angular `effect()` callbacks that call `syncProp` often run **before** `ngAfterViewInit` assigns `this.wcEl`. The first run no-ops; if parent inputs never change again, **`modus-wc-navbar` keeps Stencil defaults** (`user: true`, `mainMenu: false`, etc.) even though the template passes `[visibility]="..."`.
+
+**Symptoms on Vercel/production:** duplicate native user control next to `<user-menu>`, missing hamburger, wrong native utilities.
+
+**Fix:** `modus-navbar.component.ts` must call `flushPropsToWc()` once at the start of `ngAfterViewInit` after `wcEl` is set, pushing `visibility`, `userCard`, and every other mirrored prop. Static test: `tests/static/modus-navbar-wrapper.spec.ts`.
 
 ### Rules (mandatory)
 
@@ -1260,7 +1234,7 @@ The project dashboard component also has its own `navbarNativeRendered` signal a
 4. **Always use `bg-card`** on all navbar icon buttons (not bare/transparent).
 5. **Always maintain the icon order**: AI, dark mode, search, notifications, help, user menu.
 6. **Always update all 4 navbar instances** when changing fallback structure.
-7. **The `attachHamburgerListener` must only run when native rendering fails** (`if (!toolbar)` in `detectNativeNavbarRender`). When native rendering succeeds, the Modus component handles its own hamburger events.
+7. **Do not use `attachHamburgerListener` or `_reattachHamburgerEffect`.** Sync sidenav only via `(mainMenuOpenChange)` and the fallback template click handler.
 
 ---
 
@@ -1283,7 +1257,7 @@ The project dashboard component also has its own `navbarNativeRendered` signal a
 | Template private member access | all `.component.ts` | `tests/static/template-safety.spec.ts` |
 | Wall cascade post-cleanup (4+ widgets) | `canvas-push.ts` | `canvas-push.spec.ts` (4 new tests) |
 | Same-size oscillation & frozen pushback | `canvas-push.ts` | `canvas-push.spec.ts` (6 new tests) |
-| Hamburger double-fire prevention | `dashboard-shell.component.ts` | (manual test: hamburger toggles sidenav on mobile) |
+| Hamburger / mainMenuOpenChange | `dashboard-shell.component.ts`, `project-dashboard.component.html` | `tests/static/dashboard-shell.spec.ts` |
 | Area-adaptive content blocks | `projects-page.component.ts` | (visual: resize widget, verify content fills) |
 | CSS text scaling tiers | `src/styles.css` + `projects-page.component.ts` | (visual: resize widget, verify text scales) |
 | Canvas zoom axis swap | `canvas-panning.ts` | (manual test: Shift+scroll on macOS) |
@@ -1292,4 +1266,4 @@ The project dashboard component also has its own `navbarNativeRendered` signal a
 | Desktop snap after drag + sizing-only defaults | `dashboard-layout-engine.ts` + `buildProjectsLayoutConfig` | `dashboard-layout-engine.spec.ts` (snap, locked, v2 save/reset, flowOrder) |
 | Projects layout alignment + DashboardPageBase | `projects-page.component.ts` + `projects-page-layout.config.ts` | Build verification; visual test |
 | Compact mode for narrow widgets | `project-dashboard.component.ts` + `.html`, `home-page.component.ts` | (visual: resize widget to 5 cols, verify compact tiles) |
-| Navbar native rendering fallback | `dashboard-shell.component.ts`, `project-dashboard.component.html`, `modus-navbar.component.ts`, `trimble-logo.component.ts` | Build + verify locally (fallbacks visible) and on Vercel (native renders, no duplicates) |
+| Navbar native rendering fallback | `dashboard-shell.component.ts`, `project-dashboard.component.html`, `modus-navbar.component.ts`, `trimble-logo.component.ts` | Build + `tests/static/modus-navbar-wrapper.spec.ts` + verify on Vercel |

@@ -51,7 +51,6 @@ const NON_MODUS_ICON_PATTERNS = [
   /<IconButton[^>]*>/g,
 
   // Common icon imports (exclude modus-icon and modus-icons)
-  /import.*Icon.*from(?!.*modus)/g,
   /import.*Icons.*from/g,
   /import.*@heroicons/g,
   /import.*@lucide/g,

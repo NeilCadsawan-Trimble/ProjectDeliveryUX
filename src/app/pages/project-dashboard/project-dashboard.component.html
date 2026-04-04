@@ -1,12 +1,12 @@
     <svg aria-hidden="true" class="svg-defs-hidden">
       <defs>
         <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="20%" stop-color="#FF00FF" />
+          <stop offset="20%" stop-color="hsl(300, 100%, 50%)" />
           <stop offset="60%" stop-color="#0066CC" />
           <stop offset="100%" stop-color="#0066CC" />
         </linearGradient>
         <radialGradient id="ai-grad-dark" cx="18%" cy="18%" r="70%">
-          <stop offset="0%" stop-color="#FF00FF" />
+          <stop offset="0%" stop-color="hsl(300, 100%, 50%)" />
           <stop offset="50%" stop-color="#9933FF" />
           <stop offset="100%" stop-color="#0066CC" />
         </radialGradient>
@@ -343,7 +343,7 @@
                   [style.left.px]="tilePos()['tile-drawing-' + drawing.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-drawing-' + drawing.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-drawing-' + drawing.id]?.height ?? 260"
-                  [style.z-index]="tileZ()['tile-drawing-' + drawing.id] ?? 0"
+                  [style.z-index]="tileZ()['tile-drawing-' + drawing.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-drawing-' + drawing.id"
                   (mousedown)="selectTileWidget('tile-drawing-' + drawing.id)"
                 >
@@ -915,7 +915,7 @@
                   [style.left.px]="tilePos()['tile-dr-' + dr.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-dr-' + dr.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-dr-' + dr.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-dr-' + dr.id] ? 9999 : (tileZ()['tile-dr-' + dr.id] ?? 0)"
+                  [style.z-index]="tileDetailViews()['tile-dr-' + dr.id] ? 9999 : tileZ()['tile-dr-' + dr.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-dr-' + dr.id"
                   (mousedown)="selectTileWidget('tile-dr-' + dr.id); tileDetailViews()['tile-dr-' + dr.id] ? $event.stopPropagation() : null"
                 >
@@ -1025,7 +1025,7 @@
                   [style.left.px]="tilePos()['tile-pl-' + pl.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-pl-' + pl.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-pl-' + pl.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-pl-' + pl.id] ? 9999 : (tileZ()['tile-pl-' + pl.id] ?? 0)"
+                  [style.z-index]="tileDetailViews()['tile-pl-' + pl.id] ? 9999 : tileZ()['tile-pl-' + pl.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-pl-' + pl.id"
                   (mousedown)="selectTileWidget('tile-pl-' + pl.id); tileDetailViews()['tile-pl-' + pl.id] ? $event.stopPropagation() : null"
                 >
@@ -1130,7 +1130,7 @@
                   [style.left.px]="tilePos()['tile-ins-' + ins.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-ins-' + ins.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-ins-' + ins.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-ins-' + ins.id] ? 9999 : (tileZ()['tile-ins-' + ins.id] ?? 0)"
+                  [style.z-index]="tileDetailViews()['tile-ins-' + ins.id] ? 9999 : tileZ()['tile-ins-' + ins.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-ins-' + ins.id"
                   (mousedown)="selectTileWidget('tile-ins-' + ins.id); tileDetailViews()['tile-ins-' + ins.id] ? $event.stopPropagation() : null"
                 >
@@ -1231,7 +1231,7 @@
                   [style.left.px]="tilePos()['tile-ai-' + ai.id]?.left ?? 0"
                   [style.width.px]="tilePos()['tile-ai-' + ai.id]?.width ?? 308"
                   [style.height.px]="tilePos()['tile-ai-' + ai.id]?.height ?? 220"
-                  [style.z-index]="tileDetailViews()['tile-ai-' + ai.id] ? 9999 : (tileZ()['tile-ai-' + ai.id] ?? 0)"
+                  [style.z-index]="tileDetailViews()['tile-ai-' + ai.id] ? 9999 : tileZ()['tile-ai-' + ai.id]"
                   [class.opacity-30]="tileMoveTargetId() === 'tile-ai-' + ai.id"
                   (mousedown)="selectTileWidget('tile-ai-' + ai.id); tileDetailViews()['tile-ai-' + ai.id] ? $event.stopPropagation() : null"
                 >
@@ -1674,7 +1674,7 @@
                   [style.left.px]="tilePos()['tile-subledger-ledger']?.left"
                   [style.width.px]="tilePos()['tile-subledger-ledger']?.width"
                   [style.height.px]="tilePos()['tile-subledger-ledger']?.height"
-                  [style.z-index]="tileZ()['tile-subledger-ledger'] ?? 0">
+                  [style.z-index]="tileZ()['tile-subledger-ledger']">
                   <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
                     <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
                     <div class="text-base font-semibold text-foreground">Transaction Ledger</div>
@@ -1701,7 +1701,7 @@
                     [style.left.px]="tilePos()[btId]?.left"
                     [style.width.px]="tilePos()[btId]?.width"
                     [style.height.px]="tilePos()[btId]?.height"
-                    [style.z-index]="tileZ()[btId] ?? 0"
+                    [style.z-index]="tileZ()[btId]"
                     [class.opacity-30]="tileMoveTargetId() === btId">
                     @switch (btId) {
                       @case ('tile-budget-breakdown') {
@@ -1893,7 +1893,7 @@
                     [style.left.px]="tilePos()['tile-' + activeCoTilePrefix() + co.id]?.left ?? 0"
                     [style.width.px]="tilePos()['tile-' + activeCoTilePrefix() + co.id]?.width ?? 308"
                     [style.height.px]="tilePos()['tile-' + activeCoTilePrefix() + co.id]?.height ?? 220"
-                    [style.z-index]="tileDetailViews()['tile-' + activeCoTilePrefix() + co.id] ? 9999 : (tileZ()['tile-' + activeCoTilePrefix() + co.id] ?? 0)"
+                    [style.z-index]="tileDetailViews()['tile-' + activeCoTilePrefix() + co.id] ? 9999 : tileZ()['tile-' + activeCoTilePrefix() + co.id]"
                     [class.opacity-30]="tileMoveTargetId() === 'tile-' + activeCoTilePrefix() + co.id"
                     (mousedown)="selectTileWidget('tile-' + activeCoTilePrefix() + co.id); tileDetailViews()['tile-' + activeCoTilePrefix() + co.id] ? $event.stopPropagation() : null">
                   @if (tileDetailViews()['tile-' + activeCoTilePrefix() + co.id]; as detail) {
@@ -2047,7 +2047,7 @@
                     [style.left.px]="tilePos()['tile-rev-' + rev.projectId]?.left ?? 0"
                     [style.width.px]="tilePos()['tile-rev-' + rev.projectId]?.width ?? 308"
                     [style.height.px]="tilePos()['tile-rev-' + rev.projectId]?.height ?? 220"
-                    [style.z-index]="tileZ()['tile-rev-' + rev.projectId] ?? 0"
+                    [style.z-index]="tileZ()['tile-rev-' + rev.projectId]"
                     [class.opacity-30]="tileMoveTargetId() === 'tile-rev-' + rev.projectId"
                     (mousedown)="selectTileWidget('tile-rev-' + rev.projectId)">
                     <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
@@ -2142,7 +2142,7 @@
                     [style.left.px]="tilePos()['tile-cf-' + i]?.left ?? 0"
                     [style.width.px]="tilePos()['tile-cf-' + i]?.width ?? 308"
                     [style.height.px]="tilePos()['tile-cf-' + i]?.height ?? 220"
-                    [style.z-index]="tileZ()['tile-cf-' + i] ?? 0"
+                    [style.z-index]="tileZ()['tile-cf-' + i]"
                     [class.opacity-30]="tileMoveTargetId() === 'tile-cf-' + i"
                     (mousedown)="selectTileWidget('tile-cf-' + i)">
                     <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
@@ -2679,7 +2679,7 @@
               [style.left.px]="wLefts()['projHeader']"
               [style.width.px]="wPixelWidths()['projHeader']"
               [style.height.px]="wHeights()['projHeader']"
-              [style.z-index]="wZIndices()['projHeader'] ?? 0"
+              [style.z-index]="wZIndices()['projHeader']"
             >
               <div class="flex items-center justify-between mb-4">
                 <div class="text-2xl font-bold text-foreground">{{ projectName() }}</div>
@@ -2714,7 +2714,7 @@
               [style.left.px]="isCanvas() || moveTargetId() === wId ? wLefts()[wId] : null"
               [style.width.px]="isCanvas() ? wPixelWidths()[wId] : (moveTargetId() === wId ? dragWidth() : null)"
               [style.height.px]="wHeights()[wId]"
-              [style.z-index]="canvasDetailViews()[wId] ? 9999 : (wId === 'team' && timeOffStatusOpen() !== null) ? 9998 : (wZIndices()[wId] ?? 0)"
+              [style.z-index]="canvasDetailViews()[wId] ? 9999 : (wId === 'team' && timeOffStatusOpen() !== null) ? 9998 : wZIndices()[wId]"
               (mousedown)="canvasDetailViews()[wId] ? $event.stopPropagation() : null"
             >
             @if (canvasDetailViews()[wId]; as detail) {
@@ -2796,7 +2796,7 @@
                           <div class="text-sm text-foreground-60">{{ $any(detail.item).revision }} &middot; {{ $any(detail.item).date }}</div>
                         </div>
                       </div>
-                      <div class="bg-secondary rounded-lg overflow-hidden flex items-center justify-center p-4" style="min-height: 300px">
+                      <div class="bg-secondary rounded-lg overflow-hidden flex items-center justify-center p-4 min-h-[300px]">
                         <img [src]="$any(detail.item).thumbnail" [alt]="$any(detail.item).title" class="max-w-full max-h-[60vh] object-contain rounded" />
                       </div>
                       <div class="text-sm text-foreground-60">{{ $any(detail.item).subtitle }}</div>
@@ -3578,22 +3578,20 @@
     @if (isCanvas()) {
       <div class="canvas-host bg-background text-foreground canvas-mode" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
         <div class="canvas-navbar">
-          <modus-navbar
-            [userCard]="userCard"
-            [visibility]="navbarVisibility()"
-            [condensed]="false"
-            [searchInputOpen]="searchInputOpen()"
-            (searchClick)="searchInputOpen.set(!searchInputOpen())"
-            (searchInputOpenChange)="searchInputOpen.set($event)"
-            (trimbleLogoClick)="navigateHome()"
-          >
-            <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-              @if (!navbarNativeRendered()) {
-                <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
-                  <app-trimble-logo />
-                </div>
-                <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-              }
+          <div class="app-navbar">
+            <div class="app-navbar-start">
+              <div
+                class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+                role="button" aria-label="Main menu" tabindex="0"
+                (click)="navExpanded.set(!navExpanded())"
+                (keydown.enter)="navExpanded.set(!navExpanded())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+              </div>
+              <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+                <app-trimble-logo />
+              </div>
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
               <div
                 class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
                 (click)="navigateBack()"
@@ -3638,7 +3636,7 @@
                 }
               </div>
             </div>
-            <div slot="end" class="flex items-center gap-1">
+            <div class="app-navbar-end">
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
@@ -3659,33 +3657,43 @@
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
               </div>
-              @if (!navbarNativeRendered()) {
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Search" tabindex="0"
-                  (click)="searchInputOpen.set(!searchInputOpen())"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">search</i>
-                </div>
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Notifications" tabindex="0"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
-                </div>
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Help" tabindex="0"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">help</i>
-                </div>
+              @if (searchInputOpen()) {
+                <modus-text-input
+                  class="w-44 min-w-[10rem] max-w-xs shrink"
+                  inputId="proj-navbar-search-canvas"
+                  placeholder="Search"
+                  size="sm"
+                  [includeSearch]="true"
+                  [includeClear]="true"
+                  [value]="navbarSearchQuery()"
+                  (inputChange)="handleNavbarSearchInput($event)"
+                />
               }
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Search" tabindex="0"
+                (click)="searchInputOpen.set(!searchInputOpen())"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">search</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Notifications" tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">notifications</i>
+              </div>
+              <div
+                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
+                role="button" aria-label="Help" tabindex="0"
+              >
+                <i class="modus-icons text-lg" aria-hidden="true">help</i>
+              </div>
               <user-menu
                 [name]="userCard.name"
                 [email]="userCard.email"
               />
             </div>
-          </modus-navbar>
+          </div>
         </div>
         <div class="canvas-navbar-shadow navbar-shadow"></div>
 
@@ -3700,7 +3708,9 @@
                 role="button"
                 [attr.aria-label]="item.label"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                </div>
                 @if (navExpanded()) {
                   <div class="custom-side-nav-label">{{ item.label }}</div>
                 }
@@ -3717,7 +3727,9 @@
                 [attr.aria-label]="detailDrawing() ? 'Reset Layout' : 'Layout options'"
                 [attr.aria-expanded]="detailDrawing() ? null : resetMenuOpen()"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                </div>
                 @if (panning.locked()) {
                   <i class="modus-icons absolute top-1 right-1 text-2xs text-primary" aria-hidden="true">lock</i>
                 }
@@ -3774,7 +3786,9 @@
               role="button"
               aria-label="Settings"
             >
-              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              <div class="custom-side-nav-icon-slot">
+                <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              </div>
               @if (navExpanded()) {
                 <div class="custom-side-nav-label">Settings</div>
               }
@@ -3797,30 +3811,20 @@
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
     <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
       <!-- Navbar -->
-      <modus-navbar
-        [userCard]="userCard"
-        [visibility]="navbarVisibility()"
-        [condensed]="isMobile()"
-        [searchInputOpen]="searchInputOpen()"
-        (searchClick)="searchInputOpen.set(!searchInputOpen())"
-        (searchInputOpenChange)="searchInputOpen.set($event)"
-        (trimbleLogoClick)="navigateHome()"
-      >
-        <div slot="start" class="flex items-center gap-3 w-full min-w-0">
-          @if (!navbarNativeRendered()) {
-            <div
-              class="flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
-              role="button" aria-label="Main menu" tabindex="0"
-              (click)="navExpanded.set(!navExpanded())"
-              (keydown.enter)="navExpanded.set(!navExpanded())"
-            >
-              <i class="modus-icons text-lg" aria-hidden="true">menu</i>
-            </div>
-            <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
-              <app-trimble-logo />
-            </div>
-            <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
-          }
+      <div class="app-navbar">
+        <div class="app-navbar-start">
+          <div
+            class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
+            role="button" aria-label="Main menu" tabindex="0"
+            (click)="navExpanded.set(!navExpanded())"
+            (keydown.enter)="navExpanded.set(!navExpanded())"
+          >
+            <i class="modus-icons text-lg" aria-hidden="true">menu</i>
+          </div>
+          <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
+            <app-trimble-logo />
+          </div>
+          <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
           <div
             class="flex items-center gap-2 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150 flex-shrink-0"
             (click)="navigateBack()"
@@ -3865,7 +3869,7 @@
             }
           </div>
         </div>
-        <div slot="end" class="flex items-center gap-1">
+        <div class="app-navbar-end">
           <div
             class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
             role="button"
@@ -3886,7 +3890,19 @@
           >
             <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
           </div>
-          @if (!navbarNativeRendered() && !isMobile()) {
+          @if (searchInputOpen() && !isMobile()) {
+            <modus-text-input
+              class="w-44 min-w-[10rem] max-w-xs shrink hidden md:block"
+              inputId="proj-navbar-search-desktop"
+              placeholder="Search"
+              size="sm"
+              [includeSearch]="true"
+              [includeClear]="true"
+              [value]="navbarSearchQuery()"
+              (inputChange)="handleNavbarSearchInput($event)"
+            />
+          }
+          @if (!isMobile()) {
             <div
               class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
               role="button" aria-label="Search" tabindex="0"
@@ -3906,6 +3922,18 @@
             >
               <i class="modus-icons text-lg" aria-hidden="true">help</i>
             </div>
+          }
+          @if (searchInputOpen() && isMobile()) {
+            <modus-text-input
+              class="min-w-0 flex-1 max-w-[220px]"
+              inputId="proj-navbar-search-mobile"
+              placeholder="Search"
+              size="sm"
+              [includeSearch]="true"
+              [includeClear]="true"
+              [value]="navbarSearchQuery()"
+              (inputChange)="handleNavbarSearchInput($event)"
+            />
           }
           @if (isMobile()) {
             <div class="relative">
@@ -3964,14 +3992,20 @@
             [email]="userCard.email"
           />
         </div>
-      </modus-navbar>
+      </div>
 
       <div class="navbar-shadow"></div>
 
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
-        <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+        <div
+          class="flex-1 overflow-auto bg-background"
+          [class.pl-14]="!isMobile()"
+          role="main"
+          id="main-content"
+          tabindex="-1"
+        >
           <div [class]="detailDrawing() ? 'p-4 max-w-screen-xl mx-auto flex flex-col h-full' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
@@ -3991,7 +4025,9 @@
                 role="button"
                 [attr.aria-label]="item.label"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                </div>
                 @if (navExpanded() && !isMobile()) {
                   <div class="custom-side-nav-label">{{ item.label }}</div>
                 }
@@ -4008,7 +4044,9 @@
                 aria-label="Layout options"
                 [attr.aria-expanded]="desktopLayoutMenuOpen()"
               >
-                <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                <div class="custom-side-nav-icon-slot">
+                  <i class="modus-icons text-xl" aria-hidden="true">window_fit</i>
+                </div>
                 @if (navExpanded() && !isMobile()) {
                   <div class="custom-side-nav-label">Layout</div>
                 }
@@ -4043,7 +4081,9 @@
               role="button"
               aria-label="Settings"
             >
-              <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              <div class="custom-side-nav-icon-slot">
+                <i class="modus-icons text-xl" aria-hidden="true">settings</i>
+              </div>
               @if (navExpanded() && !isMobile()) {
                 <div class="custom-side-nav-label">Settings</div>
               }
@@ -4453,8 +4493,8 @@
               <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
             </div>
           </div>
-          <div class="relative" style="padding-left:36px;padding-bottom:20px">
-            <svg class="w-full" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none" style="height:160px">
+          <div class="relative pl-9 pb-5">
+            <svg class="w-full h-40" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none">
               <defs>
                 <linearGradient [attr.id]="'pfGradProjRaw' + projectId()" x1="0" y1="0" x2="0" y2="1">
                   @if (jcProfitFadeData()?.isFade) {
@@ -4668,8 +4708,8 @@
               <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
             </div>
           </div>
-          <div class="relative" style="padding-left:36px;padding-bottom:20px">
-            <svg class="w-full" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none" style="height:160px">
+          <div class="relative pl-9 pb-5">
+            <svg class="w-full h-40" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none">
               <defs>
                 <linearGradient [attr.id]="'pfGradProj' + projectId()" x1="0" y1="0" x2="0" y2="1">
                   @if (jcProfitFadeData()?.isFade) {
