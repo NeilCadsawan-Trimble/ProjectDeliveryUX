@@ -76,6 +76,12 @@ If the date matches today, skip this section and proceed normally.
   3. Project dashboard: added `(mainMenuOpenChange)="onMainMenuToggle($event)"` on canvas and desktop `modus-navbar`; removed `attachHamburgerListener`, `hamburgerBtn`, and `hamburgerEffect` (native path had no output binding before).
   4. Updated `tests/static/dashboard-shell.spec.ts` and `dashboard-layout-lessons` section 16.
 
+### Session 16 (Apr 3)
+- **Topic**: Canvas hamburger vs sidenav horizontal alignment
+- **What happened**:
+  1. In `src/styles.css` (canvas `@media (min-width: 1920px)`), fixed hamburger used `left: 12px` and 32px hit target while `.custom-side-nav-item.selected` uses 4px margin + 48px tile on the 56px rail, so the menu sat ~8px to the right of the home tile.
+  2. Updated native `modus-wc-button[aria-label='Main menu']` and `.shell-navbar-hamburger` to `left: 4px; top: 4px;` with 48x48 box and `border-radius: 0.375rem` on fallback to match selected rail tiles; kept `padding-left: 56px` on start slot.
+
 ## Active Context
 
 - On `dev` branch.
