@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, or aligning page layouts with the shared DashboardPageBase. Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, or modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering). Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -1140,6 +1140,128 @@ Applying the change to the parent was fewer lines of code than wrapping the cont
 
 **An explicit user constraint outranks code brevity, always.** If respecting the constraint requires more wrapper divs, more lines, or a less elegant solution -- that is the correct solution. Taking shortcuts that violate stated constraints is never acceptable.
 
+## 23. Modus Navbar Native Rendering Fallback (Stencil/Angular 20 Incompatibility)
+
+**Files:** `dashboard-shell.component.ts`, `project-dashboard.component.ts`, `project-dashboard.component.html`, `modus-navbar.component.ts`, `trimble-logo.component.ts`
+
+### The bug (has broken 5+ times)
+
+The `modus-wc-navbar` component uses Stencil's scoped encapsulation with internal slot relocation. In Angular 20 dev mode, Stencil's `renderVdom` throws a `DOMException` during `putBackInOriginalLocation` / `insertBefore` because Angular's DOM management conflicts with Stencil's programmatic DOM manipulation. This causes the entire internal toolbar (`modus-wc-toolbar`) -- including the Trimble logo, hamburger button, search, notifications, and help buttons -- to fail to render.
+
+In production builds (Vercel), the Stencil components render correctly. The failure is **dev-mode only** but has repeatedly caused confusion and broken implementations because:
+
+1. Developers remove the native Modus buttons and add custom replacements, creating duplicates in production
+2. Developers add CSS hacks to force native elements visible, which break in other ways
+3. Developers add custom Trimble logos/hamburgers that duplicate the native ones on Vercel
+4. Developers remove the custom elements thinking native ones work, breaking local dev
+5. The fix gets lost across sessions and the cycle repeats
+
+### Architecture: runtime detection + conditional fallback
+
+The solution uses runtime detection to determine whether native rendering succeeded, then conditionally shows fallback elements only when needed:
+
+```typescript
+// Signal tracks whether native Modus toolbar rendered
+readonly navbarNativeRendered = signal(false);
+
+private detectNativeNavbarRender(): void {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const toolbar = this.elementRef.nativeElement.querySelector('modus-wc-toolbar');
+      this.navbarNativeRendered.set(!!toolbar);
+    });
+  });
+}
+```
+
+The double `requestAnimationFrame` is required because Stencil components render asynchronously after Angular's change detection.
+
+### What the native Modus navbar renders internally
+
+When working correctly, `modus-wc-navbar` renders a `modus-wc-toolbar` containing:
+
+| Position | Element | Condition |
+|----------|---------|-----------|
+| `slot="start"` first | Hamburger button (`aria-label="Main menu"`) | `visibility.mainMenu === true` |
+| `slot="start"` second | Trimble logo button (globe icon, `class="trimble-logo"`) | Always |
+| `slot="start"` third | `<slot name="start">` (our custom content) | Always |
+| `slot="end"` | Search, Notifications, Help, Apps, AI, User buttons | Per `visibility` flags |
+| `slot="end"` last | `<slot name="end">` (our custom content) | Always |
+
+### Fallback elements required when native rendering fails
+
+All fallback elements are wrapped in `@if (!navbarNativeRendered())` and placed inside the `slot="start"` or `slot="end"` divs.
+
+**slot="start" fallbacks (before custom content):**
+
+| Element | Views | Class |
+|---------|-------|-------|
+| Hamburger button (`menu` icon) | Desktop only (not canvas -- canvas has its own side nav) | `bg-card text-foreground hover:bg-muted` |
+| Trimble logo + wordmark (`<app-trimble-logo />`) | All views | `text-primary` |
+| Separator (`w-px h-5 bg-foreground-20`) | All views | -- |
+
+**slot="end" fallbacks (after AI + dark mode, before user menu):**
+
+| Element | Views | Class |
+|---------|-------|-------|
+| Search button | Desktop (not mobile, not canvas when mobile) | `bg-card text-foreground hover:bg-muted` |
+| Notifications button | Same | Same |
+| Help button | Same | Same |
+
+### Correct icon order in slot="end"
+
+All navbar instances must follow this order (left to right):
+
+1. **AI assistant** (always visible)
+2. **Dark mode toggle** (always visible, `hidden md:flex` on desktop mobile)
+3. **Search** (fallback only)
+4. **Notifications** (fallback only)
+5. **Help** (fallback only)
+6. **User menu** / mobile "more menu" (always visible)
+
+### Background color consistency
+
+All navbar icon buttons (both always-visible and fallback) must use the same class for visual consistency:
+
+```
+bg-card text-foreground hover:bg-muted
+```
+
+This matches the native Modus navbar button styling: `background: var(--modus-wc-color-base-100)`.
+
+**Never** use buttons without a background in the navbar -- they look different from native Modus buttons and create visual inconsistency in production where native and custom buttons appear side by side.
+
+### TrimbleLogoComponent
+
+A reusable component at `src/app/shell/components/trimble-logo.component.ts` renders the official Trimble logo + wordmark SVG (extracted from the Modus Web Components source). It uses `fill="currentColor"` so it follows the parent's text color (`text-primary`).
+
+The SVG is the `TrimbleLogoFullIcon` from `modus-wc-navbar`'s bundled source (`viewBox="0 0 444.68 100"`, 25 `<path>` elements). It includes both the Trimble globe mark and the "Trimble." wordmark text.
+
+### 4 navbar instances that must stay in sync
+
+| File | View | Has hamburger fallback | Has logo fallback |
+|------|------|----------------------|-------------------|
+| `dashboard-shell.component.ts` | Canvas navbar | No (canvas has side nav) | Yes |
+| `dashboard-shell.component.ts` | Desktop navbar | Yes (`mainMenu: !canvas`) | Yes |
+| `project-dashboard.component.html` | Canvas navbar | No | Yes |
+| `project-dashboard.component.html` | Desktop navbar | Yes | Yes |
+
+**All 4 instances must have identical fallback structure.** When modifying fallback elements, update all 4 at once. Never update one without the others.
+
+### Detection in project-dashboard
+
+The project dashboard component also has its own `navbarNativeRendered` signal and `detectNativeNavbarRender()` method, called in `ngAfterViewInit`. Both dashboard-shell and project-dashboard must detect independently because they render separate `modus-navbar` instances.
+
+### Rules (mandatory)
+
+1. **Never remove fallback elements** thinking native rendering "just works" -- it fails in dev mode.
+2. **Never add custom Trimble logos or hamburgers** outside the `@if (!navbarNativeRendered())` guard -- they duplicate the native ones in production.
+3. **Never use CSS hacks** (`display: none !important`, `visibility: hidden`, etc.) to hide/show native Modus navbar internals -- the toolbar may or may not exist depending on the rendering mode.
+4. **Always use `bg-card`** on all navbar icon buttons (not bare/transparent).
+5. **Always maintain the icon order**: AI, dark mode, search, notifications, help, user menu.
+6. **Always update all 4 navbar instances** when changing fallback structure.
+7. **The `attachHamburgerListener` must only run when native rendering fails** (`if (!toolbar)` in `detectNativeNavbarRender`). When native rendering succeeds, the Modus component handles its own hamburger events.
+
 ---
 
 ## Quick Reference: Files and Regression Tests
@@ -1170,3 +1292,4 @@ Applying the change to the parent was fewer lines of code than wrapping the cont
 | Desktop snap after drag + sizing-only defaults | `dashboard-layout-engine.ts` + `buildProjectsLayoutConfig` | `dashboard-layout-engine.spec.ts` (snap, locked, v2 save/reset, flowOrder) |
 | Projects layout alignment + DashboardPageBase | `projects-page.component.ts` + `projects-page-layout.config.ts` | Build verification; visual test |
 | Compact mode for narrow widgets | `project-dashboard.component.ts` + `.html`, `home-page.component.ts` | (visual: resize widget to 5 cols, verify compact tiles) |
+| Navbar native rendering fallback | `dashboard-shell.component.ts`, `project-dashboard.component.html`, `modus-navbar.component.ts`, `trimble-logo.component.ts` | Build + verify locally (fallbacks visible) and on Vercel (native renders, no duplicates) |

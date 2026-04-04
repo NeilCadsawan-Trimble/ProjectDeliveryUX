@@ -59,10 +59,19 @@ If the date matches today, skip this section and proceed normally.
   5. Added `navigateToRfiList()` / `navigateToSubmittalList()` methods for compact tile click actions.
   6. Updated skills (`dashboard-layout-lessons` section 22) and PROGRESS.md (Phase 16 expanded to 7 items).
 
+### Session 14 (Apr 3)
+- **Topic**: Navbar native rendering fallback skill documentation
+- **What happened**:
+  1. Added section 23 to `dashboard-layout-lessons` SKILL.md: "Modus Navbar Native Rendering Fallback (Stencil/Angular 20 Incompatibility)".
+  2. Documents the complete architecture: runtime detection via `navbarNativeRendered` signal, conditional fallback elements (Trimble logo, hamburger, search, notifications, help), correct icon ordering, background color consistency (`bg-card`), and the 4 navbar instances that must stay in sync.
+  3. Updated skill description to include navbar modification trigger.
+  4. Added entry to Known Fragile Areas table in longterm-memory.mdc.
+  5. Updated skill description in longterm-memory.mdc.
+
 ## Active Context
 
 - On `dev` branch.
-- Hamburger fix + canvas zoom fix + risk distribution + sort ordering + Sort by Priority menu + RFI/Submittal compact mode all applied but not yet pushed.
+- Hamburger fix + canvas zoom fix + risk distribution + sort ordering + Sort by Priority menu + RFI/Submittal compact mode + navbar fallback all applied but not yet pushed.
 - Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
 
 ## Pending Items

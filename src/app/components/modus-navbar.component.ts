@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, input, output, ElementRef, AfterViewInit, inject, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, CUSTOM_ELEMENTS_SCHEMA, input, output, ElementRef, AfterViewInit, inject, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /**
@@ -76,41 +76,27 @@ export interface ModusNavbarProps {
 /**
  * Angular wrapper for the Modus navbar web component.
  *
- * The navbar component supports projecting custom content into several slots:
- * - `main-menu` slot: For custom main menu content
- * - `notifications` slot: For custom notifications menu content
- * - `apps` slot: For custom apps menu content
- * - `start` slot: For custom content at the start of the navbar
- * - `center` slot: For custom content at the center of the navbar
- * - `end` slot: For custom content at the end of the navbar
- *
- * @example
- * ```html
- * <modus-navbar
- *   [userCard]="userInfo"
- *   [visibility]="{ user: true, search: true }"
- *   (userMenuOpenChange)="handleUserMenuChange($event)"
- * />
- * ```
+ * When the Stencil internal render succeeds (production builds), the native
+ * toolbar with logo, hamburger, search, notifications, help, and user buttons
+ * renders inside the web component. When it fails (Angular 20 dev mode
+ * DOMException), `nativeRendered` stays false and consumers should provide
+ * fallback buttons in the slots.
  */
 @Component({
   selector: 'modus-navbar',
   imports: [CommonModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <modus-wc-navbar>
-      <ng-content select="[slot='main-menu']" slot="main-menu" />
-      <ng-content select="[slot='notifications']" slot="notifications" />
-      <ng-content select="[slot='apps']" slot="apps" />
-      <ng-content select="[slot='start']" slot="start" />
-      <ng-content select="[slot='center']" slot="center" />
-      <ng-content select="[slot='end']" slot="end" />
-    </modus-wc-navbar>
-  `,
+  template: `<modus-wc-navbar><ng-content /></modus-wc-navbar>`,
 })
 export class ModusNavbarComponent implements AfterViewInit {
   private readonly elRef = inject(ElementRef);
+
+  /**
+   * Whether the Stencil component rendered its internal toolbar.
+   * Consumers can read this to decide whether to show fallback buttons.
+   */
+  readonly nativeRendered = signal(false);
 
   /** The open state of the apps menu. */
   readonly appsMenuOpen = input<boolean | undefined>(false);
@@ -197,6 +183,19 @@ export class ModusNavbarComponent implements AfterViewInit {
     listen('signOutClick', this.signOutClick);
     listen('trimbleLogoClick', this.trimbleLogoClick);
     listen('userMenuOpenChange', this.userMenuOpenChange);
+
+    this.detectNativeRender();
+  }
+
+  private detectNativeRender(): void {
+    if (!this.wcEl) return;
+    const wcEl = this.wcEl;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const toolbar = wcEl.querySelector('.modus-wc-toolbar') ?? wcEl.querySelector('modus-wc-toolbar');
+        this.nativeRendered.set(!!toolbar);
+      });
+    });
   }
 
   private syncProp(name: string, value: unknown): void {

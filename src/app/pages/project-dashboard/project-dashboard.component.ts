@@ -42,6 +42,7 @@ import { PdfViewerComponent } from '../../shared/detail/pdf-viewer.component';
 import { PanoramaViewerComponent } from '../../shared/detail/panorama-viewer.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
 import { UserMenuComponent } from '../../shell/components/user-menu.component';
+import { TrimbleLogoComponent } from '../../shell/components/trimble-logo.component';
 
 import { ThemeService } from '../../shell/services/theme.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
@@ -105,7 +106,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -935,14 +936,16 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   readonly navbarVisibility = computed(() => ({
     user: false,
-    mainMenu: false,
+    mainMenu: !this.isCanvas(),
     ai: false,
-    notifications: false,
+    notifications: true,
     apps: false,
-    help: false,
-    search: false,
-    searchInput: false,
+    help: true,
+    search: true,
+    searchInput: true,
   }));
+
+  readonly navbarNativeRendered = signal(false);
 
   readonly userCard: INavbarUserCard = {
     name: 'Frank Mendoza',
@@ -1879,9 +1882,8 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   override ngAfterViewInit(): void {
     super.ngAfterViewInit();
 
-    this.fixNavbarLayout();
-    this.reorderNavbarEnd();
     this.attachHamburgerListener();
+    this.detectNativeNavbarRender();
 
     if (typeof window !== 'undefined') {
       this._compactMq = window.matchMedia('(max-width: 580px)');
@@ -1889,6 +1891,15 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       this._compactMq.addEventListener('change', this._compactMqHandler);
       this.destroyRef.onDestroy(() => this._compactMq?.removeEventListener('change', this._compactMqHandler));
     }
+  }
+
+  private detectNativeNavbarRender(): void {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const toolbar = this.elementRef.nativeElement.querySelector('modus-wc-toolbar');
+        this.navbarNativeRendered.set(!!toolbar);
+      });
+    });
   }
 
   private attachHamburgerListener(): void {
@@ -1912,56 +1923,6 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     tryAttach();
   }
 
-  private fixNavbarLayoutAttempts = 0;
-  private fixNavbarLayout(): void {
-    const toolbar = this.elementRef.nativeElement.querySelector('modus-wc-toolbar');
-    if (!toolbar?.shadowRoot) {
-      if (++this.fixNavbarLayoutAttempts > 50) return;
-      setTimeout(() => this.fixNavbarLayout(), 100);
-      return;
-    }
-    const navbarDiv = toolbar.shadowRoot.querySelector('.modus-wc-navbar') as HTMLElement | null;
-    const startEl = toolbar.shadowRoot.querySelector('.modus-wc-navbar-start') as HTMLElement | null;
-    const endEl = toolbar.shadowRoot.querySelector('.modus-wc-navbar-end') as HTMLElement | null;
-    if (navbarDiv) {
-      navbarDiv.style.display = 'flex';
-      navbarDiv.style.alignItems = 'center';
-    }
-    if (startEl) {
-      startEl.style.flex = '1 1 0%';
-      startEl.style.minWidth = '0';
-      startEl.style.overflow = 'hidden';
-    }
-    if (endEl) {
-      endEl.style.flex = '0 0 auto';
-      endEl.style.marginLeft = 'auto';
-    }
-  }
-
-  private reorderNavbarEnd(): void {
-    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
-    if (!navbarWc) return;
-    let attempts = 0;
-    const tryReorder = () => {
-      if (++attempts > 50) return;
-      const shadow = navbarWc.shadowRoot;
-      if (!shadow) { requestAnimationFrame(tryReorder); return; }
-      const endDiv = shadow.querySelector('div[slot="end"]') as HTMLElement | null;
-      if (!endDiv) { requestAnimationFrame(tryReorder); return; }
-      const endSlot = endDiv.querySelector(':scope > slot[name="end"]') as HTMLElement | null;
-      if (endSlot) endSlot.style.order = '1';
-      for (const child of Array.from(endDiv.children)) {
-        const el = child as HTMLElement;
-        const label = el.getAttribute('aria-label') || '';
-        if (label === 'User profile') {
-          el.style.order = '2';
-        }
-      }
-      const userMenu = endDiv.querySelector(':scope > div.user') as HTMLElement | null;
-      if (userMenu) userMenu.style.order = '2';
-    };
-    requestAnimationFrame(tryReorder);
-  }
 
   focusMain(): void {
     const main = document.getElementById('main-content');

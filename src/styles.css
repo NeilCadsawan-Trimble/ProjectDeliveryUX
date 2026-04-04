@@ -1481,39 +1481,21 @@ modus-wc-progress.progress-primary .modus-wc-progress {
     0 6px 16px rgba(36, 35, 45, 0.10);
 }
 
-modus-wc-navbar .main-menu {
-  visibility: hidden !important;
-  pointer-events: none !important;
-  position: absolute !important;
-  width: 0 !important;
-  height: 0 !important;
-  overflow: hidden !important;
-}
-
 /*
- * Navbar fallback layout: ensures the navbar renders as a horizontal flex bar
- * even if the internal Stencil toolbar render fails (DOMException with
- * Angular 20 + scoped encapsulation slot relocation).
- * Theme-specific backgrounds replicate the original Modus navbar colors.
+ * Navbar host fallback: when the Stencil-rendered toolbar does not appear
+ * (Angular 20 scoped-encapsulation slot relocation issue in dev mode),
+ * the host still behaves as a horizontal flex bar.  When the native
+ * toolbar DOES render, content is projected into its shadow DOM and
+ * these rules are inert.
  */
 modus-wc-navbar {
-  display: flex !important;
+  display: flex;
   align-items: center;
   width: 100%;
   height: 56px;
   min-height: 56px;
   background-color: var(--modus-wc-color-base-page);
   padding: 0 var(--modus-wc-spacing-md, 16px);
-}
-[data-theme="modus-classic-dark"] modus-wc-navbar {
-  background-color: var(--modus-wc-color-gray-10);
-}
-[data-theme="modus-modern-dark"] modus-wc-navbar {
-  background-color: var(--modus-wc-color-trimble-gray);
-}
-[data-theme="connect-light"] modus-wc-navbar,
-[data-theme="connect-dark"] modus-wc-navbar {
-  border-bottom: 1px solid var(--modus-wc-color-base-200);
 }
 modus-wc-navbar > [slot="start"] {
   flex: 1;
@@ -1529,38 +1511,15 @@ modus-wc-navbar > [slot="end"] {
 modus-wc-navbar > [slot="center"] {
   flex-shrink: 0;
 }
-.navbar-trimble-logo svg {
-  height: 24px;
-  width: auto;
+[data-theme="modus-classic-dark"] modus-wc-navbar {
+  background-color: var(--modus-wc-color-gray-10);
 }
-.navbar-trimble-logo svg path {
-  fill: var(--modus-wc-color-primary);
+[data-theme="modus-modern-dark"] modus-wc-navbar {
+  background-color: var(--modus-wc-color-trimble-gray);
 }
-[data-theme="modus-classic-dark"] .navbar-trimble-logo svg path {
-  fill: #ffffff;
-}
-[data-theme="modus-modern-dark"] .navbar-trimble-logo svg path {
-  fill: #ffffff;
-}
-.navbar-hamburger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  cursor: pointer;
-  background: var(--modus-wc-color-base-100);
-  color: var(--modus-wc-color-base-content);
-  border: none;
-  flex-shrink: 0;
-}
-[data-theme="modus-classic-dark"] .navbar-hamburger {
-  background: transparent;
-  color: #ffffff;
-}
-.navbar-hamburger:hover {
-  opacity: 0.85;
+[data-theme="connect-light"] modus-wc-navbar,
+[data-theme="connect-dark"] modus-wc-navbar {
+  border-bottom: 1px solid var(--modus-wc-color-base-200);
 }
 
 /* ========================================
