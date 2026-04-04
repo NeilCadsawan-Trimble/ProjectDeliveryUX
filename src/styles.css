@@ -1498,6 +1498,29 @@ modus-wc-navbar {
   background-color: var(--modus-wc-color-base-page);
   padding: 0 var(--modus-wc-spacing-md, 16px);
 }
+
+/*
+ * Desktop: drop double left inset (host + inner) and trim main-menu padding so the control
+ * sits flush with the side-nav rail. Mobile keeps symmetric host padding.
+ */
+@media (min-width: 768px) {
+  modus-wc-navbar {
+    padding-left: 0;
+    padding-right: var(--modus-wc-spacing-md, 16px);
+  }
+
+  modus-wc-navbar .modus-wc-navbar {
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    padding-right: var(--modus-wc-spacing-md);
+  }
+
+  modus-wc-navbar .modus-wc-navbar [slot='start'] > modus-wc-button[aria-label='Main menu'] {
+    padding-inline-start: 0;
+  }
+}
+
 .modus-wc-navbar-host-fallback modus-wc-navbar {
   display: flex;
   align-items: center;
@@ -1537,14 +1560,14 @@ modus-wc-navbar {
     [slot='start']
     > modus-wc-button[aria-label='Main menu'] {
     position: fixed;
-    left: 12px;
+    left: 4px;
     top: 12px;
     z-index: 1002;
   }
 
   .canvas-navbar .shell-navbar-hamburger {
     position: fixed;
-    left: 12px;
+    left: 4px;
     top: 12px;
     z-index: 1002;
   }
