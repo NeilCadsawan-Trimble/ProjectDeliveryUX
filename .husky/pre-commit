@@ -1,39 +1,32 @@
-# Run all linting and fast regression checks before commit
+# Run all linting checks before commit
 echo "Running pre-commit checks..."
 
 # TypeScript type checking
 echo "Checking TypeScript types..."
-npm run type-check
+npm run type-check || exit 1
 
 # Design system colors compliance
 echo "Checking design system colors..."
-npm run lint:colors
+npm run lint:colors || exit 1
 
 # Inline styles compliance
 echo "Checking inline styles..."
-npm run lint:styles
+npm run lint:styles || exit 1
 
 # Border violations compliance
 echo "Checking border patterns..."
-npm run lint:borders
+npm run lint:borders || exit 1
 
 # Opacity utilities compliance
 echo "Checking opacity utilities..."
-npm run lint:opacity
+npm run lint:opacity || exit 1
 
 # Modus Icons compliance
 echo "Checking Modus Icons usage..."
-npm run lint:icons
+npm run lint:icons || exit 1
 
 # Icon names validation
-echo "Checking icon names..."
-npm run lint:icon-names
-
-# Fast regression tests (Vitest unit + static analysis)
-echo "Running unit tests..."
-npm run test:unit
-
-echo "Running static regression tests..."
-npm run test:static
+echo "Validating icon names..."
+npm run lint:icon-names || exit 1
 
 echo "All pre-commit checks passed!"

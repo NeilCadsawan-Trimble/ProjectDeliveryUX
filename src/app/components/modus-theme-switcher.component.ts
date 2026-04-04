@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModusWcThemeSwitcher } from '@trimble-oss/moduswebcomponents-angular';
-import { ThemeMode, ThemeName, ThemeConfig } from '../shell/services/theme.service';
+import { ThemeMode, ThemeName, ThemeConfig } from '../services/theme.service';
 
 /**
  * Angular wrapper component for Modus Theme Switcher.

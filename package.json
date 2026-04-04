@@ -1,18 +1,13 @@
 {
-  "name": "nexus",
+  "name": "ProjectDeliveryUX",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "dev:api": "node dev-proxy.mjs",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' ng build",
+    "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:unit": "ng test",
-    "test:static": "vitest run --config vitest.static.config.ts",
-    "test:e2e": "playwright test",
-    "test:all": "ng test && npm run test:static && playwright test",
     "type-check": "node scripts/check-typescript.js",
     "lint:colors": "node scripts/check-modus-colors.js",
     "lint:styles": "node scripts/check-inline-styles.js",
@@ -20,7 +15,7 @@
     "lint:opacity": "node scripts/check-opacity-utilities.js",
     "lint:icons": "node scripts/check-modus-icons.js",
     "lint:icon-names": "node scripts/check-icon-names.js",
-    "lint:all": "npm run type-check && npm run lint:colors && npm run lint:styles && npm run lint:borders && npm run lint:opacity && npm run lint:icons && npm run lint:icon-names",
+    "lint:all": "node scripts/run-all-checks.js",
     "prepare": "husky || true"
   },
   "prettier": {
@@ -37,39 +32,28 @@
   },
   "private": true,
   "dependencies": {
+    "@photo-sphere-viewer/core": "^5.11.5",
     "@angular/common": "^20.3.0",
     "@angular/compiler": "^20.3.0",
     "@angular/core": "^20.3.0",
     "@angular/forms": "^20.3.0",
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
-    "@photo-sphere-viewer/core": "^5.14.1",
     "@tailwindcss/postcss": "^4.1.16",
     "@trimble-oss/modus-icons": "^1.18.0",
-    "@trimble-oss/moduswebcomponents": "1.0.6",
+    "@trimble-oss/moduswebcomponents": "^1.0.6",
     "@trimble-oss/moduswebcomponents-angular": "^1.0.6-ng19",
-    "pdfjs-dist": "^4.10.38",
+    "pdfjs-dist": "4.10.38",
     "postcss": "^8.5.6",
     "rxjs": "~7.8.0",
     "tailwindcss": "^4.1.16",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
-  "peerDependencies": {
-    "three": ">=0.179.0"
-  },
-  "peerDependenciesMeta": {
-    "three": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@angular/build": "^20.3.8",
     "@angular/cli": "^20.3.8",
     "@angular/compiler-cli": "^20.3.0",
-    "@playwright/test": "^1.58.2",
-    "@types/node": "^25.5.0",
-    "@types/three": "^0.183.1",
     "glob": "^11.0.0",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",

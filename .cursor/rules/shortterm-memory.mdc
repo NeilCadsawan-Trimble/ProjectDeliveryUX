@@ -68,10 +68,18 @@ If the date matches today, skip this section and proceed normally.
   4. Added entry to Known Fragile Areas table in longterm-memory.mdc.
   5. Updated skill description in longterm-memory.mdc.
 
+### Session 15 (Apr 3)
+- **Topic**: Hamburger / side nav not expanding (shell + project dashboard)
+- **What happened**:
+  1. Removed `_reattachHamburgerEffect` and `attachHamburgerListener` from `dashboard-shell.component.ts`; they set `_hamburgerAttached` and blocked `onMainMenuToggle` from calling `navExpanded.set(open)` when native toolbar rendered.
+  2. `onMainMenuToggle` now always `this.navExpanded.set(open)`.
+  3. Project dashboard: added `(mainMenuOpenChange)="onMainMenuToggle($event)"` on canvas and desktop `modus-navbar`; removed `attachHamburgerListener`, `hamburgerBtn`, and `hamburgerEffect` (native path had no output binding before).
+  4. Updated `tests/static/dashboard-shell.spec.ts` and `dashboard-layout-lessons` section 16.
+
 ## Active Context
 
 - On `dev` branch.
-- Hamburger fix + canvas zoom fix + risk distribution + sort ordering + Sort by Priority menu + RFI/Submittal compact mode + navbar fallback all applied but not yet pushed.
+- Hamburger / mainMenuOpenChange fix (session 15) + prior unpushed work; verify in browser after pull.
 - Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
 
 ## Pending Items

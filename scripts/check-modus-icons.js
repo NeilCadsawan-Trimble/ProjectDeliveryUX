@@ -51,7 +51,6 @@ const NON_MODUS_ICON_PATTERNS = [
   /<IconButton[^>]*>/g,
 
   // Common icon imports (exclude modus-icon and modus-icons)
-  /import.*Icon.*from(?!.*modus)/g,
   /import.*Icons.*from/g,
   /import.*@heroicons/g,
   /import.*@lucide/g,
@@ -151,18 +150,12 @@ async function checkFile(filePath) {
             matchText.includes('modusIcons') ||
             matchText.includes('totalIconCount') ||
             matchText.includes('categoryCount') ||
-            matchText.includes('AiIconComponent') ||
-            matchText.includes('urgentNeedCategoryIcon') ||
-            matchText.includes('contractTypeIcon') ||
-            matchText.includes('coTypeIcon') ||
             (matchText.includes('from') &&
               (matchText.includes('./pages/IconsPage') ||
                 matchText.includes('../pages/IconsPage') ||
                 matchText.includes('./data/modusIcons') ||
                 matchText.includes('../data/modusIcons') ||
-                matchText.includes('data/modusIcons') ||
-                matchText.includes('dashboard-data') ||
-                matchText.includes('ai-icon.component'))))) ||
+                matchText.includes('data/modusIcons'))))) ||
         // Skip legitimate Angular component usage
         (matchText.includes('<') &&
           matchText.includes('>') &&

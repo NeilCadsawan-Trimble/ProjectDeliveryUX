@@ -97,6 +97,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             [userCard]="userCard()"
             [visibility]="navbarVisibility()"
             [condensed]="false"
+            [mainMenuOpen]="navExpanded()"
             [searchInputOpen]="searchInputOpen()"
             (searchClick)="searchInputOpen.set(!searchInputOpen())"
             (searchInputOpenChange)="searchInputOpen.set($event)"
@@ -352,6 +353,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             [userCard]="userCard()"
             [visibility]="navbarVisibility()"
             [condensed]="isMobile()"
+            [mainMenuOpen]="navExpanded()"
             [searchInputOpen]="searchInputOpen()"
             (searchClick)="searchInputOpen.set(!searchInputOpen())"
             (searchInputOpenChange)="searchInputOpen.set($event)"
@@ -666,9 +668,7 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
   private readonly _abortCtrl = new AbortController();
-  private _hamburgerAbort: AbortController | null = null;
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
-    this._hamburgerAbort?.abort();
     this._abortCtrl.abort();
     this.ai.destroy();
   });
@@ -736,15 +736,6 @@ export class DashboardShellComponent implements AfterViewInit {
 
   private readonly _syncZoomEffect = effect(() => {
     this.canvasResetService.canvasZoom.set(this.panning.canvasZoom());
-  });
-
-  private readonly _reattachHamburgerEffect = effect(() => {
-    this.isCanvas();
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        this.attachHamburgerListener();
-      });
-    });
   });
 
   readonly activeNav = computed(() => {
@@ -943,10 +934,8 @@ export class DashboardShellComponent implements AfterViewInit {
     this.router.navigate([this.homeRoute()]);
   }
 
-  private _hamburgerAttached = false;
-
-  onMainMenuToggle(open: boolean): void {
-    if (!this._hamburgerAttached) {
+  onMainMenuToggle(open: unknown): void {
+    if (typeof open === 'boolean') {
       this.navExpanded.set(open);
     }
   }
@@ -1047,59 +1036,28 @@ export class DashboardShellComponent implements AfterViewInit {
       this.navbarNativeRendered.set(false);
       return;
     }
+    const hasToolbar = (): boolean =>
+      !!(navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar'));
+
+    const pollAfterStencil = (attempt: number): void => {
+      requestAnimationFrame(() => {
+        if (hasToolbar()) {
+          this.navbarNativeRendered.set(true);
+          return;
+        }
+        if (attempt >= 48) {
+          this.navbarNativeRendered.set(false);
+          return;
+        }
+        pollAfterStencil(attempt + 1);
+      });
+    };
+
     const ready = (navbarWc as unknown as { componentOnReady?: () => Promise<void> }).componentOnReady;
     if (typeof ready === 'function') {
-      ready.call(navbarWc).then(() => {
-        const toolbar = navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar');
-        this.navbarNativeRendered.set(!!toolbar);
-        if (!toolbar) this.attachHamburgerListener();
-      });
+      void ready.call(navbarWc).then(() => pollAfterStencil(0));
       return;
     }
-    let attempts = 0;
-    const poll = () => {
-      if (++attempts > 30) {
-        this.navbarNativeRendered.set(false);
-        this.attachHamburgerListener();
-        return;
-      }
-      const toolbar = navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar');
-      if (toolbar) {
-        this.navbarNativeRendered.set(true);
-      } else {
-        requestAnimationFrame(poll);
-      }
-    };
-    requestAnimationFrame(poll);
-  }
-
-  private attachHamburgerListener(): void {
-    if (this._hamburgerAbort) {
-      this._hamburgerAbort.abort();
-      this._hamburgerAbort = null;
-    }
-    this._hamburgerAttached = false;
-    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
-    if (!navbarWc) return;
-    const abort = new AbortController();
-    this._hamburgerAbort = abort;
-    let attempts = 0;
-    const tryAttach = () => {
-      if (abort.signal.aborted || ++attempts > 100) return;
-      const shadow = navbarWc.shadowRoot;
-      const btn =
-        shadow?.querySelector('[aria-label="Main menu"]') ??
-        navbarWc.querySelector('[aria-label="Main menu"]');
-      if (btn) {
-        this._hamburgerAttached = true;
-        btn.addEventListener('click', (e: Event) => {
-          e.stopImmediatePropagation();
-          this.navExpanded.set(!this.navExpanded());
-        }, { capture: true, signal: abort.signal });
-        return;
-      }
-      requestAnimationFrame(tryAttach);
-    };
-    tryAttach();
+    pollAfterStencil(0);
   }
 }

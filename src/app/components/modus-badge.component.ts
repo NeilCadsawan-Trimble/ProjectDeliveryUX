@@ -54,7 +54,6 @@ export interface ModusBadgeProps {
   selector: 'modus-badge',
   imports: [CommonModule, ModusWcBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { style: 'display: contents' },
   template: `
     <modus-wc-badge
       [color]="color()"
@@ -62,9 +61,6 @@ export interface ModusBadgeProps {
       [size]="size()"
       [variant]="variant()"
       [attr.aria-label]="ariaLabel()"
-      [attr.data-color]="color()"
-      [attr.data-size]="size()"
-      [attr.data-variant]="variant()"
     >
       <ng-content />
     </modus-wc-badge>

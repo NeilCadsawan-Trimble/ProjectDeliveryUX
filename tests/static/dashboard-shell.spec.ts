@@ -15,28 +15,25 @@ const ENGINE_SRC = readFileSync(
 
 describe('DashboardShellComponent (regression)', () => {
   describe('hamburger button', () => {
-    it('has attachHamburgerListener method as fallback', () => {
-      expect(SRC).toContain('attachHamburgerListener');
+    it('does not reattach DOM hamburger listeners (avoids blocking mainMenuOpenChange)', () => {
+      expect(SRC).not.toContain('attachHamburgerListener');
+      expect(SRC).not.toContain('_reattachHamburgerEffect');
     });
 
-    it('queries for [aria-label="Main menu"]', () => {
-      expect(SRC).toContain('[aria-label="Main menu"]');
+    it('fallback hamburger has Main menu aria-label', () => {
+      expect(SRC).toContain('aria-label="Main menu"');
     });
 
-    it('toggles navExpanded on hamburger click', () => {
-      expect(SRC).toContain('this.navExpanded.set(!this.navExpanded())');
+    it('toggles navExpanded on fallback hamburger click', () => {
+      expect(SRC).toContain('navExpanded.set(!navExpanded())');
     });
 
-    it('uses stopImmediatePropagation to prevent Modus default handling', () => {
-      expect(SRC).toContain('stopImmediatePropagation');
-    });
-
-    it('uses capture phase for click listener', () => {
-      expect(SRC).toContain('capture: true');
-    });
-
-    it('binds mainMenuOpenChange on modus-navbar for reliable toggle', () => {
+    it('binds mainMenuOpenChange on modus-navbar for native toolbar', () => {
       expect(SRC).toContain('(mainMenuOpenChange)="onMainMenuToggle($event)"');
+    });
+
+    it('binds mainMenuOpen to navExpanded for two-way sync with modus-wc-navbar', () => {
+      expect(SRC).toContain('[mainMenuOpen]="navExpanded()"');
     });
 
     it('has onMainMenuToggle method', () => {
@@ -47,7 +44,7 @@ describe('DashboardShellComponent (regression)', () => {
       expect(SRC).toContain('navbarWc.querySelector');
     });
 
-    it('onMainMenuToggle uses idempotent set(open) not toggle', () => {
+    it('onMainMenuToggle uses idempotent set(open)', () => {
       expect(SRC).toContain('navExpanded.set(open)');
     });
   });

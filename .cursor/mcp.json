@@ -1,3 +1,11 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "modus-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@julianoczkowski/mcp-modus"
+      ]
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, signal, effect, inject } from '@angular/core';
+import { Component, OnInit, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModusButtonComponent } from './modus-button.component';
 import { ModusAlertComponent } from './modus-alert.component';
@@ -44,7 +44,7 @@ import { ModusToolbarComponent } from './modus-toolbar.component';
 import { ModusTooltipComponent } from './modus-tooltip.component';
 import { ModusTypographyComponent } from './modus-typography.component';
 import { ModusUtilityPanelComponent } from './modus-utility-panel.component';
-import { ThemeService, ThemeName, ThemeMode, ThemeConfig } from '../shell/services/theme.service';
+import { ThemeService, ThemeName, ThemeMode, ThemeConfig } from '../services/theme.service';
 import type {
   IBreadcrumb,
   IPageChange,
@@ -61,7 +61,7 @@ import type {
  */
 @Component({
   selector: 'app-theme-demo',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
   imports: [
     CommonModule,
     ModusAccordionComponent,
@@ -1171,9 +1171,7 @@ export class ThemeDemoComponent implements OnInit {
     avatarAlt: 'User avatar',
   };
 
-  private readonly themeService = inject(ThemeService);
-
-  constructor() {
+  constructor(private themeService: ThemeService) {
     // Use effect to react to theme changes
     effect(() => {
       const theme = this.themeService.theme();

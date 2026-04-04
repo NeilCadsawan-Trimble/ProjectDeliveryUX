@@ -200,21 +200,6 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this._prevProjectId = id;
   });
 
-  private hamburgerBtn: HTMLElement | null = null;
-
-  private readonly hamburgerEffect = effect(() => {
-    const expanded = this.navExpanded();
-    if (this.hamburgerBtn) {
-      if (expanded) {
-        this.hamburgerBtn.style.background = 'var(--primary)';
-        this.hamburgerBtn.style.color = 'var(--primary-foreground)';
-      } else {
-        this.hamburgerBtn.style.background = '';
-        this.hamburgerBtn.style.color = '';
-      }
-    }
-  });
-
   readonly isCanvas = this.isCanvasMode;
   readonly wTops = this.widgetTops;
   readonly wHeights = this.widgetHeights;
@@ -1890,7 +1875,6 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   override ngAfterViewInit(): void {
     super.ngAfterViewInit();
 
-    this.attachHamburgerListener();
     this.detectNativeNavbarRender();
 
     if (typeof window !== 'undefined') {
@@ -1907,53 +1891,36 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       this.navbarNativeRendered.set(false);
       return;
     }
+    const hasToolbar = (): boolean =>
+      !!(navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar'));
+
+    const pollAfterStencil = (attempt: number): void => {
+      requestAnimationFrame(() => {
+        if (hasToolbar()) {
+          this.navbarNativeRendered.set(true);
+          return;
+        }
+        if (attempt >= 48) {
+          this.navbarNativeRendered.set(false);
+          return;
+        }
+        pollAfterStencil(attempt + 1);
+      });
+    };
+
     const ready = (navbarWc as unknown as { componentOnReady?: () => Promise<void> }).componentOnReady;
     if (typeof ready === 'function') {
-      ready.call(navbarWc).then(() => {
-        const toolbar = navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar');
-        this.navbarNativeRendered.set(!!toolbar);
-        if (!toolbar) this.attachHamburgerListener();
-      });
+      void ready.call(navbarWc).then(() => pollAfterStencil(0));
       return;
     }
-    let attempts = 0;
-    const poll = () => {
-      if (++attempts > 30) {
-        this.navbarNativeRendered.set(false);
-        this.attachHamburgerListener();
-        return;
-      }
-      const toolbar = navbarWc.querySelector('.modus-wc-toolbar') ?? navbarWc.querySelector('modus-wc-toolbar');
-      if (toolbar) {
-        this.navbarNativeRendered.set(true);
-      } else {
-        requestAnimationFrame(poll);
-      }
-    };
-    requestAnimationFrame(poll);
+    pollAfterStencil(0);
   }
 
-  private attachHamburgerListener(): void {
-    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
-    if (!navbarWc) return;
-
-    let attempts = 0;
-    const tryAttach = () => {
-      if (++attempts > 50) return;
-      const btn = navbarWc.querySelector('.navbar-menu-btn, [data-testid="main-menu-btn"], button[aria-label="Main menu"]');
-      if (btn) {
-        this.hamburgerBtn = btn as HTMLElement;
-        btn.addEventListener('click', (e: Event) => {
-          e.stopImmediatePropagation();
-          this.navExpanded.set(!this.navExpanded());
-        }, { capture: true, signal: this._abortCtrl.signal });
-        return;
-      }
-      requestAnimationFrame(tryAttach);
-    };
-    tryAttach();
+  onMainMenuToggle(open: unknown): void {
+    if (typeof open === 'boolean') {
+      this.navExpanded.set(open);
+    }
   }
-
 
   focusMain(): void {
     const main = document.getElementById('main-content');

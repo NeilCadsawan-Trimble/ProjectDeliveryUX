@@ -3583,10 +3583,12 @@
             [userCard]="userCard"
             [visibility]="navbarVisibility()"
             [condensed]="false"
+            [mainMenuOpen]="navExpanded()"
             [searchInputOpen]="searchInputOpen()"
             (searchClick)="searchInputOpen.set(!searchInputOpen())"
             (searchInputOpenChange)="searchInputOpen.set($event)"
             (trimbleLogoClick)="navigateHome()"
+            (mainMenuOpenChange)="onMainMenuToggle($event)"
           >
             <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               @if (!navbarNativeRendered()) {
@@ -3822,10 +3824,12 @@
         [userCard]="userCard"
         [visibility]="navbarVisibility()"
         [condensed]="isMobile()"
+        [mainMenuOpen]="navExpanded()"
         [searchInputOpen]="searchInputOpen()"
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
         (trimbleLogoClick)="navigateHome()"
+        (mainMenuOpenChange)="onMainMenuToggle($event)"
       >
         <div slot="start" class="flex items-center gap-3 w-full min-w-0">
           @if (!navbarNativeRendered()) {
