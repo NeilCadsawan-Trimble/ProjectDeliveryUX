@@ -12,7 +12,7 @@ import {
   input,
   viewChild,
 } from '@angular/core';
-import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
@@ -54,7 +54,6 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     AiAssistantPanelComponent,
     UserMenuComponent,
     TrimbleLogoComponent,
-    RouterOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -342,7 +341,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 
         <div class="canvas-content" role="main" id="main-content" tabindex="-1"
           [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
-          <router-outlet />
+          <ng-content />
         </div>
 
       </div>
@@ -558,7 +557,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 
         <div class="flex flex-1 overflow-hidden">
           <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
-            <router-outlet />
+            <ng-content />
           </div>
         </div>
 
@@ -741,6 +740,10 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly activeNav = computed(() => {
     const url = this.currentUrl();
     const items = this.sideNavItems();
+    if (url.startsWith('/project/')) {
+      const projects = items.find((i) => i.route === '/projects');
+      return projects?.value ?? 'projects';
+    }
     for (const item of items) {
       if (item.route && item.route !== '/') {
         if (url.startsWith(item.route)) return item.value;
@@ -891,6 +894,7 @@ export class DashboardShellComponent implements AfterViewInit {
   private getPageName(): string {
     const url = this.currentUrl();
     if (url.startsWith('/projects')) return 'projects';
+    if (url.startsWith('/project/')) return 'project-dashboard';
     if (url.startsWith('/financials/job-costs/')) return 'financials-job-cost-detail';
     if (url.startsWith('/financials')) return 'financials';
     return 'home';
