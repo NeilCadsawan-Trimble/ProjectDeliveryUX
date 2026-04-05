@@ -734,33 +734,36 @@ describe('runCanvasPushBfs', () => {
 
     it('financials page: dragging revenueChart down into budgetByProject pushes it away', () => {
       const rects: Record<string, WidgetRect> = {
-        finHeader:          { left: 0, top: 0,    width: 1280, height: 160 },
-        finRevenueChart:    { left: 0, top: 400,  width: 1280, height: 380 },
-        finBudgetByProject: { left: 0, top: 572,  width: 1280, height: 520 },
-        finJobCosts:        { left: 0, top: 1108, width: 1280, height: 580 },
+        finTitle:           { left: 0, top: 0,    width: 1280, height: 80 },
+        finNavKpi:          { left: 0, top: 96,   width: 640,  height: 496 },
+        finRevenueChart:    { left: 0, top: 608,  width: 1280, height: 380 },
+        finBudgetByProject: { left: 0, top: 1004, width: 1280, height: 520 },
+        finJobCosts:        { left: 0, top: 1540, width: 1280, height: 580 },
       };
-      const locked: Record<string, boolean> = { finHeader: true };
+      const locked: Record<string, boolean> = { finTitle: true, finNavKpi: true };
 
       runCanvasPushBfs('finRevenueChart', rects, locked, GAP);
 
-      expect(rects['finHeader'].top).toBe(0);
-      expect(rects['finHeader'].left).toBe(0);
+      expect(rects['finTitle'].top).toBe(0);
+      expect(rects['finTitle'].left).toBe(0);
+      expect(rects['finNavKpi'].top).toBe(96);
       assertNoPairwiseOverlap(rects, GAP);
     });
 
     it('financials page: near-same-row full-width widgets push vertically, not horizontally', () => {
       const rects: Record<string, WidgetRect> = {
-        finHeader:          { left: 0, top: 0,    width: 1280, height: 160 },
-        finRevenueChart:    { left: 0, top: 556,  width: 1280, height: 380 },
-        finBudgetByProject: { left: 0, top: 572,  width: 1280, height: 520 },
-        finJobCosts:        { left: 0, top: 1108, width: 1280, height: 580 },
+        finTitle:           { left: 0, top: 0,    width: 1280, height: 80 },
+        finNavKpi:          { left: 0, top: 96,   width: 640,  height: 496 },
+        finRevenueChart:    { left: 0, top: 608,  width: 1280, height: 380 },
+        finBudgetByProject: { left: 0, top: 624,  width: 1280, height: 520 },
+        finJobCosts:        { left: 0, top: 1160, width: 1280, height: 580 },
       };
-      const locked: Record<string, boolean> = { finHeader: true };
+      const locked: Record<string, boolean> = { finTitle: true, finNavKpi: true };
 
       runCanvasPushBfs('finRevenueChart', rects, locked, GAP);
 
       expect(rects['finBudgetByProject'].left).toBe(0);
-      expect(rects['finBudgetByProject'].top).toBeGreaterThanOrEqual(556 + 380 + GAP);
+      expect(rects['finBudgetByProject'].top).toBeGreaterThanOrEqual(608 + 380 + GAP);
       assertNoPairwiseOverlap(rects, GAP);
     });
 

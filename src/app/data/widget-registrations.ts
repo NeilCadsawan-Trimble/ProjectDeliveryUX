@@ -95,8 +95,12 @@ export const PROJECTS_WIDGETS: Record<string, WidgetRegistration> = {
 };
 
 export const FINANCIALS_WIDGETS: Record<string, WidgetRegistration> = {
-  finNavLinks: {
-    name: 'Financials Navigation',
+  finTitle: {
+    name: 'Financials Title',
+    suggestions: [],
+  },
+  finNavKpi: {
+    name: 'Financials Navigation & KPIs',
     suggestions: [
       'What financial modules are available?',
       'Navigate to accounts receivable',
