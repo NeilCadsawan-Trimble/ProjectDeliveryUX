@@ -12,7 +12,7 @@ import {
   input,
   viewChild,
 } from '@angular/core';
-import { Router, NavigationEnd } from '@angular/router';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 import type { INavbarUserCard } from '../../components/modus-navbar.component';
@@ -52,6 +52,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 @Component({
   selector: 'app-dashboard-shell',
   imports: [
+    RouterOutlet,
     ModusTextInputComponent,
     AiIconComponent,
     AiAssistantPanelComponent,
@@ -335,7 +336,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 
         <div class="canvas-content" role="main" id="main-content" tabindex="-1"
           [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
-          <ng-content />
+          <router-outlet />
         </div>
 
       </div>
@@ -534,17 +535,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 
         <div class="navbar-shadow"></div>
 
-        <div class="flex flex-1 overflow-hidden">
-          <div
-            class="flex-1 overflow-auto bg-background"
-            [class.pl-14]="!isMobile()"
-            role="main"
-            id="main-content"
-            tabindex="-1"
-          >
-            <ng-content />
-          </div>
-        </div>
+        <!-- Desktop content is in the shared content wrapper below -->
 
         @if (!isMobile() || navExpanded()) {
           <div class="custom-side-nav" [class.expanded]="navExpanded()">
@@ -639,6 +630,12 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         @if (navExpanded()) {
           <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
         }
+
+        <div class="flex flex-1 overflow-hidden">
+          <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+            <router-outlet />
+          </div>
+        </div>
 
       </div>
     }

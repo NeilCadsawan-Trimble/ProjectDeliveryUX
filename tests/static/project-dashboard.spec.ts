@@ -372,6 +372,20 @@ describe('ProjectDashboardComponent (template regression)', () => {
     });
   });
 
+  describe('weather service initialization (regression: project routes bypass DashboardShell)', () => {
+    it('imports WeatherService', () => {
+      expect(TS_SRC).toContain("from '../../services/weather.service'");
+    });
+
+    it('injects WeatherService', () => {
+      expect(TS_SRC).toContain('inject(WeatherService)');
+    });
+
+    it('calls weatherService.initialize() in ngOnInit', () => {
+      expect(TS_SRC).toContain('weatherService.initialize()');
+    });
+  });
+
   describe('canvas mode rendering parity for financials sub-pages', () => {
     const financialsPagesMatch = TS_SRC.match(
       /FINANCIALS_PAGES_WITH_CONTENT\s*=\s*new\s+Set\(\[([^\]]+)\]\)/

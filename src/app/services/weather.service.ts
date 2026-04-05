@@ -41,12 +41,14 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 export class WeatherService {
   private readonly dataStore = inject(DataStoreService);
   private readonly cache = new Map<string, CacheEntry>();
-  private initPromise: Promise<void> | null = null;
+  private fetchInProgress = false;
+  private lastSuccessTimestamp = 0;
 
   initialize(): void {
-    if (!this.initPromise) {
-      this.initPromise = this.fetchAllProjectWeather();
-    }
+    if (this.fetchInProgress) return;
+    if (this.lastSuccessTimestamp && Date.now() - this.lastSuccessTimestamp < CACHE_TTL_MS) return;
+    this.fetchInProgress = true;
+    this.fetchAllProjectWeather().finally(() => { this.fetchInProgress = false; });
   }
 
   private async fetchAllProjectWeather(): Promise<void> {
@@ -63,16 +65,20 @@ export class WeatherService {
       }
     }
 
+    const locations = [...uniqueCities.values()];
+    console.log(`[WeatherService] Fetching live weather for ${locations.length} cities...`);
+
     const results = await Promise.allSettled(
-      [...uniqueCities.values()].map(loc => this.fetchCityWeather(loc.city, loc.state))
+      locations.map(loc => this.fetchCityWeather(loc.city, loc.state))
     );
 
-    const locations = [...uniqueCities.values()];
+    let successCount = 0;
     let globalForecastSet = false;
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
       const loc = locations[i];
       if (result.status === 'fulfilled' && result.value) {
+        successCount++;
         for (const projectId of loc.projectIds) {
           const pw: ProjectWeather = { ...result.value, projectId };
           this.dataStore.updateWeather(projectId, pw);
@@ -82,6 +88,13 @@ export class WeatherService {
           globalForecastSet = true;
         }
       }
+    }
+
+    if (successCount > 0) {
+      this.lastSuccessTimestamp = Date.now();
+      console.log(`[WeatherService] Live weather updated for ${successCount}/${locations.length} cities`);
+    } else {
+      console.warn('[WeatherService] All weather API calls failed -- using seed data');
     }
   }
 
@@ -94,14 +107,18 @@ export class WeatherService {
 
     try {
       const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}`);
-      if (!res.ok) return null;
+      if (!res.ok) {
+        console.warn(`[WeatherService] API returned ${res.status} for ${city}, ${state}`);
+        return null;
+      }
 
       const json = await res.json() as { current: OWMCurrentResponse; forecast: OWMForecastResponse };
       const mapped = this.mapResponse(json.current, json.forecast, city, state);
 
       this.cache.set(cacheKey, { data: mapped as ProjectWeather, timestamp: Date.now() });
       return mapped;
-    } catch {
+    } catch (err) {
+      console.warn(`[WeatherService] Fetch failed for ${city}, ${state}:`, err);
       return null;
     }
   }
@@ -126,7 +143,7 @@ export class WeatherService {
     const today = new Date().toISOString().split('T')[0];
     const days: WeatherForecast[] = [];
     for (const [dateKey, items] of dailyMap) {
-      if (dateKey === today) continue;
+      if (dateKey < today) continue;
       if (days.length >= 7) break;
 
       const dt = new Date(dateKey + 'T12:00:00');

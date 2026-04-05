@@ -677,6 +677,91 @@ describe('DashboardLayoutEngine', () => {
       expect(tops['w3']).toBe(100 + GAP);
       expect(tops['w1']).toBe(200 + GAP * 2);
     });
+
+    it('dragged widget gets sort priority and all widgets compact upward', () => {
+      const engine = createEngine({
+        widgets: ['w1', 'w2', 'w3'],
+        defaultColStarts: { w1: 1, w2: 1, w3: 1 },
+        defaultColSpans: { w1: 16, w2: 16, w3: 16 },
+        defaultTops: { w1: 0, w2: 100 + GAP, w3: 200 + GAP * 2 },
+        defaultHeights: { w1: 100, w2: 100, w3: 100 },
+        canvasDefaultLefts: { w1: 0, w2: 0, w3: 0 },
+        canvasDefaultPixelWidths: { w1: 600, w2: 600, w3: 600 },
+      });
+      engine.isMobile.set(false);
+      engine.isCanvasMode.set(false);
+
+      engine.widgetColStarts.set({ w1: 1, w2: 1, w3: 1 });
+      engine.widgetColSpans.set({ w1: 16, w2: 16, w3: 16 });
+      engine.widgetTops.set({ w1: 0, w2: 100 + GAP, w3: 200 + GAP * 2 });
+      engine.widgetHeights.set({ w1: 100, w2: 100, w3: 100 });
+
+      const fakeGrid = { clientWidth: 1280 } as HTMLElement;
+      engine.gridElAccessor = () => fakeGrid;
+
+      engine.onWidgetHeaderMouseDown('w3', {
+        clientX: 100,
+        clientY: 400,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent);
+
+      engine.onDocumentMouseMove({
+        clientX: 100,
+        clientY: 50,
+        preventDefault: vi.fn(),
+      } as unknown as MouseEvent);
+
+      engine.onDocumentMouseUp();
+
+      const tops = engine.widgetTops();
+      expect(tops['w3']).toBe(0);
+      expect(tops['w1']).toBe(100 + GAP);
+      expect(tops['w2']).toBe(200 + GAP * 2);
+    });
+
+    it('dragged widget reorders within column and all widgets compact (no gaps)', () => {
+      const engine = createEngine({
+        widgets: ['w1', 'w2', 'w3', 'w4'],
+        defaultColStarts: { w1: 1, w2: 1, w3: 1, w4: 9 },
+        defaultColSpans: { w1: 8, w2: 8, w3: 8, w4: 8 },
+        defaultTops: { w1: 0, w2: 116, w3: 232, w4: 0 },
+        defaultHeights: { w1: 100, w2: 100, w3: 100, w4: 100 },
+        canvasDefaultLefts: { w1: 0, w2: 0, w3: 0, w4: 400 },
+        canvasDefaultPixelWidths: { w1: 300, w2: 300, w3: 300, w4: 300 },
+      });
+      engine.isMobile.set(false);
+      engine.isCanvasMode.set(false);
+
+      engine.widgetColStarts.set({ w1: 1, w2: 1, w3: 1, w4: 9 });
+      engine.widgetColSpans.set({ w1: 8, w2: 8, w3: 8, w4: 8 });
+      engine.widgetTops.set({ w1: 0, w2: 100 + GAP, w3: 200 + GAP * 2, w4: 0 });
+      engine.widgetHeights.set({ w1: 100, w2: 100, w3: 100, w4: 100 });
+
+      const fakeGrid = { clientWidth: 1280 } as HTMLElement;
+      engine.gridElAccessor = () => fakeGrid;
+
+      engine.onWidgetHeaderMouseDown('w3', {
+        clientX: 100,
+        clientY: 300,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent);
+
+      engine.onDocumentMouseMove({
+        clientX: 100,
+        clientY: 50,
+        preventDefault: vi.fn(),
+      } as unknown as MouseEvent);
+
+      engine.onDocumentMouseUp();
+
+      const tops = engine.widgetTops();
+      expect(tops['w3']).toBe(0);
+      expect(tops['w1']).toBe(100 + GAP);
+      expect(tops['w2']).toBe(200 + GAP * 2);
+      expect(tops['w4']).toBe(0);
+    });
   });
 
   describe('canvasGridMinHeight', () => {

@@ -16,6 +16,7 @@
     "lint:icons": "node scripts/check-modus-icons.js",
     "lint:icon-names": "node scripts/check-icon-names.js",
     "lint:all": "node scripts/run-all-checks.js",
+    "dev:api": "vercel dev --listen 3001",
     "prepare": "husky || true"
   },
   "prettier": {

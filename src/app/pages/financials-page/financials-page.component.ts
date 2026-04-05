@@ -25,6 +25,7 @@ import type { NavItem } from '../project-dashboard/project-dashboard.config';
 import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost, ChangeOrder, ChangeOrderType, Invoice, BillingSchedule, BillingEvent, Payable, CashFlowEntry, GLAccount, GLEntry, PurchaseOrder, PayrollRecord, Contract, SubcontractLedgerEntry } from '../../data/dashboard-data';
 import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, JOB_COST_CATEGORIES, CATEGORY_COLORS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
 import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
+import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
 
 @Component({
   selector: 'app-financials-page',
@@ -38,8 +39,22 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
   },
   template: `
     <ng-template #finSubpageToolbar let-placeholder>
-      <div class="bg-card border-default rounded-lg mb-6">
+      <div class="bg-card border-default rounded-lg mb-6 relative">
         <div class="flex items-center justify-between px-4 py-2 gap-4">
+          @if (isMobile()) {
+            <div class="flex items-center gap-1">
+              <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150"
+                [class]="finMobileSearchOpen() ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary text-foreground-60'"
+                role="button" tabindex="0" aria-label="Search"
+                (click)="finMobileSearchOpen.set(!finMobileSearchOpen())">
+                <i class="modus-icons text-base" aria-hidden="true">search</i>
+              </div>
+              <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
+                role="button" tabindex="0" aria-label="Filter">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
+              </div>
+            </div>
+          } @else {
           <div class="flex items-center gap-2 flex-1 max-w-xs">
             <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
               <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
@@ -51,6 +66,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
               <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
             </div>
           </div>
+          }
           <div class="flex items-center gap-1">
             <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
               role="button" tabindex="0" aria-label="Sort">
@@ -62,6 +78,23 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           </div>
         </div>
+        @if (isMobile() && finMobileSearchOpen()) {
+          <div class="absolute right-0 top-full z-50 bg-card border-default rounded-lg shadow-lg p-3 -mt-2"
+            [style.left.px]="isMobile() || finSubnavCollapsed() ? -227 : 0">
+            <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5">
+              <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
+              <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
+                [placeholder]="placeholder" [value]="finSubpageSearch()" (input)="finSubpageSearch.set($any($event.target).value)" />
+              @if (finSubpageSearch()) {
+                <div class="flex items-center justify-center w-5 h-5 rounded-full cursor-pointer hover:bg-muted transition-colors duration-150"
+                  role="button" tabindex="0" aria-label="Clear search"
+                  (click)="finSubpageSearch.set('')">
+                  <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">close</i>
+                </div>
+              }
+            </div>
+          </div>
+        }
       </div>
     </ng-template>
 
@@ -988,7 +1021,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
 
     @if (activeSubPage() === 'estimates') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search estimates...' }" />
         </div>
 
@@ -1015,6 +1048,38 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
           </div>
         </div>
 
+        @if (isMobile()) {
+          <div class="flex flex-col gap-3">
+            @for (est of estimates(); track est.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToEstimate(est.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-mono text-primary font-medium">{{ est.id }}</div>
+                  <modus-badge [color]="estimateBadgeColor(est.status)" variant="outlined" size="sm">{{ est.status }}</modus-badge>
+                </div>
+                <div class="text-sm font-medium text-foreground mb-1">{{ est.project }}</div>
+                <div class="text-xs text-foreground-40 mb-3">{{ est.client }}</div>
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1">{{ est.type }}</div>
+                  <div class="text-sm font-semibold text-foreground">{{ est.value }}</div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-2xs font-semibold flex-shrink-0">{{ est.requestedByInitials }}</div>
+                    <div class="text-xs text-foreground-80 truncate">{{ est.requestedBy }}</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-xs text-foreground-80">{{ est.dueDate }}</div>
+                    <div class="text-xs" [class]="dueDateClass(est.daysLeft)">
+                      @if (est.daysLeft < 0) { {{ -est.daysLeft }}d overdue }
+                      @else if (est.daysLeft === 0) { Due today }
+                      @else { {{ est.daysLeft }}d left }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>ID</div>
@@ -1056,12 +1121,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'change-orders') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search change orders...' }" />
         </div>
 
@@ -1098,6 +1164,29 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
           }
         </div>
 
+        @if (isMobile()) {
+          <div class="flex flex-col gap-3">
+            @for (co of filteredChangeOrders(); track co.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToChangeOrder(co.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-medium text-primary">{{ co.id }}</div>
+                  <modus-badge [color]="coBadgeColor(co.status)" size="sm">{{ capitalizeFirst(co.status) }}</modus-badge>
+                </div>
+                <div class="text-sm font-medium text-foreground mb-1">{{ co.description }}</div>
+                <div class="text-xs text-foreground-60 mb-3">{{ co.project }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(co.amount) }}</div>
+                  <div class="text-xs text-foreground-60">{{ co.requestDate }}</div>
+                </div>
+              </div>
+            } @empty {
+              <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap</i>
+                <div class="text-sm">No change orders in this category</div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>ID</div>
@@ -1123,12 +1212,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'job-costs') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search job costs...' }" />
         </div>
 
@@ -1162,6 +1252,27 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
           </div>
         </div>
 
+        @if (isMobile()) {
+          <div class="flex flex-col gap-3">
+            @for (p of projectJobCosts(); track p.projectId) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="openJobCostDetail(p)">
+                <div class="text-sm font-medium text-foreground mb-2">{{ p.projectName }}</div>
+                <div class="flex items-center justify-between mb-3">
+                  <div class="text-xs text-foreground-60">Budget Used</div>
+                  <div class="text-sm font-semibold text-foreground">{{ p.budgetUsed }}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  @for (cat of jobCostCategories; track cat) {
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs text-foreground-60">{{ cat }}</div>
+                      <div class="text-xs text-foreground-80">{{ formatJobCost(getCost(p.costs, cat)) }}</div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Project</div>
@@ -1180,12 +1291,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'job-billing') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search billing...' }" />
         </div>
 
@@ -1210,6 +1322,28 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         </div>
 
         <!-- Billing events table -->
+        @if (isMobile()) {
+          <div class="flex items-center gap-2 mb-3">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">invoice</i>
+            <div class="text-base font-semibold text-foreground">Billing Events</div>
+            <modus-badge color="secondary" size="sm">{{ billingEvents().length }}</modus-badge>
+          </div>
+          <div class="flex flex-col gap-3">
+            @for (ev of billingEvents(); track ev.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToBillingEvent(ev.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-medium text-foreground">{{ ev.description }}</div>
+                  <modus-badge [color]="ev.status === 'completed' ? 'success' : ev.status === 'skipped' ? 'warning' : 'secondary'" size="sm">{{ capitalizeFirst(ev.status) }}</modus-badge>
+                </div>
+                <div class="text-xs text-foreground-60 mb-2">{{ ev.period }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(ev.amount) }}</div>
+                  <div class="text-xs text-foreground-60">{{ ev.billingDate }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
@@ -1231,12 +1365,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'accounts-receivable') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search invoices...' }" />
         </div>
 
@@ -1272,6 +1407,35 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         </div>
 
         <!-- Invoice table -->
+        @if (isMobile()) {
+          <div class="flex items-center gap-2 mb-3">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
+            <div class="text-base font-semibold text-foreground">Invoices</div>
+            <modus-badge color="secondary" size="sm">{{ invoices().length }}</modus-badge>
+          </div>
+          <div class="flex flex-col gap-3">
+            @for (inv of invoices(); track inv.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToInvoice(inv.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-medium text-primary">{{ inv.invoiceNumber }}</div>
+                  <modus-badge [color]="invoiceStatusBadge(inv.status)" size="sm">{{ capitalizeFirst(inv.status) }}</modus-badge>
+                </div>
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-xs text-foreground-60">Amount</div>
+                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(inv.amount) }}</div>
+                </div>
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-xs text-foreground-60">Paid</div>
+                  <div class="text-sm text-success">{{ formatCurrency(inv.amountPaid) }}</div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="text-xs text-foreground-60">{{ inv.terms }}</div>
+                  <div class="text-xs text-foreground-60">Due {{ inv.dueDate }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
@@ -1294,12 +1458,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'accounts-payable') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search payables...' }" />
         </div>
 
@@ -1324,6 +1489,29 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         </div>
 
         <!-- Payables table -->
+        @if (isMobile()) {
+          <div class="flex items-center gap-2 mb-3">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">credit_card</i>
+            <div class="text-base font-semibold text-foreground">Payables</div>
+            <modus-badge color="secondary" size="sm">{{ payables().length }}</modus-badge>
+          </div>
+          <div class="flex flex-col gap-3">
+            @for (p of payables(); track p.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToPayable(p.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-medium text-foreground">{{ p.vendor }}</div>
+                  <modus-badge [color]="payableStatusBadge(p.status)" size="sm">{{ capitalizeFirst(p.status) }}</modus-badge>
+                </div>
+                <div class="text-xs text-foreground-60 mb-2">{{ p.description }}</div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(p.amount) }}</div>
+                  <div class="text-xs text-foreground-60">Due {{ p.dueDate }}</div>
+                </div>
+                <div class="text-xs text-foreground-40">{{ p.costCode }}</div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
@@ -1346,12 +1534,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'cash-management') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search transactions...' }" />
         </div>
 
@@ -1376,6 +1565,31 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         </div>
 
         <!-- Cash flow table -->
+        @if (isMobile()) {
+          <div class="flex items-center gap-2 mb-3">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
+            <div class="text-base font-semibold text-foreground">Cash Flow History</div>
+          </div>
+          <div class="flex flex-col gap-3">
+            @for (cf of cashFlowHistory(); track cf.month) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToCashFlow(cf.month)">
+                <div class="text-sm font-medium text-foreground mb-3">{{ cf.month }}</div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-xs text-foreground-60">Inflow</div>
+                  <div class="text-sm text-success">{{ formatCurrency(cf.inflows) }}</div>
+                </div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-xs text-foreground-60">Outflow</div>
+                  <div class="text-sm text-destructive">{{ formatCurrency(cf.outflows) }}</div>
+                </div>
+                <div class="flex items-center justify-between border-top-default pt-2 mt-1">
+                  <div class="text-xs font-medium text-foreground-60">Net</div>
+                  <div class="text-sm font-semibold" [class]="cf.netCash >= 0 ? 'text-success' : 'text-destructive'">{{ formatCurrency(cf.netCash) }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
@@ -1395,12 +1609,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'general-ledger') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search accounts...' }" />
         </div>
 
@@ -1425,6 +1640,28 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         </div>
 
         <!-- GL accounts -->
+        @if (isMobile()) {
+          <div class="flex items-center gap-2 mb-3">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
+            <div class="text-base font-semibold text-foreground">Chart of Accounts</div>
+            <modus-badge color="secondary" size="sm">{{ glAccounts().length }}</modus-badge>
+          </div>
+          <div class="flex flex-col gap-3 mb-6">
+            @for (acct of glAccounts(); track acct.code) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToGlAccount(acct.code)">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-medium text-primary">{{ acct.code }}</div>
+                  <div class="text-xs text-foreground-60">{{ capitalizeFirst(acct.type) }}</div>
+                </div>
+                <div class="text-sm text-foreground mb-2">{{ acct.name }}</div>
+                <div class="flex items-center justify-between">
+                  <div class="text-xs text-foreground-60">Balance</div>
+                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(acct.balance) }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden mb-6">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
@@ -1445,8 +1682,42 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
 
         <!-- Recent journal entries -->
+        @if (isMobile()) {
+          <div class="flex items-center gap-2 mb-3">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">file_edit</i>
+            <div class="text-base font-semibold text-foreground">Recent Journal Entries</div>
+            <modus-badge color="secondary" size="sm">{{ glEntries().length }}</modus-badge>
+          </div>
+          <div class="flex flex-col gap-3">
+            @for (entry of glEntries(); track entry.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToGlEntry(entry.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-medium text-primary">{{ entry.id }}</div>
+                  <div class="text-xs text-foreground-60">{{ entry.date }}</div>
+                </div>
+                <div class="text-xs text-foreground-60 mb-1">Acct {{ entry.accountCode }}</div>
+                <div class="text-sm text-foreground mb-3">{{ entry.description }}</div>
+                <div class="flex items-center gap-4">
+                  @if (entry.debit > 0) {
+                    <div class="flex items-center gap-1">
+                      <div class="text-xs text-foreground-60">DR</div>
+                      <div class="text-sm font-medium text-foreground">{{ formatCurrency(entry.debit) }}</div>
+                    </div>
+                  }
+                  @if (entry.credit > 0) {
+                    <div class="flex items-center gap-1">
+                      <div class="text-xs text-foreground-60">CR</div>
+                      <div class="text-sm font-medium text-foreground">{{ formatCurrency(entry.credit) }}</div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
@@ -1469,12 +1740,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'purchase-orders') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search purchase orders...' }" />
         </div>
 
@@ -1503,6 +1775,30 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         </div>
 
         <!-- PO table -->
+        @if (isMobile()) {
+          <div class="flex items-center gap-2 mb-3">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">shopping_cart</i>
+            <div class="text-base font-semibold text-foreground">Purchase Orders</div>
+            <modus-badge color="secondary" size="sm">{{ purchaseOrders().length }}</modus-badge>
+          </div>
+          <div class="flex flex-col gap-3">
+            @for (po of purchaseOrders(); track po.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToPurchaseOrder(po.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-medium text-primary">{{ po.poNumber }}</div>
+                  <modus-badge [color]="poStatusBadge(po.status)" size="sm">{{ capitalizeFirst(po.status) }}</modus-badge>
+                </div>
+                <div class="text-sm font-medium text-foreground mb-1">{{ po.vendor }}</div>
+                <div class="text-xs text-foreground-60 mb-3">{{ po.description }}</div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(po.amount) }}</div>
+                  <div class="text-xs text-foreground-60">Delivery {{ po.expectedDelivery }}</div>
+                </div>
+                <div class="text-xs text-foreground-40">{{ po.project }}</div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
@@ -1526,12 +1822,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'payroll') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search payroll...' }" />
         </div>
 
@@ -1572,6 +1869,31 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
         </div>
 
         <!-- Monthly rollup -->
+        @if (isMobile()) {
+          <div class="flex items-center gap-2 mb-3">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
+            <div class="text-base font-semibold text-foreground">Monthly Summary</div>
+          </div>
+          <div class="flex flex-col gap-3 mb-6">
+            @for (mp of monthlyPayroll(); track mp.month) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToPayrollMonthly(mp.month)">
+                <div class="text-sm font-medium text-foreground mb-3">{{ mp.month }}</div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-xs text-foreground-60">Gross</div>
+                  <div class="text-sm text-foreground">{{ formatCurrency(mp.gross) }}</div>
+                </div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-xs text-foreground-60">Net</div>
+                  <div class="text-sm text-success">{{ formatCurrency(mp.net) }}</div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="text-xs text-foreground-60">Headcount</div>
+                  <div class="text-sm text-foreground-60">{{ mp.headcount }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden mb-6">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
@@ -1591,8 +1913,39 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
 
         <!-- Weekly detail -->
+        @if (isMobile()) {
+          <div class="flex items-center gap-2 mb-3">
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">people_group</i>
+            <div class="text-base font-semibold text-foreground">Weekly Payroll Detail</div>
+            <modus-badge color="secondary" size="sm">{{ payrollRecords().length }}</modus-badge>
+          </div>
+          <div class="flex flex-col gap-3">
+            @for (pr of payrollRecords(); track pr.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToPayrollRecord(pr.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-medium text-foreground">{{ pr.period }}</div>
+                  <modus-badge [color]="payrollStatusBadge(pr.status)" size="sm">{{ capitalizeFirst(pr.status) }}</modus-badge>
+                </div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-xs text-foreground-60">Gross</div>
+                  <div class="text-sm text-foreground">{{ formatCurrency(pr.grossPay) }}</div>
+                </div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-xs text-foreground-60">Net</div>
+                  <div class="text-sm text-success">{{ formatCurrency(pr.netPay) }}</div>
+                </div>
+                <div class="flex items-center gap-4 mt-2">
+                  <div class="text-xs text-foreground-60">{{ pr.employeeCount }} emp</div>
+                  <div class="text-xs text-foreground-60">{{ pr.totalHours.toLocaleString() }} hrs</div>
+                  <div class="text-xs" [class]="pr.overtimeHours > 70 ? 'text-warning font-medium' : 'text-foreground-60'">{{ pr.overtimeHours }} OT</div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
@@ -1616,12 +1969,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'contracts') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search contracts...' }" />
         </div>
 
@@ -1652,6 +2006,35 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
           </div>
         </div>
 
+        @if (isMobile()) {
+          <div class="flex flex-col gap-3">
+            @for (c of contracts(); track c.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToContract(c.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <modus-badge [color]="c.contractType === 'prime' ? 'primary' : 'tertiary'" size="sm">{{ contractTypeLabelShort(c.contractType) }}</modus-badge>
+                  <modus-badge [color]="contractStatusBadge(c.status)" size="sm">{{ capitalizeFirst(c.status) }}</modus-badge>
+                </div>
+                <div class="text-sm font-medium text-foreground mb-1">{{ c.title }}</div>
+                <div class="text-xs text-foreground-40 mb-3">{{ c.vendor }}</div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-xs text-foreground-60">Original</div>
+                  <div class="text-sm text-foreground-60">{{ formatCurrency(c.originalValue) }}</div>
+                </div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-xs text-foreground-60">Revised</div>
+                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(c.revisedValue) }}</div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="text-xs text-foreground-60">Delta</div>
+                  <div class="text-sm" [class]="c.revisedValue > c.originalValue ? 'text-warning' : 'text-foreground-40'">
+                    {{ c.revisedValue > c.originalValue ? '+' : '' }}{{ formatCurrency(c.revisedValue - c.originalValue) }}
+                  </div>
+                </div>
+                <div class="text-xs text-foreground-40 mt-2">{{ c.project }}</div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Contract</div>
@@ -1679,12 +2062,13 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
     @if (activeSubPage() === 'subcontract-ledger') {
       <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="finSubnavCollapsed() && !isMobile() ? 227 : 0">
+        <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search ledger entries...' }" />
         </div>
 
@@ -1711,6 +2095,32 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
           </div>
         </div>
 
+        @if (isMobile()) {
+          <div class="flex flex-col gap-3">
+            @for (entry of subcontractLedger(); track entry.id) {
+              <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToSubcontractLedgerEntry(entry.id)">
+                <div class="flex items-center justify-between mb-2">
+                  <modus-badge [color]="ledgerTypeBadge(entry.type)" size="sm">{{ ledgerTypeLabel(entry.type) }}</modus-badge>
+                  <div class="text-xs text-foreground-60">{{ entry.date }}</div>
+                </div>
+                <div class="text-sm font-medium text-foreground mb-1">{{ entry.description }}</div>
+                <div class="text-xs text-foreground-40 mb-1">{{ entry.project }}</div>
+                <div class="text-xs text-foreground-60 mb-3">{{ entry.vendor }}</div>
+                <div class="flex items-center justify-between mb-1">
+                  <div class="text-xs text-foreground-60">Amount</div>
+                  <div class="text-sm font-medium" [class]="entry.amount < 0 ? 'text-destructive' : 'text-success'">
+                    {{ entry.amount < 0 ? '-' : '' }}{{ formatCurrency(entry.amount < 0 ? -entry.amount : entry.amount) }}
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="text-xs text-foreground-60">Balance</div>
+                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(entry.runningBalance) }}</div>
+                </div>
+                <div class="text-xs text-foreground-40 mt-2">{{ entry.payApp }}</div>
+              </div>
+            }
+          </div>
+        } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden">
           <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
             <div>Description</div>
@@ -1738,6 +2148,7 @@ import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widge
             </div>
           }
         </div>
+        }
       </div>
     }
 
@@ -1773,6 +2184,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly finSubnavCollapsed = signal(false);
   readonly finNavLinksCollapsed = signal(false);
   readonly finSubpageSearch = signal('');
+  readonly finMobileSearchOpen = signal(false);
 
   // Financial data references (reactive via store signals)
   readonly invoices = this.store.invoices;
@@ -1925,6 +2337,11 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly portfolioBudgetRemainingFmt = computed(() => this.fmtCurrency(this.portfolioBudgetRemaining()));
 
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
+
+  private readonly _registerFinancialsWidgets = (() => {
+    this.widgetFocusService.registerWidgets(FINANCIALS_WIDGETS);
+  })();
+
   readonly financialsWidgets: DashboardWidgetId[] = ['finNavLinks', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
 
   readonly finNavLinkItems = this.finSubNavItems.filter(i => i.value !== 'overview');

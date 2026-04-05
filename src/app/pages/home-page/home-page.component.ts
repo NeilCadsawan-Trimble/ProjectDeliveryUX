@@ -54,6 +54,7 @@ import type { Project, UrgentNeedItem, UrgentNeedCategory, ProjectWeather, Weath
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import { rewriteDynamicNeeds } from '../projects-page/projects-page-utils';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
+import { HOME_WIDGETS } from '../../data/widget-registrations';
 import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards.component';
 import { HomeWidgetFrameComponent } from './components/home-widget-frame.component';
 
@@ -1719,6 +1720,10 @@ export class HomePageComponent extends DashboardPageBase {
 
   readonly homeWidgets: DashboardWidgetId[] = ['homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
+
+  private readonly _registerHomeWidgets = (() => {
+    this.widgetFocusService.registerWidgets(HOME_WIDGETS);
+  })();
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');

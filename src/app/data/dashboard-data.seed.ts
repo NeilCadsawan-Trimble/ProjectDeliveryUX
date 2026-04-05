@@ -29,8 +29,35 @@ import type {
   Rfi,
   Submittal,
   TimeOffRequest,
+  WeatherCondition,
   WeatherForecast,
 } from './dashboard-data.types';
+
+const _DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const _MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+interface ForecastPattern {
+  condition: WeatherCondition;
+  highF: number;
+  lowF: number;
+  precipPct: number;
+  windMph: number;
+  workImpact: 'none' | 'minor' | 'major';
+  note: string;
+}
+
+function buildForecast(patterns: ForecastPattern[]): WeatherForecast[] {
+  const today = new Date();
+  return patterns.map((p, i) => {
+    const dt = new Date(today);
+    dt.setDate(today.getDate() + i);
+    return {
+      date: `${_MONTH_NAMES[dt.getMonth()]} ${dt.getDate()}`,
+      day: _DAY_NAMES[dt.getDay()],
+      ...p,
+    };
+  });
+}
 
 export const PROJECTS: Project[] = [
   { id: 1, slug: 'riverside-office-complex', name: 'Riverside Office Complex', client: 'Trimble Internal', ownerInitials: 'SC', owner: 'Sarah Chen', status: 'On Track', dueDate: 'Nov 30, 2026', progress: 72, budgetPct: 68, budgetUsed: '$544K', budgetTotal: '$800K', latestDrawingName: 'Office Tower - Floor 3 Layout', latestDrawingVersion: 'v3.2', city: 'Portland', state: 'OR' },
@@ -617,119 +644,119 @@ export const DAILY_REPORTS: DailyReport[] = [
   { id: 'DR-011', projectId: 4, project: 'Lakeside Medical Center', date: 'Mar 25, 2026', author: 'Tom Evans', weather: 'Clear, 63F', crewCount: 18, hoursWorked: 144, workPerformed: 'Electrical conduit run level 2 south wing; plumbing rough-in exam rooms 201-210; elevator shaft steel framing', issues: 'Elevator guide rail delivery delayed to Friday', safetyIncidents: 0 },
   { id: 'DR-012', projectId: 6, project: 'Metro Bridge Rehabilitation', date: 'Mar 25, 2026', author: 'Mike Osei', weather: 'Overcast, 56F', crewCount: 10, hoursWorked: 80, workPerformed: 'Completed deck scarification spans 1-2; bearing pad installation south abutment', issues: 'Bearing pad shimming requires additional measurement', safetyIncidents: 0 },
 ];
-export const WEATHER_FORECAST: WeatherForecast[] = [
-  { date: 'Mar 27', day: 'Fri', condition: 'sunny', highF: 64, lowF: 45, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
-  { date: 'Mar 28', day: 'Sat', condition: 'partly-cloudy', highF: 61, lowF: 43, precipPct: 15, windMph: 12, workImpact: 'none', note: '' },
-  { date: 'Mar 29', day: 'Sun', condition: 'cloudy', highF: 56, lowF: 40, precipPct: 40, windMph: 15, workImpact: 'none', note: '' },
-  { date: 'Mar 30', day: 'Mon', condition: 'rain', highF: 52, lowF: 38, precipPct: 85, windMph: 22, workImpact: 'major', note: 'Heavy rain expected -- no concrete pours or exterior work. Crane operations suspended if gusts exceed 25 mph.' },
-  { date: 'Mar 31', day: 'Tue', condition: 'rain', highF: 50, lowF: 37, precipPct: 70, windMph: 18, workImpact: 'minor', note: 'Tapering showers through morning. Afternoon exterior work possible.' },
-  { date: 'Apr 1', day: 'Wed', condition: 'partly-cloudy', highF: 58, lowF: 41, precipPct: 20, windMph: 10, workImpact: 'none', note: 'Drying out. Resume all outdoor operations.' },
-  { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 65, lowF: 44, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
-];
+export const WEATHER_FORECAST: WeatherForecast[] = buildForecast([
+  { condition: 'sunny', highF: 64, lowF: 45, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
+  { condition: 'partly-cloudy', highF: 61, lowF: 43, precipPct: 15, windMph: 12, workImpact: 'none', note: '' },
+  { condition: 'cloudy', highF: 56, lowF: 40, precipPct: 40, windMph: 15, workImpact: 'none', note: '' },
+  { condition: 'rain', highF: 52, lowF: 38, precipPct: 85, windMph: 22, workImpact: 'major', note: 'Heavy rain expected -- no concrete pours or exterior work. Crane operations suspended if gusts exceed 25 mph.' },
+  { condition: 'rain', highF: 50, lowF: 37, precipPct: 70, windMph: 18, workImpact: 'minor', note: 'Tapering showers through morning. Afternoon exterior work possible.' },
+  { condition: 'partly-cloudy', highF: 58, lowF: 41, precipPct: 20, windMph: 10, workImpact: 'none', note: 'Drying out. Resume all outdoor operations.' },
+  { condition: 'sunny', highF: 65, lowF: 44, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
+]);
 export const PROJECT_WEATHER_DATA: ProjectWeather[] = [
   {
     projectId: 1, city: 'Portland', state: 'OR',
     current: { condition: 'partly-cloudy', tempF: 54, feelsLikeF: 51, humidity: 68, windMph: 11, windDir: 'SW', uvIndex: 3 },
-    forecast: [
-      { date: 'Mar 27', day: 'Fri', condition: 'partly-cloudy', highF: 58, lowF: 42, precipPct: 20, windMph: 11, workImpact: 'none', note: '' },
-      { date: 'Mar 28', day: 'Sat', condition: 'rain', highF: 52, lowF: 40, precipPct: 75, windMph: 16, workImpact: 'minor', note: 'Steady rain through midday. Interior work only in AM.' },
-      { date: 'Mar 29', day: 'Sun', condition: 'rain', highF: 50, lowF: 38, precipPct: 85, windMph: 22, workImpact: 'major', note: 'Heavy rain and wind. Suspend crane operations.' },
-      { date: 'Mar 30', day: 'Mon', condition: 'cloudy', highF: 53, lowF: 39, precipPct: 40, windMph: 14, workImpact: 'minor', note: 'Showers tapering. Afternoon exterior possible.' },
-      { date: 'Mar 31', day: 'Tue', condition: 'partly-cloudy', highF: 57, lowF: 41, precipPct: 15, windMph: 9, workImpact: 'none', note: '' },
-      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 62, lowF: 44, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
-      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 65, lowF: 45, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
-    ],
+    forecast: buildForecast([
+      { condition: 'partly-cloudy', highF: 58, lowF: 42, precipPct: 20, windMph: 11, workImpact: 'none', note: '' },
+      { condition: 'rain', highF: 52, lowF: 40, precipPct: 75, windMph: 16, workImpact: 'minor', note: 'Steady rain through midday. Interior work only in AM.' },
+      { condition: 'rain', highF: 50, lowF: 38, precipPct: 85, windMph: 22, workImpact: 'major', note: 'Heavy rain and wind. Suspend crane operations.' },
+      { condition: 'cloudy', highF: 53, lowF: 39, precipPct: 40, windMph: 14, workImpact: 'minor', note: 'Showers tapering. Afternoon exterior possible.' },
+      { condition: 'partly-cloudy', highF: 57, lowF: 41, precipPct: 15, windMph: 9, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 62, lowF: 44, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 65, lowF: 45, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+    ]),
   },
   {
     projectId: 2, city: 'San Francisco', state: 'CA',
     current: { condition: 'cloudy', tempF: 58, feelsLikeF: 55, humidity: 72, windMph: 18, windDir: 'W', uvIndex: 4 },
-    forecast: [
-      { date: 'Mar 27', day: 'Fri', condition: 'cloudy', highF: 61, lowF: 50, precipPct: 25, windMph: 18, workImpact: 'none', note: '' },
-      { date: 'Mar 28', day: 'Sat', condition: 'partly-cloudy', highF: 63, lowF: 51, precipPct: 10, windMph: 15, workImpact: 'none', note: '' },
-      { date: 'Mar 29', day: 'Sun', condition: 'rain', highF: 57, lowF: 49, precipPct: 70, windMph: 22, workImpact: 'major', note: 'Atmospheric river arriving. No exterior work. High wind advisory.' },
-      { date: 'Mar 30', day: 'Mon', condition: 'rain', highF: 55, lowF: 48, precipPct: 80, windMph: 25, workImpact: 'major', note: 'Continued heavy rain. Flooding possible at grade level.' },
-      { date: 'Mar 31', day: 'Tue', condition: 'cloudy', highF: 59, lowF: 49, precipPct: 35, windMph: 14, workImpact: 'minor', note: 'Rain tapering. Exterior afternoon OK with caution.' },
-      { date: 'Apr 1', day: 'Wed', condition: 'partly-cloudy', highF: 64, lowF: 52, precipPct: 10, windMph: 10, workImpact: 'none', note: '' },
-      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 67, lowF: 53, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
-    ],
+    forecast: buildForecast([
+      { condition: 'cloudy', highF: 61, lowF: 50, precipPct: 25, windMph: 18, workImpact: 'none', note: '' },
+      { condition: 'partly-cloudy', highF: 63, lowF: 51, precipPct: 10, windMph: 15, workImpact: 'none', note: '' },
+      { condition: 'rain', highF: 57, lowF: 49, precipPct: 70, windMph: 22, workImpact: 'major', note: 'Atmospheric river arriving. No exterior work. High wind advisory.' },
+      { condition: 'rain', highF: 55, lowF: 48, precipPct: 80, windMph: 25, workImpact: 'major', note: 'Continued heavy rain. Flooding possible at grade level.' },
+      { condition: 'cloudy', highF: 59, lowF: 49, precipPct: 35, windMph: 14, workImpact: 'minor', note: 'Rain tapering. Exterior afternoon OK with caution.' },
+      { condition: 'partly-cloudy', highF: 64, lowF: 52, precipPct: 10, windMph: 10, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 67, lowF: 53, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
+    ]),
   },
   {
     projectId: 3, city: 'Seattle', state: 'WA',
     current: { condition: 'rain', tempF: 48, feelsLikeF: 43, humidity: 82, windMph: 14, windDir: 'S', uvIndex: 1 },
-    forecast: [
-      { date: 'Mar 27', day: 'Fri', condition: 'rain', highF: 51, lowF: 40, precipPct: 70, windMph: 14, workImpact: 'minor', note: 'Light steady rain. Exterior work with precautions.' },
-      { date: 'Mar 28', day: 'Sat', condition: 'rain', highF: 49, lowF: 38, precipPct: 80, windMph: 20, workImpact: 'major', note: 'Heavy rain with gusts to 30 mph. No crane or elevated work.' },
-      { date: 'Mar 29', day: 'Sun', condition: 'cloudy', highF: 50, lowF: 39, precipPct: 45, windMph: 12, workImpact: 'minor', note: 'Scattered showers. Ground saturated.' },
-      { date: 'Mar 30', day: 'Mon', condition: 'partly-cloudy', highF: 54, lowF: 41, precipPct: 20, windMph: 9, workImpact: 'none', note: '' },
-      { date: 'Mar 31', day: 'Tue', condition: 'sunny', highF: 58, lowF: 42, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
-      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 61, lowF: 44, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
-      { date: 'Apr 2', day: 'Thu', condition: 'partly-cloudy', highF: 59, lowF: 43, precipPct: 15, windMph: 10, workImpact: 'none', note: '' },
-    ],
+    forecast: buildForecast([
+      { condition: 'rain', highF: 51, lowF: 40, precipPct: 70, windMph: 14, workImpact: 'minor', note: 'Light steady rain. Exterior work with precautions.' },
+      { condition: 'rain', highF: 49, lowF: 38, precipPct: 80, windMph: 20, workImpact: 'major', note: 'Heavy rain with gusts to 30 mph. No crane or elevated work.' },
+      { condition: 'cloudy', highF: 50, lowF: 39, precipPct: 45, windMph: 12, workImpact: 'minor', note: 'Scattered showers. Ground saturated.' },
+      { condition: 'partly-cloudy', highF: 54, lowF: 41, precipPct: 20, windMph: 9, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 58, lowF: 42, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 61, lowF: 44, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { condition: 'partly-cloudy', highF: 59, lowF: 43, precipPct: 15, windMph: 10, workImpact: 'none', note: '' },
+    ]),
   },
   {
     projectId: 4, city: 'Bend', state: 'OR',
     current: { condition: 'sunny', tempF: 46, feelsLikeF: 42, humidity: 38, windMph: 8, windDir: 'NW', uvIndex: 5 },
-    forecast: [
-      { date: 'Mar 27', day: 'Fri', condition: 'sunny', highF: 52, lowF: 28, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
-      { date: 'Mar 28', day: 'Sat', condition: 'sunny', highF: 55, lowF: 30, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
-      { date: 'Mar 29', day: 'Sun', condition: 'partly-cloudy', highF: 50, lowF: 29, precipPct: 15, windMph: 10, workImpact: 'none', note: '' },
-      { date: 'Mar 30', day: 'Mon', condition: 'cloudy', highF: 47, lowF: 27, precipPct: 30, windMph: 12, workImpact: 'none', note: '' },
-      { date: 'Mar 31', day: 'Tue', condition: 'snow', highF: 38, lowF: 24, precipPct: 60, windMph: 15, workImpact: 'major', note: 'Snow likely. Freezing temps -- no concrete pours. Roads may be affected.' },
-      { date: 'Apr 1', day: 'Wed', condition: 'partly-cloudy', highF: 45, lowF: 26, precipPct: 20, windMph: 9, workImpact: 'minor', note: 'Clearing but cold. Watch for ice on scaffolding.' },
-      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 54, lowF: 30, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
-    ],
+    forecast: buildForecast([
+      { condition: 'sunny', highF: 52, lowF: 28, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 55, lowF: 30, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { condition: 'partly-cloudy', highF: 50, lowF: 29, precipPct: 15, windMph: 10, workImpact: 'none', note: '' },
+      { condition: 'cloudy', highF: 47, lowF: 27, precipPct: 30, windMph: 12, workImpact: 'none', note: '' },
+      { condition: 'snow', highF: 38, lowF: 24, precipPct: 60, windMph: 15, workImpact: 'major', note: 'Snow likely. Freezing temps -- no concrete pours. Roads may be affected.' },
+      { condition: 'partly-cloudy', highF: 45, lowF: 26, precipPct: 20, windMph: 9, workImpact: 'minor', note: 'Clearing but cold. Watch for ice on scaffolding.' },
+      { condition: 'sunny', highF: 54, lowF: 30, precipPct: 5, windMph: 7, workImpact: 'none', note: '' },
+    ]),
   },
   {
     projectId: 5, city: 'Sacramento', state: 'CA',
     current: { condition: 'sunny', tempF: 68, feelsLikeF: 68, humidity: 42, windMph: 6, windDir: 'NW', uvIndex: 6 },
-    forecast: [
-      { date: 'Mar 27', day: 'Fri', condition: 'sunny', highF: 72, lowF: 48, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
-      { date: 'Mar 28', day: 'Sat', condition: 'sunny', highF: 74, lowF: 49, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
-      { date: 'Mar 29', day: 'Sun', condition: 'partly-cloudy', highF: 70, lowF: 47, precipPct: 10, windMph: 8, workImpact: 'none', note: '' },
-      { date: 'Mar 30', day: 'Mon', condition: 'rain', highF: 62, lowF: 46, precipPct: 65, windMph: 14, workImpact: 'minor', note: 'Rain expected by midday. Cover grading work.' },
-      { date: 'Mar 31', day: 'Tue', condition: 'cloudy', highF: 64, lowF: 47, precipPct: 30, windMph: 10, workImpact: 'none', note: '' },
-      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 71, lowF: 49, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
-      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 75, lowF: 50, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
-    ],
+    forecast: buildForecast([
+      { condition: 'sunny', highF: 72, lowF: 48, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 74, lowF: 49, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+      { condition: 'partly-cloudy', highF: 70, lowF: 47, precipPct: 10, windMph: 8, workImpact: 'none', note: '' },
+      { condition: 'rain', highF: 62, lowF: 46, precipPct: 65, windMph: 14, workImpact: 'minor', note: 'Rain expected by midday. Cover grading work.' },
+      { condition: 'cloudy', highF: 64, lowF: 47, precipPct: 30, windMph: 10, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 71, lowF: 49, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 75, lowF: 50, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+    ]),
   },
   {
     projectId: 6, city: 'Tacoma', state: 'WA',
     current: { condition: 'cloudy', tempF: 50, feelsLikeF: 46, humidity: 76, windMph: 12, windDir: 'S', uvIndex: 2 },
-    forecast: [
-      { date: 'Mar 27', day: 'Fri', condition: 'cloudy', highF: 53, lowF: 41, precipPct: 35, windMph: 12, workImpact: 'none', note: '' },
-      { date: 'Mar 28', day: 'Sat', condition: 'rain', highF: 50, lowF: 39, precipPct: 75, windMph: 18, workImpact: 'minor', note: 'Steady rain. Bridge deck work suspended.' },
-      { date: 'Mar 29', day: 'Sun', condition: 'rain', highF: 48, lowF: 38, precipPct: 80, windMph: 24, workImpact: 'major', note: 'Heavy rain and high wind. Suspend all bridge operations.' },
-      { date: 'Mar 30', day: 'Mon', condition: 'partly-cloudy', highF: 52, lowF: 40, precipPct: 25, windMph: 11, workImpact: 'none', note: '' },
-      { date: 'Mar 31', day: 'Tue', condition: 'sunny', highF: 56, lowF: 42, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
-      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 60, lowF: 44, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
-      { date: 'Apr 2', day: 'Thu', condition: 'partly-cloudy', highF: 58, lowF: 43, precipPct: 15, windMph: 9, workImpact: 'none', note: '' },
-    ],
+    forecast: buildForecast([
+      { condition: 'cloudy', highF: 53, lowF: 41, precipPct: 35, windMph: 12, workImpact: 'none', note: '' },
+      { condition: 'rain', highF: 50, lowF: 39, precipPct: 75, windMph: 18, workImpact: 'minor', note: 'Steady rain. Bridge deck work suspended.' },
+      { condition: 'rain', highF: 48, lowF: 38, precipPct: 80, windMph: 24, workImpact: 'major', note: 'Heavy rain and high wind. Suspend all bridge operations.' },
+      { condition: 'partly-cloudy', highF: 52, lowF: 40, precipPct: 25, windMph: 11, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 56, lowF: 42, precipPct: 5, windMph: 8, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 60, lowF: 44, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { condition: 'partly-cloudy', highF: 58, lowF: 43, precipPct: 15, windMph: 9, workImpact: 'none', note: '' },
+    ]),
   },
   {
     projectId: 7, city: 'Eugene', state: 'OR',
     current: { condition: 'partly-cloudy', tempF: 52, feelsLikeF: 49, humidity: 64, windMph: 9, windDir: 'SW', uvIndex: 3 },
-    forecast: [
-      { date: 'Mar 27', day: 'Fri', condition: 'partly-cloudy', highF: 56, lowF: 38, precipPct: 20, windMph: 9, workImpact: 'none', note: '' },
-      { date: 'Mar 28', day: 'Sat', condition: 'rain', highF: 51, lowF: 37, precipPct: 70, windMph: 14, workImpact: 'minor', note: 'Rain from late morning. Cover foundation excavation.' },
-      { date: 'Mar 29', day: 'Sun', condition: 'rain', highF: 49, lowF: 36, precipPct: 80, windMph: 18, workImpact: 'major', note: 'Heavy rain. Ground too saturated for foundation work.' },
-      { date: 'Mar 30', day: 'Mon', condition: 'cloudy', highF: 52, lowF: 37, precipPct: 40, windMph: 11, workImpact: 'minor', note: 'Intermittent showers. Interior framing OK.' },
-      { date: 'Mar 31', day: 'Tue', condition: 'partly-cloudy', highF: 56, lowF: 39, precipPct: 15, windMph: 8, workImpact: 'none', note: '' },
-      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 61, lowF: 41, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
-      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 64, lowF: 43, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
-    ],
+    forecast: buildForecast([
+      { condition: 'partly-cloudy', highF: 56, lowF: 38, precipPct: 20, windMph: 9, workImpact: 'none', note: '' },
+      { condition: 'rain', highF: 51, lowF: 37, precipPct: 70, windMph: 14, workImpact: 'minor', note: 'Rain from late morning. Cover foundation excavation.' },
+      { condition: 'rain', highF: 49, lowF: 36, precipPct: 80, windMph: 18, workImpact: 'major', note: 'Heavy rain. Ground too saturated for foundation work.' },
+      { condition: 'cloudy', highF: 52, lowF: 37, precipPct: 40, windMph: 11, workImpact: 'minor', note: 'Intermittent showers. Interior framing OK.' },
+      { condition: 'partly-cloudy', highF: 56, lowF: 39, precipPct: 15, windMph: 8, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 61, lowF: 41, precipPct: 5, windMph: 6, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 64, lowF: 43, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+    ]),
   },
   {
     projectId: 8, city: 'Redding', state: 'CA',
     current: { condition: 'sunny', tempF: 72, feelsLikeF: 72, humidity: 35, windMph: 5, windDir: 'N', uvIndex: 7 },
-    forecast: [
-      { date: 'Mar 27', day: 'Fri', condition: 'sunny', highF: 76, lowF: 46, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
-      { date: 'Mar 28', day: 'Sat', condition: 'sunny', highF: 78, lowF: 47, precipPct: 5, windMph: 4, workImpact: 'none', note: '' },
-      { date: 'Mar 29', day: 'Sun', condition: 'partly-cloudy', highF: 74, lowF: 45, precipPct: 10, windMph: 7, workImpact: 'none', note: '' },
-      { date: 'Mar 30', day: 'Mon', condition: 'cloudy', highF: 68, lowF: 44, precipPct: 30, windMph: 10, workImpact: 'none', note: '' },
-      { date: 'Mar 31', day: 'Tue', condition: 'partly-cloudy', highF: 71, lowF: 45, precipPct: 15, windMph: 8, workImpact: 'none', note: '' },
-      { date: 'Apr 1', day: 'Wed', condition: 'sunny', highF: 77, lowF: 47, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
-      { date: 'Apr 2', day: 'Thu', condition: 'sunny', highF: 80, lowF: 48, precipPct: 5, windMph: 4, workImpact: 'none', note: '' },
-    ],
+    forecast: buildForecast([
+      { condition: 'sunny', highF: 76, lowF: 46, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 78, lowF: 47, precipPct: 5, windMph: 4, workImpact: 'none', note: '' },
+      { condition: 'partly-cloudy', highF: 74, lowF: 45, precipPct: 10, windMph: 7, workImpact: 'none', note: '' },
+      { condition: 'cloudy', highF: 68, lowF: 44, precipPct: 30, windMph: 10, workImpact: 'none', note: '' },
+      { condition: 'partly-cloudy', highF: 71, lowF: 45, precipPct: 15, windMph: 8, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 77, lowF: 47, precipPct: 5, windMph: 5, workImpact: 'none', note: '' },
+      { condition: 'sunny', highF: 80, lowF: 48, precipPct: 5, windMph: 4, workImpact: 'none', note: '' },
+    ]),
   },
 ];
 export const PROJECT_ATTENTION_ITEMS: ProjectAttentionItem[] = [
