@@ -365,63 +365,6 @@ import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
       </div>
     } @else if (activeSubPage() === 'overview') {
     <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
-      @if (!isCanvasMode()) {
-      <div #pageHeader>
-      <!-- Page header -->
-      <div class="flex items-start justify-between mb-6">
-        <div>
-          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials Dashboard</div>
-          <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
-        </div>
-        <div class="flex-shrink-0">
-          <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
-        </div>
-      </div>
-
-      <!-- KPI cards -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <div class="text-sm font-medium text-foreground-60">Total Budget</div>
-            <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center">
-              <i class="modus-icons text-lg text-primary" aria-hidden="true">payment_instant</i>
-            </div>
-          </div>
-          <div class="text-4xl font-bold text-foreground">{{ portfolioBudgetTotalFmt() }}</div>
-          <div class="text-xs text-foreground-60">Across {{ totalProjects() }} active projects</div>
-        </div>
-        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <div class="text-sm font-medium text-foreground-60">Total Spent</div>
-            <div class="w-9 h-9 rounded-lg bg-warning-20 flex items-center justify-center">
-              <i class="modus-icons text-lg text-warning" aria-hidden="true">bar_graph_line</i>
-            </div>
-          </div>
-          <div class="text-4xl font-bold text-foreground">{{ portfolioBudgetUsedFmt() }}</div>
-          <div class="text-xs text-warning font-medium">{{ portfolioBudgetPct() }}% of total budget consumed</div>
-        </div>
-        <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <div class="text-sm font-medium text-foreground-60">Remaining</div>
-            <div class="w-9 h-9 rounded-lg bg-success-20 flex items-center justify-center">
-              <i class="modus-icons text-lg text-success" aria-hidden="true">bar_graph</i>
-            </div>
-          </div>
-          <div class="text-4xl font-bold text-success">{{ portfolioBudgetRemainingFmt() }}</div>
-          <div class="text-xs text-success font-medium">{{ 100 - portfolioBudgetPct() }}% remaining budget</div>
-        </div>
-      </div>
-      @if (finKpiInsight()) {
-        <div class="flex items-center gap-1.5 px-5 py-2 mb-6 bg-card border-default rounded-lg">
-          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-          <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
-        </div>
-      } @else {
-        <div class="mb-2"></div>
-      }
-      </div>
-      }
-
       <!-- Widget area -->
       <div
         [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : isMobile() ? 'relative mb-6' : 'relative mb-6 widget-grid-desktop'"
@@ -429,62 +372,152 @@ import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
         [style.min-height.px]="isCanvasMode() ? canvasGridMinHeight() : (!isMobile() ? desktopGridMinHeight() : null)"
         #financialsWidgetGrid
       >
-        @if (isCanvasMode()) {
-          <div
-            class="absolute overflow-hidden"
-            [attr.data-widget-id]="'finHeader'"
-            [style.top.px]="widgetTops()['finHeader']"
-            [style.left.px]="widgetLefts()['finHeader']"
-            [style.width.px]="widgetPixelWidths()['finHeader']"
-            [style.height.px]="widgetHeights()['finHeader']"
-            [style.z-index]="widgetZIndices()['finHeader']"
-          >
-            <div class="flex items-start justify-between mb-4">
-              <div>
-                <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials Dashboard</div>
-                <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
-              </div>
-              <div class="flex-shrink-0">
-                <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
-              </div>
+        <!-- finTitle widget (locked, full width) -->
+        <div
+          [class]="isCanvasMode() ? 'absolute overflow-hidden'
+                 : isMobile() ? 'absolute left-0 right-0 overflow-hidden'
+                 : 'overflow-hidden'"
+          [attr.data-widget-id]="'finTitle'"
+          [style.grid-column]="!isMobile() && !isCanvasMode() ? widgetGridColumns()['finTitle'] : null"
+          [style.grid-row]="!isMobile() && !isCanvasMode() ? '1' : null"
+          [style.align-self]="!isMobile() && !isCanvasMode() ? 'start' : null"
+          [style.margin-top.px]="!isMobile() && !isCanvasMode() ? widgetTops()['finTitle'] : null"
+          [style.top.px]="isMobile() || isCanvasMode() ? widgetTops()['finTitle'] : null"
+          [style.left.px]="isCanvasMode() ? widgetLefts()['finTitle'] : null"
+          [style.width.px]="isCanvasMode() ? widgetPixelWidths()['finTitle'] : null"
+          [style.height.px]="widgetHeights()['finTitle']"
+          [style.z-index]="widgetZIndices()['finTitle']"
+        >
+          <div class="flex items-center justify-between h-full">
+            <div>
+              <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials Dashboard</div>
+              <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
             </div>
-            <div class="grid grid-cols-3 gap-4">
-              <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
-                  <i class="modus-icons text-2xl text-primary" aria-hidden="true">payment_instant</i>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-2xl font-bold text-foreground">{{ portfolioBudgetTotalFmt() }}</div>
-                  <div class="text-sm text-foreground-60">Total Budget</div>
-                </div>
-              </div>
-              <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
-                  <i class="modus-icons text-2xl text-warning" aria-hidden="true">bar_graph_line</i>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-2xl font-bold text-foreground">{{ portfolioBudgetUsedFmt() }}</div>
-                  <div class="text-sm text-foreground-60">Total Spent</div>
-                </div>
-              </div>
-              <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-success-20 flex items-center justify-center flex-shrink-0">
-                  <i class="modus-icons text-2xl text-success" aria-hidden="true">bar_graph</i>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-2xl font-bold text-success">{{ portfolioBudgetRemainingFmt() }}</div>
-                  <div class="text-sm text-foreground-60">Remaining</div>
-                </div>
-              </div>
+            <div class="flex-shrink-0">
+              <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
             </div>
-            @if (finKpiInsight()) {
-              <div class="flex items-center gap-1.5 px-5 py-2 mt-3 bg-card border-default rounded-lg">
-                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
-              </div>
-            }
           </div>
-        }
+        </div>
+
+        <!-- finNavKpi widget (locked, 8 cols) -->
+        <div
+          [class]="isCanvasMode() ? 'absolute overflow-hidden'
+                 : isMobile() ? 'absolute left-0 right-0 overflow-hidden'
+                 : 'overflow-hidden'"
+          [attr.data-widget-id]="'finNavKpi'"
+          [style.grid-column]="!isMobile() && !isCanvasMode() ? widgetGridColumns()['finNavKpi'] : null"
+          [style.grid-row]="!isMobile() && !isCanvasMode() ? '1' : null"
+          [style.align-self]="!isMobile() && !isCanvasMode() ? 'start' : null"
+          [style.margin-top.px]="!isMobile() && !isCanvasMode() ? widgetTops()['finNavKpi'] : null"
+          [style.top.px]="isMobile() || isCanvasMode() ? widgetTops()['finNavKpi'] : null"
+          [style.left.px]="isCanvasMode() ? widgetLefts()['finNavKpi'] : null"
+          [style.width.px]="isCanvasMode() ? widgetPixelWidths()['finNavKpi'] : null"
+          [style.height.px]="widgetHeights()['finNavKpi']"
+          [style.z-index]="widgetZIndices()['finNavKpi']"
+        >
+          <div class="flex items-stretch gap-4 h-full">
+            <!-- NavLinks -->
+            <div class="bg-card border-default rounded-lg flex-shrink-0 overflow-hidden flex flex-col min-w-48">
+              <div class="flex items-center gap-2 px-4 py-3 border-bottom-default flex-shrink-0">
+                <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">payment_instant</i>
+                <div class="text-sm font-semibold text-primary">Financials</div>
+                @if (navLinkTotalAlerts() > 0) {
+                  <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
+                    [class.bg-destructive]="navLinkHasCriticalAlerts()"
+                    [class.text-destructive-foreground]="navLinkHasCriticalAlerts()"
+                    [class.bg-warning]="!navLinkHasCriticalAlerts()"
+                    [class.text-warning-foreground]="!navLinkHasCriticalAlerts()">
+                    {{ navLinkTotalAlerts() }}
+                  </div>
+                }
+              </div>
+              <div class="py-1 flex-1 overflow-y-auto">
+                @for (item of finNavLinkItems; track item.value) {
+                  <div
+                    class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150 whitespace-nowrap"
+                    [class.bg-primary]="activeSubPage() === item.value"
+                    [class.text-primary-foreground]="activeSubPage() === item.value"
+                    [class.font-medium]="activeSubPage() === item.value"
+                    [class.rounded-md]="activeSubPage() === item.value"
+                    [class.mx-2]="activeSubPage() === item.value"
+                    [class.px-2]="activeSubPage() === item.value"
+                    [class.px-4]="activeSubPage() !== item.value"
+                    [class.text-foreground]="activeSubPage() !== item.value"
+                    [class.hover:bg-muted]="activeSubPage() !== item.value"
+                    tabindex="0"
+                    (click)="selectSubPageFromNavLinks(item.value)"
+                    (keydown.enter)="selectSubPageFromNavLinks(item.value)"
+                  >
+                    <div class="flex items-center gap-2 min-w-0">
+                      @if (item.icon) {
+                        <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true"
+                          [class.text-primary-foreground]="activeSubPage() === item.value"
+                          [class.text-foreground-60]="activeSubPage() !== item.value"
+                        >{{ item.icon }}</i>
+                      }
+                      <div class="truncate">{{ item.label }}</div>
+                    </div>
+                    @if (finSubnavAlerts()[item.value]; as alert) {
+                      <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1 mr-1"
+                        [class.bg-destructive]="alert.level === 'critical'"
+                        [class.text-destructive-foreground]="alert.level === 'critical'"
+                        [class.bg-warning]="alert.level === 'warning'"
+                        [class.text-warning-foreground]="alert.level === 'warning'"
+                        [class.bg-primary]="alert.level === 'info' && activeSubPage() !== item.value"
+                        [class.text-primary-foreground]="alert.level === 'info' && activeSubPage() !== item.value"
+                        [class.bg-primary-foreground]="alert.level === 'info' && activeSubPage() === item.value"
+                        [class.text-primary]="alert.level === 'info' && activeSubPage() === item.value"
+                        [attr.title]="alert.count + ' ' + alert.label">
+                        {{ alert.count }}
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Stacked KPI cards -->
+            <div class="flex-1 min-w-0 flex flex-col gap-3">
+              <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground-60">Total Budget</div>
+                  <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center">
+                    <i class="modus-icons text-lg text-primary" aria-hidden="true">payment_instant</i>
+                  </div>
+                </div>
+                <div class="text-3xl font-bold text-foreground">{{ portfolioBudgetTotalFmt() }}</div>
+                <div class="text-xs text-foreground-60">Across {{ totalProjects() }} active projects</div>
+              </div>
+              <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground-60">Total Spent</div>
+                  <div class="w-9 h-9 rounded-lg bg-warning-20 flex items-center justify-center">
+                    <i class="modus-icons text-lg text-warning" aria-hidden="true">bar_graph_line</i>
+                  </div>
+                </div>
+                <div class="text-3xl font-bold text-foreground">{{ portfolioBudgetUsedFmt() }}</div>
+                <div class="text-xs text-warning font-medium">{{ portfolioBudgetPct() }}% of total budget consumed</div>
+              </div>
+              <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground-60">Remaining</div>
+                  <div class="w-9 h-9 rounded-lg bg-success-20 flex items-center justify-center">
+                    <i class="modus-icons text-lg text-success" aria-hidden="true">bar_graph</i>
+                  </div>
+                </div>
+                <div class="text-3xl font-bold text-success">{{ portfolioBudgetRemainingFmt() }}</div>
+                <div class="text-xs text-success font-medium">{{ 100 - portfolioBudgetPct() }}% remaining budget</div>
+              </div>
+              @if (finKpiInsight()) {
+                <div class="flex items-center gap-1.5 px-5 py-2 bg-card border-default rounded-lg flex-shrink-0">
+                  <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                  <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
         @for (widgetId of financialsWidgets; track widgetId) {
           <div
             [class]="isCanvasMode() ? 'absolute overflow-hidden'
@@ -505,88 +538,7 @@ import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
 
-              @if (widgetId === 'finNavLinks') {
-                <!-- Financials Navigation Links Widget (collapsible) -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div class="flex items-center py-3 pl-4 pr-2 justify-between flex-shrink-0 cursor-grab active:cursor-grabbing select-none hover:bg-muted transition-colors duration-150"
-                    role="button" tabindex="0"
-                    [attr.aria-label]="finNavLinksCollapsed() ? 'Expand navigation' : 'Collapse navigation'"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                    (click)="finNavLinksCollapsed.set(!finNavLinksCollapsed())"
-                    (keydown.enter)="finNavLinksCollapsed.set(!finNavLinksCollapsed())">
-                    <div class="flex items-center gap-2 min-w-0">
-                      <i class="modus-icons text-base text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">payment_instant</i>
-                      <div class="text-sm font-semibold truncate" [class]="finNavLinksCollapsed() ? 'text-foreground' : 'text-primary'">
-                        {{ finNavLinksCollapsed() ? activeNavLinkLabel() : 'Financials' }}
-                      </div>
-                      @if (navLinkTotalAlerts() > 0) {
-                        <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
-                          [class.bg-destructive]="navLinkHasCriticalAlerts()"
-                          [class.text-destructive-foreground]="navLinkHasCriticalAlerts()"
-                          [class.bg-warning]="!navLinkHasCriticalAlerts()"
-                          [class.text-warning-foreground]="!navLinkHasCriticalAlerts()">
-                          {{ navLinkTotalAlerts() }}
-                        </div>
-                      }
-                    </div>
-                    <div class="flex items-center justify-center w-6 h-6 rounded flex-shrink-0">
-                      <i class="modus-icons text-sm text-foreground-60 transition-transform duration-200" aria-hidden="true"
-                        [style.transform]="finNavLinksCollapsed() ? 'rotate(0deg)' : 'rotate(-90deg)'"
-                      >chevron_left</i>
-                    </div>
-                  </div>
-
-                  <div class="overflow-hidden transition-all duration-200"
-                    [style.max-height.px]="finNavLinksCollapsed() ? 0 : 600"
-                    [style.opacity]="finNavLinksCollapsed() ? 0 : 1">
-                    <div class="overflow-y-auto min-h-0 py-1">
-                      @for (item of finNavLinkItems; track item.value) {
-                        <div
-                          class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150 whitespace-nowrap"
-                          [class.bg-primary]="activeSubPage() === item.value"
-                          [class.text-primary-foreground]="activeSubPage() === item.value"
-                          [class.font-medium]="activeSubPage() === item.value"
-                          [class.rounded-md]="activeSubPage() === item.value"
-                          [class.mx-2]="activeSubPage() === item.value"
-                          [class.px-2]="activeSubPage() === item.value"
-                          [class.px-4]="activeSubPage() !== item.value"
-                          [class.text-foreground]="activeSubPage() !== item.value"
-                          [class.hover:bg-muted]="activeSubPage() !== item.value"
-                          tabindex="0"
-                          (click)="selectSubPageFromNavLinks(item.value)"
-                          (keydown.enter)="selectSubPageFromNavLinks(item.value)"
-                        >
-                          <div class="flex items-center gap-2 min-w-0">
-                            @if (item.icon) {
-                              <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true"
-                                [class.text-primary-foreground]="activeSubPage() === item.value"
-                                [class.text-foreground-60]="activeSubPage() !== item.value"
-                              >{{ item.icon }}</i>
-                            }
-                            <div class="truncate">{{ item.label }}</div>
-                          </div>
-                          @if (finSubnavAlerts()[item.value]; as alert) {
-                            <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1 mr-1"
-                              [class.bg-destructive]="alert.level === 'critical'"
-                              [class.text-destructive-foreground]="alert.level === 'critical'"
-                              [class.bg-warning]="alert.level === 'warning'"
-                              [class.text-warning-foreground]="alert.level === 'warning'"
-                              [class.bg-primary]="alert.level === 'info' && activeSubPage() !== item.value"
-                              [class.text-primary-foreground]="alert.level === 'info' && activeSubPage() !== item.value"
-                              [class.bg-primary-foreground]="alert.level === 'info' && activeSubPage() === item.value"
-                              [class.text-primary]="alert.level === 'info' && activeSubPage() === item.value"
-                              [attr.title]="alert.count + ' ' + alert.label">
-                              {{ alert.count }}
-                            </div>
-                          }
-                        </div>
-                      }
-                    </div>
-                  </div>
-                </div>
-              } @else if (widgetId === 'finRevenueChart') {
+              @if (widgetId === 'finRevenueChart') {
                 <!-- Revenue Over Time Widget -->
                 <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
@@ -2182,7 +2134,6 @@ export class FinancialsPageComponent extends DashboardPageBase {
   ];
   readonly activeSubPage = signal<string>('overview');
   readonly finSubnavCollapsed = signal(false);
-  readonly finNavLinksCollapsed = signal(false);
   readonly finSubpageSearch = signal('');
   readonly finMobileSearchOpen = signal(false);
 
@@ -2243,60 +2194,77 @@ export class FinancialsPageComponent extends DashboardPageBase {
     day: 'numeric',
   });
 
-  private static readonly HEADER_HEIGHT = 160;
-  private static readonly HEADER_OFFSET = FinancialsPageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly NAV_LINKS_HEIGHT = 560;
-  private static readonly NAV_LINKS_WIDTH = 240;
-  private static readonly CONTENT_LEFT = FinancialsPageComponent.NAV_LINKS_WIDTH + DashboardLayoutEngine.GAP_PX;
-  private static readonly CONTENT_WIDTH = 1280 - FinancialsPageComponent.CONTENT_LEFT;
+  private static readonly G = DashboardLayoutEngine.GAP_PX;
+  private static readonly TITLE_HEIGHT = 80;
+  private static readonly NAVKPI_HEIGHT = 512;
+  private static readonly NAVKPI_TOP = FinancialsPageComponent.TITLE_HEIGHT + FinancialsPageComponent.G;
   private static readonly REVENUE_HEIGHT = 384;
-  private static readonly REVENUE_OFFSET = FinancialsPageComponent.HEADER_OFFSET + FinancialsPageComponent.REVENUE_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly REVENUE_TOP = FinancialsPageComponent.NAVKPI_TOP + FinancialsPageComponent.NAVKPI_HEIGHT + FinancialsPageComponent.G;
   private static readonly ESTIMATES_HEIGHT = 512;
-  private static readonly ESTIMATES_OFFSET_DESKTOP = FinancialsPageComponent.REVENUE_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly ESTIMATES_OFFSET_CANVAS = FinancialsPageComponent.REVENUE_OFFSET + FinancialsPageComponent.ESTIMATES_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ESTIMATES_TOP = FinancialsPageComponent.REVENUE_TOP + FinancialsPageComponent.REVENUE_HEIGHT + FinancialsPageComponent.G;
   private static readonly BUDGET_HEIGHT = 512;
-  private static readonly BUDGET_OFFSET_DESKTOP = FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP + FinancialsPageComponent.ESTIMATES_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly BUDGET_OFFSET_CANVAS = FinancialsPageComponent.ESTIMATES_OFFSET_CANVAS + FinancialsPageComponent.BUDGET_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly BUDGET_TOP = FinancialsPageComponent.ESTIMATES_TOP + FinancialsPageComponent.ESTIMATES_HEIGHT + FinancialsPageComponent.G;
   private static readonly JOB_COSTS_HEIGHT = 576;
-  private static readonly JOB_COSTS_OFFSET_DESKTOP = FinancialsPageComponent.BUDGET_OFFSET_DESKTOP + FinancialsPageComponent.BUDGET_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly JOB_COSTS_OFFSET_CANVAS = FinancialsPageComponent.BUDGET_OFFSET_CANVAS + FinancialsPageComponent.JOB_COSTS_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly JOB_COSTS_TOP = FinancialsPageComponent.BUDGET_TOP + FinancialsPageComponent.BUDGET_HEIGHT + FinancialsPageComponent.G;
   private static readonly CO_HEIGHT = 560;
-  private static readonly CO_OFFSET_DESKTOP = FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP + FinancialsPageComponent.JOB_COSTS_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly CO_OFFSET_CANVAS = FinancialsPageComponent.JOB_COSTS_OFFSET_CANVAS + FinancialsPageComponent.CO_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly CO_TOP = FinancialsPageComponent.JOB_COSTS_TOP + FinancialsPageComponent.JOB_COSTS_HEIGHT + FinancialsPageComponent.G;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    const CL = FinancialsPageComponent.CONTENT_LEFT;
-    const CW = FinancialsPageComponent.CONTENT_WIDTH;
+    const F = FinancialsPageComponent;
     return {
-      widgets: ['finHeader', 'finNavLinks', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
-      layoutStorageKey: 'dashboard-financials:v9',
-      canvasStorageKey: 'canvas-layout:dashboard-financials:v11',
-      defaultColStarts: { finHeader: 1, finNavLinks: 1, finRevenueChart: 4, finOpenEstimates: 4, finBudgetByProject: 4, finJobCosts: 4, finChangeOrders: 4 },
-      defaultColSpans: { finHeader: 16, finNavLinks: 3, finRevenueChart: 13, finOpenEstimates: 13, finBudgetByProject: 13, finJobCosts: 13, finChangeOrders: 13 },
-      defaultTops: { finHeader: 0, finNavLinks: 0, finRevenueChart: 0, finOpenEstimates: FinancialsPageComponent.ESTIMATES_OFFSET_DESKTOP, finBudgetByProject: FinancialsPageComponent.BUDGET_OFFSET_DESKTOP, finJobCosts: FinancialsPageComponent.JOB_COSTS_OFFSET_DESKTOP, finChangeOrders: FinancialsPageComponent.CO_OFFSET_DESKTOP },
-      defaultHeights: { finHeader: 0, finNavLinks: FinancialsPageComponent.NAV_LINKS_HEIGHT, finRevenueChart: FinancialsPageComponent.REVENUE_HEIGHT, finOpenEstimates: FinancialsPageComponent.ESTIMATES_HEIGHT, finBudgetByProject: FinancialsPageComponent.BUDGET_HEIGHT, finJobCosts: FinancialsPageComponent.JOB_COSTS_HEIGHT, finChangeOrders: FinancialsPageComponent.CO_HEIGHT },
-      canvasDefaultLefts: { finHeader: 0, finNavLinks: 0, finRevenueChart: 256, finOpenEstimates: 256, finBudgetByProject: 256, finJobCosts: 256, finChangeOrders: 256 },
-      canvasDefaultPixelWidths: { finHeader: 1280, finNavLinks: 227, finRevenueChart: 1024, finOpenEstimates: 1024, finBudgetByProject: 1024, finJobCosts: 1024, finChangeOrders: 1024 },
-      canvasDefaultTops: {
-        finHeader: 16,
-        finNavLinks: 192,
-        finRevenueChart: 192,
-        finOpenEstimates: 592,
-        finBudgetByProject: 1120,
-        finJobCosts: 1648,
-        finChangeOrders: 2800,
+      widgets: ['finTitle', 'finNavKpi', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
+      layoutStorageKey: 'dashboard-financials:v16',
+      canvasStorageKey: 'canvas-layout:dashboard-financials:v18',
+      defaultColStarts: { finTitle: 1, finNavKpi: 1, finRevenueChart: 1, finOpenEstimates: 1, finBudgetByProject: 1, finJobCosts: 1, finChangeOrders: 1 },
+      defaultColSpans: { finTitle: 16, finNavKpi: 8, finRevenueChart: 16, finOpenEstimates: 16, finBudgetByProject: 16, finJobCosts: 16, finChangeOrders: 16 },
+      defaultTops: {
+        finTitle: 0,
+        finNavKpi: F.NAVKPI_TOP,
+        finRevenueChart: F.REVENUE_TOP,
+        finOpenEstimates: F.ESTIMATES_TOP,
+        finBudgetByProject: F.BUDGET_TOP,
+        finJobCosts: F.JOB_COSTS_TOP,
+        finChangeOrders: F.CO_TOP,
       },
-      canvasDefaultHeights: { finHeader: 160, finNavLinks: 560, finRevenueChart: 384, finOpenEstimates: 512, finBudgetByProject: 512, finJobCosts: 576, finChangeOrders: 560 },
+      defaultHeights: {
+        finTitle: F.TITLE_HEIGHT,
+        finNavKpi: F.NAVKPI_HEIGHT,
+        finRevenueChart: F.REVENUE_HEIGHT,
+        finOpenEstimates: F.ESTIMATES_HEIGHT,
+        finBudgetByProject: F.BUDGET_HEIGHT,
+        finJobCosts: F.JOB_COSTS_HEIGHT,
+        finChangeOrders: F.CO_HEIGHT,
+      },
+      canvasDefaultLefts: { finTitle: 0, finNavKpi: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
+      canvasDefaultPixelWidths: { finTitle: 1280, finNavKpi: 640, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
+      canvasDefaultTops: {
+        finTitle: 16,
+        finNavKpi: 16 + F.TITLE_HEIGHT + F.G,
+        finRevenueChart: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G,
+        finOpenEstimates: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.REVENUE_HEIGHT + F.G,
+        finBudgetByProject: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.REVENUE_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G,
+        finJobCosts: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.REVENUE_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G + F.BUDGET_HEIGHT + F.G,
+        finChangeOrders: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.REVENUE_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G + F.BUDGET_HEIGHT + F.G + F.JOB_COSTS_HEIGHT + F.G,
+      },
+      canvasDefaultHeights: {
+        finTitle: F.TITLE_HEIGHT,
+        finNavKpi: F.NAVKPI_HEIGHT,
+        finRevenueChart: F.REVENUE_HEIGHT,
+        finOpenEstimates: F.ESTIMATES_HEIGHT,
+        finBudgetByProject: F.BUDGET_HEIGHT,
+        finJobCosts: F.JOB_COSTS_HEIGHT,
+        finChangeOrders: F.CO_HEIGHT,
+      },
       minColSpan: 1,
-      widgetMaxColSpans: { finNavLinks: 3 },
+      widgetMaxColSpans: {},
       canvasGridMinHeightOffset: 200,
-      savesDesktopOnMobile: false,
+      savesDesktopOnMobile: true,
       onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
     };
   }
 
   protected override applyInitialHeaderLock(): void {
-    this.engine.widgetLocked.update(l => ({ ...l, finHeader: true }));
+    this.engine.widgetLocked.update(l => ({ ...l, finTitle: true, finNavKpi: true }));
   }
 
   readonly projects = this.store.projects;
@@ -2342,14 +2310,10 @@ export class FinancialsPageComponent extends DashboardPageBase {
     this.widgetFocusService.registerWidgets(FINANCIALS_WIDGETS);
   })();
 
-  readonly financialsWidgets: DashboardWidgetId[] = ['finNavLinks', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
+  readonly financialsWidgets: DashboardWidgetId[] = ['finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
 
   readonly finNavLinkItems = this.finSubNavItems.filter(i => i.value !== 'overview');
 
-  readonly activeNavLinkLabel = computed(() => {
-    const active = this.activeSubPage();
-    return this.finNavLinkItems.find(i => i.value === active)?.label ?? 'Financials';
-  });
 
   private readonly finSubPageDescriptions: Record<string, string> = {
     'estimates': 'Open estimates, pricing proposals, and pending approvals',
@@ -2688,7 +2652,6 @@ export class FinancialsPageComponent extends DashboardPageBase {
     return `${value}`;
   }
 
-  private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly financialsGridContainerRef = viewChild<ElementRef>('financialsWidgetGrid');
 
   protected override resolveGridElement(): HTMLElement | undefined {
@@ -2696,7 +2659,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   }
 
   protected override resolveHeaderElement(): HTMLElement | undefined {
-    return this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
+    return undefined;
   }
 
   readonly budgetProgressClass = budgetProgressClass;

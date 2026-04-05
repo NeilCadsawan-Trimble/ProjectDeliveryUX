@@ -25,7 +25,8 @@ export type DashboardWidgetId =
   | 'homeWeather'
   | 'homeRecentActivity'
   | 'projsHeader'
-  | 'finHeader'
+  | 'finTitle'
+  | 'finNavKpi'
   | 'finBudgetByProject'
   | 'finRevenueChart'
   | 'finJobCosts'
@@ -39,8 +40,7 @@ export type DashboardWidgetId =
   | 'finPurchaseOrders'
   | 'finPayroll'
   | 'finContracts'
-  | 'finSubcontractLedger'
-  | 'finNavLinks';
+  | 'finSubcontractLedger';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';

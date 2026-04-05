@@ -1516,6 +1516,27 @@ Where `CANVAS_STEP = 81` and `GAP_PX = 16`.
 
 ---
 
+## 31. Widget Height Must Fit Content and Snap to 16px Grid
+
+**Problem**: The `finNavKpi` widget on the Financials page had an internal scrollbar on the NavLinks card because the widget height (496px) was slightly shorter than the rendered content (~504px in Chromium). Different browsers render slightly different heights, so the overflow was visible in Chromium (Vivaldi) but not Safari at the same height.
+
+**Root cause**: Widget default heights are set as static constants (e.g., `NAVKPI_HEIGHT = 496`). If the content grows (e.g., 12 nav link items at ~40px each plus header), the fixed height can become too short, causing `overflow-y-auto` to show a scrollbar.
+
+**Fix approach**:
+1. Increase the height constant in small increments (4px) until the scrollbar disappears in all target browsers.
+2. Round UP to the nearest multiple of 16 (`GAP_PX`) so the widget aligns to the vertical snapping grid.
+3. Bump both `layoutStorageKey` and `canvasStorageKey` versions so cached layouts in sessionStorage are discarded and new defaults take effect.
+
+**Rule**: When setting default widget heights, the value MUST:
+- Be large enough to contain all content without any internal scrollbar (test in multiple browsers -- Chromium-based browsers may need a few extra pixels vs Safari/WebKit).
+- Be a multiple of 16 (the `GAP_PX` vertical snap grid).
+
+**Example** (Financials `finNavKpi`): Content needed ~504px. Next 16px-aligned value: 512 (32 * 16). Old value was 496 (31 * 16).
+
+**Storage key reminder**: Any change to default heights, tops, or spans requires bumping the layout and canvas storage key versions, otherwise users with cached layouts will never see the new defaults.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1554,3 +1575,4 @@ Where `CANVAS_STEP = 81` and `GAP_PX = 16`.
 | compactAll anchor priority | `dashboard-layout-engine.ts` | `dashboard-layout-engine.spec.ts` (2 new tests) |
 | Single ng-content (canvas projection) | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` (exactly 1 ng-content, not in conditional) |
 | Canvas default pixel values (1280px grid) | `*-layout.config.ts` (`canvasDefaultLefts`, `canvasDefaultPixelWidths`) | Build verification; visual test (rightmost widget edge = 1280) |
+| Widget height grid-snap + no scrollbar | page `*_HEIGHT` constants + storage keys | (visual: verify no internal scrollbar in Chromium + Safari) |

@@ -1,6 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ModusWcButton } from '@trimble-oss/moduswebcomponents-angular';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 /**
  * Button color variant
@@ -106,33 +104,29 @@ export interface ModusButtonProps {
  */
 @Component({
   selector: 'modus-button',
-  standalone: true,
-  imports: [CommonModule, ModusWcButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'inline-flex' },
   template: `
-    <modus-wc-button
-      [color]="color()"
-      [variant]="variant()"
-      [size]="size()"
-      [shape]="shape()"
+    <button
+      [class]="btnClasses()"
       [disabled]="disabled()"
-      [fullWidth]="fullWidth()"
-      [pressed]="pressed()"
-      [type]="type()"
-      [customClass]="className()"
+      [attr.aria-pressed]="pressed() ? 'true' : null"
       [attr.aria-label]="getAriaLabel()"
-      (buttonClick)="handleButtonClick($event)"
+      [type]="type()"
+      [tabIndex]="disabled() ? -1 : 0"
+      (click)="handleClick($event)"
+      (keydown)="handleKeyDown($event)"
     >
       @if (icon() && iconPosition() === 'left') {
-      <i class="modus-icons {{ getIconSize() }} mr-2">{{ icon() }}</i>
+      <i class="modus-icons {{ getIconSize() }} mr-2" aria-hidden="true">{{ icon() }}</i>
       }
       <ng-content></ng-content>
       @if (icon() && iconPosition() === 'right') {
-      <i class="modus-icons {{ getIconSize() }} ml-2">{{ icon() }}</i>
+      <i class="modus-icons {{ getIconSize() }} ml-2" aria-hidden="true">{{ icon() }}</i>
       } @if (icon() && iconPosition() === 'only') {
-      <i class="modus-icons {{ getIconSize() }}">{{ icon() }}</i>
+      <i class="modus-icons {{ getIconSize() }}" aria-hidden="true">{{ icon() }}</i>
       }
-    </modus-wc-button>
+    </button>
   `,
 })
 export class ModusButtonComponent {
@@ -191,29 +185,61 @@ export class ModusButtonComponent {
   /** Event emitter for button clicks */
   readonly buttonClick = output<MouseEvent | KeyboardEvent>();
 
-  /**
-   * Handles button click events from the Modus Web Component
-   *
-   * Emits the event to parent components and calls the optional callback
-   *
-   * @param event - The click or keyboard event from the button (from Stencil CustomEvent)
-   */
-  handleButtonClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
-    // Stop event propagation to prevent double-firing
-    event.stopPropagation();
+  readonly btnClasses = computed(() => {
+    const parts = ['modus-wc-btn'];
 
+    const colorMap: Record<string, string> = {
+      primary: 'modus-wc-btn-primary',
+      secondary: 'modus-wc-btn-secondary',
+      tertiary: 'modus-wc-btn-neutral',
+      warning: 'modus-wc-btn-warning',
+      danger: 'modus-wc-btn-error',
+    };
+    const c = this.color();
+    if (c && colorMap[c]) parts.push(colorMap[c]);
+
+    const variantMap: Record<string, string> = {
+      filled: 'modus-wc-btn-filled',
+      outlined: 'modus-wc-btn-outline',
+      borderless: 'modus-wc-btn-borderless',
+    };
+    const v = this.variant();
+    if (v && variantMap[v]) parts.push(variantMap[v]);
+
+    const s = this.size();
+    if (s) parts.push(`modus-wc-btn-${s}`);
+
+    const shapeMap: Record<string, string> = {
+      square: 'modus-wc-btn-square',
+      circle: 'modus-wc-btn-circle',
+    };
+    const sh = this.shape();
+    if (sh && shapeMap[sh]) parts.push(shapeMap[sh]);
+
+    if (this.disabled()) parts.push('modus-wc-btn-disabled');
+    if (this.fullWidth()) parts.push('modus-wc-btn-block');
+    if (this.pressed()) parts.push('modus-wc-btn-active');
+
+    const custom = this.className();
+    if (custom) parts.push(custom);
+
+    return parts.join(' ');
+  });
+
+  handleClick(event: MouseEvent): void {
     if (!this.disabled()) {
-      // Extract the actual event from CustomEvent detail
-      const actualEvent = event.detail;
-
-      // Emit Angular event
-      this.buttonClick.emit(actualEvent);
-
-      // Call React-like callback if provided
+      this.buttonClick.emit(event);
       const callback = this.onButtonClick();
-      if (callback) {
-        callback();
-      }
+      if (callback) callback();
+    }
+  }
+
+  handleKeyDown(event: KeyboardEvent): void {
+    if (!this.disabled() && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      this.buttonClick.emit(event);
+      const callback = this.onButtonClick();
+      if (callback) callback();
     }
   }
 

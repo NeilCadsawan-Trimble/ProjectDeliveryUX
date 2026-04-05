@@ -411,7 +411,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
           this.stackAllForMobile();
         }
       } else if (!nowMobile && wasMobile && !nowCanvas) {
-        this.persistLayout();
+        this.persistMobileLayout();
         if (this.config.savesDesktopOnMobile && this._savedDesktopForMobile) {
           this.restoreSnapshot(this._savedDesktopForMobile);
           this._savedDesktopForMobile = null;
@@ -1949,7 +1949,14 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   persistLayout(): void {
-    const mobile = this.isMobile();
+    this.persistLayoutAs(this.isMobile());
+  }
+
+  private persistMobileLayout(): void {
+    this.persistLayoutAs(true);
+  }
+
+  private persistLayoutAs(mobile: boolean): void {
     const tops: Record<string, number> = {};
     const heights: Record<string, number> = {};
     const colStarts: Record<string, number> = {};
