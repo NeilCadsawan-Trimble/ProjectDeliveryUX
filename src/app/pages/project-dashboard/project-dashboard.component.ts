@@ -51,6 +51,7 @@ import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { SubpageTileCanvas, type TileRect, type TileDetailView } from '../../shell/services/subpage-tile-canvas';
 import { AiService } from '../../services/ai.service';
+import { WeatherService } from '../../services/weather.service';
 import { AiToolsService } from '../../services/ai-tools.service';
 import { AiPanelController } from '../../shell/services/ai-panel-controller';
 import { CanvasPanning } from '../../shell/services/canvas-panning';
@@ -67,6 +68,7 @@ import { rewriteDynamicNeeds, rewriteBudgetRisk } from '../projects-page/project
 import { type Rfi, type Submittal, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, type StaffingConflict, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus, type TimeOffStatus } from '../../data/dashboard-data';
 import { ALL_DRAWINGS_BY_PROJECT, SITE_CAPTURES_BY_PROJECT, type DrawingTile, type SiteCapture } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
+import { PROJECT_DETAIL_WIDGETS } from '../../data/widget-registrations';
 import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 import { ProjectDashboardNavigationService } from './project-dashboard-navigation.service';
 import {
@@ -142,6 +144,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   private readonly aiService = inject(AiService);
   private readonly aiToolsService = inject(AiToolsService);
   private readonly injector = inject(Injector);
+  private readonly weatherService = inject(WeatherService);
 
   readonly projectData = input.required<ProjectDashboardData>();
   readonly projectId = input<number>(1);
@@ -544,7 +547,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const rfis = this.projectRfis();
     const subs = this.projectSubmittals();
 
-    const regs: Record<string, { name: string; suggestions: string[] }> = {};
+    const regs: Record<string, { name: string; suggestions: string[] }> = { ...PROJECT_DETAIL_WIDGETS };
     for (const d of drawings) {
       regs[`tile-drawing-${d.id}`] = {
         name: d.title,
@@ -612,6 +615,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly subnavViewMode = signal<'grid' | 'list'>('grid');
   readonly isCompactMobile = signal(typeof window !== 'undefined' ? window.innerWidth <= 580 : false);
   readonly toolbarMoreOpen = signal(false);
+  readonly toolbarSearchOpen = signal(false);
 
   readonly recordsSubNavItems = RECORDS_SUB_NAV_ITEMS;
   readonly sideSubNavCollapsed = signal(false);
@@ -1823,6 +1827,8 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   });
 
   ngOnInit(): void {
+    this.weatherService.initialize();
+
     const zFn = () => this.panning.canvasZoom();
     this.engine.zoomFn = zFn;
     this._detailMgr.zoomFn = zFn;
@@ -2181,6 +2187,40 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     return result;
   });
 
+  readonly recordsTotalAlertCount = computed(() => {
+    const a = this.recordsAlerts();
+    let total = 0;
+    for (const v of Object.values(a)) { if (v) total += v.count; }
+    return total;
+  });
+
+  readonly recordsHasCriticalAlert = computed(() =>
+    Object.values(this.recordsAlerts()).some(v => v?.level === 'critical')
+  );
+
+  readonly financialsTotalAlertCount = computed(() => {
+    const a = this.financialsAlerts();
+    let total = 0;
+    for (const v of Object.values(a)) { if (v) total += v.count; }
+    return total;
+  });
+
+  readonly financialsHasCriticalAlert = computed(() =>
+    Object.values(this.financialsAlerts()).some(v => v?.level === 'critical')
+  );
+
+  navItemAlertCount(navValue: string): number {
+    if (navValue === 'records') return this.recordsTotalAlertCount();
+    if (navValue === 'financials') return this.financialsTotalAlertCount();
+    return 0;
+  }
+
+  navItemHasCritical(navValue: string): boolean {
+    if (navValue === 'records') return this.recordsHasCriticalAlert();
+    if (navValue === 'financials') return this.financialsHasCriticalAlert();
+    return false;
+  }
+
   // ── Mobile More Menu ──
   readonly moreMenuOpen = signal(false);
 
@@ -2223,7 +2263,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       this.navExpanded.set(false);
     }
     const target = event.target as HTMLElement;
-    const insideAiPanel = !!target.closest('modus-utility-panel');
+    const insideAiPanel = !!target.closest('modus-utility-panel') || !!target.closest('ai-assistant-panel') || !!target.closest('modus-wc-utility-panel') || !!target.closest('[aria-label="AI assistant"]');
     if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !target.closest('[data-tile-id]') && !insideAiPanel) {
       this.widgetFocusService.clearSelection();
     }
@@ -2238,6 +2278,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     }
     if (this.toolbarMoreOpen() && !target.closest('[aria-label="More actions"]') && !target.closest('[role="menuitem"]')) {
       this.toolbarMoreOpen.set(false);
+    }
+    if (this.toolbarSearchOpen() && !target.closest('[data-toolbar-search]')) {
+      this.toolbarSearchOpen.set(false);
     }
     if (this.projectSelectorOpen() && !target.closest('[role="listbox"]') && !target.closest('[aria-expanded]')) {
       this.projectSelectorOpen.set(false);

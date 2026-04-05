@@ -55,7 +55,7 @@ Consult this file before asking the user a question. If the answer is here, act 
 - **8 project detail pages**: Slug-based routes under `/projects/:slug`, all use shared `ProjectDashboardComponent`.
 - **Shared layout engine**: `DashboardLayoutEngine` service manages drag, resize, push-squeeze, and collision for all dashboard pages.
 - **Dashboard shell**: `DashboardShellComponent` provides navbar, sidenav, AI panel, and document-level event handling for all pages.
-- **Canvas mode**: Activates at viewport >= 2000px with fixed navbar (1280px centered), spacebar panning, and overlap resolution.
+- **Canvas mode**: Activates at viewport >= 1920px with fixed navbar (1280px centered), spacebar panning, and overlap resolution.
 - **Widget persistence**: sessionStorage per-page/per-project. Not server-side yet.
 - **Canvas zoom**: Anchors to viewport center (not cursor). Triggers: Shift+scroll, Ctrl+scroll, Cmd+scroll. Uses `Math.abs` comparison of both delta axes to handle macOS axis swapping.
 - **Layout storage keys**: desktop `project-${id}-v4`, canvas `canvas-layout:project-${id}:v6`.

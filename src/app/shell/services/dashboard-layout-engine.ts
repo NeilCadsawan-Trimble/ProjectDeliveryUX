@@ -135,6 +135,8 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     left: number; width: number; top: number; height: number;
   }> | null = null;
 
+  private _dragDidMove = false;
+
   private _pushSqueezeActive: Set<string> = new Set();
 
   /**
@@ -272,7 +274,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
    * With `desktopResizePriorityOrder`: primary reading order (list index ascending); unlisted ids
    * sort after listed ones by `(top, left)` then `widgetOrderIndex`.
    */
-  private sortWidgetsForCollisionPass(widgets: string[], tops: Record<string, number>): string[] {
+  private sortWidgetsForCollisionPass(widgets: string[], tops: Record<string, number>, anchorId?: string): string[] {
     const baseline = this._collisionSortBaseline;
     const topOf = (id: string) => (baseline ? (baseline[id] ?? tops[id]) : tops[id]);
 
@@ -285,6 +287,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         const ta = topOf(a);
         const tb = topOf(b);
         if (ta !== tb) return ta - tb;
+        if (anchorId) {
+          if (a === anchorId) return -1;
+          if (b === anchorId) return 1;
+        }
         const la = lefts[a] ?? 0;
         const lb = lefts[b] ?? 0;
         if (la !== lb) return la - lb;
@@ -296,6 +302,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       const ta = topOf(a);
       const tb = topOf(b);
       if (ta !== tb) return ta - tb;
+      if (anchorId) {
+        if (a === anchorId) return -1;
+        if (b === anchorId) return 1;
+      }
       return this.widgetOrderIndex(a) - this.widgetOrderIndex(b);
     });
   }
@@ -443,6 +453,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     event.preventDefault();
     this._collisionSortBaseline = { ...this.widgetTops() };
     this._moveTarget = id;
+    this._dragDidMove = false;
     this._dragAxis = this.isMobile() ? null : 'free';
     this._dragStartX = event.clientX;
     this._dragStartY = event.clientY;
@@ -485,6 +496,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     event.preventDefault();
     this._collisionSortBaseline = { ...this.widgetTops() };
     this._moveTarget = id;
+    this._dragDidMove = false;
     this._dragAxis = this.isMobile() ? null : 'free';
     this._dragStartX = touch.clientX;
     this._dragStartY = touch.clientY;
@@ -597,10 +609,12 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
   onDocumentMouseUp(): void {
     const wasWidgetMove = !!this._moveTarget;
+    const didMove = this._dragDidMove;
     const hadInteraction = wasWidgetMove || !!this._resizeTarget;
     const interactedId = this._moveTarget ?? this._resizeTarget;
     this._moveTarget = null;
     this._dragAxis = null;
+    this._dragDidMove = false;
     this.moveTargetId.set(null);
     this._resizeTarget = null;
     this._resizeEdge = 'right';
@@ -615,7 +629,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
           if (this.config.desktopSnapToDefaultLayoutAfterDrag) {
             this.applyDesktopDefaultLayoutAfterDrag();
           }
-          this.compactAll();
+          this.compactAll(didMove ? interactedId : undefined);
         } else if (!wasWidgetMove) {
           if (this.config.desktopReflowOnResize) {
             this.syncColsFromPixelPositions();
@@ -1047,6 +1061,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       newTop = clamped.top;
       newLeft = clamped.left;
 
+      this._dragDidMove = true;
       this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
       this.widgetLefts.update((l) => ({ ...l, [id]: newLeft }));
       if (!this.isCanvasMode()) {
@@ -1075,6 +1090,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const clamped = this.clampMoveAgainstLocked(id, newTop, currentLeft);
     newTop = clamped.top;
 
+    this._dragDidMove = true;
     this.widgetTops.update((t) => ({ ...t, [id]: newTop }));
     this.resolveCollisions(id, widgets);
   }
@@ -1686,7 +1702,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     }
   }
 
-  compactAll(): void {
+  compactAll(anchorId?: string): void {
     const gap = DashboardLayoutEngine.GAP_PX;
     const tops = { ...this.widgetTops() };
     const heights = this.widgetHeights();
@@ -1695,7 +1711,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
     const lockedState = this.widgetLocked();
     if (mobile) {
-      const sorted = this.sortWidgetsForCollisionPass(widgets, tops);
+      const sorted = this.sortWidgetsForCollisionPass(widgets, tops, anchorId);
       let y = 0;
       for (const id of sorted) {
         if (heights[id] <= 0) continue;
@@ -1714,7 +1730,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       return colStarts[a] < bEnd && colStarts[b] < aEnd;
     };
 
-    const sorted = this.sortWidgetsForCollisionPass(widgets, tops);
+    const sorted = this.sortWidgetsForCollisionPass(widgets, tops, anchorId);
     const placed: string[] = [];
 
     for (const id of sorted) {

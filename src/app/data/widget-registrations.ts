@@ -1,6 +1,22 @@
 import type { WidgetRegistration } from '../shell/services/widget-focus.service';
 
 export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
+  homeUrgentNeeds: {
+    name: 'Urgent Needs',
+    suggestions: [
+      'What needs my attention right now?',
+      'Show the most critical items',
+      'Which projects have urgent issues?',
+    ],
+  },
+  homeWeather: {
+    name: 'Weather',
+    suggestions: [
+      'Will weather impact any projects this week?',
+      'Show weather alerts for job sites',
+      'What is the forecast for tomorrow?',
+    ],
+  },
   homeTimeOff: {
     name: 'Time Off Requests',
     suggestions: [
@@ -33,6 +49,22 @@ export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'Summarize submittal approval rates',
     ],
   },
+  homeDrawings: {
+    name: 'Drawings',
+    suggestions: [
+      'How many drawings need review?',
+      'Show latest drawing revisions',
+      'Which drawing sets are incomplete?',
+    ],
+  },
+  homeRecentActivity: {
+    name: 'Recent Activity',
+    suggestions: [
+      'What changed today?',
+      'Show the most recent updates',
+      'Who has been most active this week?',
+    ],
+  },
 };
 
 export const PROJECTS_WIDGETS: Record<string, WidgetRegistration> = {
@@ -63,6 +95,46 @@ export const PROJECTS_WIDGETS: Record<string, WidgetRegistration> = {
 };
 
 export const FINANCIALS_WIDGETS: Record<string, WidgetRegistration> = {
+  finNavLinks: {
+    name: 'Financials Navigation',
+    suggestions: [
+      'What financial modules are available?',
+      'Navigate to accounts receivable',
+      'Show me the payroll section',
+    ],
+  },
+  finRevenueChart: {
+    name: 'Revenue Chart',
+    suggestions: [
+      'What is total revenue this quarter?',
+      'Show revenue trend over the last 12 months',
+      'How does actual revenue compare to forecast?',
+    ],
+  },
+  finOpenEstimates: {
+    name: 'Open Estimates',
+    suggestions: [
+      'Show overdue estimates',
+      'What is the total estimate pipeline value?',
+      'Which estimates need approval?',
+    ],
+  },
+  finJobCosts: {
+    name: 'Job Costs',
+    suggestions: [
+      'Which projects have the highest job costs?',
+      'Show cost breakdown by category',
+      'Are any projects over their cost budget?',
+    ],
+  },
+  finChangeOrders: {
+    name: 'Change Orders',
+    suggestions: [
+      'How many change orders are pending?',
+      'What is the total value of approved COs?',
+      'Which projects have the most change orders?',
+    ],
+  },
   finBudgetByProject: {
     name: 'Budget by Project',
     suggestions: [

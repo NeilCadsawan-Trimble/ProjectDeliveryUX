@@ -112,11 +112,16 @@ If the date matches today, skip this section and proceed normally.
   7. All 36 shell static tests pass. All lint + type-check pass. Build clean.
   8. Pushed fix to `dev` (commit `647223a`). Vercel preview will auto-deploy.
 
+### Session 20 (Apr 5)
+- **Topic**: Restore stashed subnav mobile changes
+- **What happened**:
+  1. Restored stash containing subnav mobile mode changes (collapsible-subnav, project-dashboard, layout engine anchor priority).
+  2. Resolved merge conflicts in documentation files (shortterm-memory, SKILL.md).
+
 ## Active Context
 
-- On `dev` branch, ahead of origin/dev by 0 commits (pushed).
-- Canvas mode fix deployed to Vercel preview.
-- Need to merge `dev` to `main` for production Vercel deployment.
+- On `dev` branch, uncommitted changes from restored stash.
+- Canvas mode fix is in place, subnav mobile changes restored on top.
 
 ## Pending Items
 

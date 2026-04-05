@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, or modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering). Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, or the toolbar search/filter layout. Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -1285,6 +1285,180 @@ Mobile selected items use:
 
 ---
 
+## 25. Collapsible Subnav: No Mobile Compact Mode
+
+**File:** `src/app/pages/project-dashboard/components/collapsible-subnav.component.ts`
+
+### The bug (repeated regressions)
+
+The `CollapsibleSubnavComponent` had a `mobileCompact` mode: when `isMobile() && collapsed()`, it rendered a 48px-wide icon-only strip with a badge overlay and a `chevron_right` expand affordance. When tapped, the subnav expanded to 227px with a fixed backdrop overlay (`z-index: 9998`), `shadow-lg`, and elevated `z-index: 9999`. This created multiple problems:
+
+1. The 48px compact strip consumed horizontal space on narrow viewports, cramping the toolbar and content.
+2. The fixed backdrop overlay intercepted taps, causing confusion with the toolbar and other interactive elements.
+3. The z-index juggling (9998 backdrop, 9999 panel) conflicted with other overlays (modals, dropdowns, mobile more menus).
+4. Agents repeatedly tried to "fix" mobile subnav behavior by adding more complexity (different widths, different z-indices, different expand/collapse animations), making the code harder to maintain.
+
+### The fix: hide completely on mobile
+
+On mobile, the collapsible subnav is **hidden entirely**. `outerWidth` returns `0` when `isMobile()`, the `innerWidth` is always `227` (no 48px variant), and there is no mobile-specific z-index, backdrop, or shadow:
+
+```typescript
+readonly outerWidth = computed(() => {
+  if (this.isMobile()) return 0;
+  return this.collapsed() ? 0 : 227;
+});
+
+readonly innerWidth = computed(() => 227);
+
+readonly innerZIndex = computed(() => this.collapsed() ? 10 : 1);
+```
+
+Removed signals/computeds:
+- `mobileCompact` -- no longer exists
+- Mobile-specific `innerWidth` (48px) -- always 227
+- Mobile-specific `innerZIndex` (9999) -- collapsed is 10, expanded is 1
+- Mobile `panelMaxHeight` override -- only canvas gets `'none'`
+
+Removed template elements:
+- `@if (isMobile() && !collapsed())` fixed backdrop overlay
+- `@if (mobileCompact())` icon-only strip with badge overlay
+- `shadow-lg` conditional class on mobile
+- `[class.rounded-lg]="true"` binding (now a static class)
+
+### The rule
+
+1. **Never add a mobile compact mode to the collapsible subnav.** On mobile, the subnav is hidden (`outerWidth = 0`). Sub-page navigation on mobile uses the toolbar's existing view mode toggles and page-level navigation.
+2. **Never add a fixed backdrop overlay** (`position: fixed; inset: 0`) inside the collapsible subnav. Backdrops conflict with other overlays and steal taps.
+3. **Never use z-index >= 9999** on the collapsible subnav. That range is reserved for modals and canvas detail views.
+4. **The collapsible subnav is desktop/canvas only.** Mobile users navigate sub-pages through the toolbar and route-level navigation.
+
+---
+
+## 26. Toolbar Compact Mobile Mode (Search Collapse)
+
+**Files:** `project-dashboard.component.html`, `project-dashboard.component.ts`
+
+### The pattern
+
+On narrow mobile viewports (`isCompactMobile()`, <= 580px), the `#childPageSubnav` toolbar switches from an inline search input to icon-only buttons. The search field slides down below the toolbar row when the search icon is tapped.
+
+### Architecture
+
+1. **`isCompactMobile` signal** -- tracks `window.innerWidth <= 580`. Updated on resize.
+2. **`toolbarSearchOpen` signal** -- controls the expandable search field visibility.
+3. **Template branching** in `#childPageSubnav`:
+
+```html
+@if (isCompactMobile()) {
+  <!-- Icon-only: search button + filter button -->
+  <div class="flex items-center gap-2">
+    <div role="button" (click)="toolbarSearchOpen.set(!toolbarSearchOpen())">
+      <i class="modus-icons">search</i>
+    </div>
+    <div role="button"><i class="modus-icons">filter</i></div>
+  </div>
+} @else {
+  <!-- Full inline search input + filter button -->
+}
+```
+
+4. **Expandable search row** -- appears below the toolbar when `isCompactMobile() && toolbarSearchOpen()`:
+
+```html
+@if (isCompactMobile() && toolbarSearchOpen()) {
+  <div class="px-4 pb-2">
+    <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 w-full">
+      <i class="modus-icons text-sm text-foreground-60">search</i>
+      <input type="text" ... />
+    </div>
+  </div>
+}
+```
+
+5. **Click-outside dismiss** -- the toolbar wrapper has `data-toolbar-search` attribute. `onDocumentClick` closes `toolbarSearchOpen` when the click target is outside `[data-toolbar-search]`.
+
+### The rule
+
+When adding new toolbar functionality on mobile:
+1. **Use `isCompactMobile()` (580px)** for toolbar layout decisions, not `isMobile()` (768px). The toolbar needs compaction at a narrower breakpoint than general mobile layout.
+2. **Collapse inputs to icon buttons** on compact mobile. Show the full input in an expandable row below the toolbar.
+3. **Use `data-*` attributes** for click-outside detection scoping on expandable toolbar sections.
+4. **The right-side action buttons** (view mode toggles, more menu) are always visible regardless of compact mode.
+
+---
+
+## 27. Toolbar Margin-Left with Collapsed Subnav (Mobile + Desktop)
+
+**Files:** `project-dashboard.component.html`
+
+### The bug
+
+The toolbar's `margin-left` condition was `sideSubNavCollapsed() && !isMobile()`. This meant:
+- On desktop with collapsed subnav: toolbar got 227px margin (correct, clears the floating collapsed header)
+- On mobile: toolbar got 0px margin
+
+But since the collapsible subnav is now hidden on mobile (`outerWidth = 0`), the toolbar needs margin-left on mobile too when the subnav *would* be present (it floats at 227px via `position: absolute` even though outer width is 0). The collapsed subnav header still renders at 227px wide on top of content.
+
+### The fix
+
+Changed the condition to `sideSubNavCollapsed() || isMobile()` and `md:pl-4` to `pl-4`:
+
+```html
+<div class="transition-all duration-200 pl-4"
+  [style.margin-left.px]="detailHasSubNav() && (sideSubNavCollapsed() || isMobile()) ? 227 : 0">
+```
+
+This applies to all three toolbar wrapper locations:
+1. `#detailContent` template (detail pages)
+2. Records section (desktop non-detail)
+3. Financials section (desktop non-detail)
+
+### The rule
+
+Whenever the collapsible subnav is present, the toolbar needs `margin-left: 227px` when **either** collapsed on desktop **or** on mobile (where the subnav outer width is 0 but the floating header still renders).
+
+---
+
+## 28. compactAll Anchor Priority for Dragged Widgets
+
+**File:** `src/app/shell/services/dashboard-layout-engine.ts`
+
+### The bug
+
+After dragging a widget to a new vertical position and releasing, `compactAll()` sorted all widgets by their current tops. If the dragged widget and another widget had the same top value (common when dragging to position 0), the sort was unstable -- sometimes the dragged widget won, sometimes the other widget won. The user would drag w3 to the top, release, and see w1 snap back to position 0 while w3 got pushed down.
+
+### The fix: anchor ID sort priority
+
+`compactAll` now accepts an optional `anchorId` parameter. In `sortWidgetsForCollisionPass`, when two widgets have the same top, the `anchorId` wins the tiebreak:
+
+```typescript
+if (ta !== tb) return ta - tb;
+if (anchorId) {
+  if (a === anchorId) return -1;
+  if (b === anchorId) return 1;
+}
+```
+
+A `_dragDidMove` flag tracks whether the drag actually moved the widget (not just a click). On mouseup after a real drag, `compactAll(interactedId)` passes the dragged widget as the anchor:
+
+```typescript
+this.compactAll(didMove ? interactedId : undefined);
+```
+
+### Regression tests
+
+Two new tests in `dashboard-layout-engine.spec.ts`:
+- `dragged widget gets sort priority and all widgets compact upward` -- w3 dragged to top, gets position 0, w1 and w2 shift down
+- `dragged widget reorders within column and all widgets compact (no gaps)` -- multi-column layout, w3 dragged up in its column, w4 in another column unaffected
+
+### The rule
+
+1. **`compactAll` must always receive the dragged widget ID** after a real move (not a click). Without it, tiebreaks are arbitrary.
+2. **`_dragDidMove` must be set to `true` in `onDocumentMouseMove`** (both mouse and touch paths) and cleared on mouseup and mousedown.
+3. **The anchor ID tiebreak applies to both mobile and desktop** sort paths in `sortWidgetsForCollisionPass`.
+
+---
+
 ## 29. Single ng-content Rule for DashboardShellComponent
 
 **Problem**: Commit `a681948` (PR #56, Apr 3) changed the shell from using `<router-outlet />` in each `@if`/`@else` branch to `<ng-content />` in each branch. This broke canvas mode entirely -- all dashboard pages (Home, Projects, Financials) rendered empty content at >= 1920px viewport. Project detail pages were unaffected because they have their own `<router-outlet />` inside the shell projection, not another `<ng-content />`.
@@ -1335,4 +1509,8 @@ Mobile selected items use:
 | Sidenav overlay (no push) | `dashboard-shell.component.ts`, `project-dashboard.component.html` | `tests/static/dashboard-shell.spec.ts`, `tests/static/project-dashboard.spec.ts` |
 | Consistent 56px nav row height | `src/styles.css` | `tests/static/styles.spec.ts` |
 | Mobile icon centering | `src/styles.css` | `tests/static/styles.spec.ts` (mobile icon-slot auto-fill) |
+| Collapsible subnav no mobile compact | `collapsible-subnav.component.ts` | (visual: resize to mobile, subnav hidden) |
+| Toolbar compact mobile mode | `project-dashboard.component.html`, `project-dashboard.component.ts` | (visual: resize to 580px, search collapses to icon) |
+| Toolbar margin-left collapsed subnav | `project-dashboard.component.html` | (visual: collapse subnav, toolbar clears header) |
+| compactAll anchor priority | `dashboard-layout-engine.ts` | `dashboard-layout-engine.spec.ts` (2 new tests) |
 | Single ng-content (canvas projection) | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` (exactly 1 ng-content, not in conditional) |

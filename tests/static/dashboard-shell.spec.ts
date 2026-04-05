@@ -95,6 +95,16 @@ describe('DashboardShellComponent (regression)', () => {
     });
   });
 
+  describe('weather service initialization', () => {
+    it('imports WeatherService', () => {
+      expect(SRC).toContain('WeatherService');
+    });
+
+    it('calls weatherService.initialize()', () => {
+      expect(SRC).toContain('weatherService.initialize()');
+    });
+  });
+
   describe('desktop reset flyout', () => {
     it('has desktop-reset-flyout class in template', () => {
       expect(SRC).toContain('desktop-reset-flyout');

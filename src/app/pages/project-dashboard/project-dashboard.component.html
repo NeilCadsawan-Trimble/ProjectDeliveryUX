@@ -13,19 +13,33 @@
       </defs>
     </svg>
     <ng-template #childPageSubnav let-config>
-      <div class="bg-card border-default rounded-lg mb-6">
+      <div class="bg-card border-default rounded-lg mb-6" data-toolbar-search>
         <div class="flex items-center justify-between px-4 py-2 gap-4">
-          <div class="flex items-center gap-2 flex-1 max-w-xs">
-            <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
-              <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
-              <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
-                [placeholder]="config.searchPlaceholder" [value]="subnavSearch()" (input)="subnavSearch.set($any($event.target).value)" />
+          @if (isCompactMobile()) {
+            <div class="flex items-center gap-2">
+              <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
+                role="button" tabindex="0" aria-label="Search"
+                (click)="toolbarSearchOpen.set(!toolbarSearchOpen()); $event.stopPropagation()">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">search</i>
+              </div>
+              <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
+                role="button" tabindex="0" aria-label="Filter">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
+              </div>
             </div>
-            <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
-              role="button" tabindex="0" aria-label="Filter">
-              <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
+          } @else {
+            <div class="flex items-center gap-2 flex-1 max-w-xs">
+              <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
+                <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
+                <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
+                  [placeholder]="config.searchPlaceholder" [value]="subnavSearch()" (input)="subnavSearch.set($any($event.target).value)" />
+              </div>
+              <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
+                role="button" tabindex="0" aria-label="Filter">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
+              </div>
             </div>
-          </div>
+          }
           <div class="flex items-center gap-1">
             @if (activeNavItem() === 'drawings' && subnavViewMode() === 'grid' && !isCanvas() && !detailView()) {
               <div class="flex items-center gap-2 mr-2">
@@ -83,12 +97,21 @@
             }
           </div>
         </div>
+        @if (isCompactMobile() && toolbarSearchOpen()) {
+          <div class="px-4 pb-2">
+            <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 w-full">
+              <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
+              <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
+                [placeholder]="config.searchPlaceholder" [value]="subnavSearch()" (input)="subnavSearch.set($any($event.target).value)" />
+            </div>
+          </div>
+        }
       </div>
     </ng-template>
 
     <ng-template #detailContent>
       <div [class]="isCanvasDrawingDetail() || isCanvasPanoramaDetail() ? 'canvas-detail-constrained' : ''">
-        <div class="transition-all duration-200 md:pl-4" [style.margin-left.px]="detailHasSubNav() && !isMobile() && sideSubNavCollapsed() ? 227 : 0">
+        <div class="transition-all duration-200" [style.margin-left.px]="detailHasSubNav() && !isMobile() ? (sideSubNavCollapsed() ? 106 : 16) : 0">
           <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
         </div>
         <div class="transition-[padding] duration-200" [class.md:pl-4]="!sideSubNavCollapsed()">
@@ -1324,20 +1347,22 @@
           <div class="text-2xl font-bold text-foreground">{{ activeRecordsPageLabel() }}@if (activeRecordsPage() === 'rfis') { ({{ projectRfis().length }}) }@if (activeRecordsPage() === 'submittals') { ({{ projectSubmittals().length }}) }@if (activeRecordsPage() === 'daily-reports') { ({{ projectDailyReports().length }}) }@if (activeRecordsPage() === 'punch-items') { ({{ projectPunchItems().length }}) }@if (activeRecordsPage() === 'inspections') { ({{ projectInspections().length }}) }@if (activeRecordsPage() === 'action-items') { ({{ projectAttentionItems().length }}) }</div>
         </div>
         <div class="flex min-h-[calc(100vh-12rem)]">
-            <app-collapsible-subnav
-              icon="clipboard"
-              title="Records"
-              [items]="recordsSubNavItems"
-              [activeItem]="activeRecordsPage()"
-              [collapsed]="sideSubNavCollapsed()"
-              [alerts]="recordsAlerts()"
-              [canvasMode]="isCanvas()"
-              [isMobile]="isMobile()"
-              (itemSelect)="activeRecordsPage.set($event)"
-              (collapsedChange)="sideSubNavCollapsed.set($event)"
-            />
+            @if (!isMobile()) {
+              <app-collapsible-subnav
+                icon="clipboard"
+                title="Records"
+                [items]="recordsSubNavItems"
+                [activeItem]="activeRecordsPage()"
+                [collapsed]="sideSubNavCollapsed()"
+                [alerts]="recordsAlerts()"
+                [canvasMode]="isCanvas()"
+                [isMobile]="false"
+                (itemSelect)="activeRecordsPage.set($event)"
+                (collapsedChange)="sideSubNavCollapsed.set($event)"
+              />
+            }
           <div class="flex-1 flex flex-col gap-6 min-w-0">
-            <div class="transition-all duration-200 md:pl-4" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
+            <div class="transition-all duration-200" [style.margin-left.px]="isMobile() ? 0 : (sideSubNavCollapsed() ? 106 : 16)">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
             </div>
             <div class="transition-[padding] duration-200" [class.md:pl-4]="!sideSubNavCollapsed()">
@@ -2570,22 +2595,24 @@
           </div>
         }
         <div class="flex min-h-[calc(100vh-12rem)]">
-            <app-collapsible-subnav
-              icon="bar_graph"
-              title="Financials"
-              [items]="financialsSubNavItems"
-              [activeItem]="activeFinancialsPage()"
-              [collapsed]="sideSubNavCollapsed()"
-              [alerts]="financialsAlerts()"
-              [canvasMode]="isCanvas()"
-              [isMobile]="isMobile()"
-              (itemSelect)="selectFinancialsSubPage($event)"
-              (collapsedChange)="sideSubNavCollapsed.set($event)"
-            />
+            @if (!isMobile()) {
+              <app-collapsible-subnav
+                icon="bar_graph"
+                title="Financials"
+                [items]="financialsSubNavItems"
+                [activeItem]="activeFinancialsPage()"
+                [collapsed]="sideSubNavCollapsed()"
+                [alerts]="financialsAlerts()"
+                [canvasMode]="isCanvas()"
+                [isMobile]="false"
+                (itemSelect)="selectFinancialsSubPage($event)"
+                (collapsedChange)="sideSubNavCollapsed.set($event)"
+              />
+            }
           <div class="flex-1 flex flex-col min-w-0"
             [class.gap-3]="subledgerCategory()"
             [class.gap-6]="!subledgerCategory()">
-            <div class="transition-all duration-200 md:pl-4" [style.margin-left.px]="sideSubNavCollapsed() && !isMobile() ? 227 : 0">
+            <div class="transition-all duration-200" [style.margin-left.px]="isMobile() ? 0 : (sideSubNavCollapsed() ? 106 : 16)">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: activeFinancialsSubnavConfig() }" />
             </div>
             <div class="transition-[padding] duration-200" [class.md:pl-4]="!sideSubNavCollapsed()">
@@ -4025,11 +4052,31 @@
                 role="button"
                 [attr.aria-label]="item.label"
               >
-                <div class="custom-side-nav-icon-slot">
+                <div class="custom-side-nav-icon-slot relative">
                   <i class="modus-icons text-xl" aria-hidden="true">{{ item.icon }}</i>
+                  @if (navItemAlertCount(item.value) > 0 && !navExpanded()) {
+                    <div class="absolute -top-1 -right-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center text-2xs font-bold px-0.5"
+                      [class.bg-destructive]="navItemHasCritical(item.value)"
+                      [class.text-destructive-foreground]="navItemHasCritical(item.value)"
+                      [class.bg-warning]="!navItemHasCritical(item.value)"
+                      [class.text-warning-foreground]="!navItemHasCritical(item.value)">
+                      {{ navItemAlertCount(item.value) }}
+                    </div>
+                  }
                 </div>
                 @if (navExpanded() && !isMobile()) {
-                  <div class="custom-side-nav-label">{{ item.label }}</div>
+                  <div class="custom-side-nav-label flex items-center gap-2">
+                    <div>{{ item.label }}</div>
+                    @if (navItemAlertCount(item.value) > 0) {
+                      <div class="min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
+                        [class.bg-destructive]="navItemHasCritical(item.value)"
+                        [class.text-destructive-foreground]="navItemHasCritical(item.value)"
+                        [class.bg-warning]="!navItemHasCritical(item.value)"
+                        [class.text-warning-foreground]="!navItemHasCritical(item.value)">
+                        {{ navItemAlertCount(item.value) }}
+                      </div>
+                    }
+                  </div>
                 }
               </div>
             }
@@ -4099,6 +4146,15 @@
               <div class="flex items-center gap-2 px-4 py-3 flex-shrink-0">
                 <i class="modus-icons text-base text-primary" aria-hidden="true">clipboard</i>
                 <div class="text-sm font-semibold text-primary">Records</div>
+                @if (recordsTotalAlertCount() > 0) {
+                  <div class="min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
+                    [class.bg-destructive]="recordsHasCriticalAlert()"
+                    [class.text-destructive-foreground]="recordsHasCriticalAlert()"
+                    [class.bg-warning]="!recordsHasCriticalAlert()"
+                    [class.text-warning-foreground]="!recordsHasCriticalAlert()">
+                    {{ recordsTotalAlertCount() }}
+                  </div>
+                }
               </div>
               <div class="flex-1 overflow-y-auto min-h-0">
                 @for (item of recordsSubNavItems; track item.value) {
@@ -4147,6 +4203,15 @@
               <div class="flex items-center gap-2 px-4 py-3 flex-shrink-0">
                 <i class="modus-icons text-base text-primary" aria-hidden="true">bar_graph</i>
                 <div class="text-sm font-semibold text-primary">Financials</div>
+                @if (financialsTotalAlertCount() > 0) {
+                  <div class="min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
+                    [class.bg-destructive]="financialsHasCriticalAlert()"
+                    [class.text-destructive-foreground]="financialsHasCriticalAlert()"
+                    [class.bg-warning]="!financialsHasCriticalAlert()"
+                    [class.text-warning-foreground]="!financialsHasCriticalAlert()">
+                    {{ financialsTotalAlertCount() }}
+                  </div>
+                }
               </div>
               <div class="flex-1 overflow-y-auto min-h-0">
                 @for (item of financialsSubNavItems; track item.value) {
