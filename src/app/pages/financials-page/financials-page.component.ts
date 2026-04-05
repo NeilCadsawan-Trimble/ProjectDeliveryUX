@@ -13,7 +13,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
-import { ModusBadgeComponent } from '../../components/modus-badge.component';
+import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { CollapsibleSubnavComponent } from '../project-dashboard/components/collapsible-subnav.component';
@@ -26,6 +26,36 @@ import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDat
 import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, JOB_COST_CATEGORIES, CATEGORY_COLORS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
 import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
 import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
+
+type FinDetailType =
+  | 'estimate' | 'changeOrder' | 'invoice' | 'payable' | 'purchaseOrder'
+  | 'contract' | 'billingEvent' | 'payrollRecord' | 'payrollMonthly'
+  | 'subcontractLedger' | 'glEntry' | 'glAccount' | 'cashFlow';
+
+interface FinDetailMeta {
+  title: string;
+  subtitle: string;
+  icon: string;
+  status?: string;
+  statusColor?: ModusBadgeColor;
+  fields: Array<{ label: string; value: string; highlight?: boolean }>;
+}
+
+const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type: FinDetailType }> = {
+  'change-orders': { subPage: 'change-orders', paramKey: 'id', type: 'changeOrder' },
+  'estimates': { subPage: 'estimates', paramKey: 'id', type: 'estimate' },
+  'invoices': { subPage: 'accounts-receivable', paramKey: 'id', type: 'invoice' },
+  'payables': { subPage: 'accounts-payable', paramKey: 'id', type: 'payable' },
+  'purchase-orders': { subPage: 'purchase-orders', paramKey: 'id', type: 'purchaseOrder' },
+  'contracts': { subPage: 'contracts', paramKey: 'id', type: 'contract' },
+  'billing': { subPage: 'job-billing', paramKey: 'id', type: 'billingEvent' },
+  'payroll': { subPage: 'payroll', paramKey: 'id', type: 'payrollRecord' },
+  'payroll-monthly': { subPage: 'payroll', paramKey: 'month', type: 'payrollMonthly' },
+  'subcontract-ledger': { subPage: 'subcontract-ledger', paramKey: 'id', type: 'subcontractLedger' },
+  'gl-entries': { subPage: 'general-ledger', paramKey: 'id', type: 'glEntry' },
+  'gl-accounts': { subPage: 'general-ledger', paramKey: 'code', type: 'glAccount' },
+  'cash-flow': { subPage: 'cash-management', paramKey: 'month', type: 'cashFlow' },
+};
 
 @Component({
   selector: 'app-financials-page',
@@ -362,6 +392,35 @@ import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
             </div>
           </div>
         </div>
+      </div>
+    } @else if (finDetailMeta(); as meta) {
+      <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-20 flex-shrink-0">
+            <i class="modus-icons text-lg text-primary" aria-hidden="true">{{ meta.icon }}</i>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <div class="flex items-center gap-3">
+              <div class="text-2xl font-bold text-foreground truncate">{{ meta.title }}</div>
+              @if (meta.status) {
+                <modus-badge [color]="meta.statusColor ?? 'secondary'" variant="outlined" size="sm">{{ meta.status }}</modus-badge>
+              }
+            </div>
+            <div class="text-sm text-foreground-60">{{ meta.subtitle }}</div>
+          </div>
+        </div>
+
+        <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-muted">
+            @for (field of meta.fields; track field.label) {
+              <div class="bg-card px-5 py-4 flex flex-col gap-1">
+                <div class="text-xs text-foreground-60 uppercase tracking-wide font-semibold">{{ field.label }}</div>
+                <div class="text-base text-foreground" [class.font-bold]="field.highlight" [class.text-primary]="field.highlight">{{ field.value }}</div>
+              </div>
+            }
+          </div>
+        </div>
+
       </div>
     } @else if (activeSubPage() === 'overview') {
     <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
@@ -2133,9 +2192,231 @@ export class FinancialsPageComponent extends DashboardPageBase {
     { value: 'subcontract-ledger', label: 'Subcontract Ledger', icon: 'clipboard' },
   ];
   readonly activeSubPage = signal<string>('overview');
+  readonly finDetailType = signal<FinDetailType | null>(null);
+  readonly finDetailId = signal<string | null>(null);
   readonly finSubnavCollapsed = signal(false);
   readonly finSubpageSearch = signal('');
   readonly finMobileSearchOpen = signal(false);
+
+  readonly finDetailEntity = computed<unknown>(() => {
+    const type = this.finDetailType();
+    const id = this.finDetailId();
+    if (!type || !id) return null;
+    switch (type) {
+      case 'estimate': return this.store.estimates().find(e => e.id === id) ?? null;
+      case 'changeOrder': return this.store.changeOrders().find(co => co.id === id) ?? null;
+      case 'invoice': return this.store.invoices().find(i => i.id === id) ?? null;
+      case 'payable': return this.store.payables().find(p => p.id === id) ?? null;
+      case 'purchaseOrder': return this.store.purchaseOrders().find(po => po.id === id) ?? null;
+      case 'contract': return this.store.contracts().find(c => c.id === id) ?? null;
+      case 'billingEvent': return this.store.billingEvents().find(be => be.id === id) ?? null;
+      case 'payrollRecord': return this.store.payrollRecords().find(pr => pr.id === id) ?? null;
+      case 'subcontractLedger': return this.store.subcontractLedger().find(sl => sl.id === id) ?? null;
+      case 'glEntry': return this.store.glEntries().find(gl => gl.id === id) ?? null;
+      case 'glAccount': return this.store.glAccounts().find(gl => gl.code === id) ?? null;
+      case 'cashFlow': return this.store.cashFlowHistory().find(cf => cf.month === decodeURIComponent(id)) ?? null;
+      case 'payrollMonthly': {
+        const decoded = decodeURIComponent(id);
+        const records = this.store.payrollRecords().filter(r => r.period.startsWith(decoded));
+        return records.length > 0 ? records : null;
+      }
+      default: return null;
+    }
+  });
+
+  readonly finDetailMeta = computed<FinDetailMeta | null>(() => {
+    const type = this.finDetailType();
+    const entity = this.finDetailEntity();
+    if (!type || !entity) return null;
+    switch (type) {
+      case 'estimate': {
+        const e = entity as Estimate;
+        return {
+          title: `Estimate ${e.id}`, subtitle: `${e.project} - ${e.client}`, icon: 'file',
+          status: e.status, statusColor: estimateBadgeColor(e.status),
+          fields: [
+            { label: 'Type', value: e.type },
+            { label: 'Value', value: e.value, highlight: true },
+            { label: 'Requested By', value: e.requestedBy },
+            { label: 'Due Date', value: e.dueDate },
+          ],
+        };
+      }
+      case 'changeOrder': {
+        const co = entity as ChangeOrder;
+        return {
+          title: `Change Order ${co.id}`, subtitle: co.project, icon: 'swap',
+          status: sharedCapitalizeFirst(co.status), statusColor: coBadgeColor(co.status),
+          fields: [
+            { label: 'Type', value: coTypeLabel(co.coType) },
+            { label: 'Amount', value: sharedFormatCurrency(co.amount), highlight: true },
+            { label: 'Requested By', value: co.requestedBy },
+            { label: 'Request Date', value: co.requestDate },
+            { label: 'Reason', value: co.reason },
+            { label: 'Description', value: co.description },
+          ],
+        };
+      }
+      case 'invoice': {
+        const inv = entity as Invoice;
+        const proj = this.store.findProjectById(inv.projectId);
+        return {
+          title: `Invoice ${inv.invoiceNumber}`, subtitle: proj?.name ?? `Project #${inv.projectId}`, icon: 'document',
+          status: sharedCapitalizeFirst(inv.status), statusColor: invoiceStatusBadge(inv.status),
+          fields: [
+            { label: 'Amount', value: sharedFormatCurrency(inv.amount), highlight: true },
+            { label: 'Paid', value: sharedFormatCurrency(inv.amountPaid) },
+            { label: 'Balance', value: sharedFormatCurrency(inv.amount - inv.amountPaid), highlight: true },
+            { label: 'Issue Date', value: inv.issueDate },
+            { label: 'Due Date', value: inv.dueDate },
+            { label: 'Terms', value: inv.terms },
+          ],
+        };
+      }
+      case 'payable': {
+        const p = entity as Payable;
+        const proj = this.store.findProjectById(p.projectId);
+        return {
+          title: `Payable ${p.invoiceNumber}`, subtitle: `${p.vendor} - ${proj?.name ?? ''}`, icon: 'credit_card',
+          status: sharedCapitalizeFirst(p.status), statusColor: payableStatusBadge(p.status),
+          fields: [
+            { label: 'Amount', value: sharedFormatCurrency(p.amount), highlight: true },
+            { label: 'Paid', value: sharedFormatCurrency(p.amountPaid) },
+            { label: 'Balance', value: sharedFormatCurrency(p.amount - p.amountPaid), highlight: true },
+            { label: 'Description', value: p.description },
+            { label: 'Cost Code', value: p.costCode },
+            { label: 'Received', value: p.receivedDate },
+            { label: 'Due Date', value: p.dueDate },
+          ],
+        };
+      }
+      case 'purchaseOrder': {
+        const po = entity as PurchaseOrder;
+        return {
+          title: `PO ${po.poNumber}`, subtitle: `${po.vendor} - ${po.project}`, icon: 'shopping_cart',
+          status: sharedCapitalizeFirst(po.status), statusColor: poStatusBadge(po.status),
+          fields: [
+            { label: 'Amount', value: sharedFormatCurrency(po.amount), highlight: true },
+            { label: 'Received', value: sharedFormatCurrency(po.amountReceived) },
+            { label: 'Description', value: po.description },
+            { label: 'Issue Date', value: po.issueDate },
+            { label: 'Expected Delivery', value: po.expectedDelivery },
+          ],
+        };
+      }
+      case 'contract': {
+        const c = entity as Contract;
+        return {
+          title: c.title, subtitle: `${c.vendor} - ${c.project}`, icon: 'copy_content',
+          status: sharedCapitalizeFirst(c.status), statusColor: contractStatusBadge(c.status),
+          fields: [
+            { label: 'Type', value: contractTypeLabel(c.contractType) },
+            { label: 'Original Value', value: sharedFormatCurrency(c.originalValue), highlight: true },
+            { label: 'Revised Value', value: sharedFormatCurrency(c.revisedValue), highlight: true },
+            { label: 'Scope', value: c.scope },
+            { label: 'Start Date', value: c.startDate },
+            { label: 'End Date', value: c.endDate },
+          ],
+        };
+      }
+      case 'billingEvent': {
+        const be = entity as BillingEvent;
+        const proj = this.store.findProjectById(be.projectId);
+        return {
+          title: `Billing Event ${be.id}`, subtitle: proj?.name ?? `Project #${be.projectId}`, icon: 'invoice',
+          status: sharedCapitalizeFirst(be.status),
+          statusColor: be.status === 'completed' ? 'success' : be.status === 'scheduled' ? 'primary' : 'secondary',
+          fields: [
+            { label: 'Amount', value: sharedFormatCurrency(be.amount), highlight: true },
+            { label: 'Description', value: be.description },
+            { label: 'Billing Date', value: be.billingDate },
+            { label: 'Period', value: be.period },
+          ],
+        };
+      }
+      case 'payrollRecord': {
+        const pr = entity as PayrollRecord;
+        return {
+          title: `Payroll ${pr.period}`, subtitle: `${pr.periodStart} - ${pr.periodEnd}`, icon: 'people_group',
+          status: sharedCapitalizeFirst(pr.status), statusColor: payrollStatusBadge(pr.status),
+          fields: [
+            { label: 'Gross Pay', value: sharedFormatCurrency(pr.grossPay), highlight: true },
+            { label: 'Net Pay', value: sharedFormatCurrency(pr.netPay), highlight: true },
+            { label: 'Taxes', value: sharedFormatCurrency(pr.taxes) },
+            { label: 'Benefits', value: sharedFormatCurrency(pr.benefits) },
+            { label: 'Employees', value: String(pr.employeeCount) },
+            { label: 'Total Hours', value: String(pr.totalHours) },
+            { label: 'Pay Date', value: pr.payDate },
+          ],
+        };
+      }
+      case 'payrollMonthly': {
+        const records = entity as PayrollRecord[];
+        const total = records.reduce((s, r) => s + r.grossPay, 0);
+        const headcount = records.reduce((s, r) => s + r.employeeCount, 0);
+        return {
+          title: `Payroll - ${decodeURIComponent(this.finDetailId()!)}`, subtitle: `${records.length} pay periods`, icon: 'people_group',
+          fields: [
+            { label: 'Total Gross', value: sharedFormatCurrency(total), highlight: true },
+            { label: 'Pay Periods', value: String(records.length) },
+            { label: 'Total Headcount', value: String(headcount) },
+          ],
+        };
+      }
+      case 'subcontractLedger': {
+        const sl = entity as SubcontractLedgerEntry;
+        return {
+          title: `Ledger Entry ${sl.id}`, subtitle: `${sl.vendor} - ${sl.project}`, icon: 'clipboard',
+          status: ledgerTypeLabel(sl.type), statusColor: ledgerTypeBadge(sl.type),
+          fields: [
+            { label: 'Amount', value: sharedFormatCurrency(sl.amount), highlight: true },
+            { label: 'Description', value: sl.description },
+            { label: 'Date', value: sl.date },
+            { label: 'Pay App', value: sl.payApp },
+            { label: 'Period', value: sl.period },
+          ],
+        };
+      }
+      case 'glEntry': {
+        const gl = entity as GLEntry;
+        return {
+          title: `Journal Entry ${gl.id}`, subtitle: `${gl.accountCode} - ${gl.accountName}`, icon: 'file_edit',
+          fields: [
+            { label: 'Debit', value: sharedFormatCurrency(gl.debit), highlight: gl.debit > 0 },
+            { label: 'Credit', value: sharedFormatCurrency(gl.credit), highlight: gl.credit > 0 },
+            { label: 'Balance', value: sharedFormatCurrency(gl.balance) },
+            { label: 'Description', value: gl.description },
+            { label: 'Date', value: gl.date },
+            { label: 'Reference', value: gl.reference },
+            { label: 'Category', value: gl.category },
+          ],
+        };
+      }
+      case 'glAccount': {
+        const acct = entity as GLAccount;
+        return {
+          title: `${acct.code} - ${acct.name}`, subtitle: `${acct.type} Account`, icon: 'list_bulleted',
+          fields: [
+            { label: 'Balance', value: sharedFormatCurrency(acct.balance), highlight: true },
+            { label: 'Account Type', value: acct.type },
+          ],
+        };
+      }
+      case 'cashFlow': {
+        const cf = entity as CashFlowEntry;
+        return {
+          title: `Cash Flow - ${cf.month}`, subtitle: 'Monthly cash flow summary', icon: 'gantt_chart',
+          fields: [
+            { label: 'Inflows', value: sharedFormatCurrency(cf.inflows), highlight: true },
+            { label: 'Outflows', value: sharedFormatCurrency(cf.outflows), highlight: true },
+            { label: 'Net Cash', value: sharedFormatCurrency(cf.netCash), highlight: true },
+            { label: 'Running Balance', value: sharedFormatCurrency(cf.runningBalance) },
+          ],
+        };
+      }
+      default: return null;
+    }
+  });
 
   // Financial data references (reactive via store signals)
   readonly invoices = this.store.invoices;
@@ -2198,10 +2479,10 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private static readonly TITLE_HEIGHT = 80;
   private static readonly NAVKPI_HEIGHT = 512;
   private static readonly NAVKPI_TOP = FinancialsPageComponent.TITLE_HEIGHT + FinancialsPageComponent.G;
-  private static readonly REVENUE_HEIGHT = 384;
-  private static readonly REVENUE_TOP = FinancialsPageComponent.NAVKPI_TOP + FinancialsPageComponent.NAVKPI_HEIGHT + FinancialsPageComponent.G;
+  private static readonly REVENUE_HEIGHT = 512;
+  private static readonly REVENUE_TOP = FinancialsPageComponent.NAVKPI_TOP;
   private static readonly ESTIMATES_HEIGHT = 512;
-  private static readonly ESTIMATES_TOP = FinancialsPageComponent.REVENUE_TOP + FinancialsPageComponent.REVENUE_HEIGHT + FinancialsPageComponent.G;
+  private static readonly ESTIMATES_TOP = FinancialsPageComponent.NAVKPI_TOP + FinancialsPageComponent.NAVKPI_HEIGHT + FinancialsPageComponent.G;
   private static readonly BUDGET_HEIGHT = 512;
   private static readonly BUDGET_TOP = FinancialsPageComponent.ESTIMATES_TOP + FinancialsPageComponent.ESTIMATES_HEIGHT + FinancialsPageComponent.G;
   private static readonly JOB_COSTS_HEIGHT = 576;
@@ -2213,10 +2494,10 @@ export class FinancialsPageComponent extends DashboardPageBase {
     const F = FinancialsPageComponent;
     return {
       widgets: ['finTitle', 'finNavKpi', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
-      layoutStorageKey: 'dashboard-financials:v16',
-      canvasStorageKey: 'canvas-layout:dashboard-financials:v18',
-      defaultColStarts: { finTitle: 1, finNavKpi: 1, finRevenueChart: 1, finOpenEstimates: 1, finBudgetByProject: 1, finJobCosts: 1, finChangeOrders: 1 },
-      defaultColSpans: { finTitle: 16, finNavKpi: 8, finRevenueChart: 16, finOpenEstimates: 16, finBudgetByProject: 16, finJobCosts: 16, finChangeOrders: 16 },
+      layoutStorageKey: 'dashboard-financials:v17',
+      canvasStorageKey: 'canvas-layout:dashboard-financials:v19',
+      defaultColStarts: { finTitle: 1, finNavKpi: 1, finRevenueChart: 9, finOpenEstimates: 1, finBudgetByProject: 1, finJobCosts: 1, finChangeOrders: 1 },
+      defaultColSpans: { finTitle: 16, finNavKpi: 8, finRevenueChart: 8, finOpenEstimates: 16, finBudgetByProject: 16, finJobCosts: 16, finChangeOrders: 16 },
       defaultTops: {
         finTitle: 0,
         finNavKpi: F.NAVKPI_TOP,
@@ -2235,16 +2516,16 @@ export class FinancialsPageComponent extends DashboardPageBase {
         finJobCosts: F.JOB_COSTS_HEIGHT,
         finChangeOrders: F.CO_HEIGHT,
       },
-      canvasDefaultLefts: { finTitle: 0, finNavKpi: 0, finRevenueChart: 0, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
-      canvasDefaultPixelWidths: { finTitle: 1280, finNavKpi: 640, finRevenueChart: 1280, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
+      canvasDefaultLefts: { finTitle: 0, finNavKpi: 0, finRevenueChart: 656, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
+      canvasDefaultPixelWidths: { finTitle: 1280, finNavKpi: 640, finRevenueChart: 624, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
       canvasDefaultTops: {
         finTitle: 16,
         finNavKpi: 16 + F.TITLE_HEIGHT + F.G,
-        finRevenueChart: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G,
-        finOpenEstimates: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.REVENUE_HEIGHT + F.G,
-        finBudgetByProject: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.REVENUE_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G,
-        finJobCosts: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.REVENUE_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G + F.BUDGET_HEIGHT + F.G,
-        finChangeOrders: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.REVENUE_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G + F.BUDGET_HEIGHT + F.G + F.JOB_COSTS_HEIGHT + F.G,
+        finRevenueChart: 16 + F.TITLE_HEIGHT + F.G,
+        finOpenEstimates: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G,
+        finBudgetByProject: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G,
+        finJobCosts: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G + F.BUDGET_HEIGHT + F.G,
+        finChangeOrders: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G + F.BUDGET_HEIGHT + F.G + F.JOB_COSTS_HEIGHT + F.G,
       },
       canvasDefaultHeights: {
         finTitle: F.TITLE_HEIGHT,
@@ -2961,11 +3242,39 @@ export class FinancialsPageComponent extends DashboardPageBase {
     return this.projectJobCosts().find(p => p.projectId === proj.id) ?? null;
   }
 
+  private activateEntityDetail(type: FinDetailType, subPage: string, paramValue: string): void {
+    this.jobCostDetailProject.set(null);
+    this.finDetailType.set(type);
+    this.finDetailId.set(paramValue);
+    this.activeSubPage.set(subPage);
+    this.navHistory.shellBackButton.set({
+      label: 'Back',
+      action: () => this.closeEntityDetail(subPage),
+    });
+    this.navHistory.shellTitleOverride.set(null);
+  }
+
+  closeEntityDetail(returnToSubPage?: string): void {
+    this.finDetailType.set(null);
+    this.finDetailId.set(null);
+    this.navHistory.shellBackButton.set(null);
+    this.navHistory.shellTitleOverride.set(null);
+    const subPage = returnToSubPage ?? this.activeSubPage();
+    if (subPage && subPage !== 'overview') {
+      this.router.navigate(['/financials'], { queryParams: { subpage: subPage } });
+    } else {
+      this.router.navigate(['/financials']);
+    }
+  }
+
   override ngAfterViewInit(): void {
     super.ngAfterViewInit();
 
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const slug = params.get('slug');
+      const routeSegment = this.route.snapshot.url[0]?.path;
+      const routeConfig = routeSegment ? ROUTE_TO_DETAIL[routeSegment] : undefined;
+
       if (slug) {
         const match = this.resolveSlugToProject(slug);
         if (match) {
@@ -2973,8 +3282,17 @@ export class FinancialsPageComponent extends DashboardPageBase {
         } else {
           this.router.navigate(['/financials']);
         }
+      } else if (routeConfig) {
+        const paramValue = params.get(routeConfig.paramKey);
+        if (paramValue) {
+          this.activateEntityDetail(routeConfig.type, routeConfig.subPage, paramValue);
+        } else {
+          this.router.navigate(['/financials']);
+        }
       } else {
         this.jobCostDetailProject.set(null);
+        this.finDetailType.set(null);
+        this.finDetailId.set(null);
         this.navHistory.shellBackButton.set(null);
         this.navHistory.shellTitleOverride.set(null);
       }
