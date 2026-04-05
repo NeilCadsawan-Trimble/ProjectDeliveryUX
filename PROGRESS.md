@@ -3,8 +3,8 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 3, 2026
-**Total Commits**: 193+
+**Last Updated**: April 5, 2026
+**Total Commits**: 200+
 
 ---
 
@@ -29,9 +29,11 @@
 | 15 | Projects Dashboard Layout Alignment | Done | 6/6 |
 | 16 | Risk Tuning, Priority Sort, and Widget Compact Mode | Done | 7/7 |
 | 17 | Sidenav Polish and UI Consistency | Done | 5/5 |
-| 18 | Remaining Work | Not Started | 0/8 |
+| 18 | Canvas Content Alignment and ng-content Fix | Done | 6/6 |
+| 19 | Live Weather Data and Regression Tests | Done | 5/5 |
+| 20 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 155/163 items (95%)
+**Completed**: 166/174 items (95%)
 
 ---
 
@@ -457,7 +459,50 @@ Side navigation overlay behavior, consistent spacing, mobile centering, button s
 
 ---
 
-## Phase 18: Remaining Work
+## Phase 18: Canvas Content Alignment and ng-content Fix (Apr 3--5)
+
+Fixed canvas mode content projection, centering, and grid sizing across all dashboards.
+
+### ng-content Content Projection Fix (Apr 5)
+- [x] Fixed `DashboardShellComponent` canvas mode rendering -- `<ng-content />` was inside `@if`/`@else` branches causing silent content discard; moved to single unconditional slot with CSS class switching (`canvas-content` vs `shell-content-desktop`)
+- [x] Added 4 static regression tests: exactly one `<ng-content />`, not inside conditional blocks, uses both canvas and desktop CSS classes
+
+### Canvas Content Centering (Apr 5)
+- [x] Changed `.canvas-content` from `position: absolute` to `position: fixed` -- matched the navbar's positioning context so both use viewport-relative `left: 50%; transform: translateX(-50%)` centering
+- [x] Removed side padding (`px-4`, `max-w-screen-xl mx-auto`) from Home, Projects, and Financials page root divs in canvas mode via conditional `[class]` bindings
+- [x] Added `!important` overrides on `.canvas-content` and `.canvas-content > *` for `padding-left: 0`, `padding-right: 0`, `margin-left: 0`, `margin-right: 0`, `width: 100%`
+
+### Projects Grid Width Fix (Apr 5)
+- [x] Recalculated `canvasDefaultLefts` and `canvasDefaultPixelWidths` in `projects-page-layout.config.ts` from `CANVAS_STEP = 81` and `GAP_PX = 16` -- old values were based on 1248px (padded) container; new values fill full 1280px (e.g., header width 1248 to 1280, tile width 300 to 308, col-8 left 632 to 648); bumped `canvasStorageKey` from v17 to v18 to invalidate cached layouts
+
+### Skills Documentation
+- [x] Added skill section 29 (single ng-content rule) and section 30 (canvas default pixel values must use CANVAS_STEP = 81) to `dashboard-layout-lessons`
+
+**Tests**: 390+ static tests, type-check, lint, and build all passing
+
+---
+
+## Phase 19: Live Weather Data and Regression Tests (Apr 5)
+
+Connected weather widgets to the OpenWeatherMap API for live forecasts, fixed project route initialization gap, and added comprehensive regression tests.
+
+### Live Weather Integration (PR #58)
+- [x] Created Vercel Edge Function proxy (`api/weather.ts`) -- fetches both current weather and 5-day forecast from OpenWeatherMap API with imperial units, city/state params, and edge caching (15 min s-maxage)
+- [x] Built `WeatherService` with TTL-based caching, concurrent fetch prevention (`fetchInProgress` guard), and per-city deduplication across projects sharing the same location
+
+### Project Route Initialization Fix (PR #58)
+- [x] Fixed live weather not loading on `/project/:slug` routes -- these routes bypass `DashboardShell` so `WeatherService.initialize()` was never called; added initialization directly in `ProjectDashboardComponent.ngOnInit()`
+- [x] Replaced one-shot `initPromise` guard with `fetchInProgress` + `lastSuccessTimestamp` allowing TTL-based retries (fixes HMR stale state); added console.log/warn for fetch success/failure visibility
+
+### Regression Tests (PR #58)
+- [x] Added 23 new static regression tests: `weather-service.spec.ts` (18 tests: initPromise banned, guards present, date filtering, error logging, API proxy structure, seed data dynamic dates), `project-dashboard.spec.ts` (3 tests: WeatherService import/inject/initialize), `dashboard-shell.spec.ts` (2 tests: WeatherService import/initialize)
+
+**PRs**: #58
+**Tests**: 413+ static tests (23 new), type-check, lint, and build all passing
+
+---
+
+## Phase 20: Remaining Work
 
 Features and improvements not yet started.
 
@@ -480,15 +525,16 @@ Features and improvements not yet started.
 
 ## Regression Test Coverage
 
-### Covered (Static Tests -- `tests/static/` -- 390 tests)
+### Covered (Static Tests -- `tests/static/` -- 413+ tests)
 
 | Area | File | Tests |
 |------|------|-------|
-| Dashboard shell | `dashboard-shell.spec.ts` | 32 tests: hamburger, navExpanded, reset flyout, labels, dynamic back button, overlay behavior |
+| Dashboard shell | `dashboard-shell.spec.ts` | 38 tests: hamburger, navExpanded, weather service init, reset flyout, labels, dynamic back button, overlay behavior, single ng-content, canvas/desktop CSS classes |
 | Home page | `home-page.spec.ts` | 11 tests: widgets, urgent needs, weather outlook |
 | Projects page | `projects-page.spec.ts` | 14 structural tests |
 | Financials page | `financials-page.spec.ts` | 6 structural tests |
-| Project dashboard | `project-dashboard.spec.ts` | 112 tests: widgets, weather, tile detail, subnav, layout menu, per-prefix canvas completeness, grid/list parity, toolbar icons, canvas rendering parity, overlay behavior |
+| Project dashboard | `project-dashboard.spec.ts` | 115 tests: widgets, weather service init, tile detail, subnav, layout menu, per-prefix canvas completeness, grid/list parity, toolbar icons, canvas rendering parity, overlay behavior |
+| Weather service | `weather-service.spec.ts` | 18 tests: initPromise banned, fetch guards, date filtering, error logging, API proxy structure, seed data dynamic dates |
 | CSS regressions | `styles.spec.ts` | 22 tests: side nav overflow, reset flyout, canvas navbar, row heights, expanded alignment, mobile centering |
 | Canvas panning | `canvas-panning.spec.ts` | 10 tests: spacebar panning, lock canvas |
 | Canvas grid alignment | `canvas-grid-alignment.spec.ts` | 72 tests: grid alignment, column parity, canvas structure |
@@ -537,6 +583,9 @@ Features and improvements not yet started.
 | Apr 3 | [Risk tuning and priority sort](a29bd855-b58b-4bf6-91ef-c3a10be2e2a3) | Risk distribution fixes (seen keys, year-less dates, coreWarningCount), TILE_VISUAL_ORDER, Sort by Priority menu |
 | Apr 3 | [Widget compact mode](328a8c37-da05-488d-86ec-0a6b40525f96) | RFI/Submittal compact mode ported to project dashboard, colSpan-based responsive switching |
 | Apr 3 | [Sidenav polish](a54ba709-8451-4a34-a90f-ccb02aad30e5) | Sidenav overlay (no push), consistent 56px row heights, mobile icon centering, Create button standardization, title y-coordinate alignment |
+| Apr 3--5 | [Canvas alignment](57efcfde-5b2b-43c8-af3e-933f418e9ae1) | ng-content projection fix, canvas content centering (fixed positioning), side padding removal, projects grid 1248 to 1280 recalculation, skills sections 29-30 |
+| Apr 5 | [Live weather fix](fb55d8c2-9c39-4110-99b0-9930aed93e09) | Weather widget live data, WeatherService init on project routes, date filtering, API proxy, seed data dynamic dates |
+| Apr 5 | [Weather regression tests](current) | 23 new weather regression tests, PR #58 merged to main |
 
 ---
 
@@ -577,6 +626,8 @@ Features and improvements not yet started.
 | `src/app/shell/services/navigation-history.service.ts` | Dynamic back button and shell title override |
 | `src/app/pages/project-dashboard/components/widget-frame.component.ts` | Reusable widget frame with insight badge |
 | `src/app/pages/project-dashboard/components/collapsible-subnav.component.ts` | Collapsible side subnav for canvas/desktop |
+| `src/app/services/weather.service.ts` | Live weather data fetching with TTL cache and concurrent fetch guard |
+| `api/weather.ts` | Vercel Edge Function proxy for OpenWeatherMap API |
 | `src/styles.css` | Design system colors, side nav, canvas layout, custom utilities |
 | `src/app/pages/change-order-detail/change-order-detail-page.component.ts` | Standalone change order detail page |
 | `src/app/pages/estimate-detail/estimate-detail-page.component.ts` | Standalone estimate detail page |

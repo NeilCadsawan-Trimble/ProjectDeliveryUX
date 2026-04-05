@@ -22,7 +22,7 @@ export function buildProjectsLayoutConfig(
   return {
     widgets: ['projsHeader', ...TILE_IDS],
     layoutStorageKey: 'dashboard-projects:v18',
-    canvasStorageKey: 'canvas-layout:dashboard-projects:v17',
+    canvasStorageKey: 'canvas-layout:dashboard-projects:v18',
     defaultColStarts: {
       projsHeader: 1,
       proj1: 1,  proj2: 9,   proj3: 13,
@@ -50,15 +50,15 @@ export function buildProjectsLayoutConfig(
     },
     canvasDefaultLefts: {
       projsHeader: 0,
-      proj1: 0,   proj2: 632, proj3: 948,
-      proj6: 0,   proj7: 316, proj4: 632, proj5: 948,
+      proj1: 0,   proj2: 648, proj3: 972,
+      proj6: 0,   proj7: 324, proj4: 648, proj5: 972,
       proj8: 0,
     },
     canvasDefaultPixelWidths: {
-      projsHeader: 1248,
-      proj1: 616, proj2: 300, proj3: 300,
-      proj4: 300, proj5: 300, proj6: 300, proj7: 300,
-      proj8: 300,
+      projsHeader: 1280,
+      proj1: 632, proj2: 308, proj3: 308,
+      proj4: 308, proj5: 308, proj6: 308, proj7: 308,
+      proj8: 308,
     },
     canvasDefaultTops: {
       projsHeader: 0,

@@ -43,7 +43,9 @@ export interface ModusBadgeProps {
 /**
  * Angular wrapper for the Modus Web Component badge.
  *
- * Consumers can bind to the strongly typed inputs and project arbitrary content inside the badge slot.
+ * The Stencil runtime's inner <span> does not render through the Angular proxy
+ * (same scoped-encapsulation issue as the navbar). We set data-* attributes on
+ * the host so that host-level CSS in styles.css can style the badge directly.
  *
  * @example
  * ```html
@@ -61,6 +63,9 @@ export interface ModusBadgeProps {
       [size]="size()"
       [variant]="variant()"
       [attr.aria-label]="ariaLabel()"
+      [attr.data-color]="color()"
+      [attr.data-size]="size()"
+      [attr.data-variant]="variant()"
     >
       <ng-content />
     </modus-wc-badge>
