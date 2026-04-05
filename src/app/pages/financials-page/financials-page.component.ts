@@ -447,7 +447,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           [style.height.px]="widgetHeights()['finTitle']"
           [style.z-index]="widgetZIndices()['finTitle']"
         >
-          <div class="flex items-center justify-between h-full">
+          <div class="flex items-start justify-between">
             <div>
               <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials Dashboard</div>
               <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
