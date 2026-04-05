@@ -34,8 +34,11 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     style: 'height: 24px',
   },
   styles: [`
-    :host { display: inline-flex; }
+    :host { display: inline-flex; overflow: hidden; max-width: 24px; }
     svg { height: 100%; width: auto; }
+    @media (min-width: 768px) {
+      :host { max-width: none; overflow: visible; }
+    }
   `],
 })
 export class TrimbleLogoComponent {}
