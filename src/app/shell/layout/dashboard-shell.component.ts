@@ -60,9 +60,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'block',
-    '[class.h-screen]': '!isCanvas()',
-    '[class.overflow-hidden]': '!isCanvas()',
+    class: 'block h-screen overflow-hidden',
+    '[class.flex]': '!isCanvas()',
+    '[class.flex-col]': '!isCanvas()',
     '[class.canvas-pan-ready]': 'panning.isPanReady() && !panning.panBlocked()',
     '[class.canvas-panning]': 'panning.isPanning() && !panning.panBlocked()',
     '[class.canvas-locked]': 'panning.panBlocked()',
@@ -72,6 +72,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     '(window:keyup)': 'panning.onKeyUp($event)',
     '(document:mousemove)': 'panning.handleMouseMove($event)',
     '(document:mouseup)': 'panning.handleMouseUp()',
+    '(mousedown)': 'isCanvas() && panning.onPanMouseDown($event)',
   },
   template: `
     <svg aria-hidden="true" class="svg-defs-hidden">
@@ -91,7 +92,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
 
     @if (isCanvas()) {
-      <div class="canvas-host bg-background text-foreground canvas-mode select-none" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
+      <div class="canvas-host bg-background text-foreground canvas-mode select-none" #canvasHost>
 
         <div class="canvas-navbar">
           <div class="app-navbar">
@@ -333,14 +334,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
           <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
         }
 
-        <div class="canvas-content" role="main" id="main-content" tabindex="-1"
-          [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
-          <ng-content />
-        </div>
-
       </div>
     } @else {
-      <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
+      <div class="bg-background text-foreground flex-shrink-0">
           <div class="app-navbar">
             <div class="app-navbar-start">
               <div
@@ -534,17 +530,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 
         <div class="navbar-shadow"></div>
 
-        <div class="flex flex-1 overflow-hidden">
-          <div
-            class="flex-1 overflow-auto bg-background"
-            [class.pl-14]="!isMobile()"
-            role="main"
-            id="main-content"
-            tabindex="-1"
-          >
-            <ng-content />
-          </div>
-        </div>
+        <!-- Desktop content is in the shared content wrapper below -->
 
         @if (!isMobile() || navExpanded()) {
           <div class="custom-side-nav" [class.expanded]="navExpanded()">
@@ -642,6 +628,17 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 
       </div>
     }
+
+    <div
+      [class]="isCanvas() ? 'canvas-content' : 'shell-content-desktop bg-background'"
+      [class.pl-14]="!isMobile() && !isCanvas()"
+      role="main"
+      id="main-content"
+      tabindex="-1"
+      [style.transform]="isCanvas() ? 'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')' : null"
+    >
+      <ng-content />
+    </div>
 
     <ai-assistant-panel
       [controller]="ai"
