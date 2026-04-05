@@ -77,7 +77,7 @@ describe('ProjectDashboardComponent (template regression)', () => {
   describe('navbar fallback hamburger', () => {
     it('uses shell-navbar-hamburger for side-rail alignment', () => {
       const matches = TEMPLATE_SRC.match(/shell-navbar-hamburger/g);
-      expect(matches?.length).toBe(2);
+      expect(matches?.length).toBe(1);
     });
   });
 

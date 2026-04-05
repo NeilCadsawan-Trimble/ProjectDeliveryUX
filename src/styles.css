@@ -1498,6 +1498,12 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   padding: 0 16px;
 }
 
+@media (max-width: 767px) {
+  .shell-navbar-hamburger {
+    margin-left: -2px;
+  }
+}
+
 @media (min-width: 768px) {
   .app-navbar {
     padding: 0 16px 0 12px;
@@ -1519,25 +1525,7 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   gap: 0.25rem;
 }
 
-/*
- * Canvas only (>=1920px): pad the start slot to clear the 56px side-nav rail,
- * and pin the hamburger to that rail.
- */
-@media (min-width: 1920px) {
-  .canvas-navbar .app-navbar-start {
-    padding-left: 56px;
-  }
-
-  .canvas-navbar .shell-navbar-hamburger {
-    position: fixed;
-    left: 4px;
-    top: 4px;
-    width: 48px;
-    height: 48px;
-    border-radius: 0.375rem;
-    z-index: 1002;
-  }
-}
+/* Canvas navbar no longer has a hamburger; side nav provides navigation. */
 
 [data-theme="modus-classic-dark"] .app-navbar {
   background-color: var(--modus-wc-color-gray-10);
@@ -1796,33 +1784,7 @@ modus-wc-progress.progress-primary .modus-wc-progress {
     opacity: 0.5;
   }
 
-  /*
-   * Full-viewport top band behind the centered navbar strip. Without this, only the 1280px
-   * navbar paints while the hamburger is fixed to the left rail -- the rest of the top edge
-   * looks empty and the shell reads as broken.
-   */
-  .canvas-host::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 56px;
-    z-index: 999;
-    pointer-events: none;
-    background-color: var(--modus-wc-color-base-page);
-    border-bottom: 1px solid var(--border);
-  }
-
-  [data-theme='modus-classic-dark'] .canvas-host::after {
-    background-color: var(--modus-wc-color-gray-10);
-  }
-
-  [data-theme='modus-modern-dark'] .canvas-host::after {
-    background-color: var(--modus-wc-color-trimble-gray);
-  }
-
-  /* Navbar: fixed top-center, 1280px */
+  /* Navbar: fixed top-center, 1280px with rounded bottom corners */
   .canvas-navbar {
     position: fixed;
     top: 0;
@@ -1836,19 +1798,9 @@ modus-wc-progress.progress-primary .modus-wc-progress {
 
   .canvas-navbar .app-navbar {
     border-radius: 0 0 12px 12px;
-  }
-
-  .canvas-navbar-shadow {
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 1280px;
-    height: 56px;
-    z-index: 1000;
-    border-radius: 0 0 12px 12px;
-    box-shadow: 0 2px 6px rgba(36, 35, 45, 0.25);
-    pointer-events: none;
+    border: 1px solid var(--border);
+    border-top: none;
+    box-shadow: 0 2px 8px rgba(36, 35, 45, 0.25);
   }
 
   /* Sidenav: fixed left-center, 1000px tall */
@@ -1868,6 +1820,8 @@ modus-wc-progress.progress-primary .modus-wc-progress {
     overflow: visible;
     transition: width 0.2s ease-out;
     border-radius: 0 12px 12px 0;
+    border: 1px solid var(--border);
+    border-left: none;
   }
 
   .canvas-side-nav > div:first-child > .custom-side-nav-item:first-child {
@@ -1882,39 +1836,38 @@ modus-wc-progress.progress-primary .modus-wc-progress {
     width: 240px;
   }
 
-  /* Main content area: 1280px wide, no side margins/padding, centered on canvas */
   .canvas-content {
-    position: relative;
+    position: fixed;
+    left: 50%;
+    transform-origin: 0 0;
     z-index: 1;
     min-height: 100vh;
     width: 1280px;
-    margin-left: auto;
-    margin-right: auto;
     padding-top: 72px; /* navbar (56px) + gap */
-    padding-left: 0;
-    padding-right: 0;
-    transform-origin: 0 0;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
-  /* Remove max-width constraint and side padding from page wrappers in canvas mode;
-     the canvas-content container already enforces 1280px width and must match the
-     navbar container edges exactly on both sides. */
-  .canvas-content .max-w-screen-xl {
-    max-width: none;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  /* Override p-6 shorthand which would re-apply side padding */
-  .canvas-content .p-6 {
-    padding-left: 0;
-    padding-right: 0;
+  /* Force direct children (Angular page hosts) to block-level so width:100%
+     applies, and kill all width constraints / side padding / margin;
+     the container itself enforces 1280px. */
+  .canvas-content > * {
+    display: block !important;
+    max-width: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
   }
 
   /* Drawing detail: expand canvas-content to full viewport width so the
      drawing/PDF container can grow with the browser window. */
   .canvas-content.canvas-drawing-detail {
     width: 100%;
+    left: 0;
+    transform: none !important;
   }
 
   /* Keep back-button and toolbar at the standard 1280px column. */
@@ -2201,8 +2154,11 @@ modus-wc-utility-panel .modus-wc-utility-panel-footer {
 
 /* ── Modus badge host-level overrides ────────────────────────
    The inner <span> rendered by modus-wc-badge's Stencil runtime
-   doesn't appear when used through the Angular proxy component.
-   Style the host element directly using reflected data-* attrs. ── */
+   doesn't appear when used through the Angular proxy component
+   (same scoped-encapsulation issue as the navbar). The Angular
+   wrapper sets data-color, data-size, data-variant attributes
+   so we can style the host element directly. ── */
+
 modus-wc-badge {
   display: inline-flex;
   align-items: center;
@@ -2212,6 +2168,8 @@ modus-wc-badge {
   font-weight: var(--modus-wc-font-weight-semibold, 600);
   border-radius: var(--modus-wc-border-radius-md, 0.25rem);
 }
+
+/* ── Sizes ── */
 modus-wc-badge[data-size="sm"] {
   font-size: var(--modus-wc-font-size-xs, 10px);
   height: 18px;
@@ -2227,10 +2185,95 @@ modus-wc-badge[data-size="lg"] {
   height: 28px;
   padding: 0 var(--modus-wc-spacing-md, 0.75rem);
 }
-modus-wc-badge[data-color="primary"] { background-color: var(--modus-wc-color-info); color: var(--modus-wc-color-base-page); }
-modus-wc-badge[data-color="secondary"] { background-color: var(--modus-wc-color-base-300); color: var(--modus-wc-color-base-content); }
-modus-wc-badge[data-color="tertiary"] { background-color: var(--modus-wc-color-base-200); color: var(--modus-wc-color-base-content); }
-modus-wc-badge[data-color="success"] { background-color: var(--modus-wc-color-success); color: var(--modus-wc-color-base-page); }
-modus-wc-badge[data-color="warning"] { background-color: var(--modus-wc-color-warning); color: var(--modus-wc-color-base-content); }
-modus-wc-badge[data-color="danger"] { background-color: var(--modus-wc-color-error); color: var(--modus-wc-color-base-page); }
-modus-wc-badge[data-color="high-contrast"] { background-color: var(--modus-wc-color-black, #000); color: var(--modus-wc-color-white, #fff); }
+
+/* ── Filled (default variant) ── */
+modus-wc-badge[data-color="primary"]:not([data-variant="outlined"]):not([data-variant="text"]) { background-color: var(--modus-wc-color-info); color: var(--modus-wc-color-base-page); }
+modus-wc-badge[data-color="secondary"]:not([data-variant="outlined"]):not([data-variant="text"]) { background-color: var(--modus-wc-color-base-300); color: var(--modus-wc-color-base-content); }
+modus-wc-badge[data-color="tertiary"]:not([data-variant="outlined"]):not([data-variant="text"]) { background-color: var(--modus-wc-color-base-200); color: var(--modus-wc-color-base-content); }
+modus-wc-badge[data-color="success"]:not([data-variant="outlined"]):not([data-variant="text"]) { background-color: var(--modus-wc-color-success); color: var(--modus-wc-color-base-page); }
+modus-wc-badge[data-color="warning"]:not([data-variant="outlined"]):not([data-variant="text"]) { background-color: var(--modus-wc-color-warning); color: var(--modus-wc-color-base-content); }
+modus-wc-badge[data-color="danger"]:not([data-variant="outlined"]):not([data-variant="text"]) { background-color: var(--modus-wc-color-error); color: var(--modus-wc-color-base-page); }
+modus-wc-badge[data-color="high-contrast"]:not([data-variant="outlined"]):not([data-variant="text"]) { background-color: var(--modus-wc-color-black, #000); color: var(--modus-wc-color-white, #fff); }
+
+/* ── Counter variant: pill shape ── */
+modus-wc-badge[data-variant="counter"] { border-radius: 1rem; }
+
+/* ── Outlined variant ── */
+modus-wc-badge[data-variant="outlined"] {
+  background-color: transparent;
+  border-radius: 1rem;
+  border: 1px solid;
+}
+modus-wc-badge[data-variant="outlined"][data-color="primary"] { border-color: var(--modus-wc-color-info); color: var(--modus-wc-color-info); }
+modus-wc-badge[data-variant="outlined"][data-color="secondary"] { border-color: var(--modus-wc-color-base-300); color: var(--modus-wc-color-base-300); }
+modus-wc-badge[data-variant="outlined"][data-color="tertiary"] { border-color: var(--modus-wc-color-base-200); color: var(--modus-wc-color-base-content); }
+modus-wc-badge[data-variant="outlined"][data-color="success"] { border-color: var(--modus-wc-color-success); color: var(--modus-wc-color-success); }
+modus-wc-badge[data-variant="outlined"][data-color="warning"] { border-color: var(--modus-wc-color-warning); color: var(--modus-wc-color-warning); }
+modus-wc-badge[data-variant="outlined"][data-color="danger"] { border-color: var(--modus-wc-color-error); color: var(--modus-wc-color-error); }
+modus-wc-badge[data-variant="outlined"][data-color="high-contrast"] { border-color: var(--modus-wc-color-base-content); color: var(--modus-wc-color-base-content); }
+
+/* ── Text variant ── */
+modus-wc-badge[data-variant="text"] { background-color: transparent; border: none; }
+modus-wc-badge[data-variant="text"][data-color="primary"] { color: var(--modus-wc-color-info); }
+modus-wc-badge[data-variant="text"][data-color="secondary"] { color: var(--modus-wc-color-base-300); }
+modus-wc-badge[data-variant="text"][data-color="tertiary"] { color: var(--modus-wc-color-base-content); }
+modus-wc-badge[data-variant="text"][data-color="success"] { color: var(--modus-wc-color-success); }
+modus-wc-badge[data-variant="text"][data-color="warning"] { color: var(--modus-wc-color-warning); }
+modus-wc-badge[data-variant="text"][data-color="danger"] { color: var(--modus-wc-color-error); }
+modus-wc-badge[data-variant="text"][data-color="high-contrast"] { color: var(--modus-wc-color-base-content); }
+
+/* ── Classic theme overrides ── */
+[data-theme="modus-classic-light"] modus-wc-badge,
+[data-theme="modus-classic-dark"] modus-wc-badge {
+  border: unset;
+  font-weight: var(--modus-wc-font-weight-bold, 700);
+}
+[data-theme="modus-classic-light"] modus-wc-badge:not([data-variant="counter"]),
+[data-theme="modus-classic-dark"] modus-wc-badge:not([data-variant="counter"]) {
+  border-radius: var(--modus-wc-border-radius-md, 0.25rem);
+}
+[data-theme="modus-classic-light"] modus-wc-badge[data-size="sm"],
+[data-theme="modus-classic-dark"] modus-wc-badge[data-size="sm"] {
+  border-radius: var(--modus-wc-border-radius-sm, 0.125rem);
+  font-size: var(--modus-wc-font-size-xs, 10px);
+  height: 14px;
+  padding: var(--modus-wc-spacing-2xs, 0.125rem) var(--modus-wc-spacing-xs, 0.25rem);
+}
+[data-theme="modus-classic-light"] modus-wc-badge[data-size="md"],
+[data-theme="modus-classic-dark"] modus-wc-badge[data-size="md"] {
+  font-size: var(--modus-wc-font-size-sm, 12px);
+  height: 20px;
+  padding: var(--modus-wc-spacing-xs, 0.25rem) var(--modus-wc-spacing-sm, 0.5rem);
+}
+[data-theme="modus-classic-light"] modus-wc-badge[data-size="lg"],
+[data-theme="modus-classic-dark"] modus-wc-badge[data-size="lg"] {
+  font-size: var(--modus-wc-font-size-md, 14px);
+  height: 28px;
+  padding: var(--modus-wc-spacing-sm, 0.5rem) var(--modus-wc-spacing-md, 0.75rem);
+}
+[data-theme="modus-classic-light"] modus-wc-badge[data-variant="outlined"],
+[data-theme="modus-classic-dark"] modus-wc-badge[data-variant="outlined"] {
+  background-color: transparent;
+  border: 1px solid;
+  border-radius: 1rem;
+}
+[data-theme="modus-classic-light"] modus-wc-badge[data-color="success"]:not([data-variant="outlined"]):not([data-variant="text"]),
+[data-theme="modus-classic-dark"] modus-wc-badge[data-color="success"]:not([data-variant="outlined"]):not([data-variant="text"]) {
+  background-color: var(--modus-wc-color-green-dark, var(--modus-wc-color-success));
+}
+
+/* ── Classic dark overrides ── */
+[data-theme="modus-classic-dark"] modus-wc-badge[data-color="primary"]:not([data-variant="outlined"]):not([data-variant="text"]) {
+  background-color: var(--modus-wc-color-highlight-blue, var(--modus-wc-color-info));
+  color: var(--modus-wc-color-gray-10, var(--modus-wc-color-base-content));
+}
+[data-theme="modus-classic-dark"] modus-wc-badge[data-color="high-contrast"]:not([data-variant="outlined"]):not([data-variant="text"]) {
+  background-color: var(--modus-wc-color-gray-light, #ccc);
+  color: var(--modus-wc-color-gray-10, #171c1e);
+}
+[data-theme="modus-classic-dark"] modus-wc-badge[data-variant="text"][data-color="primary"] {
+  color: var(--modus-wc-color-highlight-blue, var(--modus-wc-color-info));
+}
+[data-theme="modus-classic-dark"] modus-wc-badge[data-variant="text"][data-color="high-contrast"] {
+  color: var(--modus-wc-color-gray-light, #ccc);
+}

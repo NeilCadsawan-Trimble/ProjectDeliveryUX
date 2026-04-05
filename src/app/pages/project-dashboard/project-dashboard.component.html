@@ -3607,14 +3607,6 @@
         <div class="canvas-navbar">
           <div class="app-navbar">
             <div class="app-navbar-start">
-              <div
-                class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
-                role="button" aria-label="Main menu" tabindex="0"
-                (click)="navExpanded.set(!navExpanded())"
-                (keydown.enter)="navExpanded.set(!navExpanded())"
-              >
-                <i class="modus-icons text-lg" aria-hidden="true">menu</i>
-              </div>
               <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
                 <app-trimble-logo />
               </div>
@@ -3722,7 +3714,6 @@
             </div>
           </div>
         </div>
-        <div class="canvas-navbar-shadow navbar-shadow"></div>
 
         <div class="canvas-side-nav" [class.expanded]="navExpanded()">
           <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -3827,8 +3818,8 @@
         }
 
         <div class="canvas-content" [class.canvas-drawing-detail]="isCanvasDrawingDetail()" role="main" id="main-content" tabindex="-1"
-          [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
-          <div [class]="isCanvasDrawingDetail() ? 'py-6 flex flex-col' : 'py-6 max-w-screen-xl mx-auto'"
+          [style.transform]="'translateX(-50%) translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
+          <div [class]="isCanvasDrawingDetail() ? 'py-6 flex flex-col' : 'py-6'"
             [style.height]="isCanvasDrawingDetail() ? 'calc(100vh - 80px)' : null">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>

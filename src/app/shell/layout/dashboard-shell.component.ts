@@ -63,7 +63,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
   host: {
     class: 'block',
     '[class.h-screen]': '!isCanvas()',
-    '[class.overflow-hidden]': '!isCanvas()',
+    '[class.overflow-hidden]': 'true',
     '[class.canvas-pan-ready]': 'panning.isPanReady() && !panning.panBlocked()',
     '[class.canvas-panning]': 'panning.isPanning() && !panning.panBlocked()',
     '[class.canvas-locked]': 'panning.panBlocked()',
@@ -97,14 +97,6 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         <div class="canvas-navbar">
           <div class="app-navbar">
             <div class="app-navbar-start">
-              <div
-                class="shell-navbar-hamburger flex items-center justify-center w-8 h-8 rounded cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150 flex-shrink-0"
-                role="button" aria-label="Main menu" tabindex="0"
-                (click)="navExpanded.set(!navExpanded())"
-                (keydown.enter)="navExpanded.set(!navExpanded())"
-              >
-                <i class="modus-icons text-lg" aria-hidden="true">menu</i>
-              </div>
               <div class="flex items-center cursor-pointer text-primary flex-shrink-0 px-1" role="button" tabindex="0" aria-label="Trimble home" (click)="navigateHome()" (keydown.enter)="navigateHome()">
                 <app-trimble-logo />
               </div>
@@ -220,7 +212,6 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             </div>
           </div>
         </div>
-        <div class="canvas-navbar-shadow"></div>
 
         <div class="canvas-side-nav" [class.expanded]="navExpanded()">
           <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -335,7 +326,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         }
 
         <div class="canvas-content" role="main" id="main-content" tabindex="-1"
-          [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
+          [style.transform]="'translateX(-50%) translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
           <router-outlet />
         </div>
 
@@ -954,7 +945,7 @@ export class DashboardShellComponent implements AfterViewInit {
       this.navExpanded.set(false);
     }
     const target = event.target as HTMLElement;
-    const insideAiPanel = !!target.closest('ai-assistant-panel') || !!target.closest('modus-utility-panel') || !!target.closest('modus-wc-utility-panel');
+    const insideAiPanel = !!target.closest('ai-assistant-panel') || !!target.closest('modus-utility-panel') || !!target.closest('modus-wc-utility-panel') || !!target.closest('[aria-label="AI assistant"]');
     if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !insideAiPanel) {
       this.widgetFocusService.clearSelection();
     }

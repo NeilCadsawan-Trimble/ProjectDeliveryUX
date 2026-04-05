@@ -57,9 +57,8 @@ describe('styles.css regression', () => {
       expect(CSS).toContain("@import '../public/modus-icons.css'");
     });
 
-    it('scopes canvas hamburger rail alignment to .canvas-navbar and min-width 1920px', () => {
-      expect(CSS).toContain('.canvas-navbar .shell-navbar-hamburger');
-      expect(CSS).toMatch(/@media\s*\(\s*min-width:\s*1920px\s*\)[\s\S]*\.canvas-navbar[\s\S]*padding-left:\s*56px/);
+    it('canvas navbar has no hamburger (side nav provides navigation)', () => {
+      expect(CSS).not.toContain('.canvas-navbar .shell-navbar-hamburger');
     });
   });
 
@@ -85,10 +84,15 @@ describe('styles.css regression', () => {
       expect(match![1]).toContain('border-radius');
     });
 
-    it('uses canvas-host::after full-width top band so the navbar rail reads continuous at 1920px+', () => {
-      expect(CSS).toMatch(
-        /@media\s*\(\s*min-width:\s*1920px\s*\)[\s\S]*\.canvas-host::after[\s\S]*height:\s*56px/,
-      );
+    it('does NOT use canvas-host::after full-width top band (navbar is self-contained)', () => {
+      expect(CSS).not.toMatch(/\.canvas-host::after/);
+    });
+
+    it('canvas-navbar .app-navbar has border and shadow for self-contained appearance', () => {
+      const match = CSS.match(/\.canvas-navbar\s+\.app-navbar\s*\{([^}]*)\}/m);
+      expect(match).toBeTruthy();
+      expect(match![1]).toContain('border');
+      expect(match![1]).toContain('box-shadow');
     });
   });
 

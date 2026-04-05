@@ -1477,6 +1477,45 @@ Two new tests in `dashboard-layout-engine.spec.ts`:
 
 ---
 
+## 30. Canvas Default Pixel Values Must Use CANVAS_STEP = 81
+
+**Problem**: The projects page `canvasDefaultLefts` and `canvasDefaultPixelWidths` in `projects-page-layout.config.ts` were hardcoded for a 1248px container (the old width when `px-4` padding was present on the content area). After removing side padding to make the canvas content 1280px, the widget grid only filled 1248px, leaving a 32px gap on the right side.
+
+**Root cause**: The `canvasDefaultLefts` and `canvasDefaultPixelWidths` are manually authored pixel values, not computed from `CANVAS_STEP`. When the content area width changed from 1248px to 1280px, these values became stale. The old values used an implicit step of ~79px (`1248 / 16`), but the engine's `CANVAS_STEP` is 81, which produces a 1280px grid (`16 * 81 - 16 = 1280`).
+
+**Correct formula** for any canvas default pixel layout:
+
+```
+left  = column * CANVAS_STEP           (0, 81, 162, 243, 324, ..., 972, 1053, ...)
+width = colSpan * CANVAS_STEP - GAP_PX (4-col: 308, 8-col: 632, 16-col: 1280)
+```
+
+Where `CANVAS_STEP = 81` and `GAP_PX = 16`.
+
+**Reference values** (4-column positions):
+
+| Column | Left |
+|--------|------|
+| 0      | 0    |
+| 4      | 324  |
+| 8      | 648  |
+| 12     | 972  |
+
+| Span | Width |
+|------|-------|
+| 4    | 308   |
+| 8    | 632   |
+| 12   | 956   |
+| 16   | 1280  |
+
+**Rightmost edge check**: The rightmost widget must end at exactly 1280px (`left + width = 1280`). For span-4 at col 12: `972 + 308 = 1280`.
+
+**Cache invalidation**: When updating canvas defaults, bump the `canvasStorageKey` version (e.g., `v17` to `v18`) so cached layouts in localStorage are discarded and the new defaults take effect.
+
+**Rule**: Every `canvasDefaultLefts` and `canvasDefaultPixelWidths` value in any `*-layout.config.ts` file must be derived from `CANVAS_STEP = 81` and `GAP_PX = 16`. Never use values from a padded or narrower container width. Always verify the rightmost widget's right edge equals 1280.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1514,3 +1553,4 @@ Two new tests in `dashboard-layout-engine.spec.ts`:
 | Toolbar margin-left collapsed subnav | `project-dashboard.component.html` | (visual: collapse subnav, toolbar clears header) |
 | compactAll anchor priority | `dashboard-layout-engine.ts` | `dashboard-layout-engine.spec.ts` (2 new tests) |
 | Single ng-content (canvas projection) | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` (exactly 1 ng-content, not in conditional) |
+| Canvas default pixel values (1280px grid) | `*-layout.config.ts` (`canvasDefaultLefts`, `canvasDefaultPixelWidths`) | Build verification; visual test (rightmost widget edge = 1280) |

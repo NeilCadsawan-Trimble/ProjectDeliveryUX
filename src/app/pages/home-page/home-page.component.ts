@@ -77,7 +77,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
     '(document:click)': 'onDocumentClick($event)',
   },
   template: `
-    <div [class]="isCanvasMode() ? 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto pointer-events-none' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
+    <div [class]="isCanvasMode() ? 'py-4 md:py-6 pointer-events-none' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
       @if (!isCanvasMode()) {
       <div #pageHeader>
       <div class="flex items-start justify-between mb-6">

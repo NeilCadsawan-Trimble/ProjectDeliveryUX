@@ -100,7 +100,7 @@ import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
 
     @if (jobCostDetailProject(); as project) {
       <!-- Job Cost Detail View -->
-      <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
+      <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
         <div class="flex items-center gap-3 mb-6">
           <div class="flex flex-col">
             <div class="text-2xl font-bold text-foreground">{{ project.projectName }}</div>
@@ -364,7 +364,7 @@ import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
         </div>
       </div>
     } @else if (activeSubPage() === 'overview') {
-    <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
+    <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
       @if (!isCanvasMode()) {
       <div #pageHeader>
       <!-- Page header -->
