@@ -22,7 +22,7 @@ export function buildProjectsLayoutConfig(
   return {
     widgets: ['projsHeader', ...TILE_IDS],
     layoutStorageKey: 'dashboard-projects:v18',
-    canvasStorageKey: 'canvas-layout:dashboard-projects:v18',
+    canvasStorageKey: 'canvas-layout:dashboard-projects:v19',
     defaultColStarts: {
       projsHeader: 1,
       proj1: 1,  proj2: 9,   proj3: 13,
