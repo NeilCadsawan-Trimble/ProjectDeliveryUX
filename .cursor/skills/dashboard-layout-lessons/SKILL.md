@@ -1285,6 +1285,24 @@ Mobile selected items use:
 
 ---
 
+## 29. Single ng-content Rule for DashboardShellComponent
+
+**Problem**: Commit `a681948` (PR #56, Apr 3) changed the shell from using `<router-outlet />` in each `@if`/`@else` branch to `<ng-content />` in each branch. This broke canvas mode entirely -- all dashboard pages (Home, Projects, Financials) rendered empty content at >= 1920px viewport. Project detail pages were unaffected because they have their own `<router-outlet />` inside the shell projection, not another `<ng-content />`.
+
+**Root cause**: Angular's `<ng-content />` is resolved at **compile time** -- the framework decides where to project content when the component is created. Having two `<ng-content />` slots in mutually exclusive `@if`/`@else` branches is unsupported. Angular either projects into the wrong slot, projects into the first one it encounters, or discards content entirely. This is fundamentally different from `<router-outlet />`, which is a **runtime directive** that dynamically instantiates/destroys routed components independently.
+
+**Why the old code worked**: Before PR #56, the shell used `<router-outlet />` in both the canvas and desktop branches. Since `<router-outlet />` is a directive (not content projection), Angular creates the routed component inside whichever branch is active. When the branch switches, it destroys and recreates the component. This is fine for `<router-outlet />` but fatal for `<ng-content />`.
+
+**Fix**: Moved the single `<ng-content />` **outside** all `@if`/`@else` blocks. The canvas and desktop chrome (navbars, sidenavs) remain inside their respective conditional branches, but the content wrapper is always rendered. CSS class bindings (`canvas-content` vs `shell-content-desktop`) switch styling between modes. The `canvas-host` div became `position: fixed` (no layout impact), and the host element handles panning mousedown.
+
+**Rule**: The `DashboardShellComponent` must have **exactly one** `<ng-content />` in its template, and it must **never** be inside an `@if`, `@else`, `@for`, or `@switch` block. This is enforced by a static regression test.
+
+**Static test**: `tests/static/dashboard-shell.spec.ts` -- "has exactly ONE `<ng-content />` in the template" and "ng-content is NOT inside an @if or @else block".
+
+**General principle**: Never place `<ng-content />` inside conditional template blocks (`@if`, `@else`, `@switch`, `@for`). Use `<router-outlet />` if you need dynamic content in conditional branches, or restructure so the content wrapper is unconditional and styling changes via CSS classes.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1317,3 +1335,4 @@ Mobile selected items use:
 | Sidenav overlay (no push) | `dashboard-shell.component.ts`, `project-dashboard.component.html` | `tests/static/dashboard-shell.spec.ts`, `tests/static/project-dashboard.spec.ts` |
 | Consistent 56px nav row height | `src/styles.css` | `tests/static/styles.spec.ts` |
 | Mobile icon centering | `src/styles.css` | `tests/static/styles.spec.ts` (mobile icon-slot auto-fill) |
+| Single ng-content (canvas projection) | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` (exactly 1 ng-content, not in conditional) |

@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: Apr 3, 2026
+**Current window**: Apr 5, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -95,12 +95,29 @@ If the date matches today, skip this section and proceed normally.
   8. Updated `PROGRESS.md` with Phase 17 (5 items), updated test counts to 390, added chat session entry.
   9. Pushed to GitHub, created PR #56, merged to main.
 
+### Session 18 (Apr 4)
+- **Topic**: Skills documentation for subnav, toolbar, and layout engine changes
+- **What happened**:
+  1. Added sections 25-28 to `dashboard-layout-lessons` SKILL.md.
+
+### Session 19 (Apr 5)
+- **Topic**: Canvas mode broken on Vercel -- ng-content content projection bug
+- **What happened**:
+  1. Diagnosed root cause: `DashboardShellComponent` had two `<ng-content />` slots in `@if (isCanvas())`/`@else` branches. Angular's content projection can't handle this -- projected `<router-outlet />` from `DashboardLayoutComponent` was silently discarded.
+  2. Bug was introduced in commit `a681948` (PR #56, Apr 3) which converted `<router-outlet />` to `<ng-content />` for content projection architecture. The conversion maintained the two-branch pattern that worked with `<router-outlet />` but is fatal for `<ng-content />`.
+  3. Fix: moved the single `<ng-content />` outside all `@if`/`@else` blocks. Content wrapper uses CSS class bindings (`canvas-content` vs `shell-content-desktop`) to switch styling. `canvas-host` became `position: fixed` (no layout impact). Host element now handles panning mousedown.
+  4. Added 4 new static regression tests in `tests/static/dashboard-shell.spec.ts`: "has exactly ONE ng-content", "ng-content is NOT inside an @if or @else block", "uses canvas-content class", "uses shell-content-desktop class".
+  5. Added section 29 to `dashboard-layout-lessons` SKILL.md documenting the rule and root cause.
+  6. Added entry to Known Fragile Areas table in longterm-memory.mdc.
+  7. All 36 shell static tests pass. All lint + type-check pass. Build clean.
+  8. Pushed fix to `dev` (commit `647223a`). Vercel preview will auto-deploy.
+
 ## Active Context
 
-- On `dev` branch, up to date with origin/dev.
-- PR #56 merged to main. Vercel should auto-deploy.
-- Pre-existing SVG color lint violations remain (17 AI icon gradients) -- not related to changes.
+- On `dev` branch, ahead of origin/dev by 0 commits (pushed).
+- Canvas mode fix deployed to Vercel preview.
+- Need to merge `dev` to `main` for production Vercel deployment.
 
 ## Pending Items
 
-- None currently.
+- Merge `dev` to `main` for production Vercel deployment (when ready).

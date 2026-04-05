@@ -48,13 +48,31 @@ describe('DashboardShellComponent (regression)', () => {
   });
 
   describe('main content vs fixed side rail', () => {
-    it('always offsets main for the collapsed rail width when not mobile', () => {
-      expect(SRC).toContain('[class.pl-14]="!isMobile()"');
+    it('always offsets main for the collapsed rail width in desktop mode', () => {
+      expect(SRC).toContain('md:pl-14');
     });
 
     it('does NOT push content when sidenav expands (overlay only)', () => {
       expect(SRC).not.toContain('pl-60');
-      expect(SRC).not.toContain('md:pl-14');
+    });
+  });
+
+  describe('router-outlet in both branches (canvas mode regression)', () => {
+    it('has exactly TWO <router-outlet /> in the template (one per branch)', () => {
+      const matches = SRC.match(/<router-outlet\s*\/>/g) || [];
+      expect(matches.length).toBe(2);
+    });
+
+    it('does NOT use ng-content (shell owns router-outlet directly)', () => {
+      expect(SRC).not.toContain('<ng-content');
+    });
+
+    it('canvas branch has canvas-content wrapping router-outlet', () => {
+      expect(SRC).toContain('class="canvas-content"');
+    });
+
+    it('imports RouterOutlet', () => {
+      expect(SRC).toContain('RouterOutlet');
     });
   });
 

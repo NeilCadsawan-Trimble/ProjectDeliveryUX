@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
 import { DashboardShellComponent } from '../../shell/layout/dashboard-shell.component';
 import type { ShellNavItem, AiResponseFn } from '../../shell/layout/dashboard-shell.component';
 import type { INavbarUserCard } from '../../components/modus-navbar.component';
@@ -9,7 +8,7 @@ import { DataStoreService } from '../../data/data-store.service';
 
 @Component({
   selector: 'app-dashboard-layout',
-  imports: [DashboardShellComponent, RouterOutlet],
+  imports: [DashboardShellComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-dashboard-shell
@@ -21,9 +20,7 @@ import { DataStoreService } from '../../data/data-store.service';
       [defaultAiSuggestions]="defaultAiSuggestions"
       [aiWelcomeText]="'Ask me about projects, estimates, budgets, or team status.'"
       [aiPlaceholder]="'Ask about your projects...'"
-    >
-      <router-outlet />
-    </app-dashboard-shell>
+    />
   `,
 })
 export class DashboardLayoutComponent {

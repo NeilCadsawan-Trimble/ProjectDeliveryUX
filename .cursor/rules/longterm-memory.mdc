@@ -119,6 +119,7 @@ These areas have broken multiple times. Extra care required:
 | Canvas detail double rAF | Single rAF reads stale dimensions, pushes incorrectly | Always use double `requestAnimationFrame` before push; see skill section 7 |
 | Canvas zoom macOS axis swap | macOS swaps deltaY→deltaX when Shift held; deltaY is 0, zoom direction resolves wrong | Use `Math.abs` comparison of both axes; pick whichever is larger |
 | Navbar native rendering (Stencil/Angular 20) | `modus-wc-toolbar` fails to render in dev mode; developers add/remove custom elements creating duplicates in prod or missing elements in dev. Has broken 5+ times. | Runtime detection via `navbarNativeRendered` signal + conditional fallback. All 4 navbar instances must stay in sync. See skill section 23 |
+| Shell ng-content in conditional branches | Placing `<ng-content />` inside `@if`/`@else` branches silently destroys projected content. Broke ALL dashboard pages in canvas mode for 2 days (PR #56, Apr 3-5). | Shell must have **exactly 1** `<ng-content />` outside ALL conditional blocks. Static test enforces count and nesting. See skill section 29 |
 
 ## Project File Map
 

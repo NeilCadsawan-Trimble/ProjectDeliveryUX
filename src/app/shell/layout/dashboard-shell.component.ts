@@ -12,7 +12,7 @@ import {
   input,
   viewChild,
 } from '@angular/core';
-import { Router, NavigationEnd } from '@angular/router';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 import type { INavbarUserCard } from '../../components/modus-navbar.component';
@@ -52,6 +52,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 @Component({
   selector: 'app-dashboard-shell',
   imports: [
+    RouterOutlet,
     ModusTextInputComponent,
     AiIconComponent,
     AiAssistantPanelComponent,
@@ -60,9 +61,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'block h-screen overflow-hidden',
-    '[class.flex]': '!isCanvas()',
-    '[class.flex-col]': '!isCanvas()',
+    class: 'block',
+    '[class.h-screen]': '!isCanvas()',
+    '[class.overflow-hidden]': '!isCanvas()',
     '[class.canvas-pan-ready]': 'panning.isPanReady() && !panning.panBlocked()',
     '[class.canvas-panning]': 'panning.isPanning() && !panning.panBlocked()',
     '[class.canvas-locked]': 'panning.panBlocked()',
@@ -72,7 +73,6 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     '(window:keyup)': 'panning.onKeyUp($event)',
     '(document:mousemove)': 'panning.handleMouseMove($event)',
     '(document:mouseup)': 'panning.handleMouseUp()',
-    '(mousedown)': 'isCanvas() && panning.onPanMouseDown($event)',
   },
   template: `
     <svg aria-hidden="true" class="svg-defs-hidden">
@@ -92,7 +92,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
 
     @if (isCanvas()) {
-      <div class="canvas-host bg-background text-foreground canvas-mode select-none" #canvasHost>
+      <div class="canvas-host bg-background text-foreground canvas-mode select-none" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
 
         <div class="canvas-navbar">
           <div class="app-navbar">
@@ -334,9 +334,14 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
           <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
         }
 
+        <div class="canvas-content" role="main" id="main-content" tabindex="-1"
+          [style.transform]="'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
+          <router-outlet />
+        </div>
+
       </div>
     } @else {
-      <div class="bg-background text-foreground flex-shrink-0">
+      <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
           <div class="app-navbar">
             <div class="app-navbar-start">
               <div
@@ -626,19 +631,14 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
           <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
         }
 
+        <div class="flex flex-1 overflow-hidden">
+          <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+            <router-outlet />
+          </div>
+        </div>
+
       </div>
     }
-
-    <div
-      [class]="isCanvas() ? 'canvas-content' : 'shell-content-desktop bg-background'"
-      [class.pl-14]="!isMobile() && !isCanvas()"
-      role="main"
-      id="main-content"
-      tabindex="-1"
-      [style.transform]="isCanvas() ? 'translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')' : null"
-    >
-      <ng-content />
-    </div>
 
     <ai-assistant-panel
       [controller]="ai"
