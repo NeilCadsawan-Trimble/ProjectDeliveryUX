@@ -78,8 +78,7 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
   },
   template: `
     <div [class]="isCanvasMode() ? 'py-4 md:py-6 pointer-events-none' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
-      @if (!isCanvasMode()) {
-      <div #pageHeader>
+      <div #pageHeader class="pointer-events-auto">
       <div class="flex items-start justify-between mb-4">
         <div>
           <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Frank</div>
@@ -87,7 +86,6 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
         </div>
       </div>
       </div>
-      }
 
       <div
         [class]="isCanvasMode() ? 'relative overflow-visible pointer-events-none' : isMobile() ? 'relative' : 'relative widget-grid-desktop'"
