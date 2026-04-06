@@ -25,7 +25,48 @@
             <i class="modus-icons text-base" aria-hidden="true">calendar</i>
           </div>
         </div>
-        <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left">Create</modus-button>
+        <div class="relative" data-create-dropdown>
+          <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left"
+            (buttonClick)="toggleCreateMenu($event)">Create</modus-button>
+          @if (createMenuOpen()) {
+          <div class="absolute right-0 top-full mt-1 w-72 bg-card border-default rounded-lg shadow-dropdown z-50 overflow-hidden">
+            <div class="p-2 border-bottom-default">
+              <modus-text-input
+                placeholder="Search items..."
+                [includeSearch]="true"
+                [includeClear]="!!createSearchQuery()"
+                [value]="createSearchQuery()"
+                (inputChange)="onCreateSearchInput($event)"
+                (inputClear)="createSearchQuery.set('')"
+              />
+            </div>
+            @if (!createSearchQuery()) {
+            <div class="p-2">
+              <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wider px-2 py-1.5">Frequently Used</div>
+              @for (item of frequentlyUsedItems; track item.value) {
+              <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
+                (click)="selectCreateItem(item)">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
+                <div class="text-sm text-foreground">{{ item.label }}</div>
+              </div>
+              }
+            </div>
+            } @else {
+            <div class="p-2 max-h-64 overflow-y-auto">
+              @for (item of filteredCreateItems(); track item.value) {
+              <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
+                (click)="selectCreateItem(item)">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
+                <div class="text-sm text-foreground">{{ item.label }}</div>
+              </div>
+              } @empty {
+              <div class="text-sm text-foreground-40 px-2 py-3 text-center">No items found</div>
+              }
+            </div>
+            }
+          </div>
+          }
+        </div>
       </div>
     </div>
     <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 mt-1.5">
@@ -66,7 +107,7 @@
 
     @if (isCanvasMode()) {
     <div
-      class="absolute overflow-hidden"
+      class="absolute overflow-visible"
       [attr.data-widget-id]="'projsHeader'"
       [style.top.px]="widgetTops()['projsHeader']"
       [style.left.px]="widgetLefts()['projsHeader']"
@@ -101,8 +142,47 @@
             }
           </div>
         </div>
-        <div class="flex items-center gap-2 flex-shrink-0 mt-1">
-          <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left">Create</modus-button>
+        <div class="relative flex-shrink-0 mt-1" data-create-dropdown>
+          <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left"
+            (buttonClick)="toggleCreateMenu($event)">Create</modus-button>
+          @if (createMenuOpen()) {
+          <div class="absolute right-0 top-full mt-1 w-72 bg-card border-default rounded-lg shadow-dropdown z-50 overflow-hidden">
+            <div class="p-2 border-bottom-default">
+              <modus-text-input
+                placeholder="Search items..."
+                [includeSearch]="true"
+                [includeClear]="!!createSearchQuery()"
+                [value]="createSearchQuery()"
+                (inputChange)="onCreateSearchInput($event)"
+                (inputClear)="createSearchQuery.set('')"
+              />
+            </div>
+            @if (!createSearchQuery()) {
+            <div class="p-2">
+              <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wider px-2 py-1.5">Frequently Used</div>
+              @for (item of frequentlyUsedItems; track item.value) {
+              <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
+                (click)="selectCreateItem(item)">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
+                <div class="text-sm text-foreground">{{ item.label }}</div>
+              </div>
+              }
+            </div>
+            } @else {
+            <div class="p-2 max-h-64 overflow-y-auto">
+              @for (item of filteredCreateItems(); track item.value) {
+              <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
+                (click)="selectCreateItem(item)">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
+                <div class="text-sm text-foreground">{{ item.label }}</div>
+              </div>
+              } @empty {
+              <div class="text-sm text-foreground-40 px-2 py-3 text-center">No items found</div>
+              }
+            </div>
+            }
+          </div>
+          }
         </div>
       </div>
     </div>

@@ -45,6 +45,8 @@ import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import type { Milestone, TeamMember, Risk } from '../../data/project-data';
 import { TILE_IDS, TILE_VISUAL_ORDER, buildProjectsLayoutConfig } from './projects-page-layout.config';
 import { rewriteDynamicNeeds, injectScheduleOverdue, sortProjectsByUrgency, rewriteBudgetRisk } from './projects-page-utils';
+import { ModusTextInputComponent } from '../../components/modus-text-input.component';
+import { RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, type NavItem } from '../project-dashboard/project-dashboard.config';
 
 type ContentBlock = 'owner' | 'schedule' | 'budget' | 'weather'
   | 'urgentNeeds' | 'sparkline' | 'costBreakdown' | 'insight' | 'moreNeeds'
@@ -92,13 +94,15 @@ const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline
 
 @Component({
   selector: 'app-projects-page',
-  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent, ModusButtonComponent, ChartComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent, ModusButtonComponent, ModusTextInputComponent, ChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
     '(document:touchmove)': 'onDocumentTouchMove($event)',
     '(document:touchend)': 'onDocumentTouchEnd()',
+    '(document:click)': 'onDocumentClick($event)',
+    '(document:keydown.escape)': 'onEscapeKey()',
   },
   templateUrl: './projects-page.component.html',
 })
@@ -133,6 +137,21 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     return cols > 0 && cols < 4;
   });
   readonly forecastDays = signal(3);
+
+  private static readonly ALL_CREATE_ITEMS: NavItem[] = [...RECORDS_SUB_NAV_ITEMS, ...FINANCIALS_SUB_NAV_ITEMS];
+  private static readonly FREQUENTLY_USED: NavItem[] = [
+    { value: 'daily-reports', label: 'Daily Report', icon: 'calendar' },
+    { value: 'rfis', label: 'RFI', icon: 'help' },
+    { value: 'general-invoices', label: 'Invoice', icon: 'invoice' },
+  ];
+  readonly createMenuOpen = signal(false);
+  readonly createSearchQuery = signal('');
+  readonly filteredCreateItems = computed(() => {
+    const q = this.createSearchQuery().toLowerCase().trim();
+    if (!q) return [];
+    return ProjectsPageComponent.ALL_CREATE_ITEMS.filter(item => item.label.toLowerCase().includes(q));
+  });
+  readonly frequentlyUsedItems = ProjectsPageComponent.FREQUENTLY_USED;
 
   readonly today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -967,5 +986,37 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
       this._compactMq.addEventListener('change', this._compactMqHandler);
       this.destroyRef.onDestroy(() => this._compactMq?.removeEventListener('change', this._compactMqHandler));
     }
+  }
+
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (this.createMenuOpen() && !target.closest('[data-create-dropdown]')) {
+      this.createMenuOpen.set(false);
+      this.createSearchQuery.set('');
+    }
+  }
+
+  onEscapeKey(): void {
+    if (this.createMenuOpen()) {
+      this.createMenuOpen.set(false);
+      this.createSearchQuery.set('');
+    }
+  }
+
+  toggleCreateMenu(event: MouseEvent | KeyboardEvent): void {
+    event.stopPropagation();
+    const opening = !this.createMenuOpen();
+    this.createMenuOpen.set(opening);
+    if (!opening) this.createSearchQuery.set('');
+  }
+
+  onCreateSearchInput(event: Event): void {
+    const value = (event as CustomEvent)?.detail?.target?.value ?? (event?.target as HTMLInputElement)?.value ?? '';
+    this.createSearchQuery.set(value);
+  }
+
+  selectCreateItem(item: NavItem): void {
+    this.createMenuOpen.set(false);
+    this.createSearchQuery.set('');
   }
 }
