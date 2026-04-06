@@ -130,6 +130,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   private _resizeStartH = 0;
   private _resizeStartW = 0;
   private _resizeStartL = 0;
+  private _hResizeActive = false;
 
   private _resizeSnapshot: Record<string, {
     left: number; width: number; top: number; height: number;
@@ -533,6 +534,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this._resizeEdge = edge;
     this._resizeStartY = event.clientY;
     this._resizeStartX = event.clientX;
+    this._hResizeActive = dir === 'h';
     if (dir === 'v' || dir === 'both') {
       this._resizeStartH = this.widgetHeights()[target] ?? 400;
     }
@@ -564,6 +566,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this._resizeEdge = edge;
     this._resizeStartY = touch.clientY;
     this._resizeStartX = touch.clientX;
+    this._hResizeActive = dir === 'h';
     if (this._resizeDir === 'v' || this._resizeDir === 'both') {
       this._resizeStartH = this.widgetHeights()[target] ?? 400;
     }
@@ -618,6 +621,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.moveTargetId.set(null);
     this._resizeTarget = null;
     this._resizeEdge = 'right';
+    this._hResizeActive = false;
     this._resizeSnapshot = null;
     this._collisionSortBaseline = null;
     if (hadInteraction) {
@@ -1106,7 +1110,15 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       const newH = Math.round(raw / 16) * 16;
       this.widgetHeights.update((h) => ({ ...h, [id]: newH }));
     }
-    if (this._resizeDir === 'h' || this._resizeDir === 'both') {
+
+    if (this._resizeDir === 'both' && !this._hResizeActive) {
+      const hDelta = Math.abs(event.clientX - this._resizeStartX) / z;
+      if (hDelta >= this.currentStep / 2) {
+        this._hResizeActive = true;
+      }
+    }
+
+    if ((this._resizeDir === 'h' || this._resizeDir === 'both') && this._hResizeActive) {
       const hStep = this.currentStep;
       const minResizeCols = 4;
       const minW = minResizeCols * hStep - gap;
@@ -1151,7 +1163,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
     if (this.isCanvasMode()) {
       this.syncColSpansFromPixelWidths();
-    } else {
+    } else if (this._hResizeActive) {
       this.syncColsFromPixelPositions();
     }
   }
@@ -1293,7 +1305,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const mobile = this.isMobile();
 
     const isHResize = !mobile && this._resizeTarget === movedId
-      && (this._resizeDir === 'h' || this._resizeDir === 'both')
+      && this._hResizeActive
       && this._resizeSnapshot != null;
 
     if (isHResize) {
@@ -1344,7 +1356,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     for (const id of sorted) {
       if (id === movedId || activeSet.has(id)) continue;
       if (locked[id]) { placed.push(id); continue; }
-      let y = 0;
+      let y = tops[id];
       let settled = false;
       while (!settled) {
         settled = true;
@@ -1735,7 +1747,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
     for (const id of sorted) {
       if (lockedState[id]) { placed.push(id); continue; }
-      let y = 0;
+      let y = tops[id];
       let settled = false;
       while (!settled) {
         settled = true;

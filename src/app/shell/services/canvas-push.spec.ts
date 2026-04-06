@@ -767,20 +767,18 @@ describe('runCanvasPushBfs', () => {
       assertNoPairwiseOverlap(rects, GAP);
     });
 
-    it('home page with locked header does not displace header', () => {
+    it('home page KPI widget participates in push as regular widget', () => {
       const rects: Record<string, WidgetRect> = {
-        homeHeader:     { left: 0,   top: 16,  width: 1280, height: 190 },
-        homeRfis:       { left: 0,   top: 222, width: 800,  height: 1000 },
-        homeSubmittals: { left: 405, top: 222, width: 389,  height: 340 },
-        homeTimeOff:    { left: 810, top: 222, width: 470,  height: 340 },
-        homeCalendar:   { left: 0,   top: 578, width: 1280, height: 580 },
+        homeKpis:       { left: 0,   top: 16,  width: 389,  height: 264 },
+        homeRfis:       { left: 0,   top: 296, width: 800,  height: 1000 },
+        homeSubmittals: { left: 405, top: 296, width: 389,  height: 340 },
+        homeTimeOff:    { left: 810, top: 296, width: 470,  height: 340 },
+        homeCalendar:   { left: 0,   top: 652, width: 1280, height: 580 },
       };
-      const locked: Record<string, boolean> = { homeHeader: true };
+      const locked: Record<string, boolean> = {};
 
       runCanvasPushBfs('homeRfis', rects, locked, GAP);
 
-      expect(rects['homeHeader'].left).toBe(0);
-      expect(rects['homeHeader'].top).toBe(16);
       assertNoPairwiseOverlap(rects, GAP);
     });
   });
