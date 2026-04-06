@@ -20,7 +20,7 @@ export interface ModusMenuItemProps {
   /** Text label rendered inside the item. */
   label: Components.ModusWcMenuItem['label'];
   /** Icon name displayed before the label. */
-  startIcon?: Components.ModusWcMenuItem['startIcon'];
+  startIcon?: string;
   /** Marks the item as selected. */
   selected?: Components.ModusWcMenuItem['selected'];
   /** Item size token. */
