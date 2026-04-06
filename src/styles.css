@@ -497,6 +497,12 @@
   box-shadow: 0 4px 8px rgba(36, 35, 45, 0.12);
 }
 
+.shadow-dropdown {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
 /* Opacity utilities for design system colors */
 /* Text opacity utilities */
 .text-foreground-80 {

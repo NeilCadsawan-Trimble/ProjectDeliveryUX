@@ -25,7 +25,7 @@ import {
 } from '../../data/dashboard-item-status';
 import { DrawingMarkupToolbarComponent, DRAWING_TOOLS } from '../../shared/detail/drawing-markup-toolbar.component';
 import { PdfViewerComponent } from '../../shared/detail/pdf-viewer.component';
-import { SUBNAV_CONFIGS } from '../project-dashboard/project-dashboard.config';
+import { SUBNAV_CONFIGS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, type NavItem } from '../project-dashboard/project-dashboard.config';
 import type {
   DashboardWidgetId,
   GridPage,
@@ -57,6 +57,8 @@ import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-d
 import { HOME_WIDGETS } from '../../data/widget-registrations';
 import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards.component';
 import { HomeWidgetFrameComponent } from './components/home-widget-frame.component';
+import { ModusButtonComponent } from '../../components/modus-button.component';
+import { ModusTextInputComponent } from '../../components/modus-text-input.component';
 
 @Component({
   selector: 'app-home-page',
@@ -68,6 +70,8 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
     PdfViewerComponent,
     HomeKpiCardsComponent,
     HomeWidgetFrameComponent,
+    ModusButtonComponent,
+    ModusTextInputComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -75,17 +79,62 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
     '(document:mouseup)': 'onDocumentMouseUp()',
     '(document:touchend)': 'onDocumentTouchEnd()',
     '(document:click)': 'onDocumentClick($event)',
+    '(document:keydown.escape)': 'onEscapeKey()',
   },
   template: `
     <div [class]="isCanvasMode() ? 'py-4 md:py-6 pointer-events-none' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
+      @if (!isCanvasMode()) {
       <div #pageHeader class="pointer-events-auto">
       <div class="flex items-start justify-between mb-4">
         <div>
           <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Frank</div>
           <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
         </div>
+        <div class="relative flex-shrink-0" data-create-dropdown #createDropdownDesktop>
+          <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left"
+            (buttonClick)="toggleCreateMenu($event)">Create</modus-button>
+          @if (createMenuOpen()) {
+          <div class="absolute right-0 top-full mt-1 w-72 bg-card border-default rounded-lg shadow-dropdown z-50 overflow-hidden">
+            <div class="p-2 border-bottom-default">
+              <modus-text-input
+                placeholder="Search items..."
+                [includeSearch]="true"
+                [includeClear]="!!createSearchQuery()"
+                [value]="createSearchQuery()"
+                (inputChange)="onCreateSearchInput($event)"
+                (inputClear)="createSearchQuery.set('')"
+              />
+            </div>
+            @if (!createSearchQuery()) {
+            <div class="p-2">
+              <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wider px-2 py-1.5">Frequently Used</div>
+              @for (item of frequentlyUsedItems; track item.value) {
+              <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
+                (click)="selectCreateItem(item)">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
+                <div class="text-sm text-foreground">{{ item.label }}</div>
+              </div>
+              }
+            </div>
+            } @else {
+            <div class="p-2 max-h-64 overflow-y-auto">
+              @for (item of filteredCreateItems(); track item.value) {
+              <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
+                (click)="selectCreateItem(item)">
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
+                <div class="text-sm text-foreground">{{ item.label }}</div>
+              </div>
+              } @empty {
+              <div class="text-sm text-foreground-40 px-2 py-3 text-center">No items found</div>
+              }
+            </div>
+            }
+          </div>
+          }
+        </div>
       </div>
       </div>
+      }
 
       <div
         [class]="isCanvasMode() ? 'relative overflow-visible pointer-events-none' : isMobile() ? 'relative' : 'relative widget-grid-desktop'"
@@ -96,10 +145,10 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
         @for (widgetId of homeWidgets; track widgetId) {
           <div
             [class]="(canvasDetailViews()[widgetId] ? 'absolute pointer-events-auto'
-                   : isMobile() ? 'absolute left-0 right-0 pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden')
-                   : isCanvasMode() ? 'absolute pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden')
+                   : isMobile() ? 'absolute left-0 right-0 pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' || widgetId === 'homeHeader' ? '' : ' overflow-hidden')
+                   : isCanvasMode() ? 'absolute pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' || widgetId === 'homeHeader' ? '' : ' overflow-hidden')
                    : moveTargetId() === widgetId ? 'absolute pointer-events-auto overflow-hidden'
-                   : 'pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' ? '' : ' overflow-hidden'))
+                   : 'pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' || widgetId === 'homeHeader' ? '' : ' overflow-hidden'))
                    + (shouldTransition(widgetId) ? ' widget-detail-transition' : '')"
             [attr.data-widget-id]="widgetId"
             [style.grid-column]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? widgetGridColumns()[widgetId] : null"
@@ -339,9 +388,62 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
             }
           } @else {
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
+              @if (widgetId !== 'homeHeader') {
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
+              }
 
-              @if (widgetId === 'homeKpis') {
+              @if (widgetId === 'homeHeader') {
+                @if (isCanvasMode()) {
+                <div class="flex items-start justify-between h-full">
+                  <div>
+                    <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Frank</div>
+                    <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+                  </div>
+                  <div class="relative flex-shrink-0 mt-1" data-create-dropdown #createDropdownCanvas>
+                    <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left"
+                      (buttonClick)="toggleCreateMenu($event)">Create</modus-button>
+                    @if (createMenuOpen()) {
+                    <div class="absolute right-0 top-full mt-1 w-72 bg-card border-default rounded-lg shadow-dropdown z-50 overflow-hidden">
+                      <div class="p-2 border-bottom-default">
+                        <modus-text-input
+                          placeholder="Search items..."
+                          [includeSearch]="true"
+                          [includeClear]="!!createSearchQuery()"
+                          [value]="createSearchQuery()"
+                          (inputChange)="onCreateSearchInput($event)"
+                          (inputClear)="createSearchQuery.set('')"
+                        />
+                      </div>
+                      @if (!createSearchQuery()) {
+                      <div class="p-2">
+                        <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wider px-2 py-1.5">Frequently Used</div>
+                        @for (item of frequentlyUsedItems; track item.value) {
+                        <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
+                          (click)="selectCreateItem(item)">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
+                          <div class="text-sm text-foreground">{{ item.label }}</div>
+                        </div>
+                        }
+                      </div>
+                      } @else {
+                      <div class="p-2 max-h-64 overflow-y-auto">
+                        @for (item of filteredCreateItems(); track item.value) {
+                        <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
+                          (click)="selectCreateItem(item)">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
+                          <div class="text-sm text-foreground">{{ item.label }}</div>
+                        </div>
+                        } @empty {
+                        <div class="text-sm text-foreground-40 px-2 py-3 text-center">No items found</div>
+                        }
+                      </div>
+                      }
+                    </div>
+                    }
+                  </div>
+                </div>
+                }
+              } @else if (widgetId === 'homeKpis') {
                 <app-home-widget-frame
                   [widgetId]="widgetId"
                   [title]="'Key Metrics'"
@@ -1538,29 +1640,34 @@ export class HomePageComponent extends DashboardPageBase {
   private static readonly ROW_3_TOP = HomePageComponent.ROW_2_TOP + HomePageComponent.ROW_2_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly ROW_4_TOP = HomePageComponent.ROW_3_TOP + HomePageComponent.ROW_3_MAX_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
+  private static readonly CANVAS_HEADER_HEIGHT = 80;
+  private static readonly CANVAS_HEADER_OFFSET = HomePageComponent.CANVAS_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
+
   protected override getEngineConfig(): DashboardLayoutConfig {
+    const H = HomePageComponent.CANVAS_HEADER_OFFSET;
     return {
-      widgets: ['homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
-      layoutStorageKey: 'dashboard-home-v8',
-      canvasStorageKey: 'canvas-layout:dashboard-home:v15',
-      defaultColStarts: { homeKpis: 1, homeUrgentNeeds: 7, homeWeather: 1, homeRfis: 7, homeSubmittals: 12, homeTimeOff: 1, homeCalendar: 7, homeDrawings: 1, homeRecentActivity: 7 },
-      defaultColSpans: { homeKpis: 6, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 10 },
-      defaultTops: { homeKpis: 0, homeUrgentNeeds: 0, homeWeather: HomePageComponent.ROW_2_TOP, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP, homeTimeOff: HomePageComponent.ROW_3_TOP, homeCalendar: HomePageComponent.ROW_3_TOP, homeDrawings: HomePageComponent.ROW_4_TOP, homeRecentActivity: HomePageComponent.ROW_4_TOP },
-      defaultHeights: { homeKpis: HomePageComponent.KPI_HEIGHT, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT, homeWeather: HomePageComponent.ROW_2_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT, homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT, homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: 384 },
-      canvasDefaultLefts: { homeKpis: 0, homeUrgentNeeds: 0, homeWeather: 891, homeTimeOff: 0, homeCalendar: 0, homeRfis: 891, homeSubmittals: 891, homeDrawings: 1296, homeRecentActivity: 0 },
-      canvasDefaultPixelWidths: { homeKpis: 389, homeUrgentNeeds: 875, homeWeather: 389, homeTimeOff: 875, homeCalendar: 875, homeRfis: 389, homeSubmittals: 389, homeDrawings: 470, homeRecentActivity: 875 },
+      widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
+      layoutStorageKey: 'dashboard-home-v9',
+      canvasStorageKey: 'canvas-layout:dashboard-home:v16',
+      defaultColStarts: { homeHeader: 1, homeKpis: 1, homeUrgentNeeds: 7, homeWeather: 1, homeRfis: 7, homeSubmittals: 12, homeTimeOff: 1, homeCalendar: 7, homeDrawings: 1, homeRecentActivity: 7 },
+      defaultColSpans: { homeHeader: 16, homeKpis: 6, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 10 },
+      defaultTops: { homeHeader: 0, homeKpis: 0, homeUrgentNeeds: 0, homeWeather: HomePageComponent.ROW_2_TOP, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP, homeTimeOff: HomePageComponent.ROW_3_TOP, homeCalendar: HomePageComponent.ROW_3_TOP, homeDrawings: HomePageComponent.ROW_4_TOP, homeRecentActivity: HomePageComponent.ROW_4_TOP },
+      defaultHeights: { homeHeader: 0, homeKpis: HomePageComponent.KPI_HEIGHT, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT, homeWeather: HomePageComponent.ROW_2_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT, homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT, homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: 384 },
+      canvasDefaultLefts: { homeHeader: 0, homeKpis: 0, homeUrgentNeeds: 0, homeWeather: 891, homeTimeOff: 0, homeCalendar: 0, homeRfis: 891, homeSubmittals: 891, homeDrawings: 1296, homeRecentActivity: 0 },
+      canvasDefaultPixelWidths: { homeHeader: 1280, homeKpis: 389, homeUrgentNeeds: 875, homeWeather: 389, homeTimeOff: 875, homeCalendar: 875, homeRfis: 389, homeSubmittals: 389, homeDrawings: 470, homeRecentActivity: 875 },
       canvasDefaultTops: {
-        homeKpis: 16,
-        homeUrgentNeeds: 288,
-        homeWeather: 288,
-        homeCalendar: 640,
-        homeSubmittals: 832,
-        homeTimeOff: 1120,
-        homeRfis: 1264,
-        homeRecentActivity: 1568,
-        homeDrawings: 1936,
+        homeHeader: 0,
+        homeKpis: H + 16,
+        homeUrgentNeeds: H + 288,
+        homeWeather: H + 288,
+        homeCalendar: H + 640,
+        homeSubmittals: H + 832,
+        homeTimeOff: H + 1120,
+        homeRfis: H + 1264,
+        homeRecentActivity: H + 1568,
+        homeDrawings: H + 1936,
       },
-      canvasDefaultHeights: { homeKpis: 256, homeUrgentNeeds: 336, homeWeather: 528, homeTimeOff: 432, homeCalendar: 464, homeRfis: 432, homeSubmittals: 416, homeDrawings: 448, homeRecentActivity: 352 },
+      canvasDefaultHeights: { homeHeader: HomePageComponent.CANVAS_HEADER_HEIGHT, homeKpis: 256, homeUrgentNeeds: 336, homeWeather: 528, homeTimeOff: 432, homeCalendar: 464, homeRfis: 432, homeSubmittals: 416, homeDrawings: 448, homeRecentActivity: 352 },
       minColSpan: 4,
       canvasGridMinHeightOffset: 100,
       savesDesktopOnMobile: true,
@@ -1570,7 +1677,7 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   protected override applyInitialHeaderLock(): void {
-    // No locked elements on home dashboard
+    this.engine.widgetLocked.update(l => ({ ...l, homeHeader: true }));
   }
 
   readonly today = new Date().toLocaleDateString('en-US', {
@@ -1693,8 +1800,23 @@ export class HomePageComponent extends DashboardPageBase {
     return results;
   });
 
-  readonly homeWidgets: DashboardWidgetId[] = ['homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'];
+  readonly homeWidgets: DashboardWidgetId[] = ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
+
+  private static readonly ALL_CREATE_ITEMS: NavItem[] = [...RECORDS_SUB_NAV_ITEMS, ...FINANCIALS_SUB_NAV_ITEMS];
+  private static readonly FREQUENTLY_USED: NavItem[] = [
+    { value: 'daily-reports', label: 'Daily Report', icon: 'calendar' },
+    { value: 'rfis', label: 'RFI', icon: 'help' },
+    { value: 'general-invoices', label: 'Invoice', icon: 'invoice' },
+  ];
+  readonly createMenuOpen = signal(false);
+  readonly createSearchQuery = signal('');
+  readonly filteredCreateItems = computed(() => {
+    const q = this.createSearchQuery().toLowerCase().trim();
+    if (!q) return [];
+    return HomePageComponent.ALL_CREATE_ITEMS.filter(item => item.label.toLowerCase().includes(q));
+  });
+  readonly frequentlyUsedItems = HomePageComponent.FREQUENTLY_USED;
 
   private readonly _registerHomeWidgets = (() => {
     this.widgetFocusService.registerWidgets(HOME_WIDGETS);
@@ -1760,6 +1882,17 @@ export class HomePageComponent extends DashboardPageBase {
     if (this.timeOffStatusOpen() !== null && !target.closest('[data-timeoff-dropdown]')) {
       this.timeOffStatusOpen.set(null);
     }
+    if (this.createMenuOpen() && !target.closest('[data-create-dropdown]')) {
+      this.createMenuOpen.set(false);
+      this.createSearchQuery.set('');
+    }
+  }
+
+  onEscapeKey(): void {
+    if (this.createMenuOpen()) {
+      this.createMenuOpen.set(false);
+      this.createSearchQuery.set('');
+    }
   }
 
   private static readonly MOBILE_HEADER_H = 58;
@@ -1805,6 +1938,7 @@ export class HomePageComponent extends DashboardPageBase {
   private applyMobileHeights(): void {
     if (!this.isMobile()) return;
     const heights = { ...this.widgetHeights() };
+    heights['homeHeader'] = 0;
     heights['homeKpis'] = 48 + 12 + this.kpiCards().length * 44 + (this.kpiCards().length - 1) * 8 + 12;
     heights['homeRfis'] = this.mobileWidgetHeight(this.rfiMobileExpanded(), this.filteredRfis().length);
     heights['homeSubmittals'] = this.mobileWidgetHeight(
@@ -2683,5 +2817,22 @@ export class HomePageComponent extends DashboardPageBase {
 
   onCanvasDetailDueDateChange(widgetId: string, newDate: string): void {
     this._detailMgr.updateField(widgetId, 'dueDate', newDate);
+  }
+
+  toggleCreateMenu(event: MouseEvent | KeyboardEvent): void {
+    event.stopPropagation();
+    const opening = !this.createMenuOpen();
+    this.createMenuOpen.set(opening);
+    if (!opening) this.createSearchQuery.set('');
+  }
+
+  onCreateSearchInput(event: Event): void {
+    const value = (event as CustomEvent)?.detail?.target?.value ?? (event?.target as HTMLInputElement)?.value ?? '';
+    this.createSearchQuery.set(value);
+  }
+
+  selectCreateItem(item: NavItem): void {
+    this.createMenuOpen.set(false);
+    this.createSearchQuery.set('');
   }
 }
