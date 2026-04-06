@@ -1,16 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
-import type { Contract, ContractStatus, ContractType } from '../../data/dashboard-data';
+import type { Contract, ContractStatus, ContractType } from '../../data/dashboard-data.types';
 import {
   contractStatusBadge,
   contractTypeLabelShort,
   formatCurrency as sharedFormatCurrency,
   capitalizeFirst as sharedCapitalizeFirst,
-} from '../../data/dashboard-data';
+} from '../../data/dashboard-data.formatters';
 import { DataStoreService } from '../../data/data-store.service';
-import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
+import { DetailPageLayoutComponent } from '../../shared/detail-page-layout.component';
+import { routeParamSignal } from '../../shared/route-param-signal';
+import { useBackNavigation } from '../../shared/go-back';
 
 function statusBgClass(status: ContractStatus): string {
   const map: Record<ContractStatus, string> = { active: 'bg-success', closed: 'bg-secondary', pending: 'bg-warning', draft: 'bg-muted' };
@@ -24,22 +24,18 @@ function typeBadgeVariant(ct: ContractType): 'primary' | 'warning' | 'secondary'
 
 @Component({
   selector: 'app-contract-detail-page',
-  imports: [ModusBadgeComponent],
+  imports: [ModusBadgeComponent, DetailPageLayoutComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="px-4 py-6 md:py-8 max-w-screen-lg mx-auto">
-      @if (contract()) {
-        <div
-          class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
-          role="button" tabindex="0"
-          (click)="goBack()"
-          (keydown.enter)="goBack()"
-        >
-          <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">{{ backLabel }}</div>
-        </div>
-
-        <!-- Header card -->
+    <app-detail-page-layout
+      [hasEntity]="!!contract()"
+      [backLabel]="backLabel"
+      emptyIcon="copy_content"
+      emptyTitle="Contract Not Found"
+      emptyMessage="The requested contract could not be found."
+      (back)="goBack()"
+    >
+      @if (contract(); as c) {
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
             <div class="flex items-center gap-4">
@@ -47,69 +43,66 @@ function typeBadgeVariant(ct: ContractType): 'primary' | 'warning' | 'secondary'
                 <i class="modus-icons text-xl text-primary" aria-hidden="true">copy_content</i>
               </div>
               <div>
-                <div class="text-xl font-semibold text-foreground">{{ contract()!.title }}</div>
-                <div class="text-sm text-foreground-60">{{ contract()!.vendor }}</div>
+                <div class="text-xl font-semibold text-foreground">{{ c.title }}</div>
+                <div class="text-sm text-foreground-60">{{ c.vendor }}</div>
               </div>
             </div>
             <div class="flex items-center gap-2">
               <modus-badge [color]="typeBadgeColor()" variant="outlined" size="md">
-                {{ contractTypeLabelShort(contract()!.contractType) }}
+                {{ contractTypeLabelShort(c.contractType) }}
               </modus-badge>
-              <modus-badge [color]="contractStatusBadge(contract()!.status)" size="md">
-                {{ capitalizeFirst(contract()!.status) }}
+              <modus-badge [color]="contractStatusBadge(c.status)" size="md">
+                {{ capitalizeFirst(c.status) }}
               </modus-badge>
             </div>
           </div>
 
-          <!-- KPI row 1: financials -->
           <div class="px-6 py-6 flex flex-col gap-6">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Original Value</div>
-                <div class="text-xl font-bold text-foreground">{{ formatCurrency(contract()!.originalValue) }}</div>
+                <div class="detail-field-label">Original Value</div>
+                <div class="text-xl font-bold text-foreground">{{ formatCurrency(c.originalValue) }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Revised Value</div>
-                <div class="text-xl font-bold text-foreground">{{ formatCurrency(contract()!.revisedValue) }}</div>
+                <div class="detail-field-label">Revised Value</div>
+                <div class="text-xl font-bold text-foreground">{{ formatCurrency(c.revisedValue) }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Delta</div>
+                <div class="detail-field-label">Delta</div>
                 <div class="text-xl font-bold" [class]="delta() > 0 ? 'text-warning' : 'text-foreground'">
                   {{ delta() >= 0 ? '+' : '' }}{{ formatCurrency(delta()) }}
                 </div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Retainage</div>
-                <div class="text-xl font-bold text-foreground">{{ contract()!.retainage }}%</div>
+                <div class="detail-field-label">Retainage</div>
+                <div class="text-xl font-bold text-foreground">{{ c.retainage }}%</div>
               </div>
             </div>
 
-            <!-- KPI row 2: metadata -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Start Date</div>
-                <div class="text-base text-foreground">{{ contract()!.startDate }}</div>
+                <div class="detail-field-label">Start Date</div>
+                <div class="text-base text-foreground">{{ c.startDate }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">End Date</div>
-                <div class="text-base text-foreground">{{ contract()!.endDate }}</div>
+                <div class="detail-field-label">End Date</div>
+                <div class="text-base text-foreground">{{ c.endDate }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Project</div>
-                <div class="text-base text-foreground">{{ contract()!.project }}</div>
+                <div class="detail-field-label">Project</div>
+                <div class="text-base text-foreground">{{ c.project }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Status</div>
+                <div class="detail-field-label">Status</div>
                 <div class="flex items-center gap-2">
                   <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
-                  <div class="text-base text-foreground">{{ capitalizeFirst(contract()!.status) }}</div>
+                  <div class="text-base text-foreground">{{ capitalizeFirst(c.status) }}</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Contract Details -->
         <div class="bg-card border-default rounded-lg overflow-hidden">
           <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">info_outlined</i>
@@ -117,11 +110,11 @@ function typeBadgeVariant(ct: ContractType): 'primary' | 'warning' | 'secondary'
           </div>
           <div class="px-6 py-6 flex flex-col gap-6">
             <div>
-              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Scope</div>
-              <div class="text-base text-foreground">{{ contract()!.scope }}</div>
+              <div class="detail-field-label">Scope</div>
+              <div class="text-base text-foreground">{{ c.scope }}</div>
             </div>
             <div>
-              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Linked Change Orders</div>
+              <div class="detail-field-label">Linked Change Orders</div>
               @if (linkedCOs().length) {
                 <div class="flex flex-wrap gap-2 mt-1">
                   @for (co of linkedCOs(); track co.id) {
@@ -136,32 +129,18 @@ function typeBadgeVariant(ct: ContractType): 'primary' | 'warning' | 'secondary'
             </div>
           </div>
         </div>
-      } @else {
-        <div class="flex flex-col items-center justify-center py-20 text-foreground-40">
-          <i class="modus-icons text-4xl mb-3" aria-hidden="true">copy_content</i>
-          <div class="text-lg font-medium mb-1">Contract Not Found</div>
-          <div class="text-sm mb-4">The requested contract could not be found.</div>
-          <div
-            class="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer bg-primary text-primary-foreground hover:opacity-90 transition-opacity duration-150"
-            role="button" tabindex="0"
-            (click)="goBack()"
-            (keydown.enter)="goBack()"
-          >Return to {{ backLabel }}</div>
-        </div>
       }
-    </div>
+    </app-detail-page-layout>
   `,
 })
 export class ContractDetailPageComponent {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly navHistory = inject(NavigationHistoryService);
   private readonly store = inject(DataStoreService);
+  private readonly nav = useBackNavigation();
 
-  private readonly backInfo = this.navHistory.getBackInfo();
-  readonly backLabel = 'Back to ' + this.backInfo.label;
+  readonly backLabel = this.nav.backLabel;
+  readonly goBack = this.nav.goBack;
 
-  private readonly contractId = signal<string>('');
+  private readonly contractId = routeParamSignal('id');
 
   readonly contract = computed<Contract | null>(() => {
     const id = this.contractId();
@@ -196,26 +175,5 @@ export class ContractDetailPageComponent {
   readonly contractTypeLabelShort = contractTypeLabelShort;
   readonly capitalizeFirst = sharedCapitalizeFirst;
 
-  constructor() {
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
-      this.contractId.set(params.get('id') ?? '');
-    });
-  }
-
   formatCurrency(value: number): string { return sharedFormatCurrency(value); }
-
-  goBack(): void {
-    const route = this.backInfo.route;
-    if (route.includes('?')) {
-      const [path, query] = route.split('?');
-      const qp: Record<string, string> = {};
-      for (const pair of query.split('&')) {
-        const [k, v] = pair.split('=');
-        if (k) qp[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
-      }
-      this.router.navigate([path || '/'], { queryParams: qp });
-    } else {
-      this.router.navigate([route]);
-    }
-  }
 }

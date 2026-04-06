@@ -17,7 +17,7 @@ import {
   type JobCostCategory,
   type UrgentNeedItem,
   type ProjectAttentionItem,
-} from '../../data/dashboard-data';
+} from '../../data/dashboard-data.types';
 import type { NavItem } from './project-dashboard.config';
 
 /**

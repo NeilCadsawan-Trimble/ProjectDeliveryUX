@@ -30,7 +30,7 @@ import type {
   WeatherForecast,
   ProjectCalendarEvent,
   ProjectEventCategory,
-} from '../../data/dashboard-data';
+} from '../../data/dashboard-data.types';
 import {
   statusBadgeColor,
   progressClass,
@@ -40,7 +40,7 @@ import {
   urgentNeedCategoryIcon,
   weatherIcon,
   weatherIconColor,
-} from '../../data/dashboard-data';
+} from '../../data/dashboard-data.formatters';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import type { Milestone, TeamMember, Risk } from '../../data/project-data';
 import { TILE_IDS, TILE_VISUAL_ORDER, buildProjectsLayoutConfig } from './projects-page-layout.config';

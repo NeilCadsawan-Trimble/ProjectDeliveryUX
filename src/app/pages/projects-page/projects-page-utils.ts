@@ -1,4 +1,4 @@
-import type { Project, UrgentNeedItem, ChangeOrder } from '../../data/dashboard-data';
+import type { Project, UrgentNeedItem, ChangeOrder } from '../../data/dashboard-data.types';
 import type { Risk } from '../../data/project-data';
 
 export interface AgentProjectData {

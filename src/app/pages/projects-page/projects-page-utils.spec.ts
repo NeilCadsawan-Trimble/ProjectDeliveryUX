@@ -6,7 +6,7 @@ import {
   STATUS_SEVERITY,
   type AgentProjectData,
 } from './projects-page-utils';
-import type { Project, UrgentNeedItem, ChangeOrder } from '../../data/dashboard-data';
+import type { Project, UrgentNeedItem, ChangeOrder } from '../../data/dashboard-data.types';
 
 function makeProject(overrides: Partial<Project> = {}): Project {
   return {

@@ -1,6 +1,6 @@
 import type { DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
-import type { DashboardWidgetId } from '../../data/dashboard-data';
+import type { DashboardWidgetId } from '../../data/dashboard-data.types';
 
 export const TILE_IDS: DashboardWidgetId[] = ['proj1', 'proj2', 'proj3', 'proj4', 'proj5', 'proj6', 'proj7', 'proj8'];
 

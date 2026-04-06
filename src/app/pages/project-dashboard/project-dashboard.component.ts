@@ -45,7 +45,7 @@ import { AiIconComponent } from '../../shell/components/ai-icon.component';
 import { UserMenuComponent } from '../../shell/components/user-menu.component';
 import { TrimbleLogoComponent } from '../../shell/components/trimble-logo.component';
 
-import { ThemeService } from '../../shell/services/theme.service';
+import { ThemeService } from '../../services/theme.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
@@ -65,7 +65,10 @@ import {
   type SummaryStat,
 } from '../../data/project-data';
 import { rewriteDynamicNeeds, rewriteBudgetRisk } from '../projects-page/projects-page-utils';
-import { type Rfi, type Submittal, getJobCostSummary, getSubledger, JOB_COST_CATEGORIES, CATEGORY_COLORS, budgetProgressClass, type JobCostCategory, type ProjectJobCost, type SubledgerTransaction, type DailyReport, type Inspection, type PunchListItem, type ChangeOrder, type Contract, type ProjectRevenue, type BudgetHistoryPoint, type WeatherForecast, type ProjectAttentionItem, type InspectionResult, type ChangeOrderStatus, type Invoice, type Payable, type PurchaseOrder, type SubcontractLedgerEntry, type InvoiceStatus, type PayableStatus, type PurchaseOrderStatus, type SubcontractLedgerType, buildUrgentNeeds, urgentNeedCategoryIcon, type UrgentNeedItem, type ProjectWeather, type WeatherCondition, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, type StaffingConflict, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, type ContractStatus, type ContractType, type RfiStatus, type SubmittalStatus, type TimeOffStatus } from '../../data/dashboard-data';
+import type { Rfi, Submittal, JobCostCategory, ProjectJobCost, SubledgerTransaction, DailyReport, Inspection, PunchListItem, ChangeOrder, Contract, ProjectRevenue, BudgetHistoryPoint, WeatherForecast, ProjectAttentionItem, InspectionResult, ChangeOrderStatus, Invoice, Payable, PurchaseOrder, SubcontractLedgerEntry, InvoiceStatus, PayableStatus, PurchaseOrderStatus, SubcontractLedgerType, UrgentNeedItem, ProjectWeather, WeatherCondition, StaffingConflict, ContractStatus, ContractType, RfiStatus, SubmittalStatus, TimeOffStatus } from '../../data/dashboard-data.types';
+import { JOB_COST_CATEGORIES } from '../../data/dashboard-data.types';
+import { CATEGORY_COLORS } from '../../data/dashboard-data.seed';
+import { getJobCostSummary, getSubledger, budgetProgressClass, buildUrgentNeeds, urgentNeedCategoryIcon, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost } from '../../data/dashboard-data.formatters';
 import { ALL_DRAWINGS_BY_PROJECT, SITE_CAPTURES_BY_PROJECT, type DrawingTile, type SiteCapture } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { PROJECT_DETAIL_WIDGETS } from '../../data/widget-registrations';

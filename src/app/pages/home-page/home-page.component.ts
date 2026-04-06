@@ -41,7 +41,13 @@ import type {
   ActivityItem,
   ChangeOrder,
   Estimate,
-} from '../../data/dashboard-data';
+  Project,
+  UrgentNeedItem,
+  UrgentNeedCategory,
+  ProjectWeather,
+  WeatherCondition,
+  StaffingConflict,
+} from '../../data/dashboard-data.types';
 import {
   buildUrgentNeeds,
   urgentNeedCategoryIcon,
@@ -49,8 +55,7 @@ import {
   weatherIconColor,
   buildStaffingConflicts,
   formatCurrency,
-} from '../../data/dashboard-data';
-import type { Project, UrgentNeedItem, UrgentNeedCategory, ProjectWeather, WeatherCondition, StaffingConflict } from '../../data/dashboard-data';
+} from '../../data/dashboard-data.formatters';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import { rewriteDynamicNeeds } from '../projects-page/projects-page-utils';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';

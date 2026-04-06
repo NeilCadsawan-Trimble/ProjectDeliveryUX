@@ -87,6 +87,11 @@ export class PdfViewerComponent {
   private readonly canvasRef = viewChild<ElementRef<HTMLCanvasElement>>('pdfCanvas');
   private readonly containerRef = viewChild<ElementRef<HTMLElement>>('container');
 
+  private readonly _cleanup = this.destroyRef.onDestroy(() => {
+    if (this._rerenderTimer) clearTimeout(this._rerenderTimer);
+    this._activeRenderTask?.cancel();
+  });
+
   readonly zoom = signal(1);
   readonly panX = signal(0);
   readonly panY = signal(0);

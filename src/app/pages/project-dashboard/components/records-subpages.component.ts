@@ -10,7 +10,7 @@ import {
   weatherIcon as sharedWeatherIcon,
   inspectionResultBadge as sharedInspectionResultBadge,
   punchPriorityBadge as sharedPunchPriorityBadge,
-} from '../../../data/dashboard-data';
+} from '../../../data/dashboard-data.formatters';
 import type {
   DailyReport,
   Inspection,
@@ -18,7 +18,7 @@ import type {
   ProjectAttentionItem,
   WeatherForecast,
   InspectionResult,
-} from '../../../data/dashboard-data';
+} from '../../../data/dashboard-data.types';
 
 type ViewMode = 'grid' | 'list';
 

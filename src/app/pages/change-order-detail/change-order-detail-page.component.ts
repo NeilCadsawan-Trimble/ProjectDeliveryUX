@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
-import type { ChangeOrder, ChangeOrderStatus, ChangeOrderType } from '../../data/dashboard-data';
-import { coBadgeColor, coTypeLabel, coTypeIcon, formatCurrency as sharedFormatCurrency, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
+import type { ChangeOrder, ChangeOrderStatus, ChangeOrderType } from '../../data/dashboard-data.types';
+import { coBadgeColor, coTypeLabel, coTypeIcon, formatCurrency as sharedFormatCurrency, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data.formatters';
 import { DataStoreService } from '../../data/data-store.service';
-import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
+import { DetailPageLayoutComponent } from '../../shared/detail-page-layout.component';
+import { routeParamSignal } from '../../shared/route-param-signal';
+import { useBackNavigation } from '../../shared/go-back';
 
 interface CostBreakdownItem {
   description: string;
@@ -77,21 +77,18 @@ function typeBgClass(coType: ChangeOrderType): string {
 
 @Component({
   selector: 'app-change-order-detail-page',
-  imports: [ModusBadgeComponent],
+  imports: [ModusBadgeComponent, DetailPageLayoutComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="px-4 py-6 md:py-8 max-w-screen-lg mx-auto">
-      @if (changeOrder()) {
-        <div
-          class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
-          role="button" tabindex="0"
-          (click)="goBack()"
-          (keydown.enter)="goBack()"
-        >
-          <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">{{ backLabel }}</div>
-        </div>
-
+    <app-detail-page-layout
+      [hasEntity]="!!changeOrder()"
+      [backLabel]="backLabel"
+      emptyIcon="swap"
+      emptyTitle="Change Order Not Found"
+      emptyMessage="The requested change order could not be found."
+      (back)="goBack()"
+    >
+      @if (changeOrder(); as co) {
         <!-- Header card -->
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
@@ -100,13 +97,13 @@ function typeBgClass(coType: ChangeOrderType): string {
                 <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">swap</i>
               </div>
               <div>
-                <div class="text-xl font-semibold text-foreground">{{ changeOrder()!.id }}</div>
-                <div class="text-sm text-foreground-60">{{ changeOrder()!.project }}</div>
+                <div class="text-xl font-semibold text-foreground">{{ co.id }}</div>
+                <div class="text-sm text-foreground-60">{{ co.project }}</div>
               </div>
             </div>
             <div class="flex items-center gap-3">
               <modus-badge [color]="typeBadgeColor()" variant="outlined" size="md">
-                {{ coTypeLabel(changeOrder()!.coType) }}
+                {{ coTypeLabel(co.coType) }}
               </modus-badge>
               <div class="relative">
                 <div class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-muted transition-colors duration-150"
@@ -114,7 +111,7 @@ function typeBgClass(coType: ChangeOrderType): string {
                   (click)="statusOpen.set(!statusOpen())"
                   (keydown.enter)="statusOpen.set(!statusOpen())">
                   <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
-                  <div class="text-sm font-medium text-foreground">{{ capitalizeFirst(changeOrder()!.status) }}</div>
+                  <div class="text-sm font-medium text-foreground">{{ capitalizeFirst(co.status) }}</div>
                   <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
                 </div>
                 @if (statusOpen()) {
@@ -122,11 +119,11 @@ function typeBgClass(coType: ChangeOrderType): string {
                   <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-[9999] min-w-[160px] py-1 overflow-hidden">
                     @for (opt of coStatusOptions; track opt.value) {
                       <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
-                        role="option" [attr.aria-selected]="opt.value === changeOrder()!.status"
+                        role="option" [attr.aria-selected]="opt.value === co.status"
                         (click)="changeStatus(opt.value)">
                         <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
                         <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
-                        @if (opt.value === changeOrder()!.status) {
+                        @if (opt.value === co.status) {
                           <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
                         }
                       </div>
@@ -140,48 +137,48 @@ function typeBgClass(coType: ChangeOrderType): string {
           <div class="px-6 py-6 flex flex-col gap-6">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Amount</div>
-                <div class="text-xl font-bold text-foreground">{{ formatCurrency(changeOrder()!.amount) }}</div>
+                <div class="detail-field-label">Amount</div>
+                <div class="text-xl font-bold text-foreground">{{ formatCurrency(co.amount) }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Request Date</div>
-                <div class="text-base text-foreground">{{ changeOrder()!.requestDate }}</div>
+                <div class="detail-field-label">Request Date</div>
+                <div class="text-base text-foreground">{{ co.requestDate }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Requested By</div>
-                <div class="text-base text-foreground">{{ changeOrder()!.requestedBy }}</div>
+                <div class="detail-field-label">Requested By</div>
+                <div class="text-base text-foreground">{{ co.requestedBy }}</div>
               </div>
-              @if (changeOrder()!.costCode) {
+              @if (co.costCode) {
                 <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Cost Code</div>
-                  <div class="text-base text-foreground">{{ changeOrder()!.costCode }}</div>
+                  <div class="detail-field-label">Cost Code</div>
+                  <div class="text-base text-foreground">{{ co.costCode }}</div>
                 </div>
               }
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              @if (changeOrder()!.contractNumber) {
+              @if (co.contractNumber) {
                 <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Contract Number</div>
-                  <div class="text-base text-foreground">{{ changeOrder()!.contractNumber }}</div>
+                  <div class="detail-field-label">Contract Number</div>
+                  <div class="text-base text-foreground">{{ co.contractNumber }}</div>
                 </div>
               }
-              @if (changeOrder()!.subcontractor) {
+              @if (co.subcontractor) {
                 <div>
-                  <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Subcontractor</div>
-                  <div class="text-base text-foreground">{{ changeOrder()!.subcontractor }}</div>
+                  <div class="detail-field-label">Subcontractor</div>
+                  <div class="text-base text-foreground">{{ co.subcontractor }}</div>
                 </div>
               }
             </div>
 
             <div>
-              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Description</div>
-              <div class="text-base text-foreground">{{ changeOrder()!.description }}</div>
+              <div class="detail-field-label">Description</div>
+              <div class="text-base text-foreground">{{ co.description }}</div>
             </div>
 
             <div>
-              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Reason / Justification</div>
-              <div class="text-base text-foreground">{{ changeOrder()!.reason }}</div>
+              <div class="detail-field-label">Reason / Justification</div>
+              <div class="text-base text-foreground">{{ co.reason }}</div>
             </div>
           </div>
         </div>
@@ -206,7 +203,7 @@ function typeBgClass(coType: ChangeOrderType): string {
               }
               <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] gap-3 px-6 py-4 bg-muted border-top-default">
                 <div class="text-sm font-semibold text-foreground">Total</div>
-                <div class="text-base font-bold text-foreground text-right">{{ formatCurrency(changeOrder()!.amount) }}</div>
+                <div class="text-base font-bold text-foreground text-right">{{ formatCurrency(co.amount) }}</div>
               </div>
             </div>
           </div>
@@ -232,35 +229,20 @@ function typeBgClass(coType: ChangeOrderType): string {
             }
           </div>
         </div>
-      } @else {
-        <div class="flex flex-col items-center justify-center py-20 text-foreground-40">
-          <i class="modus-icons text-4xl mb-3" aria-hidden="true">swap</i>
-          <div class="text-lg font-medium mb-1">Change Order Not Found</div>
-          <div class="text-sm mb-4">The requested change order could not be found.</div>
-          <div
-            class="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer bg-primary text-primary-foreground hover:opacity-90 transition-opacity duration-150"
-            role="button" tabindex="0"
-            (click)="goBack()"
-            (keydown.enter)="goBack()"
-          >Return to {{ backLabel }}</div>
-        </div>
       }
-    </div>
+    </app-detail-page-layout>
   `,
 })
 export class ChangeOrderDetailPageComponent {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
-  private readonly navHistory = inject(NavigationHistoryService);
-
-  private readonly backInfo = this.navHistory.getBackInfo();
-  readonly backLabel = 'Back to ' + this.backInfo.label;
+  private readonly nav = useBackNavigation();
+  readonly backLabel = this.nav.backLabel;
+  readonly goBack = this.nav.goBack;
 
   readonly coStatusOptions = CO_STATUS_OPTIONS;
   readonly statusOpen = signal(false);
 
-  private readonly coId = signal<string>('');
+  private readonly coId = routeParamSignal('id');
 
   readonly changeOrder = computed<ChangeOrder | null>(() => {
     const id = this.coId();
@@ -299,12 +281,6 @@ export class ChangeOrderDetailPageComponent {
   readonly coBadgeColor = coBadgeColor;
   readonly coTypeLabel = coTypeLabel;
 
-  constructor() {
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
-      this.coId.set(params.get('id') ?? '');
-    });
-  }
-
   readonly capitalizeFirst = sharedCapitalizeFirst;
 
   formatCurrency(value: number): string { return sharedFormatCurrency(value); }
@@ -314,20 +290,5 @@ export class ChangeOrderDetailPageComponent {
     if (!co) return;
     this.store.updateChangeOrderStatus(co.id, newStatus);
     this.statusOpen.set(false);
-  }
-
-  goBack(): void {
-    const route = this.backInfo.route;
-    if (route.includes('?')) {
-      const [path, query] = route.split('?');
-      const qp: Record<string, string> = {};
-      for (const pair of query.split('&')) {
-        const [k, v] = pair.split('=');
-        if (k) qp[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
-      }
-      this.router.navigate([path || '/'], { queryParams: qp });
-    } else {
-      this.router.navigate([route]);
-    }
   }
 }

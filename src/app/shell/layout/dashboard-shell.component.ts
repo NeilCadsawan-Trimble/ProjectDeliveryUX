@@ -21,7 +21,7 @@ import { AiIconComponent } from '../components/ai-icon.component';
 import { AiAssistantPanelComponent } from '../components/ai-assistant-panel.component';
 import { UserMenuComponent } from '../components/user-menu.component';
 import { TrimbleLogoComponent } from '../components/trimble-logo.component';
-import { ThemeService } from '../services/theme.service';
+import { ThemeService } from '../../services/theme.service';
 import { CanvasResetService } from '../services/canvas-reset.service';
 import { WidgetFocusService } from '../services/widget-focus.service';
 import { AiService } from '../../services/ai.service';

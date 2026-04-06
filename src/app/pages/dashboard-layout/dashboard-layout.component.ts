@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { DashboardShellComponent } from '../../shell/layout/dashboard-shell.component';
 import type { ShellNavItem, AiResponseFn } from '../../shell/layout/dashboard-shell.component';
 import type { INavbarUserCard } from '../../components/modus-navbar.component';
-import type { Project, Estimate } from '../../data/dashboard-data';
-import { ATTENTION_ITEMS } from '../../data/dashboard-data';
+import type { Project, Estimate } from '../../data/dashboard-data.types';
+import { ATTENTION_ITEMS } from '../../data/dashboard-data.seed';
 import { DataStoreService } from '../../data/data-store.service';
 
 @Component({

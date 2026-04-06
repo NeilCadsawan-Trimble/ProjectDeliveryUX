@@ -1,5 +1,5 @@
 import { signal, computed, type WritableSignal } from '@angular/core';
-import type { Rfi, Submittal, RfiStatus, SubmittalStatus, DailyReport, Inspection, PunchListItem, ChangeOrder, Contract } from '../../data/dashboard-data';
+import type { Rfi, Submittal, RfiStatus, SubmittalStatus, DailyReport, Inspection, PunchListItem, ChangeOrder, Contract } from '../../data/dashboard-data.types';
 import type { DrawingTile, SiteCapture } from '../../data/drawings-data';
 
 export type DetailView =
