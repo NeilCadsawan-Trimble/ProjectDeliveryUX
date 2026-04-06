@@ -18,6 +18,7 @@ import type {
   Payable,
   PayrollRecord,
   Project,
+  ProjectCalendarEvent,
   ProjectAttentionItem,
   ProjectRevenue,
   ProjectWeather,
@@ -413,6 +414,255 @@ export const CALENDAR_APPOINTMENTS: CalendarAppointment[] = [
   { id: 176, title: 'May Budget Closeout', date: new Date(2026, 4, 29), startHour: 10, startMin: 0, endHour: 11, endMin: 30, type: 'review' },
   { id: 177, title: 'May Reports Deadline', date: new Date(2026, 4, 29), startHour: 17, startMin: 0, endHour: 17, endMin: 30, type: 'deadline' },
 ];
+
+// ---------------------------------------------------------------------------
+// Project Calendar Timeline Events (Gantt data for /projects timeline view)
+// ---------------------------------------------------------------------------
+const _d = (y: number, m: number, d: number) => new Date(y, m, d);
+export const PROJECT_CALENDAR_EVENTS: ProjectCalendarEvent[] = [
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Project 1 — Riverside Office Complex  (72 % complete, On Track)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Site activities
+  { id: 1, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Interior Framing - Floors 4-5', startDate: _d(2026, 2, 2), endDate: _d(2026, 2, 13), category: 'site' },
+  { id: 2, projectId: 1, projectSlug: 'riverside-office-complex', title: 'MEP Rough-In - Floor 3', startDate: _d(2026, 2, 9), endDate: _d(2026, 2, 20), category: 'site' },
+  { id: 3, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Curtain Wall Installation - East', startDate: _d(2026, 2, 23), endDate: _d(2026, 3, 3), category: 'site' },
+  { id: 4, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Drywall & Taping - Floors 1-3', startDate: _d(2026, 3, 6), endDate: _d(2026, 3, 17), category: 'site' },
+  { id: 5, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Elevator Installation', startDate: _d(2026, 3, 20), endDate: _d(2026, 4, 8), category: 'site' },
+  { id: 6, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Fire Suppression Testing', startDate: _d(2026, 4, 18), endDate: _d(2026, 4, 22), category: 'site' },
+  { id: 7, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Finish Flooring - Floors 1-3', startDate: _d(2026, 5, 4), endDate: _d(2026, 5, 15), category: 'site' },
+  { id: 8, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Punch List Walkthrough', startDate: _d(2026, 6, 1), endDate: _d(2026, 6, 5), category: 'site' },
+  // Meetings
+  { id: 9, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Architect Design Review', startDate: _d(2026, 2, 5), endDate: _d(2026, 2, 5), category: 'meeting', participants: 'Architect, PM' },
+  { id: 10, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Owner Progress Walkthrough', startDate: _d(2026, 2, 19), endDate: _d(2026, 2, 19), category: 'meeting', participants: 'Client Owner, PM' },
+  { id: 11, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Structural Engineer Site Visit', startDate: _d(2026, 3, 2), endDate: _d(2026, 3, 2), category: 'meeting', participants: 'Structural Engineer' },
+  { id: 12, projectId: 1, projectSlug: 'riverside-office-complex', title: 'MEP Coordination Meeting', startDate: _d(2026, 3, 14), endDate: _d(2026, 3, 14), category: 'meeting', participants: 'MEP Subcontractors, Engineer' },
+  { id: 13, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Subcontractor Kickoff - Elevators', startDate: _d(2026, 3, 16), endDate: _d(2026, 3, 16), category: 'meeting', participants: 'Elevator Subcontractor' },
+  { id: 14, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Client Progress Presentation', startDate: _d(2026, 4, 9), endDate: _d(2026, 4, 9), category: 'meeting', participants: 'Client Owner, PM, Architect' },
+  { id: 15, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Safety Coordination Meeting', startDate: _d(2026, 5, 7), endDate: _d(2026, 5, 7), category: 'meeting', participants: 'Safety Officer, All Subs' },
+  // Financial
+  { id: 16, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Pay Application #8', startDate: _d(2026, 2, 25), endDate: _d(2026, 2, 25), category: 'financial' },
+  { id: 17, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Pay Application #9', startDate: _d(2026, 3, 25), endDate: _d(2026, 3, 25), category: 'financial' },
+  { id: 18, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Change Order Review - PCO-010', startDate: _d(2026, 3, 8), endDate: _d(2026, 3, 8), category: 'financial' },
+  { id: 19, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Budget Reconciliation Q1', startDate: _d(2026, 3, 30), endDate: _d(2026, 3, 30), category: 'financial' },
+  { id: 20, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Pay Application #10', startDate: _d(2026, 4, 25), endDate: _d(2026, 4, 25), category: 'financial' },
+  // Deadlines
+  { id: 21, projectId: 1, projectSlug: 'riverside-office-complex', title: 'RFI-012 Response Due', startDate: _d(2026, 2, 28), endDate: _d(2026, 2, 28), category: 'deadline' },
+  { id: 22, projectId: 1, projectSlug: 'riverside-office-complex', title: 'SUB-009 Curtain Wall Mock-up Due', startDate: _d(2026, 2, 19), endDate: _d(2026, 2, 19), category: 'deadline' },
+  { id: 23, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Permit Renewal Deadline', startDate: _d(2026, 4, 15), endDate: _d(2026, 4, 15), category: 'deadline' },
+  // Inspections
+  { id: 24, projectId: 1, projectSlug: 'riverside-office-complex', title: 'MEP Rough-In Inspection', startDate: _d(2026, 2, 20), endDate: _d(2026, 2, 20), category: 'inspection' },
+  { id: 25, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Fire Marshal Walkthrough', startDate: _d(2026, 4, 23), endDate: _d(2026, 4, 23), category: 'inspection' },
+  { id: 26, projectId: 1, projectSlug: 'riverside-office-complex', title: 'Elevator Compliance Inspection', startDate: _d(2026, 5, 11), endDate: _d(2026, 5, 11), category: 'inspection' },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Project 2 — Harbor View Condominiums  (45 % complete, At Risk)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Site activities
+  { id: 27, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Concrete Pour - Level 4 Deck', startDate: _d(2026, 2, 3), endDate: _d(2026, 2, 6), category: 'site' },
+  { id: 28, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Plumbing Rough-In - Units A-D', startDate: _d(2026, 2, 16), endDate: _d(2026, 2, 27), category: 'site' },
+  { id: 29, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Kitchen Cabinet Installation', startDate: _d(2026, 3, 6), endDate: _d(2026, 3, 17), category: 'site' },
+  { id: 30, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Roof Membrane Application', startDate: _d(2026, 3, 20), endDate: _d(2026, 3, 24), category: 'site' },
+  { id: 31, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Exterior Painting', startDate: _d(2026, 4, 11), endDate: _d(2026, 4, 22), category: 'site' },
+  { id: 32, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Balcony Railing Installation', startDate: _d(2026, 5, 4), endDate: _d(2026, 5, 8), category: 'site' },
+  { id: 33, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Landscaping & Hardscaping', startDate: _d(2026, 5, 18), endDate: _d(2026, 5, 29), category: 'site' },
+  // Meetings
+  { id: 34, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Architect Review - Unit Layouts', startDate: _d(2026, 2, 10), endDate: _d(2026, 2, 10), category: 'meeting', participants: 'Architect, Interior Designer' },
+  { id: 35, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Client Walkthrough', startDate: _d(2026, 3, 5), endDate: _d(2026, 3, 5), category: 'meeting', participants: 'Client Owner (Apex Corp)' },
+  { id: 36, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Subcontractor Sync - Roofing', startDate: _d(2026, 3, 18), endDate: _d(2026, 3, 18), category: 'meeting', participants: 'Roofing Subcontractor' },
+  { id: 37, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Progress Presentation', startDate: _d(2026, 4, 2), endDate: _d(2026, 4, 2), category: 'meeting', participants: 'Client Owner, PM' },
+  { id: 38, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Landscape Architect Coordination', startDate: _d(2026, 5, 14), endDate: _d(2026, 5, 14), category: 'meeting', participants: 'Landscape Architect' },
+  // Financial
+  { id: 39, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Pay Application #5', startDate: _d(2026, 2, 25), endDate: _d(2026, 2, 25), category: 'financial' },
+  { id: 40, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Pay Application #6', startDate: _d(2026, 3, 25), endDate: _d(2026, 3, 25), category: 'financial' },
+  { id: 41, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Budget Variance Review', startDate: _d(2026, 3, 12), endDate: _d(2026, 3, 12), category: 'financial' },
+  { id: 42, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Pay Application #7', startDate: _d(2026, 4, 25), endDate: _d(2026, 4, 25), category: 'financial' },
+  // Deadlines
+  { id: 43, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'RFI-002 Response Overdue', startDate: _d(2026, 2, 28), endDate: _d(2026, 2, 28), category: 'deadline' },
+  { id: 44, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'SUB-011 Roof Membrane Due', startDate: _d(2026, 3, 2), endDate: _d(2026, 3, 2), category: 'deadline' },
+  // Inspections
+  { id: 45, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Plumbing Rough-In Inspection', startDate: _d(2026, 2, 27), endDate: _d(2026, 2, 27), category: 'inspection' },
+  { id: 46, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'Roof Inspection', startDate: _d(2026, 3, 27), endDate: _d(2026, 3, 27), category: 'inspection' },
+  { id: 47, projectId: 2, projectSlug: 'harbor-view-condominiums', title: 'ADA Compliance Review', startDate: _d(2026, 5, 20), endDate: _d(2026, 5, 20), category: 'inspection' },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Project 3 — Downtown Transit Hub  (60 % complete, Overdue)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Site activities
+  { id: 48, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Platform Canopy Steel Erection', startDate: _d(2026, 2, 2), endDate: _d(2026, 2, 13), category: 'site' },
+  { id: 49, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Utility Relocation - Water Main', startDate: _d(2026, 2, 16), endDate: _d(2026, 2, 27), category: 'site' },
+  { id: 50, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Electrical Conduit Installation', startDate: _d(2026, 3, 2), endDate: _d(2026, 3, 13), category: 'site' },
+  { id: 51, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Platform Tile Setting', startDate: _d(2026, 3, 20), endDate: _d(2026, 4, 3), category: 'site' },
+  { id: 52, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Signage & Wayfinding Installation', startDate: _d(2026, 4, 13), endDate: _d(2026, 4, 24), category: 'site' },
+  { id: 53, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Systems Integration Testing', startDate: _d(2026, 5, 4), endDate: _d(2026, 5, 15), category: 'site' },
+  // Meetings
+  { id: 54, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Transit Authority Review', startDate: _d(2026, 2, 12), endDate: _d(2026, 2, 12), category: 'meeting', participants: 'Transit Authority, PM, Architect' },
+  { id: 55, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'MEP Engineer Coordination', startDate: _d(2026, 3, 3), endDate: _d(2026, 3, 3), category: 'meeting', participants: 'MEP Engineer, Electrical Sub' },
+  { id: 56, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Client Progress Review', startDate: _d(2026, 3, 19), endDate: _d(2026, 3, 19), category: 'meeting', participants: 'GlobalTech Ltd, PM' },
+  { id: 57, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Safety Committee Meeting', startDate: _d(2026, 4, 7), endDate: _d(2026, 4, 7), category: 'meeting', participants: 'Safety Officer, All Subs' },
+  { id: 58, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Commissioning Planning', startDate: _d(2026, 4, 28), endDate: _d(2026, 4, 28), category: 'meeting', participants: 'Commissioning Agent, MEP' },
+  // Financial
+  { id: 59, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Pay Application #7', startDate: _d(2026, 2, 25), endDate: _d(2026, 2, 25), category: 'financial' },
+  { id: 60, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Budget Escalation Review', startDate: _d(2026, 3, 10), endDate: _d(2026, 3, 10), category: 'financial' },
+  { id: 61, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Pay Application #8', startDate: _d(2026, 3, 25), endDate: _d(2026, 3, 25), category: 'financial' },
+  { id: 62, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Retainage Release Request', startDate: _d(2026, 5, 20), endDate: _d(2026, 5, 20), category: 'financial' },
+  // Deadlines
+  { id: 63, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'RFI-003 Utility Relocation Due', startDate: _d(2026, 2, 15), endDate: _d(2026, 2, 15), category: 'deadline' },
+  { id: 64, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Permit Extension Deadline', startDate: _d(2026, 3, 31), endDate: _d(2026, 3, 31), category: 'deadline' },
+  // Inspections
+  { id: 65, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Structural Steel Inspection', startDate: _d(2026, 2, 13), endDate: _d(2026, 2, 13), category: 'inspection' },
+  { id: 66, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Electrical Rough-In Inspection', startDate: _d(2026, 3, 16), endDate: _d(2026, 3, 16), category: 'inspection' },
+  { id: 67, projectId: 3, projectSlug: 'downtown-transit-hub', title: 'Fire & Life Safety Inspection', startDate: _d(2026, 5, 18), endDate: _d(2026, 5, 18), category: 'inspection' },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Project 4 — Lakeside Medical Center  (35 % complete, On Track)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Site activities
+  { id: 68, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Foundation Pour - Wing B', startDate: _d(2026, 2, 9), endDate: _d(2026, 2, 13), category: 'site' },
+  { id: 69, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Structural Steel - Wing A', startDate: _d(2026, 2, 16), endDate: _d(2026, 3, 3), category: 'site' },
+  { id: 70, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'HVAC Equipment Set', startDate: _d(2026, 3, 13), endDate: _d(2026, 3, 24), category: 'site' },
+  { id: 71, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Medical Gas Piping', startDate: _d(2026, 4, 6), endDate: _d(2026, 4, 17), category: 'site' },
+  { id: 72, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Roof Deck & Waterproofing', startDate: _d(2026, 4, 27), endDate: _d(2026, 5, 8), category: 'site' },
+  { id: 73, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Clean Room Construction', startDate: _d(2026, 5, 18), endDate: _d(2026, 6, 5), category: 'site' },
+  { id: 74, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Equipment Commissioning', startDate: _d(2026, 6, 15), endDate: _d(2026, 6, 26), category: 'site' },
+  // Meetings
+  { id: 75, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Architect Schematic Review', startDate: _d(2026, 2, 6), endDate: _d(2026, 2, 6), category: 'meeting', participants: 'Architect, Medical Planner' },
+  { id: 76, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Structural Engineer Review', startDate: _d(2026, 3, 5), endDate: _d(2026, 3, 5), category: 'meeting', participants: 'Structural Engineer' },
+  { id: 77, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Owner Progress Meeting', startDate: _d(2026, 3, 26), endDate: _d(2026, 3, 26), category: 'meeting', participants: 'NexGen Analytics, PM' },
+  { id: 78, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'HVAC Subcontractor Kickoff', startDate: _d(2026, 3, 10), endDate: _d(2026, 3, 10), category: 'meeting', participants: 'HVAC Subcontractor' },
+  { id: 79, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Medical Equipment Vendor Coord', startDate: _d(2026, 5, 12), endDate: _d(2026, 5, 12), category: 'meeting', participants: 'Equipment Vendor, PM' },
+  // Financial
+  { id: 80, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Pay Application #4', startDate: _d(2026, 2, 25), endDate: _d(2026, 2, 25), category: 'financial' },
+  { id: 81, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Pay Application #5', startDate: _d(2026, 3, 25), endDate: _d(2026, 3, 25), category: 'financial' },
+  { id: 82, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Change Order Review - HVAC Scope', startDate: _d(2026, 4, 3), endDate: _d(2026, 4, 3), category: 'financial' },
+  { id: 83, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Pay Application #6', startDate: _d(2026, 4, 25), endDate: _d(2026, 4, 25), category: 'financial' },
+  // Deadlines
+  { id: 84, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'RFI-004 HVAC Specs Due', startDate: _d(2026, 2, 20), endDate: _d(2026, 2, 20), category: 'deadline' },
+  { id: 85, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'SUB-013 Generator Report Due', startDate: _d(2026, 2, 18), endDate: _d(2026, 2, 18), category: 'deadline' },
+  { id: 86, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'State Health Dept Filing', startDate: _d(2026, 5, 29), endDate: _d(2026, 5, 29), category: 'deadline' },
+  // Inspections
+  { id: 87, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Foundation Inspection - Wing B', startDate: _d(2026, 2, 13), endDate: _d(2026, 2, 13), category: 'inspection' },
+  { id: 88, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Structural Steel Inspection', startDate: _d(2026, 3, 6), endDate: _d(2026, 3, 6), category: 'inspection' },
+  { id: 89, projectId: 4, projectSlug: 'lakeside-medical-center', title: 'Medical Gas System Inspection', startDate: _d(2026, 4, 20), endDate: _d(2026, 4, 20), category: 'inspection' },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Project 5 — Westfield Shopping Center  (12 % complete, Planning)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Site activities
+  { id: 90, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Site Survey & Topo', startDate: _d(2026, 2, 2), endDate: _d(2026, 2, 6), category: 'site' },
+  { id: 91, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Tree Clearing & Grubbing', startDate: _d(2026, 2, 23), endDate: _d(2026, 2, 27), category: 'site' },
+  { id: 92, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Mass Grading', startDate: _d(2026, 3, 13), endDate: _d(2026, 3, 24), category: 'site' },
+  { id: 93, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Storm Sewer Installation', startDate: _d(2026, 4, 6), endDate: _d(2026, 4, 17), category: 'site' },
+  { id: 94, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Foundation Excavation', startDate: _d(2026, 5, 4), endDate: _d(2026, 5, 22), category: 'site' },
+  { id: 95, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Concrete Foundations', startDate: _d(2026, 5, 25), endDate: _d(2026, 6, 12), category: 'site' },
+  // Meetings
+  { id: 96, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Design Development Review', startDate: _d(2026, 2, 11), endDate: _d(2026, 2, 11), category: 'meeting', participants: 'Architect, Civil Engineer, Client' },
+  { id: 97, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Planning Commission Hearing', startDate: _d(2026, 3, 4), endDate: _d(2026, 3, 4), category: 'meeting', participants: 'PM, Legal, Client' },
+  { id: 98, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Grading Subcontractor Kickoff', startDate: _d(2026, 3, 10), endDate: _d(2026, 3, 10), category: 'meeting', participants: 'Earthwork Subcontractor' },
+  { id: 99, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Client Design Approval', startDate: _d(2026, 4, 1), endDate: _d(2026, 4, 1), category: 'meeting', participants: 'Brightline Co, PM, Architect' },
+  // Financial
+  { id: 100, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Pay Application #1', startDate: _d(2026, 3, 25), endDate: _d(2026, 3, 25), category: 'financial' },
+  { id: 101, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'GMP Amendment Review', startDate: _d(2026, 4, 15), endDate: _d(2026, 4, 15), category: 'financial' },
+  { id: 102, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Pay Application #2', startDate: _d(2026, 4, 25), endDate: _d(2026, 4, 25), category: 'financial' },
+  // Deadlines
+  { id: 103, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Zoning Permit Application', startDate: _d(2026, 2, 28), endDate: _d(2026, 2, 28), category: 'deadline' },
+  { id: 104, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Environmental Impact Filing', startDate: _d(2026, 3, 15), endDate: _d(2026, 3, 15), category: 'deadline' },
+  { id: 105, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'SUB-015 Irrigation Drawings Due', startDate: _d(2026, 2, 20), endDate: _d(2026, 2, 20), category: 'deadline' },
+  // Inspections
+  { id: 106, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Erosion Control Inspection', startDate: _d(2026, 3, 27), endDate: _d(2026, 3, 27), category: 'inspection' },
+  { id: 107, projectId: 5, projectSlug: 'westfield-shopping-center', title: 'Foundation Inspection', startDate: _d(2026, 6, 15), endDate: _d(2026, 6, 15), category: 'inspection' },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Project 6 — Metro Bridge Rehabilitation  (88 % complete, On Track)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Site activities
+  { id: 108, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Deck Overlay Placement', startDate: _d(2026, 2, 2), endDate: _d(2026, 2, 13), category: 'site' },
+  { id: 109, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Bearing Pad Replacement', startDate: _d(2026, 2, 16), endDate: _d(2026, 2, 20), category: 'site' },
+  { id: 110, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Expansion Joint Install', startDate: _d(2026, 2, 23), endDate: _d(2026, 2, 27), category: 'site' },
+  { id: 111, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Guardrail & Barrier Repair', startDate: _d(2026, 3, 2), endDate: _d(2026, 3, 6), category: 'site' },
+  { id: 112, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Lane Striping & Signage', startDate: _d(2026, 3, 16), endDate: _d(2026, 3, 20), category: 'site' },
+  { id: 113, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Final Punch List & Closeout', startDate: _d(2026, 4, 6), endDate: _d(2026, 4, 10), category: 'site' },
+  // Meetings
+  { id: 114, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'DOT Coordination Meeting', startDate: _d(2026, 2, 5), endDate: _d(2026, 2, 5), category: 'meeting', participants: 'DOT Rep, PM, Traffic Engineer' },
+  { id: 115, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Structural Engineer Final Review', startDate: _d(2026, 3, 9), endDate: _d(2026, 3, 9), category: 'meeting', participants: 'Structural Engineer' },
+  { id: 116, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Owner Substantial Completion Walk', startDate: _d(2026, 3, 23), endDate: _d(2026, 3, 23), category: 'meeting', participants: 'Client Owner (Trimble), PM' },
+  { id: 117, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Closeout Documentation Review', startDate: _d(2026, 4, 13), endDate: _d(2026, 4, 13), category: 'meeting', participants: 'PM, QA Manager' },
+  // Financial
+  { id: 118, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Pay Application #10', startDate: _d(2026, 2, 25), endDate: _d(2026, 2, 25), category: 'financial' },
+  { id: 119, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Final Pay Application', startDate: _d(2026, 3, 25), endDate: _d(2026, 3, 25), category: 'financial' },
+  { id: 120, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Retainage Release', startDate: _d(2026, 4, 30), endDate: _d(2026, 4, 30), category: 'financial' },
+  // Deadlines
+  { id: 121, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'RFI-006 Bearing Capacity Due', startDate: _d(2026, 2, 22), endDate: _d(2026, 2, 22), category: 'deadline' },
+  { id: 122, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'As-Built Drawings Submission', startDate: _d(2026, 4, 17), endDate: _d(2026, 4, 17), category: 'deadline' },
+  // Inspections
+  { id: 123, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Load Test - Spans 1-3', startDate: _d(2026, 2, 13), endDate: _d(2026, 2, 13), category: 'inspection' },
+  { id: 124, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'DOT Final Inspection', startDate: _d(2026, 3, 27), endDate: _d(2026, 3, 27), category: 'inspection' },
+  { id: 125, projectId: 6, projectSlug: 'metro-bridge-rehabilitation', title: 'Warranty Inspection', startDate: _d(2026, 5, 15), endDate: _d(2026, 5, 15), category: 'inspection' },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Project 7 — Sunset Ridge Apartments  (30 % complete, At Risk)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Site activities
+  { id: 126, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Framing - Building B', startDate: _d(2026, 2, 2), endDate: _d(2026, 2, 20), category: 'site' },
+  { id: 127, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Exterior Sheathing - Building A', startDate: _d(2026, 2, 23), endDate: _d(2026, 3, 6), category: 'site' },
+  { id: 128, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Window Installation', startDate: _d(2026, 3, 9), endDate: _d(2026, 3, 20), category: 'site' },
+  { id: 129, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Plumbing & Electrical Rough-In', startDate: _d(2026, 3, 23), endDate: _d(2026, 4, 10), category: 'site' },
+  { id: 130, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Insulation & Drywall', startDate: _d(2026, 4, 13), endDate: _d(2026, 5, 1), category: 'site' },
+  { id: 131, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Parking Lot Paving', startDate: _d(2026, 5, 11), endDate: _d(2026, 5, 15), category: 'site' },
+  { id: 132, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Landscaping', startDate: _d(2026, 5, 18), endDate: _d(2026, 5, 29), category: 'site' },
+  // Meetings
+  { id: 133, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Architect Progress Review', startDate: _d(2026, 2, 12), endDate: _d(2026, 2, 12), category: 'meeting', participants: 'Architect, PM' },
+  { id: 134, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Framing Subcontractor Recovery Mtg', startDate: _d(2026, 2, 18), endDate: _d(2026, 2, 18), category: 'meeting', participants: 'Framing Sub, PM' },
+  { id: 135, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Client Owner Walkthrough', startDate: _d(2026, 3, 12), endDate: _d(2026, 3, 12), category: 'meeting', participants: 'CoreSystems Inc, PM' },
+  { id: 136, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'MEP Coordination', startDate: _d(2026, 3, 20), endDate: _d(2026, 3, 20), category: 'meeting', participants: 'Plumbing & Electrical Subs' },
+  { id: 137, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Schedule Recovery Workshop', startDate: _d(2026, 4, 2), endDate: _d(2026, 4, 2), category: 'meeting', participants: 'All Subs, PM, Scheduler' },
+  // Financial
+  { id: 138, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Pay Application #4', startDate: _d(2026, 2, 25), endDate: _d(2026, 2, 25), category: 'financial' },
+  { id: 139, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Pay Application #5', startDate: _d(2026, 3, 25), endDate: _d(2026, 3, 25), category: 'financial' },
+  { id: 140, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Budget Impact Assessment', startDate: _d(2026, 4, 8), endDate: _d(2026, 4, 8), category: 'financial' },
+  { id: 141, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Pay Application #6', startDate: _d(2026, 4, 25), endDate: _d(2026, 4, 25), category: 'financial' },
+  // Deadlines
+  { id: 142, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Framing Deficiency Correction', startDate: _d(2026, 2, 14), endDate: _d(2026, 2, 14), category: 'deadline' },
+  { id: 143, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Building Permit Renewal', startDate: _d(2026, 3, 31), endDate: _d(2026, 3, 31), category: 'deadline' },
+  // Inspections
+  { id: 144, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Framing Inspection - Building B', startDate: _d(2026, 2, 20), endDate: _d(2026, 2, 20), category: 'inspection' },
+  { id: 145, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Rough-In Inspection', startDate: _d(2026, 4, 14), endDate: _d(2026, 4, 14), category: 'inspection' },
+  { id: 146, projectId: 7, projectSlug: 'sunset-ridge-apartments', title: 'Insulation Inspection', startDate: _d(2026, 4, 28), endDate: _d(2026, 4, 28), category: 'inspection' },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Project 8 — Industrial Park Warehouse  (20 % complete, On Track)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Site activities
+  { id: 147, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Pile Driving - Grid A-D', startDate: _d(2026, 2, 2), endDate: _d(2026, 2, 13), category: 'site' },
+  { id: 148, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Grade Beams & Caps', startDate: _d(2026, 2, 16), endDate: _d(2026, 2, 27), category: 'site' },
+  { id: 149, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Slab on Grade - Phase 1', startDate: _d(2026, 3, 9), endDate: _d(2026, 3, 20), category: 'site' },
+  { id: 150, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Pre-Engineered Metal Bldg Erection', startDate: _d(2026, 3, 23), endDate: _d(2026, 4, 10), category: 'site' },
+  { id: 151, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Loading Dock Construction', startDate: _d(2026, 4, 13), endDate: _d(2026, 4, 24), category: 'site' },
+  { id: 152, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Fire Sprinkler Installation', startDate: _d(2026, 5, 4), endDate: _d(2026, 5, 15), category: 'site' },
+  { id: 153, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Epoxy Floor Coating', startDate: _d(2026, 5, 25), endDate: _d(2026, 6, 5), category: 'site' },
+  { id: 154, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Truck Court & Paving', startDate: _d(2026, 6, 8), endDate: _d(2026, 6, 19), category: 'site' },
+  // Meetings
+  { id: 155, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Architect CD Review', startDate: _d(2026, 2, 4), endDate: _d(2026, 2, 4), category: 'meeting', participants: 'Architect, PM' },
+  { id: 156, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Steel Fabricator Kickoff', startDate: _d(2026, 3, 4), endDate: _d(2026, 3, 4), category: 'meeting', participants: 'Steel Fabricator' },
+  { id: 157, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Client Progress Review', startDate: _d(2026, 3, 19), endDate: _d(2026, 3, 19), category: 'meeting', participants: 'DataDrive AI, PM' },
+  { id: 158, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Dock Equipment Vendor Coord', startDate: _d(2026, 4, 9), endDate: _d(2026, 4, 9), category: 'meeting', participants: 'Dock Equipment Vendor' },
+  { id: 159, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Safety Orientation - New Subs', startDate: _d(2026, 4, 27), endDate: _d(2026, 4, 27), category: 'meeting', participants: 'Safety Officer, New Subs' },
+  // Financial
+  { id: 160, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Pay Application #2', startDate: _d(2026, 2, 25), endDate: _d(2026, 2, 25), category: 'financial' },
+  { id: 161, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Pay Application #3', startDate: _d(2026, 3, 25), endDate: _d(2026, 3, 25), category: 'financial' },
+  { id: 162, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Pay Application #4', startDate: _d(2026, 4, 25), endDate: _d(2026, 4, 25), category: 'financial' },
+  { id: 163, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Mid-Project Budget Review', startDate: _d(2026, 5, 6), endDate: _d(2026, 5, 6), category: 'financial' },
+  // Deadlines
+  { id: 164, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'RFI-008 Slab Thickness Due', startDate: _d(2026, 2, 22), endDate: _d(2026, 2, 22), category: 'deadline' },
+  { id: 165, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'SUB-008 Dock Leveler Specs Due', startDate: _d(2026, 2, 25), endDate: _d(2026, 2, 25), category: 'deadline' },
+  { id: 166, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'SUB-014 Epoxy Samples Due', startDate: _d(2026, 3, 10), endDate: _d(2026, 3, 10), category: 'deadline' },
+  // Inspections
+  { id: 167, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Pile Driving Inspection', startDate: _d(2026, 2, 13), endDate: _d(2026, 2, 13), category: 'inspection' },
+  { id: 168, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Slab Pre-Pour Inspection', startDate: _d(2026, 3, 9), endDate: _d(2026, 3, 9), category: 'inspection' },
+  { id: 169, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Structural Framing Inspection', startDate: _d(2026, 4, 13), endDate: _d(2026, 4, 13), category: 'inspection' },
+  { id: 170, projectId: 8, projectSlug: 'industrial-park-warehouse', title: 'Fire Sprinkler Inspection', startDate: _d(2026, 5, 18), endDate: _d(2026, 5, 18), category: 'inspection' },
+];
+
 function generateDaily1M(): RevenueDataPoint[] {
   const days = 27;
   const startVal = 17000;

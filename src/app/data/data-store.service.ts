@@ -27,6 +27,7 @@ import type {
   Project,
   ProjectAttentionItem,
   ProjectJobCost,
+  ProjectCalendarEvent,
   ProjectRevenue,
   ProjectStatus,
   ProjectWeather,
@@ -68,6 +69,7 @@ import {
   PAYROLL_RECORDS,
   PROJECTS,
   PROJECT_ATTENTION_ITEMS,
+  PROJECT_CALENDAR_EVENTS,
   PROJECT_REVENUE,
   PROJECT_WEATHER_DATA,
   PUNCH_LIST_ITEMS,
@@ -123,6 +125,7 @@ export class DataStoreService {
   readonly punchListItems = signal<PunchListItem[]>([...PUNCH_LIST_ITEMS]);
   readonly activities = signal<ActivityItem[]>([...ACTIVITIES]);
   readonly calendarAppointments = signal<CalendarAppointment[]>([...CALENDAR_APPOINTMENTS]);
+  readonly projectCalendarEvents = signal<ProjectCalendarEvent[]>([...PROJECT_CALENDAR_EVENTS]);
   readonly dailyReports = signal<DailyReport[]>([...DAILY_REPORTS]);
   readonly projectRevenue = signal<ProjectRevenue[]>([...PROJECT_REVENUE]);
   readonly monthlyRevenue = signal<Record<RevenueTimeRange, RevenueDataPoint[]>>(structuredClone(MONTHLY_REVENUE));

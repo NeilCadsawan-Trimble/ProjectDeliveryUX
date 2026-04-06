@@ -5,35 +5,58 @@
     <div class="flex items-start justify-between">
       <div class="text-lg md:text-3xl font-bold text-foreground" role="heading" aria-level="1">Projects Dashboard</div>
       <div class="flex items-center gap-2 flex-shrink-0">
+        <div class="flex items-center border-default rounded overflow-hidden">
+          <div
+            class="flex items-center justify-center w-8 h-8 cursor-pointer transition-colors"
+            [class.bg-primary]="viewMode() === 'grid'"
+            [class.text-primary-foreground]="viewMode() === 'grid'"
+            [class.text-foreground-60]="viewMode() !== 'grid'"
+            (click)="switchView('grid')"
+          >
+            <i class="modus-icons text-base" aria-hidden="true">dashboard</i>
+          </div>
+          <div
+            class="flex items-center justify-center w-8 h-8 cursor-pointer transition-colors"
+            [class.bg-primary]="viewMode() === 'timeline'"
+            [class.text-primary-foreground]="viewMode() === 'timeline'"
+            [class.text-foreground-60]="viewMode() !== 'timeline'"
+            (click)="switchView('timeline')"
+          >
+            <i class="modus-icons text-base" aria-hidden="true">calendar</i>
+          </div>
+        </div>
         <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left">Create</modus-button>
       </div>
     </div>
     <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 mt-1.5">
       <div class="text-sm text-foreground-60">{{ today }}</div>
-      <div class="flex items-center gap-2 flex-wrap py-1">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-20 whitespace-nowrap">
-          <div class="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0"></div>
-          <div class="text-xs font-medium text-success">{{ onTrackCount() }} On Track</div>
+      @if (viewMode() === 'grid') {
+        <div class="flex items-center gap-2 flex-wrap py-1">
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-20 whitespace-nowrap">
+            <div class="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0"></div>
+            <div class="text-xs font-medium text-success">{{ onTrackCount() }} On Track</div>
+          </div>
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-20 whitespace-nowrap">
+            <div class="w-1.5 h-1.5 rounded-full bg-warning flex-shrink-0"></div>
+            <div class="text-xs font-medium text-warning">{{ atRiskCount() }} At Risk</div>
+          </div>
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive-20 whitespace-nowrap">
+            <div class="w-1.5 h-1.5 rounded-full bg-destructive flex-shrink-0"></div>
+            <div class="text-xs font-medium text-destructive">{{ overdueCount() }} Overdue</div>
+          </div>
         </div>
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-20 whitespace-nowrap">
-          <div class="w-1.5 h-1.5 rounded-full bg-warning flex-shrink-0"></div>
-          <div class="text-xs font-medium text-warning">{{ atRiskCount() }} At Risk</div>
-        </div>
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-destructive-20 whitespace-nowrap">
-          <div class="w-1.5 h-1.5 rounded-full bg-destructive flex-shrink-0"></div>
-          <div class="text-xs font-medium text-destructive">{{ overdueCount() }} Overdue</div>
-        </div>
-      </div>
-      @if (projectsInsight()) {
-        <div class="flex items-center gap-1.5">
-          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-          <div class="text-xs text-foreground-60 truncate leading-none">{{ projectsInsight() }}</div>
-        </div>
+        @if (projectsInsight()) {
+          <div class="flex items-center gap-1.5">
+            <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+            <div class="text-xs text-foreground-60 truncate leading-none">{{ projectsInsight() }}</div>
+          </div>
+        }
       }
     </div>
   </div>
   }
 
+  @if (isCanvasMode() || viewMode() === 'grid') {
   <div
     [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : isMobile() ? 'relative' : 'relative widget-grid-desktop'"
     [style.height.px]="isMobile() ? mobileGridHeight() : null"
@@ -81,6 +104,140 @@
         <div class="flex items-center gap-2 flex-shrink-0 mt-1">
           <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left">Create</modus-button>
         </div>
+      </div>
+    </div>
+
+    <!-- ═══ Canvas Timeline Widget ═══ -->
+    <div
+      class="absolute overflow-hidden"
+      [attr.data-widget-id]="'projsTimeline'"
+      [style.top.px]="widgetTops()['projsTimeline']"
+      [style.left.px]="widgetLefts()['projsTimeline']"
+      [style.width.px]="widgetPixelWidths()['projsTimeline']"
+      [style.height.px]="widgetHeights()['projsTimeline']"
+      [style.z-index]="widgetZIndices()['projsTimeline']"
+    >
+      <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
+        <div
+          class="flex items-center justify-between px-3 py-2 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+          (mousedown)="onWidgetHeaderMouseDown('projsTimeline', $event)"
+          (touchstart)="onWidgetHeaderTouchStart('projsTimeline', $event)"
+        >
+          <div class="flex items-center gap-1.5 min-w-0">
+            <i class="modus-icons text-sm text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
+            <div class="text-xs font-semibold text-foreground">Portfolio Timeline</div>
+          </div>
+          <div class="flex items-center gap-1">
+            @for (cat of allCategories; track cat) {
+              <div
+                class="flex items-center gap-1 px-2 py-0.5 rounded-full cursor-pointer text-2xs transition-opacity select-none"
+                [class]="categoryMeta[cat].bgClass"
+                [class.opacity-40]="!isCategoryActive(cat)"
+                (click)="toggleCategory(cat); $event.stopPropagation()"
+              >
+                <div class="w-1.5 h-1.5 rounded-full" [class]="categoryMeta[cat].colorClass"></div>
+                <div class="text-foreground">{{ categoryMeta[cat].label }}</div>
+              </div>
+            }
+            <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer text-foreground-60 hover:bg-muted transition-colors ml-1" (click)="shiftTimeline(-1); $event.stopPropagation()">
+              <i class="modus-icons text-xs" aria-hidden="true">chevron_left</i>
+            </div>
+            <div
+              class="px-1.5 py-0.5 rounded text-2xs font-medium text-primary cursor-pointer hover:bg-primary-20 transition-colors"
+              (click)="scrollTimelineToToday(); $event.stopPropagation()"
+            >Today</div>
+            <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer text-foreground-60 hover:bg-muted transition-colors" (click)="shiftTimeline(1); $event.stopPropagation()">
+              <i class="modus-icons text-xs" aria-hidden="true">chevron_right</i>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-1 min-h-0 overflow-hidden">
+          <div class="flex-shrink-0 w-48 border-right-default bg-card z-10 sticky left-0">
+            <div class="h-10 border-bottom-default sticky top-0 bg-card z-20"></div>
+            <div class="h-6 border-bottom-default sticky top-10 bg-card z-20"></div>
+            @for (row of eventsByProject(); track row.project.id) {
+              <div
+                class="flex items-center gap-2 px-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors"
+                [style.height.px]="canvasTimelineRowHeight()"
+                (click)="navigateToProject(row.project)"
+              >
+                <div class="flex-shrink-0 w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center text-xs font-semibold text-primary">
+                  {{ row.project.ownerInitials }}
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-medium text-foreground truncate">{{ row.project.name }}</div>
+                  <div class="text-2xs text-foreground-60 truncate">{{ row.project.status }}</div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="flex-1 overflow-x-auto overflow-y-hidden timeline-scroll-container">
+            <div [style.width.px]="timelineTotalWidth()" class="relative">
+              <div class="flex h-10 border-bottom-default sticky top-0 bg-card z-10">
+                @for (month of timelineMonths(); track month.label) {
+                  <div
+                    class="flex items-center justify-center text-xs font-medium text-foreground border-right-default"
+                    [style.width.px]="month.span * 24"
+                  >
+                    {{ month.label }}
+                  </div>
+                }
+              </div>
+
+              <div class="flex h-6 border-bottom-default sticky top-10 bg-card z-10">
+                @for (day of timelineDays(); track $index) {
+                  <div
+                    class="flex items-center justify-center text-2xs w-6 flex-shrink-0"
+                    [class.bg-muted]="day.isWeekend"
+                    [class.text-foreground-40]="day.isWeekend"
+                    [class.text-foreground-60]="!day.isWeekend && !day.isToday"
+                    [class.text-primary]="day.isToday"
+                    [class.font-bold]="day.isToday"
+                  >
+                    @if (day.dayOfMonth === 1 || day.dayOfMonth % 5 === 0 || day.isToday) {
+                      {{ day.dayOfMonth }}
+                    }
+                  </div>
+                }
+              </div>
+
+              <div
+                class="absolute top-0 bottom-0 w-px bg-primary z-20 pointer-events-none timeline-today-marker"
+                [style.left.px]="todayOffset()"
+              ></div>
+
+              @for (row of eventsByProject(); track row.project.id) {
+                @let visibleRows = row.rows.length > 3 ? 3 : row.rows.length < 1 ? 1 : row.rows.length;
+                @let rowH = canvasTimelineRowHeight();
+                @let barSpacing = rowH > 60 ? 24 : 22;
+                @let barTop = (rowH - visibleRows * barSpacing) / 2;
+                <div class="relative border-bottom-default" [style.height.px]="rowH">
+                  @for (eventRow of row.rows.slice(0, 3); track $index; let rowIdx = $index) {
+                    @for (event of eventRow; track event.id) {
+                      <div
+                        class="absolute h-5 rounded text-2xs flex items-center px-1 overflow-hidden whitespace-nowrap cursor-default transition-opacity hover:opacity-80"
+                        [class]="categoryMeta[event.category].bgClass + ' ' + categoryMeta[event.category].borderClass"
+                        [style.left.px]="eventLeft(event)"
+                        [style.width.px]="eventWidth(event)"
+                        [style.top.px]="(barTop > 2 ? barTop : 2) + rowIdx * barSpacing"
+                        [title]="event.title + ' (' + formatEventDates(event) + ')' + (event.participants ? ' \u2014 ' + event.participants : '')"
+                      >
+                        <div class="text-foreground truncate">{{ event.title }}</div>
+                      </div>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <widget-resize-handle
+          (resizeStart)="startWidgetResize('projsTimeline', 'both', $event)"
+          (resizeTouchStart)="startWidgetResizeTouch('projsTimeline', 'both', $event)"
+        />
       </div>
     </div>
     }
@@ -388,20 +545,20 @@
                         <div class="flex items-center justify-between">
                           <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget Trend</div>
                           <div class="flex items-center gap-3">
-                            <div class="flex items-center gap-1"><div class="w-2 h-0.5 bg-foreground-40"></div><div class="text-2xs text-foreground-40">Planned</div></div>
+                            <div class="flex items-center gap-1"><div class="w-2 h-0.5 bg-warning"></div><div class="text-2xs text-foreground-40">Planned</div></div>
                             <div class="flex items-center gap-1"><div class="w-2 h-0.5 bg-primary"></div><div class="text-2xs text-foreground-40">Actual</div></div>
                           </div>
                         </div>
-                        @if (isLargeWidget(widgetId)) {
-                          <svg class="w-full" viewBox="0 0 200 80" preserveAspectRatio="none" aria-hidden="true">
-                            <path [attr.d]="sparklinePath(history, 'planned', 80)" fill="none" stroke="var(--foreground)" stroke-opacity="0.3" stroke-width="1.5" />
-                            <path [attr.d]="sparklinePath(history, 'actual', 80)" fill="none" stroke="var(--primary)" stroke-width="1.5" />
-                          </svg>
-                        } @else {
-                          <svg class="w-full" viewBox="0 0 200 50" preserveAspectRatio="none" aria-hidden="true">
-                            <path [attr.d]="sparklinePath(history, 'planned')" fill="none" stroke="var(--foreground)" stroke-opacity="0.3" stroke-width="1.5" />
-                            <path [attr.d]="sparklinePath(history, 'actual')" fill="none" stroke="var(--primary)" stroke-width="1.5" />
-                          </svg>
+                        @if (budgetSparklineOptions(history, isLargeWidget(widgetId) ? 80 : 50); as opts) {
+                          <apx-chart
+                            [series]="opts.series"
+                            [chart]="opts.chart"
+                            [stroke]="opts.stroke"
+                            [fill]="opts.fill"
+                            [colors]="opts.colors"
+                            [dataLabels]="opts.dataLabels"
+                            [tooltip]="opts.tooltip"
+                          />
                         }
                         @if (!showBlock(widgetId, 'fadeGain')) {
                           @if (wd.fadeGain; as fg) {
@@ -590,14 +747,21 @@
                     <div class="flex items-center justify-between">
                       <div class="text-2xs text-foreground-40 uppercase tracking-wide">Budget Trend</div>
                       <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-1"><div class="w-2 h-0.5 bg-foreground-40"></div><div class="text-2xs text-foreground-40">Planned</div></div>
+                        <div class="flex items-center gap-1"><div class="w-2 h-0.5 bg-warning"></div><div class="text-2xs text-foreground-40">Planned</div></div>
                         <div class="flex items-center gap-1"><div class="w-2 h-0.5 bg-primary"></div><div class="text-2xs text-foreground-40">Actual</div></div>
                       </div>
                     </div>
-                    <svg class="w-full" viewBox="0 0 200 50" preserveAspectRatio="none" aria-hidden="true">
-                      <path [attr.d]="sparklinePath(history, 'planned')" fill="none" stroke="var(--foreground)" stroke-opacity="0.3" stroke-width="1.5" />
-                      <path [attr.d]="sparklinePath(history, 'actual')" fill="none" stroke="var(--primary)" stroke-width="1.5" />
-                    </svg>
+                    @if (budgetSparklineOptions(history, 50); as opts) {
+                      <apx-chart
+                        [series]="opts.series"
+                        [chart]="opts.chart"
+                        [stroke]="opts.stroke"
+                        [fill]="opts.fill"
+                        [colors]="opts.colors"
+                        [dataLabels]="opts.dataLabels"
+                        [tooltip]="opts.tooltip"
+                      />
+                    }
                     @if (!showBlock(widgetId, 'fadeGain')) {
                       @if (wd.fadeGain; as fg) {
                         <div class="flex items-center justify-end gap-1.5">
@@ -769,5 +933,145 @@
     }
 
   </div>
+  } @else {
+
+  <!-- ═══ Timeline View ═══ -->
+  <div
+    class="bg-card border-default rounded-lg overflow-hidden flex flex-col"
+    [style.height.px]="timelineHeight()"
+    [class.select-none]="timelineResizing()"
+  >
+    <!-- Timeline toolbar -->
+    <div class="flex items-center justify-between px-4 py-3 border-bottom-default flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="text-base font-semibold text-foreground">Portfolio Timeline</div>
+        <div class="flex items-center gap-1">
+          @for (cat of allCategories; track cat) {
+            <div
+              class="flex items-center gap-1 px-2 py-0.5 rounded-full cursor-pointer text-xs transition-opacity select-none"
+              [class]="categoryMeta[cat].bgClass"
+              [class.opacity-40]="!isCategoryActive(cat)"
+              (click)="toggleCategory(cat)"
+            >
+              <div class="w-2 h-2 rounded-full" [class]="categoryMeta[cat].colorClass"></div>
+              <div class="text-foreground">{{ categoryMeta[cat].label }}</div>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <div class="flex items-center justify-center w-7 h-7 rounded cursor-pointer text-foreground-60 hover:bg-muted transition-colors" (click)="shiftTimeline(-1)">
+          <i class="modus-icons text-sm" aria-hidden="true">chevron_left</i>
+        </div>
+        <div
+          class="px-2 py-0.5 rounded text-xs font-medium text-primary cursor-pointer hover:bg-primary-20 transition-colors"
+          (click)="scrollTimelineToToday()"
+        >Today</div>
+        <div class="flex items-center justify-center w-7 h-7 rounded cursor-pointer text-foreground-60 hover:bg-muted transition-colors" (click)="shiftTimeline(1)">
+          <i class="modus-icons text-sm" aria-hidden="true">chevron_right</i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline body -->
+    <div class="flex flex-1 min-h-0 overflow-hidden">
+      <!-- Fixed project name column -->
+      <div class="flex-shrink-0 w-48 border-right-default bg-card z-10 sticky left-0">
+        <div class="h-10 border-bottom-default sticky top-0 bg-card z-20"></div>
+        <div class="h-6 border-bottom-default sticky top-10 bg-card z-20"></div>
+        @for (row of eventsByProject(); track row.project.id) {
+          <div
+            class="flex items-center gap-2 px-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors"
+            [style.height.px]="timelineRowHeight()"
+            (click)="navigateToProject(row.project)"
+          >
+            <div class="flex-shrink-0 w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center text-xs font-semibold text-primary">
+              {{ row.project.ownerInitials }}
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-medium text-foreground truncate">{{ row.project.name }}</div>
+              <div class="text-2xs text-foreground-60 truncate">{{ row.project.status }}</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Scrollable timeline area -->
+      <div class="flex-1 overflow-x-auto overflow-y-hidden timeline-scroll-container">
+        <div [style.width.px]="timelineTotalWidth()" class="relative">
+          <!-- Month headers -->
+          <div class="flex h-10 border-bottom-default sticky top-0 bg-card z-10">
+            @for (month of timelineMonths(); track month.label) {
+              <div
+                class="flex items-center justify-center text-xs font-medium text-foreground border-right-default"
+                [style.width.px]="month.span * 24"
+              >
+                {{ month.label }}
+              </div>
+            }
+          </div>
+
+          <!-- Day numbers row -->
+          <div class="flex h-6 border-bottom-default sticky top-10 bg-card z-10">
+            @for (day of timelineDays(); track $index) {
+              <div
+                class="flex items-center justify-center text-2xs w-6 flex-shrink-0"
+                [class.bg-muted]="day.isWeekend"
+                [class.text-foreground-40]="day.isWeekend"
+                [class.text-foreground-60]="!day.isWeekend && !day.isToday"
+                [class.text-primary]="day.isToday"
+                [class.font-bold]="day.isToday"
+              >
+                @if (day.dayOfMonth === 1 || day.dayOfMonth % 5 === 0 || day.isToday) {
+                  {{ day.dayOfMonth }}
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Today marker -->
+          <div
+            class="absolute top-0 bottom-0 w-px bg-primary z-20 pointer-events-none timeline-today-marker"
+            [style.left.px]="todayOffset()"
+          ></div>
+
+          <!-- Project rows with events -->
+          @for (row of eventsByProject(); track row.project.id) {
+            @let visibleRows = row.rows.length > 3 ? 3 : row.rows.length < 1 ? 1 : row.rows.length;
+            @let rowH = timelineRowHeight();
+            @let barSpacing = rowH > 60 ? 24 : 22;
+            @let barTop = (rowH - visibleRows * barSpacing) / 2;
+            <div class="relative border-bottom-default" [style.height.px]="rowH">
+              @for (eventRow of row.rows.slice(0, 3); track $index; let rowIdx = $index) {
+                @for (event of eventRow; track event.id) {
+                  <div
+                    class="absolute h-5 rounded text-2xs flex items-center px-1 overflow-hidden whitespace-nowrap cursor-default transition-opacity hover:opacity-80"
+                    [class]="categoryMeta[event.category].bgClass + ' ' + categoryMeta[event.category].borderClass"
+                    [style.left.px]="eventLeft(event)"
+                    [style.width.px]="eventWidth(event)"
+                    [style.top.px]="(barTop > 2 ? barTop : 2) + rowIdx * barSpacing"
+                    [title]="event.title + ' (' + formatEventDates(event) + ')' + (event.participants ? ' \u2014 ' + event.participants : '')"
+                  >
+                    <div class="text-foreground truncate">{{ event.title }}</div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Vertical resize handle -->
+    <div
+      class="timeline-resize-handle flex-shrink-0 flex items-center justify-center h-2 cursor-ns-resize border-top-default hover:bg-muted transition-colors"
+      (mousedown)="startTimelineResize($event)"
+      (touchstart)="startTimelineResizeTouch($event)"
+    >
+      <div class="w-8 h-0.5 rounded-full bg-foreground-20"></div>
+    </div>
+  </div>
+
+  }
 
 </div>

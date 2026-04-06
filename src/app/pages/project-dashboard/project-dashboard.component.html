@@ -4549,43 +4549,24 @@
               <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
             </div>
           </div>
-          <div class="relative pl-9 pb-5">
-            <svg class="w-full h-40" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none">
-              <defs>
-                <linearGradient [attr.id]="'pfGradProjRaw' + projectId()" x1="0" y1="0" x2="0" y2="1">
-                  @if (jcProfitFadeData()?.isFade) {
-                    <stop offset="0%" class="pf-gradient-fade-end" />
-                    <stop offset="100%" class="pf-gradient-fade-start" />
-                  } @else {
-                    <stop offset="0%" class="pf-gradient-gain-start" />
-                    <stop offset="100%" class="pf-gradient-gain-end" />
-                  }
-                </linearGradient>
-              </defs>
-              @for (line of jcPfGridLines(); track line.y) {
-                <line [attr.x1]="0" [attr.y1]="line.y" [attr.x2]="jcPfW" [attr.y2]="line.y" class="chart-grid-line" />
-              }
-              <line [attr.x1]="jcPfPadX" [attr.y1]="jcPfBaselineY()" [attr.x2]="jcPfW - jcPfPadX" [attr.y2]="jcPfBaselineY()" class="pf-baseline" />
-              <path [attr.d]="jcPfAreaPath()" [attr.fill]="'url(#pfGradProjRaw' + projectId() + ')'" />
-              <path [attr.d]="jcPfLinePath()" [class]="pf.isFade ? 'pf-line-fade' : 'pf-line-gain'" />
-              @for (pt of jcPfChartPoints(); track pt.x) {
-                <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5" [class]="pf.isFade ? 'pf-dot-fade' : 'pf-dot-gain'" />
-              }
-            </svg>
-            <div class="absolute bottom-0 left-9 right-0 text-2xs text-foreground-40" style="position:relative">
-              @for (lbl of jcPfMonthLabels(); track lbl.pct) {
-                <div class="absolute" [style.left.%]="lbl.pct" style="transform:translateX(-50%)">{{ lbl.text }}</div>
-              }
+          @if (pfChartOptions(); as opts) {
+            <div class="px-2 pb-2">
+              <apx-chart
+                [series]="opts.series"
+                [chart]="opts.chart"
+                [xaxis]="opts.xaxis"
+                [yaxis]="opts.yaxis"
+                [stroke]="opts.stroke"
+                [fill]="opts.fill"
+                [colors]="opts.colors"
+                [grid]="opts.grid"
+                [tooltip]="opts.tooltip"
+                [markers]="opts.markers"
+                [annotations]="opts.annotations"
+                [dataLabels]="opts.dataLabels"
+              />
             </div>
-            <div class="absolute top-0 left-0 bottom-5 flex flex-col justify-between text-2xs text-foreground-40">
-              @for (line of jcPfGridLines(); track line.y) {
-                <div>{{ line.label }}</div>
-              }
-            </div>
-            <div class="absolute text-2xs font-medium text-foreground-60" style="right:4px" [style.top.px]="jcPfBaselineY() - 14">
-              Est. {{ pf.originalMargin }}%
-            </div>
-          </div>
+          }
           <div class="flex flex-col gap-3">
             <div class="text-sm font-semibold text-foreground">Fade / Gain by Category</div>
             <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -4764,43 +4745,24 @@
               <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
             </div>
           </div>
-          <div class="relative pl-9 pb-5">
-            <svg class="w-full h-40" [attr.viewBox]="'0 0 ' + jcPfW + ' ' + jcPfH" preserveAspectRatio="none">
-              <defs>
-                <linearGradient [attr.id]="'pfGradProj' + projectId()" x1="0" y1="0" x2="0" y2="1">
-                  @if (jcProfitFadeData()?.isFade) {
-                    <stop offset="0%" class="pf-gradient-fade-end" />
-                    <stop offset="100%" class="pf-gradient-fade-start" />
-                  } @else {
-                    <stop offset="0%" class="pf-gradient-gain-start" />
-                    <stop offset="100%" class="pf-gradient-gain-end" />
-                  }
-                </linearGradient>
-              </defs>
-              @for (line of jcPfGridLines(); track line.y) {
-                <line [attr.x1]="0" [attr.y1]="line.y" [attr.x2]="jcPfW" [attr.y2]="line.y" class="chart-grid-line" />
-              }
-              <line [attr.x1]="jcPfPadX" [attr.y1]="jcPfBaselineY()" [attr.x2]="jcPfW - jcPfPadX" [attr.y2]="jcPfBaselineY()" class="pf-baseline" />
-              <path [attr.d]="jcPfAreaPath()" [attr.fill]="'url(#pfGradProj' + projectId() + ')'" />
-              <path [attr.d]="jcPfLinePath()" [class]="pf.isFade ? 'pf-line-fade' : 'pf-line-gain'" />
-              @for (pt of jcPfChartPoints(); track pt.x) {
-                <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5" [class]="pf.isFade ? 'pf-dot-fade' : 'pf-dot-gain'" />
-              }
-            </svg>
-            <div class="absolute bottom-0 left-9 right-0 text-2xs text-foreground-40" style="position:relative">
-              @for (lbl of jcPfMonthLabels(); track lbl.pct) {
-                <div class="absolute" [style.left.%]="lbl.pct" style="transform:translateX(-50%)">{{ lbl.text }}</div>
-              }
+          @if (pfChartOptions(); as opts) {
+            <div class="px-2 pb-2">
+              <apx-chart
+                [series]="opts.series"
+                [chart]="opts.chart"
+                [xaxis]="opts.xaxis"
+                [yaxis]="opts.yaxis"
+                [stroke]="opts.stroke"
+                [fill]="opts.fill"
+                [colors]="opts.colors"
+                [grid]="opts.grid"
+                [tooltip]="opts.tooltip"
+                [markers]="opts.markers"
+                [annotations]="opts.annotations"
+                [dataLabels]="opts.dataLabels"
+              />
             </div>
-            <div class="absolute top-0 left-0 bottom-5 flex flex-col justify-between text-2xs text-foreground-40">
-              @for (line of jcPfGridLines(); track line.y) {
-                <div>{{ line.label }}</div>
-              }
-            </div>
-            <div class="absolute text-2xs font-medium text-foreground-60" style="right:4px" [style.top.px]="jcPfBaselineY() - 14">
-              Est. {{ pf.originalMargin }}%
-            </div>
-          </div>
+          }
           <div class="flex flex-col gap-3">
             <div class="text-sm font-semibold text-foreground">Fade / Gain by Category</div>
             <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
