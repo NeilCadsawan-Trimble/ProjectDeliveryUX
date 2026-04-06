@@ -118,11 +118,24 @@ If the date matches today, skip this section and proceed normally.
   1. Restored stash containing subnav mobile mode changes (collapsible-subnav, project-dashboard, layout engine anchor priority).
   2. Resolved merge conflicts in documentation files (shortterm-memory, SKILL.md).
 
+### Session 21 (Apr 5)
+- **Topic**: Draggable KPI widget, resize twitchiness fix, push-down only collision
+- **What happened**:
+  1. Converted locked `homeHeader` into draggable/resizable `homeKpis` widget with compact KPI display.
+  2. Moved "Welcome back, Frank" greeting to static text line above widget grid.
+  3. Updated `DashboardWidgetId`, `widget-registrations.ts`, `layout-defaults.service.ts`, canvas-push tests.
+  4. Fixed resize twitchiness: added `_hResizeActive` dead zone flag -- horizontal resize pipeline only activates when horizontal mouse delta exceeds half a column step (`currentStep / 2`).
+  5. Fixed widget jumping: changed `resolveCollisions` and `compactAll` to initialize `y` from `tops[id]` instead of `0`. Widgets can only be pushed down, never jump up over intervening widgets.
+  6. All lint, type-check, build passing. PR #66 created and merged to `main`.
+  7. Added sections 32-33 to `dashboard-layout-lessons` SKILL.md.
+  8. Added Phase 20 to PROGRESS.md, updated chat session history.
+
 ## Active Context
 
-- On `dev` branch, uncommitted changes from restored stash.
-- Canvas mode fix is in place, subnav mobile changes restored on top.
+- On `dev` branch, merged to `main` via PR #66.
+- Layout engine has push-down only collision resolution (no upward jumping).
+- Home dashboard has no locked elements -- all widgets are draggable/resizable.
 
 ## Pending Items
 
-- Merge `dev` to `main` for production Vercel deployment (when ready).
+- None outstanding from this session.
