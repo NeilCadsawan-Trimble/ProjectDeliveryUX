@@ -1747,7 +1747,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
     for (const id of sorted) {
       if (lockedState[id]) { placed.push(id); continue; }
-      let y = tops[id];
+      let y = 0;
       let settled = false;
       while (!settled) {
         settled = true;
