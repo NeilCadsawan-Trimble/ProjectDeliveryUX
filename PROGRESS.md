@@ -502,7 +502,36 @@ Connected weather widgets to the OpenWeatherMap API for live forecasts, fixed pr
 
 ---
 
-## Phase 20: Remaining Work
+## Phase 20: Draggable KPI Widget and Layout Engine Fixes (Apr 5)
+
+Converted the locked KPI header on the home dashboard into a draggable/resizable widget, and fixed two layout engine regressions: resize twitchiness and widget jumping.
+
+### Draggable KPI Widget (PR #66)
+- [x] Replaced locked `homeHeader` with draggable/resizable `homeKpis` widget
+- [x] Added `compact` input to `HomeKpiCardsComponent` for condensed vertical display inside widgets
+- [x] Moved "Welcome back, Frank" greeting to a static text line above the widget grid
+- [x] Updated `DashboardWidgetId` type, `widget-registrations.ts`, and `layout-defaults.service.ts`
+- [x] Bumped layout storage keys (`dashboard-home-v8`, `canvas-layout:dashboard-home:v15`)
+- [x] Updated canvas-push tests to replace `homeHeader` references with `homeKpis`
+
+### Resize Twitchiness Fix (PR #66)
+- [x] Added `_hResizeActive` dead zone flag to prevent horizontal resize pipeline from running during vertical-only resize with `dir='both'`
+- [x] Horizontal processing gated on actual horizontal mouse delta exceeding half a column step
+
+### Widget Jumping Fix (PR #66)
+- [x] Changed `resolveCollisions` and `compactAll` to initialize widget `y` from current position (`tops[id]`) instead of `0`
+- [x] Widgets can only be pushed down by overlaps; no automatic upward jumping over intervening widgets
+
+### Skills Updated
+- [x] Added section 32: Horizontal Resize Dead Zone for `dir='both'` (Twitch Fix)
+- [x] Added section 33: Push-Down Only Collision Resolution (No Widget Jumping)
+
+**PRs**: #66
+**Tests**: lint, type-check, and build all passing
+
+---
+
+## Phase 21: Remaining Work
 
 Features and improvements not yet started.
 
@@ -585,7 +614,8 @@ Features and improvements not yet started.
 | Apr 3 | [Sidenav polish](a54ba709-8451-4a34-a90f-ccb02aad30e5) | Sidenav overlay (no push), consistent 56px row heights, mobile icon centering, Create button standardization, title y-coordinate alignment |
 | Apr 3--5 | [Canvas alignment](57efcfde-5b2b-43c8-af3e-933f418e9ae1) | ng-content projection fix, canvas content centering (fixed positioning), side padding removal, projects grid 1248 to 1280 recalculation, skills sections 29-30 |
 | Apr 5 | [Live weather fix](fb55d8c2-9c39-4110-99b0-9930aed93e09) | Weather widget live data, WeatherService init on project routes, date filtering, API proxy, seed data dynamic dates |
-| Apr 5 | [Weather regression tests](current) | 23 new weather regression tests, PR #58 merged to main |
+| Apr 5 | [Weather regression tests](fb55d8c2-9c39-4110-99b0-9930aed93e09) | 23 new weather regression tests, PR #58 merged to main |
+| Apr 5 | [KPI widget and layout fixes](56f15e0d-1c0c-4cb6-82f7-2018d33f1ec3) | Draggable KPI widget, resize twitchiness fix, push-down only collision (no jumping), PR #66 merged to main |
 
 ---
 

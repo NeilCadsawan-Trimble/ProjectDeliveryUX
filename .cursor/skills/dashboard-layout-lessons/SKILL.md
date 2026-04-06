@@ -1537,6 +1537,34 @@ Where `CANVAS_STEP = 81` and `GAP_PX = 16`.
 
 ---
 
+## 32. Horizontal Resize Dead Zone for `dir='both'` (Twitch Fix)
+
+**Problem**: All home-page widget resize handles pass `dir='both'` to `startWidgetResize`. Even during purely vertical resize, the horizontal pipeline runs every frame: `applyResizePushSqueeze` → `syncColsFromPixelPositions`. The pixel-to-column round-trip causes sub-pixel rounding instability, making neighboring widgets twitch/jump on every mouse-move frame.
+
+**Root cause**: `handleResize` unconditionally entered the horizontal code path when `_resizeDir === 'both'`. The snapped pixel widths fed into `syncColsFromPixelPositions`, which recalculated `widgetColStarts`/`widgetColSpans` for all widgets. Even tiny rounding differences caused CSS Grid to re-layout neighbors.
+
+**Fix**: Added `_hResizeActive` flag (default `false`). For `dir='both'`, horizontal processing is gated on actual horizontal mouse movement exceeding half a column step (`currentStep / 2`). For pure `dir='h'`, the flag is set `true` immediately.
+
+**Files changed**: `dashboard-layout-engine.ts` — `startWidgetResize`, `startWidgetResizeTouch`, `handleResize`, `resolveCollisions`, `onDocumentMouseUp`.
+
+**Rule**: When `dir='both'`, never run horizontal resize logic (`applyResizePushSqueeze`, `syncColsFromPixelPositions`) until horizontal mouse delta exceeds half a grid step. This prevents pixel-column round-trip noise during vertical-only resize.
+
+---
+
+## 33. Push-Down Only Collision Resolution (No Widget Jumping)
+
+**Problem**: During resize and on mouseup (`compactAll`), the collision pass started each widget at `y=0` and packed greedily upward. This caused widgets to jump across intervening widgets to fill distant gaps — e.g., a widget in row 4 could jump to row 1 if a gap opened, skipping over rows 2-3.
+
+**User rule**: Widgets may only be moved across other widgets by explicit user drag. Automatic collision resolution must never pull a widget up over intervening widgets.
+
+**Fix**: Changed `let y = 0` to `let y = tops[id]` in both `resolveCollisions` (during resize) and `compactAll` (on mouseup). Widgets now start at their current position and can only be pushed DOWN by overlaps. They never rise above their current position automatically.
+
+**Files changed**: `dashboard-layout-engine.ts` — `resolveCollisions` inner loop, `compactAll` inner loop.
+
+**Rule**: In the collision placement loop, always initialize `y` from the widget's current top position (`tops[id]`), never from `0`. This ensures widgets only move downward to resolve overlaps and never teleport upward across other widgets.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1576,3 +1604,5 @@ Where `CANVAS_STEP = 81` and `GAP_PX = 16`.
 | Single ng-content (canvas projection) | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` (exactly 1 ng-content, not in conditional) |
 | Canvas default pixel values (1280px grid) | `*-layout.config.ts` (`canvasDefaultLefts`, `canvasDefaultPixelWidths`) | Build verification; visual test (rightmost widget edge = 1280) |
 | Widget height grid-snap + no scrollbar | page `*_HEIGHT` constants + storage keys | (visual: verify no internal scrollbar in Chromium + Safari) |
+| Horizontal resize dead zone (twitch fix) | `dashboard-layout-engine.ts` (`_hResizeActive`) | (visual: vertical resize, neighbors must not twitch) |
+| Push-down only collision (no jumping) | `dashboard-layout-engine.ts` (`resolveCollisions`, `compactAll`) | (visual: resize shorter, distant widgets must not jump up) |

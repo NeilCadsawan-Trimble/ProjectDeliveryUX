@@ -623,7 +623,7 @@ describe('DashboardLayoutEngine', () => {
   describe('desktop gravity', () => {
     const GAP = DashboardLayoutEngine.GAP_PX;
 
-    it('desktop init compacts gaps from restored layout', () => {
+    it('desktop init preserves restored layout positions (push-down only)', () => {
       const layoutService = createMockLayoutService();
       (layoutService.load as ReturnType<typeof vi.fn>).mockReturnValue({
         tops: { w1: 500, w2: 0, w3: 1000 },
@@ -645,11 +645,11 @@ describe('DashboardLayoutEngine', () => {
 
       const tops = engine.widgetTops();
       expect(tops['w2']).toBe(0);
-      expect(tops['w1']).toBe(100 + GAP);
-      expect(tops['w3']).toBe(200 + GAP * 2);
+      expect(tops['w1']).toBe(500);
+      expect(tops['w3']).toBe(1000);
     });
 
-    it('desktop move-end compacts all widgets to top', () => {
+    it('desktop move-end preserves widget positions (push-down only)', () => {
       const engine = createEngine({
         defaultColStarts: { w1: 1, w2: 1, w3: 1 },
         defaultColSpans: { w1: 16, w2: 16, w3: 16 },
@@ -673,9 +673,9 @@ describe('DashboardLayoutEngine', () => {
       engine.onDocumentMouseUp();
 
       const tops = engine.widgetTops();
-      expect(tops['w2']).toBe(0);
-      expect(tops['w3']).toBe(100 + GAP);
-      expect(tops['w1']).toBe(200 + GAP * 2);
+      expect(tops['w2']).toBe(100 + GAP);
+      expect(tops['w3']).toBe(200 + GAP * 2);
+      expect(tops['w1']).toBe(500);
     });
 
     it('dragged widget gets sort priority and all widgets compact upward', () => {
