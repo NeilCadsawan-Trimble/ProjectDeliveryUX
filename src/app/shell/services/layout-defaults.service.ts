@@ -6,7 +6,7 @@ interface DashboardKeyPair {
 }
 
 const STATIC_DASHBOARDS: DashboardKeyPair[] = [
-  { desktop: 'dashboard-home-v7', canvas: 'canvas-layout:dashboard-home:v14' },
+  { desktop: 'dashboard-home-v8', canvas: 'canvas-layout:dashboard-home:v15' },
   { desktop: 'dashboard-financials:v9', canvas: 'canvas-layout:dashboard-financials:v11' },
   { desktop: 'dashboard-projects:v18', canvas: 'canvas-layout:dashboard-projects:v19' },
 ];

@@ -15,7 +15,7 @@ export type DashboardWidgetId =
   | 'recentActivity'
   | 'needsAttention'
   | 'timeOff'
-  | 'homeHeader'
+  | 'homeKpis'
   | 'homeTimeOff'
   | 'homeCalendar'
   | 'homeRfis'

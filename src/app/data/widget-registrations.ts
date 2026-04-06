@@ -1,6 +1,14 @@
 import type { WidgetRegistration } from '../shell/services/widget-focus.service';
 
 export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
+  homeKpis: {
+    name: 'Key Metrics',
+    suggestions: [
+      'What are the top priorities right now?',
+      'Show portfolio health summary',
+      'Which KPIs need attention?',
+    ],
+  },
   homeUrgentNeeds: {
     name: 'Urgent Needs',
     suggestions: [

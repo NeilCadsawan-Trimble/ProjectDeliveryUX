@@ -80,24 +80,12 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
     <div [class]="isCanvasMode() ? 'py-4 md:py-6 pointer-events-none' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
       @if (!isCanvasMode()) {
       <div #pageHeader>
-      <div class="flex items-start justify-between mb-6">
+      <div class="flex items-start justify-between mb-4">
         <div>
           <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Frank</div>
           <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
         </div>
       </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <app-home-kpi-cards [cards]="kpiCards()" (cardClick)="handleKpiCardClick($event)" />
-      </div>
-      @if (homeKpiInsight()) {
-        <div class="flex items-center gap-1.5 px-5 py-2 mb-6 bg-card border-default rounded-lg">
-          <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-          <div class="text-xs text-foreground-60 truncate leading-none">{{ homeKpiInsight() }}</div>
-        </div>
-      } @else {
-        <div class="mb-2"></div>
-      }
       </div>
       }
 
@@ -107,34 +95,6 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
         [style.min-height.px]="isCanvasMode() ? canvasGridMinHeight() : (!isMobile() ? desktopGridMinHeight() : null)"
         #homeWidgetGrid
       >
-        @if (isCanvasMode()) {
-          <div
-            class="absolute overflow-hidden pointer-events-auto"
-            [class.widget-detail-transition]="shouldTransition('homeHeader')"
-            [attr.data-widget-id]="'homeHeader'"
-            [style.top.px]="widgetTops()['homeHeader']"
-            [style.left.px]="widgetLefts()['homeHeader']"
-            [style.width.px]="widgetPixelWidths()['homeHeader']"
-            [style.height.px]="widgetHeights()['homeHeader']"
-            [style.z-index]="widgetZIndices()['homeHeader']"
-          >
-            <div class="flex items-start justify-between mb-4">
-              <div>
-                <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Frank</div>
-                <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
-              </div>
-            </div>
-            <div class="grid grid-cols-3 gap-4">
-              <app-home-kpi-cards [cards]="kpiCards()" (cardClick)="handleKpiCardClick($event)" />
-            </div>
-            @if (homeKpiInsight()) {
-              <div class="flex items-center gap-1.5 px-5 py-2 mt-3 bg-card border-default rounded-lg">
-                <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                <div class="text-xs text-foreground-60 truncate leading-none">{{ homeKpiInsight() }}</div>
-              </div>
-            }
-          </div>
-        }
         @for (widgetId of homeWidgets; track widgetId) {
           <div
             [class]="(canvasDetailViews()[widgetId] ? 'absolute pointer-events-auto'
@@ -383,7 +343,26 @@ import { HomeWidgetFrameComponent } from './components/home-widget-frame.compone
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
               <widget-lock-toggle [locked]="widgetLocked()[widgetId]" (toggle)="toggleWidgetLock(widgetId)" />
 
-              @if (widgetId === 'homeTimeOff') {
+              @if (widgetId === 'homeKpis') {
+                <app-home-widget-frame
+                  [widgetId]="widgetId"
+                  [title]="'Key Metrics'"
+                  [icon]="'bar_graph_square'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerRowClass]="'px-4 py-3'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <div class="p-3 flex flex-col gap-2 overflow-y-auto flex-1">
+                    <app-home-kpi-cards [cards]="kpiCards()" [compact]="true" (cardClick)="handleKpiCardClick($event)" />
+                  </div>
+                </app-home-widget-frame>
+              }
+
+              @else if (widgetId === 'homeTimeOff') {
                 <div class="bg-card rounded-lg flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
@@ -1553,39 +1532,37 @@ export class HomePageComponent extends DashboardPageBase {
   private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
 
-  private static readonly HEADER_HEIGHT = 224;
-  private static readonly HEADER_OFFSET = HomePageComponent.HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
-
+  private static readonly KPI_HEIGHT = 200;
   private static readonly ROW_1_HEIGHT = 336;
   private static readonly ROW_2_HEIGHT = 336;
   private static readonly ROW_3_MAX_HEIGHT = 448;
   private static readonly ROW_2_TOP = HomePageComponent.ROW_1_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly ROW_3_TOP = HomePageComponent.ROW_2_TOP + HomePageComponent.ROW_2_HEIGHT + DashboardLayoutEngine.GAP_PX;
-  private static readonly ACTIVITY_ROW_TOP = HomePageComponent.ROW_3_TOP + HomePageComponent.ROW_3_MAX_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ROW_4_TOP = HomePageComponent.ROW_3_TOP + HomePageComponent.ROW_3_MAX_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
     return {
-      widgets: ['homeHeader', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
-      layoutStorageKey: 'dashboard-home-v7',
-      canvasStorageKey: 'canvas-layout:dashboard-home:v14',
-      defaultColStarts: { homeHeader: 1, homeUrgentNeeds: 1, homeWeather: 11, homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1, homeDrawings: 11, homeRecentActivity: 1 },
-      defaultColSpans: { homeHeader: 16, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 16 },
-      defaultTops: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 0, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP, homeTimeOff: HomePageComponent.ROW_2_TOP, homeCalendar: HomePageComponent.ROW_3_TOP, homeDrawings: HomePageComponent.ROW_3_TOP, homeRecentActivity: HomePageComponent.ACTIVITY_ROW_TOP },
-      defaultHeights: { homeHeader: 0, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT, homeWeather: HomePageComponent.ROW_1_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT, homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT, homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: 384 },
-      canvasDefaultLefts: { homeHeader: 0, homeUrgentNeeds: 0, homeWeather: 891, homeTimeOff: 0, homeCalendar: 0, homeRfis: 891, homeSubmittals: 891, homeDrawings: 1296, homeRecentActivity: 0 },
-      canvasDefaultPixelWidths: { homeHeader: 1280, homeUrgentNeeds: 875, homeWeather: 389, homeTimeOff: 875, homeCalendar: 875, homeRfis: 389, homeSubmittals: 389, homeDrawings: 470, homeRecentActivity: 875 },
+      widgets: ['homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
+      layoutStorageKey: 'dashboard-home-v8',
+      canvasStorageKey: 'canvas-layout:dashboard-home:v15',
+      defaultColStarts: { homeKpis: 1, homeUrgentNeeds: 7, homeWeather: 1, homeRfis: 7, homeSubmittals: 12, homeTimeOff: 1, homeCalendar: 7, homeDrawings: 1, homeRecentActivity: 7 },
+      defaultColSpans: { homeKpis: 6, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 10 },
+      defaultTops: { homeKpis: 0, homeUrgentNeeds: 0, homeWeather: HomePageComponent.ROW_2_TOP, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP, homeTimeOff: HomePageComponent.ROW_3_TOP, homeCalendar: HomePageComponent.ROW_3_TOP, homeDrawings: HomePageComponent.ROW_4_TOP, homeRecentActivity: HomePageComponent.ROW_4_TOP },
+      defaultHeights: { homeKpis: HomePageComponent.KPI_HEIGHT, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT, homeWeather: HomePageComponent.ROW_2_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT, homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT, homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: 384 },
+      canvasDefaultLefts: { homeKpis: 0, homeUrgentNeeds: 0, homeWeather: 891, homeTimeOff: 0, homeCalendar: 0, homeRfis: 891, homeSubmittals: 891, homeDrawings: 1296, homeRecentActivity: 0 },
+      canvasDefaultPixelWidths: { homeKpis: 389, homeUrgentNeeds: 875, homeWeather: 389, homeTimeOff: 875, homeCalendar: 875, homeRfis: 389, homeSubmittals: 389, homeDrawings: 470, homeRecentActivity: 875 },
       canvasDefaultTops: {
-        homeHeader: 16,
-        homeUrgentNeeds: 256,
-        homeWeather: 256,
-        homeCalendar: 608,
-        homeSubmittals: 800,
-        homeTimeOff: 1088,
-        homeRfis: 1232,
-        homeRecentActivity: 1536,
-        homeDrawings: 2128,
+        homeKpis: 16,
+        homeUrgentNeeds: 288,
+        homeWeather: 288,
+        homeCalendar: 640,
+        homeSubmittals: 832,
+        homeTimeOff: 1120,
+        homeRfis: 1264,
+        homeRecentActivity: 1568,
+        homeDrawings: 1936,
       },
-      canvasDefaultHeights: { homeHeader: 224, homeUrgentNeeds: 336, homeWeather: 528, homeTimeOff: 432, homeCalendar: 464, homeRfis: 432, homeSubmittals: 416, homeDrawings: 448, homeRecentActivity: 352 },
+      canvasDefaultHeights: { homeKpis: 256, homeUrgentNeeds: 336, homeWeather: 528, homeTimeOff: 432, homeCalendar: 464, homeRfis: 432, homeSubmittals: 416, homeDrawings: 448, homeRecentActivity: 352 },
       minColSpan: 4,
       canvasGridMinHeightOffset: 100,
       savesDesktopOnMobile: true,
@@ -1595,7 +1572,7 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   protected override applyInitialHeaderLock(): void {
-    this.engine.widgetLocked.update(l => ({ ...l, homeHeader: true }));
+    // No locked elements on home dashboard
   }
 
   readonly today = new Date().toLocaleDateString('en-US', {
@@ -1718,7 +1695,7 @@ export class HomePageComponent extends DashboardPageBase {
     return results;
   });
 
-  readonly homeWidgets: DashboardWidgetId[] = ['homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'];
+  readonly homeWidgets: DashboardWidgetId[] = ['homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   private readonly _registerHomeWidgets = (() => {
@@ -1830,6 +1807,7 @@ export class HomePageComponent extends DashboardPageBase {
   private applyMobileHeights(): void {
     if (!this.isMobile()) return;
     const heights = { ...this.widgetHeights() };
+    heights['homeKpis'] = 48 + 12 + this.kpiCards().length * 44 + (this.kpiCards().length - 1) * 8 + 12;
     heights['homeRfis'] = this.mobileWidgetHeight(this.rfiMobileExpanded(), this.filteredRfis().length);
     heights['homeSubmittals'] = this.mobileWidgetHeight(
       this.submittalMobileExpanded(),
@@ -2198,7 +2176,6 @@ export class HomePageComponent extends DashboardPageBase {
   readonly submittalsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeSubmittals'));
   readonly drawingsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeDrawings'));
   readonly recentActivityInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeRecentActivity'));
-  readonly homeKpiInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeDefault'));
 
   readonly staffingByProject = computed(() => {
     const conflicts = this.allStaffingConflicts();
