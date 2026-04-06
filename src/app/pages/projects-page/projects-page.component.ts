@@ -17,6 +17,7 @@ import { ModusProgressComponent } from '../../components/modus-progress.componen
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { ModusButtonComponent } from '../../components/modus-button.component';
+import { ChartComponent, type ApexAxisChartSeries } from 'ng-apexcharts';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import type { DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import type {
@@ -27,6 +28,8 @@ import type {
   BudgetHistoryPoint,
   ProjectJobCost,
   WeatherForecast,
+  ProjectCalendarEvent,
+  ProjectEventCategory,
 } from '../../data/dashboard-data';
 import {
   statusBadgeColor,
@@ -89,11 +92,12 @@ const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline
 
 @Component({
   selector: 'app-projects-page',
-  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent, ModusButtonComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent, ModusButtonComponent, ChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
     '(document:mouseup)': 'onDocumentMouseUp()',
+    '(document:touchmove)': 'onDocumentTouchMove($event)',
     '(document:touchend)': 'onDocumentTouchEnd()',
   },
   templateUrl: './projects-page.component.html',
@@ -539,17 +543,29 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     return this.budgetHistoryMap().get(projectId) ?? null;
   }
 
-  sparklinePath(points: BudgetHistoryPoint[], field: 'planned' | 'actual', svgHeight = 50): string {
-    if (!points.length) return '';
-    const vals = points.map(p => p[field]);
-    const max = Math.max(...vals, 1);
-    const w = 200;
-    const step = w / Math.max(vals.length - 1, 1);
-    return vals.map((v, i) => {
-      const x = i * step;
-      const y = svgHeight - (v / max) * (svgHeight - 4) - 2;
-      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
+  private resolveCssVar(prop: string): string {
+    return getComputedStyle(document.documentElement).getPropertyValue(prop).trim();
+  }
+
+  budgetSparklineOptions(points: BudgetHistoryPoint[], height: number) {
+    if (!points.length) return null;
+    const primaryColor = this.resolveCssVar('--color-primary');
+    const warningColor = this.resolveCssVar('--color-warning');
+    return {
+      series: [
+        { name: 'Planned', data: points.map(p => p.planned) },
+        { name: 'Actual', data: points.map(p => p.actual) },
+      ] as ApexAxisChartSeries,
+      chart: { type: 'area' as const, height, sparkline: { enabled: true }, animations: { enabled: false }, fontFamily: 'inherit' },
+      stroke: { curve: 'smooth' as const, width: [1.5, 2] },
+      fill: {
+        type: 'gradient' as const,
+        gradient: { shadeIntensity: 1, opacityFrom: [0.15, 0.25], opacityTo: [0, 0.02], stops: [0, 100] },
+      },
+      colors: [warningColor, primaryColor],
+      dataLabels: { enabled: false },
+      tooltip: { enabled: false },
+    };
   }
 
   private readonly jobCostDataMap = computed<Map<number, ProjectJobCost | null>>(() => {
@@ -645,6 +661,265 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
   readonly projectWidgets: DashboardWidgetId[] = [...TILE_IDS];
+
+  // ─── Timeline view toggle ───────────────────────────────────────────
+  readonly viewMode = signal<'grid' | 'timeline'>(
+    (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('projects-view-mode') as 'grid' | 'timeline') || 'grid',
+  );
+
+  switchView(mode: 'grid' | 'timeline'): void {
+    this.viewMode.set(mode);
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('projects-view-mode', mode);
+  }
+
+  // ─── Timeline computed signals ──────────────────────────────────────
+  private static readonly ALL_CATEGORIES: ProjectEventCategory[] = ['site', 'financial', 'meeting', 'deadline', 'inspection'];
+  readonly categoryFilter = signal<Set<ProjectEventCategory>>(new Set(ProjectsPageComponent.ALL_CATEGORIES));
+  readonly allCategories = ProjectsPageComponent.ALL_CATEGORIES;
+
+  toggleCategory(cat: ProjectEventCategory): void {
+    this.categoryFilter.update(s => {
+      const next = new Set(s);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      return next;
+    });
+  }
+
+  isCategoryActive(cat: ProjectEventCategory): boolean {
+    return this.categoryFilter().has(cat);
+  }
+
+  readonly categoryMeta: Record<ProjectEventCategory, { label: string; colorClass: string; bgClass: string; borderClass: string }> = {
+    site: { label: 'Site Activities', colorClass: 'bg-primary', bgClass: 'bg-primary-20', borderClass: 'timeline-bar-site' },
+    financial: { label: 'Financial', colorClass: 'bg-warning', bgClass: 'bg-warning-20', borderClass: 'timeline-bar-financial' },
+    meeting: { label: 'Meetings', colorClass: 'bg-success', bgClass: 'bg-success-20', borderClass: 'timeline-bar-meeting' },
+    deadline: { label: 'Deadlines', colorClass: 'bg-destructive', bgClass: 'bg-destructive-20', borderClass: 'timeline-bar-deadline' },
+    inspection: { label: 'Inspections', colorClass: 'bg-secondary', bgClass: 'bg-secondary-20', borderClass: 'timeline-bar-inspection' },
+  };
+
+  readonly timelineEvents = computed<ProjectCalendarEvent[]>(() => {
+    const events = this.store.projectCalendarEvents();
+    const filter = this.categoryFilter();
+    return events.filter(e => filter.has(e.category));
+  });
+
+  readonly eventsByProject = computed(() => {
+    const events = this.timelineEvents();
+    const dayPx = ProjectsPageComponent.DAY_PX;
+    const start = this.timelineStartDate();
+
+    return this.store.projects().map(p => {
+      const projEvents = events
+        .filter(e => e.projectId === p.id)
+        .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+
+      const rows: ProjectCalendarEvent[][] = [];
+      for (const evt of projEvents) {
+        const evtLeft = Math.floor((evt.startDate.getTime() - start.getTime()) / 86400000) * dayPx;
+        const evtRight = evtLeft + Math.max((Math.floor((evt.endDate.getTime() - evt.startDate.getTime()) / 86400000) + 1) * dayPx - 2, 6);
+        let placed = false;
+        for (const row of rows) {
+          const lastInRow = row[row.length - 1];
+          const lastLeft = Math.floor((lastInRow.startDate.getTime() - start.getTime()) / 86400000) * dayPx;
+          const lastRight = lastLeft + Math.max((Math.floor((lastInRow.endDate.getTime() - lastInRow.startDate.getTime()) / 86400000) + 1) * dayPx - 2, 6);
+          if (evtLeft >= lastRight + 2) {
+            row.push(evt);
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) rows.push([evt]);
+      }
+
+      return {
+        project: p,
+        events: projEvents,
+        rows,
+      };
+    });
+  });
+
+  private static readonly DAY_PX = 24;
+  private static readonly TIMELINE_MONTHS = 6;
+
+  readonly timelineStartDate = signal<Date>(this.computeTimelineStart());
+  readonly timelineToday = new Date();
+
+  private computeTimelineStart(): Date {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 1);
+    return d;
+  }
+
+  readonly timelineDays = computed<{ date: Date; dayOfMonth: number; isWeekend: boolean; isToday: boolean }[]>(() => {
+    const start = this.timelineStartDate();
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + ProjectsPageComponent.TIMELINE_MONTHS);
+    const days: { date: Date; dayOfMonth: number; isWeekend: boolean; isToday: boolean }[] = [];
+    const todayStr = this.timelineToday.toDateString();
+    const d = new Date(start);
+    while (d < end) {
+      const dow = d.getDay();
+      days.push({
+        date: new Date(d),
+        dayOfMonth: d.getDate(),
+        isWeekend: dow === 0 || dow === 6,
+        isToday: d.toDateString() === todayStr,
+      });
+      d.setDate(d.getDate() + 1);
+    }
+    return days;
+  });
+
+  readonly timelineMonths = computed<{ label: string; span: number }[]>(() => {
+    const days = this.timelineDays();
+    if (!days.length) return [];
+    const months: { label: string; span: number }[] = [];
+    let current = '';
+    let count = 0;
+    const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' });
+    for (const d of days) {
+      const label = fmt.format(d.date);
+      if (label !== current) {
+        if (current) months.push({ label: current, span: count });
+        current = label;
+        count = 1;
+      } else {
+        count++;
+      }
+    }
+    if (current) months.push({ label: current, span: count });
+    return months;
+  });
+
+  readonly timelineTotalWidth = computed(() => this.timelineDays().length * ProjectsPageComponent.DAY_PX);
+
+  readonly todayOffset = computed(() => {
+    const start = this.timelineStartDate();
+    const diff = Math.floor((this.timelineToday.getTime() - start.getTime()) / 86400000);
+    return diff * ProjectsPageComponent.DAY_PX;
+  });
+
+  eventLeft(event: ProjectCalendarEvent): number {
+    const start = this.timelineStartDate();
+    const diff = Math.floor((event.startDate.getTime() - start.getTime()) / 86400000);
+    return diff * ProjectsPageComponent.DAY_PX;
+  }
+
+  eventWidth(event: ProjectCalendarEvent): number {
+    const days = Math.floor((event.endDate.getTime() - event.startDate.getTime()) / 86400000) + 1;
+    return Math.max(days * ProjectsPageComponent.DAY_PX - 2, 6);
+  }
+
+  formatEventDates(event: ProjectCalendarEvent): string {
+    const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+    if (event.startDate.getTime() === event.endDate.getTime()) return fmt.format(event.startDate);
+    return `${fmt.format(event.startDate)} - ${fmt.format(event.endDate)}`;
+  }
+
+  scrollTimelineToToday(): void {
+    const el = document.querySelector('.timeline-scroll-container');
+    if (el) {
+      const offset = this.todayOffset() - el.clientWidth / 2;
+      el.scrollLeft = Math.max(0, offset);
+    }
+  }
+
+  shiftTimeline(months: number): void {
+    this.timelineStartDate.update(d => {
+      const next = new Date(d);
+      next.setMonth(next.getMonth() + months);
+      return next;
+    });
+  }
+
+  // ─── Timeline row height (distributes available space) ─────────────
+  private static readonly TL_CHROME_PX = 121;
+  private static readonly TL_CANVAS_CHROME_PX = 81;
+  private static readonly TL_ROW_MIN = 34;
+
+  readonly timelineRowHeight = computed(() => {
+    const count = this.store.projects().length || 1;
+    const available = this.timelineHeight() - ProjectsPageComponent.TL_CHROME_PX;
+    return Math.max(ProjectsPageComponent.TL_ROW_MIN, Math.floor(available / count));
+  });
+
+  readonly canvasTimelineRowHeight = computed(() => {
+    const count = this.store.projects().length || 1;
+    const h = this.widgetHeights()['projsTimeline'] ?? 400;
+    const available = h - ProjectsPageComponent.TL_CANVAS_CHROME_PX;
+    return Math.max(ProjectsPageComponent.TL_ROW_MIN, Math.floor(available / count));
+  });
+
+  // ─── Timeline vertical resize ──────────────────────────────────────
+  private static readonly TL_MIN_H = 200;
+
+  readonly timelineHeight = signal<number>(
+    (typeof sessionStorage !== 'undefined' && parseInt(sessionStorage.getItem('projects-timeline-height') ?? '', 10)) || 400,
+  );
+  readonly timelineResizing = signal(false);
+  private _tlResizeStartY = 0;
+  private _tlResizeStartH = 0;
+
+  startTimelineResize(event: MouseEvent): void {
+    event.preventDefault();
+    this._tlResizeStartY = event.clientY;
+    this._tlResizeStartH = this.timelineHeight();
+    this.timelineResizing.set(true);
+  }
+
+  startTimelineResizeTouch(event: TouchEvent): void {
+    const touch = event.touches[0];
+    if (!touch) return;
+    event.preventDefault();
+    this._tlResizeStartY = touch.clientY;
+    this._tlResizeStartH = this.timelineHeight();
+    this.timelineResizing.set(true);
+  }
+
+  override onDocumentMouseMove(event: MouseEvent): void {
+    if (this.timelineResizing()) {
+      const dy = event.clientY - this._tlResizeStartY;
+      const h = Math.max(ProjectsPageComponent.TL_MIN_H, this._tlResizeStartH + dy);
+      this.timelineHeight.set(h);
+      return;
+    }
+    super.onDocumentMouseMove(event);
+  }
+
+  override onDocumentMouseUp(): void {
+    if (this.timelineResizing()) {
+      this.timelineResizing.set(false);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('projects-timeline-height', String(this.timelineHeight()));
+      }
+      return;
+    }
+    super.onDocumentMouseUp();
+  }
+
+  onDocumentTouchMove(event: TouchEvent): void {
+    if (this.timelineResizing()) {
+      const touch = event.touches[0];
+      if (!touch) return;
+      const dy = touch.clientY - this._tlResizeStartY;
+      const h = Math.max(ProjectsPageComponent.TL_MIN_H, this._tlResizeStartH + dy);
+      this.timelineHeight.set(h);
+      return;
+    }
+  }
+
+  override onDocumentTouchEnd(): void {
+    if (this.timelineResizing()) {
+      this.timelineResizing.set(false);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('projects-timeline-height', String(this.timelineHeight()));
+      }
+      return;
+    }
+    super.onDocumentTouchEnd();
+  }
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly gridContainerRef = viewChild<ElementRef>('widgetGrid');

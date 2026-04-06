@@ -25,6 +25,7 @@ export type DashboardWidgetId =
   | 'homeWeather'
   | 'homeRecentActivity'
   | 'projsHeader'
+  | 'projsTimeline'
   | 'finTitle'
   | 'finNavKpi'
   | 'finBudgetByProject'
@@ -559,4 +560,20 @@ export interface SubcontractLedgerEntry {
   invoiceRef?: string;
   period: string;
   runningBalance: number;
+}
+
+// ---------------------------------------------------------------------------
+// Project Calendar Timeline
+// ---------------------------------------------------------------------------
+export type ProjectEventCategory = 'site' | 'financial' | 'meeting' | 'deadline' | 'inspection';
+
+export interface ProjectCalendarEvent {
+  id: number;
+  projectId: number;
+  projectSlug: string;
+  title: string;
+  startDate: Date;
+  endDate: Date;
+  category: ProjectEventCategory;
+  participants?: string;
 }

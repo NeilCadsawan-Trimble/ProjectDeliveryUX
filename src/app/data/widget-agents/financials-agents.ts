@@ -341,19 +341,23 @@ export const financialsDefault: WidgetAgent = {
       : ['How is the overall budget tracking?', 'Which projects are over budget?', 'What is the total outstanding revenue?', 'Show pending change orders'];
   },
   insight(s) {
+    const gl = s.glAccounts ?? [];
+    const revenue = gl.filter(a => a.type === 'revenue').reduce((sum, a) => sum + a.balance, 0);
+    const direct = gl.filter(a => a.code === '5000' || a.code === '5100').reduce((sum, a) => sum + a.balance, 0);
+    const marginPct = revenue > 0 ? Math.round(((revenue - direct) / revenue) * 1000) / 10 : 0;
+    const cp = s.cashPosition;
+    const burn = cp ? cp.monthlyPayroll + cp.monthlyOverhead : 0;
+    const runway = burn > 0 && cp ? Math.round((cp.currentBalance / burn) * 10) / 10 : Infinity;
+    if (marginPct < 10 && runway < 3) return `Margin ${marginPct}% (below 10% target), ${runway} mo cash runway`;
+    if (marginPct < 10) return `Gross margin at ${marginPct}% -- below 10% target`;
+    if (runway < 3) return `Cash runway ${runway} months -- monitor collections closely`;
     const pendingCo = (s.changeOrders ?? []).filter(c => c.status === 'pending').length;
     const invoices = s.invoices ?? [];
-    const outstandingInv = invoices.filter(i => ['sent', 'overdue', 'partially-paid'].includes(i.status));
-    const totalAR = outstandingInv.reduce((sum, i) => sum + i.amount - i.amountPaid, 0);
-    const payables = s.payables ?? [];
-    const unpaidAP = payables.filter(p => p.status !== 'paid');
-    const totalAP = unpaidAP.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
-    if (totalAR > 0 && pendingCo) return `${formatCurrency(totalAR)} AR outstanding, ${pendingCo} pending CO${pendingCo === 1 ? '' : 's'}`;
-    if (totalAR > 0) return `${formatCurrency(totalAR)} AR outstanding, ${formatCurrency(totalAP)} AP pending`;
+    const overdueCount = invoices.filter(i => i.status === 'overdue').length;
+    if (overdueCount > 0 && pendingCo) return `${overdueCount} overdue invoice${overdueCount === 1 ? '' : 's'}, ${pendingCo} pending CO${pendingCo === 1 ? '' : 's'}`;
+    if (overdueCount > 0) return `${overdueCount} overdue invoice${overdueCount === 1 ? '' : 's'} -- review AR aging`;
     if (pendingCo) return `${pendingCo} change order${pendingCo === 1 ? '' : 's'} pending approval`;
-    const rev = (s.projectRevenue ?? []).reduce((sum, r) => sum + r.outstandingRaw, 0);
-    if (rev > 0) return `${formatCurrency(rev)} outstanding revenue across portfolio`;
-    return null;
+    return `${marginPct}% gross margin, ${runway} mo runway -- portfolio healthy`;
   },
   alerts: () => null,
   actions(s) {

@@ -26,6 +26,7 @@ import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDat
 import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, JOB_COST_CATEGORIES, CATEGORY_COLORS, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data';
 import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
 import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
+import { ChartComponent, type ApexAxisChartSeries } from 'ng-apexcharts';
 
 type FinDetailType =
   | 'estimate' | 'changeOrder' | 'invoice' | 'payable' | 'purchaseOrder'
@@ -59,7 +60,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
 @Component({
   selector: 'app-financials-page',
-  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent],
+  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent, ChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     'class': 'block h-full',
@@ -539,33 +540,102 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div class="flex-1 min-w-0 flex flex-col gap-3">
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Total Budget</div>
-                  <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center">
-                    <i class="modus-icons text-lg text-primary" aria-hidden="true">payment_instant</i>
+                  <div class="text-sm font-medium text-foreground-60">Gross Margin</div>
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                    [class.bg-success-20]="grossMarginColor() === 'success'"
+                    [class.bg-warning-20]="grossMarginColor() === 'warning'"
+                    [class.bg-destructive-20]="grossMarginColor() === 'destructive'">
+                    <i class="modus-icons text-lg" aria-hidden="true"
+                      [class.text-success]="grossMarginColor() === 'success'"
+                      [class.text-warning]="grossMarginColor() === 'warning'"
+                      [class.text-destructive]="grossMarginColor() === 'destructive'">bar_graph_line</i>
                   </div>
                 </div>
-                <div class="text-3xl font-bold text-foreground">{{ portfolioBudgetTotalFmt() }}</div>
-                <div class="text-xs text-foreground-60">Across {{ totalProjects() }} active projects</div>
+                <div class="flex items-center gap-3">
+                  <div class="text-3xl font-bold flex-shrink-0"
+                    [class.text-success]="grossMarginColor() === 'success'"
+                    [class.text-warning]="grossMarginColor() === 'warning'"
+                    [class.text-destructive]="grossMarginColor() === 'destructive'">{{ grossMarginPct() }}%</div>
+                  @if (showKpiSparklines() && marginSparkline().length > 1) {
+                    <div class="flex-1 min-w-0">
+                      <apx-chart
+                        [series]="marginChartOptions().series"
+                        [chart]="marginChartOptions().chart"
+                        [stroke]="marginChartOptions().stroke"
+                        [fill]="marginChartOptions().fill"
+                        [colors]="marginChartOptions().colors"
+                        [tooltip]="marginChartOptions().tooltip"
+                      />
+                    </div>
+                  }
+                </div>
+                <div class="text-xs text-foreground-60">{{ fmtCurrency(grossProfit()) }} gross profit across {{ totalProjects() }} projects</div>
               </div>
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Total Spent</div>
-                  <div class="w-9 h-9 rounded-lg bg-warning-20 flex items-center justify-center">
-                    <i class="modus-icons text-lg text-warning" aria-hidden="true">bar_graph_line</i>
+                  <div class="text-sm font-medium text-foreground-60">Cash Runway</div>
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                    [class.bg-success-20]="cashRunwayColor() === 'success'"
+                    [class.bg-warning-20]="cashRunwayColor() === 'warning'"
+                    [class.bg-destructive-20]="cashRunwayColor() === 'destructive'">
+                    <i class="modus-icons text-lg" aria-hidden="true"
+                      [class.text-success]="cashRunwayColor() === 'success'"
+                      [class.text-warning]="cashRunwayColor() === 'warning'"
+                      [class.text-destructive]="cashRunwayColor() === 'destructive'">clock</i>
                   </div>
                 </div>
-                <div class="text-3xl font-bold text-foreground">{{ portfolioBudgetUsedFmt() }}</div>
-                <div class="text-xs text-warning font-medium">{{ portfolioBudgetPct() }}% of total budget consumed</div>
+                <div class="flex items-center gap-3">
+                  <div class="text-3xl font-bold flex-shrink-0"
+                    [class.text-success]="cashRunwayColor() === 'success'"
+                    [class.text-warning]="cashRunwayColor() === 'warning'"
+                    [class.text-destructive]="cashRunwayColor() === 'destructive'">{{ cashRunwayMonths() }} mo</div>
+                  @if (showKpiSparklines() && runwaySparkline().length > 1) {
+                    <div class="flex-1 min-w-0">
+                      <apx-chart
+                        [series]="runwayChartOptions().series"
+                        [chart]="runwayChartOptions().chart"
+                        [stroke]="runwayChartOptions().stroke"
+                        [fill]="runwayChartOptions().fill"
+                        [colors]="runwayChartOptions().colors"
+                        [tooltip]="runwayChartOptions().tooltip"
+                      />
+                    </div>
+                  }
+                </div>
+                <div class="text-xs text-foreground-60">{{ fmtCurrency(cashBalance()) }} balance / {{ fmtCurrency(monthlyBurn()) }} monthly burn</div>
               </div>
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Remaining</div>
-                  <div class="w-9 h-9 rounded-lg bg-success-20 flex items-center justify-center">
-                    <i class="modus-icons text-lg text-success" aria-hidden="true">bar_graph</i>
+                  <div class="text-sm font-medium text-foreground-60">Accounts Receivable</div>
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                    [class.bg-success-20]="arColor() === 'success'"
+                    [class.bg-warning-20]="arColor() === 'warning'"
+                    [class.bg-destructive-20]="arColor() === 'destructive'">
+                    <i class="modus-icons text-lg" aria-hidden="true"
+                      [class.text-success]="arColor() === 'success'"
+                      [class.text-warning]="arColor() === 'warning'"
+                      [class.text-destructive]="arColor() === 'destructive'">invoice</i>
                   </div>
                 </div>
-                <div class="text-3xl font-bold text-success">{{ portfolioBudgetRemainingFmt() }}</div>
-                <div class="text-xs text-success font-medium">{{ 100 - portfolioBudgetPct() }}% remaining budget</div>
+                <div class="flex items-center gap-3">
+                  <div class="text-3xl font-bold flex-shrink-0"
+                    [class.text-success]="arColor() === 'success'"
+                    [class.text-warning]="arColor() === 'warning'"
+                    [class.text-destructive]="arColor() === 'destructive'">{{ fmtCurrency(totalOutstandingAR()) }}</div>
+                  @if (showKpiSparklines() && arSparkline().length > 1) {
+                    <div class="flex-1 min-w-0">
+                      <apx-chart
+                        [series]="arChartOptions().series"
+                        [chart]="arChartOptions().chart"
+                        [stroke]="arChartOptions().stroke"
+                        [fill]="arChartOptions().fill"
+                        [colors]="arChartOptions().colors"
+                        [tooltip]="arChartOptions().tooltip"
+                      />
+                    </div>
+                  }
+                </div>
+                <div class="text-xs text-foreground-60">DSO {{ dso() }} days @if (overdueInvoiceCount() > 0) { -- {{ overdueInvoiceCount() }} overdue }</div>
               </div>
               @if (finKpiInsight()) {
                 <div class="flex items-center gap-1.5 px-5 py-2 bg-card border-default rounded-lg flex-shrink-0">
@@ -643,67 +713,21 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <div class="text-xs text-foreground-40">{{ revenueSummary().label }}</div>
                     </div>
 
-                    <div class="flex-1 min-h-0 relative pl-9 pb-5"
-                      #chartArea
-                      (mousemove)="onChartMouseMove($event)"
-                      (mouseleave)="onChartMouseLeave()">
-                      <svg class="w-full h-full" [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" class="chart-gradient-start" />
-                            <stop offset="100%" class="chart-gradient-end" />
-                          </linearGradient>
-                        </defs>
-
-                        @for (line of chartGridLines(); track line.y) {
-                          <line [attr.x1]="0" [attr.y1]="line.y" [attr.x2]="chartWidth" [attr.y2]="line.y" class="chart-grid-line" />
-                        }
-
-                        <path [attr.d]="chartAreaPath()" fill="url(#revenueGrad)" />
-                        <path [attr.d]="chartLinePath()" fill="none" class="chart-line" />
-
-                        <line [attr.x1]="0" [attr.y1]="chartHighLow().highY" [attr.x2]="chartWidth" [attr.y2]="chartHighLow().highY" class="chart-high-line" />
-                        <line [attr.x1]="0" [attr.y1]="chartHighLow().lowY" [attr.x2]="chartWidth" [attr.y2]="chartHighLow().lowY" class="chart-low-line" />
-
-                        @if (showDots()) {
-                          @for (pt of chartPoints(); track pt.x) {
-                            <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="4" class="chart-dot" />
-                          }
-                        }
-
-                        @if (hoverInfo()) {
-                          <line [attr.x1]="hoverInfo()!.svgX" [attr.y1]="0" [attr.x2]="hoverInfo()!.svgX" [attr.y2]="chartHeight" class="chart-crosshair" />
-                          <circle [attr.cx]="hoverInfo()!.svgX" [attr.cy]="hoverInfo()!.svgY" r="5" class="chart-hover-dot" />
-                        }
-                      </svg>
-
-                      @if (hoverInfo()) {
-                        <div class="absolute bg-card border-default rounded px-2 py-1 text-xs font-medium text-foreground pointer-events-none shadow-md"
-                          style="transform:translateX(-50%);white-space:nowrap;z-index:10"
-                          [style.left.%]="hoverInfo()!.pctX"
-                          [style.top.px]="-4">
-                          {{ hoverInfo()!.label ? hoverInfo()!.label + ': ' : '' }}{{ formatCurrency(hoverInfo()!.value) }}
-                        </div>
-                      }
-
-                      <div class="absolute bottom-0 left-9 right-0 text-2xs text-foreground-40" style="position:relative">
-                        @for (lbl of chartVisibleLabels(); track lbl.pct) {
-                          <div class="absolute" [style.left.%]="lbl.pct" style="transform:translateX(-50%)">{{ lbl.text }}</div>
-                        }
-                      </div>
-
-                      <div class="absolute top-0 left-0 bottom-5 flex flex-col justify-between text-2xs text-foreground-40">
-                        @for (line of chartGridLines(); track line.y) {
-                          <div>{{ line.label }}</div>
-                        }
-                      </div>
-
-                      <div class="absolute text-2xs font-medium text-success" style="right:0" [style.top.%]="chartHighLow().highPct">
-                        H: {{ chartHighLow().highLabel }}
-                      </div>
-                      <div class="absolute text-2xs font-medium text-destructive" style="right:0" [style.top.%]="chartHighLow().lowPct">
-                        L: {{ chartHighLow().lowLabel }}
-                      </div>
+                    <div class="flex-1 min-h-0 px-2 pb-2">
+                      <apx-chart
+                        [series]="revenueChartOptions().series"
+                        [chart]="revenueChartOptions().chart"
+                        [xaxis]="revenueChartOptions().xaxis"
+                        [yaxis]="revenueChartOptions().yaxis"
+                        [stroke]="revenueChartOptions().stroke"
+                        [fill]="revenueChartOptions().fill"
+                        [colors]="revenueChartOptions().colors"
+                        [grid]="revenueChartOptions().grid"
+                        [tooltip]="revenueChartOptions().tooltip"
+                        [markers]="revenueChartOptions().markers"
+                        [annotations]="revenueChartOptions().annotations"
+                        [dataLabels]="revenueChartOptions().dataLabels"
+                      />
                     </div>
                   </div>
                 </div>
@@ -2551,39 +2575,150 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly projects = this.store.projects;
   readonly totalProjects = computed(() => this.projects().length);
 
-  private parseAmt(s: string): number {
-    const clean = s.replace(/[^0-9.KMkm]/g, '');
-    if (clean.endsWith('K') || clean.endsWith('k')) return parseFloat(clean) * 1000;
-    if (clean.endsWith('M') || clean.endsWith('m')) return parseFloat(clean) * 1_000_000;
-    return parseFloat(clean) || 0;
-  }
-
-  private fmtCurrency(val: number): string {
+  fmtCurrency(val: number): string {
     if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
     if (val >= 1_000) return `$${(val / 1_000).toFixed(0)}K`;
     return `$${val.toFixed(0)}`;
   }
 
-  readonly portfolioBudgetTotal = computed(() =>
-    this.projects().reduce((sum, p) => sum + this.parseAmt(p.budgetTotal), 0),
+  // --- KPI 1: Gross Margin (Profitability) ---
+  readonly grossRevenue = computed(() =>
+    this.glAccounts().filter(a => a.type === 'revenue').reduce((s, a) => s + a.balance, 0),
   );
-
-  readonly portfolioBudgetUsed = computed(() =>
-    this.projects().reduce((sum, p) => sum + this.parseAmt(p.budgetUsed), 0),
+  readonly directCosts = computed(() =>
+    this.glAccounts().filter(a => a.code === '5000' || a.code === '5100').reduce((s, a) => s + a.balance, 0),
   );
-
-  readonly portfolioBudgetRemaining = computed(() =>
-    this.portfolioBudgetTotal() - this.portfolioBudgetUsed(),
-  );
-
-  readonly portfolioBudgetPct = computed(() => {
-    const total = this.portfolioBudgetTotal();
-    return total > 0 ? Math.round((this.portfolioBudgetUsed() / total) * 100) : 0;
+  readonly grossProfit = computed(() => this.grossRevenue() - this.directCosts());
+  readonly grossMarginPct = computed(() => {
+    const rev = this.grossRevenue();
+    return rev > 0 ? Math.round((this.grossProfit() / rev) * 1000) / 10 : 0;
+  });
+  readonly grossMarginColor = computed(() => {
+    const pct = this.grossMarginPct();
+    if (pct >= 10) return 'success';
+    if (pct >= 5) return 'warning';
+    return 'destructive';
   });
 
-  readonly portfolioBudgetTotalFmt = computed(() => this.fmtCurrency(this.portfolioBudgetTotal()));
-  readonly portfolioBudgetUsedFmt = computed(() => this.fmtCurrency(this.portfolioBudgetUsed()));
-  readonly portfolioBudgetRemainingFmt = computed(() => this.fmtCurrency(this.portfolioBudgetRemaining()));
+  // --- KPI 2: Cash Runway (Liquidity) ---
+  readonly cashRunwayMonths = computed(() => {
+    const pos = this.cashPosition();
+    const burn = pos.monthlyPayroll + pos.monthlyOverhead;
+    return burn > 0 ? Math.round((pos.currentBalance / burn) * 10) / 10 : Infinity;
+  });
+  readonly cashBalance = computed(() => this.cashPosition().currentBalance);
+  readonly monthlyBurn = computed(() => {
+    const pos = this.cashPosition();
+    return pos.monthlyPayroll + pos.monthlyOverhead;
+  });
+  readonly cashRunwayColor = computed(() => {
+    const mo = this.cashRunwayMonths();
+    if (mo >= 3) return 'success';
+    if (mo >= 1.5) return 'warning';
+    return 'destructive';
+  });
+
+  // --- KPI 3: Accounts Receivable (Collections Health) ---
+  readonly totalOutstandingAR = computed(() =>
+    this.store.projectRevenue().reduce((sum, p) => sum + p.outstandingRaw, 0),
+  );
+  readonly overdueInvoiceCount = computed(() =>
+    this.invoices().filter(i => i.status === 'overdue').length,
+  );
+  readonly arColor = computed(() => {
+    const d = this.dso();
+    const overdue = this.overdueInvoiceCount();
+    if (d > 60 || overdue >= 4) return 'destructive';
+    if (d > 30 || overdue >= 1) return 'warning';
+    return 'success';
+  });
+
+  // --- KPI Sparklines (ApexCharts) ---
+  readonly showKpiSparklines = computed(() => {
+    const span = this.engine.widgetColSpans()['finNavKpi'] ?? 8;
+    return !this.isMobile() && span >= 6;
+  });
+
+  readonly revenueChartHeight = computed(() => {
+    const widgetH = this.widgetHeights()['finRevenueChart'] ?? 512;
+    const chrome = 172;
+    return Math.max(widgetH - chrome, 120);
+  });
+
+  readonly marginSparkline = computed<number[]>(() => {
+    const entries = this.glEntries();
+    const months = new Map<string, { rev: number; cost: number }>();
+    for (const e of entries) {
+      const ym = e.date.slice(0, 7);
+      if (!months.has(ym)) months.set(ym, { rev: 0, cost: 0 });
+      const bucket = months.get(ym)!;
+      if (e.accountCode === '4000' || e.accountCode === '4100') bucket.rev += e.credit;
+      if (e.accountCode === '5000' || e.accountCode === '5100') bucket.cost += e.debit;
+    }
+    const sorted = [...months.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    let cumRev = 0;
+    let cumCost = 0;
+    return sorted.map(([, m]) => {
+      cumRev += m.rev;
+      cumCost += m.cost;
+      return cumRev > 0 ? Math.round(((cumRev - cumCost) / cumRev) * 1000) / 10 : 0;
+    });
+  });
+
+  readonly runwaySparkline = computed<number[]>(() => {
+    const history = this.cashFlowHistory();
+    const burn = this.monthlyBurn();
+    if (burn <= 0) return [];
+    return history.map(h => Math.round((h.runningBalance / burn) * 10) / 10);
+  });
+
+  readonly arSparkline = computed<number[]>(() => {
+    const entries = this.glEntries();
+    const months = new Map<string, number>();
+    for (const e of entries) {
+      if (e.accountCode !== '1100') continue;
+      const ym = e.date.slice(0, 7);
+      months.set(ym, e.balance);
+    }
+    return [...months.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([, bal]) => bal);
+  });
+
+  private cssColor(status: string): string {
+    const el = document.documentElement;
+    const style = getComputedStyle(el);
+    if (status === 'success') return style.getPropertyValue('--color-success').trim() || '#4caf50';
+    if (status === 'warning') return style.getPropertyValue('--color-warning').trim() || '#fb8c00';
+    return style.getPropertyValue('--color-destructive').trim() || '#e53935';
+  }
+
+  readonly marginChartOptions = computed(() => ({
+    series: [{ name: 'Margin', data: this.marginSparkline() }] as ApexAxisChartSeries,
+    chart: { type: 'area' as const, height: 36, sparkline: { enabled: true }, animations: { enabled: false } },
+    stroke: { curve: 'smooth' as const, width: 2 },
+    fill: { opacity: 0.15 },
+    colors: [this.cssColor(this.grossMarginColor())],
+    tooltip: { enabled: false },
+  }));
+
+  readonly runwayChartOptions = computed(() => ({
+    series: [{ name: 'Runway', data: this.runwaySparkline() }] as ApexAxisChartSeries,
+    chart: { type: 'area' as const, height: 36, sparkline: { enabled: true }, animations: { enabled: false } },
+    stroke: { curve: 'smooth' as const, width: 2 },
+    fill: { opacity: 0.15 },
+    colors: [this.cssColor(this.cashRunwayColor())],
+    tooltip: { enabled: false },
+  }));
+
+  readonly arChartOptions = computed(() => ({
+    series: [{ name: 'AR', data: this.arSparkline() }] as ApexAxisChartSeries,
+    chart: { type: 'area' as const, height: 36, sparkline: { enabled: true }, animations: { enabled: false } },
+    stroke: { curve: 'smooth' as const, width: 2 },
+    fill: { opacity: 0.15 },
+    colors: [this.cssColor(this.arColor())],
+    tooltip: { enabled: false },
+  }));
 
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
@@ -2794,135 +2929,103 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly revenueData = computed(() => getRevenueData(this.selectedRange(), this.store.monthlyRevenue()));
   readonly revenueSummary = computed(() => getRevenueSummary(this.selectedRange(), this.store.annualTotals()));
 
-  readonly chartWidth = 600;
-  readonly chartHeight = 200;
+  private resolveCssVar(prop: string): string {
+    return getComputedStyle(document.documentElement).getPropertyValue(prop).trim();
+  }
 
-  readonly chartPoints = computed(() => {
+  readonly revenueChartOptions = computed(() => {
     const data = this.revenueData();
-    if (data.length === 0) return [];
-    const maxVal = Math.max(...data.map(d => d.value));
-    const minVal = Math.min(...data.map(d => d.value)) * 0.85;
-    const range = maxVal - minVal || 1;
-    const padX = 10;
-    const padY = 10;
-    const w = this.chartWidth - padX * 2;
-    const h = this.chartHeight - padY * 2;
-    return data.map((d, i) => ({
-      x: padX + (data.length > 1 ? (i / (data.length - 1)) * w : w / 2),
-      y: padY + h - ((d.value - minVal) / range) * h,
-    }));
-  });
-
-  readonly chartLinePath = computed(() => {
-    const pts = this.chartPoints();
-    if (pts.length === 0) return '';
-    return pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-  });
-
-  readonly chartAreaPath = computed(() => {
-    const pts = this.chartPoints();
-    if (pts.length === 0) return '';
-    const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-    return `${line} L${pts[pts.length - 1].x},${this.chartHeight} L${pts[0].x},${this.chartHeight} Z`;
-  });
-
-  readonly chartGridLines = computed(() => {
-    const data = this.revenueData();
-    if (data.length === 0) return [];
-    const maxVal = Math.max(...data.map(d => d.value));
-    const minVal = Math.min(...data.map(d => d.value)) * 0.85;
-    const range = maxVal - minVal || 1;
-    const padY = 10;
-    const h = this.chartHeight - padY * 2;
-    const steps = 4;
-    const lines: { y: number; label: string }[] = [];
-    for (let i = 0; i <= steps; i++) {
-      const val = minVal + (range * (steps - i)) / steps;
-      lines.push({
-        y: padY + (i / steps) * h,
-        label: this.formatCompact(val),
-      });
-    }
-    return lines;
-  });
-
-  readonly showDots = computed(() => this.revenueData().length <= 20);
-
-  readonly chartHighLow = computed(() => {
-    const data = this.revenueData();
-    if (data.length === 0) return { highY: 0, lowY: 0, highPct: 0, lowPct: 0, highLabel: '', lowLabel: '' };
     const values = data.map(d => d.value);
-    const maxVal = Math.max(...values);
-    const minVal = Math.min(...values);
-    const chartMin = Math.min(...values) * 0.85;
-    const range = maxVal - chartMin || 1;
-    const padY = 10;
-    const h = this.chartHeight - padY * 2;
-    const highY = padY + h - ((maxVal - chartMin) / range) * h;
-    const lowY = padY + h - ((minVal - chartMin) / range) * h;
-    const totalH = this.chartHeight;
+    const categories = data.map(d => d.label);
+    const primaryColor = this.resolveCssVar('--color-primary');
+    const successColor = this.resolveCssVar('--color-success');
+    const destructiveColor = this.resolveCssVar('--color-destructive');
+    const borderColor = this.resolveCssVar('--color-border');
+    const fgMuted = this.resolveCssVar('--color-foreground');
+    const labelFg = this.resolveCssVar('--color-success-foreground') || this.resolveCssVar('--color-primary-foreground');
+
+    const maxVal = values.length > 0 ? Math.max(...values) : 0;
+    const minVal = values.length > 0 ? Math.min(...values) : 0;
+
+    const tickCount = Math.min(categories.length, 6);
+    const tickInterval = categories.length > tickCount ? Math.ceil(categories.length / tickCount) : 1;
+
     return {
-      highY,
-      lowY,
-      highPct: (highY / totalH) * 100,
-      lowPct: (lowY / totalH) * 100,
-      highLabel: this.formatCurrency(maxVal),
-      lowLabel: this.formatCurrency(minVal),
+      series: [{ name: 'Revenue', data: values }] as ApexAxisChartSeries,
+      chart: {
+        type: 'area' as const,
+        height: this.revenueChartHeight(),
+        sparkline: { enabled: false },
+        toolbar: { show: false },
+        zoom: { enabled: false },
+        animations: { enabled: false },
+        fontFamily: 'inherit',
+      },
+      stroke: { curve: 'smooth' as const, width: 2.5 },
+      fill: {
+        type: 'gradient' as const,
+        gradient: { shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0.02, stops: [0, 100] },
+      },
+      colors: [primaryColor],
+      dataLabels: { enabled: false },
+      grid: {
+        borderColor,
+        strokeDashArray: 4,
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: true } },
+        padding: { left: 8, right: 8, top: 0, bottom: 0 },
+      },
+      xaxis: {
+        categories,
+        labels: {
+          style: { colors: fgMuted, fontSize: '10px', cssClass: 'text-foreground-40' },
+          rotate: 0,
+          hideOverlappingLabels: true,
+          ...(tickInterval > 1 ? { tickAmount: tickCount } : {}),
+        },
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+        tooltip: { enabled: false },
+      },
+      yaxis: {
+        labels: {
+          style: { colors: fgMuted, fontSize: '10px' },
+          formatter: (val: number) => this.formatCompact(val),
+        },
+      },
+      tooltip: {
+        enabled: true,
+        y: { formatter: (val: number) => this.formatCurrency(val) },
+        theme: 'dark',
+        style: { fontSize: '12px' },
+      },
+      markers: {
+        size: data.length <= 20 ? 3 : 0,
+        strokeWidth: 2,
+        strokeColors: primaryColor,
+        hover: { size: 5 },
+      },
+      annotations: {
+        yaxis: [
+          ...(maxVal > 0 ? [{
+            y: maxVal,
+            borderColor: successColor,
+            strokeDashArray: 6,
+            label: { text: `H: ${this.formatCurrency(maxVal)}`, borderColor: successColor, style: { color: labelFg, background: successColor, fontSize: '10px', padding: { left: 4, right: 4, top: 2, bottom: 2 } }, position: 'front' as const },
+          }] : []),
+          ...(minVal > 0 && minVal !== maxVal ? [{
+            y: minVal,
+            borderColor: destructiveColor,
+            strokeDashArray: 6,
+            label: { text: `L: ${this.formatCurrency(minVal)}`, borderColor: destructiveColor, style: { color: labelFg, background: destructiveColor, fontSize: '10px', padding: { left: 4, right: 4, top: 2, bottom: 2 } }, position: 'front' as const },
+          }] : []),
+        ],
+      },
     };
   });
 
-  readonly chartVisibleLabels = computed(() => {
-    const data = this.revenueData();
-    if (data.length === 0) return [];
-    const labels: { text: string; pct: number }[] = [];
-    for (let i = 0; i < data.length; i++) {
-      if (data[i].label) {
-        labels.push({
-          text: data[i].label,
-          pct: data.length > 1 ? (i / (data.length - 1)) * 100 : 50,
-        });
-      }
-    }
-    return labels;
-  });
-
-  readonly hoverInfo = signal<{ svgX: number; svgY: number; pctX: number; value: number; label: string } | null>(null);
-
-  private readonly chartAreaRef = viewChild<ElementRef>('chartArea');
-
-  onChartMouseMove(event: MouseEvent): void {
-    const el = this.chartAreaRef()?.nativeElement as HTMLElement | undefined;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const padLeft = 36;
-    const padBottom = 20;
-    const chartLeft = rect.left + padLeft;
-    const chartW = rect.width - padLeft;
-    const relX = event.clientX - chartLeft;
-    const pctX = Math.max(0, Math.min(1, relX / chartW));
-
-    const data = this.revenueData();
-    if (data.length === 0) return;
-    const idx = Math.round(pctX * (data.length - 1));
-    const pts = this.chartPoints();
-    if (!pts[idx]) return;
-
-    this.hoverInfo.set({
-      svgX: pts[idx].x,
-      svgY: pts[idx].y,
-      pctX: pctX * 100,
-      value: data[idx].value,
-      label: data[idx].label,
-    });
-  }
-
-  onChartMouseLeave(): void {
-    this.hoverInfo.set(null);
-  }
-
   selectRange(range: RevenueTimeRange): void {
     this.selectedRange.set(range);
-    this.hoverInfo.set(null);
   }
 
   formatCurrency(value: number): string { return sharedFormatCurrency(value); }

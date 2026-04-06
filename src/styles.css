@@ -391,6 +391,30 @@
   border-right: 1px solid var(--destructive);
 }
 
+.border-left-secondary {
+  border-left: 1px solid var(--secondary);
+}
+
+/* Timeline event bar accent borders (thicker for visual emphasis) */
+.timeline-bar-site { border-left: 2px solid var(--primary); }
+.timeline-bar-financial { border-left: 2px solid var(--warning); }
+.timeline-bar-meeting { border-left: 2px solid var(--success); }
+.timeline-bar-deadline { border-left: 2px solid var(--destructive); }
+.timeline-bar-inspection { border-left: 2px solid var(--secondary); }
+
+/* Timeline today marker */
+.timeline-today-marker {
+  box-shadow: 0 0 4px 0 var(--primary);
+}
+
+/* Timeline resize handle */
+.timeline-resize-handle:active {
+  background: var(--muted);
+}
+.timeline-resize-handle:active > div {
+  background: var(--foreground);
+}
+
 /* Legacy error borders for backward compatibility */
 .border-error {
   border: 1px solid var(--error);
@@ -2065,52 +2089,10 @@ modus-wc-utility-panel .modus-wc-utility-panel-footer {
   transform: scale(1.3);
 }
 
-.chart-gradient-start {
-  stop-color: var(--primary);
-  stop-opacity: 0.25;
-}
-.chart-gradient-end {
-  stop-color: var(--primary);
-  stop-opacity: 0.02;
-}
-.chart-line {
-  stroke: var(--primary);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-.chart-dot {
-  fill: var(--primary);
-  stroke: var(--card);
-  stroke-width: 2;
-}
 .chart-grid-line {
   stroke: var(--border);
   stroke-width: 0.5;
   stroke-dasharray: 4 4;
-}
-.chart-high-line {
-  stroke: var(--success);
-  stroke-width: 1;
-  stroke-dasharray: 6 3;
-  opacity: 0.6;
-}
-.chart-low-line {
-  stroke: var(--destructive);
-  stroke-width: 1;
-  stroke-dasharray: 6 3;
-  opacity: 0.6;
-}
-.chart-crosshair {
-  stroke: var(--foreground);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-  opacity: 0.4;
-}
-.chart-hover-dot {
-  fill: var(--primary);
-  stroke: var(--card);
-  stroke-width: 2.5;
 }
 /* Widget text scaling — medium: 5+ cols or 480px+ height */
 .widget-text-md .text-2xs { font-size: var(--modus-wc-font-size-xs) !important; }

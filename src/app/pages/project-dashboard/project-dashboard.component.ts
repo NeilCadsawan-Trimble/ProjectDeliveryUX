@@ -75,6 +75,7 @@ import {
   coerceMainMenuOpenPayload,
   isClickInsideSideNavChrome,
 } from '../../shell/utils/side-nav-click.util';
+import { ChartComponent, type ApexAxisChartSeries } from 'ng-apexcharts';
 
 type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather';
 
@@ -113,7 +114,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -716,11 +717,6 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     return { total: budgetTotal, spent: totalSpend, remaining: budgetTotal - totalSpend, pct: p.budgetPct };
   });
 
-  readonly jcPfW = 500;
-  readonly jcPfH = 160;
-  readonly jcPfPadX = 10;
-  readonly jcPfPadY = 10;
-
   readonly jcProfitFadeData = computed(() => {
     const p = this.projectJobCost();
     if (!p) return null;
@@ -747,72 +743,6 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     return { originalMargin, currentMargin, fadeGain, isFade: fadeGain < 0, points };
   });
 
-  readonly jcPfChartPoints = computed(() => {
-    const d = this.jcProfitFadeData();
-    if (!d || d.points.length === 0) return [];
-    const all = [d.originalMargin, ...d.points.map(p => p.margin)];
-    const maxV = Math.max(...all) + 2;
-    const minV = Math.min(...all) - 2;
-    const range = maxV - minV || 1;
-    const w = this.jcPfW - this.jcPfPadX * 2;
-    const h = this.jcPfH - this.jcPfPadY * 2;
-    return d.points.map((p, i) => ({
-      x: this.jcPfPadX + (d.points.length > 1 ? (i / (d.points.length - 1)) * w : w / 2),
-      y: this.jcPfPadY + h - ((p.margin - minV) / range) * h,
-    }));
-  });
-
-  readonly jcPfBaselineY = computed(() => {
-    const d = this.jcProfitFadeData();
-    if (!d || d.points.length === 0) return this.jcPfH / 2;
-    const all = [d.originalMargin, ...d.points.map(p => p.margin)];
-    const maxV = Math.max(...all) + 2;
-    const minV = Math.min(...all) - 2;
-    const range = maxV - minV || 1;
-    const h = this.jcPfH - this.jcPfPadY * 2;
-    return this.jcPfPadY + h - ((d.originalMargin - minV) / range) * h;
-  });
-
-  readonly jcPfLinePath = computed(() => {
-    const pts = this.jcPfChartPoints();
-    if (pts.length === 0) return '';
-    return pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-  });
-
-  readonly jcPfAreaPath = computed(() => {
-    const pts = this.jcPfChartPoints();
-    const baseY = this.jcPfBaselineY();
-    if (pts.length === 0) return '';
-    const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-    return `${line} L${pts[pts.length - 1].x},${baseY} L${pts[0].x},${baseY} Z`;
-  });
-
-  readonly jcPfGridLines = computed(() => {
-    const d = this.jcProfitFadeData();
-    if (!d || d.points.length === 0) return [];
-    const all = [d.originalMargin, ...d.points.map(p => p.margin)];
-    const maxV = Math.max(...all) + 2;
-    const minV = Math.min(...all) - 2;
-    const range = maxV - minV || 1;
-    const h = this.jcPfH - this.jcPfPadY * 2;
-    const steps = 4;
-    const lines: { y: number; label: string }[] = [];
-    for (let i = 0; i <= steps; i++) {
-      const val = minV + (range * (steps - i)) / steps;
-      lines.push({ y: this.jcPfPadY + (i / steps) * h, label: `${val.toFixed(0)}%` });
-    }
-    return lines;
-  });
-
-  readonly jcPfMonthLabels = computed(() => {
-    const d = this.jcProfitFadeData();
-    if (!d || d.points.length === 0) return [];
-    return d.points.map((p, i) => ({
-      text: p.month,
-      pct: d.points.length > 1 ? (i / (d.points.length - 1)) * 100 : 50,
-    }));
-  });
-
   readonly jcPfCategoryFade = computed(() => {
     const p = this.projectJobCost();
     const d = this.jcProfitFadeData();
@@ -834,6 +764,90 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
         isFade: share < 0,
       };
     });
+  });
+
+  private resolveCssVar(prop: string): string {
+    return getComputedStyle(document.documentElement).getPropertyValue(prop).trim();
+  }
+
+  readonly pfChartOptions = computed(() => {
+    const d = this.jcProfitFadeData();
+    if (!d || d.points.length === 0) return null;
+
+    const isFade = d.isFade;
+    const lineColor = isFade
+      ? this.resolveCssVar('--color-destructive')
+      : this.resolveCssVar('--color-success');
+    const borderColor = this.resolveCssVar('--color-border');
+    const fgColor = this.resolveCssVar('--color-foreground');
+
+    const values = d.points.map(p => p.margin);
+    const categories = d.points.map(p => p.month);
+
+    return {
+      series: [{ name: 'Margin', data: values }] as ApexAxisChartSeries,
+      chart: {
+        type: 'area' as const,
+        height: 160,
+        sparkline: { enabled: false },
+        toolbar: { show: false },
+        zoom: { enabled: false },
+        animations: { enabled: false },
+        fontFamily: 'inherit',
+      },
+      stroke: { curve: 'smooth' as const, width: 2 },
+      fill: {
+        type: 'gradient' as const,
+        gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 100] },
+      },
+      colors: [lineColor],
+      dataLabels: { enabled: false },
+      grid: {
+        borderColor,
+        strokeDashArray: 4,
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: true } },
+        padding: { left: 4, right: 4, top: 0, bottom: 0 },
+      },
+      xaxis: {
+        categories,
+        labels: {
+          style: { colors: fgColor, fontSize: '10px' },
+          rotate: 0,
+          hideOverlappingLabels: true,
+        },
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+        tooltip: { enabled: false },
+      },
+      yaxis: {
+        labels: {
+          style: { colors: fgColor, fontSize: '10px' },
+          formatter: (val: number) => `${val.toFixed(0)}%`,
+        },
+      },
+      tooltip: {
+        enabled: true,
+        y: { formatter: (val: number) => `${val.toFixed(1)}%` },
+        theme: 'dark',
+        style: { fontSize: '12px' },
+      },
+      markers: { size: 3.5, strokeWidth: 2, strokeColors: lineColor, hover: { size: 5 } },
+      annotations: {
+        yaxis: [{
+          y: d.originalMargin,
+          borderColor: fgColor,
+          strokeDashArray: 6,
+          opacity: 0.35,
+          label: {
+            text: `Est. ${d.originalMargin}%`,
+            borderColor: 'transparent',
+            style: { color: fgColor, background: 'transparent', fontSize: '10px', padding: { left: 4, right: 4, top: 2, bottom: 2 } },
+            position: 'front' as const,
+          },
+        }],
+      },
+    };
   });
 
   readonly formatJobCost = sharedFormatJobCost;
