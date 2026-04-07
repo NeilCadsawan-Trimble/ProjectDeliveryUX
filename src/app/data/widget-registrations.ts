@@ -1,12 +1,20 @@
 import type { WidgetRegistration } from '../shell/services/widget-focus.service';
 
 export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
-  homeTimeOff: {
-    name: 'Time Off Requests',
+  homeAllEstimates: {
+    name: 'All Estimates',
     suggestions: [
-      'How many time-off requests are pending?',
-      'Who is out this week?',
-      'Show upcoming PTO conflicts',
+      'Which estimates are awaiting approval?',
+      'What is the total bidding pipeline value?',
+      'Show estimates due this week',
+    ],
+  },
+  homeTasks: {
+    name: 'Tasks & action items',
+    suggestions: [
+      'What should I prioritize today?',
+      'Which bidding tasks are overdue?',
+      'Summarize schedule risks',
     ],
   },
   homeCalendar: {
@@ -15,6 +23,14 @@ export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'What meetings do I have today?',
       'Show my schedule for this week',
       'Are there any scheduling conflicts?',
+    ],
+  },
+  homeTimeOff: {
+    name: 'Time Off Requests',
+    suggestions: [
+      'How many time-off requests are pending?',
+      'Who is out this week?',
+      'Show upcoming PTO conflicts',
     ],
   },
   homeRfis: {

@@ -951,6 +951,21 @@ export class DashboardLayoutEngine {
     }
   }
 
+  /**
+   * Recalculate widget positions after heights change outside drag/resize (e.g. expand/collapse
+   * content). Otherwise stacked/mobile layouts keep stale `top` values and widgets overlap.
+   */
+  reflowAfterHeightsChanged(): void {
+    if (this.isCanvasMode()) {
+      requestAnimationFrame(() => {
+        this.cleanupCanvasOverlaps();
+      });
+      return;
+    }
+    this.compactAll();
+    this.persistLayout();
+  }
+
   stackAllForMobile(): void {
     const gap = DashboardLayoutEngine.GAP_PX;
     const heights = this.widgetHeights();

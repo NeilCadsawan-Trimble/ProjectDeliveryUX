@@ -4,6 +4,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  afterNextRender,
   computed,
   effect,
   signal,
@@ -17,28 +18,22 @@ import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
+import { ModusButtonComponent } from '../../components/modus-button.component';
 import type {
   DashboardWidgetId,
   GridPage,
-  RfiStatus,
-  SubmittalStatus,
   ApptType,
   CalendarAppointment,
-  Rfi,
-  Submittal,
+  HomeEstimateCard,
+  HomeEstimateCardStatus,
+  BiddingTask,
+  BiddingTaskScheduleTab,
 } from '../../data/dashboard-data';
-import {
-  PROJECTS,
-  ESTIMATES,
-  RFIS,
-  SUBMITTALS,
-  TIME_OFF_REQUESTS,
-  CALENDAR_APPOINTMENTS,
-} from '../../data/dashboard-data';
+import { HOME_ESTIMATE_CARDS, CALENDAR_APPOINTMENTS, BIDDING_TASKS } from '../../data/dashboard-data';
 
 @Component({
   selector: 'app-home-page',
-  imports: [WidgetResizeHandleComponent],
+  imports: [WidgetResizeHandleComponent, ModusButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -48,45 +43,18 @@ import {
   template: `
     <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
       <div #pageHeader>
-      <div class="flex items-start justify-between mb-6">
-        <div>
-          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Alex</div>
-          <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+          <div>
+            <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome Back, Bert!</div>
+            <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+            <div class="text-sm text-foreground-80 mt-2">You are in the <span class="font-semibold text-foreground">bidding phase</span> — track estimates, tasks, and client meetings in one place.</div>
+          </div>
+          <div class="flex-shrink-0">
+            <modus-button color="primary" icon="add" iconPosition="left" (buttonClick)="onCreateClick()">
+              Create
+            </modus-button>
+          </div>
         </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" role="link" tabindex="0" aria-label="Active Projects: {{ totalProjects() }}" (click)="navigateToProjects()" (keydown.enter)="navigateToProjects()" (keydown.space)="$event.preventDefault(); navigateToProjects()">
-          <div class="w-12 h-12 rounded-xl bg-primary-20 flex items-center justify-center flex-shrink-0">
-            <i class="modus-icons text-2xl text-primary" aria-hidden="true">briefcase</i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="text-2xl font-bold text-foreground">{{ totalProjects() }}</div>
-            <div class="text-sm text-foreground-60">Active Projects</div>
-          </div>
-          <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
-        </div>
-        <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" role="link" tabindex="0" aria-label="Open Estimates: {{ openEstimatesCount() }}" (click)="navigateToProjects()" (keydown.enter)="navigateToProjects()" (keydown.space)="$event.preventDefault(); navigateToProjects()">
-          <div class="w-12 h-12 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
-            <i class="modus-icons text-2xl text-warning" aria-hidden="true">description</i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="text-2xl font-bold text-foreground">{{ openEstimatesCount() }}</div>
-            <div class="text-sm text-foreground-60">Open Estimates</div>
-          </div>
-          <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
-        </div>
-        <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150" role="link" tabindex="0" aria-label="Estimate Pipeline: {{ totalEstimateValue() }}" (click)="navigateToFinancials()" (keydown.enter)="navigateToFinancials()" (keydown.space)="$event.preventDefault(); navigateToFinancials()">
-          <div class="w-12 h-12 rounded-xl bg-success-20 flex items-center justify-center flex-shrink-0">
-            <i class="modus-icons text-2xl text-success" aria-hidden="true">bar_graph</i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="text-2xl font-bold text-foreground">{{ totalEstimateValue() }}</div>
-            <div class="text-sm text-foreground-60">Estimate Pipeline</div>
-          </div>
-          <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>
-        </div>
-      </div>
       </div>
 
       <div
@@ -106,207 +74,254 @@ import {
             [style.z-index]="widgetZIndices()[widgetId] ?? 0"
           >
             <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
-
-              @if (widgetId === 'homeTimeOff') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+              @if (widgetId === 'homeAllEstimates') {
+                <div
+                  #allEstimatesMeasureRoot
+                  class="bg-card rounded-lg overflow-hidden flex flex-col w-full min-w-0 h-full min-h-0"
+                  [class.home-all-estimates-cq]="!isMobile()"
+                  [class.max-h-full]="isMobile()"
+                  [class.border-default]="selectedWidgetId() !== widgetId"
+                  [class.border-primary]="selectedWidgetId() === widgetId"
+                >
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                     (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   >
-                    <div class="flex items-center gap-2">
-                      @if (isTimeOffCompact() && timeOffMobileExpanded()) {
-                        <div
-                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
-                          role="button" tabindex="0" aria-label="Back to Time Off summary"
-                          (click)="$event.stopPropagation(); collapseTimeOffMobile()"
-                          (mousedown)="$event.stopPropagation()"
-                          (touchstart)="$event.stopPropagation()"
-                          (keydown.enter)="collapseTimeOffMobile()"
-                          (keydown.space)="$event.preventDefault(); collapseTimeOffMobile()"
-                        >
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
-                        </div>
-                      } @else {
-                        <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      }
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Time Off</div>
-                      @if (pendingTimeOffCount() > 0) {
-                        <div class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
-                          <div class="text-xs font-medium text-warning">{{ pendingTimeOffCount() }} pending</div>
-                        </div>
-                      }
-                    </div>
-                    @if (!isTimeOffCompact()) {
-                      <div
-                        class="flex items-center rounded-lg border-default overflow-hidden flex-shrink-0"
-                        role="tablist"
-                        aria-label="Time off view"
-                        (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
-                      >
-                        <div
-                          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                          [class.bg-primary]="timeOffView() === 'list'"
-                          [class.text-primary-foreground]="timeOffView() === 'list'"
-                          [class.text-foreground-60]="timeOffView() !== 'list'"
-                          role="tab"
-                          tabindex="0"
-                          [attr.aria-selected]="timeOffView() === 'list'"
-                          (click)="timeOffView.set('list')"
-                          (keydown.enter)="timeOffView.set('list')"
-                          (keydown.space)="$event.preventDefault(); timeOffView.set('list')"
-                        >
-                          <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
-                          <div>List</div>
-                        </div>
-                        <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
-                        <div
-                          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                          [class.bg-primary]="timeOffView() === 'calendar'"
-                          [class.text-primary-foreground]="timeOffView() === 'calendar'"
-                          [class.text-foreground-60]="timeOffView() !== 'calendar'"
-                          role="tab"
-                          tabindex="0"
-                          [attr.aria-selected]="timeOffView() === 'calendar'"
-                          (click)="timeOffView.set('calendar')"
-                          (keydown.enter)="timeOffView.set('calendar')"
-                          (keydown.space)="$event.preventDefault(); timeOffView.set('calendar')"
-                        >
-                          <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                          <div>Calendar</div>
-                        </div>
+                    <div class="flex items-center gap-2 min-w-0">
+                      <i class="modus-icons text-base text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-foreground-60 flex-shrink-0" aria-hidden="true">list_bulleted</i>
+                      <div class="min-w-0">
+                        <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">All Estimates</div>
+                        <div class="text-xs text-foreground-60 truncate">Overview of all your construction projects</div>
                       </div>
-                    }
-                  </div>
-
-                  @if (isTimeOffCompact() && !timeOffMobileExpanded()) {
-                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
-                      @for (item of timeOffCompactItems; track item.key) {
-                        <div
-                          class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
-                          role="button" tabindex="0"
-                          [attr.aria-label]="item.label + ': ' + timeOffCounts()[item.key]"
-                          (click)="expandTimeOffMobile(item.key)"
-                          (keydown.enter)="expandTimeOffMobile(item.key)"
-                          (keydown.space)="$event.preventDefault(); expandTimeOffMobile(item.key)"
-                        >
-                          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 {{ item.colorBg }}">
-                            <i class="modus-icons text-base {{ item.colorText }}" aria-hidden="true">{{ item.icon }}</i>
-                          </div>
-                          <div class="flex-1 min-w-0">
-                            <div class="text-xs text-foreground-60">{{ item.label }}</div>
-                          </div>
-                          <div class="text-lg font-bold"
-                            [class.text-foreground]="item.key !== 'Denied'"
-                            [class.text-destructive]="item.key === 'Denied'">{{ timeOffCounts()[item.key] }}</div>
-                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
-                        </div>
-                      }
                     </div>
-                  } @else {
-                    @if (timeOffView() === 'list' || (isTimeOffCompact() && timeOffMobileExpanded())) {
-                      <div class="overflow-y-auto flex-1" role="table" aria-label="Time off requests">
-                        <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-                          <div role="columnheader">Employee</div>
-                          <div role="columnheader">Type</div>
-                          <div role="columnheader">Dates</div>
-                          <div role="columnheader">Days</div>
-                          <div role="columnheader">Status</div>
-                        </div>
-                        @for (req of filteredTimeOff(); track req.id) {
-                          <div class="grid grid-cols-[2fr_1fr_2fr_1fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
-                            <div class="flex items-center gap-2" role="cell">
-                              <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0" aria-hidden="true">
-                                {{ req.initials }}
+                  </div>
+                  <div
+                    class="p-4 flex flex-col gap-4 min-h-0 flex-1 overflow-y-auto overscroll-contain"
+                  >
+                    @for (card of homeEstimateCards(); track card.id) {
+                      <div class="rounded-lg bg-background flex flex-col transition-colors duration-200 border-default">
+                        <div
+                          class="p-4 flex gap-3 select-none"
+                          [class.cursor-pointer]="!isHomeAllEstimatesWideLayout()"
+                          [attr.role]="isHomeAllEstimatesWideLayout() ? null : 'button'"
+                          [attr.tabindex]="isHomeAllEstimatesWideLayout() ? null : 0"
+                          [attr.aria-expanded]="showHomeEstimateCardDetails(card.id)"
+                          [attr.aria-label]="estimateCardRowAriaLabel(card)"
+                          (click)="onEstimateCardHeaderClick(card.id)"
+                          (keydown.enter)="onEstimateCardHeaderKeydown(card.id, $event)"
+                          (keydown.space)="onEstimateCardHeaderKeydown(card.id, $event)"
+                        >
+                          <div class="w-10 h-10 rounded-lg bg-card border-default flex items-center justify-center flex-shrink-0">
+                            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">{{ card.listIcon }}</i>
+                          </div>
+                          <div class="flex-1 min-w-0 flex flex-col gap-3">
+                            <div class="flex items-start justify-between gap-2">
+                              <div class="text-sm font-semibold text-foreground leading-snug pr-2">{{ card.title }}</div>
+                              <div class="flex items-center gap-2 flex-shrink-0">
+                                <div class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ homeEstimateCardBadgeClass(card.statusLabel) }}">
+                                  {{ card.statusLabel }}
+                                </div>
+                                @if (!isHomeAllEstimatesWideLayout()) {
+                                  <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">{{ isEstimateCardExpanded(card.id) ? 'expand_less' : 'arrow_right' }}</i>
+                                }
                               </div>
-                              <div class="text-sm font-medium text-foreground truncate">{{ req.name }}</div>
                             </div>
-                            <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit" role="cell">{{ req.type }}</div>
-                            <div class="text-sm text-foreground-80" role="cell">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
-                            <div class="text-sm text-foreground-60" role="cell">{{ req.days }}d</div>
-                            <div role="cell">
-                              <div class="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full
-                                {{ req.status === 'Approved' ? 'bg-success-20 text-success' :
-                                   req.status === 'Pending'  ? 'bg-warning-20 text-warning' :
-                                   'bg-destructive-20 text-destructive' }}">
-                                {{ req.status }}
+                            <div class="text-xs text-foreground-60 leading-snug">{{ card.description }}</div>
+                            @if (card.showProgressBar) {
+                              <div class="flex flex-col gap-3 home-all-estimates-progress-row">
+                                <div class="flex-1 min-w-0">
+                                  <div class="flex items-center justify-between text-xs text-foreground-60 mb-1">
+                                    <div>Progress</div>
+                                    <div class="font-semibold text-foreground">{{ card.progressPct }}%</div>
+                                  </div>
+                                  <div class="h-2 rounded-full bg-muted overflow-hidden">
+                                    <div
+                                      class="h-full rounded-full transition-all duration-300"
+                                      [class]="estimateProgressFillClass(card)"
+                                      [style.width.%]="card.progressPct"
+                                    ></div>
+                                  </div>
+                                </div>
+                                <div class="home-all-estimates-progress-meta flex flex-wrap items-center gap-x-2 text-xs text-foreground-60">
+                                  <div class="flex items-center gap-1">
+                                    <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                                    <div>{{ card.dateLine }}</div>
+                                  </div>
+                                  @if (card.membersLabel) {
+                                    <div aria-hidden="true">•</div>
+                                    <div class="flex items-center gap-1">
+                                      <i class="modus-icons text-sm" aria-hidden="true">people_group</i>
+                                      <div>{{ card.membersLabel }}</div>
+                                    </div>
+                                  }
+                                </div>
                               </div>
+                            } @else {
+                              <div class="flex flex-wrap items-center gap-x-2 text-xs text-foreground-60">
+                                <div class="flex items-center gap-1">
+                                  <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                                  <div>{{ card.dateLine }}</div>
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                        @if (showHomeEstimateCardDetails(card.id)) {
+                          <div class="px-4 pb-4 flex flex-col gap-4 border-top-default mx-3">
+                            <div class="flex items-center gap-2 pt-3">
+                              <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">toggle_center</i>
+                              <div class="text-xs font-semibold text-primary">Performance Snapshot</div>
+                            </div>
+                            <div class="grid grid-cols-1 gap-2 home-all-estimates-metrics-grid">
+                              @for (m of card.metrics; track m.label) {
+                                <div class="rounded-lg border-default bg-card px-2 py-1.5 flex flex-col gap-1">
+                                  <div class="flex items-center gap-1 min-w-0">
+                                    <i class="modus-icons text-2xs text-foreground-60 flex-shrink-0" aria-hidden="true">{{ m.labelIcon }}</i>
+                                    <div class="text-2xs font-semibold text-foreground leading-tight">{{ m.label }}</div>
+                                  </div>
+                                  <div class="flex items-center gap-1 flex-wrap">
+                                    <div class="text-xs font-semibold text-foreground">{{ m.value }}</div>
+                                    @if (m.trend !== 'none') {
+                                      <i
+                                        class="modus-icons text-xs flex-shrink-0"
+                                        [class.text-success]="m.trend === 'up'"
+                                        [class.text-destructive]="m.trend === 'down'"
+                                        aria-hidden="true"
+                                      >{{ m.trend === 'up' ? 'arrow_up' : 'arrow_down' }}</i>
+                                    }
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                            <div class="flex flex-col gap-2">
+                              @for (ins of card.insights; track ins.text) {
+                                @if (ins.layout === 'simple') {
+                                  <div class="flex items-center gap-2 rounded-md px-2 py-2 bg-warning-20">
+                                    <i class="modus-icons text-sm text-warning flex-shrink-0" aria-hidden="true">warning</i>
+                                    <div class="text-xs text-foreground leading-snug">{{ ins.text }}</div>
+                                  </div>
+                                } @else {
+                                  <div
+                                    class="flex items-center gap-2 rounded-md px-3 py-2 min-w-0"
+                                    [class.bg-success-20]="ins.tone === 'positive'"
+                                    [class.bg-warning-20]="ins.tone === 'caution'"
+                                  >
+                                    <i
+                                      class="modus-icons text-xs flex-shrink-0"
+                                      [class.text-success]="ins.tone === 'positive'"
+                                      [class.text-warning]="ins.tone === 'caution'"
+                                      aria-hidden="true"
+                                    >{{ ins.tone === 'positive' ? 'check' : 'warning' }}</i>
+                                    <div class="text-xs leading-snug text-foreground">{{ ins.text }}</div>
+                                  </div>
+                                }
+                              }
                             </div>
                           </div>
                         }
                       </div>
                     }
-
-                    @if (timeOffView() === 'calendar' && !isTimeOffCompact()) {
-                      <div class="flex flex-col flex-1">
-                        <div class="flex items-center justify-between px-5 py-3 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
-                          <div
-                            class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                            role="button"
-                            tabindex="0"
-                            aria-label="Previous month"
-                            (click)="prevCalendarMonth()"
-                            (keydown.enter)="prevCalendarMonth()"
-                            (keydown.space)="$event.preventDefault(); prevCalendarMonth()"
-                          >
-                            <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
-                          </div>
-                          <div class="text-sm font-semibold text-foreground" aria-live="polite">{{ calendarMonthLabel() }}</div>
-                          <div
-                            class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                            role="button"
-                            tabindex="0"
-                            aria-label="Next month"
-                            (click)="nextCalendarMonth()"
-                            (keydown.enter)="nextCalendarMonth()"
-                            (keydown.space)="$event.preventDefault(); nextCalendarMonth()"
-                          >
-                            <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_right</i>
-                          </div>
-                        </div>
-                        <div class="grid grid-cols-7 px-3 pt-2 pb-1 flex-shrink-0">
-                          @for (d of ['Su','Mo','Tu','We','Th','Fr','Sa']; track d) {
-                            <div class="text-center text-2xs font-semibold text-foreground-40 uppercase py-1">{{ d }}</div>
-                          }
-                        </div>
-                        <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1">
-                          @for (cell of calendarDays(); track cell.day ?? $index) {
-                            <div class="min-h-[52px] rounded-lg p-1 flex flex-col gap-0.5"
-                              [class.bg-muted]="cell.day !== null && cell.requests.length === 0"
-                              [class.bg-primary-20]="cell.requests.length > 0"
-                            >
-                              @if (cell.day !== null) {
-                                <div class="text-xs font-medium text-foreground-60 text-center leading-4">{{ cell.day }}</div>
-                                @for (req of cell.requests.slice(0, 2); track req.id) {
-                                  <div class="flex items-center gap-1 rounded px-1 py-0.5 {{ timeOffStatusColor(req.status) }}">
-                                    <div class="text-2xs font-semibold leading-none truncate">{{ req.initials }}</div>
-                                  </div>
-                                }
-                                @if (cell.requests.length > 2) {
-                                  <div class="text-2xs text-foreground-60 text-center">+{{ cell.requests.length - 2 }}</div>
-                                }
-                              }
-                            </div>
-                          }
-                        </div>
-                        <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
-                          <div class="flex items-center gap-1.5">
-                            <div class="w-2.5 h-2.5 rounded-sm bg-success"></div>
-                            <div class="text-xs text-foreground-60">Approved</div>
-                          </div>
-                          <div class="flex items-center gap-1.5">
-                            <div class="w-2.5 h-2.5 rounded-sm bg-warning"></div>
-                            <div class="text-xs text-foreground-60">Pending</div>
-                          </div>
-                          <div class="flex items-center gap-1.5">
-                            <div class="w-2.5 h-2.5 rounded-sm bg-destructive"></div>
-                            <div class="text-xs text-foreground-60">Denied</div>
-                          </div>
-                        </div>
+                  </div>
+                </div>
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  position="left"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
+                />
+                <widget-resize-handle
+                  [isMobile]="isMobile()"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                />
+              }
+              @else if (widgetId === 'homeTasks') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0 gap-2"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  >
+                    <div class="flex items-center gap-2 min-w-0">
+                      <i class="modus-icons text-base text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-foreground-60 flex-shrink-0" aria-hidden="true">check_circle</i>
+                      <div class="text-base font-semibold text-foreground truncate" role="heading" aria-level="2">Tasks & action items</div>
+                    </div>
+                    @if (filteredTasks().length > 0) {
+                      <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20 flex-shrink-0">
+                        <div class="text-xs font-semibold text-destructive">{{ filteredTasks().length }} Items</div>
                       </div>
                     }
-                  }
+                  </div>
+
+                  <div class="flex flex-col gap-2 px-5 pt-3 pb-2 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                    <div class="flex items-center gap-1 overflow-x-auto" role="tablist" aria-label="Task schedule">
+                      @for (tab of taskScheduleTabs; track tab.key) {
+                        <div
+                          class="px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 whitespace-nowrap select-none"
+                          [class.bg-primary]="taskScheduleTab() === tab.key"
+                          [class.text-primary-foreground]="taskScheduleTab() === tab.key"
+                          [class.bg-muted]="taskScheduleTab() !== tab.key"
+                          [class.text-foreground-60]="taskScheduleTab() !== tab.key"
+                          role="tab"
+                          tabindex="0"
+                          [attr.aria-selected]="taskScheduleTab() === tab.key"
+                          (click)="onTaskScheduleTabSelect(tab.key)"
+                          (keydown.enter)="onTaskScheduleTabSelect(tab.key)"
+                          (keydown.space)="$event.preventDefault(); onTaskScheduleTabSelect(tab.key)"
+                        >
+                          {{ tab.label }}
+                        </div>
+                      }
+                    </div>
+                    <div class="flex items-center gap-1 overflow-x-auto pb-1" role="radiogroup" aria-label="Priority filter">
+                      @for (p of taskPriorityOptions; track p.key) {
+                        <div
+                          class="px-2.5 py-1 rounded-full text-2xs font-semibold cursor-pointer transition-colors duration-150 whitespace-nowrap select-none"
+                          [class.bg-primary]="taskPriorityFilter() === p.key"
+                          [class.text-primary-foreground]="taskPriorityFilter() === p.key"
+                          [class.bg-muted]="taskPriorityFilter() !== p.key"
+                          [class.text-foreground-60]="taskPriorityFilter() !== p.key"
+                          role="radio"
+                          tabindex="0"
+                          [attr.aria-checked]="taskPriorityFilter() === p.key"
+                          (click)="onTaskPrioritySelect(p.key)"
+                          (keydown.enter)="onTaskPrioritySelect(p.key)"
+                          (keydown.space)="$event.preventDefault(); onTaskPrioritySelect(p.key)"
+                        >
+                          {{ p.label }}
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="overflow-y-auto flex-1 p-4 flex flex-col gap-3">
+                    @for (task of filteredTasks(); track task.id) {
+                      <div class="rounded-lg border-default bg-background p-4 flex flex-col gap-2">
+                        <div class="flex items-start justify-between gap-2">
+                          <div>
+                            <div class="text-sm font-semibold text-foreground">{{ task.headline }}</div>
+                            <div class="text-xs text-foreground-60">{{ task.subline }}</div>
+                          </div>
+                          <div class="text-2xs font-bold uppercase px-2 py-0.5 rounded flex-shrink-0 {{ taskPriorityBadgeClass(task.priority) }}">
+                            {{ taskPriorityLabel(task.priority) }}
+                          </div>
+                        </div>
+                        <div class="text-xs text-foreground-80 bg-warning-20 border-warning rounded px-2 py-1.5">
+                          {{ task.warning }}
+                        </div>
+                        <div class="text-xs font-semibold text-primary cursor-pointer hover:text-primary-80 transition-colors">{{ task.actionLabel }}</div>
+                      </div>
+                    }
+                    @if (filteredTasks().length === 0) {
+                      <div class="flex flex-col items-center justify-center py-8 text-foreground-40">
+                        <i class="modus-icons text-3xl mb-2" aria-hidden="true">check_circle</i>
+                        <div class="text-sm">No tasks match these filters</div>
+                      </div>
+                    }
+                  </div>
                 </div>
                 <widget-resize-handle
                   [isMobile]="isMobile()"
@@ -436,7 +451,7 @@ import {
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                  <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0 flex-wrap" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                     <div class="flex items-center gap-1.5">
                       <div class="w-2 h-2 rounded-sm bg-primary"></div>
                       <div class="text-xs text-foreground-60">Meeting</div>
@@ -471,295 +486,6 @@ import {
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 />
               }
-              @else if (widgetId === 'homeRfis') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
-                  >
-                    <div class="flex items-center gap-2">
-                      @if (isRfiCompact() && rfiMobileExpanded()) {
-                        <div
-                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
-                          role="button" tabindex="0" aria-label="Back to RFI summary"
-                          (click)="$event.stopPropagation(); collapseRfiMobile()"
-                          (mousedown)="$event.stopPropagation()"
-                          (touchstart)="$event.stopPropagation()"
-                          (keydown.enter)="collapseRfiMobile()"
-                          (keydown.space)="$event.preventDefault(); collapseRfiMobile()"
-                        >
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
-                        </div>
-                      } @else {
-                        <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      }
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">clipboard</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">RFIs</div>
-                      @if (rfiCounts().overdue > 0) {
-                        <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                          <div class="text-xs font-medium text-destructive">{{ rfiCounts().overdue }} overdue</div>
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  @if (isRfiCompact() && !rfiMobileExpanded()) {
-                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
-                      @for (item of rfiCompactItems; track item.key) {
-                        <div
-                          class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
-                          role="button" tabindex="0"
-                          [attr.aria-label]="item.label + ': ' + rfiCounts()[item.key]"
-                          (click)="expandRfiMobile(item.key)"
-                          (keydown.enter)="expandRfiMobile(item.key)"
-                          (keydown.space)="$event.preventDefault(); expandRfiMobile(item.key)"
-                        >
-                          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                            [class.bg-primary-20]="!item.destructive && item.key !== 'overdue'"
-                            [class.bg-destructive-20]="item.destructive"
-                            [class.bg-warning-20]="item.key === 'upcoming'"
-                            [class.bg-success-20]="item.key === 'closed'">
-                            <i class="modus-icons text-base" aria-hidden="true"
-                              [class.text-primary]="item.key === 'all' || item.key === 'open'"
-                              [class.text-destructive]="item.destructive"
-                              [class.text-warning]="item.key === 'upcoming'"
-                              [class.text-success]="item.key === 'closed'">{{ item.icon }}</i>
-                          </div>
-                          <div class="flex-1 min-w-0">
-                            <div class="text-xs text-foreground-60">{{ item.label }}</div>
-                          </div>
-                          <div class="text-lg font-bold"
-                            [class.text-foreground]="item.key !== 'overdue'"
-                            [class.text-destructive]="item.destructive">{{ rfiCounts()[item.key] }}</div>
-                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
-                        </div>
-                      }
-                    </div>
-                  } @else {
-                    @if (!isRfiCompact()) {
-                      <div
-                        class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
-                        role="radiogroup" aria-label="Filter RFIs by status"
-                        (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
-                      >
-                        @for (f of rfiFilterOptions; track f) {
-                          <div
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                            [class.bg-primary]="rfiActiveFilter() === f"
-                            [class.text-primary-foreground]="rfiActiveFilter() === f"
-                            [class.bg-muted]="rfiActiveFilter() !== f"
-                            [class.text-foreground-60]="rfiActiveFilter() !== f"
-                            [class.bg-destructive]="f === 'overdue' && rfiActiveFilter() === f"
-                            [class.text-destructive-foreground]="f === 'overdue' && rfiActiveFilter() === f"
-                            [class.bg-warning]="f === 'upcoming' && rfiActiveFilter() === f"
-                            [class.text-warning-foreground]="f === 'upcoming' && rfiActiveFilter() === f"
-                            [class.bg-success]="f === 'closed' && rfiActiveFilter() === f"
-                            [class.text-success-foreground]="f === 'closed' && rfiActiveFilter() === f"
-                            role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === f"
-                            (click)="rfiActiveFilter.set(f)"
-                            (keydown.enter)="rfiActiveFilter.set(f)"
-                            (keydown.space)="$event.preventDefault(); rfiActiveFilter.set(f)"
-                          >
-                            <div>{{ f.charAt(0).toUpperCase() + f.slice(1) }}</div>
-                            <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                              [class.bg-primary-foreground]="rfiActiveFilter() === f && f === 'all'"
-                              [class.text-primary]="rfiActiveFilter() === f && f === 'all'"
-                              [class.bg-secondary]="rfiActiveFilter() !== f"
-                              [class.text-foreground-60]="rfiActiveFilter() !== f"
-                              aria-hidden="true"
-                            >{{ rfiCounts()[f] }}</div>
-                          </div>
-                        }
-                      </div>
-                    }
-                    <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
-                      <div role="columnheader">RFI #</div>
-                      <div role="columnheader">Subject</div>
-                      <div role="columnheader">Project</div>
-                      <div role="columnheader">Assignee</div>
-                      <div role="columnheader">Due</div>
-                      <div role="columnheader">Status</div>
-                    </div>
-                    <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
-                      @for (rfi of filteredRfis(); track rfi.id) {
-                        <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
-                          <div class="text-sm font-medium text-primary" role="cell">{{ rfi.number }}</div>
-                          <div class="text-sm text-foreground truncate" role="cell">{{ rfi.subject }}</div>
-                          <div class="text-sm text-foreground-60 truncate" role="cell">{{ rfi.project }}</div>
-                          <div class="text-sm text-foreground-60" role="cell">{{ rfi.assignee }}</div>
-                          <div class="text-sm text-foreground-60" role="cell">{{ rfi.dueDate }}</div>
-                          <div class="flex items-center gap-1.5" role="cell">
-                            <div class="w-2 h-2 rounded-full {{ rfiStatusColor(rfi.status) }}" aria-hidden="true"></div>
-                            <div class="text-xs font-medium text-foreground-60">{{ rfiStatusLabel(rfi.status) }}</div>
-                          </div>
-                        </div>
-                      } @empty {
-                        <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                          <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
-                          <div class="text-sm">No RFIs match this filter</div>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  position="left"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
-                />
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
-              }
-              @else if (widgetId === 'homeSubmittals') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
-                  >
-                    <div class="flex items-center gap-2">
-                      @if (isSubmittalCompact() && submittalMobileExpanded()) {
-                        <div
-                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
-                          role="button" tabindex="0" aria-label="Back to Submittal summary"
-                          (click)="$event.stopPropagation(); collapseSubmittalMobile()"
-                          (mousedown)="$event.stopPropagation()"
-                          (touchstart)="$event.stopPropagation()"
-                          (keydown.enter)="collapseSubmittalMobile()"
-                          (keydown.space)="$event.preventDefault(); collapseSubmittalMobile()"
-                        >
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
-                        </div>
-                      } @else {
-                        <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      }
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Submittals</div>
-                      @if (submittalCounts().overdue > 0) {
-                        <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                          <div class="text-xs font-medium text-destructive">{{ submittalCounts().overdue }} overdue</div>
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  @if (isSubmittalCompact() && !submittalMobileExpanded()) {
-                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
-                      @for (item of submittalCompactItems; track item.key) {
-                        <div
-                          class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
-                          role="button" tabindex="0"
-                          [attr.aria-label]="item.label + ': ' + submittalCounts()[item.key]"
-                          (click)="expandSubmittalMobile(item.key)"
-                          (keydown.enter)="expandSubmittalMobile(item.key)"
-                          (keydown.space)="$event.preventDefault(); expandSubmittalMobile(item.key)"
-                        >
-                          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                            [class.bg-primary-20]="!item.destructive && item.key !== 'overdue'"
-                            [class.bg-destructive-20]="item.destructive"
-                            [class.bg-warning-20]="item.key === 'upcoming'"
-                            [class.bg-success-20]="item.key === 'closed'">
-                            <i class="modus-icons text-base" aria-hidden="true"
-                              [class.text-primary]="item.key === 'all' || item.key === 'open'"
-                              [class.text-destructive]="item.destructive"
-                              [class.text-warning]="item.key === 'upcoming'"
-                              [class.text-success]="item.key === 'closed'">{{ item.icon }}</i>
-                          </div>
-                          <div class="flex-1 min-w-0">
-                            <div class="text-xs text-foreground-60">{{ item.label }}</div>
-                          </div>
-                          <div class="text-lg font-bold"
-                            [class.text-foreground]="item.key !== 'overdue'"
-                            [class.text-destructive]="item.destructive">{{ submittalCounts()[item.key] }}</div>
-                          <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
-                        </div>
-                      }
-                    </div>
-                  } @else {
-                    @if (!isSubmittalCompact()) {
-                      <div
-                        class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
-                        role="radiogroup" aria-label="Filter Submittals by status"
-                        (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
-                      >
-                        @for (f of submittalFilterOptions; track f) {
-                          <div
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                            [class.bg-primary]="submittalActiveFilter() === f"
-                            [class.text-primary-foreground]="submittalActiveFilter() === f"
-                            [class.bg-muted]="submittalActiveFilter() !== f"
-                            [class.text-foreground-60]="submittalActiveFilter() !== f"
-                            [class.bg-destructive]="f === 'overdue' && submittalActiveFilter() === f"
-                            [class.text-destructive-foreground]="f === 'overdue' && submittalActiveFilter() === f"
-                            [class.bg-warning]="f === 'upcoming' && submittalActiveFilter() === f"
-                            [class.text-warning-foreground]="f === 'upcoming' && submittalActiveFilter() === f"
-                            [class.bg-success]="f === 'closed' && submittalActiveFilter() === f"
-                            [class.text-success-foreground]="f === 'closed' && submittalActiveFilter() === f"
-                            role="radio" tabindex="0" [attr.aria-checked]="submittalActiveFilter() === f"
-                            (click)="submittalActiveFilter.set(f)"
-                            (keydown.enter)="submittalActiveFilter.set(f)"
-                            (keydown.space)="$event.preventDefault(); submittalActiveFilter.set(f)"
-                          >
-                            <div>{{ f.charAt(0).toUpperCase() + f.slice(1) }}</div>
-                            <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                              [class.bg-primary-foreground]="submittalActiveFilter() === f && f === 'all'"
-                              [class.text-primary]="submittalActiveFilter() === f && f === 'all'"
-                              [class.bg-secondary]="submittalActiveFilter() !== f"
-                              [class.text-foreground-60]="submittalActiveFilter() !== f"
-                              aria-hidden="true"
-                            >{{ submittalCounts()[f] }}</div>
-                          </div>
-                        }
-                      </div>
-                    }
-                    <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
-                      <div role="columnheader">Sub #</div>
-                      <div role="columnheader">Subject</div>
-                      <div role="columnheader">Project</div>
-                      <div role="columnheader">Assignee</div>
-                      <div role="columnheader">Due</div>
-                      <div role="columnheader">Status</div>
-                    </div>
-                    <div class="overflow-y-auto flex-1" role="table" aria-label="Submittals" aria-live="polite">
-                      @for (sub of filteredSubmittals(); track sub.id) {
-                        <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
-                          <div class="text-sm font-medium text-primary" role="cell">{{ sub.number }}</div>
-                          <div class="text-sm text-foreground truncate" role="cell">{{ sub.subject }}</div>
-                          <div class="text-sm text-foreground-60 truncate" role="cell">{{ sub.project }}</div>
-                          <div class="text-sm text-foreground-60" role="cell">{{ sub.assignee }}</div>
-                          <div class="text-sm text-foreground-60" role="cell">{{ sub.dueDate }}</div>
-                          <div class="flex items-center gap-1.5" role="cell">
-                            <div class="w-2 h-2 rounded-full {{ submittalStatusColor(sub.status) }}" aria-hidden="true"></div>
-                            <div class="text-xs font-medium text-foreground-60">{{ submittalStatusLabel(sub.status) }}</div>
-                          </div>
-                        </div>
-                      } @empty {
-                        <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-                          <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
-                          <div class="text-sm">No submittals match this filter</div>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  position="left"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home', 'left')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home', 'left')"
-                />
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
-              }
-
             </div>
           </div>
         }
@@ -773,34 +499,103 @@ export class HomePageComponent implements AfterViewInit {
   private readonly widgetFocusService = inject(WidgetFocusService);
   private readonly destroyRef = inject(DestroyRef);
 
-  private readonly engine = new DashboardLayoutEngine({
-    widgets: ['homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals'],
-    layoutStorageKey: 'dashboard-home-v2',
-    canvasStorageKey: 'canvas-layout:dashboard-home:v6',
-    defaultColStarts: { homeRfis: 1, homeSubmittals: 6, homeTimeOff: 11, homeCalendar: 1 },
-    defaultColSpans: { homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 16 },
-    defaultTops: { homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356 },
-    defaultHeights: { homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
-    defaultLefts: { homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
-    defaultPixelWidths: { homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
-    canvasDefaultLefts: { homeRfis: 0, homeSubmittals: 405, homeTimeOff: 810, homeCalendar: 0 },
-    canvasDefaultPixelWidths: { homeRfis: 389, homeSubmittals: 389, homeTimeOff: 470, homeCalendar: 1280 },
-    canvasDefaultTops: { homeRfis: 0, homeSubmittals: 0, homeTimeOff: 0, homeCalendar: 356 },
-    canvasDefaultHeights: { homeRfis: 340, homeSubmittals: 340, homeTimeOff: 340, homeCalendar: 580 },
-    minColSpan: 4,
-    canvasGridMinHeightOffset: 100,
-    savesDesktopOnMobile: true,
-    onBeforeMobileCompact: () => this.applyMobileHeights(),
-    onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-  }, inject(WidgetLayoutService));
+  private readonly engine = new DashboardLayoutEngine(
+    {
+      widgets: ['homeAllEstimates', 'homeTasks', 'homeCalendar'],
+      layoutStorageKey: 'dashboard-home-v3',
+      canvasStorageKey: 'canvas-layout:dashboard-home:v7',
+      defaultColStarts: { homeAllEstimates: 1, homeTasks: 6, homeCalendar: 11 },
+      defaultColSpans: { homeAllEstimates: 5, homeTasks: 5, homeCalendar: 6 },
+      defaultTops: { homeAllEstimates: 0, homeTasks: 0, homeCalendar: 0 },
+      defaultHeights: { homeAllEstimates: 560, homeTasks: 560, homeCalendar: 560 },
+      defaultLefts: { homeAllEstimates: 0, homeTasks: 432, homeCalendar: 864 },
+      defaultPixelWidths: { homeAllEstimates: 416, homeTasks: 416, homeCalendar: 416 },
+      canvasDefaultLefts: { homeAllEstimates: 0, homeTasks: 432, homeCalendar: 864 },
+      canvasDefaultPixelWidths: { homeAllEstimates: 416, homeTasks: 416, homeCalendar: 416 },
+      canvasDefaultTops: { homeAllEstimates: 0, homeTasks: 0, homeCalendar: 0 },
+      canvasDefaultHeights: { homeAllEstimates: 560, homeTasks: 560, homeCalendar: 560 },
+      minColSpan: 4,
+      canvasGridMinHeightOffset: 100,
+      savesDesktopOnMobile: true,
+      onBeforeMobileCompact: () => this.applyMobileHeights(),
+      onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
+    },
+    inject(WidgetLayoutService),
+  );
 
-  private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
+  private readonly _onHomeAllEstimatesWindowResize = (): void => {
+    if (this.isMobile()) return;
+    this.applyHomeAllEstimatesHeightFromMeasure();
+  };
+
+  private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
+    window.removeEventListener('resize', this._onHomeAllEstimatesWindowResize);
+    this._homeEstimatesResizeObserver?.disconnect();
+    this._homeEstimatesResizeObserver = null;
+    this.engine.destroy();
+  });
 
   private readonly _resetWidgetsEffect = effect(() => {
     const tick = this.canvasResetService.resetWidgetsTick();
     if (tick > 0) {
-      untracked(() => this.engine.resetToDefaults());
+      untracked(() => {
+        this.engine.resetToDefaults();
+        this.expandedEstimateIds.set(new Set());
+        this._homeAllEstimatesHeightBaselinePx = null;
+      });
     }
+  });
+
+  private readonly _estimateExpandMobileHeights = effect(() => {
+    this.expandedEstimateIds();
+    this.homeEstimateCards();
+    if (this.isMobile()) {
+      untracked(() => this.applyMobileHeights());
+    }
+  });
+
+  /** Wide layout shows snapshot by default; clear row expansion state (RFI-style expand is narrow-only). */
+  private readonly _clearEstimateRowExpandWhenWide = effect(() => {
+    if (!this.isHomeAllEstimatesWideLayout()) return;
+    untracked(() => {
+      if (this.expandedEstimateIds().size === 0) return;
+      this.expandedEstimateIds.set(new Set());
+      this.syncHomeAllEstimatesHeightForExpandState();
+    });
+  });
+
+  /** Desktop: size All Estimates to intrinsic content via ResizeObserver + post-render passes. */
+  private _homeEstimatesResizeObserver: ResizeObserver | null = null;
+  private readonly allEstimatesMeasureRoot = viewChild<ElementRef>('allEstimatesMeasureRoot');
+
+  private readonly _homeAllEstimatesMeasureEffect = effect(() => {
+    this.isMobile();
+    this.homeEstimateCards();
+    this.expandedEstimateIds();
+    this.widgetPixelWidths();
+    untracked(() => {
+      if (this.isMobile()) {
+        this._homeEstimatesResizeObserver?.disconnect();
+        this._homeEstimatesResizeObserver = null;
+        return;
+      }
+      afterNextRender(() => {
+        const attachOrApply = (): void => {
+          if (this.isMobile()) return;
+          const el = this.allEstimatesMeasureRoot()?.nativeElement as HTMLElement | undefined;
+          if (!el) {
+            requestAnimationFrame(() => attachOrApply());
+            return;
+          }
+          if (typeof ResizeObserver !== 'undefined' && !this._homeEstimatesResizeObserver) {
+            this._homeEstimatesResizeObserver = new ResizeObserver(() => this.applyHomeAllEstimatesHeightFromMeasure());
+            this._homeEstimatesResizeObserver.observe(el);
+          }
+          this.applyHomeAllEstimatesHeightFromMeasure();
+        };
+        attachOrApply();
+      });
+    });
   });
 
   readonly isMobile = this.engine.isMobile;
@@ -811,6 +606,17 @@ export class HomePageComponent implements AfterViewInit {
   readonly widgetHeights = this.engine.widgetHeights;
   readonly widgetLefts = this.engine.widgetLefts;
   readonly widgetPixelWidths = this.engine.widgetPixelWidths;
+  /**
+   * Performance Snapshot and full detail layout when the All Estimates **column width** (layout engine px) is wide enough.
+   * Uses the same width that changes when you drag resize handles — not viewport `sm:` and not DOM measure (which misreported).
+   * Below the breakpoint: basic rows only; tap/Enter/Space on a row expands that card (RFI-style detail).
+   */
+  readonly isHomeAllEstimatesWideLayout = computed(() => {
+    if (this.isMobile()) return false;
+    const w = this.widgetPixelWidths()['homeAllEstimates'] ?? 0;
+    if (w <= 0) return false;
+    return w >= HomePageComponent.HOME_ESTIMATES_WIDE_BREAKPOINT_PX;
+  });
   readonly widgetZIndices = this.engine.widgetZIndices;
   readonly moveTargetId = this.engine.moveTargetId;
   readonly canvasGridMinHeight = this.engine.canvasGridMinHeight;
@@ -822,28 +628,40 @@ export class HomePageComponent implements AfterViewInit {
     day: 'numeric',
   });
 
-  readonly timeOffRequests = TIME_OFF_REQUESTS;
-  readonly rfis: Rfi[] = RFIS;
-  readonly submittals: Submittal[] = SUBMITTALS;
   readonly calendarAppointments: CalendarAppointment[] = CALENDAR_APPOINTMENTS;
-  readonly projects = signal(PROJECTS);
-  readonly estimates = signal(ESTIMATES);
+  readonly homeEstimateCards = signal<HomeEstimateCard[]>(HOME_ESTIMATE_CARDS);
+  /** Narrow layout: user-expanded card ids. Wide layout ignores this for showing snapshots. */
+  readonly expandedEstimateIds = signal<Set<string>>(new Set());
+  readonly biddingTasks = signal<BiddingTask[]>(BIDDING_TASKS);
 
-  readonly totalProjects = computed(() => this.projects().length);
-  readonly openEstimatesCount = computed(() =>
-    this.estimates().filter((e) => e.status !== 'Approved').length
-  );
-  readonly totalEstimateValue = computed(() => {
-    const total = this.estimates()
-      .filter((e) => e.status !== 'Approved')
-      .reduce((sum, e) => sum + e.valueRaw, 0);
-    if (total >= 1_000_000) return `$${(total / 1_000_000).toFixed(1)}M`;
-    if (total >= 1_000) return `$${(total / 1_000).toFixed(0)}K`;
-    return `$${total}`;
-  });
-
-  readonly homeWidgets: DashboardWidgetId[] = ['homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals'];
+  readonly homeWidgets: DashboardWidgetId[] = ['homeAllEstimates', 'homeTasks', 'homeCalendar'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
+
+  readonly taskScheduleTabs: { key: BiddingTaskScheduleTab; label: string }[] = [
+    { key: 'today', label: 'Today' },
+    { key: 'tomorrow', label: 'Tomorrow' },
+    { key: 'week', label: 'This Week' },
+    { key: 'archive', label: 'Archive' },
+  ];
+  readonly taskScheduleTab = signal<BiddingTaskScheduleTab>('today');
+  readonly taskPriorityFilter = signal<'all' | 'critical' | 'high' | 'medium'>('all');
+  readonly taskPriorityOptions: { key: 'all' | 'critical' | 'high' | 'medium'; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'critical', label: 'Critical' },
+    { key: 'high', label: 'High' },
+    { key: 'medium', label: 'Medium' },
+  ];
+
+  readonly filteredTasks = computed(() => {
+    const tab = this.taskScheduleTab();
+    const pri = this.taskPriorityFilter();
+    return this.biddingTasks().filter((t) => {
+      if (t.scheduleTab !== tab) return false;
+      if (pri === 'all') return true;
+      if (pri === 'critical') return t.priority === 'overdue' || t.priority === 'critical';
+      return t.priority === pri;
+    });
+  });
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
   private readonly homeGridContainerRef = viewChild<ElementRef>('homeWidgetGrid');
@@ -874,223 +692,226 @@ export class HomePageComponent implements AfterViewInit {
 
   onDocumentMouseUp(): void {
     this.engine.onDocumentMouseUp();
+    this.scheduleHomeAllEstimatesMeasureSync();
   }
 
   onDocumentTouchEnd(): void {
     this.engine.onDocumentTouchEnd();
+    this.scheduleHomeAllEstimatesMeasureSync();
   }
 
-  private static readonly MOBILE_HEADER_H = 58;
-  private static readonly MOBILE_KPI_ROW_H = 53;
-  private static readonly MOBILE_KPI_GAP = 8;
-  private static readonly MOBILE_KPI_PADDING = 26;
-  private static readonly MOBILE_KPI_ROWS = 5;
-  private static readonly MOBILE_FILTER_PILLS_H = 50;
-  private static readonly MOBILE_TABLE_HEADER_H = 42;
-  private static readonly MOBILE_TABLE_ROW_H = 49;
-  private static readonly MOBILE_EMPTY_STATE_H = 104;
+  isEstimateCardExpanded(id: string): boolean {
+    return this.expandedEstimateIds().has(id);
+  }
 
-  private mobileWidgetHeight(expanded: boolean, rowCount: number): number {
-    const maxH = Math.floor(window.innerHeight * 0.75);
-    const {
-      MOBILE_HEADER_H,
-      MOBILE_KPI_ROW_H,
-      MOBILE_KPI_GAP,
-      MOBILE_KPI_PADDING,
-      MOBILE_KPI_ROWS,
-      MOBILE_FILTER_PILLS_H,
-      MOBILE_TABLE_HEADER_H,
-      MOBILE_TABLE_ROW_H,
-      MOBILE_EMPTY_STATE_H,
-    } = HomePageComponent;
+  showHomeEstimateCardDetails(id: string): boolean {
+    return this.isHomeAllEstimatesWideLayout() || this.expandedEstimateIds().has(id);
+  }
 
-    if (expanded) {
-      const tableBodyH = rowCount > 0 ? rowCount * MOBILE_TABLE_ROW_H : MOBILE_EMPTY_STATE_H;
-      return Math.min(
-        MOBILE_HEADER_H + MOBILE_FILTER_PILLS_H + MOBILE_TABLE_HEADER_H + tableBodyH,
-        maxH
-      );
+  estimateCardRowAriaLabel(card: HomeEstimateCard): string {
+    if (this.isHomeAllEstimatesWideLayout()) {
+      return 'Project summary and performance snapshot for ' + card.title;
     }
-    return Math.min(
-      MOBILE_HEADER_H +
-        MOBILE_KPI_PADDING +
-        MOBILE_KPI_ROWS * MOBILE_KPI_ROW_H +
-        (MOBILE_KPI_ROWS - 1) * MOBILE_KPI_GAP,
-      maxH
+    return (
+      (this.showHomeEstimateCardDetails(card.id) ? 'Collapse' : 'Expand') + ' details for ' + card.title
     );
   }
 
-  private applyMobileHeights(): void {
+  onEstimateCardHeaderClick(id: string): void {
+    if (this.isHomeAllEstimatesWideLayout()) return;
+    this.toggleEstimateCardExpanded(id);
+  }
+
+  onEstimateCardHeaderKeydown(id: string, event: Event): void {
+    if (this.isHomeAllEstimatesWideLayout()) return;
+    if (!(event instanceof KeyboardEvent)) return;
+    if (event.key === ' ') event.preventDefault();
+    if (event.key === 'Enter' || event.key === ' ') {
+      this.toggleEstimateCardExpanded(id);
+    }
+  }
+
+  toggleEstimateCardExpanded(id: string): void {
+    if (this.isHomeAllEstimatesWideLayout()) return;
+    this.expandedEstimateIds.update((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    this.syncHomeAllEstimatesHeightForExpandState();
+  }
+
+  /**
+   * Performance Snapshot + metrics live only in the expanded block at the bottom of each card.
+   * Grow the home widget on desktop when cards expand (same idea as mobile height bump)
+   * so the expanded region is not only scroll-clipped. Collapse restores the pre-expand height.
+   */
+  private _homeAllEstimatesHeightBaselinePx: number | null = null;
+
+  private syncHomeAllEstimatesHeightForExpandState(): void {
+    if (this.isMobile()) {
+      this.applyMobileHeights();
+      return;
+    }
+
+    const cards = this.homeEstimateCards();
+    const expandedCount = [...this.expandedEstimateIds()].filter((eid) => cards.some((c) => c.id === eid))
+      .length;
+
+    if (expandedCount === 0 && !this.isHomeAllEstimatesWideLayout()) {
+      const baseline = this._homeAllEstimatesHeightBaselinePx;
+      this._homeAllEstimatesHeightBaselinePx = null;
+      if (baseline !== null) {
+        this.widgetHeights.update((h) => ({ ...h, homeAllEstimates: baseline }));
+        this.engine.reflowAfterHeightsChanged();
+      }
+    } else if (
+      expandedCount > 0 &&
+      !this.isHomeAllEstimatesWideLayout() &&
+      this._homeAllEstimatesHeightBaselinePx === null
+    ) {
+      this._homeAllEstimatesHeightBaselinePx =
+        this.widgetHeights()['homeAllEstimates'] ?? HomePageComponent.HOME_ESTIMATES_DEFAULT_HEIGHT_PX;
+    }
+
+    afterNextRender(() => this.applyHomeAllEstimatesHeightFromMeasure());
+  }
+
+  /** After widget resize / browser resize, RO may lag one frame — nudge width + height sync. */
+  private scheduleHomeAllEstimatesMeasureSync(): void {
+    if (this.isMobile()) return;
+    requestAnimationFrame(() => this.applyHomeAllEstimatesHeightFromMeasure());
+  }
+
+  private applyHomeAllEstimatesHeightFromMeasure(): void {
+    if (this.isMobile()) return;
+    const el = this.allEstimatesMeasureRoot()?.nativeElement as HTMLElement | undefined;
+    if (!el) return;
+    const raw = Math.ceil(
+      Math.max(el.getBoundingClientRect().height, el.scrollHeight, el.offsetHeight),
+    );
+    const minPx = HomePageComponent.HOME_ESTIMATES_MIN_WIDGET_HEIGHT_PX;
+    const maxPx = Math.floor(window.innerHeight * 0.92);
+    const next = Math.min(maxPx, Math.max(minPx, raw));
+    const cur =
+      this.widgetHeights()['homeAllEstimates'] ?? HomePageComponent.HOME_ESTIMATES_DEFAULT_HEIGHT_PX;
+    if (Math.abs(cur - next) <= 1) return;
+    this.widgetHeights.update((h) => ({ ...h, homeAllEstimates: next }));
+    this.engine.reflowAfterHeightsChanged();
+  }
+
+  homeEstimateCardBadgeClass(status: HomeEstimateCardStatus): string {
+    switch (status) {
+      case 'In Progress':
+        return 'bg-foreground text-primary-foreground';
+      case 'Completed':
+        return 'bg-success-20 text-success';
+      case 'Planning':
+        return 'bg-warning-20 text-warning';
+      case 'Archived':
+        return 'bg-muted text-foreground-60';
+      default:
+        return 'bg-muted text-foreground-60';
+    }
+  }
+
+  estimateProgressFillClass(card: HomeEstimateCard): string {
+    switch (card.progressVariant) {
+      case 'in_progress':
+        return 'bg-foreground';
+      case 'complete':
+        return 'bg-success';
+      case 'planning':
+        return 'bg-warning';
+      case 'archived':
+        return 'bg-muted';
+      default:
+        return 'bg-primary';
+    }
+  }
+
+  taskPriorityLabel(priority: BiddingTask['priority']): string {
+    if (priority === 'overdue') return 'Overdue';
+    return priority.charAt(0).toUpperCase() + priority.slice(1);
+  }
+
+  taskPriorityBadgeClass(priority: BiddingTask['priority']): string {
+    switch (priority) {
+      case 'overdue':
+        return 'bg-destructive-20 text-destructive';
+      case 'critical':
+        return 'bg-destructive-20 text-destructive';
+      case 'high':
+        return 'bg-warning-20 text-warning';
+      case 'medium':
+      default:
+        return 'bg-muted text-foreground-60';
+    }
+  }
+
+  /** Matches layout engine defaultHeights.homeAllEstimates on the home dashboard. */
+  private static readonly HOME_ESTIMATES_DEFAULT_HEIGHT_PX = 560;
+  /** Desktop widget height floor so chrome + one row stays usable. */
+  private static readonly HOME_ESTIMATES_MIN_WIDGET_HEIGHT_PX = 280;
+  /**
+   * Measured panel width (container) at/above this shows Performance Snapshot without expand (Figma 2:23632).
+   * Default grid column ~416px stays summary-only (Figma 2:36091). Aligns with ~504px narrow frame in Figma.
+   */
+  private static readonly HOME_ESTIMATES_WIDE_BREAKPOINT_PX = 520;
+  private static readonly MOBILE_ESTIMATE_TOP = 140;
+  private static readonly MOBILE_ESTIMATE_CARD = 104;
+  private static readonly MOBILE_ESTIMATE_EXPANDED = 220;
+  private static readonly MOBILE_TASKS_CHROME = 200;
+  private static readonly MOBILE_TASK_CARD = 132;
+
+  applyMobileHeights(): void {
     if (!this.isMobile()) return;
     const heights = { ...this.widgetHeights() };
-    heights['homeRfis'] = this.mobileWidgetHeight(this.rfiMobileExpanded(), this.filteredRfis().length);
-    heights['homeSubmittals'] = this.mobileWidgetHeight(
-      this.submittalMobileExpanded(),
-      this.filteredSubmittals().length
+    const estCards = this.homeEstimateCards().length;
+    let expandExtra = 0;
+    for (const id of this.expandedEstimateIds()) {
+      if (this.homeEstimateCards().some((c) => c.id === id)) {
+        expandExtra += HomePageComponent.MOBILE_ESTIMATE_EXPANDED;
+      }
+    }
+    const taskRows = this.filteredTasks().length;
+    const taskBody =
+      taskRows === 0 ? 120 : taskRows * HomePageComponent.MOBILE_TASK_CARD;
+    const cap = Math.floor(window.innerHeight * 0.72);
+    heights['homeAllEstimates'] = Math.min(
+      HomePageComponent.MOBILE_ESTIMATE_TOP +
+        estCards * HomePageComponent.MOBILE_ESTIMATE_CARD +
+        expandExtra,
+      cap,
     );
-    heights['homeTimeOff'] = this.mobileWidgetHeight(
-      this.timeOffMobileExpanded(),
-      this.filteredTimeOff().length
-    );
+    heights['homeTasks'] = Math.min(HomePageComponent.MOBILE_TASKS_CHROME + taskBody, cap);
+    heights['homeCalendar'] = heights['homeCalendar'] ?? 480;
     this.widgetHeights.set(heights);
+    this.engine.reflowAfterHeightsChanged();
+  }
+
+  onTaskScheduleTabSelect(key: BiddingTaskScheduleTab): void {
+    this.taskScheduleTab.set(key);
+    this.applyMobileHeights();
+  }
+
+  onTaskPrioritySelect(key: 'all' | 'critical' | 'high' | 'medium'): void {
+    this.taskPriorityFilter.set(key);
+    this.applyMobileHeights();
   }
 
   ngAfterViewInit(): void {
     this.engine.gridElAccessor = () => this.homeGridContainerRef()?.nativeElement as HTMLElement | undefined;
     this.engine.headerElAccessor = () => this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
     this.engine.init();
+    window.addEventListener('resize', this._onHomeAllEstimatesWindowResize, { passive: true });
+    requestAnimationFrame(() => this.applyHomeAllEstimatesHeightFromMeasure());
+    this.syncHomeAllEstimatesHeightForExpandState();
   }
 
-  readonly timeOffView = signal<'list' | 'calendar'>('list');
-  readonly calendarYear = signal(2026);
-  readonly calendarMonth = signal(2);
-
-  private readonly _monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-
-  private readonly _monthAbbr: Record<string, number> = {
-    Jan: 0,
-    Feb: 1,
-    Mar: 2,
-    Apr: 3,
-    May: 4,
-    Jun: 5,
-    Jul: 6,
-    Aug: 7,
-    Sep: 8,
-    Oct: 9,
-    Nov: 10,
-    Dec: 11,
-  };
-
-  readonly calendarMonthLabel = computed(
-    () => `${this._monthNames[this.calendarMonth()]} ${this.calendarYear()}`
-  );
-
-  readonly calendarDays = computed(() => {
-    const year = this.calendarYear();
-    const month = this.calendarMonth();
-    const firstWeekday = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    interface TimeOffEntry {
-      id: number;
-      name: string;
-      initials: string;
-      type: string;
-      startDate: string;
-      endDate: string;
-      days: number;
-      status: 'Pending' | 'Approved' | 'Denied';
-    }
-    const dayMap = new Map<number, TimeOffEntry[]>();
-    for (const req of this.timeOffRequests) {
-      const [startMon, startDayStr] = req.startDate.split(' ');
-      const [endMon, endDayStr] = req.endDate.split(' ');
-      const start = new Date(year, this._monthAbbr[startMon], parseInt(startDayStr, 10));
-      const end = new Date(year, this._monthAbbr[endMon], parseInt(endDayStr, 10));
-      const cur = new Date(start);
-      while (cur <= end) {
-        if (cur.getFullYear() === year && cur.getMonth() === month) {
-          const d = cur.getDate();
-          if (!dayMap.has(d)) dayMap.set(d, []);
-          dayMap.get(d)!.push(req);
-        }
-        cur.setDate(cur.getDate() + 1);
-      }
-    }
-
-    interface CalCell {
-      day: number | null;
-      requests: TimeOffEntry[];
-    }
-    const cells: CalCell[] = [];
-    for (let i = 0; i < firstWeekday; i++) cells.push({ day: null, requests: [] });
-    for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, requests: dayMap.get(d) ?? [] });
-    while (cells.length % 7 !== 0) cells.push({ day: null, requests: [] });
-    return cells;
-  });
-
-  prevCalendarMonth(): void {
-    const m = this.calendarMonth();
-    if (m === 0) {
-      this.calendarMonth.set(11);
-      this.calendarYear.update((y) => y - 1);
-    } else {
-      this.calendarMonth.update((v) => v - 1);
-    }
-  }
-
-  nextCalendarMonth(): void {
-    const m = this.calendarMonth();
-    if (m === 11) {
-      this.calendarMonth.set(0);
-      this.calendarYear.update((y) => y + 1);
-    } else {
-      this.calendarMonth.update((v) => v + 1);
-    }
-  }
-
-  timeOffStatusColor(status: string): string {
-    if (status === 'Approved') return 'bg-success text-success-foreground';
-    if (status === 'Pending') return 'bg-warning text-warning-foreground';
-    return 'bg-destructive text-destructive-foreground';
-  }
-
-  readonly pendingTimeOffCount = computed(() =>
-    this.timeOffRequests.filter((r) => r.status === 'Pending').length
-  );
-
-  readonly timeOffFilterOptions: readonly ('all' | 'Pending' | 'Approved' | 'Denied')[] = ['all', 'Pending', 'Approved', 'Denied'] as const;
-  readonly timeOffCompactItems: readonly { key: 'all' | 'Pending' | 'Approved' | 'Denied'; label: string; icon: string; colorBg: string; colorText: string }[] = [
-    { key: 'all', label: 'All Requests', icon: 'calendar', colorBg: 'bg-primary-20', colorText: 'text-primary' },
-    { key: 'Pending', label: 'Pending', icon: 'clock', colorBg: 'bg-warning-20', colorText: 'text-warning' },
-    { key: 'Approved', label: 'Approved', icon: 'check_circle', colorBg: 'bg-success-20', colorText: 'text-success' },
-    { key: 'Denied', label: 'Denied', icon: 'cancel_circle', colorBg: 'bg-destructive-20', colorText: 'text-destructive' },
-  ];
-  readonly timeOffActiveFilter = signal<'all' | 'Pending' | 'Approved' | 'Denied'>('all');
-  readonly timeOffMobileExpanded = signal(false);
-  readonly isTimeOffCompact = computed(
-    () => this.isMobile() || (this.widgetColSpans()['homeTimeOff'] ?? 16) <= 6
-  );
-
-  readonly timeOffCounts = computed(() => ({
-    all: this.timeOffRequests.length,
-    Pending: this.timeOffRequests.filter((r) => r.status === 'Pending').length,
-    Approved: this.timeOffRequests.filter((r) => r.status === 'Approved').length,
-    Denied: this.timeOffRequests.filter((r) => r.status === 'Denied').length,
-  }));
-
-  readonly filteredTimeOff = computed(() => {
-    const filter = this.timeOffActiveFilter();
-    if (filter === 'all') return this.timeOffRequests;
-    return this.timeOffRequests.filter((r) => r.status === filter);
-  });
-
-  expandTimeOffMobile(filter: 'all' | 'Pending' | 'Approved' | 'Denied'): void {
-    this.timeOffActiveFilter.set(filter);
-    this.timeOffMobileExpanded.set(true);
-    this.applyMobileHeights();
-    this.engine.compactAll();
-  }
-
-  collapseTimeOffMobile(): void {
-    this.timeOffMobileExpanded.set(false);
-    this.timeOffActiveFilter.set('all');
-    this.applyMobileHeights();
-    this.engine.compactAll();
+  onCreateClick(): void {
+    this.router.navigate(['/estimates']);
   }
 
   private readonly _apptTypeColor: Record<ApptType, string> = {
@@ -1105,7 +926,7 @@ export class HomePageComponent implements AfterViewInit {
   private readonly CAL_LAST_HOUR = 18;
   readonly calendarHours = Array.from(
     { length: this.CAL_LAST_HOUR - this.CAL_FIRST_HOUR },
-    (_, i) => i + this.CAL_FIRST_HOUR
+    (_, i) => i + this.CAL_FIRST_HOUR,
   );
 
   readonly calendarBaseDate = signal(new Date());
@@ -1124,20 +945,7 @@ export class HomePageComponent implements AfterViewInit {
   });
 
   private readonly _DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  private readonly _MON_NAMES = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
+  private readonly _MON_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   private calDayMeta(d: Date): { label: string; dateStr: string; dayNum: number; isToday: boolean } {
     const today = new Date();
@@ -1169,13 +977,13 @@ export class HomePageComponent implements AfterViewInit {
   readonly calendarDay1Appts = computed(() =>
     this.calendarAppointments
       .filter((a) => this.isSameCalDay(a.date, this.calendarDay1()))
-      .sort((a, b) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin))
+      .sort((a, b) => a.startHour * 60 + a.startMin - (b.startHour * 60 + b.startMin)),
   );
 
   readonly calendarDay2Appts = computed(() =>
     this.calendarAppointments
       .filter((a) => this.isSameCalDay(a.date, this.calendarDay2()))
-      .sort((a, b) => (a.startHour * 60 + a.startMin) - (b.startHour * 60 + b.startMin))
+      .sort((a, b) => a.startHour * 60 + a.startMin - (b.startHour * 60 + b.startMin)),
   );
 
   readonly currentTimeTop = computed(() => {
@@ -1228,125 +1036,5 @@ export class HomePageComponent implements AfterViewInit {
 
   resetCalendarToToday(): void {
     this.calendarBaseDate.set(new Date());
-  }
-
-  readonly rfiFilterOptions: readonly (RfiStatus | 'all')[] = ['all', 'open', 'overdue', 'upcoming', 'closed'] as const;
-  readonly rfiCompactItems: readonly { key: RfiStatus | 'all'; label: string; icon: string; destructive: boolean }[] = [
-    { key: 'all', label: 'All RFIs', icon: 'clipboard', destructive: false },
-    { key: 'open', label: 'Open', icon: 'clipboard', destructive: false },
-    { key: 'overdue', label: 'Overdue', icon: 'warning', destructive: true },
-    { key: 'upcoming', label: 'Upcoming', icon: 'clock', destructive: false },
-    { key: 'closed', label: 'Closed', icon: 'check_circle', destructive: false },
-  ];
-  readonly rfiActiveFilter = signal<RfiStatus | 'all'>('all');
-  readonly rfiMobileExpanded = signal(false);
-  readonly isRfiCompact = computed(
-    () => this.isMobile() || (this.widgetColSpans()['homeRfis'] ?? 16) <= 5
-  );
-
-  expandRfiMobile(filter: RfiStatus | 'all'): void {
-    this.rfiActiveFilter.set(filter);
-    this.rfiMobileExpanded.set(true);
-    this.applyMobileHeights();
-    this.engine.compactAll();
-  }
-
-  collapseRfiMobile(): void {
-    this.rfiMobileExpanded.set(false);
-    this.rfiActiveFilter.set('all');
-    this.applyMobileHeights();
-    this.engine.compactAll();
-  }
-
-  readonly rfiCounts = computed(() => ({
-    all: this.rfis.length,
-    open: this.rfis.filter((r) => r.status === 'open').length,
-    overdue: this.rfis.filter((r) => r.status === 'overdue').length,
-    upcoming: this.rfis.filter((r) => r.status === 'upcoming').length,
-    closed: this.rfis.filter((r) => r.status === 'closed').length,
-  }));
-
-  readonly filteredRfis = computed(() => {
-    const filter = this.rfiActiveFilter();
-    if (filter === 'all') return this.rfis;
-    return this.rfis.filter((r) => r.status === filter);
-  });
-
-  rfiStatusColor(status: RfiStatus): string {
-    const map: Record<RfiStatus, string> = {
-      open: 'bg-primary',
-      overdue: 'bg-destructive',
-      upcoming: 'bg-warning',
-      closed: 'bg-success',
-    };
-    return map[status];
-  }
-
-  rfiStatusLabel(status: RfiStatus): string {
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  }
-
-  readonly submittalFilterOptions: readonly (SubmittalStatus | 'all')[] = ['all', 'open', 'overdue', 'upcoming', 'closed'] as const;
-  readonly submittalCompactItems: readonly { key: SubmittalStatus | 'all'; label: string; icon: string; destructive: boolean }[] = [
-    { key: 'all', label: 'All Submittals', icon: 'document', destructive: false },
-    { key: 'open', label: 'Open', icon: 'document', destructive: false },
-    { key: 'overdue', label: 'Overdue', icon: 'warning', destructive: true },
-    { key: 'upcoming', label: 'Upcoming', icon: 'clock', destructive: false },
-    { key: 'closed', label: 'Closed', icon: 'check_circle', destructive: false },
-  ];
-  readonly submittalActiveFilter = signal<SubmittalStatus | 'all'>('all');
-  readonly submittalMobileExpanded = signal(false);
-  readonly isSubmittalCompact = computed(
-    () => this.isMobile() || (this.widgetColSpans()['homeSubmittals'] ?? 16) <= 5
-  );
-
-  expandSubmittalMobile(filter: SubmittalStatus | 'all'): void {
-    this.submittalActiveFilter.set(filter);
-    this.submittalMobileExpanded.set(true);
-    this.applyMobileHeights();
-    this.engine.compactAll();
-  }
-
-  collapseSubmittalMobile(): void {
-    this.submittalMobileExpanded.set(false);
-    this.submittalActiveFilter.set('all');
-    this.applyMobileHeights();
-    this.engine.compactAll();
-  }
-
-  readonly submittalCounts = computed(() => ({
-    all: this.submittals.length,
-    open: this.submittals.filter((s) => s.status === 'open').length,
-    overdue: this.submittals.filter((s) => s.status === 'overdue').length,
-    upcoming: this.submittals.filter((s) => s.status === 'upcoming').length,
-    closed: this.submittals.filter((s) => s.status === 'closed').length,
-  }));
-
-  readonly filteredSubmittals = computed(() => {
-    const filter = this.submittalActiveFilter();
-    if (filter === 'all') return this.submittals;
-    return this.submittals.filter((s) => s.status === filter);
-  });
-
-  submittalStatusColor(status: SubmittalStatus): string {
-    const map: Record<SubmittalStatus, string> = {
-      open: 'bg-primary',
-      overdue: 'bg-destructive',
-      upcoming: 'bg-warning',
-      closed: 'bg-success',
-    };
-    return map[status];
-  }
-
-  submittalStatusLabel(status: SubmittalStatus): string {
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  }
-
-  navigateToProjects(): void {
-    this.router.navigate(['/projects']);
-  }
-
-  navigateToFinancials(): void {
-    this.router.navigate(['/financials']);
   }
 }

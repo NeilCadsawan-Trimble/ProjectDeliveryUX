@@ -26,21 +26,22 @@ export class DashboardLayoutComponent {
   readonly appTitle = 'Project Delivery';
 
   readonly userCard: INavbarUserCard = {
-    name: 'Alex Morgan',
-    email: 'alex.morgan@trimble.com',
+    name: 'Bert Alvarez',
+    email: 'bert.alvarez@trimble.com',
   };
 
   readonly sideNavItems: ShellNavItem[] = [
     { value: 'home', label: 'Home', icon: 'home', route: '/' },
     { value: 'projects', label: 'Projects', icon: 'briefcase', route: '/projects' },
+    { value: 'estimates', label: 'Estimates', icon: 'description', route: '/estimates' },
     { value: 'financials', label: 'Financials', icon: 'bar_graph', route: '/financials' },
   ];
 
   readonly defaultAiSuggestions: string[] = [
-    'Summarize project status',
-    'Which projects are at risk?',
-    'Show overdue estimates',
-    'What needs attention today?',
+    'What estimates need approval this week?',
+    'Summarize bidding risks from my tasks',
+    'Which deadlines are coming up?',
+    'What is my total pipeline value?',
   ];
 
   readonly aiResponseFn: AiResponseFn = (input: string): string => {

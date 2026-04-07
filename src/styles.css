@@ -1847,3 +1847,38 @@ modus-wc-navbar .main-menu {
   text-anchor: middle;
   opacity: 0.4;
 }
+
+/*
+ * Home dashboard — All Estimates widget: layout follows the widget column width (Figma 2:36091 vs 2:23632),
+ * not the global viewport `sm:` breakpoint (which broke narrow columns on wide screens).
+ */
+.home-all-estimates-cq {
+  container-type: inline-size;
+  container-name: home-all-estimates;
+}
+
+@container home-all-estimates (min-width: 560px) {
+  .home-all-estimates-progress-row {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 1rem;
+  }
+
+  .home-all-estimates-progress-meta {
+    justify-content: flex-end;
+    flex-shrink: 0;
+    padding-bottom: 0.125rem;
+  }
+}
+
+@container home-all-estimates (min-width: 720px) {
+  .home-all-estimates-metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container home-all-estimates (min-width: 400px) and (max-width: 719px) {
+  .home-all-estimates-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

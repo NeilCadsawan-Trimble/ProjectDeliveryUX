@@ -22,8 +22,16 @@ import { CanvasResetService } from '../services/canvas-reset.service';
 import { WidgetFocusService } from '../services/widget-focus.service';
 import { AiService, type AiChatMessage } from '../../services/ai.service';
 import {
-  PROJECTS, ESTIMATES, ACTIVITIES, ATTENTION_ITEMS,
-  TIME_OFF_REQUESTS, RFIS, SUBMITTALS, CALENDAR_APPOINTMENTS,
+  PROJECTS,
+  ESTIMATES,
+  ACTIVITIES,
+  ATTENTION_ITEMS,
+  TIME_OFF_REQUESTS,
+  RFIS,
+  SUBMITTALS,
+  CALENDAR_APPOINTMENTS,
+  BIDDING_TASKS,
+  HOME_ESTIMATE_CARDS,
 } from '../../data/dashboard-data';
 
 export interface ShellNavItem {
@@ -68,12 +76,12 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     <svg aria-hidden="true" class="svg-defs-hidden">
       <defs>
         <linearGradient id="ai-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="20%" stop-color="#FF00FF" />
+          <stop offset="20%" stop-color="#9933FF" />
           <stop offset="60%" stop-color="#0066CC" />
           <stop offset="100%" stop-color="#0066CC" />
         </linearGradient>
         <radialGradient id="ai-grad-dark" cx="18%" cy="18%" r="70%">
-          <stop offset="0%" stop-color="#FF00FF" />
+          <stop offset="0%" stop-color="#9933FF" />
           <stop offset="50%" stop-color="#9933FF" />
           <stop offset="100%" stop-color="#0066CC" />
         </radialGradient>
@@ -715,6 +723,7 @@ export class DashboardShellComponent implements AfterViewInit {
     const url = this.currentUrl();
     if (url.startsWith('/projects')) return 'projects';
     if (url.startsWith('/financials')) return 'financials';
+    if (url.startsWith('/estimates')) return 'estimates';
     return 'home';
   }
 
@@ -724,6 +733,26 @@ export class DashboardShellComponent implements AfterViewInit {
 
     if (page === 'home') {
       switch (focusedWidget) {
+        case 'homeAllEstimates':
+          parts.push('Construction estimate cards (home dashboard):');
+          for (const c of HOME_ESTIMATE_CARDS) {
+            parts.push(
+              `  ${c.title}: ${c.statusLabel}, ${c.progressPct}%, ${c.dateLine}. ${c.description}`,
+            );
+            parts.push(
+              `    Snapshot: ${c.metrics.map((m) => `${m.label} ${m.value} (${m.trend})`).join('; ')}`,
+            );
+            parts.push(
+              `    Notes: ${c.insights.map((i) => i.text).join(' | ')}`,
+            );
+          }
+          break;
+        case 'homeTasks':
+          parts.push('Bidding tasks and action items:');
+          for (const t of BIDDING_TASKS) {
+            parts.push(`  ${t.headline} — ${t.subline} (${t.priority}): ${t.warning}`);
+          }
+          break;
         case 'homeTimeOff':
           parts.push('Time off requests:');
           for (const r of TIME_OFF_REQUESTS) {
@@ -752,12 +781,13 @@ export class DashboardShellComponent implements AfterViewInit {
           }
           break;
         default:
-          parts.push(`${PROJECTS.length} projects, ${ESTIMATES.length} open estimates`);
-          const atRisk = PROJECTS.filter(p => p.status === 'At Risk').length;
-          const overdue = PROJECTS.filter(p => p.status === 'Overdue').length;
-          if (atRisk > 0) parts.push(`${atRisk} project(s) at risk`);
-          if (overdue > 0) parts.push(`${overdue} project(s) overdue`);
+          parts.push(`Bert is in the bidding phase: ${ESTIMATES.length} estimates, tasks, and calendar on the home dashboard.`);
           break;
+      }
+    } else if (page === 'estimates') {
+      parts.push('Open estimates:');
+      for (const e of ESTIMATES) {
+        parts.push(`  ${e.id}: ${e.project}, ${e.value}, status: ${e.status}, due ${e.dueDate}`);
       }
     } else if (page === 'projects') {
       switch (focusedWidget) {

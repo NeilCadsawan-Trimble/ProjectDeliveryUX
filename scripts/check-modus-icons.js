@@ -139,6 +139,7 @@ async function checkFile(filePath) {
         matchText.includes('modus-icons') ||
         (matchText.includes('icon') && content.includes('modus-icons')) ||
         // Skip legitimate component names and imports
+        matchText.includes('AiIconComponent') ||
         matchText.includes('IconsPage') ||
         matchText.includes('modusIcons') ||
         matchText.includes('totalIconCount') ||

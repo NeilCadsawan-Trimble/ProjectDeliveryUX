@@ -167,7 +167,7 @@ import {
                           <div class="text-2xs text-foreground-40">{{ project.budgetUsed }} / {{ project.budgetTotal }}</div>
                         </div>
                         <div class="flex items-center gap-1.5 border-top-default pt-3 mt-1">
-                          <i class="modus-icons text-sm text-primary" aria-hidden="true">draft</i>
+                          <i class="modus-icons text-sm text-primary" aria-hidden="true">file_edit</i>
                           <div class="text-2xs text-primary truncate cursor-pointer hover:underline" (click)="navigateToProject(project); $event.stopPropagation()">
                             {{ project.latestDrawingName }}
                           </div>

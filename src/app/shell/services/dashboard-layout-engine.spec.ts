@@ -300,7 +300,7 @@ describe('DashboardLayoutEngine', () => {
       expect(engine.widgetLefts()['w2']).toBeGreaterThanOrEqual(origW2Left);
     });
 
-    it('squeezes the far-end neighbor first at the container edge', () => {
+    it('squeezes the outer-end neighbor first at the container edge', () => {
       const engine = createEngine({
         widgets: ['w1', 'w2'],
         defaultLefts: { w1: 0, w2: 400 },
@@ -355,7 +355,7 @@ describe('DashboardLayoutEngine', () => {
       expect(engine.widgetLefts()['w2']).toBeLessThanOrEqual(origW2Left);
     });
 
-    it('squeezes the far-end neighbor first at left boundary', () => {
+    it('squeezes the outer-end neighbor first at left boundary', () => {
       const engine = createEngine({
         widgets: ['w1', 'w2'],
         defaultLefts: { w1: 0, w2: 500 },
@@ -405,6 +405,21 @@ describe('DashboardLayoutEngine', () => {
         expect(tops[id]).toBe(y);
         y += heights[id] + 16;
       }
+    });
+  });
+
+  describe('reflowAfterHeightsChanged', () => {
+    it('restacks mobile widgets when a widget grows taller', () => {
+      const engine = createEngine();
+      engine.isMobile.set(true);
+      engine.widgetTops.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetHeights.set({ w1: 300, w2: 200, w3: 200 });
+      engine.compactAll();
+      expect(engine.widgetTops()['w2']).toBe(300 + DashboardLayoutEngine.GAP_PX);
+
+      engine.widgetHeights.set({ w1: 900, w2: 200, w3: 200 });
+      engine.reflowAfterHeightsChanged();
+      expect(engine.widgetTops()['w2']).toBe(900 + DashboardLayoutEngine.GAP_PX);
     });
   });
 

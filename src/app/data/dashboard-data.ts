@@ -3,7 +3,19 @@ import type { ModusBadgeColor } from '../components/modus-badge.component';
 export type ProjectStatus = 'On Track' | 'At Risk' | 'Overdue' | 'Planning';
 export type EstimateStatus = 'Draft' | 'Under Review' | 'Awaiting Approval' | 'Approved';
 export type EstimateType = 'Fixed Price' | 'T&M' | 'Retainer' | 'Milestone';
-export type DashboardWidgetId = 'projects' | 'openEstimates' | 'recentActivity' | 'needsAttention' | 'timeOff' | 'homeTimeOff' | 'homeCalendar' | 'homeRfis' | 'homeSubmittals' | 'finBudgetByProject';
+export type DashboardWidgetId =
+  | 'projects'
+  | 'openEstimates'
+  | 'recentActivity'
+  | 'needsAttention'
+  | 'timeOff'
+  | 'homeTimeOff'
+  | 'homeCalendar'
+  | 'homeRfis'
+  | 'homeSubmittals'
+  | 'homeAllEstimates'
+  | 'homeTasks'
+  | 'finBudgetByProject';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
@@ -71,6 +83,157 @@ export interface Estimate {
   daysLeft: number;
 }
 
+export type BiddingTaskScheduleTab = 'today' | 'tomorrow' | 'week' | 'archive';
+export type BiddingTaskPriorityKind = 'overdue' | 'critical' | 'high' | 'medium';
+
+export interface BiddingTask {
+  id: string;
+  headline: string;
+  subline: string;
+  priority: BiddingTaskPriorityKind;
+  warning: string;
+  actionLabel: string;
+  scheduleTab: BiddingTaskScheduleTab;
+}
+
+/** Status chips on home "All Estimates" cards (Figma WC-2.0 Estimates Page). */
+export type HomeEstimateCardStatus = 'In Progress' | 'Completed' | 'Planning' | 'Archived';
+
+/** Trend glyph beside metric value (Figma Estimates expanded snapshot). */
+export type HomeEstimateMetricTrend = 'up' | 'down' | 'none';
+
+export interface HomeEstimateMetric {
+  label: string;
+  value: string;
+  trend: HomeEstimateMetricTrend;
+  /** Leading Modus icon on the label row (Figma Performance Snapshot). */
+  labelIcon: string;
+}
+
+export type HomeEstimateInsightTone = 'positive' | 'caution';
+
+export interface HomeEstimateInsight {
+  text: string;
+  tone: HomeEstimateInsightTone;
+  /**
+   * Figma: most insights use a left accent strip + icon + copy.
+   * Planning (Clubhouse) uses compact padded rows without the strip.
+   */
+  layout?: 'accent' | 'simple';
+}
+
+export interface HomeEstimateCard {
+  id: string;
+  /** Leading icon in card row (Figma: document vs archive). */
+  listIcon: 'document' | 'archive_square';
+  title: string;
+  description: string;
+  statusLabel: HomeEstimateCardStatus;
+  progressPct: number;
+  progressVariant: 'in_progress' | 'complete' | 'planning' | 'archived';
+  /** When false, collapsed layout omits the progress bar (e.g. Archive). */
+  showProgressBar: boolean;
+  /** e.g. "Due Mar 15, 2026" / "Completed Feb 28, 2026" / "Archived Jan 10, 2026" */
+  dateLine: string;
+  membersLabel: string;
+  metrics: [HomeEstimateMetric, HomeEstimateMetric, HomeEstimateMetric];
+  /** Insight rows below metrics (check vs warning per Figma). */
+  insights: [HomeEstimateInsight, HomeEstimateInsight];
+}
+
+/** Home dashboard All Estimates cards — copy aligned to Figma node 2:23597. */
+export const HOME_ESTIMATE_CARDS: HomeEstimateCard[] = [
+  {
+    id: 'hec-eldorado',
+    listIcon: 'document',
+    title: 'Eldorado Canyon Community Center',
+    description: 'Community center construction project in Eldorado Canyon',
+    statusLabel: 'In Progress',
+    progressPct: 75,
+    progressVariant: 'in_progress',
+    showProgressBar: true,
+    dateLine: 'Due Mar 15, 2026',
+    membersLabel: '2 members',
+    metrics: [
+      { label: 'Projected Margin', value: '19.2%', trend: 'up', labelIcon: 'line_graph' },
+      { label: 'Schedule Adherence', value: '92%', trend: 'up', labelIcon: 'calendar' },
+      { label: 'Under Budget', value: '+$12.5K', trend: 'up', labelIcon: 'monetarization' },
+    ],
+    insights: [
+      { text: 'Local suppliers reduced delays by 28%', tone: 'positive' },
+      { text: 'Early sub engagement improved bids', tone: 'positive' },
+    ],
+  },
+  {
+    id: 'hec-housing',
+    listIcon: 'document',
+    title: 'Housing Complex - Division 3',
+    description: 'Previous Housing Complex project successfully completed',
+    statusLabel: 'Completed',
+    progressPct: 100,
+    progressVariant: 'complete',
+    showProgressBar: true,
+    dateLine: 'Completed Feb 28, 2026',
+    membersLabel: '2 members',
+    metrics: [
+      { label: 'Final Margin', value: '21.4%', trend: 'up', labelIcon: 'line_graph' },
+      { label: 'On-Time Delivery', value: '100%', trend: 'up', labelIcon: 'calendar' },
+      { label: 'Under Budget', value: '+$45.2K', trend: 'up', labelIcon: 'monetarization' },
+    ],
+    insights: [
+      { text: 'AI doc review caught all compliance issues', tone: 'positive' },
+      { text: 'Strong subcontractor engagement', tone: 'positive' },
+    ],
+  },
+  {
+    id: 'hec-clubhouse',
+    listIcon: 'document',
+    title: 'Clubhouse Build',
+    description: 'Private clubhouse construction project',
+    statusLabel: 'Planning',
+    progressPct: 30,
+    progressVariant: 'planning',
+    showProgressBar: true,
+    dateLine: 'Due Apr 20, 2026',
+    membersLabel: '1 member',
+    metrics: [
+      { label: 'Target Margin', value: '16.8%', trend: 'up', labelIcon: 'line_graph' },
+      { label: 'Planning Phase', value: '—', trend: 'none', labelIcon: 'calendar' },
+      { label: 'Budget Status', value: 'On Track', trend: 'up', labelIcon: 'bar_graph_line' },
+    ],
+    insights: [
+      { text: 'Need 2+ electrical quotes by Mar 25', tone: 'caution', layout: 'simple' },
+      { text: 'Consider local material suppliers', tone: 'caution', layout: 'simple' },
+    ],
+  },
+  {
+    id: 'hec-archive',
+    listIcon: 'archive_square',
+    title: 'Archive',
+    description: 'Archived projects and historical data',
+    statusLabel: 'Archived',
+    progressPct: 0,
+    progressVariant: 'archived',
+    showProgressBar: false,
+    dateLine: 'Archived Jan 10, 2026',
+    membersLabel: '',
+    metrics: [
+      {
+        label: 'Avg Margin (18 projects)',
+        value: '18.3%',
+        trend: 'up',
+        labelIcon: 'line_graph',
+      },
+      { label: 'On-Time Rate', value: '83%', trend: 'down', labelIcon: 'calendar' },
+      { label: 'Budget Adherence', value: '91%', trend: 'up', labelIcon: 'bar_graph_line' },
+    ],
+    insights: [
+      { text: 'Early sub engagement: 89% success', tone: 'positive' },
+      { text: 'Late electrical bids: 33% win rate', tone: 'caution' },
+    ],
+  },
+];
+
 export interface ActivityItem {
   id: number;
   actorInitials: string;
@@ -111,6 +274,54 @@ export const ESTIMATES: Estimate[] = [
   { id: 'EST-2026-050', project: 'Customer Onboarding Automation', client: 'Brightline Co', type: 'T&M', value: '$130,000', valueRaw: 130000, status: 'Awaiting Approval', requestedBy: 'Lena Brooks', requestedByInitials: 'LB', dueDate: 'Mar 3, 2026', daysLeft: 4 },
   { id: 'EST-2026-051', project: 'Reporting Module Rebuild', client: 'NexGen Analytics', type: 'Fixed Price', value: '$95,500', valueRaw: 95500, status: 'Under Review', requestedBy: 'James Carter', requestedByInitials: 'JC', dueDate: 'Mar 12, 2026', daysLeft: 13 },
   { id: 'EST-2026-052', project: 'Security Training Program', client: 'GlobalTech Ltd', type: 'Retainer', value: '$18,000/mo', valueRaw: 18000, status: 'Draft', requestedBy: 'Mike Osei', requestedByInitials: 'MO', dueDate: 'Apr 5, 2026', daysLeft: 37 },
+];
+
+export const BIDDING_TASKS: BiddingTask[] = [
+  {
+    id: 'bt-1',
+    headline: 'Downtown Convention Center',
+    subline: 'Budget Review',
+    priority: 'overdue',
+    warning: 'High profit fade risk detected.',
+    actionLabel: 'Review & Approve',
+    scheduleTab: 'today',
+  },
+  {
+    id: 'bt-2',
+    headline: 'Warehouse Renovation',
+    subline: 'Permit Approval',
+    priority: 'high',
+    warning: '1-day delay risk if not submitted.',
+    actionLabel: 'Coordinate with Jennifer Park',
+    scheduleTab: 'today',
+  },
+  {
+    id: 'bt-3',
+    headline: 'Office Tower Phase 2',
+    subline: 'Resource Conflict',
+    priority: 'high',
+    warning: 'Potential 3-day project delay.',
+    actionLabel: 'Resolve Schedule',
+    scheduleTab: 'today',
+  },
+  {
+    id: 'bt-4',
+    headline: 'Eldorado Canyon framing package',
+    subline: 'Bid bond verification',
+    priority: 'medium',
+    warning: 'Insurance certificate expires in 5 days.',
+    actionLabel: 'Upload renewal',
+    scheduleTab: 'tomorrow',
+  },
+  {
+    id: 'bt-5',
+    headline: 'Regional water treatment RFQ',
+    subline: 'Vendor comparison',
+    priority: 'medium',
+    warning: 'Pricing refresh requested by procurement.',
+    actionLabel: 'Refresh quotes',
+    scheduleTab: 'week',
+  },
 ];
 
 export const ACTIVITIES: ActivityItem[] = [

@@ -4,7 +4,7 @@
  * Guards against recurring regressions:
  * - Desktop padding (px-4) must not be overridden by md:px-0
  * - Both left and right resize handles must be present
- * - Compact mode signals must exist
+ * - Bidding dashboard widgets and task filter handlers must exist
  */
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -42,17 +42,15 @@ describe('HomePageComponent (template regression)', () => {
     });
   });
 
-  describe('compact mode', () => {
-    it('has isRfiCompact computed signal', () => {
-      expect(SRC).toContain('isRfiCompact');
+  describe('bidding dashboard widgets', () => {
+    it('registers homeAllEstimates, homeTasks, and homeCalendar on the layout engine', () => {
+      expect(SRC).toContain("'homeAllEstimates'");
+      expect(SRC).toContain("'homeTasks'");
+      expect(SRC).toContain("'homeCalendar'");
     });
 
-    it('has isSubmittalCompact computed signal', () => {
-      expect(SRC).toContain('isSubmittalCompact');
-    });
-
-    it('has isTimeOffCompact computed signal', () => {
-      expect(SRC).toContain('isTimeOffCompact');
+    it('has task schedule tab handler for mobile height updates', () => {
+      expect(SRC).toContain('onTaskScheduleTabSelect');
     });
   });
 
@@ -65,6 +63,23 @@ describe('HomePageComponent (template regression)', () => {
   describe('no deprecated features', () => {
     it('does NOT contain cleanupOverlaps', () => {
       expect(SRC).not.toContain('cleanupOverlaps');
+    });
+  });
+
+  describe('All Estimates expanded content', () => {
+    it('renders Performance Snapshot only when showHomeEstimateCardDetails is true', () => {
+      const guardIdx = SRC.indexOf('@if (showHomeEstimateCardDetails(card.id))');
+      const snapshotIdx = SRC.indexOf('text-primary">Performance Snapshot<');
+      expect(guardIdx).toBeGreaterThanOrEqual(0);
+      expect(snapshotIdx).toBeGreaterThan(guardIdx);
+    });
+
+    it('uses a desktop pixel breakpoint for wide estimate layout', () => {
+      expect(SRC).toContain('HOME_ESTIMATES_WIDE_BREAKPOINT_PX');
+      expect(SRC).toContain('isHomeAllEstimatesWideLayout');
+      expect(SRC).toContain("widgetPixelWidths()['homeAllEstimates']");
+      expect(SRC).toContain('home-all-estimates-cq');
+      expect(SRC).toContain('home-all-estimates-progress-row');
     });
   });
 });

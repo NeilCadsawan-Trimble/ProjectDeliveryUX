@@ -117,7 +117,7 @@ type WidgetId = 'details' | 'tasks' | 'activity';
               role="button"
               aria-label="Tasks"
             >
-              <i class="modus-icons text-xl" aria-hidden="true">list</i>
+              <i class="modus-icons text-xl" aria-hidden="true">list_bulleted</i>
             </div>
             <div
               class="custom-side-nav-item"
@@ -222,7 +222,7 @@ type WidgetId = 'details' | 'tasks' | 'activity';
                         >
                           <div class="flex items-center gap-2">
                             <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
+                            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
                             <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Key Tasks</div>
                           </div>
                         </div>

@@ -56,7 +56,7 @@ type WidgetId = 'exSummary' | 'exProjects' | 'exTasks' | 'exActivity';
           </div>
           <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl bg-warning-20 flex items-center justify-center flex-shrink-0">
-              <i class="modus-icons text-2xl text-warning" aria-hidden="true">list</i>
+              <i class="modus-icons text-2xl text-warning" aria-hidden="true">list_bulleted</i>
             </div>
             <div class="flex-1 min-w-0">
               <div class="text-2xl font-bold text-foreground">{{ openTaskCount() }}</div>
@@ -179,7 +179,7 @@ type WidgetId = 'exSummary' | 'exProjects' | 'exTasks' | 'exActivity';
                   >
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list</i>
+                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
                       <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Tasks</div>
                       <div class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
                         <div class="text-xs font-medium text-warning">{{ blockedCount() }} blocked</div>

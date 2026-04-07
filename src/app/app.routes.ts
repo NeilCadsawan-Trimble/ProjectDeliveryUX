@@ -48,6 +48,14 @@ export const routes: Routes = [
           ),
         title: 'Financials',
       },
+      {
+        path: 'estimates',
+        loadComponent: () =>
+          import('./pages/estimates-page/estimates-page.component').then(
+            (m) => m.EstimatesPageComponent,
+          ),
+        title: 'Estimates',
+      },
     ],
   },
 
