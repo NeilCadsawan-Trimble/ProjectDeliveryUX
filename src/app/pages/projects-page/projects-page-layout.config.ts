@@ -1,6 +1,6 @@
 import type { DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
-import type { DashboardWidgetId } from '../../data/dashboard-data';
+import type { DashboardWidgetId } from '../../data/dashboard-data.types';
 
 export const TILE_IDS: DashboardWidgetId[] = ['proj1', 'proj2', 'proj3', 'proj4', 'proj5', 'proj6', 'proj7', 'proj8'];
 
@@ -22,11 +22,12 @@ const TILES_OFFSET = HEADER_OFFSET + H_TIMELINE + GAP;
 
 export function buildProjectsLayoutConfig(
   onWidgetSelect: (id: string) => void,
+  personaSlug?: () => string,
 ): DashboardLayoutConfig {
   return {
     widgets: ['projsHeader', 'projsTimeline', ...TILE_IDS],
-    layoutStorageKey: 'dashboard-projects:v18',
-    canvasStorageKey: 'canvas-layout:dashboard-projects:v21',
+    layoutStorageKey: personaSlug ? () => `${personaSlug()}:dashboard-projects:v18` : 'dashboard-projects:v18',
+    canvasStorageKey: personaSlug ? () => `${personaSlug()}:canvas-layout:dashboard-projects:v21` : 'canvas-layout:dashboard-projects:v21',
     defaultColStarts: {
       projsHeader: 1,
       projsTimeline: 1,

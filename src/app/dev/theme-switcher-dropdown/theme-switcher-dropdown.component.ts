@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ThemeService, ThemeMode, ThemeName } from '../../services/theme.service';
+import { PersonaService } from '../../services/persona.service';
 import { ModusDropdownMenuComponent } from '../../components/modus-dropdown-menu.component';
 import { ModusMenuComponent } from '../../components/modus-menu.component';
 import { ModusMenuItemComponent } from '../../components/modus-menu-item.component';
@@ -53,6 +54,7 @@ interface ThemeOption {
 })
 export class ThemeSwitcherDropdownComponent {
   private readonly themeService = inject(ThemeService);
+  private readonly personaService = inject(PersonaService);
 
   readonly currentTheme = computed(() => this.themeService.theme());
   readonly currentMode = computed(() => this.themeService.mode());
@@ -129,6 +131,7 @@ export class ThemeSwitcherDropdownComponent {
 
     if (theme && mode && (mode === 'light' || mode === 'dark')) {
       this.themeService.setTheme(theme, mode);
+      this.personaService.onThemeChangedByUser();
     }
   }
 }

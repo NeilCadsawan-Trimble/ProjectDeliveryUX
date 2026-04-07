@@ -85,4 +85,27 @@ describe('ProjectsPageComponent (template regression)', () => {
       expect(SRC).toContain('sortProjectsByUrgency');
     });
   });
+
+  describe('persona routing', () => {
+    it('accesses personaService (inherited from DashboardPageBase)', () => {
+      expect(SRC).toContain('personaService');
+    });
+
+    it('has pp getter for persona prefix', () => {
+      expect(SRC).toContain('get pp()');
+    });
+
+    it('does not contain hardcoded /project or /financials route', () => {
+      const hardcoded = SRC.match(/navigate\(\['\/(project|financials)'/g);
+      expect(hardcoded).toBeNull();
+    });
+
+    it('sessionStorage keys use personaKey helper', () => {
+      expect(SRC).toContain('personaKey(');
+    });
+
+    it('layout config call passes persona slug function', () => {
+      expect(SRC).toContain('activePersonaSlug()');
+    });
+  });
 });

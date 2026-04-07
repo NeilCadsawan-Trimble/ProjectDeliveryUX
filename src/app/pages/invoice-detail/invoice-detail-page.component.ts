@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
-import type { Invoice, InvoiceStatus } from '../../data/dashboard-data';
-import { invoiceStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import type { Invoice, InvoiceStatus } from '../../data/dashboard-data.types';
+import { invoiceStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data.formatters';
 import { DataStoreService } from '../../data/data-store.service';
-import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
+import { DetailPageLayoutComponent } from '../../shared/detail-page-layout.component';
+import { routeParamSignal } from '../../shared/route-param-signal';
+import { useBackNavigation } from '../../shared/go-back';
 
 interface PaymentLine {
   description: string;
@@ -58,22 +58,18 @@ function statusLabel(status: InvoiceStatus): string {
 
 @Component({
   selector: 'app-invoice-detail-page',
-  imports: [ModusBadgeComponent],
+  imports: [ModusBadgeComponent, DetailPageLayoutComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="px-4 py-6 md:py-8 max-w-screen-lg mx-auto">
-      @if (invoice()) {
-        <div
-          class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
-          role="button" tabindex="0"
-          (click)="goBack()"
-          (keydown.enter)="goBack()"
-        >
-          <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">{{ backLabel }}</div>
-        </div>
-
-        <!-- Header card -->
+    <app-detail-page-layout
+      [hasEntity]="!!invoice()"
+      [backLabel]="backLabel"
+      emptyIcon="invoice"
+      emptyTitle="Invoice Not Found"
+      emptyMessage="The requested invoice could not be found."
+      (back)="goBack()"
+    >
+      @if (invoice(); as inv) {
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
             <div class="flex items-center gap-4">
@@ -81,7 +77,7 @@ function statusLabel(status: InvoiceStatus): string {
                 <i class="modus-icons text-xl text-primary" aria-hidden="true">invoice</i>
               </div>
               <div>
-                <div class="text-xl font-semibold text-foreground">{{ invoice()!.invoiceNumber }}</div>
+                <div class="text-xl font-semibold text-foreground">{{ inv.invoiceNumber }}</div>
                 <div class="text-sm text-foreground-60">Invoice</div>
               </div>
             </div>
@@ -89,49 +85,46 @@ function statusLabel(status: InvoiceStatus): string {
           </div>
 
           <div class="px-6 py-6 flex flex-col gap-6">
-            <!-- KPI row 1 -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Amount</div>
-                <div class="text-xl font-bold text-foreground">{{ formatCurrency(invoice()!.amount) }}</div>
+                <div class="detail-field-label">Amount</div>
+                <div class="text-xl font-bold text-foreground">{{ formatCurrency(inv.amount) }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Amount Paid</div>
-                <div class="text-xl font-bold text-success">{{ formatCurrency(invoice()!.amountPaid) }}</div>
+                <div class="detail-field-label">Amount Paid</div>
+                <div class="text-xl font-bold text-success">{{ formatCurrency(inv.amountPaid) }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Remaining</div>
+                <div class="detail-field-label">Remaining</div>
                 <div class="text-xl font-bold text-foreground">{{ formatCurrency(remainingAmount()) }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Terms</div>
-                <div class="text-base text-foreground">{{ invoice()!.terms }}</div>
+                <div class="detail-field-label">Terms</div>
+                <div class="text-base text-foreground">{{ inv.terms }}</div>
               </div>
             </div>
 
-            <!-- KPI row 2 -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Issue Date</div>
-                <div class="text-base text-foreground">{{ invoice()!.issueDate }}</div>
+                <div class="detail-field-label">Issue Date</div>
+                <div class="text-base text-foreground">{{ inv.issueDate }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Due Date</div>
-                <div class="text-base text-foreground">{{ invoice()!.dueDate }}</div>
+                <div class="detail-field-label">Due Date</div>
+                <div class="text-base text-foreground">{{ inv.dueDate }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Paid Date</div>
-                <div class="text-base text-foreground">{{ invoice()!.paidDate || 'Pending' }}</div>
+                <div class="detail-field-label">Paid Date</div>
+                <div class="text-base text-foreground">{{ inv.paidDate || 'Pending' }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Retainage Held</div>
-                <div class="text-base text-foreground">{{ formatCurrency(invoice()!.retainageHeld) }}</div>
+                <div class="detail-field-label">Retainage Held</div>
+                <div class="text-base text-foreground">{{ formatCurrency(inv.retainageHeld) }}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Payment Summary -->
         <div class="bg-card border-default rounded-lg overflow-hidden">
           <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payment_instant</i>
@@ -147,7 +140,7 @@ function statusLabel(status: InvoiceStatus): string {
 
               <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] gap-3 px-6 py-3.5 border-bottom-default items-center">
                 <div class="text-sm text-foreground">Invoice total</div>
-                <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(invoice()!.amount) }}</div>
+                <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(inv.amount) }}</div>
               </div>
 
               @for (line of paymentLines(); track line.description) {
@@ -166,32 +159,18 @@ function statusLabel(status: InvoiceStatus): string {
             </div>
           </div>
         </div>
-      } @else {
-        <div class="flex flex-col items-center justify-center py-20 text-foreground-40">
-          <i class="modus-icons text-4xl mb-3" aria-hidden="true">invoice</i>
-          <div class="text-lg font-medium mb-1">Invoice Not Found</div>
-          <div class="text-sm mb-4">The requested invoice could not be found.</div>
-          <div
-            class="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer bg-primary text-primary-foreground hover:opacity-90 transition-opacity duration-150"
-            role="button" tabindex="0"
-            (click)="goBack()"
-            (keydown.enter)="goBack()"
-          >Return to {{ backLabel }}</div>
-        </div>
       }
-    </div>
+    </app-detail-page-layout>
   `,
 })
 export class InvoiceDetailPageComponent {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly navHistory = inject(NavigationHistoryService);
   private readonly store = inject(DataStoreService);
+  private readonly nav = useBackNavigation();
 
-  private readonly backInfo = this.navHistory.getBackInfo();
-  readonly backLabel = 'Back to ' + this.backInfo.label;
+  readonly backLabel = this.nav.backLabel;
+  readonly goBack = this.nav.goBack;
 
-  private readonly invoiceId = signal<string>('');
+  private readonly invoiceId = routeParamSignal('id');
 
   readonly invoice = computed<Invoice | null>(() => {
     const id = this.invoiceId();
@@ -218,26 +197,5 @@ export class InvoiceDetailPageComponent {
     return inv ? buildPaymentLines(inv) : [];
   });
 
-  constructor() {
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
-      this.invoiceId.set(params.get('id') ?? '');
-    });
-  }
-
   formatCurrency(value: number): string { return sharedFormatCurrency(value); }
-
-  goBack(): void {
-    const route = this.backInfo.route;
-    if (route.includes('?')) {
-      const [path, query] = route.split('?');
-      const qp: Record<string, string> = {};
-      for (const pair of query.split('&')) {
-        const [k, v] = pair.split('=');
-        if (k) qp[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
-      }
-      this.router.navigate([path || '/'], { queryParams: qp });
-    } else {
-      this.router.navigate([route]);
-    }
-  }
 }

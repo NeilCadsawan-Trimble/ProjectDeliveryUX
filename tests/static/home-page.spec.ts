@@ -82,4 +82,52 @@ describe('HomePageComponent (template regression)', () => {
       expect(SRC).toContain('_detailMgr.shouldTransition(');
     });
   });
+
+  describe('persona layout isolation (DashboardPageBase)', () => {
+    it('base class injects PersonaService', () => {
+      expect(DASHBOARD_PAGE_BASE).toContain('inject(PersonaService)');
+    });
+
+    it('base class has _personaSwitchEffect that calls reinitLayout', () => {
+      expect(DASHBOARD_PAGE_BASE).toContain('_personaSwitchEffect');
+      expect(DASHBOARD_PAGE_BASE).toContain('reinitLayout');
+    });
+
+    it('base class tracks previous persona slug and keys', () => {
+      expect(DASHBOARD_PAGE_BASE).toContain('_prevPersonaSlug');
+      expect(DASHBOARD_PAGE_BASE).toContain('_prevLayoutKey');
+      expect(DASHBOARD_PAGE_BASE).toContain('_prevCanvasKey');
+    });
+
+    it('base class re-applies header lock after persona switch', () => {
+      expect(DASHBOARD_PAGE_BASE).toContain('applyInitialHeaderLock()');
+    });
+  });
+
+  describe('persona routing', () => {
+    it('accesses personaService (inherited from DashboardPageBase)', () => {
+      expect(SRC).toContain('personaService');
+    });
+
+    it('has dynamic welcome greeting (not hardcoded Frank)', () => {
+      expect(SRC).toContain('personaFirstName()');
+      expect(SRC).not.toContain("'Welcome back, Frank'");
+      expect(SRC).not.toContain('"Welcome back, Frank"');
+    });
+
+    it('uses personaPrefix for navigation', () => {
+      expect(SRC).toContain('personaPrefix()');
+    });
+
+    it('does not contain hardcoded root route navigation', () => {
+      const hardcoded = SRC.match(/navigate\(\['\/(projects|financials|project)'/g);
+      expect(hardcoded).toBeNull();
+    });
+
+    it('storage keys include persona slug', () => {
+      expect(SRC).toContain('activePersonaSlug()');
+      expect(SRC).toMatch(/layoutStorageKey:\s*\(\)/);
+      expect(SRC).toMatch(/canvasStorageKey:\s*\(\)/);
+    });
+  });
 });

@@ -1,35 +1,37 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { PersonaService } from '../../services/persona.service';
 
 interface DashboardKeyPair {
   desktop: string;
   canvas: string;
 }
 
-const STATIC_DASHBOARDS: DashboardKeyPair[] = [
+const STATIC_BASES: DashboardKeyPair[] = [
   { desktop: 'dashboard-home-v9', canvas: 'canvas-layout:dashboard-home:v16' },
-  { desktop: 'dashboard-financials:v9', canvas: 'canvas-layout:dashboard-financials:v11' },
-  { desktop: 'dashboard-projects:v18', canvas: 'canvas-layout:dashboard-projects:v19' },
+  { desktop: 'dashboard-financials:v17', canvas: 'canvas-layout:dashboard-financials:v19' },
+  { desktop: 'dashboard-projects:v18', canvas: 'canvas-layout:dashboard-projects:v21' },
 ];
 
 const PROJECT_IDS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-function projectKeys(id: number): DashboardKeyPair {
+function projectBases(id: number): DashboardKeyPair {
   return {
     desktop: `project-${id}-v5`,
     canvas: `canvas-layout:project-${id}:v7`,
   };
 }
 
-function allDashboardKeys(): DashboardKeyPair[] {
-  return [...STATIC_DASHBOARDS, ...PROJECT_IDS.map(projectKeys)];
+function allDashboardKeys(personaSlug: string): DashboardKeyPair[] {
+  const bases = [...STATIC_BASES, ...PROJECT_IDS.map(projectBases)];
+  return bases.map(pair => ({
+    desktop: `${personaSlug}:${pair.desktop}`,
+    canvas: `${personaSlug}:${pair.canvas}`,
+  }));
 }
 
-/**
- * Saves/resets custom default layouts for ALL dashboards at once,
- * not just the currently-active page.
- */
 @Injectable({ providedIn: 'root' })
 export class LayoutDefaultsService {
+  private readonly personaService = inject(PersonaService);
   private readonly DESKTOP_SESSION_PREFIX = 'widget-layout:';
 
   /**
@@ -41,7 +43,7 @@ export class LayoutDefaultsService {
    */
   saveAllVisitedDefaults(): number {
     let count = 0;
-    for (const pair of allDashboardKeys()) {
+    for (const pair of allDashboardKeys(this.personaService.activePersonaSlug())) {
       const desktopSaved = this.saveDesktopDefaults(pair.desktop);
       const canvasSaved = this.saveCanvasDefaults(pair.canvas);
       if (desktopSaved || canvasSaved) count++;
@@ -54,7 +56,7 @@ export class LayoutDefaultsService {
    * restoring factory code defaults for future resets.
    */
   clearAllDefaults(): void {
-    for (const pair of allDashboardKeys()) {
+    for (const pair of allDashboardKeys(this.personaService.activePersonaSlug())) {
       try { localStorage.removeItem(`${pair.desktop}__customDefaults`); } catch { /* ignore */ }
       try { localStorage.removeItem(`${pair.canvas}__customDefaults`); } catch { /* ignore */ }
     }

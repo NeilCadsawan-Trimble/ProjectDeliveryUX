@@ -3,7 +3,7 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 5, 2026
+**Last Updated**: April 6, 2026
 **Total Commits**: 200+
 
 ---
@@ -31,9 +31,10 @@
 | 17 | Sidenav Polish and UI Consistency | Done | 5/5 |
 | 18 | Canvas Content Alignment and ng-content Fix | Done | 6/6 |
 | 19 | Live Weather Data and Regression Tests | Done | 5/5 |
-| 20 | Remaining Work | Not Started | 0/8 |
+| 20 | Persona Data: Bert Humphries as PM | Done | 3/3 |
+| 21 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 166/174 items (95%)
+**Completed**: 169/177 items (95%)
 
 ---
 
@@ -531,6 +532,23 @@ Converted the locked KPI header on the home dashboard into a draggable/resizable
 
 ---
 
+## Phase 20: Persona Data -- Bert Humphries as Project Manager (Apr 6)
+
+Set Bert Humphries as the Project Manager across all 8 projects, aligning project tile ownership with the persona system.
+
+### Project Tile Ownership
+- [x] Updated `owner` to `'Bert Humphries'` and `ownerInitials` to `'BH'` on all 8 entries in `PROJECTS` array (`dashboard-data.seed.ts`)
+
+### Per-Project Team Rosters
+- [x] Added Bert Humphries (`id: 1`, role `'Project Manager'`) to all 8 `PROJECT_DATA` team arrays in `project-data.ts`; displaced PMs re-titled (Sarah Chen -> Asst PM, Priya Nair -> Senior Engineer, Lena Brooks -> Project Coordinator); team member summary stat counts incremented
+
+### Skills Updated
+- [x] Added section 34 to `dashboard-layout-lessons` SKILL.md: Persona-Driven Project Ownership
+
+**Tests**: Type-check and build passing
+
+---
+
 ## Phase 21: Remaining Work
 
 Features and improvements not yet started.
@@ -616,6 +634,7 @@ Features and improvements not yet started.
 | Apr 5 | [Live weather fix](fb55d8c2-9c39-4110-99b0-9930aed93e09) | Weather widget live data, WeatherService init on project routes, date filtering, API proxy, seed data dynamic dates |
 | Apr 5 | [Weather regression tests](fb55d8c2-9c39-4110-99b0-9930aed93e09) | 23 new weather regression tests, PR #58 merged to main |
 | Apr 5 | [KPI widget and layout fixes](56f15e0d-1c0c-4cb6-82f7-2018d33f1ec3) | Draggable KPI widget, resize twitchiness fix, push-down only collision (no jumping), PR #66 merged to main |
+| Apr 6 | [Bert Humphries as PM](current) | Set Bert Humphries as Project Manager on all 8 projects, updated team rosters, skills section 34 |
 
 ---
 

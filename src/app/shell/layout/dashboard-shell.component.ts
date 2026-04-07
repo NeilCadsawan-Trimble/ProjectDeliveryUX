@@ -21,11 +21,13 @@ import { AiIconComponent } from '../components/ai-icon.component';
 import { AiAssistantPanelComponent } from '../components/ai-assistant-panel.component';
 import { UserMenuComponent } from '../components/user-menu.component';
 import { TrimbleLogoComponent } from '../components/trimble-logo.component';
-import { ThemeService } from '../services/theme.service';
+import { ThemeService } from '../../services/theme.service';
 import { CanvasResetService } from '../services/canvas-reset.service';
 import { WidgetFocusService } from '../services/widget-focus.service';
 import { AiService } from '../../services/ai.service';
 import { AiToolsService } from '../../services/ai-tools.service';
+import { PersonaService } from '../../services/persona.service';
+import { getPersonaNav } from '../../data/persona-nav.config';
 import { AiPanelController } from '../services/ai-panel-controller';
 import { CanvasPanning } from '../services/canvas-panning';
 import { NavigationHistoryService } from '../services/navigation-history.service';
@@ -36,6 +38,7 @@ import {
 import { LayoutDefaultsService } from '../services/layout-defaults.service';
 import { DataStoreService } from '../../data/data-store.service';
 import { WeatherService } from '../../services/weather.service';
+import { AuthService } from '../../services/auth.service';
 import { getAgent, getSuggestions, type AgentDataState } from '../../data/widget-agents';
 
 export interface ShellNavItem {
@@ -206,7 +209,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 [name]="userCard().name"
                 [email]="userCard().email"
                 [avatarSrc]="userCard().avatarSrc"
+                [activePersonaSlug]="activePersonaSlug()"
                 (menuAction)="onUserMenuAction($event)"
+                (personaSwitch)="onPersonaSwitch($event)"
                 (signOut)="onUserSignOut()"
               />
             </div>
@@ -518,7 +523,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                 [name]="userCard().name"
                 [email]="userCard().email"
                 [avatarSrc]="userCard().avatarSrc"
+                [activePersonaSlug]="activePersonaSlug()"
                 (menuAction)="onUserMenuAction($event)"
+                (personaSwitch)="onPersonaSwitch($event)"
                 (signOut)="onUserSignOut()"
               />
           </div>
@@ -657,6 +664,7 @@ export class DashboardShellComponent implements AfterViewInit {
     { value: 'home', label: 'Home', icon: 'home', route: '/' },
   ]);
   readonly homeRoute = input('/');
+  readonly activePersonaSlug = input<string>('frank');
   readonly aiResponseFn = input<AiResponseFn | undefined>(undefined);
   readonly defaultAiSuggestions = input<string[]>([
     'What can you help me with?',
@@ -699,26 +707,38 @@ export class DashboardShellComponent implements AfterViewInit {
     this.canvasResetService.canvasZoom.set(this.panning.canvasZoom());
   });
 
-  readonly activeNav = computed(() => {
+  private readonly routeSuffix = computed(() => {
     const url = this.currentUrl();
+    const slug = this.activePersonaSlug();
+    const prefix = `/${slug}`;
+    return url.startsWith(prefix) ? url.slice(prefix.length) || '/' : url;
+  });
+
+  readonly activeNav = computed(() => {
+    const suffix = this.routeSuffix();
     const items = this.sideNavItems();
-    if (url.startsWith('/project/')) {
-      const projects = items.find((i) => i.route === '/projects');
+    if (suffix.startsWith('/project/')) {
+      const projects = items.find((i) => i.value === 'projects');
       return projects?.value ?? 'projects';
     }
     for (const item of items) {
-      if (item.route && item.route !== '/') {
-        if (url.startsWith(item.route)) return item.value;
-      }
+      if (!item.route) continue;
+      const baseRoute = item.route.replace(/\/$/, '');
+      const slug = this.activePersonaSlug();
+      const itemSuffix = baseRoute.startsWith(`/${slug}`)
+        ? baseRoute.slice(`/${slug}`.length) || '/'
+        : baseRoute;
+      if (itemSuffix === '/') continue;
+      if (suffix.startsWith(itemSuffix)) return item.value;
     }
-    if (url === '/' || url === '') {
-      const home = items.find(i => i.route === '/');
+    if (suffix === '/' || suffix === '') {
+      const home = items.find(i => i.value === 'home');
       return home?.value ?? items[0]?.value ?? 'home';
     }
     return items[0]?.value ?? 'home';
   });
 
-  readonly isProjectsPage = computed(() => this.currentUrl() === '/projects');
+  readonly isProjectsPage = computed(() => this.routeSuffix() === '/projects');
 
   readonly moreMenuOpen = signal(false);
   readonly resetMenuOpen = signal(false);
@@ -727,6 +747,7 @@ export class DashboardShellComponent implements AfterViewInit {
 
   readonly widgetFocusService = inject(WidgetFocusService);
   readonly navHistory = inject(NavigationHistoryService);
+  private readonly personaService = inject(PersonaService);
   private readonly layoutDefaults = inject(LayoutDefaultsService);
   private readonly aiService = inject(AiService);
   private readonly aiToolsService = inject(AiToolsService);
@@ -797,8 +818,16 @@ export class DashboardShellComponent implements AfterViewInit {
     console.log('User menu action:', actionId);
   }
 
+  onPersonaSwitch(targetSlug: string): void {
+    this.store.switchToPersona(targetSlug);
+    this.personaService.setActivePersona(targetSlug);
+    void this.router.navigateByUrl(`/${targetSlug}`);
+  }
+
+  private readonly authService = inject(AuthService);
+
   onUserSignOut(): void {
-    console.log('Sign out requested');
+    this.authService.logout();
   }
 
   toggleMoreMenu(): void {
@@ -854,11 +883,11 @@ export class DashboardShellComponent implements AfterViewInit {
 
 
   private getPageName(): string {
-    const url = this.currentUrl();
-    if (url.startsWith('/projects')) return 'projects';
-    if (url.startsWith('/project/')) return 'project-dashboard';
-    if (url.startsWith('/financials/job-costs/')) return 'financials-job-cost-detail';
-    if (url.startsWith('/financials')) return 'financials';
+    const suffix = this.routeSuffix();
+    if (suffix.startsWith('/projects')) return 'projects';
+    if (suffix.startsWith('/project/')) return 'project-dashboard';
+    if (suffix.startsWith('/financials/job-costs/')) return 'financials-job-cost-detail';
+    if (suffix.startsWith('/financials')) return 'financials';
     return 'home';
   }
 
@@ -885,8 +914,8 @@ export class DashboardShellComponent implements AfterViewInit {
       currentPage: page,
     };
     if (page === 'financials-job-cost-detail') {
-      const url = this.currentUrl();
-      const slug = url.replace('/financials/job-costs/', '').split('?')[0];
+      const suffix = this.routeSuffix();
+      const slug = suffix.replace('/financials/job-costs/', '').split('?')[0];
       const proj = this.store.findProjectBySlug(slug);
       if (proj) {
         state.jobCostDetailProject = this.store.projectJobCosts().find(p => p.projectId === proj.id) ?? undefined;

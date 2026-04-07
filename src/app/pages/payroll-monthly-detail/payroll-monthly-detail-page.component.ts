@@ -1,30 +1,27 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
-import type { PayrollRecord } from '../../data/dashboard-data';
-import { formatCurrency as sharedFormatCurrency, payrollStatusBadge } from '../../data/dashboard-data';
+import type { PayrollRecord } from '../../data/dashboard-data.types';
+import { formatCurrency as sharedFormatCurrency, payrollStatusBadge } from '../../data/dashboard-data.formatters';
 import { DataStoreService } from '../../data/data-store.service';
-import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
+import { DetailPageLayoutComponent } from '../../shared/detail-page-layout.component';
+import { routeParamSignal } from '../../shared/route-param-signal';
+import { useBackNavigation } from '../../shared/go-back';
 
 @Component({
   selector: 'app-payroll-monthly-detail-page',
-  imports: [DecimalPipe, ModusBadgeComponent],
+  imports: [DecimalPipe, ModusBadgeComponent, DetailPageLayoutComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="px-4 py-6 md:py-8 max-w-screen-lg mx-auto">
+    <app-detail-page-layout
+      [hasEntity]="records().length > 0"
+      [backLabel]="backLabel"
+      emptyIcon="people_group"
+      emptyTitle="No Payroll Data"
+      [emptyMessage]="'No payroll records found for ' + monthParam() + '.'"
+      (back)="goBack()"
+    >
       @if (records().length > 0) {
-        <div
-          class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
-          role="button" tabindex="0"
-          (click)="goBack()"
-          (keydown.enter)="goBack()"
-        >
-          <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">{{ backLabel }}</div>
-        </div>
-
         <!-- Header card -->
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center gap-4 px-6 py-5">
@@ -41,19 +38,19 @@ import { NavigationHistoryService } from '../../shell/services/navigation-histor
         <!-- KPI grid -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div class="bg-card border-default rounded-lg px-5 py-4">
-            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Gross Pay</div>
+            <div class="detail-field-label">Gross Pay</div>
             <div class="text-xl font-bold text-foreground">{{ formatCurrency(totals().gross) }}</div>
           </div>
           <div class="bg-card border-default rounded-lg px-5 py-4">
-            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Net Pay</div>
+            <div class="detail-field-label">Net Pay</div>
             <div class="text-xl font-bold text-success">{{ formatCurrency(totals().net) }}</div>
           </div>
           <div class="bg-card border-default rounded-lg px-5 py-4">
-            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Avg Headcount</div>
+            <div class="detail-field-label">Avg Headcount</div>
             <div class="text-xl font-bold text-foreground">{{ totals().headcount }}</div>
           </div>
           <div class="bg-card border-default rounded-lg px-5 py-4">
-            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Total Hours</div>
+            <div class="detail-field-label">Total Hours</div>
             <div class="text-xl font-bold text-foreground">{{ totals().totalHours | number }}</div>
           </div>
         </div>
@@ -91,32 +88,17 @@ import { NavigationHistoryService } from '../../shell/services/navigation-histor
             </div>
           </div>
         </div>
-      } @else if (monthParam()) {
-        <div class="flex flex-col items-center justify-center py-20 text-foreground-40">
-          <i class="modus-icons text-4xl mb-3" aria-hidden="true">people_group</i>
-          <div class="text-lg font-medium mb-1">No Payroll Data</div>
-          <div class="text-sm mb-4">No payroll records found for {{ monthParam() }}.</div>
-          <div
-            class="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer bg-primary text-primary-foreground hover:opacity-90 transition-opacity duration-150"
-            role="button" tabindex="0"
-            (click)="goBack()"
-            (keydown.enter)="goBack()"
-          >Return to {{ backLabel }}</div>
-        </div>
       }
-    </div>
+    </app-detail-page-layout>
   `,
 })
 export class PayrollMonthlyDetailPageComponent {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly navHistory = inject(NavigationHistoryService);
   private readonly store = inject(DataStoreService);
+  private readonly nav = useBackNavigation();
+  readonly backLabel = this.nav.backLabel;
+  readonly goBack = this.nav.goBack;
 
-  private readonly backInfo = this.navHistory.getBackInfo();
-  readonly backLabel = 'Back to ' + this.backInfo.label;
-
-  readonly monthParam = signal<string>('');
+  readonly monthParam = routeParamSignal('month');
 
   readonly records = computed<PayrollRecord[]>(() => {
     const month = this.monthParam();
@@ -137,27 +119,5 @@ export class PayrollMonthlyDetailPageComponent {
 
   readonly payrollStatusBadge = payrollStatusBadge;
 
-  constructor() {
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
-      const raw = params.get('month') ?? '';
-      this.monthParam.set(decodeURIComponent(raw));
-    });
-  }
-
   formatCurrency(value: number): string { return sharedFormatCurrency(value); }
-
-  goBack(): void {
-    const route = this.backInfo.route;
-    if (route.includes('?')) {
-      const [path, query] = route.split('?');
-      const qp: Record<string, string> = {};
-      for (const pair of query.split('&')) {
-        const [k, v] = pair.split('=');
-        if (k) qp[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
-      }
-      this.router.navigate([path || '/'], { queryParams: qp });
-    } else {
-      this.router.navigate([route]);
-    }
-  }
 }

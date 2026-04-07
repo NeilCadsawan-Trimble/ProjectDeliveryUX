@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
-import type { PayrollRecord } from '../../data/dashboard-data';
-import { payrollStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data';
+import type { PayrollRecord } from '../../data/dashboard-data.types';
+import { payrollStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data.formatters';
 import { DataStoreService } from '../../data/data-store.service';
-import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
+import { DetailPageLayoutComponent } from '../../shared/detail-page-layout.component';
+import { routeParamSignal } from '../../shared/route-param-signal';
+import { useBackNavigation } from '../../shared/go-back';
 
 interface DeductionRow {
   category: string;
@@ -15,21 +15,18 @@ interface DeductionRow {
 
 @Component({
   selector: 'app-payroll-record-detail-page',
-  imports: [ModusBadgeComponent],
+  imports: [ModusBadgeComponent, DetailPageLayoutComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="px-4 py-6 md:py-8 max-w-screen-lg mx-auto">
-      @if (record()) {
-        <div
-          class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
-          role="button" tabindex="0"
-          (click)="goBack()"
-          (keydown.enter)="goBack()"
-        >
-          <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">{{ backLabel }}</div>
-        </div>
-
+    <app-detail-page-layout
+      [hasEntity]="!!record()"
+      [backLabel]="backLabel"
+      emptyIcon="people_group"
+      emptyTitle="Payroll Record Not Found"
+      emptyMessage="The requested payroll record could not be found."
+      (back)="goBack()"
+    >
+      @if (record(); as r) {
         <!-- Header card -->
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
@@ -38,12 +35,12 @@ interface DeductionRow {
                 <i class="modus-icons text-xl text-primary" aria-hidden="true">people_group</i>
               </div>
               <div>
-                <div class="text-xl font-semibold text-foreground">{{ record()!.period }}</div>
-                <div class="text-sm text-foreground-60">Pay date: {{ record()!.payDate }}</div>
+                <div class="text-xl font-semibold text-foreground">{{ r.period }}</div>
+                <div class="text-sm text-foreground-60">Pay date: {{ r.payDate }}</div>
               </div>
             </div>
-            <modus-badge [color]="payrollStatusBadge(record()!.status)" variant="filled">
-              {{ record()!.status }}
+            <modus-badge [color]="payrollStatusBadge(r.status)" variant="filled">
+              {{ r.status }}
             </modus-badge>
           </div>
 
@@ -51,41 +48,41 @@ interface DeductionRow {
           <div class="px-6 py-6 flex flex-col gap-6">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Gross Pay</div>
-                <div class="text-xl font-bold text-foreground">{{ formatCurrency(record()!.grossPay) }}</div>
+                <div class="detail-field-label">Gross Pay</div>
+                <div class="text-xl font-bold text-foreground">{{ formatCurrency(r.grossPay) }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Net Pay</div>
-                <div class="text-xl font-bold text-success">{{ formatCurrency(record()!.netPay) }}</div>
+                <div class="detail-field-label">Net Pay</div>
+                <div class="text-xl font-bold text-success">{{ formatCurrency(r.netPay) }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Employee Count</div>
-                <div class="text-base text-foreground">{{ record()!.employeeCount }}</div>
+                <div class="detail-field-label">Employee Count</div>
+                <div class="text-base text-foreground">{{ r.employeeCount }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Total Hours</div>
-                <div class="text-base text-foreground">{{ record()!.totalHours.toLocaleString() }}</div>
+                <div class="detail-field-label">Total Hours</div>
+                <div class="text-base text-foreground">{{ r.totalHours.toLocaleString() }}</div>
               </div>
             </div>
 
             <!-- KPI row 2 -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Period Start</div>
-                <div class="text-base text-foreground">{{ record()!.periodStart }}</div>
+                <div class="detail-field-label">Period Start</div>
+                <div class="text-base text-foreground">{{ r.periodStart }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Period End</div>
-                <div class="text-base text-foreground">{{ record()!.periodEnd }}</div>
+                <div class="detail-field-label">Period End</div>
+                <div class="text-base text-foreground">{{ r.periodEnd }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Frequency</div>
-                <div class="text-base text-foreground capitalize">{{ record()!.frequency }}</div>
+                <div class="detail-field-label">Frequency</div>
+                <div class="text-base text-foreground capitalize">{{ r.frequency }}</div>
               </div>
               <div>
-                <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Overtime Hours</div>
-                <div class="text-base" [class]="record()!.overtimeHours > 70 ? 'text-warning font-semibold' : 'text-foreground'">
-                  {{ record()!.overtimeHours }}
+                <div class="detail-field-label">Overtime Hours</div>
+                <div class="text-base" [class]="r.overtimeHours > 70 ? 'text-warning font-semibold' : 'text-foreground'">
+                  {{ r.overtimeHours }}
                 </div>
               </div>
             </div>
@@ -115,40 +112,25 @@ interface DeductionRow {
               }
               <div class="grid grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)] gap-3 px-6 py-4 bg-muted border-top-default">
                 <div class="text-sm font-semibold text-foreground">Total (Gross Pay)</div>
-                <div class="text-base font-bold text-foreground text-right">{{ formatCurrency(record()!.grossPay) }}</div>
+                <div class="text-base font-bold text-foreground text-right">{{ formatCurrency(r.grossPay) }}</div>
                 <div class="text-sm font-semibold text-foreground-60 text-right">100%</div>
               </div>
             </div>
           </div>
         </div>
-      } @else {
-        <div class="flex flex-col items-center justify-center py-20 text-foreground-40">
-          <i class="modus-icons text-4xl mb-3" aria-hidden="true">people_group</i>
-          <div class="text-lg font-medium mb-1">Payroll Record Not Found</div>
-          <div class="text-sm mb-4">The requested payroll record could not be found.</div>
-          <div
-            class="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer bg-primary text-primary-foreground hover:opacity-90 transition-opacity duration-150"
-            role="button" tabindex="0"
-            (click)="goBack()"
-            (keydown.enter)="goBack()"
-          >Return to {{ backLabel }}</div>
-        </div>
       }
-    </div>
+    </app-detail-page-layout>
   `,
 })
 export class PayrollRecordDetailPageComponent {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly navHistory = inject(NavigationHistoryService);
   private readonly store = inject(DataStoreService);
-
-  private readonly backInfo = this.navHistory.getBackInfo();
-  readonly backLabel = 'Back to ' + this.backInfo.label;
+  private readonly nav = useBackNavigation();
+  readonly backLabel = this.nav.backLabel;
+  readonly goBack = this.nav.goBack;
 
   readonly payrollStatusBadge = payrollStatusBadge;
 
-  private readonly recordId = signal<string>('');
+  private readonly recordId = routeParamSignal('id');
 
   readonly record = computed<PayrollRecord | null>(() => {
     const id = this.recordId();
@@ -166,26 +148,5 @@ export class PayrollRecordDetailPageComponent {
     ];
   });
 
-  constructor() {
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
-      this.recordId.set(params.get('id') ?? '');
-    });
-  }
-
   formatCurrency(value: number): string { return sharedFormatCurrency(value); }
-
-  goBack(): void {
-    const route = this.backInfo.route;
-    if (route.includes('?')) {
-      const [path, query] = route.split('?');
-      const qp: Record<string, string> = {};
-      for (const pair of query.split('&')) {
-        const [k, v] = pair.split('=');
-        if (k) qp[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
-      }
-      this.router.navigate([path || '/'], { queryParams: qp });
-    } else {
-      this.router.navigate([route]);
-    }
-  }
 }

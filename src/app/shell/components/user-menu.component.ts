@@ -8,6 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { PERSONAS } from '../../services/persona.service';
 
 export interface UserMenuItem {
   id: string;
@@ -22,12 +23,11 @@ const SECTION_1_ITEMS: UserMenuItem[] = [
   { id: 'admin', label: 'Admin settings', icon: 'cloud_download' },
 ];
 
-const SECTION_2_ITEMS: UserMenuItem[] = [
-  { id: 'menu-1', label: 'Frank Mendoza', icon: 'person' },
-  { id: 'menu-2', label: 'Bert Humphries', icon: 'person' },
-  { id: 'menu-3', label: 'Kelly Marshall', icon: 'person' },
-  { id: 'menu-4', label: 'Dominique Marques', icon: 'person' },
-];
+const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS.map(p => ({
+  id: p.slug,
+  label: p.name,
+  icon: 'person',
+}));
 
 @Component({
   selector: 'user-menu',
@@ -100,16 +100,21 @@ const SECTION_2_ITEMS: UserMenuItem[] = [
         <div class="border-top-default"></div>
 
         <div class="py-1">
-          @for (item of section2; track item.id) {
+          @for (item of personaItems; track item.id) {
             <div
               class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted transition-colors duration-150"
+              [class.bg-muted]="item.id === activePersonaSlug()"
               role="menuitem"
               tabindex="0"
-              (click)="onMenuAction(item.id)"
-              (keydown.enter)="onMenuAction(item.id)"
+              (click)="onPersonaSwitch(item.id)"
+              (keydown.enter)="onPersonaSwitch(item.id)"
             >
-              <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
-              <div class="text-sm text-foreground">{{ item.label }}</div>
+              @if (item.id === activePersonaSlug()) {
+                <i class="modus-icons text-base text-primary" aria-hidden="true">check</i>
+              } @else {
+                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
+              }
+              <div class="text-sm" [class.font-semibold]="item.id === activePersonaSlug()" [class.text-primary]="item.id === activePersonaSlug()" [class.text-foreground]="item.id !== activePersonaSlug()">{{ item.label }}</div>
             </div>
           }
         </div>
@@ -160,15 +165,17 @@ export class UserMenuComponent {
   readonly email = input.required<string>();
   readonly avatarSrc = input<string | undefined>(undefined);
   readonly company = input('Rocky Mountain Contracting');
+  readonly activePersonaSlug = input<string>('frank');
 
   readonly menuAction = output<string>();
+  readonly personaSwitch = output<string>();
   readonly signOut = output<void>();
 
   readonly isOpen = signal(false);
   readonly legalExpanded = signal(false);
 
   readonly section1 = SECTION_1_ITEMS;
-  readonly section2 = SECTION_2_ITEMS;
+  readonly personaItems = PERSONA_MENU_ITEMS;
   readonly currentYear = new Date().getFullYear();
 
   private readonly elementRef = inject(ElementRef);
@@ -200,6 +207,11 @@ export class UserMenuComponent {
 
   onMenuAction(actionId: string): void {
     this.menuAction.emit(actionId);
+    this.close();
+  }
+
+  onPersonaSwitch(slug: string): void {
+    this.personaSwitch.emit(slug);
     this.close();
   }
 

@@ -17,7 +17,7 @@ import {
   contractTypeIcon,
   inspectionResultBadge as sharedInspectionResultBadge,
   formatCurrency as sharedFormatCurrency,
-} from '../../../data/dashboard-data';
+} from '../../../data/dashboard-data.formatters';
 import type {
   DailyReport,
   Inspection,
@@ -28,7 +28,7 @@ import type {
   ChangeOrderStatus,
   ContractStatus,
   ContractType,
-} from '../../../data/dashboard-data';
+} from '../../../data/dashboard-data.types';
 
 @Component({
   selector: 'app-record-detail-views',

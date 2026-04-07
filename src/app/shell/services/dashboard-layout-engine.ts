@@ -222,7 +222,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   private get lockedKey(): string {
-    return `${this.layoutKey}__locked`;
+    return `${this.currentLayoutKey}__locked`;
   }
 
   private loadLockedState(): Record<string, boolean> {
@@ -242,22 +242,22 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     } catch { /* quota exceeded */ }
   }
 
-  private get layoutKey(): string {
+  get currentLayoutKey(): string {
     const k = this.config.layoutStorageKey;
     return typeof k === 'function' ? k() : k;
   }
 
-  private get canvasKey(): string {
+  get currentCanvasKey(): string {
     const k = this.config.canvasStorageKey;
     return typeof k === 'function' ? k() : k;
   }
 
   private get desktopDefaultsKey(): string {
-    return `${this.layoutKey}__customDefaults`;
+    return `${this.currentLayoutKey}__customDefaults`;
   }
 
   private get canvasDefaultsKey(): string {
-    return `${this.canvasKey}__customDefaults`;
+    return `${this.currentCanvasKey}__customDefaults`;
   }
 
   private get activeGridEl(): HTMLElement | undefined {
@@ -678,7 +678,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       } else {
         this.applyCanvasDefaults();
       }
-      localStorage.removeItem(this.canvasKey);
+      localStorage.removeItem(this.currentCanvasKey);
       this.persistCanvasLayout();
     } else if (this.config.desktopSaveDefaultLayoutSizingOnly) {
       try {
@@ -1979,7 +1979,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       colStarts[id] = this.widgetColStarts()[id];
       colSpans[id] = this.widgetColSpans()[id];
     }
-    this.layoutService.save(this.layoutKey, mobile, {
+    this.layoutService.save(this.currentLayoutKey, mobile, {
       tops,
       heights,
       colStarts,
@@ -1998,12 +1998,12 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       layout['widths'][id] = this.widgetPixelWidths()[id];
     }
     try {
-      localStorage.setItem(this.canvasKey, JSON.stringify(layout));
+      localStorage.setItem(this.currentCanvasKey, JSON.stringify(layout));
     } catch { /* quota exceeded */ }
   }
 
   restoreDesktopLayout(): boolean {
-    const saved = this.layoutService.load(this.layoutKey, false);
+    const saved = this.layoutService.load(this.currentLayoutKey, false);
     if (!saved) return false;
     const tops = { ...this.widgetTops() };
     const heights = { ...this.widgetHeights() };
@@ -2024,7 +2024,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   restoreMobileLayout(): boolean {
-    const saved = this.layoutService.load(this.layoutKey, true);
+    const saved = this.layoutService.load(this.currentLayoutKey, true);
     if (!saved) return false;
     const tops = { ...this.widgetTops() };
     const heights = { ...this.widgetHeights() };
@@ -2045,7 +2045,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
   restoreCanvasLayout(): boolean {
     try {
-      const raw = localStorage.getItem(this.canvasKey);
+      const raw = localStorage.getItem(this.currentCanvasKey);
       if (!raw) return false;
       const layout = JSON.parse(raw);
       const tops = { ...this.widgetTops() };

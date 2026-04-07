@@ -10,7 +10,7 @@ import {
   formatCurrency as sharedFormatCurrency,
   ledgerTypeBadge,
   ledgerTypeLabel,
-} from '../../../data/dashboard-data';
+} from '../../../data/dashboard-data.formatters';
 import type {
   ChangeOrder,
   Contract,
@@ -27,7 +27,7 @@ import type {
   PurchaseOrderStatus,
   SubcontractLedgerEntry,
   SubcontractLedgerType,
-} from '../../../data/dashboard-data';
+} from '../../../data/dashboard-data.types';
 
 type ViewMode = 'grid' | 'list';
 

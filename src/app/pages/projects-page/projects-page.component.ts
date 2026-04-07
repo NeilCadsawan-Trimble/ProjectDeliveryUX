@@ -16,7 +16,6 @@ import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modu
 import { ModusProgressComponent } from '../../components/modus-progress.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
-import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ChartComponent, type ApexAxisChartSeries } from 'ng-apexcharts';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import type { DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
@@ -30,7 +29,7 @@ import type {
   WeatherForecast,
   ProjectCalendarEvent,
   ProjectEventCategory,
-} from '../../data/dashboard-data';
+} from '../../data/dashboard-data.types';
 import {
   statusBadgeColor,
   progressClass,
@@ -40,13 +39,13 @@ import {
   urgentNeedCategoryIcon,
   weatherIcon,
   weatherIconColor,
-} from '../../data/dashboard-data';
+} from '../../data/dashboard-data.formatters';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import type { Milestone, TeamMember, Risk } from '../../data/project-data';
 import { TILE_IDS, TILE_VISUAL_ORDER, buildProjectsLayoutConfig } from './projects-page-layout.config';
 import { rewriteDynamicNeeds, injectScheduleOverdue, sortProjectsByUrgency, rewriteBudgetRisk } from './projects-page-utils';
-import { ModusTextInputComponent } from '../../components/modus-text-input.component';
 import { RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, type NavItem } from '../project-dashboard/project-dashboard.config';
+import { CreateMenuDropdownComponent } from '../../shared/create-menu-dropdown.component';
 
 type ContentBlock = 'owner' | 'schedule' | 'budget' | 'weather'
   | 'urgentNeeds' | 'sparkline' | 'costBreakdown' | 'insight' | 'moreNeeds'
@@ -94,7 +93,7 @@ const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline
 
 @Component({
   selector: 'app-projects-page',
-  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent, ModusButtonComponent, ModusTextInputComponent, ChartComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent, ChartComponent, CreateMenuDropdownComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -109,13 +108,17 @@ const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline
 export class ProjectsPageComponent extends DashboardPageBase implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
+  private get pp(): string { return `/${this.personaService.activePersonaSlug()}`; }
 
   constructor() {
     super();
   }
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    return buildProjectsLayoutConfig((id) => this.widgetFocusService.selectWidget(id));
+    return buildProjectsLayoutConfig(
+      (id) => this.widgetFocusService.selectWidget(id),
+      () => this.personaService.activePersonaSlug(),
+    );
   }
 
   protected override applyInitialHeaderLock(): void {
@@ -138,20 +141,14 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   });
   readonly forecastDays = signal(3);
 
-  private static readonly ALL_CREATE_ITEMS: NavItem[] = [...RECORDS_SUB_NAV_ITEMS, ...FINANCIALS_SUB_NAV_ITEMS];
-  private static readonly FREQUENTLY_USED: NavItem[] = [
+  readonly allCreateItems: NavItem[] = [...RECORDS_SUB_NAV_ITEMS, ...FINANCIALS_SUB_NAV_ITEMS];
+  readonly frequentlyUsedItems: NavItem[] = [
     { value: 'daily-reports', label: 'Daily Report', icon: 'calendar' },
     { value: 'rfis', label: 'RFI', icon: 'help' },
     { value: 'general-invoices', label: 'Invoice', icon: 'invoice' },
   ];
-  readonly createMenuOpen = signal(false);
-  readonly createSearchQuery = signal('');
-  readonly filteredCreateItems = computed(() => {
-    const q = this.createSearchQuery().toLowerCase().trim();
-    if (!q) return [];
-    return ProjectsPageComponent.ALL_CREATE_ITEMS.filter(item => item.label.toLowerCase().includes(q));
-  });
-  readonly frequentlyUsedItems = ProjectsPageComponent.FREQUENTLY_USED;
+  private readonly createDropdownDesktop = viewChild<CreateMenuDropdownComponent>('createDropdownDesktop');
+  private readonly createDropdownCanvas = viewChild<CreateMenuDropdownComponent>('createDropdownCanvas');
 
   readonly today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -306,11 +303,11 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
   navigateToJobCosts(project: Project, event: MouseEvent): void {
     event.stopPropagation();
-    this.router.navigate(['/financials/job-costs', project.slug]);
+    this.router.navigate([`${this.pp}/financials/job-costs`, project.slug]);
   }
 
   navigateToProject(project: Project): void {
-    this.router.navigate(['/project', project.slug]);
+    this.router.navigate([`${this.pp}/project`, project.slug]);
   }
 
   private static readonly WIDGET_BLOCK_MAP: Record<string, string> = {
@@ -328,11 +325,11 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     const slug = project.slug;
     const widgetId = ProjectsPageComponent.WIDGET_BLOCK_MAP[block];
     if (widgetId) {
-      this.router.navigate(['/project', slug], { queryParams: { widget: widgetId } });
+      this.router.navigate([`${this.pp}/project`, slug], { queryParams: { widget: widgetId } });
     } else if (ProjectsPageComponent.FINANCIALS_BLOCKS.has(block)) {
-      this.router.navigate(['/project', slug], { queryParams: { page: 'financials', subpage: 'budget' } });
+      this.router.navigate([`${this.pp}/project`, slug], { queryParams: { page: 'financials', subpage: 'budget' } });
     } else {
-      this.router.navigate(['/project', slug]);
+      this.router.navigate([`${this.pp}/project`, slug]);
     }
   }
 
@@ -682,13 +679,17 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   readonly projectWidgets: DashboardWidgetId[] = [...TILE_IDS];
 
   // ─── Timeline view toggle ───────────────────────────────────────────
+  private personaKey(base: string): string {
+    return `${this.personaService.activePersonaSlug()}:${base}`;
+  }
+
   readonly viewMode = signal<'grid' | 'timeline'>(
-    (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('projects-view-mode') as 'grid' | 'timeline') || 'grid',
+    (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(this.personaKey('projects-view-mode')) as 'grid' | 'timeline') || 'grid',
   );
 
   switchView(mode: 'grid' | 'timeline'): void {
     this.viewMode.set(mode);
-    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('projects-view-mode', mode);
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(this.personaKey('projects-view-mode'), mode);
   }
 
   // ─── Timeline computed signals ──────────────────────────────────────
@@ -875,7 +876,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   private static readonly TL_MIN_H = 200;
 
   readonly timelineHeight = signal<number>(
-    (typeof sessionStorage !== 'undefined' && parseInt(sessionStorage.getItem('projects-timeline-height') ?? '', 10)) || 400,
+    (typeof sessionStorage !== 'undefined' && parseInt(sessionStorage.getItem(this.personaKey('projects-timeline-height')) ?? '', 10)) || 400,
   );
   readonly timelineResizing = signal(false);
   private _tlResizeStartY = 0;
@@ -911,7 +912,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     if (this.timelineResizing()) {
       this.timelineResizing.set(false);
       if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem('projects-timeline-height', String(this.timelineHeight()));
+        sessionStorage.setItem(this.personaKey('projects-timeline-height'), String(this.timelineHeight()));
       }
       return;
     }
@@ -933,7 +934,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     if (this.timelineResizing()) {
       this.timelineResizing.set(false);
       if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem('projects-timeline-height', String(this.timelineHeight()));
+        sessionStorage.setItem(this.personaKey('projects-timeline-height'), String(this.timelineHeight()));
       }
       return;
     }
@@ -990,33 +991,21 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (this.createMenuOpen() && !target.closest('[data-create-dropdown]')) {
-      this.createMenuOpen.set(false);
-      this.createSearchQuery.set('');
+    if (!target.closest('[data-create-dropdown]')) {
+      this.closeCreateMenus();
     }
   }
 
   onEscapeKey(): void {
-    if (this.createMenuOpen()) {
-      this.createMenuOpen.set(false);
-      this.createSearchQuery.set('');
-    }
+    this.closeCreateMenus();
   }
 
-  toggleCreateMenu(event: MouseEvent | KeyboardEvent): void {
-    event.stopPropagation();
-    const opening = !this.createMenuOpen();
-    this.createMenuOpen.set(opening);
-    if (!opening) this.createSearchQuery.set('');
+  private closeCreateMenus(): void {
+    this.createDropdownDesktop()?.close();
+    this.createDropdownCanvas()?.close();
   }
 
-  onCreateSearchInput(event: Event): void {
-    const value = (event as CustomEvent)?.detail?.target?.value ?? (event?.target as HTMLInputElement)?.value ?? '';
-    this.createSearchQuery.set(value);
-  }
-
-  selectCreateItem(item: NavItem): void {
-    this.createMenuOpen.set(false);
-    this.createSearchQuery.set('');
+  selectCreateItem(_item: NavItem): void {
+    // placeholder -- future: navigate to create form for item.value
   }
 }

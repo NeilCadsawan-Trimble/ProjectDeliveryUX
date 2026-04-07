@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
-import type { GLAccount, GLAccountType, GLEntry } from '../../data/dashboard-data';
-import { formatCurrency, capitalizeFirst } from '../../data/dashboard-data';
+import type { GLAccount, GLAccountType, GLEntry } from '../../data/dashboard-data.types';
+import { formatCurrency, capitalizeFirst } from '../../data/dashboard-data.formatters';
 import { DataStoreService } from '../../data/data-store.service';
-import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
+import { DetailPageLayoutComponent } from '../../shared/detail-page-layout.component';
+import { routeParamSignal } from '../../shared/route-param-signal';
+import { useBackNavigation } from '../../shared/go-back';
 
 import type { ModusBadgeColor } from '../../components/modus-badge.component';
 
@@ -19,21 +19,18 @@ const TYPE_BADGE_COLOR: Record<GLAccountType, ModusBadgeColor> = {
 
 @Component({
   selector: 'app-gl-account-detail-page',
-  imports: [ModusBadgeComponent],
+  imports: [ModusBadgeComponent, DetailPageLayoutComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="px-4 py-6 md:py-8 max-w-screen-lg mx-auto">
-      @if (account()) {
-        <div
-          class="flex items-center gap-2 mb-6 cursor-pointer text-foreground-60 hover:text-foreground transition-colors duration-150"
-          role="button" tabindex="0"
-          (click)="goBack()"
-          (keydown.enter)="goBack()"
-        >
-          <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
-          <div class="text-sm font-medium">{{ backLabel }}</div>
-        </div>
-
+    <app-detail-page-layout
+      [hasEntity]="!!account()"
+      [backLabel]="backLabel"
+      emptyIcon="bar_graph"
+      emptyTitle="GL Account Not Found"
+      emptyMessage="The requested GL account could not be found."
+      (back)="goBack()"
+    >
+      @if (account(); as acct) {
         <!-- Header card -->
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
@@ -42,27 +39,27 @@ const TYPE_BADGE_COLOR: Record<GLAccountType, ModusBadgeColor> = {
                 <i class="modus-icons text-xl text-primary" aria-hidden="true">bar_graph</i>
               </div>
               <div>
-                <div class="text-xl font-semibold text-foreground">{{ account()!.code }}</div>
-                <div class="text-sm text-foreground-60">{{ account()!.name }}</div>
+                <div class="text-xl font-semibold text-foreground">{{ acct.code }}</div>
+                <div class="text-sm text-foreground-60">{{ acct.name }}</div>
               </div>
             </div>
             <modus-badge [color]="typeBadgeColor()" variant="outlined">
-              {{ capitalizeFirst(account()!.type) }}
+              {{ capitalizeFirst(acct.type) }}
             </modus-badge>
           </div>
 
           <!-- KPI grid -->
           <div class="px-6 py-6 grid grid-cols-3 gap-6">
             <div>
-              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Balance</div>
-              <div class="text-xl font-bold text-foreground">{{ formatCurrency(account()!.balance) }}</div>
+              <div class="detail-field-label">Balance</div>
+              <div class="text-xl font-bold text-foreground">{{ formatCurrency(acct.balance) }}</div>
             </div>
             <div>
-              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Account Type</div>
-              <div class="text-base text-foreground">{{ capitalizeFirst(account()!.type) }}</div>
+              <div class="detail-field-label">Account Type</div>
+              <div class="text-base text-foreground">{{ capitalizeFirst(acct.type) }}</div>
             </div>
             <div>
-              <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Entry Count</div>
+              <div class="detail-field-label">Entry Count</div>
               <div class="text-base text-foreground">{{ entries().length }}</div>
             </div>
           </div>
@@ -108,32 +105,17 @@ const TYPE_BADGE_COLOR: Record<GLAccountType, ModusBadgeColor> = {
             </div>
           }
         </div>
-      } @else {
-        <div class="flex flex-col items-center justify-center py-20 text-foreground-40">
-          <i class="modus-icons text-4xl mb-3" aria-hidden="true">bar_graph</i>
-          <div class="text-lg font-medium mb-1">GL Account Not Found</div>
-          <div class="text-sm mb-4">The requested GL account could not be found.</div>
-          <div
-            class="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer bg-primary text-primary-foreground hover:opacity-90 transition-opacity duration-150"
-            role="button" tabindex="0"
-            (click)="goBack()"
-            (keydown.enter)="goBack()"
-          >Return to {{ backLabel }}</div>
-        </div>
       }
-    </div>
+    </app-detail-page-layout>
   `,
 })
 export class GlAccountDetailPageComponent {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly navHistory = inject(NavigationHistoryService);
   private readonly store = inject(DataStoreService);
+  private readonly nav = useBackNavigation();
+  readonly backLabel = this.nav.backLabel;
+  readonly goBack = this.nav.goBack;
 
-  private readonly backInfo = this.navHistory.getBackInfo();
-  readonly backLabel = 'Back to ' + this.backInfo.label;
-
-  private readonly code = signal<string>('');
+  private readonly code = routeParamSignal('code');
 
   readonly account = computed<GLAccount | null>(() => {
     const c = this.code();
@@ -151,27 +133,6 @@ export class GlAccountDetailPageComponent {
     return acct ? TYPE_BADGE_COLOR[acct.type] : 'secondary';
   });
 
-  constructor() {
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
-      this.code.set(params.get('code') ?? '');
-    });
-  }
-
   readonly formatCurrency = formatCurrency;
   readonly capitalizeFirst = capitalizeFirst;
-
-  goBack(): void {
-    const route = this.backInfo.route;
-    if (route.includes('?')) {
-      const [path, query] = route.split('?');
-      const qp: Record<string, string> = {};
-      for (const pair of query.split('&')) {
-        const [k, v] = pair.split('=');
-        if (k) qp[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
-      }
-      this.router.navigate([path || '/'], { queryParams: qp });
-    } else {
-      this.router.navigate([route]);
-    }
-  }
 }

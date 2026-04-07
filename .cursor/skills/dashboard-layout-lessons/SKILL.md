@@ -1565,6 +1565,29 @@ Where `CANVAS_STEP = 81` and `GAP_PX = 16`.
 
 ---
 
+## 34. Persona-Driven Project Ownership (Bert Humphries as PM)
+
+**Context**: The application supports multiple user personas (`frank`, `bert`, `kelly`, `dominique`) defined in `persona.service.ts`. When a persona is designated as Project Manager across all projects, the data must be updated in two places -- the dashboard tile data and the per-project detail data.
+
+**Data locations that must stay in sync**:
+
+1. **`dashboard-data.seed.ts` → `PROJECTS` array**: Each project has `owner` (display name) and `ownerInitials` (avatar badge). These appear on project tiles in the Projects page and anywhere project cards are rendered.
+
+2. **`project-data.ts` → `PROJECT_DATA[n].team` array**: Each project's team roster. The PM should be `id: 1` (first in list) with `role: 'Project Manager'`. Previous PMs get re-titled (e.g., Assistant Project Manager, Senior Engineer, Project Coordinator).
+
+3. **`project-data.ts` → `PROJECT_DATA[n].summaryStats`**: The "Team Members" stat `value` must reflect the actual team array length after adding/removing members.
+
+**Rule**: When changing project ownership:
+- Update `owner`/`ownerInitials` on all entries in the `PROJECTS` array
+- Add the new PM as `id: 1` in each project's `team` array with `role: 'Project Manager'`
+- Re-title the displaced PM to an appropriate secondary role (varies per project)
+- Increment the Team Members summary stat count
+- Verify the PM's `initials` match `ownerInitials` in the `PROJECTS` array
+
+**Files changed**: `dashboard-data.seed.ts`, `project-data.ts`
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |

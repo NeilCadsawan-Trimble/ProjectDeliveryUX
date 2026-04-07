@@ -1,12 +1,47 @@
-import { Routes } from '@angular/router';
+import { Routes, type CanActivateFn } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { environment } from '../environments/environment.development';
+import { PersonaService } from './services/persona.service';
+import { AuthService } from './services/auth.service';
+import { collectAllExtraRoutes } from './data/persona-nav.config';
+
+/**
+ * Guard that requires Trimble ID authentication.
+ * Stores the attempted URL and redirects to /login if not authenticated.
+ */
+const authGuard: CanActivateFn = (route, state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  if (authService.isAuthenticated()) {
+    return true;
+  }
+  authService.setReturnUrl(state.url);
+  return router.createUrlTree(['/login']);
+};
+
+/**
+ * Guard that validates the :persona route parameter.
+ * Sets the active persona in PersonaService if valid, otherwise redirects to /frank.
+ */
+const personaGuard: CanActivateFn = (route) => {
+  const personaService = inject(PersonaService);
+  const router = inject(Router);
+  const slug = route.paramMap.get('persona');
+  if (slug && PersonaService.isValidPersona(slug)) {
+    personaService.setActivePersona(slug);
+    return true;
+  }
+  return router.createUrlTree(['/frank']);
+};
 
 /**
  * Application routes.
  *
  * Structure:
- * - /, /projects, /financials/*, /project/:slug : App shell (dashboard layout + page content)
+ * - /:persona/, /:persona/projects, /:persona/financials/*, /:persona/project/:slug : App shell (dashboard layout + page content)
  * - /dev/* : Development routes (only when devPanel is enabled in environment)
+ * - / : Redirects to /frank
  */
 export const routes: Routes = [
   ...(environment.devPanel
@@ -332,123 +367,143 @@ export const routes: Routes = [
       ]
     : []),
   {
-    path: 'project/:slug',
+    path: 'login',
     loadComponent: () =>
-      import('./pages/project-dashboard/project-slug-page.component').then((m) => m.ProjectSlugPageComponent),
-    title: 'Project',
+      import('./pages/login-page/login-page.component').then((m) => m.LoginPageComponent),
+    title: 'Sign In',
   },
   {
-    path: '',
+    path: 'auth/callback',
     loadComponent: () =>
-      import('./pages/dashboard-layout/dashboard-layout.component').then((m) => m.DashboardLayoutComponent),
+      import('./pages/auth-callback/auth-callback.component').then((m) => m.AuthCallbackComponent),
+    title: 'Signing In...',
+  },
+  { path: '', redirectTo: 'frank', pathMatch: 'full' as const },
+  {
+    path: ':persona',
+    canActivate: [authGuard, personaGuard],
     children: [
+      {
+        path: 'project/:slug',
+        loadComponent: () =>
+          import('./pages/project-dashboard/project-slug-page.component').then((m) => m.ProjectSlugPageComponent),
+        title: 'Project',
+      },
       {
         path: '',
         loadComponent: () =>
-          import('./pages/home-page/home-page.component').then((m) => m.HomePageComponent),
-        title: 'Home',
-      },
-      {
-        path: 'projects',
-        loadComponent: () =>
-          import('./pages/projects-page/projects-page.component').then((m) => m.ProjectsPageComponent),
-        title: 'Projects',
-      },
-      {
-        path: 'financials',
-        loadComponent: () =>
-          import('./pages/financials-page/financials-shell.component').then((m) => m.FinancialsShellComponent),
+          import('./pages/dashboard-layout/dashboard-layout.component').then((m) => m.DashboardLayoutComponent),
         children: [
           {
             path: '',
             loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Financials',
+              import('./pages/home-page/home-page.component').then((m) => m.HomePageComponent),
+            title: 'Home',
           },
           {
-            path: 'job-costs/:slug',
+            path: 'projects',
             loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Job costs',
+              import('./pages/projects-page/projects-page.component').then((m) => m.ProjectsPageComponent),
+            title: 'Projects',
           },
           {
-            path: 'change-orders/:id',
+            path: 'financials',
             loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Change orders',
+              import('./pages/financials-page/financials-shell.component').then((m) => m.FinancialsShellComponent),
+            children: [
+              {
+                path: '',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Financials',
+              },
+              {
+                path: 'job-costs/:slug',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Job costs',
+              },
+              {
+                path: 'change-orders/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Change orders',
+              },
+              {
+                path: 'estimates/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Estimates',
+              },
+              {
+                path: 'invoices/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Invoices',
+              },
+              {
+                path: 'payables/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Payables',
+              },
+              {
+                path: 'purchase-orders/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Purchase orders',
+              },
+              {
+                path: 'contracts/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Contracts',
+              },
+              {
+                path: 'billing/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Billing',
+              },
+              {
+                path: 'payroll/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Payroll',
+              },
+              {
+                path: 'payroll-monthly/:month',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Payroll',
+              },
+              {
+                path: 'subcontract-ledger/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Subcontract ledger',
+              },
+              {
+                path: 'gl-entries/:id',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'GL entries',
+              },
+              {
+                path: 'gl-accounts/:code',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'GL accounts',
+              },
+              {
+                path: 'cash-flow/:month',
+                loadComponent: () =>
+                  import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
+                title: 'Cash flow',
+              },
+            ],
           },
-          {
-            path: 'estimates/:id',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Estimates',
-          },
-          {
-            path: 'invoices/:id',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Invoices',
-          },
-          {
-            path: 'payables/:id',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Payables',
-          },
-          {
-            path: 'purchase-orders/:id',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Purchase orders',
-          },
-          {
-            path: 'contracts/:id',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Contracts',
-          },
-          {
-            path: 'billing/:id',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Billing',
-          },
-          {
-            path: 'payroll/:id',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Payroll',
-          },
-          {
-            path: 'payroll-monthly/:month',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Payroll',
-          },
-          {
-            path: 'subcontract-ledger/:id',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Subcontract ledger',
-          },
-          {
-            path: 'gl-entries/:id',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'GL entries',
-          },
-          {
-            path: 'gl-accounts/:code',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'GL accounts',
-          },
-          {
-            path: 'cash-flow/:month',
-            loadComponent: () =>
-              import('./pages/financials-page/financials-page.component').then((m) => m.FinancialsPageComponent),
-            title: 'Cash flow',
-          },
+          ...collectAllExtraRoutes(),
         ],
       },
     ],
