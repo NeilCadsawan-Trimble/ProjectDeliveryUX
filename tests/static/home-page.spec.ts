@@ -28,6 +28,13 @@ describe('HomePageComponent (template regression)', () => {
     });
   });
 
+  describe('home header', () => {
+    it('does not render the removed bidding-phase subtitle under welcome', () => {
+      expect(SRC).not.toContain('meetings in one place');
+      expect(SRC).not.toContain('bidding phase</span>');
+    });
+  });
+
   describe('resize handles', () => {
     it('has left position resize handles', () => {
       expect(SRC).toContain('position="left"');

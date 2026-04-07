@@ -47,7 +47,6 @@ import { HOME_ESTIMATE_CARDS, CALENDAR_APPOINTMENTS, BIDDING_TASKS } from '../..
           <div>
             <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome Back, Bert!</div>
             <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
-            <div class="text-sm text-foreground-80 mt-2">You are in the <span class="font-semibold text-foreground">bidding phase</span> — track estimates, tasks, and client meetings in one place.</div>
           </div>
           <div class="flex-shrink-0">
             <modus-button color="primary" icon="add" iconPosition="left" (buttonClick)="onCreateClick()">
