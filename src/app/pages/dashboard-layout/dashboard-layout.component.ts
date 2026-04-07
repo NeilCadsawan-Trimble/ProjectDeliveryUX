@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { DashboardShellComponent } from '../../shell/layout/dashboard-shell.component';
 import type { ShellNavItem, AiResponseFn } from '../../shell/layout/dashboard-shell.component';
 import type { INavbarUserCard } from '../../components/modus-navbar.component';
 import type { Project, Estimate } from '../../data/dashboard-data.types';
 import { ATTENTION_ITEMS } from '../../data/dashboard-data.seed';
 import { DataStoreService } from '../../data/data-store.service';
+import { PersonaService } from '../../services/persona.service';
+import { getPersonaNav } from '../../data/persona-nav.config';
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -13,9 +15,10 @@ import { DataStoreService } from '../../data/data-store.service';
   template: `
     <app-dashboard-shell
       [appTitle]="appTitle"
-      [userCard]="userCard"
-      [sideNavItems]="sideNavItems"
-      [homeRoute]="'/'"
+      [userCard]="userCard()"
+      [sideNavItems]="sideNavItems()"
+      [homeRoute]="homeRoute()"
+      [activePersonaSlug]="personaService.activePersonaSlug()"
       [aiResponseFn]="aiResponseFn"
       [defaultAiSuggestions]="defaultAiSuggestions"
       [aiWelcomeText]="'Ask me about projects, estimates, budgets, or team status.'"
@@ -25,18 +28,21 @@ import { DataStoreService } from '../../data/data-store.service';
 })
 export class DashboardLayoutComponent {
   private readonly store = inject(DataStoreService);
+  readonly personaService = inject(PersonaService);
   readonly appTitle = 'Project Delivery';
 
-  readonly userCard: INavbarUserCard = {
-    name: 'Frank Mendoza',
-    email: 'frank.mendoza@rockymtncontracting.com',
-  };
+  readonly userCard = computed<INavbarUserCard>(() => this.personaService.userCard());
 
-  readonly sideNavItems: ShellNavItem[] = [
-    { value: 'home', label: 'Home', icon: 'home', route: '/' },
-    { value: 'projects', label: 'Projects', icon: 'briefcase', route: '/projects' },
-    { value: 'financials', label: 'Financials', icon: 'bar_graph', route: '/financials' },
-  ];
+  readonly homeRoute = computed(() => `/${this.personaService.activePersonaSlug()}`);
+
+  readonly sideNavItems = computed<ShellNavItem[]>(() => {
+    const slug = this.personaService.activePersonaSlug();
+    const nav = getPersonaNav(slug);
+    return nav.shellSideNav.map(item => ({
+      ...item,
+      route: item.route ? `/${slug}${item.route}` : undefined,
+    }));
+  });
 
   readonly defaultAiSuggestions: string[] = [
     'Summarize project status',

@@ -22,11 +22,12 @@ const TILES_OFFSET = HEADER_OFFSET + H_TIMELINE + GAP;
 
 export function buildProjectsLayoutConfig(
   onWidgetSelect: (id: string) => void,
+  personaSlug?: () => string,
 ): DashboardLayoutConfig {
   return {
     widgets: ['projsHeader', 'projsTimeline', ...TILE_IDS],
-    layoutStorageKey: 'dashboard-projects:v18',
-    canvasStorageKey: 'canvas-layout:dashboard-projects:v21',
+    layoutStorageKey: personaSlug ? () => `${personaSlug()}:dashboard-projects:v18` : 'dashboard-projects:v18',
+    canvasStorageKey: personaSlug ? () => `${personaSlug()}:canvas-layout:dashboard-projects:v21` : 'canvas-layout:dashboard-projects:v21',
     defaultColStarts: {
       projsHeader: 1,
       projsTimeline: 1,

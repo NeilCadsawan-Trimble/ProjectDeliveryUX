@@ -5,6 +5,7 @@ import type { SubpageTileCanvas, TileDetailView } from '../../shell/services/sub
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import type { DrawingTile, SiteCapture } from '../../data/drawings-data';
 import { DataStoreService } from '../../data/data-store.service';
+import { PersonaService } from '../../services/persona.service';
 import {
   JOB_COST_CATEGORIES,
   type Rfi,
@@ -52,6 +53,8 @@ export class ProjectDashboardNavigationService {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly store = inject(DataStoreService);
+  private readonly personaService = inject(PersonaService);
+  private get pp(): string { return `/${this.personaService.activePersonaSlug()}`; }
 
   private ctx!: ProjectDashboardNavigationBindings;
 
@@ -172,7 +175,7 @@ export class ProjectDashboardNavigationService {
 
   navigateToUrgentNeed(item: UrgentNeedItem): void {
     if (item.financialsRoute && (item.category === 'budget' || item.category === 'change-order')) {
-      void this.router.navigate([item.financialsRoute]);
+      void this.router.navigate([`${this.pp}${item.financialsRoute}`]);
       return;
     }
     const qp = item.queryParams;
@@ -264,9 +267,9 @@ export class ProjectDashboardNavigationService {
       } else if (currentPage === 'financials') {
         qp['subpage'] = this.ctx.activeFinancialsPage();
       }
-      void this.router.navigate(['/project', slug], { queryParams: qp });
+      void this.router.navigate([`${this.pp}/project`, slug], { queryParams: qp });
     } else {
-      void this.router.navigate(['/project', slug]);
+      void this.router.navigate([`${this.pp}/project`, slug]);
     }
   }
 
@@ -349,12 +352,13 @@ export class ProjectDashboardNavigationService {
   }
 
   private resolveFromPath(from: string): string {
+    const pp = this.pp;
     const paths: Record<string, string> = {
-      home: '/',
-      projects: '/projects',
-      financials: '/financials',
+      home: pp,
+      projects: `${pp}/projects`,
+      financials: `${pp}/financials`,
     };
-    return paths[from] ?? '/';
+    return paths[from] ?? pp;
   }
 
   private onPopState(): void {

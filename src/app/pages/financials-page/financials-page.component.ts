@@ -20,8 +20,8 @@ import { CollapsibleSubnavComponent } from '../project-dashboard/components/coll
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
+import { getPersonaNav } from '../../data/persona-nav.config';
 import { DataStoreService } from '../../data/data-store.service';
-import type { NavItem } from '../project-dashboard/project-dashboard.config';
 import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDataPoint, JobCostCategory, ProjectJobCost, ChangeOrder, ChangeOrderType, Invoice, BillingSchedule, BillingEvent, Payable, CashFlowEntry, GLAccount, GLEntry, PurchaseOrder, PayrollRecord, Contract, SubcontractLedgerEntry } from '../../data/dashboard-data.types';
 import { JOB_COST_CATEGORIES } from '../../data/dashboard-data.types';
 import { CATEGORY_COLORS } from '../../data/dashboard-data.seed';
@@ -494,7 +494,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 }
               </div>
               <div class="py-1 flex-1 overflow-y-auto">
-                @for (item of finNavLinkItems; track item.value) {
+                @for (item of finNavLinkItems(); track item.value) {
                   <div
                     class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150 whitespace-nowrap"
                     [class.bg-primary]="activeSubPage() === item.value"
@@ -1045,7 +1045,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <app-collapsible-subnav
           icon="payment_instant"
           title="Financials"
-          [items]="finSubNavItems"
+          [items]="finSubNavItems()"
           [activeItem]="activeSubPage()"
           [collapsed]="finSubnavCollapsed()"
           [alerts]="finSubnavAlerts()"
@@ -2200,23 +2200,9 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly store = inject(DataStoreService);
+  private get pp(): string { return `/${this.personaService.activePersonaSlug()}`; }
 
-  // Subnav configuration
-  readonly finSubNavItems: NavItem[] = [
-    { value: 'overview', label: 'Overview', icon: 'dashboard' },
-    { value: 'estimates', label: 'Estimates', icon: 'file' },
-    { value: 'change-orders', label: 'Change Orders', icon: 'swap' },
-    { value: 'job-costs', label: 'Job Costs', icon: 'bar_graph' },
-    { value: 'job-billing', label: 'Job Billing', icon: 'invoice' },
-    { value: 'accounts-receivable', label: 'Accounts Receivable', icon: 'document' },
-    { value: 'accounts-payable', label: 'Accounts Payable', icon: 'credit_card' },
-    { value: 'cash-management', label: 'Cash Management', icon: 'gantt_chart' },
-    { value: 'general-ledger', label: 'General Ledger', icon: 'list_bulleted' },
-    { value: 'purchase-orders', label: 'Purchase Orders', icon: 'shopping_cart' },
-    { value: 'payroll', label: 'Payroll', icon: 'people_group' },
-    { value: 'contracts', label: 'Contracts', icon: 'copy_content' },
-    { value: 'subcontract-ledger', label: 'Subcontract Ledger', icon: 'clipboard' },
-  ];
+  readonly finSubNavItems = computed(() => getPersonaNav(this.personaService.activePersonaSlug()).financialsPageSubNav);
   readonly activeSubPage = signal<string>('overview');
   readonly finDetailType = signal<FinDetailType | null>(null);
   readonly finDetailId = signal<string | null>(null);
@@ -2520,8 +2506,8 @@ export class FinancialsPageComponent extends DashboardPageBase {
     const F = FinancialsPageComponent;
     return {
       widgets: ['finTitle', 'finNavKpi', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
-      layoutStorageKey: 'dashboard-financials:v17',
-      canvasStorageKey: 'canvas-layout:dashboard-financials:v19',
+      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-financials:v17`,
+      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-financials:v19`,
       defaultColStarts: { finTitle: 1, finNavKpi: 1, finRevenueChart: 9, finOpenEstimates: 1, finBudgetByProject: 1, finJobCosts: 1, finChangeOrders: 1 },
       defaultColSpans: { finTitle: 16, finNavKpi: 8, finRevenueChart: 8, finOpenEstimates: 16, finBudgetByProject: 16, finJobCosts: 16, finChangeOrders: 16 },
       defaultTops: {
@@ -2730,7 +2716,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   readonly financialsWidgets: DashboardWidgetId[] = ['finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
 
-  readonly finNavLinkItems = this.finSubNavItems.filter(i => i.value !== 'overview');
+  readonly finNavLinkItems = computed(() => this.finSubNavItems().filter(i => i.value !== 'overview'));
 
 
   private readonly finSubPageDescriptions: Record<string, string> = {
@@ -2749,7 +2735,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   };
 
   readonly activeSubPageTitle = computed(() => {
-    return this.finSubNavItems.find(i => i.value === this.activeSubPage())?.label ?? '';
+    return this.finSubNavItems().find(i => i.value === this.activeSubPage())?.label ?? '';
   });
 
   readonly activeSubPageDescription = computed(() => {
@@ -2846,13 +2832,13 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private readonly _restoreSubPage = effect(() => {
     const params = this.route.snapshot.queryParamMap;
     const sp = params.get('subpage');
-    if (sp && this.finSubNavItems.some(i => i.value === sp)) {
+    if (sp && this.finSubNavItems().some(i => i.value === sp)) {
       this.activeSubPage.set(sp);
     }
   });
 
   navigateToChangeOrder(id: string): void {
-    this.router.navigate(['/financials/change-orders', id]);
+    this.router.navigate([`${this.pp}/financials/change-orders`, id]);
   }
 
   private buildFinAgentState(): AgentDataState {
@@ -3215,7 +3201,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   openJobCostDetail(p: ProjectJobCost): void {
     const proj = this.store.findProjectById(p.projectId);
     const slug = proj?.slug ?? String(p.projectId);
-    this.router.navigate(['/financials/job-costs', slug]);
+    this.router.navigate([`${this.pp}/financials/job-costs`, slug]);
   }
 
   private activateJobCostDetail(p: ProjectJobCost): void {
@@ -3228,7 +3214,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
     this.jobCostDetailProject.set(null);
     this.navHistory.shellBackButton.set(null);
     this.navHistory.shellTitleOverride.set(null);
-    this.router.navigate(['/financials']);
+    this.router.navigate([`${this.pp}/financials`]);
   }
 
   private setTitleOverrideForProject(current: ProjectJobCost): void {
@@ -3241,7 +3227,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
       }),
       onSelect: (id: number) => {
         const proj = this.store.findProjectById(id);
-        if (proj) this.router.navigate(['/financials/job-costs', proj.slug]);
+        if (proj) this.router.navigate([`${this.pp}/financials/job-costs`, proj.slug]);
       },
     });
   }
@@ -3290,51 +3276,51 @@ export class FinancialsPageComponent extends DashboardPageBase {
   }
 
   navigateToEstimate(id: string): void {
-    this.router.navigate(['/financials/estimates', id]);
+    this.router.navigate([`${this.pp}/financials/estimates`, id]);
   }
 
   navigateToInvoice(id: string): void {
-    this.router.navigate(['/financials/invoices', id]);
+    this.router.navigate([`${this.pp}/financials/invoices`, id]);
   }
 
   navigateToPayable(id: string): void {
-    this.router.navigate(['/financials/payables', id]);
+    this.router.navigate([`${this.pp}/financials/payables`, id]);
   }
 
   navigateToPurchaseOrder(id: string): void {
-    this.router.navigate(['/financials/purchase-orders', id]);
+    this.router.navigate([`${this.pp}/financials/purchase-orders`, id]);
   }
 
   navigateToContract(id: string): void {
-    this.router.navigate(['/financials/contracts', id]);
+    this.router.navigate([`${this.pp}/financials/contracts`, id]);
   }
 
   navigateToBillingEvent(id: string): void {
-    this.router.navigate(['/financials/billing', id]);
+    this.router.navigate([`${this.pp}/financials/billing`, id]);
   }
 
   navigateToPayrollRecord(id: string): void {
-    this.router.navigate(['/financials/payroll', id]);
+    this.router.navigate([`${this.pp}/financials/payroll`, id]);
   }
 
   navigateToPayrollMonthly(month: string): void {
-    this.router.navigate(['/financials/payroll-monthly', encodeURIComponent(month)]);
+    this.router.navigate([`${this.pp}/financials/payroll-monthly`, encodeURIComponent(month)]);
   }
 
   navigateToSubcontractLedgerEntry(id: string): void {
-    this.router.navigate(['/financials/subcontract-ledger', id]);
+    this.router.navigate([`${this.pp}/financials/subcontract-ledger`, id]);
   }
 
   navigateToGlEntry(id: string): void {
-    this.router.navigate(['/financials/gl-entries', id]);
+    this.router.navigate([`${this.pp}/financials/gl-entries`, id]);
   }
 
   navigateToGlAccount(code: string): void {
-    this.router.navigate(['/financials/gl-accounts', code]);
+    this.router.navigate([`${this.pp}/financials/gl-accounts`, code]);
   }
 
   navigateToCashFlow(month: string): void {
-    this.router.navigate(['/financials/cash-flow', encodeURIComponent(month)]);
+    this.router.navigate([`${this.pp}/financials/cash-flow`, encodeURIComponent(month)]);
   }
 
   toggleWidgetLock(id: string): void {
@@ -3366,9 +3352,9 @@ export class FinancialsPageComponent extends DashboardPageBase {
     this.navHistory.shellTitleOverride.set(null);
     const subPage = returnToSubPage ?? this.activeSubPage();
     if (subPage && subPage !== 'overview') {
-      this.router.navigate(['/financials'], { queryParams: { subpage: subPage } });
+      this.router.navigate([`${this.pp}/financials`], { queryParams: { subpage: subPage } });
     } else {
-      this.router.navigate(['/financials']);
+      this.router.navigate([`${this.pp}/financials`]);
     }
   }
 
@@ -3385,14 +3371,14 @@ export class FinancialsPageComponent extends DashboardPageBase {
         if (match) {
           this.activateJobCostDetail(match);
         } else {
-          this.router.navigate(['/financials']);
+          this.router.navigate([`${this.pp}/financials`]);
         }
       } else if (routeConfig) {
         const paramValue = params.get(routeConfig.paramKey);
         if (paramValue) {
           this.activateEntityDetail(routeConfig.type, routeConfig.subPage, paramValue);
         } else {
-          this.router.navigate(['/financials']);
+          this.router.navigate([`${this.pp}/financials`]);
         }
       } else {
         this.jobCostDetailProject.set(null);

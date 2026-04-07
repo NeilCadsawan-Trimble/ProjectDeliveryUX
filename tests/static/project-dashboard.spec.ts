@@ -19,7 +19,7 @@ const TEMPLATE_SRC = readFileSync(
 /** Combined TS + external template for regression scans (template moved to .html). */
 const SRC = `${TS_SRC}\n${TEMPLATE_SRC}`;
 const WIDGET_FRAME_SRC = readFileSync(
-  resolve(__dir, '../../src/app/pages/project-dashboard/components/widget-frame.component.ts'),
+  resolve(__dir, '../../src/app/shell/components/widget-frame.component.ts'),
   'utf-8',
 );
 const TILE_CANVAS_SRC = readFileSync(
@@ -354,8 +354,8 @@ describe('ProjectDashboardComponent (template regression)', () => {
 
     it('activeFinancialsSubnavConfig computed selects correct config', () => {
       expect(SRC).toContain('activeFinancialsSubnavConfig');
-      expect(SRC).toContain("subnavConfigs['financials-tiles']");
-      expect(SRC).toContain("subnavConfigs['financials']");
+      expect(SRC).toContain("subnavConfigs()['financials-tiles']");
+      expect(SRC).toContain("subnavConfigs()['financials']");
     });
 
     it('FINANCIALS_TILE_PAGES includes all tile-based financials pages', () => {
@@ -421,5 +421,55 @@ describe('ProjectDashboardComponent (template regression)', () => {
         expect(TEMPLATE_SRC).toMatch(pattern);
       });
     }
+  });
+
+  describe('persona routing', () => {
+    it('accesses personaService (inherited from DashboardPageBase)', () => {
+      expect(TS_SRC).toContain('personaService');
+    });
+
+    it('has onPersonaSwitch method', () => {
+      expect(TS_SRC).toContain('onPersonaSwitch(');
+    });
+
+    it('calls store.switchToPersona', () => {
+      expect(TS_SRC).toContain('switchToPersona(');
+    });
+
+    it('userCard is a computed signal from personaService', () => {
+      expect(TS_SRC).toContain('personaService.userCard()');
+    });
+
+    it('storage keys include persona slug', () => {
+      expect(TS_SRC).toContain('activePersonaSlug()');
+      expect(TS_SRC).toMatch(/layoutStorageKey:\s*\(\)/);
+      expect(TS_SRC).toMatch(/canvasStorageKey:\s*\(\)/);
+    });
+
+    it('tile canvas storage key includes persona slug', () => {
+      expect(TS_SRC).toMatch(/storageKey:.*activePersonaSlug/);
+    });
+
+    it('template passes activePersonaSlug to user-menu', () => {
+      expect(SRC).toContain('[activePersonaSlug]');
+    });
+
+    it('template binds personaSwitch output', () => {
+      expect(SRC).toContain('(personaSwitch)');
+    });
+
+    it('nav items use getPersonaNav for persona-driven config', () => {
+      expect(TS_SRC).toContain('getPersonaNav');
+      expect(TS_SRC).toContain('projectSideNav');
+      expect(TS_SRC).toContain('recordsSubNav');
+      expect(TS_SRC).toContain('projectFinancialsSubNav');
+      expect(TS_SRC).toContain('subnavConfigs');
+    });
+
+    it('does not import static nav constants from config', () => {
+      expect(TS_SRC).not.toMatch(/import.*SIDE_NAV_ITEMS.*from/);
+      expect(TS_SRC).not.toMatch(/import.*RECORDS_SUB_NAV_ITEMS.*from/);
+      expect(TS_SRC).not.toMatch(/import.*FINANCIALS_SUB_NAV_ITEMS.*from/);
+    });
   });
 });

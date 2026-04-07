@@ -199,4 +199,44 @@ describe('DashboardLayoutEngine (regression)', () => {
       expect(ENGINE_SRC).toContain('_loadCustomDesktopDefaults');
     });
   });
+
+  describe('persona routing', () => {
+    it('injects PersonaService', () => {
+      expect(SRC).toContain('inject(PersonaService)');
+    });
+
+    it('has activePersonaSlug input', () => {
+      expect(SRC).toMatch(/activePersonaSlug\s*=\s*input/);
+    });
+
+    it('has routeSuffix computed signal for stripping persona prefix', () => {
+      expect(SRC).toContain('routeSuffix');
+    });
+
+    it('has onPersonaSwitch method', () => {
+      expect(SRC).toContain('onPersonaSwitch(');
+    });
+
+    it('calls store.switchToPersona in onPersonaSwitch', () => {
+      expect(SRC).toContain('switchToPersona(');
+    });
+
+    it('navigateHome uses persona prefix', () => {
+      expect(SRC).toContain('activePersonaSlug()');
+      expect(SRC).not.toMatch(/navigate\(\['\/']\)/);
+    });
+
+    it('does not contain hardcoded /projects or /financials route', () => {
+      const hardcodedProjects = SRC.match(/navigate\(\['\/(projects|financials)'\]/g);
+      expect(hardcodedProjects).toBeNull();
+    });
+
+    it('template passes activePersonaSlug to user-menu', () => {
+      expect(SRC).toContain('[activePersonaSlug]');
+    });
+
+    it('template binds personaSwitch output from user-menu', () => {
+      expect(SRC).toContain('(personaSwitch)');
+    });
+  });
 });

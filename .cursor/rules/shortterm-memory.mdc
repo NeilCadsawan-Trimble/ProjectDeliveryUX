@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: Apr 5, 2026
+**Current window**: Apr 6, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -130,11 +130,22 @@ If the date matches today, skip this section and proceed normally.
   7. Added sections 32-33 to `dashboard-layout-lessons` SKILL.md.
   8. Added Phase 20 to PROGRESS.md, updated chat session history.
 
+### Session 22 (Apr 6)
+- **Topic**: Bert Humphries as Project Manager on all 8 projects
+- **What happened**:
+  1. Updated `owner` to `'Bert Humphries'` and `ownerInitials` to `'BH'` on all 8 entries in `PROJECTS` array (`dashboard-data.seed.ts`).
+  2. Added Bert Humphries (`id: 1`, `initials: 'BH'`, `role: 'Project Manager'`) to all 8 `PROJECT_DATA` team arrays in `project-data.ts`.
+  3. Displaced previous PMs re-titled: Sarah Chen -> Assistant Project Manager (proj 1, 7), Priya Nair -> Senior Engineer (proj 3, 8), Lena Brooks -> Project Coordinator (proj 5). Projects 2, 4, 6 had no prior PM role -- Bert added as new member.
+  4. Incremented Team Members summary stat counts on all 8 projects.
+  5. Added section 34 to `dashboard-layout-lessons` SKILL.md: Persona-Driven Project Ownership.
+  6. Updated PROGRESS.md with Phase 20 (Persona Data).
+  7. Type-check and build both passing.
+
 ## Active Context
 
-- On `dev` branch, merged to `main` via PR #66.
-- Layout engine has push-down only collision resolution (no upward jumping).
-- Home dashboard has no locked elements -- all widgets are draggable/resizable.
+- On `dev` branch.
+- Bert Humphries (`BH`) is now the Project Manager and owner on all 8 projects.
+- Previous session's work (PR #66) merged to `main`.
 
 ## Pending Items
 

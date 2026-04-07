@@ -10,6 +10,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs/operators';
 import { DataStoreService } from '../../data/data-store.service';
+import { PersonaService } from '../../services/persona.service';
 import { ProjectDashboardComponent } from './project-dashboard.component';
 
 @Component({
@@ -28,6 +29,7 @@ export class ProjectSlugPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
+  private readonly personaService = inject(PersonaService);
 
   private readonly slug = toSignal(
     this.route.paramMap.pipe(map((p) => p.get('slug'))),
@@ -51,7 +53,8 @@ export class ProjectSlugPageComponent {
       const s = this.slug();
       const id = this.projectId();
       if (s !== null && s.length > 0 && id === null) {
-        untracked(() => void this.router.navigate(['/projects']));
+        const pp = this.personaService.activePersonaSlug();
+        untracked(() => void this.router.navigate([`/${pp}/projects`]));
       }
     });
   }

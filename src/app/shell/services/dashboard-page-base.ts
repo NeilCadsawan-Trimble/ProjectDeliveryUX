@@ -1,4 +1,5 @@
 import { DestroyRef, Directive, effect, inject, untracked } from '@angular/core';
+import { PersonaService } from '../../services/persona.service';
 import { CanvasResetService } from './canvas-reset.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from './dashboard-layout-engine';
 import { WidgetFocusService } from './widget-focus.service';
@@ -16,6 +17,7 @@ export abstract class DashboardPageBase {
   protected readonly widgetLayoutService = inject(WidgetLayoutService);
   readonly widgetFocusService = inject(WidgetFocusService);
   protected readonly canvasResetService = inject(CanvasResetService);
+  protected readonly personaService = inject(PersonaService);
 
   protected abstract getEngineConfig(): DashboardLayoutConfig;
 
@@ -33,6 +35,25 @@ export abstract class DashboardPageBase {
 
   private readonly _registerEngineDestroy = this.destroyRef.onDestroy(() => {
     this.engine.destroy();
+  });
+
+  private _prevPersonaSlug: string | null = null;
+  private _prevLayoutKey: string | null = null;
+  private _prevCanvasKey: string | null = null;
+
+  private readonly _personaSwitchEffect = effect(() => {
+    const slug = this.personaService.activePersonaSlug();
+    if (this._prevPersonaSlug !== null && this._prevPersonaSlug !== slug) {
+      const prevLK = this._prevLayoutKey;
+      const prevCK = this._prevCanvasKey;
+      untracked(() => {
+        this.engine.reinitLayout(prevLK ?? undefined, prevCK ?? undefined);
+        this.applyInitialHeaderLock();
+      });
+    }
+    this._prevPersonaSlug = slug;
+    this._prevLayoutKey = this.engine.currentLayoutKey;
+    this._prevCanvasKey = this.engine.currentCanvasKey;
   });
 
   private readonly _resetWidgetsEffect = effect(() => {

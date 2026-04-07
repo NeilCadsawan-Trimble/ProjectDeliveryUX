@@ -46,4 +46,30 @@ describe('FinancialsPageComponent (template regression)', () => {
       expect(SRC).not.toContain('cleanupOverlaps');
     });
   });
+
+  describe('persona routing', () => {
+    it('accesses personaService (inherited from DashboardPageBase)', () => {
+      expect(SRC).toContain('personaService');
+    });
+
+    it('has pp getter for persona prefix', () => {
+      expect(SRC).toContain('get pp()');
+    });
+
+    it('does not contain hardcoded /financials route navigation', () => {
+      const hardcoded = SRC.match(/navigate\(\['\/(financials|project)'/g);
+      expect(hardcoded).toBeNull();
+    });
+
+    it('storage keys include persona slug', () => {
+      expect(SRC).toContain('activePersonaSlug()');
+      expect(SRC).toMatch(/layoutStorageKey:\s*\(\)/);
+      expect(SRC).toMatch(/canvasStorageKey:\s*\(\)/);
+    });
+
+    it('finSubNavItems uses getPersonaNav for persona-driven subnav', () => {
+      expect(SRC).toContain('getPersonaNav');
+      expect(SRC).toContain('financialsPageSubNav');
+    });
+  });
 });

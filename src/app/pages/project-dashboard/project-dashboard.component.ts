@@ -38,7 +38,7 @@ import {
   capitalizeStatus as getCapitalizedStatus,
 } from '../../data/dashboard-item-status';
 import { DrawingMarkupToolbarComponent, DRAWING_TOOLS } from '../../shared/detail/drawing-markup-toolbar.component';
-import { WidgetFrameComponent } from './components/widget-frame.component';
+import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
 import { PdfViewerComponent } from '../../shared/detail/pdf-viewer.component';
 import { PanoramaViewerComponent } from '../../shared/detail/panorama-viewer.component';
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
@@ -46,6 +46,8 @@ import { UserMenuComponent } from '../../shell/components/user-menu.component';
 import { TrimbleLogoComponent } from '../../shell/components/trimble-logo.component';
 
 import { ThemeService } from '../../services/theme.service';
+import { PersonaService } from '../../services/persona.service';
+import { getPersonaNav } from '../../data/persona-nav.config';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
@@ -72,7 +74,6 @@ import { getJobCostSummary, getSubledger, budgetProgressClass, buildUrgentNeeds,
 import { ALL_DRAWINGS_BY_PROJECT, SITE_CAPTURES_BY_PROJECT, type DrawingTile, type SiteCapture } from '../../data/drawings-data';
 import { getAgent, getSuggestions, type AgentDataState, type AgentAlert } from '../../data/widget-agents';
 import { PROJECT_DETAIL_WIDGETS } from '../../data/widget-registrations';
-import { SIDE_NAV_ITEMS, RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, SUBNAV_CONFIGS } from './project-dashboard.config';
 import { ProjectDashboardNavigationService } from './project-dashboard-navigation.service';
 import {
   coerceMainMenuOpenPayload,
@@ -165,8 +166,8 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   protected override getEngineConfig(): DashboardLayoutConfig {
     return {
       widgets: ['projHeader', 'risks', 'milestones', 'tasks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'],
-      layoutStorageKey: () => `project-${this.projectId()}-v5`,
-      canvasStorageKey: () => `canvas-layout:project-${this.projectId()}:v7`,
+      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:project-${this.projectId()}-v5`,
+      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:project-${this.projectId()}:v7`,
       defaultColStarts: { projHeader: 1, risks: 1, milestones: 1, tasks: 1, rfis: 1, submittals: 1, drawing: 12, weather: 12, budget: 12, team: 12, activity: 12 },
       defaultColSpans: { projHeader: 16, risks: 11, milestones: 11, tasks: 11, rfis: 11, submittals: 11, drawing: 5, weather: 5, budget: 5, team: 5, activity: 5 },
       defaultTops: { projHeader: 0, risks: 0, milestones: 368, tasks: 896, rfis: 1312, submittals: 1648, drawing: 0, weather: 432, budget: 688, team: 1152, activity: 1568 },
@@ -199,16 +200,18 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
   private _prevProjectId: number | null = null;
+  private _prevProjectLayoutKey: string | null = null;
+  private _prevProjectCanvasKey: string | null = null;
   private readonly _projectChangeEffect = effect(() => {
     const id = this.projectId();
     if (this._prevProjectId !== null && this._prevProjectId !== id) {
-      const prevId = this._prevProjectId;
-      untracked(() => this.engine.reinitLayout(
-        `project-${prevId}`,
-        `canvas-layout:project-${prevId}:v1`,
-      ));
+      const prevLK = this._prevProjectLayoutKey;
+      const prevCK = this._prevProjectCanvasKey;
+      untracked(() => this.engine.reinitLayout(prevLK ?? undefined, prevCK ?? undefined));
     }
     this._prevProjectId = id;
+    this._prevProjectLayoutKey = this.engine.currentLayoutKey;
+    this._prevProjectCanvasKey = this.engine.currentCanvasKey;
   });
 
   readonly isCanvas = this.isCanvasMode;
@@ -250,7 +253,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   );
 
   readonly tileCanvas = new SubpageTileCanvas({
-    storageKey: () => `tile-canvas:project-${this.projectId()}:${this.activeNavItem()}:${this.activeSubpage()}:v2`,
+    storageKey: () => `${this.personaService.activePersonaSlug()}:tile-canvas:project-${this.projectId()}:${this.activeNavItem()}:${this.activeSubpage()}:v2`,
     lockedIds: ['tc-subnav', 'tc-toolbar', 'tc-title', 'tc-list', 'tc-weather', 'tc-fin-kpis'],
     tileWidth: 308,
     tileHeight: 260,
@@ -613,7 +616,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     return page === 'records' || page === 'financials';
   });
 
-  readonly sideNavItems = SIDE_NAV_ITEMS;
+  readonly sideNavItems = computed(() => getPersonaNav(this.personaService.activePersonaSlug()).projectSideNav);
 
   readonly subnavSearch = signal('');
   readonly subnavViewMode = signal<'grid' | 'list'>('grid');
@@ -621,21 +624,21 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly toolbarMoreOpen = signal(false);
   readonly toolbarSearchOpen = signal(false);
 
-  readonly recordsSubNavItems = RECORDS_SUB_NAV_ITEMS;
+  readonly recordsSubNavItems = computed(() => getPersonaNav(this.personaService.activePersonaSlug()).recordsSubNav);
   readonly sideSubNavCollapsed = signal(false);
   readonly activeRecordsPage = signal('daily-reports');
   readonly activeRecordsPageLabel = computed(() => {
-    const item = this.recordsSubNavItems.find(i => i.value === this.activeRecordsPage());
+    const item = this.recordsSubNavItems().find(i => i.value === this.activeRecordsPage());
     return item?.label ?? 'Daily Reports';
   });
   readonly activeRecordsPageDescription = computed(() =>
     RECORDS_PAGE_DESCRIPTIONS[this.activeRecordsPage()] ?? ''
   );
 
-  readonly financialsSubNavItems = FINANCIALS_SUB_NAV_ITEMS;
+  readonly financialsSubNavItems = computed(() => getPersonaNav(this.personaService.activePersonaSlug()).projectFinancialsSubNav);
   readonly activeFinancialsPage = signal('budget');
   readonly activeFinancialsPageLabel = computed(() => {
-    const item = this.financialsSubNavItems.find(i => i.value === this.activeFinancialsPage());
+    const item = this.financialsSubNavItems().find(i => i.value === this.activeFinancialsPage());
     return item?.label ?? 'Budget';
   });
   readonly activeFinancialsPageDescription = computed(() =>
@@ -649,9 +652,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   private static readonly FINANCIALS_INVOICE_PAGES = new Set(['contract-invoices', 'general-invoices']);
   readonly activeFinancialsSubnavConfig = computed(() => {
     const page = this.activeFinancialsPage();
-    if (ProjectDashboardComponent.FINANCIALS_TILE_PAGES.has(page)) return this.subnavConfigs['financials-tiles'];
-    if (ProjectDashboardComponent.FINANCIALS_INVOICE_PAGES.has(page)) return this.subnavConfigs['financials-invoices'];
-    return this.subnavConfigs['financials'];
+    if (ProjectDashboardComponent.FINANCIALS_TILE_PAGES.has(page)) return this.subnavConfigs()['financials-tiles'];
+    if (ProjectDashboardComponent.FINANCIALS_INVOICE_PAGES.has(page)) return this.subnavConfigs()['financials-invoices'];
+    return this.subnavConfigs()['financials'];
   });
 
   private static readonly FIN_PAGES_WITH_KPIS = new Set([
@@ -928,7 +931,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     SITE_CAPTURES_BY_PROJECT[this.projectId()] ?? SITE_CAPTURES_BY_PROJECT[1]
   );
 
-  readonly subnavConfigs = SUBNAV_CONFIGS;
+  readonly subnavConfigs = computed(() => getPersonaNav(this.personaService.activePersonaSlug()).subnavConfigs);
 
   private readonly gridRef = viewChild<ElementRef>('widgetGrid');
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
@@ -952,10 +955,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this.navbarSearchQuery.set(target?.value ?? '');
   }
 
-  readonly userCard: INavbarUserCard = {
-    name: 'Frank Mendoza',
-    email: 'frank.mendoza@trimble.com',
-  };
+  readonly userCard = computed<INavbarUserCard>(() => this.personaService.userCard());
 
   readonly projectName = computed(() => this.projectData().name);
   readonly projectStatus = computed(() => this.projectData().status);
@@ -1678,15 +1678,15 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
   navigateToPurchaseOrder(po: PurchaseOrder): void {
-    this.router.navigate(['/financials/purchase-orders', po.id]);
+    this.router.navigate([`/${this.personaService.activePersonaSlug()}/financials/purchase-orders`, po.id]);
   }
 
   navigateToInvoice(inv: Invoice): void {
-    this.router.navigate(['/financials/invoices', inv.id]);
+    this.router.navigate([`/${this.personaService.activePersonaSlug()}/financials/invoices`, inv.id]);
   }
 
   navigateToPayable(p: Payable): void {
-    this.router.navigate(['/financials/payables', p.id]);
+    this.router.navigate([`/${this.personaService.activePersonaSlug()}/financials/payables`, p.id]);
   }
 
   onLinkedCoClick(coId: string): void {
@@ -1832,7 +1832,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const nav = this.activeNavItem();
     if (nav === 'records') return this.activeRecordsPageLabel();
     if (nav === 'financials') return this.activeFinancialsPageLabel();
-    const item = this.sideNavItems.find(i => i.value === nav);
+    const item = this.sideNavItems().find(i => i.value === nav);
     if (item) return item.label;
     return 'Dashboard';
   });
@@ -1865,9 +1865,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       currentPageLabel: () => this.currentPageLabel(),
       drawingTiles: () => this.drawingTiles(),
       siteCaptures: () => this.siteCaptures(),
-      sideNavItems: this.sideNavItems,
-      recordsSubNavItems: this.recordsSubNavItems,
-      financialsSubNavItems: this.financialsSubNavItems,
+      sideNavItems: this.sideNavItems(),
+      recordsSubNavItems: this.recordsSubNavItems(),
+      financialsSubNavItems: this.financialsSubNavItems(),
       resetDrawingZoom: () => this.resetDrawingZoom(),
       tileCanvas: this.tileCanvas,
       widgetFocus: this.widgetFocusService,
@@ -1910,7 +1910,13 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
   navigateHome(): void {
-    this.router.navigate(['/']);
+    this.router.navigate([`/${this.personaService.activePersonaSlug()}`]);
+  }
+
+  onPersonaSwitch(targetSlug: string): void {
+    this.store.switchToPersona(targetSlug);
+    this.personaService.setActivePersona(targetSlug);
+    void this.router.navigateByUrl(`/${targetSlug}`);
   }
 
   readonly navBackRoute = signal('/projects');
@@ -2113,7 +2119,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       return `${name} / ${sub}`;
     }
 
-    const sideItem = this.sideNavItems.find(i => i.value === nav);
+    const sideItem = this.sideNavItems().find(i => i.value === nav);
     return sideItem ? `${name} / ${sideItem.label}` : name;
   });
 

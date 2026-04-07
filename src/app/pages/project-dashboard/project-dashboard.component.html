@@ -112,7 +112,7 @@
     <ng-template #detailContent>
       <div [class]="isCanvasDrawingDetail() || isCanvasPanoramaDetail() ? 'canvas-detail-constrained' : ''">
         <div class="transition-all duration-200" [style.margin-left.px]="detailHasSubNav() && !isMobile() ? (sideSubNavCollapsed() ? 106 : 16) : 0">
-          <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detailSubnavKey()] }" />
+          <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()[detailSubnavKey()] }" />
         </div>
         <div class="transition-[padding] duration-200" [class.md:pl-4]="!sideSubNavCollapsed()">
         @if (detailRfi(); as rfi) {
@@ -263,7 +263,7 @@
               <app-collapsible-subnav
                 icon="clipboard"
                 title="Records"
-                [items]="recordsSubNavItems"
+                [items]="recordsSubNavItems()"
                 [activeItem]="activeRecordsPage()"
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="recordsAlerts()"
@@ -277,7 +277,7 @@
               <app-collapsible-subnav
                 icon="bar_graph"
                 title="Financials"
-                [items]="financialsSubNavItems"
+                [items]="financialsSubNavItems()"
                 [activeItem]="activeFinancialsPage()"
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="financialsAlerts()"
@@ -315,7 +315,7 @@
               [style.width.px]="1280"
               [style.height.px]="56"
             >
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['drawings'] }" />
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['drawings'] }" />
             </div>
             <!-- Locked: List widget (list view mode) -->
             @if (subnavViewMode() === 'list') {
@@ -405,7 +405,7 @@
         <div class="flex items-center justify-between mb-6">
           <div class="text-2xl font-bold text-foreground">Drawings ({{ drawingTiles().length }})</div>
         </div>
-        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['drawings'] }" />
+        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['drawings'] }" />
         <div class="flex flex-col gap-6">
           @if (subnavViewMode() === 'grid') {
             <div class="grid gap-4" [style.grid-template-columns]="drawingTileGridStyle()">
@@ -478,7 +478,7 @@
               <div class="text-2xl font-bold text-foreground">Models</div>
             </div>
             <div class="absolute" [style.top.px]="56" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['models'] }" />
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['models'] }" />
             </div>
             <div class="absolute" [style.top.px]="128" [style.left.px]="0">
               <app-empty-state icon="cube" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
@@ -488,7 +488,7 @@
         <div class="flex items-center justify-between mb-6">
           <div class="text-2xl font-bold text-foreground">Models</div>
         </div>
-        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['models'] }" />
+        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['models'] }" />
         <div class="flex flex-col gap-6">
           <app-empty-state icon="cube" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
         </div>
@@ -516,7 +516,7 @@
               <app-collapsible-subnav
                 icon="clipboard"
                 title="Records"
-                [items]="recordsSubNavItems"
+                [items]="recordsSubNavItems()"
                 [activeItem]="activeRecordsPage()"
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="recordsAlerts()"
@@ -533,7 +533,7 @@
               [style.width.px]="tilePos()['tc-toolbar']?.width ?? tileToolbarWidth()"
               [style.height.px]="tilePos()['tc-toolbar']?.height ?? 56"
             >
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['records'] }" />
             </div>
             <!-- Locked: Weather forecast strip (daily reports only) -->
             @if (activeRecordsPage() === 'daily-reports') {
@@ -1351,7 +1351,7 @@
               <app-collapsible-subnav
                 icon="clipboard"
                 title="Records"
-                [items]="recordsSubNavItems"
+                [items]="recordsSubNavItems()"
                 [activeItem]="activeRecordsPage()"
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="recordsAlerts()"
@@ -1363,7 +1363,7 @@
             }
           <div class="flex-1 flex flex-col gap-6 min-w-0">
             <div class="transition-all duration-200" [style.margin-left.px]="isMobile() ? 0 : (sideSubNavCollapsed() ? 106 : 16)">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['records'] }" />
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['records'] }" />
             </div>
             <div class="transition-[padding] duration-200" [class.md:pl-4]="!sideSubNavCollapsed()">
             @if (activeRecordsPage() === 'rfis') {
@@ -1523,7 +1523,7 @@
               <div class="text-2xl font-bold text-foreground">Site Captures ({{ siteCaptures().length }})</div>
             </div>
             <div class="absolute" [style.top.px]="56" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['fieldCaptures'] }" />
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['fieldCaptures'] }" />
             </div>
             @if (subnavViewMode() === 'list') {
               <div class="absolute" [style.top.px]="128" [style.left.px]="0" [style.width.px]="1280">
@@ -1591,7 +1591,7 @@
         <div class="flex items-center justify-between mb-6">
           <div class="text-2xl font-bold text-foreground">Site Captures ({{ siteCaptures().length }})</div>
         </div>
-        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['fieldCaptures'] }" />
+        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['fieldCaptures'] }" />
         <div class="flex flex-col gap-6">
           @if (subnavViewMode() === 'grid') {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -1669,7 +1669,7 @@
               <app-collapsible-subnav
                 icon="bar_graph"
                 title="Financials"
-                [items]="financialsSubNavItems"
+                [items]="financialsSubNavItems()"
                 [activeItem]="activeFinancialsPage()"
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="financialsAlerts()"
@@ -2599,7 +2599,7 @@
               <app-collapsible-subnav
                 icon="bar_graph"
                 title="Financials"
-                [items]="financialsSubNavItems"
+                [items]="financialsSubNavItems()"
                 [activeItem]="activeFinancialsPage()"
                 [collapsed]="sideSubNavCollapsed()"
                 [alerts]="financialsAlerts()"
@@ -2656,7 +2656,7 @@
               <div class="text-2xl font-bold text-foreground">Files</div>
             </div>
             <div class="absolute" [style.top.px]="56" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
-              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['files'] }" />
+              <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['files'] }" />
             </div>
             <div class="absolute" [style.top.px]="128" [style.left.px]="0">
               <app-empty-state icon="folder_closed" title="Project Files" description="Manage project documents, shared files, and folder structures." />
@@ -2666,7 +2666,7 @@
         <div class="flex items-center justify-between mb-6">
           <div class="text-2xl font-bold text-foreground">Files</div>
         </div>
-        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs['files'] }" />
+        <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['files'] }" />
         <div class="flex flex-col gap-6">
           <app-empty-state icon="folder_closed" title="Project Files" description="Manage project documents, shared files, and folder structures." />
         </div>
@@ -2765,7 +2765,7 @@
                     <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
                   </div>
                 </div>
-                <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs[detail.type === 'rfi' ? 'rfi-detail' : detail.type === 'drawing' ? 'drawing-detail' : 'submittal-detail'] }" />
+                <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()[detail.type === 'rfi' ? 'rfi-detail' : detail.type === 'drawing' ? 'drawing-detail' : 'submittal-detail'] }" />
                 <div class="flex-1 overflow-y-auto p-5">
                   @if (detail.type === 'rfi') {
                     <app-item-detail-view
@@ -2843,10 +2843,10 @@
 
               @switch (wId) {
                 @case ('milestones') {
-              <app-widget-frame icon="flag" title="Milestones" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('milestones')"
+              <app-widget-frame icon="flag" title="Milestones" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('milestones')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ completedMilestones() }}/{{ milestones().length }} Complete</div>
+                <div headerTrailing class="text-xs text-foreground-60">{{ completedMilestones() }}/{{ milestones().length }} Complete</div>
                 <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
                   @for (ms of milestones(); track ms.id) {
                     <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
@@ -2885,11 +2885,11 @@
                 }
 
                 @case ('tasks') {
-              <app-widget-frame icon="clipboard" title="Key Tasks" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+              <app-widget-frame icon="clipboard" title="Key Tasks" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
                 [insight]="getWidgetInsight('tasks')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ openTaskCount() }} Open</div>
+                <div headerTrailing class="text-xs text-foreground-60">{{ openTaskCount() }} Open</div>
                 <div class="p-4 flex flex-col gap-2 overflow-y-auto flex-1">
                   @for (task of tasks(); track task.id) {
                     <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
@@ -2910,10 +2910,10 @@
                 }
 
                 @case ('risks') {
-              <app-widget-frame icon="warning" title="Risks &amp; Urgent Needs" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('risks')"
+              <app-widget-frame icon="warning" title="Risks &amp; Urgent Needs" iconClass="text-warning" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('risks')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ filteredRisks().length + filteredProjectUrgentNeeds().length }} of {{ risks().length + projectUrgentNeeds().length }}</div>
+                <div headerTrailing class="text-xs text-foreground-60">{{ filteredRisks().length + filteredProjectUrgentNeeds().length }} of {{ risks().length + projectUrgentNeeds().length }}</div>
                 @if (filteredProjectUrgentNeeds().length > 0) {
                   <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
                     <div class="text-xs font-medium text-destructive">{{ filteredProjectUrgentNeeds().length }} urgent</div>
@@ -2997,7 +2997,7 @@
                 }
 
                 @case ('rfis') {
-              <app-widget-frame icon="clipboard" title="RFIs" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsRfis')"
+              <app-widget-frame icon="clipboard" title="RFIs" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsRfis')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 @if (rfiOverdueCount() > 0) {
@@ -3005,7 +3005,7 @@
                     <div class="text-xs font-medium text-destructive">{{ rfiOverdueCount() }} overdue</div>
                   </div>
                 }
-                <div headerMeta class="text-xs text-foreground-60">{{ projectRfis().length }} Total</div>
+                <div headerTrailing class="text-xs text-foreground-60">{{ projectRfis().length }} Total</div>
                 @if (isRfiCompact()) {
                   <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
                     @for (item of rfiCompactItems; track item.key) {
@@ -3068,7 +3068,7 @@
                 }
 
                 @case ('submittals') {
-              <app-widget-frame icon="document" title="Submittals" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsSubmittals')"
+              <app-widget-frame icon="document" title="Submittals" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsSubmittals')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 @if (submittalOverdueCount() > 0) {
@@ -3076,7 +3076,7 @@
                     <div class="text-xs font-medium text-destructive">{{ submittalOverdueCount() }} overdue</div>
                   </div>
                 }
-                <div headerMeta class="text-xs text-foreground-60">{{ projectSubmittals().length }} Total</div>
+                <div headerTrailing class="text-xs text-foreground-60">{{ projectSubmittals().length }} Total</div>
                 @if (isSubmittalCompact()) {
                   <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
                     @for (item of submittalCompactItems; track item.key) {
@@ -3139,10 +3139,10 @@
                 }
 
                 @case ('drawing') {
-              <app-widget-frame icon="floorplan" title="Latest Drawing" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('drawing')"
+              <app-widget-frame icon="floorplan" title="Latest Drawing" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('drawing')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="text-xs text-foreground-60">{{ latestDrawing().version }}</div>
+                <div headerTrailing class="text-xs text-foreground-60">{{ latestDrawing().version }}</div>
                 <div class="overflow-y-auto flex-1 cursor-pointer hover:opacity-90 transition-opacity duration-150" role="button" tabindex="0"
                   [attr.aria-label]="'Open drawing: ' + newestDrawingTile().title"
                   (click)="openLatestDrawing()"
@@ -3163,7 +3163,7 @@
                 }
 
                 @case ('budget') {
-              <app-widget-frame icon="bar_graph" title="Budget" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('budget')"
+              <app-widget-frame icon="bar_graph" title="Budget" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('budget')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1 cursor-pointer"
@@ -3202,10 +3202,10 @@
                 }
 
                 @case ('team') {
-              <app-widget-frame icon="people_group" title="Team" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('team')"
+              <app-widget-frame icon="people_group" title="Team" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('team')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="flex items-center gap-3">
+                <div headerTrailing class="flex items-center gap-3">
                   @if (projectStaffingConflicts().length) {
                     <div class="flex items-center gap-1 px-2 py-0.5 rounded-full"
                       [class.bg-destructive-20]="projectStaffingConflicts()[0].severity === 'critical'"
@@ -3516,10 +3516,10 @@
 
                 @case ('weather') {
               @if (projectWeather(); as pw) {
-              <app-widget-frame icon="sun" [title]="projectCity()" iconClass="text-warning" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('weather')"
+              <app-widget-frame icon="sun" [title]="projectCity()" iconClass="text-warning" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('weather')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div headerMeta class="flex items-center gap-1.5">
+                <div headerTrailing class="flex items-center gap-1.5">
                   <i class="modus-icons text-lg" [class]="weatherIconColor(pw.current.condition)" aria-hidden="true">{{ weatherIcon(pw.current.condition) }}</i>
                   <div class="text-lg font-semibold text-foreground">{{ pw.current.tempF }}&deg;F</div>
                 </div>
@@ -3570,7 +3570,7 @@
                 }
 
                 @case ('activity') {
-              <app-widget-frame icon="history" title="Recent Activity" [isSelected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('activity')"
+              <app-widget-frame icon="history" title="Recent Activity" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('activity')"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
@@ -3708,8 +3708,10 @@
                 <i class="modus-icons text-lg" aria-hidden="true">help</i>
               </div>
               <user-menu
-                [name]="userCard.name"
-                [email]="userCard.email"
+                [name]="userCard().name"
+                [email]="userCard().email"
+                [activePersonaSlug]="personaService.activePersonaSlug()"
+                (personaSwitch)="onPersonaSwitch($event)"
               />
             </div>
           </div>
@@ -3717,7 +3719,7 @@
 
         <div class="canvas-side-nav" [class.expanded]="navExpanded()">
           <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
-            @for (item of sideNavItems; track item.value) {
+            @for (item of sideNavItems(); track item.value) {
               <div
                 class="custom-side-nav-item"
                 [class.selected]="activeNavItem() === item.value"
@@ -4006,8 +4008,10 @@
             </div>
           }
           <user-menu
-            [name]="userCard.name"
-            [email]="userCard.email"
+            [name]="userCard().name"
+            [email]="userCard().email"
+            [activePersonaSlug]="personaService.activePersonaSlug()"
+            (personaSwitch)="onPersonaSwitch($event)"
           />
         </div>
       </div>
@@ -4034,7 +4038,7 @@
       @if (!isMobile() || navExpanded()) {
         <div class="custom-side-nav" [class.expanded]="navExpanded()">
           <div class="flex flex-col flex-1 min-h-0">
-            @for (item of sideNavItems; track item.value) {
+            @for (item of sideNavItems(); track item.value) {
               <div
                 class="custom-side-nav-item"
                 [class.selected]="activeNavItem() === item.value"
@@ -4148,7 +4152,7 @@
                 }
               </div>
               <div class="flex-1 overflow-y-auto min-h-0">
-                @for (item of recordsSubNavItems; track item.value) {
+                @for (item of recordsSubNavItems(); track item.value) {
                   <div
                     class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150"
                     [class.bg-primary]="activeRecordsPage() === item.value"
@@ -4205,7 +4209,7 @@
                 }
               </div>
               <div class="flex-1 overflow-y-auto min-h-0">
-                @for (item of financialsSubNavItems; track item.value) {
+                @for (item of financialsSubNavItems(); track item.value) {
                   <div
                     class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150"
                     [class.bg-primary]="activeFinancialsPage() === item.value"
@@ -4656,7 +4660,7 @@
 
     <ng-template #budgetBreakdownContent let-jcP="jcP">
       <app-widget-frame icon="bar_graph" title="Cost Breakdown"
-        [isSelected]="selectedWidgetId() === 'tile-budget-breakdown'" [isMobile]="isMobile()"
+        [selected]="selectedWidgetId() === 'tile-budget-breakdown'" [isMobile]="isMobile()"
         (headerMouseDown)="onBudgetTileMouseDown('tile-budget-breakdown', $event)"
         (resizeStart)="onBudgetTileResizeStart('tile-budget-breakdown', $event)">
         <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1">
@@ -4718,10 +4722,10 @@
     <ng-template #budgetProfitFadeContent let-jcP="jcP">
       @if (jcProfitFadeData(); as pf) {
       <app-widget-frame icon="arrow_up" title="Profit Fade / Gain"
-        [isSelected]="selectedWidgetId() === 'tile-budget-profitfade'" [isMobile]="isMobile()"
+        [selected]="selectedWidgetId() === 'tile-budget-profitfade'" [isMobile]="isMobile()"
         (headerMouseDown)="onBudgetTileMouseDown('tile-budget-profitfade', $event)"
         (resizeStart)="onBudgetTileResizeStart('tile-budget-profitfade', $event)">
-        <div class="px-2.5 py-1 rounded-full text-xs font-semibold {{ pf.isFade ? 'bg-destructive-20 text-destructive' : 'bg-success-20 text-success' }}" headerMeta>
+        <div class="px-2.5 py-1 rounded-full text-xs font-semibold {{ pf.isFade ? 'bg-destructive-20 text-destructive' : 'bg-success-20 text-success' }}" headerTrailing>
           {{ pf.isFade ? 'Fade' : 'Gain' }} {{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%
         </div>
         <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1">
@@ -4787,7 +4791,7 @@
 
     <ng-template #budgetCostSummaryContent let-jcP="jcP">
       <app-widget-frame icon="list_bulleted" title="Cost Summary"
-        [isSelected]="selectedWidgetId() === 'tile-budget-costsummary'" [isMobile]="isMobile()"
+        [selected]="selectedWidgetId() === 'tile-budget-costsummary'" [isMobile]="isMobile()"
         (headerMouseDown)="onBudgetTileMouseDown('tile-budget-costsummary', $event)"
         (resizeStart)="onBudgetTileResizeStart('tile-budget-costsummary', $event)">
         <div class="overflow-y-auto flex-1">

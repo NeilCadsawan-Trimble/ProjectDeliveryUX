@@ -96,8 +96,85 @@ function parseAmount(s: string): number {
   return parseFloat(clean);
 }
 
+interface PersonaSnapshot {
+  rfis: Rfi[];
+  submittals: Submittal[];
+  changeOrders: ChangeOrder[];
+  estimates: Estimate[];
+  timeOffRequests: TimeOffRequest[];
+  projects: Project[];
+  projectDetailData: Record<number, ProjectDashboardData>;
+  weatherData: ProjectWeather[];
+  budgetHistory: Record<number, BudgetHistoryPoint[]>;
+  invoices: Invoice[];
+  billingEvents: BillingEvent[];
+  billingSchedules: BillingSchedule[];
+  payables: Payable[];
+  cashFlowHistory: CashFlowEntry[];
+  cashPosition: CashPosition;
+  glAccounts: GLAccount[];
+  glEntries: GLEntry[];
+  purchaseOrders: PurchaseOrder[];
+  payrollRecords: PayrollRecord[];
+  contracts: Contract[];
+  subcontractLedger: SubcontractLedgerEntry[];
+  inspections: Inspection[];
+  punchListItems: PunchListItem[];
+  activities: ActivityItem[];
+  calendarAppointments: CalendarAppointment[];
+  projectCalendarEvents: ProjectCalendarEvent[];
+  dailyReports: DailyReport[];
+  projectRevenue: ProjectRevenue[];
+  monthlyRevenue: Record<RevenueTimeRange, RevenueDataPoint[]>;
+  annualTotals: Record<RevenueTimeRange, { current: number; previous: number; label: string }>;
+  weatherForecast: WeatherForecast[];
+  projectAttentionItems: ProjectAttentionItem[];
+  attentionItems: AttentionItem[];
+}
+
+function createFreshSnapshot(): PersonaSnapshot {
+  return {
+    rfis: [...RFIS_SEED],
+    submittals: [...SUBMITTALS_SEED],
+    changeOrders: [...CHANGE_ORDERS],
+    estimates: [...ESTIMATES],
+    timeOffRequests: [...TIME_OFF_REQUESTS],
+    projects: [...PROJECTS],
+    projectDetailData: structuredClone(PROJECT_DATA),
+    weatherData: [...PROJECT_WEATHER_DATA],
+    budgetHistory: structuredClone(BUDGET_HISTORY_BY_PROJECT),
+    invoices: [...INVOICES],
+    billingEvents: [...BILLING_EVENTS],
+    billingSchedules: [...BILLING_SCHEDULES],
+    payables: [...PAYABLES],
+    cashFlowHistory: [...CASH_FLOW_HISTORY],
+    cashPosition: { ...CASH_POSITION },
+    glAccounts: [...GL_ACCOUNTS],
+    glEntries: [...GL_ENTRIES],
+    purchaseOrders: [...PURCHASE_ORDERS],
+    payrollRecords: [...PAYROLL_RECORDS],
+    contracts: [...CONTRACTS],
+    subcontractLedger: [...SUBCONTRACT_LEDGER],
+    inspections: [...INSPECTIONS],
+    punchListItems: [...PUNCH_LIST_ITEMS],
+    activities: [...ACTIVITIES],
+    calendarAppointments: [...CALENDAR_APPOINTMENTS],
+    projectCalendarEvents: [...PROJECT_CALENDAR_EVENTS],
+    dailyReports: [...DAILY_REPORTS],
+    projectRevenue: [...PROJECT_REVENUE],
+    monthlyRevenue: structuredClone(MONTHLY_REVENUE),
+    annualTotals: structuredClone(ANNUAL_TOTALS),
+    weatherForecast: [...WEATHER_FORECAST],
+    projectAttentionItems: [...PROJECT_ATTENTION_ITEMS],
+    attentionItems: [...ATTENTION_ITEMS],
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class DataStoreService {
+  private readonly personaStateMap = new Map<string, PersonaSnapshot>();
+  private currentPersonaSlug = 'frank';
+
   readonly rfis = signal<Rfi[]>([...RFIS_SEED]);
   readonly submittals = signal<Submittal[]>([...SUBMITTALS_SEED]);
   readonly changeOrders = signal<ChangeOrder[]>([...CHANGE_ORDERS]);
@@ -133,6 +210,89 @@ export class DataStoreService {
   readonly weatherForecast = signal<WeatherForecast[]>([...WEATHER_FORECAST]);
   readonly projectAttentionItems = signal<ProjectAttentionItem[]>([...PROJECT_ATTENTION_ITEMS]);
   readonly attentionItems = signal<AttentionItem[]>([...ATTENTION_ITEMS]);
+
+  switchToPersona(slug: string): void {
+    if (slug === this.currentPersonaSlug) return;
+    this.personaStateMap.set(this.currentPersonaSlug, this.takeSnapshot());
+    const cached = this.personaStateMap.get(slug);
+    const snapshot = cached ?? createFreshSnapshot();
+    this.loadSnapshot(snapshot);
+    this.currentPersonaSlug = slug;
+  }
+
+  private takeSnapshot(): PersonaSnapshot {
+    return {
+      rfis: this.rfis(),
+      submittals: this.submittals(),
+      changeOrders: this.changeOrders(),
+      estimates: this.estimates(),
+      timeOffRequests: this.timeOffRequests(),
+      projects: this.projects(),
+      projectDetailData: this.projectDetailData(),
+      weatherData: this.weatherData(),
+      budgetHistory: this.budgetHistory(),
+      invoices: this.invoices(),
+      billingEvents: this.billingEvents(),
+      billingSchedules: this.billingSchedules(),
+      payables: this.payables(),
+      cashFlowHistory: this.cashFlowHistory(),
+      cashPosition: this.cashPosition(),
+      glAccounts: this.glAccounts(),
+      glEntries: this.glEntries(),
+      purchaseOrders: this.purchaseOrders(),
+      payrollRecords: this.payrollRecords(),
+      contracts: this.contracts(),
+      subcontractLedger: this.subcontractLedger(),
+      inspections: this.inspections(),
+      punchListItems: this.punchListItems(),
+      activities: this.activities(),
+      calendarAppointments: this.calendarAppointments(),
+      projectCalendarEvents: this.projectCalendarEvents(),
+      dailyReports: this.dailyReports(),
+      projectRevenue: this.projectRevenue(),
+      monthlyRevenue: this.monthlyRevenue(),
+      annualTotals: this.annualTotals(),
+      weatherForecast: this.weatherForecast(),
+      projectAttentionItems: this.projectAttentionItems(),
+      attentionItems: this.attentionItems(),
+    };
+  }
+
+  private loadSnapshot(s: PersonaSnapshot): void {
+    this.rfis.set(s.rfis);
+    this.submittals.set(s.submittals);
+    this.changeOrders.set(s.changeOrders);
+    this.estimates.set(s.estimates);
+    this.timeOffRequests.set(s.timeOffRequests);
+    this.projects.set(s.projects);
+    this.projectDetailData.set(s.projectDetailData);
+    this.weatherData.set(s.weatherData);
+    this.budgetHistory.set(s.budgetHistory);
+    this.invoices.set(s.invoices);
+    this.billingEvents.set(s.billingEvents);
+    this.billingSchedules.set(s.billingSchedules);
+    this.payables.set(s.payables);
+    this.cashFlowHistory.set(s.cashFlowHistory);
+    this.cashPosition.set(s.cashPosition);
+    this.glAccounts.set(s.glAccounts);
+    this.glEntries.set(s.glEntries);
+    this.purchaseOrders.set(s.purchaseOrders);
+    this.payrollRecords.set(s.payrollRecords);
+    this.contracts.set(s.contracts);
+    this.subcontractLedger.set(s.subcontractLedger);
+    this.inspections.set(s.inspections);
+    this.punchListItems.set(s.punchListItems);
+    this.activities.set(s.activities);
+    this.calendarAppointments.set(s.calendarAppointments);
+    this.projectCalendarEvents.set(s.projectCalendarEvents);
+    this.dailyReports.set(s.dailyReports);
+    this.projectRevenue.set(s.projectRevenue);
+    this.monthlyRevenue.set(s.monthlyRevenue);
+    this.annualTotals.set(s.annualTotals);
+    this.weatherForecast.set(s.weatherForecast);
+    this.projectAttentionItems.set(s.projectAttentionItems);
+    this.attentionItems.set(s.attentionItems);
+  }
 
   readonly projectJobCosts = computed<ProjectJobCost[]>(() => {
     const projs = this.projects();

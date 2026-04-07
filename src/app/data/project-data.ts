@@ -98,7 +98,7 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     summaryStats: [
       { label: 'Schedule', value: '72%', subtext: 'On track', subtextClass: 'text-success' },
       { label: 'Budget Used', value: '$544K', subtext: '68% of $800K', subtextClass: 'text-foreground-60' },
-      { label: 'Team Members', value: '6', subtext: '2 available', subtextClass: 'text-foreground-60' },
+      { label: 'Team Members', value: '7', subtext: '2 available', subtextClass: 'text-foreground-60' },
       { label: 'Due Date', value: 'Nov 30', subtext: '241 days remaining', subtextClass: 'text-foreground-60' },
     ],
     milestones: [
@@ -123,12 +123,13 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 3, title: 'HVAC and electrical conduit routing conflicts', severity: 'low', impact: 'Duct routing clashes with electrical conduit in ceiling plenum on Level 4', mitigation: 'BIM clash detection review scheduled; MEP coordinator resolving spatial conflicts' },
     ],
     team: [
-      { id: 1, initials: 'SC', name: 'Sarah Chen', role: 'Project Manager', tasksCompleted: 14, tasksTotal: 18, availability: 100 },
-      { id: 2, initials: 'PN', name: 'Priya Nair', role: 'Structural Engineer', tasksCompleted: 11, tasksTotal: 15, availability: 80 },
-      { id: 3, initials: 'MO', name: 'Mike Osei', role: 'Site Superintendent', tasksCompleted: 8, tasksTotal: 12, availability: 100 },
-      { id: 4, initials: 'JC', name: 'James Carter', role: 'Safety Manager', tasksCompleted: 5, tasksTotal: 8, availability: 60 },
-      { id: 5, initials: 'LB', name: 'Lena Brooks', role: 'Project Coordinator', tasksCompleted: 7, tasksTotal: 9, availability: 100 },
-      { id: 6, initials: 'TE', name: 'Tom Evans', role: 'MEP Engineer', tasksCompleted: 6, tasksTotal: 10, availability: 40 },
+      { id: 1, initials: 'BH', name: 'Bert Humphries', role: 'Project Manager', tasksCompleted: 16, tasksTotal: 20, availability: 100 },
+      { id: 2, initials: 'SC', name: 'Sarah Chen', role: 'Assistant Project Manager', tasksCompleted: 14, tasksTotal: 18, availability: 100 },
+      { id: 3, initials: 'PN', name: 'Priya Nair', role: 'Structural Engineer', tasksCompleted: 11, tasksTotal: 15, availability: 80 },
+      { id: 4, initials: 'MO', name: 'Mike Osei', role: 'Site Superintendent', tasksCompleted: 8, tasksTotal: 12, availability: 100 },
+      { id: 5, initials: 'JC', name: 'James Carter', role: 'Safety Manager', tasksCompleted: 5, tasksTotal: 8, availability: 60 },
+      { id: 6, initials: 'LB', name: 'Lena Brooks', role: 'Project Coordinator', tasksCompleted: 7, tasksTotal: 9, availability: 100 },
+      { id: 7, initials: 'TE', name: 'Tom Evans', role: 'MEP Engineer', tasksCompleted: 6, tasksTotal: 10, availability: 40 },
     ],
     activity: [
       { id: 1, actorInitials: 'SC', text: 'Completed load balancer configuration for staging', timeAgo: '25 min ago', icon: 'check_circle' },
@@ -157,7 +158,7 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     summaryStats: [
       { label: 'Schedule', value: '45%', subtext: 'At risk', subtextClass: 'text-warning' },
       { label: 'Budget Used', value: '$246K', subtext: '82% of $300K', subtextClass: 'text-destructive font-medium' },
-      { label: 'Team Members', value: '5', subtext: '1 available', subtextClass: 'text-foreground-60' },
+      { label: 'Team Members', value: '6', subtext: '1 available', subtextClass: 'text-foreground-60' },
       { label: 'Due Date', value: 'Apr 30, 2027', subtext: '392 days remaining', subtextClass: 'text-foreground-60' },
     ],
     milestones: [
@@ -182,11 +183,12 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 3, title: 'Concrete pour sequencing delay', severity: 'low', impact: 'Level 5 east wing deck pour behind schedule — blocks window frame installation for units 301-320', mitigation: 'Weekend pour scheduled with batch plant; window crew redirected to completed floors' },
     ],
     team: [
-      { id: 1, initials: 'JC', name: 'James Carter', role: 'General Superintendent', tasksCompleted: 9, tasksTotal: 14, availability: 80 },
-      { id: 2, initials: 'RK', name: 'Rachel Kim', role: 'Interior Design Lead', tasksCompleted: 12, tasksTotal: 16, availability: 100 },
-      { id: 3, initials: 'DL', name: 'David Lin', role: 'Civil Engineer', tasksCompleted: 7, tasksTotal: 11, availability: 100 },
-      { id: 4, initials: 'AW', name: 'Amy Wu', role: 'Estimator', tasksCompleted: 8, tasksTotal: 12, availability: 60 },
-      { id: 5, initials: 'NP', name: 'Nick Park', role: 'Quality Control Inspector', tasksCompleted: 4, tasksTotal: 10, availability: 40 },
+      { id: 1, initials: 'BH', name: 'Bert Humphries', role: 'Project Manager', tasksCompleted: 10, tasksTotal: 16, availability: 100 },
+      { id: 2, initials: 'JC', name: 'James Carter', role: 'General Superintendent', tasksCompleted: 9, tasksTotal: 14, availability: 80 },
+      { id: 3, initials: 'RK', name: 'Rachel Kim', role: 'Interior Design Lead', tasksCompleted: 12, tasksTotal: 16, availability: 100 },
+      { id: 4, initials: 'DL', name: 'David Lin', role: 'Civil Engineer', tasksCompleted: 7, tasksTotal: 11, availability: 100 },
+      { id: 5, initials: 'AW', name: 'Amy Wu', role: 'Estimator', tasksCompleted: 8, tasksTotal: 12, availability: 60 },
+      { id: 6, initials: 'NP', name: 'Nick Park', role: 'Quality Control Inspector', tasksCompleted: 4, tasksTotal: 10, availability: 40 },
     ],
     activity: [
       { id: 1, actorInitials: 'JC', text: 'Resolved gesture conflict on home feed swipe', timeAgo: '30 min ago', icon: 'check_circle' },
@@ -214,7 +216,7 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     summaryStats: [
       { label: 'Schedule', value: '60%', subtext: 'Overdue', subtextClass: 'text-destructive font-medium' },
       { label: 'Budget Used', value: '$855K', subtext: '95% of $900K', subtextClass: 'text-destructive font-medium' },
-      { label: 'Team Members', value: '8', subtext: '1 available', subtextClass: 'text-foreground-60' },
+      { label: 'Team Members', value: '9', subtext: '1 available', subtextClass: 'text-foreground-60' },
       { label: 'Due Date', value: 'Feb 20', subtext: '21 days overdue', subtextClass: 'text-destructive font-medium' },
     ],
     milestones: [
@@ -240,14 +242,15 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 4, title: 'ADA compliance drawing revisions', severity: 'low', impact: 'Transit authority flagged platform access non-compliance — could delay final systems testing', mitigation: 'Revised ADA drawings in progress; pre-submission review with transit authority scheduled' },
     ],
     team: [
-      { id: 1, initials: 'PN', name: 'Priya Nair', role: 'Project Manager', tasksCompleted: 22, tasksTotal: 30, availability: 100 },
-      { id: 2, initials: 'KT', name: 'Karen Torres', role: 'Scheduling Manager', tasksCompleted: 15, tasksTotal: 20, availability: 100 },
-      { id: 3, initials: 'BW', name: 'Brian Walsh', role: 'Structural Engineer', tasksCompleted: 10, tasksTotal: 16, availability: 80 },
-      { id: 4, initials: 'RM', name: 'Rita Moreno', role: 'Permits Coordinator', tasksCompleted: 8, tasksTotal: 12, availability: 60 },
-      { id: 5, initials: 'TE', name: 'Tom Evans', role: 'MEP Coordinator', tasksCompleted: 12, tasksTotal: 14, availability: 40 },
-      { id: 6, initials: 'PN', name: 'Priya Nair', role: 'Quality Assurance Manager', tasksCompleted: 9, tasksTotal: 18, availability: 100 },
-      { id: 7, initials: 'VR', name: 'Vikram Rao', role: 'BIM Manager', tasksCompleted: 6, tasksTotal: 8, availability: 100 },
-      { id: 8, initials: 'LB', name: 'Lena Brooks', role: 'Document Controller', tasksCompleted: 11, tasksTotal: 13, availability: 80 },
+      { id: 1, initials: 'BH', name: 'Bert Humphries', role: 'Project Manager', tasksCompleted: 24, tasksTotal: 32, availability: 100 },
+      { id: 2, initials: 'PN', name: 'Priya Nair', role: 'Senior Engineer', tasksCompleted: 22, tasksTotal: 30, availability: 100 },
+      { id: 3, initials: 'KT', name: 'Karen Torres', role: 'Scheduling Manager', tasksCompleted: 15, tasksTotal: 20, availability: 100 },
+      { id: 4, initials: 'BW', name: 'Brian Walsh', role: 'Structural Engineer', tasksCompleted: 10, tasksTotal: 16, availability: 80 },
+      { id: 5, initials: 'RM', name: 'Rita Moreno', role: 'Permits Coordinator', tasksCompleted: 8, tasksTotal: 12, availability: 60 },
+      { id: 6, initials: 'TE', name: 'Tom Evans', role: 'MEP Coordinator', tasksCompleted: 12, tasksTotal: 14, availability: 40 },
+      { id: 7, initials: 'PN', name: 'Priya Nair', role: 'Quality Assurance Manager', tasksCompleted: 9, tasksTotal: 18, availability: 100 },
+      { id: 8, initials: 'VR', name: 'Vikram Rao', role: 'BIM Manager', tasksCompleted: 6, tasksTotal: 8, availability: 100 },
+      { id: 9, initials: 'LB', name: 'Lena Brooks', role: 'Document Controller', tasksCompleted: 11, tasksTotal: 13, availability: 80 },
     ],
     activity: [
       { id: 1, actorInitials: 'PN', text: 'Escalated critical defect to vendor support team', timeAgo: '45 min ago', icon: 'warning' },
@@ -275,7 +278,7 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     summaryStats: [
       { label: 'Schedule', value: '35%', subtext: 'On track', subtextClass: 'text-success' },
       { label: 'Budget Used', value: '$150K', subtext: '30% of $500K', subtextClass: 'text-foreground-60' },
-      { label: 'Team Members', value: '7', subtext: '3 available', subtextClass: 'text-foreground-60' },
+      { label: 'Team Members', value: '8', subtext: '3 available', subtextClass: 'text-foreground-60' },
       { label: 'Due Date', value: 'Aug 15, 2027', subtext: '499 days remaining', subtextClass: 'text-foreground-60' },
     ],
     milestones: [
@@ -300,13 +303,14 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 3, title: 'Healthcare code inspection sequencing', severity: 'low', impact: 'Health department requires sequential inspections that could create 5-7 day hold points between phases', mitigation: 'Pre-scheduled inspection windows with health department; parallel prep for next phase during holds' },
     ],
     team: [
-      { id: 1, initials: 'TE', name: 'Tom Evans', role: 'Project Director', tasksCompleted: 8, tasksTotal: 14, availability: 100 },
-      { id: 2, initials: 'AJ', name: 'Anita Joshi', role: 'Biomedical Equipment Planner', tasksCompleted: 6, tasksTotal: 10, availability: 100 },
-      { id: 3, initials: 'MO', name: 'Mike Osei', role: 'Site Superintendent', tasksCompleted: 4, tasksTotal: 8, availability: 60 },
-      { id: 4, initials: 'CH', name: 'Chris Hall', role: 'Cost Engineer', tasksCompleted: 5, tasksTotal: 9, availability: 100 },
-      { id: 5, initials: 'SP', name: 'Sara Park', role: 'Contract Administrator', tasksCompleted: 3, tasksTotal: 6, availability: 80 },
-      { id: 6, initials: 'RK', name: 'Rachel Kim', role: 'Architect', tasksCompleted: 2, tasksTotal: 7, availability: 100 },
-      { id: 7, initials: 'DL', name: 'David Lin', role: 'MEP Engineer', tasksCompleted: 3, tasksTotal: 5, availability: 40 },
+      { id: 1, initials: 'BH', name: 'Bert Humphries', role: 'Project Manager', tasksCompleted: 9, tasksTotal: 15, availability: 100 },
+      { id: 2, initials: 'TE', name: 'Tom Evans', role: 'Project Director', tasksCompleted: 8, tasksTotal: 14, availability: 100 },
+      { id: 3, initials: 'AJ', name: 'Anita Joshi', role: 'Biomedical Equipment Planner', tasksCompleted: 6, tasksTotal: 10, availability: 100 },
+      { id: 4, initials: 'MO', name: 'Mike Osei', role: 'Site Superintendent', tasksCompleted: 4, tasksTotal: 8, availability: 60 },
+      { id: 5, initials: 'CH', name: 'Chris Hall', role: 'Cost Engineer', tasksCompleted: 5, tasksTotal: 9, availability: 100 },
+      { id: 6, initials: 'SP', name: 'Sara Park', role: 'Contract Administrator', tasksCompleted: 3, tasksTotal: 6, availability: 80 },
+      { id: 7, initials: 'RK', name: 'Rachel Kim', role: 'Architect', tasksCompleted: 2, tasksTotal: 7, availability: 100 },
+      { id: 8, initials: 'DL', name: 'David Lin', role: 'MEP Engineer', tasksCompleted: 3, tasksTotal: 5, availability: 40 },
     ],
     activity: [
       { id: 1, actorInitials: 'TE', text: 'Completed dashboard wireframes for executive view', timeAgo: '1 hr ago', icon: 'dashboard' },
@@ -334,7 +338,7 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     summaryStats: [
       { label: 'Schedule', value: '12%', subtext: 'Planning', subtextClass: 'text-foreground-60' },
       { label: 'Budget Used', value: '$24K', subtext: '8% of $350K', subtextClass: 'text-foreground-60' },
-      { label: 'Team Members', value: '4', subtext: '3 available', subtextClass: 'text-foreground-60' },
+      { label: 'Team Members', value: '5', subtext: '3 available', subtextClass: 'text-foreground-60' },
       { label: 'Due Date', value: 'Mar 15, 2028', subtext: '712 days remaining', subtextClass: 'text-foreground-60' },
     ],
     milestones: [
@@ -358,10 +362,11 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 3, title: 'Food court mechanical scope uncertainty', severity: 'low', impact: 'Ventilation requirements vary by food court tenant type — final tenant mix not confirmed', mitigation: 'Designing for worst-case exhaust capacity; modular kitchen hood connections for flexibility' },
     ],
     team: [
-      { id: 1, initials: 'LB', name: 'Lena Brooks', role: 'Project Manager', tasksCompleted: 4, tasksTotal: 8, availability: 100 },
-      { id: 2, initials: 'RK', name: 'Rachel Kim', role: 'Architect', tasksCompleted: 2, tasksTotal: 6, availability: 100 },
-      { id: 3, initials: 'DL', name: 'David Lin', role: 'General Contractor Lead', tasksCompleted: 1, tasksTotal: 5, availability: 80 },
-      { id: 4, initials: 'NP', name: 'Nick Park', role: 'Estimator', tasksCompleted: 3, tasksTotal: 5, availability: 100 },
+      { id: 1, initials: 'BH', name: 'Bert Humphries', role: 'Project Manager', tasksCompleted: 5, tasksTotal: 10, availability: 100 },
+      { id: 2, initials: 'LB', name: 'Lena Brooks', role: 'Project Coordinator', tasksCompleted: 4, tasksTotal: 8, availability: 100 },
+      { id: 3, initials: 'RK', name: 'Rachel Kim', role: 'Architect', tasksCompleted: 2, tasksTotal: 6, availability: 100 },
+      { id: 4, initials: 'DL', name: 'David Lin', role: 'General Contractor Lead', tasksCompleted: 1, tasksTotal: 5, availability: 80 },
+      { id: 5, initials: 'NP', name: 'Nick Park', role: 'Estimator', tasksCompleted: 3, tasksTotal: 5, availability: 100 },
     ],
     activity: [
       { id: 1, actorInitials: 'LB', text: 'Completed stakeholder interview with finance team', timeAgo: '2 hrs ago', icon: 'check_circle' },
@@ -388,7 +393,7 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     summaryStats: [
       { label: 'Schedule', value: '88%', subtext: 'On track', subtextClass: 'text-success' },
       { label: 'Budget Used', value: '$108K', subtext: '72% of $150K', subtextClass: 'text-foreground-60' },
-      { label: 'Team Members', value: '5', subtext: '2 available', subtextClass: 'text-foreground-60' },
+      { label: 'Team Members', value: '6', subtext: '2 available', subtextClass: 'text-foreground-60' },
       { label: 'Due Date', value: 'Jun 15', subtext: '73 days remaining', subtextClass: 'text-foreground-60' },
     ],
     milestones: [
@@ -412,11 +417,12 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 3, title: 'Environmental compliance documentation gap', severity: 'low', impact: 'Missing stormwater discharge records from deck removal phase could trigger DOT non-compliance finding', mitigation: 'Environmental specialist compiling retroactive documentation from daily site logs' },
     ],
     team: [
-      { id: 1, initials: 'MO', name: 'Mike Osei', role: 'Bridge Engineer', tasksCompleted: 18, tasksTotal: 20, availability: 100 },
-      { id: 2, initials: 'JC', name: 'James Carter', role: 'Field Engineer', tasksCompleted: 12, tasksTotal: 14, availability: 100 },
-      { id: 3, initials: 'AW', name: 'Amy Wu', role: 'Environmental Compliance Specialist', tasksCompleted: 9, tasksTotal: 11, availability: 80 },
-      { id: 4, initials: 'LB', name: 'Lena Brooks', role: 'Project Coordinator', tasksCompleted: 7, tasksTotal: 8, availability: 60 },
-      { id: 5, initials: 'VR', name: 'Vikram Rao', role: 'Traffic Control Manager', tasksCompleted: 10, tasksTotal: 10, availability: 100 },
+      { id: 1, initials: 'BH', name: 'Bert Humphries', role: 'Project Manager', tasksCompleted: 19, tasksTotal: 22, availability: 100 },
+      { id: 2, initials: 'MO', name: 'Mike Osei', role: 'Bridge Engineer', tasksCompleted: 18, tasksTotal: 20, availability: 100 },
+      { id: 3, initials: 'JC', name: 'James Carter', role: 'Field Engineer', tasksCompleted: 12, tasksTotal: 14, availability: 100 },
+      { id: 4, initials: 'AW', name: 'Amy Wu', role: 'Environmental Compliance Specialist', tasksCompleted: 9, tasksTotal: 11, availability: 80 },
+      { id: 5, initials: 'LB', name: 'Lena Brooks', role: 'Project Coordinator', tasksCompleted: 7, tasksTotal: 8, availability: 60 },
+      { id: 6, initials: 'VR', name: 'Vikram Rao', role: 'Traffic Control Manager', tasksCompleted: 10, tasksTotal: 10, availability: 100 },
     ],
     activity: [
       { id: 1, actorInitials: 'MO', text: 'Completed network controls checkpoint review', timeAgo: '1 hr ago', icon: 'check_circle' },
@@ -444,7 +450,7 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     summaryStats: [
       { label: 'Schedule', value: '30%', subtext: 'Behind schedule', subtextClass: 'text-warning font-medium' },
       { label: 'Budget Used', value: '$110K', subtext: '55% of $200K', subtextClass: 'text-foreground-60' },
-      { label: 'Team Members', value: '4', subtext: '0 available', subtextClass: 'text-destructive font-medium' },
+      { label: 'Team Members', value: '5', subtext: '0 available', subtextClass: 'text-destructive font-medium' },
       { label: 'Due Date', value: 'Jan 15, 2027', subtext: '287 days remaining', subtextClass: 'text-warning font-medium' },
     ],
     milestones: [
@@ -469,10 +475,11 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 4, title: 'Siding material substitution risk', severity: 'low', impact: 'Specified siding out of stock — substitute material requires owner approval and may change exterior appearance', mitigation: 'Three alternate materials submitted with mock-up samples for owner review' },
     ],
     team: [
-      { id: 1, initials: 'SC', name: 'Sarah Chen', role: 'Project Manager', tasksCompleted: 5, tasksTotal: 12, availability: 100 },
-      { id: 2, initials: 'DL', name: 'David Lin', role: 'Site Superintendent', tasksCompleted: 3, tasksTotal: 10, availability: 100 },
-      { id: 3, initials: 'SP', name: 'Sara Park', role: 'Contract Administrator', tasksCompleted: 2, tasksTotal: 5, availability: 100 },
-      { id: 4, initials: 'NP', name: 'Nick Park', role: 'Quality Control Inspector', tasksCompleted: 1, tasksTotal: 6, availability: 100 },
+      { id: 1, initials: 'BH', name: 'Bert Humphries', role: 'Project Manager', tasksCompleted: 6, tasksTotal: 14, availability: 100 },
+      { id: 2, initials: 'SC', name: 'Sarah Chen', role: 'Assistant Project Manager', tasksCompleted: 5, tasksTotal: 12, availability: 100 },
+      { id: 3, initials: 'DL', name: 'David Lin', role: 'Site Superintendent', tasksCompleted: 3, tasksTotal: 10, availability: 100 },
+      { id: 4, initials: 'SP', name: 'Sara Park', role: 'Contract Administrator', tasksCompleted: 2, tasksTotal: 5, availability: 100 },
+      { id: 5, initials: 'NP', name: 'Nick Park', role: 'Quality Control Inspector', tasksCompleted: 1, tasksTotal: 6, availability: 100 },
     ],
     activity: [
       { id: 1, actorInitials: 'SC', text: 'Identified root cause of rate limiter bypass bug', timeAgo: '40 min ago', icon: 'warning' },
@@ -500,7 +507,7 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
     summaryStats: [
       { label: 'Schedule', value: '20%', subtext: 'On track', subtextClass: 'text-success' },
       { label: 'Budget Used', value: '$90K', subtext: '18% of $500K', subtextClass: 'text-foreground-60' },
-      { label: 'Team Members', value: '6', subtext: '4 available', subtextClass: 'text-foreground-60' },
+      { label: 'Team Members', value: '7', subtext: '4 available', subtextClass: 'text-foreground-60' },
       { label: 'Due Date', value: 'Feb 28, 2028', subtext: '696 days remaining', subtextClass: 'text-foreground-60' },
     ],
     milestones: [
@@ -525,12 +532,13 @@ export const PROJECT_DATA: Record<number, ProjectDashboardData> = {
       { id: 3, title: 'Fire suppression code compliance', severity: 'low', impact: 'Warehouse classification may require ESFR sprinkler system upgrade over standard design', mitigation: 'Fire protection engineer reviewing occupancy classification; early submission to fire marshal for pre-approval' },
     ],
     team: [
-      { id: 1, initials: 'PN', name: 'Priya Nair', role: 'Project Manager', tasksCompleted: 5, tasksTotal: 12, availability: 100 },
-      { id: 2, initials: 'CH', name: 'Chris Hall', role: 'Warehouse Superintendent', tasksCompleted: 3, tasksTotal: 8, availability: 100 },
-      { id: 3, initials: 'AJ', name: 'Anita Joshi', role: 'Structural Engineer', tasksCompleted: 4, tasksTotal: 10, availability: 100 },
-      { id: 4, initials: 'TE', name: 'Tom Evans', role: 'Concrete Foreman', tasksCompleted: 2, tasksTotal: 6, availability: 80 },
-      { id: 5, initials: 'LB', name: 'Lena Brooks', role: 'Project Coordinator', tasksCompleted: 2, tasksTotal: 4, availability: 100 },
-      { id: 6, initials: 'DL', name: 'David Lin', role: 'Safety Officer', tasksCompleted: 3, tasksTotal: 7, availability: 60 },
+      { id: 1, initials: 'BH', name: 'Bert Humphries', role: 'Project Manager', tasksCompleted: 6, tasksTotal: 14, availability: 100 },
+      { id: 2, initials: 'PN', name: 'Priya Nair', role: 'Senior Engineer', tasksCompleted: 5, tasksTotal: 12, availability: 100 },
+      { id: 3, initials: 'CH', name: 'Chris Hall', role: 'Warehouse Superintendent', tasksCompleted: 3, tasksTotal: 8, availability: 100 },
+      { id: 4, initials: 'AJ', name: 'Anita Joshi', role: 'Structural Engineer', tasksCompleted: 4, tasksTotal: 10, availability: 100 },
+      { id: 5, initials: 'TE', name: 'Tom Evans', role: 'Concrete Foreman', tasksCompleted: 2, tasksTotal: 6, availability: 80 },
+      { id: 6, initials: 'LB', name: 'Lena Brooks', role: 'Project Coordinator', tasksCompleted: 2, tasksTotal: 4, availability: 100 },
+      { id: 7, initials: 'DL', name: 'David Lin', role: 'Safety Officer', tasksCompleted: 3, tasksTotal: 7, availability: 60 },
     ],
     activity: [
       { id: 1, actorInitials: 'PN', text: 'Configured MLflow experiment tracking for staging', timeAgo: '1 hr ago', icon: 'check_circle' },

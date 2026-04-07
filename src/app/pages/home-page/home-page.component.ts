@@ -61,9 +61,9 @@ import { rewriteDynamicNeeds } from '../projects-page/projects-page-utils';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
 import { HOME_WIDGETS } from '../../data/widget-registrations';
 import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards.component';
-import { HomeWidgetFrameComponent } from './components/home-widget-frame.component';
-import { ModusButtonComponent } from '../../components/modus-button.component';
-import { ModusTextInputComponent } from '../../components/modus-text-input.component';
+import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
+import { CreateMenuDropdownComponent } from '../../shared/create-menu-dropdown.component';
+import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.component';
 
 @Component({
   selector: 'app-home-page',
@@ -74,9 +74,9 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
     DrawingMarkupToolbarComponent,
     PdfViewerComponent,
     HomeKpiCardsComponent,
-    HomeWidgetFrameComponent,
-    ModusButtonComponent,
-    ModusTextInputComponent,
+    WidgetFrameComponent,
+    CreateMenuDropdownComponent,
+    StatusFilterPillsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -92,51 +92,12 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
       <div #pageHeader class="pointer-events-auto">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Frank</div>
+          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, {{ personaFirstName() }}</div>
           <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
         </div>
-        <div class="relative flex-shrink-0" data-create-dropdown #createDropdownDesktop>
-          <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left"
-            (buttonClick)="toggleCreateMenu($event)">Create</modus-button>
-          @if (createMenuOpen()) {
-          <div class="absolute right-0 top-full mt-1 w-72 bg-card border-default rounded-lg shadow-dropdown z-50 overflow-hidden">
-            <div class="p-2 border-bottom-default">
-              <modus-text-input
-                placeholder="Search items..."
-                [includeSearch]="true"
-                [includeClear]="!!createSearchQuery()"
-                [value]="createSearchQuery()"
-                (inputChange)="onCreateSearchInput($event)"
-                (inputClear)="createSearchQuery.set('')"
-              />
-            </div>
-            @if (!createSearchQuery()) {
-            <div class="p-2">
-              <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wider px-2 py-1.5">Frequently Used</div>
-              @for (item of frequentlyUsedItems; track item.value) {
-              <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
-                (click)="selectCreateItem(item)">
-                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
-                <div class="text-sm text-foreground">{{ item.label }}</div>
-              </div>
-              }
-            </div>
-            } @else {
-            <div class="p-2 max-h-64 overflow-y-auto">
-              @for (item of filteredCreateItems(); track item.value) {
-              <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
-                (click)="selectCreateItem(item)">
-                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
-                <div class="text-sm text-foreground">{{ item.label }}</div>
-              </div>
-              } @empty {
-              <div class="text-sm text-foreground-40 px-2 py-3 text-center">No items found</div>
-              }
-            </div>
-            }
-          </div>
-          }
-        </div>
+        <app-create-menu-dropdown #createDropdownDesktop
+          [allItems]="allCreateItems" [frequentItems]="frequentlyUsedItems"
+          (itemSelected)="selectCreateItem($event)" />
       </div>
       </div>
       }
@@ -401,61 +362,22 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                 @if (isCanvasMode()) {
                 <div class="flex items-start justify-between h-full">
                   <div>
-                    <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, Frank</div>
+                    <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, {{ personaFirstName() }}</div>
                     <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
                   </div>
-                  <div class="relative flex-shrink-0 mt-1" data-create-dropdown #createDropdownCanvas>
-                    <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left"
-                      (buttonClick)="toggleCreateMenu($event)">Create</modus-button>
-                    @if (createMenuOpen()) {
-                    <div class="absolute right-0 top-full mt-1 w-72 bg-card border-default rounded-lg shadow-dropdown z-50 overflow-hidden">
-                      <div class="p-2 border-bottom-default">
-                        <modus-text-input
-                          placeholder="Search items..."
-                          [includeSearch]="true"
-                          [includeClear]="!!createSearchQuery()"
-                          [value]="createSearchQuery()"
-                          (inputChange)="onCreateSearchInput($event)"
-                          (inputClear)="createSearchQuery.set('')"
-                        />
-                      </div>
-                      @if (!createSearchQuery()) {
-                      <div class="p-2">
-                        <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wider px-2 py-1.5">Frequently Used</div>
-                        @for (item of frequentlyUsedItems; track item.value) {
-                        <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
-                          (click)="selectCreateItem(item)">
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
-                          <div class="text-sm text-foreground">{{ item.label }}</div>
-                        </div>
-                        }
-                      </div>
-                      } @else {
-                      <div class="p-2 max-h-64 overflow-y-auto">
-                        @for (item of filteredCreateItems(); track item.value) {
-                        <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
-                          (click)="selectCreateItem(item)">
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
-                          <div class="text-sm text-foreground">{{ item.label }}</div>
-                        </div>
-                        } @empty {
-                        <div class="text-sm text-foreground-40 px-2 py-3 text-center">No items found</div>
-                        }
-                      </div>
-                      }
-                    </div>
-                    }
-                  </div>
+                  <app-create-menu-dropdown class="mt-1" #createDropdownCanvas
+                    [allItems]="allCreateItems" [frequentItems]="frequentlyUsedItems"
+                    (itemSelected)="selectCreateItem($event)" />
                 </div>
                 }
               } @else if (widgetId === 'homeKpis') {
-                <app-home-widget-frame
-                  [widgetId]="widgetId"
+                <app-widget-frame
                   [title]="'Key Metrics'"
                   [icon]="'bar_graph_square'"
+                  [iconClass]="'text-foreground-60'"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
-                  [headerRowClass]="'px-4 py-3'"
+                  [headerPadding]="'px-4 py-3'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -464,7 +386,7 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                   <div class="p-3 flex flex-col gap-2 overflow-y-auto flex-1">
                     <app-home-kpi-cards [cards]="kpiCards()" [compact]="true" (cardClick)="handleKpiCardClick($event)" />
                   </div>
-                </app-home-widget-frame>
+                </app-widget-frame>
               }
 
               @else if (widgetId === 'homeTimeOff') {
@@ -1049,40 +971,11 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                     </div>
                   } @else {
                     @if (!isRfiCompact()) {
-                      <div
-                        class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
-                        role="radiogroup" aria-label="Filter RFIs by status"
-                        (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
-                      >
-                        @for (f of rfiFilterOptions; track f) {
-                          <div
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                            [class.bg-primary]="rfiActiveFilter() === f"
-                            [class.text-primary-foreground]="rfiActiveFilter() === f"
-                            [class.bg-muted]="rfiActiveFilter() !== f"
-                            [class.text-foreground-60]="rfiActiveFilter() !== f"
-                            [class.bg-destructive]="f === 'overdue' && rfiActiveFilter() === f"
-                            [class.text-destructive-foreground]="f === 'overdue' && rfiActiveFilter() === f"
-                            [class.bg-warning]="f === 'upcoming' && rfiActiveFilter() === f"
-                            [class.text-warning-foreground]="f === 'upcoming' && rfiActiveFilter() === f"
-                            [class.bg-success]="f === 'closed' && rfiActiveFilter() === f"
-                            [class.text-success-foreground]="f === 'closed' && rfiActiveFilter() === f"
-                            role="radio" tabindex="0" [attr.aria-checked]="rfiActiveFilter() === f"
-                            (click)="rfiActiveFilter.set(f)"
-                            (keydown.enter)="rfiActiveFilter.set(f)"
-                            (keydown.space)="$event.preventDefault(); rfiActiveFilter.set(f)"
-                          >
-                            <div>{{ f.charAt(0).toUpperCase() + f.slice(1) }}</div>
-                            <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                              [class.bg-primary-foreground]="rfiActiveFilter() === f && f === 'all'"
-                              [class.text-primary]="rfiActiveFilter() === f && f === 'all'"
-                              [class.bg-secondary]="rfiActiveFilter() !== f"
-                              [class.text-foreground-60]="rfiActiveFilter() !== f"
-                              aria-hidden="true"
-                            >{{ rfiCounts()[f] }}</div>
-                          </div>
-                        }
-                      </div>
+                      <app-status-filter-pills
+                        [options]="rfiFilterOptions" [active]="rfiActiveFilter()"
+                        [counts]="rfiCounts()" ariaLabel="Filter RFIs by status"
+                        (filterChange)="onRfiFilterChange($event)"
+                      />
                     }
                     <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
                       <div role="columnheader">RFI #</div>
@@ -1199,40 +1092,11 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                     </div>
                   } @else {
                     @if (!isSubmittalCompact()) {
-                      <div
-                        class="flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto"
-                        role="radiogroup" aria-label="Filter Submittals by status"
-                        (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
-                      >
-                        @for (f of submittalFilterOptions; track f) {
-                          <div
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
-                            [class.bg-primary]="submittalActiveFilter() === f"
-                            [class.text-primary-foreground]="submittalActiveFilter() === f"
-                            [class.bg-muted]="submittalActiveFilter() !== f"
-                            [class.text-foreground-60]="submittalActiveFilter() !== f"
-                            [class.bg-destructive]="f === 'overdue' && submittalActiveFilter() === f"
-                            [class.text-destructive-foreground]="f === 'overdue' && submittalActiveFilter() === f"
-                            [class.bg-warning]="f === 'upcoming' && submittalActiveFilter() === f"
-                            [class.text-warning-foreground]="f === 'upcoming' && submittalActiveFilter() === f"
-                            [class.bg-success]="f === 'closed' && submittalActiveFilter() === f"
-                            [class.text-success-foreground]="f === 'closed' && submittalActiveFilter() === f"
-                            role="radio" tabindex="0" [attr.aria-checked]="submittalActiveFilter() === f"
-                            (click)="submittalActiveFilter.set(f)"
-                            (keydown.enter)="submittalActiveFilter.set(f)"
-                            (keydown.space)="$event.preventDefault(); submittalActiveFilter.set(f)"
-                          >
-                            <div>{{ f.charAt(0).toUpperCase() + f.slice(1) }}</div>
-                            <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
-                              [class.bg-primary-foreground]="submittalActiveFilter() === f && f === 'all'"
-                              [class.text-primary]="submittalActiveFilter() === f && f === 'all'"
-                              [class.bg-secondary]="submittalActiveFilter() !== f"
-                              [class.text-foreground-60]="submittalActiveFilter() !== f"
-                              aria-hidden="true"
-                            >{{ submittalCounts()[f] }}</div>
-                          </div>
-                        }
-                      </div>
+                      <app-status-filter-pills
+                        [options]="submittalFilterOptions" [active]="submittalActiveFilter()"
+                        [counts]="submittalCounts()" ariaLabel="Filter Submittals by status"
+                        (filterChange)="onSubmittalFilterChange($event)"
+                      />
                     }
                     <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
                       <div role="columnheader">Sub #</div>
@@ -1271,12 +1135,13 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                 />
               }
               @else if (widgetId === 'homeDrawings') {
-                <app-home-widget-frame
-                  [widgetId]="widgetId"
+                <app-widget-frame
                   [title]="'Recent Drawings'"
                   [icon]="'image'"
+                  [iconClass]="'text-foreground-60'"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
+                  [headerPadding]="'px-5 py-4'"
                   [titleMeta]="recentDrawings().length + ' projects'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
@@ -1313,18 +1178,17 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                       </div>
                     }
                   </div>
-                </app-home-widget-frame>
+                </app-widget-frame>
               }
 
               @else if (widgetId === 'homeWeather') {
-                <app-home-widget-frame
-                  [widgetId]="widgetId"
+                <app-widget-frame
                   [title]="'Weather Outlook'"
                   [icon]="'sun'"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
-                  [headerRowClass]="'px-5 py-3.5'"
-                  [iconToneClass]="'text-warning'"
+                  [headerPadding]="'px-5 py-3.5'"
+                  [iconClass]="'text-warning'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1332,7 +1196,7 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                 >
                   @if (weatherImpactProjects().length > 0) {
                     <div
-                      data-home-widget-title-extra
+                      headerExtra
                       class="flex items-center px-2 py-0.5 rounded-full flex-shrink-0"
                       [class]="weatherImpactProjects()[0].majorDays > 0 ? 'bg-destructive-20' : 'bg-warning-20'"
                     >
@@ -1416,7 +1280,7 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                       }
                     }
                   </div>
-                </app-home-widget-frame>
+                </app-widget-frame>
               }
 
               @else if (widgetId === 'homeUrgentNeeds') {
@@ -1583,13 +1447,13 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                 />
 
               } @else if (widgetId === 'homeRecentActivity') {
-                <app-home-widget-frame
-                  [widgetId]="widgetId"
+                <app-widget-frame
                   [title]="'Recent Project Activity'"
                   [icon]="'history'"
+                  [iconClass]="'text-foreground-60'"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
-                  [headerRowClass]="'px-6 py-4'"
+                  [headerPadding]="'px-6 py-4'"
                   [titleClass]="'text-lg font-semibold text-foreground'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
@@ -1620,7 +1484,7 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                       </div>
                     }
                   </div>
-                </app-home-widget-frame>
+                </app-widget-frame>
               }
 
             </div>
@@ -1636,6 +1500,8 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
 export class HomePageComponent extends DashboardPageBase {
   private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
+  readonly personaFirstName = computed(() => this.personaService.activePersona().firstName);
+  private personaPrefix(): string { return `/${this.personaService.activePersonaSlug()}`; }
 
   private static readonly KPI_HEIGHT = 200;
   private static readonly ROW_1_HEIGHT = 336;
@@ -1652,8 +1518,8 @@ export class HomePageComponent extends DashboardPageBase {
     const H = HomePageComponent.CANVAS_HEADER_OFFSET;
     return {
       widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
-      layoutStorageKey: 'dashboard-home-v9',
-      canvasStorageKey: 'canvas-layout:dashboard-home:v16',
+      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-home-v9`,
+      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:v16`,
       defaultColStarts: { homeHeader: 1, homeKpis: 1, homeUrgentNeeds: 7, homeWeather: 1, homeRfis: 7, homeSubmittals: 12, homeTimeOff: 1, homeCalendar: 7, homeDrawings: 1, homeRecentActivity: 7 },
       defaultColSpans: { homeHeader: 16, homeKpis: 6, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 10 },
       defaultTops: { homeHeader: 0, homeKpis: 0, homeUrgentNeeds: 0, homeWeather: HomePageComponent.ROW_2_TOP, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP, homeTimeOff: HomePageComponent.ROW_3_TOP, homeCalendar: HomePageComponent.ROW_3_TOP, homeDrawings: HomePageComponent.ROW_4_TOP, homeRecentActivity: HomePageComponent.ROW_4_TOP },
@@ -1808,20 +1674,14 @@ export class HomePageComponent extends DashboardPageBase {
   readonly homeWidgets: DashboardWidgetId[] = ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
-  private static readonly ALL_CREATE_ITEMS: NavItem[] = [...RECORDS_SUB_NAV_ITEMS, ...FINANCIALS_SUB_NAV_ITEMS];
-  private static readonly FREQUENTLY_USED: NavItem[] = [
+  readonly allCreateItems: NavItem[] = [...RECORDS_SUB_NAV_ITEMS, ...FINANCIALS_SUB_NAV_ITEMS];
+  readonly frequentlyUsedItems: NavItem[] = [
     { value: 'daily-reports', label: 'Daily Report', icon: 'calendar' },
     { value: 'rfis', label: 'RFI', icon: 'help' },
     { value: 'general-invoices', label: 'Invoice', icon: 'invoice' },
   ];
-  readonly createMenuOpen = signal(false);
-  readonly createSearchQuery = signal('');
-  readonly filteredCreateItems = computed(() => {
-    const q = this.createSearchQuery().toLowerCase().trim();
-    if (!q) return [];
-    return HomePageComponent.ALL_CREATE_ITEMS.filter(item => item.label.toLowerCase().includes(q));
-  });
-  readonly frequentlyUsedItems = HomePageComponent.FREQUENTLY_USED;
+  private readonly createDropdownDesktop = viewChild<CreateMenuDropdownComponent>('createDropdownDesktop');
+  private readonly createDropdownCanvas = viewChild<CreateMenuDropdownComponent>('createDropdownCanvas');
 
   private readonly _registerHomeWidgets = (() => {
     this.widgetFocusService.registerWidgets(HOME_WIDGETS);
@@ -1887,17 +1747,18 @@ export class HomePageComponent extends DashboardPageBase {
     if (this.timeOffStatusOpen() !== null && !target.closest('[data-timeoff-dropdown]')) {
       this.timeOffStatusOpen.set(null);
     }
-    if (this.createMenuOpen() && !target.closest('[data-create-dropdown]')) {
-      this.createMenuOpen.set(false);
-      this.createSearchQuery.set('');
+    if (!target.closest('[data-create-dropdown]')) {
+      this.closeCreateMenus();
     }
   }
 
   onEscapeKey(): void {
-    if (this.createMenuOpen()) {
-      this.createMenuOpen.set(false);
-      this.createSearchQuery.set('');
-    }
+    this.closeCreateMenus();
+  }
+
+  private closeCreateMenus(): void {
+    this.createDropdownDesktop()?.close();
+    this.createDropdownCanvas()?.close();
   }
 
   private static readonly MOBILE_HEADER_H = 58;
@@ -2201,9 +2062,9 @@ export class HomePageComponent extends DashboardPageBase {
 
   navigateToUrgentNeed(item: UrgentNeedItem): void {
     if (item.financialsRoute) {
-      this.router.navigate([item.financialsRoute]);
+      this.router.navigate([`${this.personaPrefix()}${item.financialsRoute}`]);
     } else {
-      this.router.navigate([item.route], { queryParams: item.queryParams });
+      this.router.navigate([`${this.personaPrefix()}${item.route}`], { queryParams: item.queryParams });
     }
   }
 
@@ -2256,11 +2117,12 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   navigateToProject(slugOrId: string | number): void {
+    const pp = this.personaPrefix();
     if (typeof slugOrId === 'number') {
       const proj = this.store.findProjectById(slugOrId);
-      if (proj) this.router.navigate(['/project', proj.slug]);
+      if (proj) this.router.navigate([`${pp}/project`, proj.slug]);
     } else {
-      this.router.navigate(['/project', slugOrId]);
+      this.router.navigate([`${pp}/project`, slugOrId]);
     }
   }
 
@@ -2558,6 +2420,10 @@ export class HomePageComponent extends DashboardPageBase {
     () => this.isMobile() || (this.widgetColSpans()['homeRfis'] ?? 16) <= 5
   );
 
+  onRfiFilterChange(filter: string): void {
+    this.rfiActiveFilter.set(filter as RfiStatus | 'all');
+  }
+
   expandRfiMobile(filter: RfiStatus | 'all'): void {
     this.rfiActiveFilter.set(filter);
     this.rfiMobileExpanded.set(true);
@@ -2610,7 +2476,7 @@ export class HomePageComponent extends DashboardPageBase {
     }
     const slug = this.findProjectSlug(rfi.project);
     if (slug) {
-      this.router.navigate(['/project', slug], { queryParams: { view: 'rfi', id: rfi.id, from: 'home' } });
+      this.router.navigate([`${this.personaPrefix()}/project`, slug], { queryParams: { view: 'rfi', id: rfi.id, from: 'home' } });
     }
   }
 
@@ -2621,7 +2487,7 @@ export class HomePageComponent extends DashboardPageBase {
     }
     const slug = this.findProjectSlug(sub.project);
     if (slug) {
-      this.router.navigate(['/project', slug], { queryParams: { view: 'submittal', id: sub.id, from: 'home' } });
+      this.router.navigate([`${this.personaPrefix()}/project`, slug], { queryParams: { view: 'submittal', id: sub.id, from: 'home' } });
     }
   }
 
@@ -2638,6 +2504,10 @@ export class HomePageComponent extends DashboardPageBase {
   readonly isSubmittalCompact = computed(
     () => this.isMobile() || (this.widgetColSpans()['homeSubmittals'] ?? 16) <= 5
   );
+
+  onSubmittalFilterChange(filter: string): void {
+    this.submittalActiveFilter.set(filter as SubmittalStatus | 'all');
+  }
 
   expandSubmittalMobile(filter: SubmittalStatus | 'all'): void {
     this.submittalActiveFilter.set(filter);
@@ -2680,11 +2550,11 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   navigateToProjects(): void {
-    this.router.navigate(['/projects']);
+    this.router.navigate([`${this.personaPrefix()}/projects`]);
   }
 
   navigateToFinancials(): void {
-    this.router.navigate(['/financials']);
+    this.router.navigate([`${this.personaPrefix()}/financials`]);
   }
 
   handleKpiCardClick(action: string): void {
@@ -2709,7 +2579,7 @@ export class HomePageComponent extends DashboardPageBase {
       }
       case 'at-risk-projects': {
         const first = this.atRiskProjects()[0];
-        if (first) this.router.navigate(['/project', first.slug]);
+        if (first) this.router.navigate([`${this.personaPrefix()}/project`, first.slug]);
         else this.navigateToProjects();
         break;
       }
@@ -2740,7 +2610,7 @@ export class HomePageComponent extends DashboardPageBase {
     }
     const project = this.store.findProjectById(projectId);
     if (project) {
-      this.router.navigate(['/project', project.slug], {
+      this.router.navigate([`${this.personaPrefix()}/project`, project.slug], {
         queryParams: { page: 'drawings', view: 'drawing', id: drawing.id },
       });
     }
@@ -2824,20 +2694,7 @@ export class HomePageComponent extends DashboardPageBase {
     this._detailMgr.updateField(widgetId, 'dueDate', newDate);
   }
 
-  toggleCreateMenu(event: MouseEvent | KeyboardEvent): void {
-    event.stopPropagation();
-    const opening = !this.createMenuOpen();
-    this.createMenuOpen.set(opening);
-    if (!opening) this.createSearchQuery.set('');
-  }
-
-  onCreateSearchInput(event: Event): void {
-    const value = (event as CustomEvent)?.detail?.target?.value ?? (event?.target as HTMLInputElement)?.value ?? '';
-    this.createSearchQuery.set(value);
-  }
-
-  selectCreateItem(item: NavItem): void {
-    this.createMenuOpen.set(false);
-    this.createSearchQuery.set('');
+  selectCreateItem(_item: NavItem): void {
+    // placeholder -- future: navigate to create form for item.value
   }
 }
