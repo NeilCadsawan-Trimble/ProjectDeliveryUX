@@ -1,7 +1,7 @@
 import { Routes, type CanActivateFn } from '@angular/router';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { environment } from '../environments/environment.development';
+import { environment } from '../environments/environment';
 import { PersonaService } from './services/persona.service';
 import { AuthService } from './services/auth.service';
 import { collectAllExtraRoutes } from './data/persona-nav.config';

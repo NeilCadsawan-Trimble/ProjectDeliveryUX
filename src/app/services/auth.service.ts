@@ -6,7 +6,7 @@ import {
   OpenIdKeysetProvider,
 } from '@trimble-oss/trimble-id';
 import type { Claimset } from '@trimble-oss/trimble-id';
-import { environment } from '../../environments/environment.development';
+import { environment } from '../../environments/environment';
 
 const STORAGE_KEYS = {
   accessToken: 'tid_access_token',
