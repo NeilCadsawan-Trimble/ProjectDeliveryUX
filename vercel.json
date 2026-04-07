@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "rm -rf .angular/cache && npm run build",
   "outputDirectory": "dist/angular-vite/browser",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
