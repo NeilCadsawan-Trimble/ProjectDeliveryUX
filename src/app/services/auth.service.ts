@@ -27,7 +27,11 @@ export interface AuthUser {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly _config = environment.trimbleId;
+  private readonly _config = {
+    ...environment.trimbleId,
+    redirectUri: `${window.location.origin}/auth/callback`,
+    logoutRedirectUri: `${window.location.origin}/login`,
+  };
   private readonly _endpointProvider = new OpenIdEndpointProvider(this._config.wellKnownEndpoint);
   private _tokenProvider: AuthorizationCodeGrantTokenProvider | null = null;
 

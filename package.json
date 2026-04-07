@@ -58,7 +58,7 @@
     "@tailwindcss/postcss": "^4.1.16",
     "@types/node": "^25.5.2",
     "concurrently": "^9.2.1",
-    "glob": "^11.0.0",
+    "glob": "^13.0.6",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.6",
