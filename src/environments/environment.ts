@@ -7,8 +7,8 @@ export const environment = {
   devPanel: false,
   trimbleId: {
     clientId: '47811b82-ab80-432f-a44e-2f80ea65e621',
-    redirectUri: 'https://projectdeliveryux.vercel.app/auth/callback',
-    logoutRedirectUri: 'https://projectdeliveryux.vercel.app/login',
+    redirectUri: 'https://project-delivery-ux.vercel.app/auth/callback',
+    logoutRedirectUri: 'https://project-delivery-ux.vercel.app/login',
     wellKnownEndpoint: 'https://id.trimble.com/.well-known/openid-configuration',
     scopes: ['openid'],
   },
