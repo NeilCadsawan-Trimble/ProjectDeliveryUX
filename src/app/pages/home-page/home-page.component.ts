@@ -18,7 +18,6 @@ import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
-import { ModusButtonComponent } from '../../components/modus-button.component';
 import type {
   DashboardWidgetId,
   GridPage,
@@ -30,10 +29,18 @@ import type {
   BiddingTaskScheduleTab,
 } from '../../data/dashboard-data';
 import { HOME_ESTIMATE_CARDS, CALENDAR_APPOINTMENTS, BIDDING_TASKS } from '../../data/dashboard-data';
+import { HomePageHeroComponent } from './home-page-hero.component';
+import { ModusButtonGroupComponent } from '../../components/modus-button-group.component';
+import { ModusButtonComponent } from '../../components/modus-button.component';
 
 @Component({
   selector: 'app-home-page',
-  imports: [WidgetResizeHandleComponent, ModusButtonComponent],
+  imports: [
+    WidgetResizeHandleComponent,
+    HomePageHeroComponent,
+    ModusButtonGroupComponent,
+    ModusButtonComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',
@@ -43,17 +50,7 @@ import { HOME_ESTIMATE_CARDS, CALENDAR_APPOINTMENTS, BIDDING_TASKS } from '../..
   template: `
     <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
       <div #pageHeader>
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
-          <div>
-            <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome Back, Bert!</div>
-            <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
-          </div>
-          <div class="flex-shrink-0">
-            <modus-button color="primary" icon="add" iconPosition="left" (buttonClick)="onCreateClick()">
-              Create
-            </modus-button>
-          </div>
-        </div>
+        <app-home-page-hero [formattedDate]="today" (createClick)="onCreateClick()" />
       </div>
 
       <div
@@ -237,81 +234,131 @@ import { HOME_ESTIMATE_CARDS, CALENDAR_APPOINTMENTS, BIDDING_TASKS } from '../..
                 />
               }
               @else if (widgetId === 'homeTasks') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div
+                  class="bg-card rounded-lg overflow-hidden flex flex-col w-full min-w-0 h-full min-h-0"
+                  [class.max-h-full]="isMobile()"
+                  [class.border-default]="selectedWidgetId() !== widgetId"
+                  [class.border-primary]="selectedWidgetId() === widgetId"
+                >
                   <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0 gap-2"
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                     (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   >
                     <div class="flex items-center gap-2 min-w-0">
                       <i class="modus-icons text-base text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60 flex-shrink-0" aria-hidden="true">check_circle</i>
-                      <div class="text-base font-semibold text-foreground truncate" role="heading" aria-level="2">Tasks & action items</div>
+                      <div class="min-w-0">
+                        <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Tasks & Action Items</div>
+                        <div class="text-xs text-foreground-60 truncate">
+                          Prioritized by: Largest projects first, Overdue items first, Critical items first
+                        </div>
+                      </div>
                     </div>
                     @if (filteredTasks().length > 0) {
-                      <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20 flex-shrink-0">
-                        <div class="text-xs font-semibold text-destructive">{{ filteredTasks().length }} Items</div>
+                      <div class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 bg-muted text-foreground-60">
+                        {{ filteredTasks().length }} Items
                       </div>
                     }
                   </div>
-
-                  <div class="flex flex-col gap-2 px-5 pt-3 pb-2 border-bottom-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
-                    <div class="flex items-center gap-1 overflow-x-auto" role="tablist" aria-label="Task schedule">
-                      @for (tab of taskScheduleTabs; track tab.key) {
-                        <div
-                          class="px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 whitespace-nowrap select-none"
-                          [class.bg-primary]="taskScheduleTab() === tab.key"
-                          [class.text-primary-foreground]="taskScheduleTab() === tab.key"
-                          [class.bg-muted]="taskScheduleTab() !== tab.key"
-                          [class.text-foreground-60]="taskScheduleTab() !== tab.key"
-                          role="tab"
-                          tabindex="0"
-                          [attr.aria-selected]="taskScheduleTab() === tab.key"
-                          (click)="onTaskScheduleTabSelect(tab.key)"
-                          (keydown.enter)="onTaskScheduleTabSelect(tab.key)"
-                          (keydown.space)="$event.preventDefault(); onTaskScheduleTabSelect(tab.key)"
+                  <div class="p-4 flex flex-col gap-4 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                    <div
+                      class="flex flex-col gap-3 flex-shrink-0 bg-card"
+                      (mousedown)="$event.stopPropagation()"
+                      (touchstart)="$event.stopPropagation()"
+                    >
+                      <div class="min-w-0 overflow-x-auto">
+                        <modus-button-group
+                          selectionType="single"
+                          variant="outlined"
+                          color="primary"
+                          ariaLabel="Task schedule"
                         >
-                          {{ tab.label }}
+                          @for (tab of taskScheduleTabs; track tab.key) {
+                            <modus-button
+                              size="sm"
+                              [pressed]="taskScheduleTab() === tab.key"
+                              (buttonClick)="onTaskScheduleTabSelect(tab.key)"
+                            >
+                              {{ taskScheduleTabDisplayLabel(tab.key) }}
+                            </modus-button>
+                          }
+                        </modus-button-group>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Priority filter">
+                        <div class="text-xs text-foreground-60">Priority:</div>
+                        <div class="flex flex-wrap items-center gap-1">
+                          @for (p of taskPriorityOptions; track p.key) {
+                            <div
+                              class="px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 whitespace-nowrap select-none flex items-center justify-center"
+                              [class.bg-primary]="taskPriorityFilter() === p.key"
+                              [class.text-primary-foreground]="taskPriorityFilter() === p.key"
+                              [class.bg-muted]="taskPriorityFilter() !== p.key"
+                              [class.text-foreground-60]="taskPriorityFilter() !== p.key"
+                              role="radio"
+                              tabindex="0"
+                              [attr.aria-checked]="taskPriorityFilter() === p.key"
+                              (click)="onTaskPrioritySelect(p.key)"
+                              (keydown.enter)="onTaskPrioritySelect(p.key)"
+                              (keydown.space)="$event.preventDefault(); onTaskPrioritySelect(p.key)"
+                            >
+                              {{ p.label }}
+                            </div>
+                          }
                         </div>
-                      }
+                      </div>
                     </div>
-                    <div class="flex items-center gap-1 overflow-x-auto pb-1" role="radiogroup" aria-label="Priority filter">
-                      @for (p of taskPriorityOptions; track p.key) {
-                        <div
-                          class="px-2.5 py-1 rounded-full text-2xs font-semibold cursor-pointer transition-colors duration-150 whitespace-nowrap select-none"
-                          [class.bg-primary]="taskPriorityFilter() === p.key"
-                          [class.text-primary-foreground]="taskPriorityFilter() === p.key"
-                          [class.bg-muted]="taskPriorityFilter() !== p.key"
-                          [class.text-foreground-60]="taskPriorityFilter() !== p.key"
-                          role="radio"
-                          tabindex="0"
-                          [attr.aria-checked]="taskPriorityFilter() === p.key"
-                          (click)="onTaskPrioritySelect(p.key)"
-                          (keydown.enter)="onTaskPrioritySelect(p.key)"
-                          (keydown.space)="$event.preventDefault(); onTaskPrioritySelect(p.key)"
-                        >
-                          {{ p.label }}
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  <div class="overflow-y-auto flex-1 p-4 flex flex-col gap-3">
                     @for (task of filteredTasks(); track task.id) {
-                      <div class="rounded-lg border-default bg-background p-4 flex flex-col gap-2">
-                        <div class="flex items-start justify-between gap-2">
-                          <div>
-                            <div class="text-sm font-semibold text-foreground">{{ task.headline }}</div>
-                            <div class="text-xs text-foreground-60">{{ task.subline }}</div>
+                      <div class="rounded-lg bg-background flex flex-col transition-colors duration-200 border-default">
+                        <div class="p-4 flex gap-3 select-none">
+                          <div class="w-10 h-10 rounded-lg bg-card border-default flex items-center justify-center flex-shrink-0">
+                            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">check_circle</i>
                           </div>
-                          <div class="text-2xs font-bold uppercase px-2 py-0.5 rounded flex-shrink-0 {{ taskPriorityBadgeClass(task.priority) }}">
-                            {{ taskPriorityLabel(task.priority) }}
+                          <div class="flex-1 min-w-0 flex flex-col gap-3">
+                            <div class="flex items-start justify-between gap-2">
+                              <div class="text-sm font-semibold text-foreground leading-snug pr-2">{{ task.title }}</div>
+                              <div class="flex items-center gap-2 flex-shrink-0">
+                                <div [class]="taskCardBadgeClass(task.priority)">
+                                  @if (task.priority === 'overdue') {
+                                    <i class="modus-icons text-2xs flex-shrink-0" aria-hidden="true">clock</i>
+                                  }
+                                  {{ taskPriorityLabel(task.priority) }}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-x-2 text-xs text-foreground-60">
+                              <div class="flex items-center gap-1">
+                                <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true">costs</i>
+                                <div>{{ task.projectValue }}</div>
+                              </div>
+                              <div aria-hidden="true">•</div>
+                              <div class="flex items-center gap-1">
+                                <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true">calendar</i>
+                                <div>{{ task.timeLabel }}</div>
+                              </div>
+                              <div aria-hidden="true">•</div>
+                              <div class="flex items-center gap-1">
+                                <i class="modus-icons text-sm flex-shrink-0" aria-hidden="true">person</i>
+                                <div>{{ task.assigneeLabel }}</div>
+                              </div>
+                            </div>
+                            <div class="text-xs text-foreground-60 leading-snug">{{ task.description }}</div>
+                            @if (task.alertTone === 'error') {
+                              <div class="flex items-center gap-2 rounded-md px-3 py-2 min-w-0 bg-destructive-20">
+                                <i class="modus-icons text-xs flex-shrink-0 text-destructive" aria-hidden="true">alert</i>
+                                <div class="text-xs leading-snug text-foreground">{{ task.alertMessage }}</div>
+                              </div>
+                            } @else {
+                              <div class="flex items-center gap-2 rounded-md px-3 py-2 min-w-0 bg-warning-20">
+                                <i class="modus-icons text-xs flex-shrink-0 text-warning" aria-hidden="true">warning</i>
+                                <div class="text-xs leading-snug text-foreground">{{ task.alertMessage }}</div>
+                              </div>
+                            }
+                            <div class="text-xs font-semibold text-primary cursor-pointer hover:text-primary-60 transition-colors w-fit">
+                              {{ task.actionLabel }}
+                            </div>
                           </div>
                         </div>
-                        <div class="text-xs text-foreground-80 bg-warning-20 border-warning rounded px-2 py-1.5">
-                          {{ task.warning }}
-                        </div>
-                        <div class="text-xs font-semibold text-primary cursor-pointer hover:text-primary-80 transition-colors">{{ task.actionLabel }}</div>
                       </div>
                     }
                     @if (filteredTasks().length === 0) {
@@ -341,11 +388,16 @@ import { HOME_ESTIMATE_CARDS, CALENDAR_APPOINTMENTS, BIDDING_TASKS } from '../..
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                     (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Calendar</div>
-                      <div class="text-xs text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</div>
+                    <div class="flex items-center gap-2 min-w-0">
+                      <i class="modus-icons text-base text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-foreground-60 flex-shrink-0" aria-hidden="true">calendar</i>
+                      <div class="min-w-0">
+                        <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Calendar</div>
+                        <div class="text-xs text-foreground-60 truncate">
+                          Bidding and preconstruction
+                          <span class="text-foreground-40"> · {{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</span>
+                        </div>
+                      </div>
                     </div>
                     <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                       <div
@@ -642,6 +694,17 @@ export class HomePageComponent implements AfterViewInit {
     { key: 'week', label: 'This Week' },
     { key: 'archive', label: 'Archive' },
   ];
+  readonly taskTabCounts = computed(() => {
+    const tasks = this.biddingTasks();
+    const counts: Record<BiddingTaskScheduleTab, number> = {
+      today: 0,
+      tomorrow: 0,
+      week: 0,
+      archive: 0,
+    };
+    for (const t of tasks) counts[t.scheduleTab]++;
+    return counts;
+  });
   readonly taskScheduleTab = signal<BiddingTaskScheduleTab>('today');
   readonly taskPriorityFilter = signal<'all' | 'critical' | 'high' | 'medium'>('all');
   readonly taskPriorityOptions: { key: 'all' | 'critical' | 'high' | 'medium'; label: string }[] = [
@@ -835,17 +898,34 @@ export class HomePageComponent implements AfterViewInit {
     return priority.charAt(0).toUpperCase() + priority.slice(1);
   }
 
-  taskPriorityBadgeClass(priority: BiddingTask['priority']): string {
+  /** Same visual language as `homeEstimateCardBadgeClass` (Planning/Archived/Completed). */
+  taskCardBadgeClass(priority: BiddingTask['priority']): string {
+    const base =
+      'text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap flex items-center gap-1';
     switch (priority) {
       case 'overdue':
-        return 'bg-destructive-20 text-destructive';
+        return `${base} bg-destructive text-destructive-foreground`;
       case 'critical':
-        return 'bg-destructive-20 text-destructive';
+        return `${base} bg-destructive-20 text-destructive`;
       case 'high':
-        return 'bg-warning-20 text-warning';
+        return `${base} bg-warning-20 text-warning`;
       case 'medium':
       default:
-        return 'bg-muted text-foreground-60';
+        return `${base} bg-muted text-foreground-60`;
+    }
+  }
+
+  taskScheduleTabDisplayLabel(key: BiddingTaskScheduleTab): string {
+    const n = this.taskTabCounts()[key];
+    switch (key) {
+      case 'today':
+        return `Today (${n})`;
+      case 'tomorrow':
+        return `Tomorrow (${n})`;
+      case 'week':
+        return 'This Week';
+      default:
+        return 'Archive';
     }
   }
 

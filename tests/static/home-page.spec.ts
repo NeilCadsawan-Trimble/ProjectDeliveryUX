@@ -16,6 +16,10 @@ const SRC = readFileSync(
   resolve(__dir, '../../src/app/pages/home-page/home-page.component.ts'),
   'utf-8',
 );
+const HERO = readFileSync(
+  resolve(__dir, '../../src/app/pages/home-page/home-page-hero.component.ts'),
+  'utf-8',
+);
 
 describe('HomePageComponent (template regression)', () => {
   describe('desktop padding', () => {
@@ -29,9 +33,13 @@ describe('HomePageComponent (template regression)', () => {
   });
 
   describe('home header', () => {
-    it('does not render the removed bidding-phase subtitle under welcome', () => {
+    it('uses isolated hero component with no bidding-phase subtitle', () => {
+      expect(SRC).toContain('<app-home-page-hero');
       expect(SRC).not.toContain('meetings in one place');
       expect(SRC).not.toContain('bidding phase</span>');
+      expect(HERO).not.toContain('meetings in one place');
+      expect(HERO).not.toContain('text-foreground-80 mt-2');
+      expect(HERO).not.toContain('bidding phase');
     });
   });
 

@@ -750,7 +750,7 @@ export class DashboardShellComponent implements AfterViewInit {
         case 'homeTasks':
           parts.push('Bidding tasks and action items:');
           for (const t of BIDDING_TASKS) {
-            parts.push(`  ${t.headline} — ${t.subline} (${t.priority}): ${t.warning}`);
+            parts.push(`  ${t.title} (${t.priority}): ${t.description} — ${t.alertMessage}`);
           }
           break;
         case 'homeTimeOff':
@@ -760,7 +760,7 @@ export class DashboardShellComponent implements AfterViewInit {
           }
           break;
         case 'homeCalendar': {
-          parts.push('Upcoming calendar:');
+          parts.push('Bert — bidding & preconstruction calendar:');
           const upcoming = CALENDAR_APPOINTMENTS.slice(0, 10);
           for (const a of upcoming) {
             const d = a.date;
