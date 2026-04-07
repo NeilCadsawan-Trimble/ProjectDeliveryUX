@@ -104,23 +104,24 @@ export class AuthService {
   }
 
   async logout(): Promise<void> {
+    this._clearStorage();
+    this._isAuthenticated.set(false);
+    this._user.set(null);
+
     try {
       const codeVerifier = localStorage.getItem(STORAGE_KEYS.codeVerifier);
       if (codeVerifier) {
         const provider = this._createTokenProvider(codeVerifier);
-        const logoutUrl = await provider.GetOAuthLogoutRedirect();
-        this._clearStorage();
-        this._isAuthenticated.set(false);
-        this._user.set(null);
+        const logoutUrl = await Promise.race([
+          provider.GetOAuthLogoutRedirect(),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+        ]);
         window.location.href = logoutUrl;
         return;
       }
     } catch {
-      // Fall through to local-only logout
+      // Trimble ID logout unavailable -- fall through to local redirect
     }
-    this._clearStorage();
-    this._isAuthenticated.set(false);
-    this._user.set(null);
     window.location.href = this._config.logoutRedirectUri;
   }
 
