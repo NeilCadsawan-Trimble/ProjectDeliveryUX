@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, NgZone, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
@@ -38,6 +38,7 @@ import { AuthService } from '../../services/auth.service';
 export class AuthCallbackComponent implements OnInit {
   readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly ngZone = inject(NgZone);
 
   async ngOnInit(): Promise<void> {
     const queryString = window.location.search;
@@ -50,7 +51,13 @@ export class AuthCallbackComponent implements OnInit {
     if (success) {
       const returnUrl = this.authService.getReturnUrl();
       this.authService.clearReturnUrl();
-      this.router.navigateByUrl(returnUrl);
+      this.ngZone.run(() => {
+        this.router.navigateByUrl(returnUrl).then(navigated => {
+          if (!navigated) {
+            window.location.replace(returnUrl);
+          }
+        });
+      });
     }
   }
 
