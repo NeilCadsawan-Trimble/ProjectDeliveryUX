@@ -169,6 +169,7 @@ These areas have broken multiple times. Extra care required:
 | Skills (lessons) | `.cursor/skills/dashboard-layout-lessons/SKILL.md` |
 | Lint scripts | `scripts/` |
 | Dashboard data | `src/app/data/dashboard-data.ts` |
+| Profile page | `src/app/pages/profile-page/profile-page.component.ts` |
 | Routes | `src/app/app.routes.ts` |
 | Theme service | `src/app/shell/services/theme.service.ts` |
 | Canvas panning/zoom | `src/app/shell/services/canvas-panning.ts` |
@@ -229,3 +230,4 @@ These areas have broken multiple times. Extra care required:
 | 16 (Apr 5) | `fb55d8c2-9c39-4110-99b0-9930aed93e09` | Live weather (OpenWeatherMap API, Edge Function, WeatherService), 23 regression tests, PR #58 |
 | 17 (Apr 6) | *(session)* | Bert Humphries as Project Manager on all 8 projects |
 | 18 (Apr 7) | `2c2f59d8-3267-405f-ae9b-62cbe76d9ac6` | Trimble ID auth (OAuth 2.0 PKCE), Vercel deployment fixes, PRs #73-78 |
+| 19 (Apr 8) | *(current)* | Persona profile pages, user menu internal navigation |

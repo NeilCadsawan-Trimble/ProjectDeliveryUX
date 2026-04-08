@@ -80,8 +80,12 @@ import {
   isClickInsideSideNavChrome,
 } from '../../shell/utils/side-nav-click.util';
 import { ChartComponent, type ApexAxisChartSeries } from 'ng-apexcharts';
+import { ProjectChangeOrdersComponent } from './components/project-change-orders.component';
+import { ProjectFieldOpsComponent } from './components/project-field-ops.component';
+import { ProjectDailyReportsComponent } from './components/project-daily-reports.component';
+import { ProjectContractsComponent } from './components/project-contracts.component';
 
-type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather';
+type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather' | 'changeOrders' | 'fieldOps' | 'dailyReports' | 'contracts';
 
 const RECORDS_PAGE_DESCRIPTIONS: Record<string, string> = {
   'daily-reports': 'View and manage daily field reports including weather, workforce, equipment, and work performed.',
@@ -118,7 +122,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -165,15 +169,15 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   protected override getEngineConfig(): DashboardLayoutConfig {
     return {
-      widgets: ['projHeader', 'risks', 'milestones', 'tasks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'],
-      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:project-${this.projectId()}-v5`,
-      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:project-${this.projectId()}:v7`,
-      defaultColStarts: { projHeader: 1, risks: 1, milestones: 1, tasks: 1, rfis: 1, submittals: 1, drawing: 12, weather: 12, budget: 12, team: 12, activity: 12 },
-      defaultColSpans: { projHeader: 16, risks: 11, milestones: 11, tasks: 11, rfis: 11, submittals: 11, drawing: 5, weather: 5, budget: 5, team: 5, activity: 5 },
-      defaultTops: { projHeader: 0, risks: 0, milestones: 368, tasks: 896, rfis: 1312, submittals: 1648, drawing: 0, weather: 432, budget: 688, team: 1152, activity: 1568 },
-      defaultHeights: { projHeader: 0, milestones: 512, tasks: 400, risks: 352, rfis: 320, submittals: 320, drawing: 416, weather: 240, budget: 448, team: 400, activity: 352 },
-      canvasDefaultLefts: { projHeader: 0, risks: 0, milestones: 0, tasks: 0, rfis: 0, submittals: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891 },
-      canvasDefaultPixelWidths: { projHeader: 1280, risks: 875, milestones: 875, tasks: 875, rfis: 875, submittals: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389 },
+      widgets: ['projHeader', 'risks', 'milestones', 'tasks', 'rfis', 'submittals', 'dailyReports', 'fieldOps', 'drawing', 'weather', 'budget', 'team', 'activity', 'changeOrders', 'contracts'],
+      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:project-${this.projectId()}-v6`,
+      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:project-${this.projectId()}:v8`,
+      defaultColStarts: { projHeader: 1, risks: 1, milestones: 1, tasks: 1, rfis: 1, submittals: 1, dailyReports: 1, fieldOps: 1, drawing: 12, weather: 12, budget: 12, team: 12, activity: 12, changeOrders: 12, contracts: 12 },
+      defaultColSpans: { projHeader: 16, risks: 11, milestones: 11, tasks: 11, rfis: 11, submittals: 11, dailyReports: 11, fieldOps: 11, drawing: 5, weather: 5, budget: 5, team: 5, activity: 5, changeOrders: 5, contracts: 5 },
+      defaultTops: { projHeader: 0, risks: 0, milestones: 368, tasks: 896, rfis: 1312, submittals: 1648, dailyReports: 1984, fieldOps: 2400, drawing: 0, weather: 432, budget: 688, team: 1152, activity: 1568, changeOrders: 1936, contracts: 2352 },
+      defaultHeights: { projHeader: 0, milestones: 512, tasks: 400, risks: 352, rfis: 320, submittals: 320, dailyReports: 400, fieldOps: 400, drawing: 416, weather: 240, budget: 448, team: 400, activity: 352, changeOrders: 400, contracts: 380 },
+      canvasDefaultLefts: { projHeader: 0, risks: 0, milestones: 0, tasks: 0, rfis: 0, submittals: 0, dailyReports: 0, fieldOps: 0, drawing: 891, weather: 891, budget: 891, team: 891, activity: 891, changeOrders: 891, contracts: 891 },
+      canvasDefaultPixelWidths: { projHeader: 1280, risks: 875, milestones: 875, tasks: 875, rfis: 875, submittals: 875, dailyReports: 875, fieldOps: 875, drawing: 389, weather: 389, budget: 389, team: 389, activity: 389, changeOrders: 389, contracts: 389 },
       canvasDefaultTops: {
         projHeader: 16,
         risks: 176,
@@ -181,13 +185,17 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
         tasks: 1072,
         rfis: 1488,
         submittals: 1824,
+        dailyReports: 2160,
+        fieldOps: 2576,
         drawing: 176,
         weather: 608,
         budget: 864,
         team: 1328,
         activity: 1744,
+        changeOrders: 2112,
+        contracts: 2528,
       },
-      canvasDefaultHeights: { projHeader: 144, risks: 352, milestones: 512, tasks: 400, rfis: 320, submittals: 320, drawing: 416, weather: 240, budget: 448, team: 400, activity: 352 },
+      canvasDefaultHeights: { projHeader: 144, risks: 352, milestones: 512, tasks: 400, rfis: 320, submittals: 320, dailyReports: 400, fieldOps: 400, drawing: 416, weather: 240, budget: 448, team: 400, activity: 352, changeOrders: 400, contracts: 380 },
       minColSpan: 4,
       canvasGridMinHeightOffset: 200,
       savesDesktopOnMobile: true,
@@ -945,7 +953,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
   private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
 
-  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'drawing', 'weather', 'budget', 'team', 'activity'];
+  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'dailyReports', 'fieldOps', 'drawing', 'weather', 'budget', 'team', 'activity', 'changeOrders', 'contracts'];
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   readonly navbarSearchQuery = signal('');

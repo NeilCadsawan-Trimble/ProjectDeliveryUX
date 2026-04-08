@@ -3589,6 +3589,38 @@
                 </div>
               </app-widget-frame>
                 }
+
+                @case ('changeOrders') {
+              <app-widget-frame icon="swap" title="Change Orders" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('changeOrders')"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <app-project-change-orders [changeOrders]="projectChangeOrders()" />
+              </app-widget-frame>
+                }
+
+                @case ('fieldOps') {
+              <app-widget-frame icon="clipboard" title="Field Operations" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('fieldOps')"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <app-project-field-ops [inspections]="projectInspections()" [punchListItems]="projectPunchItems()" />
+              </app-widget-frame>
+                }
+
+                @case ('dailyReports') {
+              <app-widget-frame icon="file" title="Daily Reports" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('dailyReports')"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <app-project-daily-reports [dailyReports]="projectDailyReports()" />
+              </app-widget-frame>
+                }
+
+                @case ('contracts') {
+              <app-widget-frame icon="document" title="Contracts" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('contracts')"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <app-project-contracts [contracts]="projectContracts()" />
+              </app-widget-frame>
+                }
               }
 
               </div>

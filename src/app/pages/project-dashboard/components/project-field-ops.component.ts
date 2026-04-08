@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { Inspection, PunchListItem } from '../../../data/dashboard-data.types';
 
 @Component({
-  selector: 'app-home-field-ops',
+  selector: 'app-project-field-ops',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
@@ -64,12 +64,9 @@ import type { Inspection, PunchListItem } from '../../../data/dashboard-data.typ
       <div class="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto">
         <div class="text-2xs font-medium text-foreground-60 mb-1">Recent failed inspections</div>
         @for (insp of failedInspections(); track insp.id) {
-          <div class="flex items-center justify-between gap-2 py-1.5 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
-            role="button" tabindex="0"
-            (click)="inspectionClick.emit({ projectId: insp.projectId, inspectionId: insp.id })"
-            (keydown.enter)="inspectionClick.emit({ projectId: insp.projectId, inspectionId: insp.id })">
+          <div class="flex items-center justify-between gap-2 py-1.5 border-bottom-default last:border-b-0">
             <div class="flex flex-col gap-0.5 min-w-0 flex-1">
-              <div class="text-xs font-medium text-foreground truncate">{{ insp.type }} -- {{ insp.project }}</div>
+              <div class="text-xs font-medium text-foreground truncate">{{ insp.type }}</div>
               <div class="text-2xs text-foreground-40 truncate">{{ insp.notes }}</div>
             </div>
             <div class="text-2xs text-foreground-60 shrink-0">{{ insp.date }}</div>
@@ -82,10 +79,9 @@ import type { Inspection, PunchListItem } from '../../../data/dashboard-data.typ
     </div>
   `,
 })
-export class HomeFieldOpsComponent {
+export class ProjectFieldOpsComponent {
   readonly inspections = input.required<Inspection[]>();
   readonly punchListItems = input.required<PunchListItem[]>();
-  readonly inspectionClick = output<{ projectId: number; inspectionId: string }>();
 
   readonly passCount = computed(() => this.inspections().filter((i) => i.result === 'pass').length);
   readonly failCount = computed(() => this.inspections().filter((i) => i.result === 'fail').length);

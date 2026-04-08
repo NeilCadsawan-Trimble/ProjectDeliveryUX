@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { DailyReport } from '../../../data/dashboard-data.types';
 
 export interface DailyReportRow {
   id: string;
+  projectId: number;
   project: string;
   date: string;
   author: string;
@@ -37,7 +38,10 @@ export interface DailyReportRow {
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
         @for (row of latestReports(); track row.id) {
-          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
+          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+            role="button" tabindex="0"
+            (click)="reportClick.emit({ projectId: row.projectId, reportId: row.id })"
+            (keydown.enter)="reportClick.emit({ projectId: row.projectId, reportId: row.id })">
             <div class="flex items-center justify-between gap-2">
               <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ row.project }}</div>
               <div class="flex items-center gap-1.5 shrink-0">
@@ -68,6 +72,7 @@ export interface DailyReportRow {
 })
 export class HomeDailyReportsComponent {
   readonly dailyReports = input.required<DailyReport[]>();
+  readonly reportClick = output<{ projectId: number; reportId: string }>();
 
   readonly latestReports = computed<DailyReportRow[]>(() => {
     const reports = this.dailyReports();
@@ -77,6 +82,7 @@ export class HomeDailyReportsComponent {
     }
     return [...byProject.values()].map((r) => ({
       id: r.id,
+      projectId: r.projectId,
       project: r.project,
       date: r.date,
       author: r.author,

@@ -865,9 +865,12 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       }
                       @for (appt of calendarDay1Appts(); track appt.id) {
                         <div
-                          class="absolute inset-x-1 rounded px-1.5 py-0.5 text-xs overflow-hidden border-l-2 cursor-default {{ apptColor(appt.type) }}"
+                          class="absolute inset-x-1 rounded px-1.5 py-0.5 text-xs overflow-hidden border-l-2 {{ apptColor(appt.type) }}"
+                          [class.cursor-pointer]="!!appt.projectSlug"
+                          [class.cursor-default]="!appt.projectSlug"
                           [style.top.px]="apptTop(appt)"
                           [style.height.px]="apptHeight(appt)"
+                          (click)="appt.projectSlug ? handleCalendarApptClick(appt.projectSlug) : null"
                         >
                           <div class="font-medium leading-tight truncate">{{ appt.title }}</div>
                           @if (apptHeight(appt) >= 36) {
@@ -887,9 +890,12 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       }
                       @for (appt of calendarDay2Appts(); track appt.id) {
                         <div
-                          class="absolute inset-x-1 rounded px-1.5 py-0.5 text-xs overflow-hidden border-l-2 cursor-default {{ apptColor(appt.type) }}"
+                          class="absolute inset-x-1 rounded px-1.5 py-0.5 text-xs overflow-hidden border-l-2 {{ apptColor(appt.type) }}"
+                          [class.cursor-pointer]="!!appt.projectSlug"
+                          [class.cursor-default]="!appt.projectSlug"
                           [style.top.px]="apptTop(appt)"
                           [style.height.px]="apptHeight(appt)"
+                          (click)="appt.projectSlug ? handleCalendarApptClick(appt.projectSlug) : null"
                         >
                           <div class="font-medium leading-tight truncate">{{ appt.title }}</div>
                           @if (apptHeight(appt) >= 36) {
@@ -1504,7 +1510,14 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   }
                   <div class="overflow-y-auto flex-1">
                     @for (activity of activities(); track activity.id) {
-                      <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0">
+                      <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0"
+                        [class.cursor-pointer]="!!activity.projectId"
+                        [class.hover:bg-muted]="!!activity.projectId"
+                        [class]="activity.projectId ? 'transition-colors duration-150' : ''"
+                        [attr.role]="activity.projectId ? 'button' : null"
+                        [attr.tabindex]="activity.projectId ? 0 : null"
+                        (click)="activity.projectId ? handleActivityClick(activity.projectId) : null"
+                        (keydown.enter)="activity.projectId ? handleActivityClick(activity.projectId!) : null">
                         <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
                           <i class="modus-icons text-sm {{ activity.iconColor }}" aria-hidden="true">{{ activity.icon }}</i>
                         </div>
@@ -1728,7 +1741,10 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                 >
                   <div class="flex flex-col gap-1 h-full min-h-0 overflow-y-auto p-4">
                     @for (ms of crossProjectMilestones().slice(0, 15); track ms.name) {
-                      <div class="flex items-center gap-3 py-2 border-bottom-default last:border-b-0">
+                      <div class="flex items-center gap-3 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+                        role="button" tabindex="0"
+                        (click)="handleMilestoneClick(ms.projectSlug)"
+                        (keydown.enter)="handleMilestoneClick(ms.projectSlug)">
                         <div class="w-2 h-2 rounded-full shrink-0"
                           [class]="ms.status === 'completed' ? 'bg-success' : ms.status === 'overdue' ? 'bg-destructive' : ms.status === 'in-progress' ? 'bg-primary' : 'bg-muted'"></div>
                         <div class="flex flex-col gap-0.5 min-w-0 flex-1">
@@ -1761,7 +1777,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <app-home-budget-variance [projects]="projects()" />
+                  <app-home-budget-variance [projects]="projects()" (rowClick)="handleBudgetRowClick($event)" />
                 </app-widget-frame>
 
               } @else if (widgetId === 'homeChangeOrders') {
@@ -1779,7 +1795,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <app-home-change-orders [changeOrders]="allChangeOrders()" />
+                  <app-home-change-orders [changeOrders]="allChangeOrders()" (orderClick)="handleChangeOrderClick($event)" />
                 </app-widget-frame>
 
               } @else if (widgetId === 'homeFieldOps') {
@@ -1797,7 +1813,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <app-home-field-ops [inspections]="allInspections()" [punchListItems]="allPunchListItems()" />
+                  <app-home-field-ops [inspections]="allInspections()" [punchListItems]="allPunchListItems()" (inspectionClick)="handleInspectionClick($event)" />
                 </app-widget-frame>
 
               } @else if (widgetId === 'homeDailyReports') {
@@ -1815,7 +1831,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <app-home-daily-reports [dailyReports]="allDailyReports()" />
+                  <app-home-daily-reports [dailyReports]="allDailyReports()" (reportClick)="handleDailyReportClick($event)" />
                 </app-widget-frame>
 
               } @else if (widgetId === 'homeTeamAllocation') {
@@ -1833,7 +1849,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <app-home-team-allocation [projectTeams]="projectTeamInputs()" />
+                  <app-home-team-allocation [projectTeams]="projectTeamInputs()" (projectClick)="handleTeamProjectClick($event)" />
                 </app-widget-frame>
 
               } @else if (widgetId === 'homeContracts') {
@@ -1851,7 +1867,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <app-home-contracts [contracts]="allContracts()" />
+                  <app-home-contracts [contracts]="allContracts()" (contractClick)="handleContractClick($event)" />
                 </app-widget-frame>
               }
 
@@ -2063,11 +2079,14 @@ export class HomePageComponent extends DashboardPageBase {
   readonly allPunchListItems = computed<PunchListItem[]>(() => this.store.punchListItems());
   readonly allDailyReports = computed<DailyReport[]>(() => this.store.dailyReports());
 
-  readonly crossProjectMilestones = computed<(Milestone & { projectName: string })[]>(() => {
-    const milestones: (Milestone & { projectName: string })[] = [];
-    for (const [, pd] of Object.entries(PROJECT_DATA)) {
+  readonly crossProjectMilestones = computed<(Milestone & { projectName: string; projectId: number; projectSlug: string })[]>(() => {
+    const milestones: (Milestone & { projectName: string; projectId: number; projectSlug: string })[] = [];
+    for (const [idStr, pd] of Object.entries(PROJECT_DATA)) {
+      const pid = +idStr;
+      const proj = this.store.findProjectById(pid);
+      const slug = proj?.slug ?? '';
       for (const m of pd.milestones) {
-        milestones.push({ ...m, projectName: pd.name ?? '' });
+        milestones.push({ ...m, projectName: pd.name ?? '', projectId: pid, projectSlug: slug });
       }
     }
     return milestones.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
@@ -2647,6 +2666,59 @@ export class HomePageComponent extends DashboardPageBase {
     } else {
       this.router.navigate([`${pp}/project`, slugOrId]);
     }
+  }
+
+  private navigateToProjectPage(projectId: number, queryParams: Record<string, string>): void {
+    const proj = this.store.findProjectById(projectId);
+    if (proj) {
+      this.router.navigate([`${this.personaPrefix()}/project`, proj.slug], { queryParams });
+    }
+  }
+
+  handleBudgetRowClick(slug: string): void {
+    this.router.navigate([`${this.personaPrefix()}/project`, slug], {
+      queryParams: { page: 'financials', subpage: 'budget' },
+    });
+  }
+
+  handleChangeOrderClick(event: { projectId: number; orderId: string }): void {
+    this.navigateToProjectPage(event.projectId, {
+      page: 'financials', subpage: 'potential-change-orders', view: 'changeOrder', id: event.orderId, from: 'home',
+    });
+  }
+
+  handleInspectionClick(event: { projectId: number; inspectionId: string }): void {
+    this.navigateToProjectPage(event.projectId, {
+      page: 'records', subpage: 'inspections', view: 'inspection', id: event.inspectionId, from: 'home',
+    });
+  }
+
+  handleDailyReportClick(event: { projectId: number; reportId: string }): void {
+    this.navigateToProjectPage(event.projectId, {
+      page: 'records', subpage: 'daily-reports', view: 'dailyReport', id: event.reportId, from: 'home',
+    });
+  }
+
+  handleTeamProjectClick(projectId: number): void {
+    this.navigateToProject(projectId);
+  }
+
+  handleContractClick(event: { projectId: number; contractId: string }): void {
+    this.navigateToProjectPage(event.projectId, {
+      page: 'financials', subpage: 'contracts',
+    });
+  }
+
+  handleMilestoneClick(projectSlug: string): void {
+    if (projectSlug) this.navigateToProject(projectSlug);
+  }
+
+  handleActivityClick(projectId: number): void {
+    this.navigateToProject(projectId);
+  }
+
+  handleCalendarApptClick(projectSlug: string): void {
+    if (projectSlug) this.navigateToProject(projectSlug);
   }
 
   readonly pendingTimeOffCount = computed(() =>

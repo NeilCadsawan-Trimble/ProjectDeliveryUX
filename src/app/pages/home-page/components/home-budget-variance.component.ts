@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { Project } from '../../../data/dashboard-data.types';
 
 export interface BudgetRow {
   id: number;
+  slug: string;
   name: string;
   budgetPct: number;
   budgetUsed: string;
@@ -22,7 +23,10 @@ export interface BudgetRow {
         <div>Budget Used</div>
       </div>
       @for (row of rows(); track row.id) {
-        <div class="flex flex-col gap-1.5 py-2 border-bottom-default last:border-b-0">
+        <div class="flex flex-col gap-1.5 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+          role="button" tabindex="0"
+          (click)="rowClick.emit(row.slug)"
+          (keydown.enter)="rowClick.emit(row.slug)">
           <div class="flex items-center justify-between gap-3">
             <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ row.name }}</div>
             <div class="text-xs tabular-nums text-foreground-60 shrink-0">{{ row.budgetUsed }} / {{ row.budgetTotal }}</div>
@@ -40,11 +44,13 @@ export interface BudgetRow {
 })
 export class HomeBudgetVarianceComponent {
   readonly projects = input.required<Project[]>();
+  readonly rowClick = output<string>();
 
   readonly rows = computed<BudgetRow[]>(() =>
     this.projects()
       .map((p) => ({
         id: p.id,
+        slug: p.slug,
         name: p.name,
         budgetPct: p.budgetPct,
         budgetUsed: p.budgetUsed,

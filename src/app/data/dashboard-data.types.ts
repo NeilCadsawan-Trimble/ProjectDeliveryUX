@@ -147,6 +147,7 @@ export interface ActivityItem {
   timeAgo: string;
   icon: string;
   iconColor: string;
+  projectId?: number;
 }
 
 export interface AiMessage {
