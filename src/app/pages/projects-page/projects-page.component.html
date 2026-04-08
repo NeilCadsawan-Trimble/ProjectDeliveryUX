@@ -219,12 +219,15 @@
                   @for (eventRow of row.rows.slice(0, 3); track $index; let rowIdx = $index) {
                     @for (event of eventRow; track event.id) {
                       <div
-                        class="absolute h-5 rounded text-2xs flex items-center px-1 overflow-hidden whitespace-nowrap cursor-default transition-opacity hover:opacity-80"
+                        class="absolute h-5 rounded text-2xs flex items-center px-1 overflow-hidden whitespace-nowrap cursor-pointer transition-opacity hover:opacity-80"
                         [class]="categoryMeta[event.category].bgClass + ' ' + categoryMeta[event.category].borderClass"
                         [style.left.px]="eventLeft(event)"
                         [style.width.px]="eventWidth(event)"
                         [style.top.px]="(barTop > 2 ? barTop : 2) + rowIdx * barSpacing"
-                        [title]="event.title + ' (' + formatEventDates(event) + ')' + (event.participants ? ' \u2014 ' + event.participants : '')"
+                        (mouseenter)="onBarMouseEnter($event, event, row.project.name)"
+                        (mousemove)="onBarMouseMove($event)"
+                        (mouseleave)="onBarMouseLeave()"
+                        (click)="navigateToProjectSchedule(event)"
                       >
                         <div class="text-foreground truncate">{{ event.title }}</div>
                       </div>
@@ -1047,12 +1050,15 @@
               @for (eventRow of row.rows.slice(0, 3); track $index; let rowIdx = $index) {
                 @for (event of eventRow; track event.id) {
                   <div
-                    class="absolute h-5 rounded text-2xs flex items-center px-1 overflow-hidden whitespace-nowrap cursor-default transition-opacity hover:opacity-80"
+                    class="absolute h-5 rounded text-2xs flex items-center px-1 overflow-hidden whitespace-nowrap cursor-pointer transition-opacity hover:opacity-80"
                     [class]="categoryMeta[event.category].bgClass + ' ' + categoryMeta[event.category].borderClass"
                     [style.left.px]="eventLeft(event)"
                     [style.width.px]="eventWidth(event)"
                     [style.top.px]="(barTop > 2 ? barTop : 2) + rowIdx * barSpacing"
-                    [title]="event.title + ' (' + formatEventDates(event) + ')' + (event.participants ? ' \u2014 ' + event.participants : '')"
+                    (mouseenter)="onBarMouseEnter($event, event, row.project.name)"
+                    (mousemove)="onBarMouseMove($event)"
+                    (mouseleave)="onBarMouseLeave()"
+                    (click)="navigateToProjectSchedule(event)"
                   >
                     <div class="text-foreground truncate">{{ event.title }}</div>
                   </div>
@@ -1077,3 +1083,33 @@
   }
 
 </div>
+
+@if (hoveredEvent(); as evt) {
+  <div
+    class="fixed z-50 pointer-events-none bg-card border-default rounded-lg shadow-lg p-3 min-w-[220px] max-w-[300px]"
+    [style.left.px]="clampedFlyoutPosition().x"
+    [style.top.px]="clampedFlyoutPosition().y"
+  >
+    <div class="flex items-center gap-2 mb-1">
+      <div class="w-2 h-2 rounded-full flex-shrink-0" [class]="categoryMeta[evt.category].colorClass"></div>
+      <div class="text-sm font-semibold text-foreground truncate">{{ evt.title }}</div>
+    </div>
+    <div class="text-xs text-foreground-60 mb-2">{{ categoryMeta[evt.category].label }}</div>
+    <div class="flex items-center gap-1 text-xs text-foreground-80 mb-1">
+      <i class="modus-icons text-xs" aria-hidden="true">calendar</i>
+      <div>{{ formatEventDates(evt) }}</div>
+      <div class="text-foreground-40 mx-1">|</div>
+      <div>{{ eventDurationDays(evt) }} day(s)</div>
+    </div>
+    <div class="flex items-center gap-1 text-xs text-foreground-60">
+      <i class="modus-icons text-xs" aria-hidden="true">folder_closed</i>
+      <div>{{ hoveredProject() }}</div>
+    </div>
+    @if (evt.participants) {
+      <div class="flex items-center gap-1 text-xs text-foreground-60 mt-1">
+        <i class="modus-icons text-xs" aria-hidden="true">people_group</i>
+        <div>{{ evt.participants }}</div>
+      </div>
+    }
+  </div>
+}

@@ -717,6 +717,7 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly activeNav = computed(() => {
     const suffix = this.routeSuffix();
     const items = this.sideNavItems();
+    if (suffix === '/profile') return '';
     if (suffix.startsWith('/project/')) {
       const projects = items.find((i) => i.value === 'projects');
       return projects?.value ?? 'projects';

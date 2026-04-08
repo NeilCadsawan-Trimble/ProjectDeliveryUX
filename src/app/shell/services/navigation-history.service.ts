@@ -44,16 +44,7 @@ export class NavigationHistoryService {
 
   getBackInfo(): { route: string; label: string } {
     const prev = this._previousUrl;
-    if (!prev) return { route: '/projects', label: 'Back' };
-
-    const path = prev.split('?')[0];
-
-    if (path === '/' || path === '') return { route: '/', label: 'Back' };
-    if (path === '/projects') return { route: '/projects', label: 'Back' };
-    if (path === '/financials') return { route: '/financials', label: 'Back' };
-    if (path.startsWith('/financials/')) return { route: prev, label: 'Back' };
-    if (path.startsWith('/project/')) return { route: prev, label: 'Back' };
-
-    return { route: '/projects', label: 'Back' };
+    if (!prev) return { route: '/', label: 'Back' };
+    return { route: prev, label: 'Back' };
   }
 }

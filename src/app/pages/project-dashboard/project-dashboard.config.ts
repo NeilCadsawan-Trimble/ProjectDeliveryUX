@@ -23,6 +23,7 @@ export interface SubnavConfig {
 
 export const SIDE_NAV_ITEMS: NavItem[] = [
   { value: 'dashboard', label: 'Project Dashboard', icon: 'dashboard' },
+  { value: 'schedule', label: 'Schedule', icon: 'gantt_chart' },
   { value: 'records', label: 'Records', icon: 'clipboard' },
   { value: 'drawings', label: 'Drawings', icon: 'floorplan' },
   { value: 'field-captures', label: 'Field Captures', icon: 'camera' },
@@ -65,6 +66,15 @@ export const FINANCIALS_SUB_NAV_ITEMS: NavItem[] = [
 ];
 
 export const SUBNAV_CONFIGS: Record<string, SubnavConfig> = {
+  schedule: {
+    searchPlaceholder: 'Search events...',
+    actions: [
+      { icon: 'add', label: 'Add event' },
+      { icon: 'upload', label: 'Export' },
+      { icon: 'print', label: 'Print' },
+    ],
+    viewToggles: [],
+  },
   drawings: {
     searchPlaceholder: 'Search drawings...',
     actions: [

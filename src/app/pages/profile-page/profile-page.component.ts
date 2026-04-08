@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  signal,
 } from '@angular/core';
 import { PersonaService } from '../../services/persona.service';
 
@@ -11,17 +12,18 @@ import { PersonaService } from '../../services/persona.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col min-h-full bg-background">
-      <div class="w-full max-w-[960px] mx-auto px-6 py-6 flex flex-col gap-6">
+      <div class="w-full max-w-[960px] mx-auto px-6 py-6 flex flex-col gap-6 flex-1">
 
         <div class="flex items-center justify-between">
           <div class="flex-1"></div>
           <div class="text-sm font-semibold tracking-wide text-foreground uppercase">My Profile</div>
-          <div class="flex-1 flex justify-end gap-3">
+          <div class="flex-1 flex items-center justify-end gap-3">
             <div
               class="text-sm text-foreground-60 cursor-pointer hover:text-foreground transition-colors"
             >Cancel</div>
             <div
-              class="px-4 py-1.5 rounded bg-primary text-primary-foreground text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity"
+              class="px-4 py-1.5 rounded text-sm font-medium transition-opacity"
+              [class]="hasChanges() ? 'bg-primary text-primary-foreground cursor-pointer hover:opacity-90' : 'bg-secondary text-foreground-40 cursor-not-allowed'"
             >Save</div>
           </div>
         </div>
@@ -142,6 +144,9 @@ import { PersonaService } from '../../services/persona.service';
           </div>
         </div>
 
+      </div>
+
+      <div class="w-full max-w-[960px] mx-auto px-6 pb-4">
         <div class="flex items-center justify-center gap-2 text-xs text-foreground-40 py-4 flex-wrap">
           <div class="cursor-pointer hover:text-primary">Help</div>
           <div>|</div>
@@ -153,8 +158,7 @@ import { PersonaService } from '../../services/persona.service';
           <div>|</div>
           <div class="cursor-pointer hover:text-primary">Your Privacy Choices</div>
         </div>
-
-        <div class="text-center text-2xs text-foreground-40 pb-4">
+        <div class="text-center text-2xs text-foreground-40">
           &copy;{{ currentYear }}, Trimble Inc. All rights reserved.
         </div>
       </div>
@@ -166,6 +170,7 @@ export class ProfilePageComponent {
 
   readonly persona = this.personaService.activePersona;
   readonly currentYear = new Date().getFullYear();
+  readonly hasChanges = signal(false);
 
   readonly firstName = computed(() => {
     const parts = this.persona().name.split(' ');
