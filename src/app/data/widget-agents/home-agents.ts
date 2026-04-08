@@ -1096,6 +1096,364 @@ export const homeCashOutflow: WidgetAgent = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// PM Home Widgets (Bert/Frank) -- new cross-project widgets
+// ---------------------------------------------------------------------------
+
+export const homeMilestonesAgent: WidgetAgent = {
+  id: 'homeMilestones',
+  name: 'Cross-Project Milestones',
+  systemPrompt: 'You track milestones across all active construction projects. You help PMs understand upcoming deadlines, overdue milestones, and completion rates.',
+  suggestions(s) {
+    const ms = s.milestones ?? [];
+    const overdue = ms.filter(m => m.status === 'overdue');
+    if (overdue.length) return [`${overdue.length} overdue milestone(s)`, 'Show upcoming milestones', 'Which projects are behind schedule?'];
+    const upcoming = ms.filter(m => m.status === 'upcoming' || m.status === 'in-progress');
+    return [`${upcoming.length} upcoming milestones`, 'Show milestone completion rate', 'Are any milestones at risk?'];
+  },
+  insight(s) {
+    const ms = s.milestones ?? [];
+    const overdue = ms.filter(m => m.status === 'overdue').length;
+    if (overdue) return `${overdue} milestone(s) overdue across portfolio`;
+    const inProg = ms.filter(m => m.status === 'in-progress').length;
+    if (inProg) return `${inProg} milestone(s) in progress`;
+    return null;
+  },
+  alerts(s) {
+    const overdue = (s.milestones ?? []).filter(m => m.status === 'overdue').length;
+    return overdue ? { level: 'warning' as const, count: overdue, label: 'overdue' } : null;
+  },
+  actions: () => [
+    { id: 'escalate-overdue', label: 'Escalate overdue milestones', execute: (st) => { const n = (st.milestones ?? []).filter(m => m.status === 'overdue').length; return n ? `Escalated ${n} overdue milestone(s).` : 'No overdue milestones.'; } },
+    { id: 'export-milestones', label: 'Export milestone report', execute: () => 'Exported cross-project milestone report.' },
+  ],
+  buildContext(s) {
+    const ms = s.milestones ?? [];
+    if (!ms.length) return 'No milestones.';
+    const lines = ms.map(m => `  ${m.name}: due ${m.dueDate}, status: ${m.status}, progress: ${m.progress}%`);
+    return `Cross-project milestones (${ms.length}):\n${lines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const ms = s.milestones ?? [];
+    if (kw(q, 'overdue', 'late', 'behind')) {
+      const overdue = ms.filter(m => m.status === 'overdue');
+      return overdue.length ? `${overdue.length} overdue: ${overdue.map(m => m.name).join(', ')}` : 'No overdue milestones.';
+    }
+    if (kw(q, 'upcoming', 'next', 'soon', 'coming')) {
+      const upcoming = ms.filter(m => m.status === 'upcoming' || m.status === 'in-progress').slice(0, 8);
+      return upcoming.length ? upcoming.map(m => `- **${m.name}**: ${m.dueDate} (${m.progress}%)`).join('\n') : 'No upcoming milestones.';
+    }
+    if (kw(q, 'completion', 'rate', 'progress')) {
+      const completed = ms.filter(m => m.status === 'completed').length;
+      return `${completed} of ${ms.length} milestones completed (${ms.length ? Math.round(completed / ms.length * 100) : 0}%).`;
+    }
+    return `Tracking ${ms.length} milestones across the portfolio. Ask about overdue, upcoming, or completion rates.`;
+  },
+};
+
+export const homeBudgetVarianceAgent: WidgetAgent = {
+  id: 'homeBudgetVariance',
+  name: 'Budget Variance',
+  systemPrompt: 'You track budget utilization across all active construction projects. You help PMs understand budget health, overruns, and portfolio spend.',
+  suggestions(s) {
+    const projects = s.projects ?? [];
+    const over85 = projects.filter(p => p.budgetPct > 85);
+    if (over85.length) return [`${over85.length} project(s) over 85% budget`, 'Show budget breakdown', 'What is total portfolio spend?'];
+    return ['Which projects are highest on budget?', 'Show budget utilization summary', 'What is total portfolio spend?'];
+  },
+  insight(s) {
+    const projects = s.projects ?? [];
+    const over90 = projects.filter(p => p.budgetPct > 90).length;
+    if (over90) return `${over90} project(s) over 90% budget`;
+    const over75 = projects.filter(p => p.budgetPct > 75).length;
+    if (over75) return `${over75} project(s) past 75% budget`;
+    if (projects.length) {
+      const avg = Math.round(projects.reduce((s, p) => s + p.budgetPct, 0) / projects.length);
+      return `Avg ${avg}% budget utilization`;
+    }
+    return null;
+  },
+  alerts(s) {
+    const over90 = (s.projects ?? []).filter(p => p.budgetPct > 90).length;
+    if (over90) return { level: 'critical' as const, count: over90, label: 'over 90% budget' };
+    const over85 = (s.projects ?? []).filter(p => p.budgetPct > 85).length;
+    if (over85) return { level: 'warning' as const, count: over85, label: 'over 85% budget' };
+    return null;
+  },
+  actions: () => [
+    { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
+    { id: 'export-budget', label: 'Export budget report', execute: () => 'Exported portfolio budget variance report.' },
+  ],
+  buildContext(s) {
+    const projects = s.projects ?? [];
+    if (!projects.length) return 'No projects.';
+    const lines = projects.map(p => `  ${p.name}: ${p.budgetUsed}/${p.budgetTotal} (${p.budgetPct}%)`);
+    return `Budget variance (${projects.length} projects):\n${lines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const projects = s.projects ?? [];
+    if (kw(q, 'over budget', 'over 90', 'overrun', 'highest')) {
+      const high = [...projects].sort((a, b) => b.budgetPct - a.budgetPct).slice(0, 5);
+      return high.map(p => `- **${p.name}**: ${p.budgetPct}% (${p.budgetUsed}/${p.budgetTotal})`).join('\n');
+    }
+    if (kw(q, 'total', 'portfolio', 'spend')) {
+      return `Portfolio: ${projects.length} projects. Avg ${Math.round(projects.reduce((s, p) => s + p.budgetPct, 0) / (projects.length || 1))}% budget utilization.`;
+    }
+    return `Tracking budgets for ${projects.length} projects. Ask about overruns, totals, or specific projects.`;
+  },
+};
+
+export const homeChangeOrdersAgent: WidgetAgent = {
+  id: 'homeChangeOrders',
+  name: 'Change Orders',
+  systemPrompt: 'You track change orders across all active construction projects. You help PMs understand pending COs, approval status, and financial impact.',
+  suggestions(s) {
+    const cos = s.changeOrders ?? [];
+    const pending = cos.filter(c => c.status === 'pending');
+    if (pending.length) return [`${pending.length} pending CO(s) totaling ${fmtCurrency(pending.reduce((s, c) => s + c.amount, 0))}`, 'Which projects have the most COs?', 'Show approved CO value'];
+    return ['How many change orders are pending?', 'What is the total approved CO value?', 'Show CO breakdown by project'];
+  },
+  insight(s) {
+    const cos = s.changeOrders ?? [];
+    const pending = cos.filter(c => c.status === 'pending');
+    if (pending.length) return `${pending.length} pending CO(s) worth ${fmtCurrency(pending.reduce((s, c) => s + c.amount, 0))}`;
+    return null;
+  },
+  alerts(s) {
+    const pending = (s.changeOrders ?? []).filter(c => c.status === 'pending').length;
+    return pending >= 3 ? { level: 'warning' as const, count: pending, label: 'pending COs' } : null;
+  },
+  actions: () => [
+    { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
+    { id: 'export-cos', label: 'Export CO report', execute: () => 'Exported change order report.' },
+  ],
+  buildContext(s) {
+    const cos = s.changeOrders ?? [];
+    if (!cos.length) return 'No change orders.';
+    const lines = cos.map(c => `  ${c.id}: ${c.project}, ${c.description}, ${fmtCurrency(c.amount)}, status: ${c.status}`);
+    return `Change orders (${cos.length}):\n${lines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const cos = s.changeOrders ?? [];
+    if (kw(q, 'pending', 'how many', 'count')) {
+      const pending = cos.filter(c => c.status === 'pending');
+      return pending.length ? `${pending.length} pending CO(s):\n${pending.map(c => `- **${c.project}**: ${c.description} (${fmtCurrency(c.amount)})`).join('\n')}` : 'No pending change orders.';
+    }
+    if (kw(q, 'approved', 'value', 'total')) {
+      const approved = cos.filter(c => c.status === 'approved');
+      return `${approved.length} approved CO(s) totaling ${fmtCurrency(approved.reduce((s, c) => s + c.amount, 0))}.`;
+    }
+    if (kw(q, 'project', 'which')) {
+      const byProj = new Map<string, number>();
+      for (const c of cos) byProj.set(c.project, (byProj.get(c.project) ?? 0) + 1);
+      return [...byProj.entries()].map(([p, n]) => `**${p}**: ${n} CO(s)`).join('\n');
+    }
+    return `Tracking ${cos.length} change orders. ${cos.filter(c => c.status === 'pending').length} pending, ${cos.filter(c => c.status === 'approved').length} approved.`;
+  },
+};
+
+export const homeFieldOpsAgent: WidgetAgent = {
+  id: 'homeFieldOps',
+  name: 'Field Operations',
+  systemPrompt: 'You track inspections and punch list items across all active construction projects. You help PMs understand quality metrics, failed inspections, and outstanding punch items.',
+  suggestions(s) {
+    const failed = (s.inspections ?? []).filter(i => i.result === 'fail').length;
+    const openPunch = (s.punchListItems ?? []).filter(p => p.status === 'open').length;
+    if (failed) return [`${failed} failed inspection(s)`, `${openPunch} open punch items`, 'Which projects have quality issues?'];
+    return ['Show inspection results', 'How many punch items are open?', 'Which projects have the most issues?'];
+  },
+  insight(s) {
+    const failed = (s.inspections ?? []).filter(i => i.result === 'fail').length;
+    const openPunch = (s.punchListItems ?? []).filter(p => p.status === 'open').length;
+    if (failed) return `${failed} failed inspection(s), ${openPunch} open punch items`;
+    if (openPunch) return `${openPunch} open punch item(s) across portfolio`;
+    return null;
+  },
+  alerts(s) {
+    const failed = (s.inspections ?? []).filter(i => i.result === 'fail').length;
+    if (failed >= 2) return { level: 'critical' as const, count: failed, label: 'failed inspections' };
+    if (failed) return { level: 'warning' as const, count: failed, label: 'failed inspection' };
+    return null;
+  },
+  actions: () => [
+    { id: 'export-field', label: 'Export field ops report', execute: () => 'Exported field operations report.' },
+    { id: 'escalate-failures', label: 'Escalate failed inspections', execute: (st) => { const n = (st.inspections ?? []).filter(i => i.result === 'fail').length; return n ? `Escalated ${n} failed inspection(s).` : 'No failures.'; } },
+  ],
+  buildContext(s) {
+    const insp = s.inspections ?? [];
+    const punch = s.punchListItems ?? [];
+    const inspLines = insp.map(i => `  ${i.project}: ${i.type}, result: ${i.result}, date: ${i.date}`);
+    const punchLines = punch.filter(p => p.status !== 'verified').map(p => `  ${p.project}: ${p.description}, status: ${p.status}, priority: ${p.priority}`);
+    return `Inspections (${insp.length}):\n${inspLines.join('\n')}\n\nPunch list (${punch.length} total, ${punch.filter(p => p.status === 'open').length} open):\n${punchLines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const insp = s.inspections ?? [];
+    const punch = s.punchListItems ?? [];
+    if (kw(q, 'fail', 'failed', 'failure')) {
+      const failed = insp.filter(i => i.result === 'fail');
+      return failed.length ? `${failed.length} failed:\n${failed.map(i => `- **${i.project}**: ${i.type} (${i.date}) -- ${i.notes}`).join('\n')}` : 'No failed inspections.';
+    }
+    if (kw(q, 'punch', 'open', 'outstanding')) {
+      const open = punch.filter(p => p.status === 'open' || p.status === 'in-progress');
+      return open.length ? `${open.length} open/in-progress:\n${open.map(p => `- **${p.project}**: ${p.description} (${p.priority})`).join('\n')}` : 'No open punch items.';
+    }
+    if (kw(q, 'project', 'quality', 'which')) {
+      const byProj = new Map<string, { failed: number; openPunch: number }>();
+      for (const i of insp.filter(x => x.result === 'fail')) { const e = byProj.get(i.project) ?? { failed: 0, openPunch: 0 }; e.failed++; byProj.set(i.project, e); }
+      for (const p of punch.filter(x => x.status === 'open')) { const e = byProj.get(p.project) ?? { failed: 0, openPunch: 0 }; e.openPunch++; byProj.set(p.project, e); }
+      return [...byProj.entries()].map(([p, d]) => `**${p}**: ${d.failed} failed inspections, ${d.openPunch} open punch items`).join('\n');
+    }
+    return `Inspections: ${insp.filter(i => i.result === 'pass').length} passed, ${insp.filter(i => i.result === 'fail').length} failed. Punch list: ${punch.filter(p => p.status === 'open').length} open. Ask about failures, punch items, or project quality.`;
+  },
+};
+
+export const homeDailyReportsAgent: WidgetAgent = {
+  id: 'homeDailyReports',
+  name: 'Daily Reports',
+  systemPrompt: 'You analyze daily construction reports across all active projects. You help PMs track crew activity, safety incidents, and field operations.',
+  suggestions(s) {
+    const reports = s.dailyReports ?? [];
+    const safety = reports.filter(r => r.safetyIncidents > 0).length;
+    if (safety) return [`${safety} report(s) with safety incidents`, 'Show latest daily reports', 'What is total crew count today?'];
+    return ['Show latest daily reports', 'What is total crew count today?', 'Any issues reported?'];
+  },
+  insight(s) {
+    const reports = s.dailyReports ?? [];
+    const safety = reports.reduce((sum, r) => sum + r.safetyIncidents, 0);
+    if (safety) return `${safety} safety incident(s) reported`;
+    const totalCrew = reports.reduce((sum, r) => sum + r.crewCount, 0);
+    if (totalCrew) return `${totalCrew} total crew across ${reports.length} reports`;
+    return null;
+  },
+  alerts(s) {
+    const safety = (s.dailyReports ?? []).filter(r => r.safetyIncidents > 0).length;
+    return safety ? { level: 'critical' as const, count: safety, label: 'safety incidents' } : null;
+  },
+  actions: () => [
+    { id: 'export-reports', label: 'Export daily reports', execute: () => 'Exported daily reports summary.' },
+  ],
+  buildContext(s) {
+    const reports = s.dailyReports ?? [];
+    if (!reports.length) return 'No daily reports.';
+    const lines = reports.map(r => `  ${r.project} (${r.date}): crew ${r.crewCount}, ${r.hoursWorked}h, safety: ${r.safetyIncidents}, work: ${r.workPerformed}`);
+    return `Daily reports (${reports.length}):\n${lines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const reports = s.dailyReports ?? [];
+    if (kw(q, 'safety', 'incident', 'accident')) {
+      const withIncidents = reports.filter(r => r.safetyIncidents > 0);
+      return withIncidents.length ? `${withIncidents.length} report(s) with safety incidents:\n${withIncidents.map(r => `- **${r.project}** (${r.date}): ${r.safetyIncidents} incident(s)`).join('\n')}` : 'No safety incidents reported.';
+    }
+    if (kw(q, 'crew', 'count', 'headcount', 'total')) {
+      const totalCrew = reports.reduce((sum, r) => sum + r.crewCount, 0);
+      return `Total crew across all reports: ${totalCrew} workers, ${reports.reduce((sum, r) => sum + r.hoursWorked, 0)} hours worked.`;
+    }
+    if (kw(q, 'issue', 'problem')) {
+      const withIssues = reports.filter(r => r.issues && r.issues !== 'None');
+      return withIssues.length ? withIssues.map(r => `- **${r.project}**: ${r.issues}`).join('\n') : 'No issues reported.';
+    }
+    return `${reports.length} daily reports. ${reports.reduce((sum, r) => sum + r.crewCount, 0)} total crew, ${reports.reduce((sum, r) => sum + r.safetyIncidents, 0)} safety incidents.`;
+  },
+};
+
+export const homeTeamAllocationAgent: WidgetAgent = {
+  id: 'homeTeamAllocation',
+  name: 'Team Allocation',
+  systemPrompt: 'You analyze team allocation and resource distribution across all active construction projects. You help PMs identify overallocated team members, staffing gaps, and capacity issues.',
+  suggestions(s) {
+    const team = s.team ?? [];
+    const lowAvail = team.filter(m => m.availability < 30).length;
+    if (lowAvail) return [`${lowAvail} team member(s) with low availability`, 'Who is on multiple projects?', 'Show team by project'];
+    return ['Who is assigned to the most projects?', 'Show team availability', 'Are there any staffing gaps?'];
+  },
+  insight(s) {
+    const team = s.team ?? [];
+    const lowAvail = team.filter(m => m.availability < 30).length;
+    if (lowAvail) return `${lowAvail} team member(s) below 30% availability`;
+    if (team.length) return `${team.length} team members across portfolio`;
+    return null;
+  },
+  alerts(s) {
+    const lowAvail = (s.team ?? []).filter(m => m.availability < 30).length;
+    return lowAvail ? { level: 'warning' as const, count: lowAvail, label: 'low availability' } : null;
+  },
+  actions: () => [
+    { id: 'export-allocation', label: 'Export team allocation report', execute: () => 'Exported team allocation report.' },
+  ],
+  buildContext(s) {
+    const team = s.team ?? [];
+    if (!team.length) return 'No team data.';
+    const lines = team.map(m => `  ${m.name} (${m.role}): ${m.tasksCompleted}/${m.tasksTotal} tasks, ${m.availability}% available`);
+    return `Team allocation (${team.length} members):\n${lines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const team = s.team ?? [];
+    if (kw(q, 'overallocated', 'overloaded', 'busy', 'low')) {
+      const low = team.filter(m => m.availability < 30);
+      return low.length ? `${low.length} with low availability:\n${low.map(m => `- **${m.name}** (${m.role}): ${m.availability}% available`).join('\n')}` : 'No team members below 30% availability.';
+    }
+    if (kw(q, 'availability', 'capacity')) {
+      const avg = team.length ? Math.round(team.reduce((s, m) => s + m.availability, 0) / team.length) : 0;
+      return `Average team availability: ${avg}%. ${team.filter(m => m.availability >= 60).length} members with good capacity (60%+).`;
+    }
+    return `${team.length} team members tracked. Ask about availability, overallocation, or specific people.`;
+  },
+};
+
+export const homeContractsAgent: WidgetAgent = {
+  id: 'homeContracts',
+  name: 'Contract Status',
+  systemPrompt: 'You track contracts across all active construction projects. You help PMs understand contract status, pending approvals, expiring contracts, and total committed value.',
+  suggestions(s) {
+    const contracts = s.contracts ?? [];
+    const pending = contracts.filter(c => c.status === 'pending').length;
+    if (pending) return [`${pending} contract(s) pending approval`, 'What is total contract value?', 'Show contracts expiring soon'];
+    return ['How many contracts are active?', 'What is total contract value?', 'Are any contracts expiring soon?'];
+  },
+  insight(s) {
+    const contracts = s.contracts ?? [];
+    const pending = contracts.filter(c => c.status === 'pending').length;
+    if (pending) return `${pending} contract(s) awaiting approval`;
+    const active = contracts.filter(c => c.status === 'active').length;
+    if (active) return `${active} active contract(s)`;
+    return null;
+  },
+  alerts(s) {
+    const pending = (s.contracts ?? []).filter(c => c.status === 'pending').length;
+    return pending ? { level: 'warning' as const, count: pending, label: 'pending approval' } : null;
+  },
+  actions: () => [
+    { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
+    { id: 'export-contracts', label: 'Export contract report', execute: () => 'Exported contract status report.' },
+  ],
+  buildContext(s) {
+    const contracts = s.contracts ?? [];
+    if (!contracts.length) return 'No contracts.';
+    const lines = contracts.map(c => `  ${c.title}: ${c.vendor}, ${c.project}, value: ${fmtCurrency(c.revisedValue)}, status: ${c.status}, ends: ${c.endDate}`);
+    return `Contracts (${contracts.length}):\n${lines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const contracts = s.contracts ?? [];
+    if (kw(q, 'pending', 'approval', 'waiting')) {
+      const pending = contracts.filter(c => c.status === 'pending');
+      return pending.length ? `${pending.length} pending:\n${pending.map(c => `- **${c.title}** (${c.vendor}): ${fmtCurrency(c.revisedValue)}`).join('\n')}` : 'No pending contracts.';
+    }
+    if (kw(q, 'expiring', 'soon', 'ending')) {
+      const sorted = [...contracts].filter(c => c.status === 'active').sort((a, b) => a.endDate.localeCompare(b.endDate));
+      return sorted.slice(0, 5).map(c => `- **${c.title}**: ends ${c.endDate}`).join('\n');
+    }
+    if (kw(q, 'active', 'how many', 'count')) {
+      const active = contracts.filter(c => c.status === 'active');
+      return `${active.length} active contract(s) totaling ${fmtCurrency(active.reduce((s, c) => s + c.revisedValue, 0))}.`;
+    }
+    if (kw(q, 'total', 'value', 'committed')) {
+      const total = contracts.filter(c => c.status !== 'closed').reduce((s, c) => s + c.revisedValue, 0);
+      return `Total committed contract value: ${fmtCurrency(total)} across ${contracts.length} contracts.`;
+    }
+    return `Tracking ${contracts.length} contracts. ${contracts.filter(c => c.status === 'active').length} active, ${contracts.filter(c => c.status === 'pending').length} pending.`;
+  },
+};
+
 export const HOME_AGENTS: WidgetAgent[] = [
   homeTimeOff,
   homeCalendar,
@@ -1104,6 +1462,13 @@ export const HOME_AGENTS: WidgetAgent[] = [
   homeDefault,
   urgentNeedsAgent,
   homeWeatherAgent,
+  homeMilestonesAgent,
+  homeBudgetVarianceAgent,
+  homeChangeOrdersAgent,
+  homeFieldOpsAgent,
+  homeDailyReportsAgent,
+  homeTeamAllocationAgent,
+  homeContractsAgent,
 ];
 
 export const KELLY_HOME_AGENTS: WidgetAgent[] = [

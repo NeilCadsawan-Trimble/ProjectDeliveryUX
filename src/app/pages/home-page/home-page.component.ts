@@ -47,6 +47,10 @@ import type {
   ProjectWeather,
   WeatherCondition,
   StaffingConflict,
+  Contract,
+  Inspection,
+  PunchListItem,
+  DailyReport,
 } from '../../data/dashboard-data.types';
 import {
   buildUrgentNeeds,
@@ -70,6 +74,14 @@ import { HomeLienWaiversComponent } from './components/home-lien-waivers.compone
 import { HomeRetentionComponent } from './components/home-retention.component';
 import { HomeApActivityComponent } from './components/home-ap-activity.component';
 import { HomeCashOutflowComponent } from './components/home-cash-outflow.component';
+import { HomeBudgetVarianceComponent } from './components/home-budget-variance.component';
+import { HomeChangeOrdersComponent } from './components/home-change-orders.component';
+import { HomeFieldOpsComponent } from './components/home-field-ops.component';
+import { HomeDailyReportsComponent } from './components/home-daily-reports.component';
+import { HomeTeamAllocationComponent } from './components/home-team-allocation.component';
+import { HomeContractsComponent } from './components/home-contracts.component';
+import { PROJECT_DATA, type TeamMember, type Milestone } from '../../data/project-data';
+import type { ProjectTeamInput } from './components/home-team-allocation.component';
 import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
 import { CreateMenuDropdownComponent } from '../../shared/create-menu-dropdown.component';
 import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.component';
@@ -92,6 +104,12 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
     HomeRetentionComponent,
     HomeApActivityComponent,
     HomeCashOutflowComponent,
+    HomeBudgetVarianceComponent,
+    HomeChangeOrdersComponent,
+    HomeFieldOpsComponent,
+    HomeDailyReportsComponent,
+    HomeTeamAllocationComponent,
+    HomeContractsComponent,
     WidgetFrameComponent,
     CreateMenuDropdownComponent,
     StatusFilterPillsComponent,
@@ -1692,6 +1710,149 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                 >
                   <app-home-cash-outflow [payments]="apPaymentSchedule()" />
                 </app-widget-frame>
+
+              } @else if (widgetId === 'homeMilestones') {
+                <app-widget-frame
+                  [title]="'Cross-Project Milestones'"
+                  [icon]="'flag'"
+                  [iconClass]="'text-primary'"
+                  [insight]="milestonesInsight()"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <div class="flex flex-col gap-1 h-full min-h-0 overflow-y-auto p-4">
+                    @for (ms of crossProjectMilestones().slice(0, 15); track ms.name) {
+                      <div class="flex items-center gap-3 py-2 border-bottom-default last:border-b-0">
+                        <div class="w-2 h-2 rounded-full shrink-0"
+                          [class]="ms.status === 'completed' ? 'bg-success' : ms.status === 'overdue' ? 'bg-destructive' : ms.status === 'in-progress' ? 'bg-primary' : 'bg-muted'"></div>
+                        <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                          <div class="text-sm font-medium text-foreground truncate">{{ ms.name }}</div>
+                          <div class="text-2xs text-foreground-60">{{ ms.projectName }}</div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                          <div class="h-1.5 w-12 rounded-full bg-muted overflow-hidden">
+                            <div class="h-full rounded-full bg-primary" [style.width.%]="ms.progress"></div>
+                          </div>
+                          <div class="text-2xs tabular-nums text-foreground-60 w-16 text-right">{{ ms.dueDate.split(',')[0] }}</div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </app-widget-frame>
+
+              } @else if (widgetId === 'homeBudgetVariance') {
+                <app-widget-frame
+                  [title]="'Budget Variance'"
+                  [icon]="'bar_graph_square'"
+                  [iconClass]="'text-warning'"
+                  [insight]="budgetVarianceInsight()"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <app-home-budget-variance [projects]="projects()" />
+                </app-widget-frame>
+
+              } @else if (widgetId === 'homeChangeOrders') {
+                <app-widget-frame
+                  [title]="'Change Orders'"
+                  [icon]="'swap'"
+                  [iconClass]="'text-warning'"
+                  [insight]="changeOrdersInsight()"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <app-home-change-orders [changeOrders]="allChangeOrders()" />
+                </app-widget-frame>
+
+              } @else if (widgetId === 'homeFieldOps') {
+                <app-widget-frame
+                  [title]="'Field Operations'"
+                  [icon]="'clipboard'"
+                  [iconClass]="'text-success'"
+                  [insight]="fieldOpsInsight()"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <app-home-field-ops [inspections]="allInspections()" [punchListItems]="allPunchListItems()" />
+                </app-widget-frame>
+
+              } @else if (widgetId === 'homeDailyReports') {
+                <app-widget-frame
+                  [title]="'Daily Reports'"
+                  [icon]="'calendar'"
+                  [iconClass]="'text-primary'"
+                  [insight]="dailyReportsInsight()"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <app-home-daily-reports [dailyReports]="allDailyReports()" />
+                </app-widget-frame>
+
+              } @else if (widgetId === 'homeTeamAllocation') {
+                <app-widget-frame
+                  [title]="'Team Allocation'"
+                  [icon]="'people'"
+                  [iconClass]="'text-primary'"
+                  [insight]="teamAllocationInsight()"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <app-home-team-allocation [projectTeams]="projectTeamInputs()" />
+                </app-widget-frame>
+
+              } @else if (widgetId === 'homeContracts') {
+                <app-widget-frame
+                  [title]="'Contract Status'"
+                  [icon]="'document'"
+                  [iconClass]="'text-success'"
+                  [insight]="contractsInsight()"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <app-home-contracts [contracts]="allContracts()" />
+                </app-widget-frame>
               }
 
             </div>
@@ -1717,6 +1878,14 @@ export class HomePageComponent extends DashboardPageBase {
   private static readonly ROW_2_TOP = HomePageComponent.ROW_1_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly ROW_3_TOP = HomePageComponent.ROW_2_TOP + HomePageComponent.ROW_2_HEIGHT + DashboardLayoutEngine.GAP_PX;
   private static readonly ROW_4_TOP = HomePageComponent.ROW_3_TOP + HomePageComponent.ROW_3_MAX_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ROW_4_HEIGHT = 384;
+  private static readonly ROW_5_TOP = HomePageComponent.ROW_4_TOP + HomePageComponent.ROW_4_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ROW_5_HEIGHT = 336;
+  private static readonly ROW_6_TOP = HomePageComponent.ROW_5_TOP + HomePageComponent.ROW_5_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ROW_6_HEIGHT = 336;
+  private static readonly ROW_7_TOP = HomePageComponent.ROW_6_TOP + HomePageComponent.ROW_6_HEIGHT + DashboardLayoutEngine.GAP_PX;
+  private static readonly ROW_7_HEIGHT = 336;
+  private static readonly ROW_8_TOP = HomePageComponent.ROW_7_TOP + HomePageComponent.ROW_7_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   private static readonly CANVAS_HEADER_HEIGHT = 80;
   private static readonly CANVAS_HEADER_OFFSET = HomePageComponent.CANVAS_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
@@ -1751,15 +1920,61 @@ export class HomePageComponent extends DashboardPageBase {
     }
 
     return {
-      widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity'],
-      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-home-v9`,
-      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:v16`,
-      defaultColStarts: { homeHeader: 1, homeKpis: 1, homeUrgentNeeds: 7, homeWeather: 1, homeRfis: 7, homeSubmittals: 12, homeTimeOff: 1, homeCalendar: 7, homeDrawings: 1, homeRecentActivity: 7 },
-      defaultColSpans: { homeHeader: 16, homeKpis: 6, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5, homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 10 },
-      defaultTops: { homeHeader: 0, homeKpis: 0, homeUrgentNeeds: 0, homeWeather: HomePageComponent.ROW_2_TOP, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP, homeTimeOff: HomePageComponent.ROW_3_TOP, homeCalendar: HomePageComponent.ROW_3_TOP, homeDrawings: HomePageComponent.ROW_4_TOP, homeRecentActivity: HomePageComponent.ROW_4_TOP },
-      defaultHeights: { homeHeader: 0, homeKpis: HomePageComponent.KPI_HEIGHT, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT, homeWeather: HomePageComponent.ROW_2_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT, homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT, homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: 384 },
-      canvasDefaultLefts: { homeHeader: 0, homeKpis: 0, homeUrgentNeeds: 0, homeWeather: 891, homeTimeOff: 0, homeCalendar: 0, homeRfis: 891, homeSubmittals: 891, homeDrawings: 1296, homeRecentActivity: 0 },
-      canvasDefaultPixelWidths: { homeHeader: 1280, homeKpis: 389, homeUrgentNeeds: 875, homeWeather: 389, homeTimeOff: 875, homeCalendar: 875, homeRfis: 389, homeSubmittals: 389, homeDrawings: 470, homeRecentActivity: 875 },
+      widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts'],
+      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-home-v10`,
+      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:v17`,
+      defaultColStarts: {
+        homeHeader: 1, homeKpis: 1, homeUrgentNeeds: 7, homeWeather: 1, homeRfis: 7, homeSubmittals: 12,
+        homeTimeOff: 1, homeCalendar: 7, homeDrawings: 1, homeRecentActivity: 7,
+        homeMilestones: 1, homeBudgetVariance: 7,
+        homeChangeOrders: 1, homeFieldOps: 7,
+        homeDailyReports: 1, homeTeamAllocation: 7,
+        homeContracts: 1,
+      },
+      defaultColSpans: {
+        homeHeader: 16, homeKpis: 6, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5,
+        homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 10,
+        homeMilestones: 6, homeBudgetVariance: 10,
+        homeChangeOrders: 6, homeFieldOps: 10,
+        homeDailyReports: 6, homeTeamAllocation: 10,
+        homeContracts: 16,
+      },
+      defaultTops: {
+        homeHeader: 0, homeKpis: 0, homeUrgentNeeds: 0,
+        homeWeather: HomePageComponent.ROW_2_TOP, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP,
+        homeTimeOff: HomePageComponent.ROW_3_TOP, homeCalendar: HomePageComponent.ROW_3_TOP,
+        homeDrawings: HomePageComponent.ROW_4_TOP, homeRecentActivity: HomePageComponent.ROW_4_TOP,
+        homeMilestones: HomePageComponent.ROW_5_TOP, homeBudgetVariance: HomePageComponent.ROW_5_TOP,
+        homeChangeOrders: HomePageComponent.ROW_6_TOP, homeFieldOps: HomePageComponent.ROW_6_TOP,
+        homeDailyReports: HomePageComponent.ROW_7_TOP, homeTeamAllocation: HomePageComponent.ROW_7_TOP,
+        homeContracts: HomePageComponent.ROW_8_TOP,
+      },
+      defaultHeights: {
+        homeHeader: 0, homeKpis: HomePageComponent.KPI_HEIGHT, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT,
+        homeWeather: HomePageComponent.ROW_2_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT,
+        homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT,
+        homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: HomePageComponent.ROW_4_HEIGHT,
+        homeMilestones: HomePageComponent.ROW_5_HEIGHT, homeBudgetVariance: HomePageComponent.ROW_5_HEIGHT,
+        homeChangeOrders: HomePageComponent.ROW_6_HEIGHT, homeFieldOps: HomePageComponent.ROW_6_HEIGHT,
+        homeDailyReports: HomePageComponent.ROW_7_HEIGHT, homeTeamAllocation: HomePageComponent.ROW_7_HEIGHT,
+        homeContracts: HomePageComponent.ROW_5_HEIGHT,
+      },
+      canvasDefaultLefts: {
+        homeHeader: 0, homeKpis: 0, homeUrgentNeeds: 0, homeWeather: 891, homeTimeOff: 0, homeCalendar: 0,
+        homeRfis: 891, homeSubmittals: 891, homeDrawings: 1296, homeRecentActivity: 0,
+        homeMilestones: 0, homeBudgetVariance: 500,
+        homeChangeOrders: 0, homeFieldOps: 500,
+        homeDailyReports: 0, homeTeamAllocation: 500,
+        homeContracts: 0,
+      },
+      canvasDefaultPixelWidths: {
+        homeHeader: 1280, homeKpis: 389, homeUrgentNeeds: 875, homeWeather: 389, homeTimeOff: 875, homeCalendar: 875,
+        homeRfis: 389, homeSubmittals: 389, homeDrawings: 470, homeRecentActivity: 875,
+        homeMilestones: 480, homeBudgetVariance: 780,
+        homeChangeOrders: 480, homeFieldOps: 780,
+        homeDailyReports: 480, homeTeamAllocation: 780,
+        homeContracts: 1280,
+      },
       canvasDefaultTops: {
         homeHeader: 0,
         homeKpis: H + 16,
@@ -1771,8 +1986,22 @@ export class HomePageComponent extends DashboardPageBase {
         homeRfis: H + 1264,
         homeRecentActivity: H + 1568,
         homeDrawings: H + 1936,
+        homeMilestones: H + 2400,
+        homeBudgetVariance: H + 2400,
+        homeChangeOrders: H + 2752,
+        homeFieldOps: H + 2752,
+        homeDailyReports: H + 3104,
+        homeTeamAllocation: H + 3104,
+        homeContracts: H + 3456,
       },
-      canvasDefaultHeights: { homeHeader: HomePageComponent.CANVAS_HEADER_HEIGHT, homeKpis: 256, homeUrgentNeeds: 336, homeWeather: 528, homeTimeOff: 432, homeCalendar: 464, homeRfis: 432, homeSubmittals: 416, homeDrawings: 448, homeRecentActivity: 352 },
+      canvasDefaultHeights: {
+        homeHeader: HomePageComponent.CANVAS_HEADER_HEIGHT, homeKpis: 256, homeUrgentNeeds: 336, homeWeather: 528,
+        homeTimeOff: 432, homeCalendar: 464, homeRfis: 432, homeSubmittals: 416, homeDrawings: 448, homeRecentActivity: 352,
+        homeMilestones: 336, homeBudgetVariance: 336,
+        homeChangeOrders: 336, homeFieldOps: 336,
+        homeDailyReports: 336, homeTeamAllocation: 336,
+        homeContracts: 336,
+      },
       minColSpan: 4,
       canvasGridMinHeightOffset: 100,
       savesDesktopOnMobile: true,
@@ -1826,6 +2055,38 @@ export class HomePageComponent extends DashboardPageBase {
     return this.store.changeOrders()
       .filter(co => co.status === 'approved' && co.requestDate.includes(monthStr))
       .reduce((s, co) => s + Math.abs(co.amount), 0);
+  });
+
+  readonly allChangeOrders = computed<ChangeOrder[]>(() => this.store.changeOrders());
+  readonly allContracts = computed<Contract[]>(() => this.store.contracts());
+  readonly allInspections = computed<Inspection[]>(() => this.store.inspections());
+  readonly allPunchListItems = computed<PunchListItem[]>(() => this.store.punchListItems());
+  readonly allDailyReports = computed<DailyReport[]>(() => this.store.dailyReports());
+
+  readonly crossProjectMilestones = computed<(Milestone & { projectName: string })[]>(() => {
+    const milestones: (Milestone & { projectName: string })[] = [];
+    for (const [, pd] of Object.entries(PROJECT_DATA)) {
+      for (const m of pd.milestones) {
+        milestones.push({ ...m, projectName: pd.name ?? '' });
+      }
+    }
+    return milestones.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  });
+
+  readonly projectTeamInputs = computed<ProjectTeamInput[]>(() => {
+    const result: ProjectTeamInput[] = [];
+    for (const [idStr, pd] of Object.entries(PROJECT_DATA)) {
+      result.push({ projectId: +idStr, projectName: pd.name ?? `Project ${idStr}`, team: pd.team });
+    }
+    return result;
+  });
+
+  readonly flatTeamMembers = computed<TeamMember[]>(() => {
+    const members: TeamMember[] = [];
+    for (const [, pd] of Object.entries(PROJECT_DATA)) {
+      members.push(...pd.team);
+    }
+    return members;
   });
 
   readonly kpiCards = computed<KpiCard[]>(() => {
@@ -1932,7 +2193,7 @@ export class HomePageComponent extends DashboardPageBase {
   readonly homeWidgets = computed<DashboardWidgetId[]>(() =>
     this.isKelly()
       ? ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity']
-      : ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity']
+      : ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts']
   );
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
@@ -2426,6 +2687,11 @@ export class HomePageComponent extends DashboardPageBase {
       apRetention: this.store.apRetention(),
       apActivities: this.store.apActivities(),
       apPaymentSchedule: this.store.apPaymentSchedule(),
+      dailyReports: this.store.dailyReports(),
+      inspections: this.store.inspections(),
+      punchListItems: this.store.punchListItems(),
+      milestones: this.crossProjectMilestones(),
+      team: this.flatTeamMembers(),
       currentPage: 'home',
     };
   }
@@ -2454,6 +2720,14 @@ export class HomePageComponent extends DashboardPageBase {
   readonly retentionInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeRetention'));
   readonly apActivityInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeApActivity'));
   readonly cashOutflowInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeCashOutflow'));
+
+  readonly milestonesInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeMilestones'));
+  readonly budgetVarianceInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeBudgetVariance'));
+  readonly changeOrdersInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeChangeOrders'));
+  readonly fieldOpsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeFieldOps'));
+  readonly dailyReportsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeDailyReports'));
+  readonly teamAllocationInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeTeamAllocation'));
+  readonly contractsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeContracts'));
 
   readonly staffingByProject = computed(() => {
     const conflicts = this.allStaffingConflicts();

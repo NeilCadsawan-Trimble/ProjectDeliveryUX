@@ -73,6 +73,62 @@ export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'Who has been most active this week?',
     ],
   },
+  homeMilestones: {
+    name: 'Cross-Project Milestones',
+    suggestions: [
+      'Which milestones are coming due?',
+      'Are any milestones overdue?',
+      'Show milestone completion rate by project',
+    ],
+  },
+  homeBudgetVariance: {
+    name: 'Budget Variance',
+    suggestions: [
+      'Which projects are over budget?',
+      'Show budget utilization across projects',
+      'What is the total portfolio spend?',
+    ],
+  },
+  homeChangeOrders: {
+    name: 'Change Orders',
+    suggestions: [
+      'How many change orders are pending?',
+      'What is the total pending CO value?',
+      'Which projects have the most change orders?',
+    ],
+  },
+  homeFieldOps: {
+    name: 'Field Operations',
+    suggestions: [
+      'How many inspections failed?',
+      'Show open punch list items',
+      'Which projects have quality issues?',
+    ],
+  },
+  homeDailyReports: {
+    name: 'Daily Reports',
+    suggestions: [
+      'Show latest daily reports',
+      'Any safety incidents reported?',
+      'What is total crew count across sites?',
+    ],
+  },
+  homeTeamAllocation: {
+    name: 'Team Allocation',
+    suggestions: [
+      'Who is assigned to multiple projects?',
+      'Which team members are overallocated?',
+      'Show team availability by project',
+    ],
+  },
+  homeContracts: {
+    name: 'Contract Status',
+    suggestions: [
+      'How many contracts are active?',
+      'Which contracts are pending approval?',
+      'Are any contracts expiring soon?',
+    ],
+  },
 };
 
 export const KELLY_HOME_WIDGETS: Record<string, WidgetRegistration> = {

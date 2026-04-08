@@ -401,6 +401,12 @@ export const routes: Routes = [
             title: 'Home',
           },
           {
+            path: 'profile',
+            loadComponent: () =>
+              import('./pages/profile-page/profile-page.component').then((m) => m.ProfilePageComponent),
+            title: 'My Profile',
+          },
+          {
             path: 'projects',
             loadComponent: () =>
               import('./pages/projects-page/projects-page.component').then((m) => m.ProjectsPageComponent),

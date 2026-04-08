@@ -571,7 +571,28 @@ Added Trimble ID login gate with OAuth 2.0 PKCE flow, fixed post-auth blank page
 
 ---
 
-## Phase 22: Remaining Work
+## Phase 22: Persona Profile Pages (Apr 8)
+
+Per-persona "My Profile" page mirroring the Trimble profile page layout, wired to the user menu dropdown.
+
+### Profile Page
+- [x] Created `ProfilePageComponent` with two-column layout: Basic Information (avatar, first/last name) + Preferences (country, language, timezone) on left; Account Management (Rocky Mountain Contracting, profile details, passkeys) on right
+- [x] Component reads `PersonaService.activePersona()` for persona-specific data (name, email, company)
+
+### Routing and Navigation
+- [x] Added `/:persona/profile` lazy-loaded route as child of `DashboardLayoutComponent` (protected by existing auth + persona guards)
+- [x] Wired user menu "My profile" action to navigate to `/:persona/profile` instead of opening external `https://myprofile.trimble.com/home`
+- [x] Updated `DashboardShellComponent.onUserMenuAction()` to handle `'profile'` action with internal routing
+
+**Key files**:
+- `src/app/pages/profile-page/profile-page.component.ts` (new)
+- `src/app/app.routes.ts` (added profile route)
+- `src/app/shell/components/user-menu.component.ts` (removed external URL)
+- `src/app/shell/layout/dashboard-shell.component.ts` (profile navigation handler)
+
+---
+
+## Phase 23: Remaining Work
 
 Features and improvements not yet started.
 
