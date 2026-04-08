@@ -1,9 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { TitleCasePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { ChangeOrder } from '../../../data/dashboard-data.types';
 
 @Component({
-  selector: 'app-home-change-orders',
+  selector: 'app-project-change-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TitleCasePipe],
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col gap-2 h-full min-h-0 p-4">
@@ -25,33 +27,36 @@ import type { ChangeOrder } from '../../../data/dashboard-data.types';
         </div>
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
-        @for (co of pendingOrders(); track co.id) {
-          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
-            role="button" tabindex="0"
-            (click)="orderClick.emit({ projectId: co.projectId, orderId: co.id })"
-            (keydown.enter)="orderClick.emit({ projectId: co.projectId, orderId: co.id })">
+        @for (co of sortedOrders(); track co.id) {
+          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
             <div class="flex items-center justify-between gap-2">
-              <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ co.project }}</div>
+              <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ co.description }}</div>
               <div class="text-sm font-semibold tabular-nums" [class]="co.amount >= 0 ? 'text-foreground' : 'text-destructive'">{{ fmtCurrency(co.amount) }}</div>
             </div>
-            <div class="text-xs text-foreground-60 truncate">{{ co.description }}</div>
-            <div class="flex items-center gap-2 text-2xs text-foreground-40">
-              <div>{{ co.requestedBy }}</div>
+            <div class="flex items-center gap-2 text-2xs">
+              <div class="rounded px-1.5 py-0.5 font-medium" [class]="statusClass(co.status)">{{ co.status | titlecase }}</div>
+              <div class="text-foreground-40">{{ co.requestedBy }}</div>
               <div class="w-1 h-1 rounded-full bg-foreground-20"></div>
-              <div>{{ co.requestDate }}</div>
+              <div class="text-foreground-40">{{ co.requestDate }}</div>
             </div>
           </div>
         }
-        @if (pendingOrders().length === 0) {
-          <div class="text-sm text-foreground-40 text-center py-6">No pending change orders</div>
+        @if (sortedOrders().length === 0) {
+          <div class="text-sm text-foreground-40 text-center py-6">No change orders</div>
         }
       </div>
     </div>
   `,
 })
-export class HomeChangeOrdersComponent {
+export class ProjectChangeOrdersComponent {
   readonly changeOrders = input.required<ChangeOrder[]>();
-  readonly orderClick = output<{ projectId: number; orderId: string }>();
+
+  readonly sortedOrders = computed(() =>
+    [...this.changeOrders()].sort((a, b) => {
+      const order: Record<string, number> = { pending: 0, approved: 1, rejected: 2 };
+      return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+    }),
+  );
 
   readonly pendingOrders = computed(() => this.changeOrders().filter((co) => co.status === 'pending'));
   readonly pendingCount = computed(() => this.pendingOrders().length);
@@ -63,5 +68,14 @@ export class HomeChangeOrdersComponent {
 
   fmtCurrency(amount: number): string {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+  }
+
+  statusClass(status: string): string {
+    switch (status) {
+      case 'pending': return 'bg-warning-20 text-warning';
+      case 'approved': return 'bg-success-20 text-success';
+      case 'rejected': return 'bg-destructive-20 text-destructive';
+      default: return 'bg-muted text-foreground-60';
+    }
   }
 }

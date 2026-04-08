@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: Apr 7, 2026
+**Current window**: Apr 8, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -31,14 +31,22 @@ If the date matches today, skip this section and proceed normally.
 
 ## Today's Sessions
 
-*(Fresh session -- Apr 7, 2026)*
+*(Apr 8, 2026)*
+
+### Session 1: Persona Profile Pages
+- Created `ProfilePageComponent` mirroring Trimble profile page layout
+- Route: `/:persona/profile` (child of DashboardLayoutComponent)
+- User menu "My profile" now navigates internally instead of external URL
+- Updated `onUserMenuAction` in shell to handle `'profile'` action
+- Updated PROGRESS.md (Phase 22), navigation-routing skill (section 6), longterm memory
 
 ## Active Context
 
 - On `dev` branch.
 - Trimble ID authentication live (PRs #73-78). All persona routes gated.
-- Vercel deployment fixes applied (build cache clear, CDN no-cache headers).
+- Persona profile page complete at `/:persona/profile`.
+- Pre-existing build error: Milestone type mismatch in home-page.component.ts (unrelated to profile work).
 
 ## Pending Items
 
-- None outstanding.
+- Pre-existing Milestone type error in home-page.component.ts needs fixing.

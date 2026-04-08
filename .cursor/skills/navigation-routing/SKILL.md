@@ -259,6 +259,36 @@ this.router.navigate(['/projects', slug], {
 - For within-page detail activation, use query parameters + `pushState`
 - Test that deep links from the Home dashboard correctly navigate to project dashboards
 
+## 6. User Menu Actions as Internal Navigation
+
+### What It Does
+
+Menu items in the user dropdown (`UserMenuComponent`) can trigger internal navigation instead of opening external URLs. The shell's `onUserMenuAction` handler routes based on action ID.
+
+### Pattern: Profile Page
+
+The "My profile" menu item navigates to `/:persona/profile` instead of an external URL:
+
+```typescript
+// In user-menu.component.ts -- no `url` field means no window.open
+{ id: 'profile', label: 'My profile', icon: 'person' },
+
+// In dashboard-shell.component.ts
+onUserMenuAction(actionId: string): void {
+  if (actionId === 'profile') {
+    void this.router.navigateByUrl(`/${this.personaService.activePersonaSlug()}/profile`);
+    return;
+  }
+}
+```
+
+### Rules
+
+- Remove the `url` field from menu items that should use internal navigation
+- Handle the action ID in `DashboardShellComponent.onUserMenuAction()`
+- Use `personaService.activePersonaSlug()` to build persona-scoped routes
+- The profile route is a child of `DashboardLayoutComponent` so it gets the full shell (navbar, sidenav)
+
 ## Anti-Patterns
 
 | Anti-Pattern | Correct Approach |

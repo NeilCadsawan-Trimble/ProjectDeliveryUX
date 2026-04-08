@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { TeamMember } from '../../../data/project-data';
 
 export interface ProjectTeamInput {
@@ -68,7 +68,10 @@ interface PersonRow {
           }
         } @else {
           @for (pt of projectTeams(); track pt.projectName) {
-            <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
+            <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+              role="button" tabindex="0"
+              (click)="projectClick.emit(pt.projectId)"
+              (keydown.enter)="projectClick.emit(pt.projectId)">
               <div class="flex items-center justify-between gap-2">
                 <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ pt.projectName }}</div>
                 <div class="text-2xs text-foreground-60 shrink-0">{{ pt.team.length }} members</div>
@@ -90,6 +93,7 @@ interface PersonRow {
 })
 export class HomeTeamAllocationComponent {
   readonly projectTeams = input.required<ProjectTeamInput[]>();
+  readonly projectClick = output<number>();
   readonly viewMode = signal<'person' | 'project'>('person');
 
   readonly people = computed<PersonRow[]>(() => {

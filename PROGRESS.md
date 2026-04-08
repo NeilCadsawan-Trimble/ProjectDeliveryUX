@@ -3,7 +3,7 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 7, 2026
+**Last Updated**: April 8, 2026
 **Total Commits**: 200+
 
 ---
@@ -33,9 +33,10 @@
 | 19 | Live Weather Data and Regression Tests | Done | 5/5 |
 | 20 | Persona Data: Bert Humphries as PM | Done | 3/3 |
 | 21 | Trimble ID Authentication and Vercel Deployment Fixes | Done | 6/6 |
-| 22 | Remaining Work | Not Started | 0/8 |
+| 22 | Persona Profile Pages | Done | 5/5 |
+| 23 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 175/183 items (96%)
+**Completed**: 180/188 items (96%)
 
 ---
 
@@ -678,6 +679,7 @@ Features and improvements not yet started.
 | Apr 5 | [KPI widget and layout fixes](56f15e0d-1c0c-4cb6-82f7-2018d33f1ec3) | Draggable KPI widget, resize twitchiness fix, push-down only collision (no jumping), PR #66 merged to main |
 | Apr 6 | [Bert Humphries as PM](current) | Set Bert Humphries as Project Manager on all 8 projects, updated team rosters, skills section 34 |
 | Apr 7 | [Auth and Vercel fixes](2c2f59d8-3267-405f-ae9b-62cbe76d9ac6) | Trimble ID login gate, post-auth blank page fix (NgZone.run), dynamic OAuth URIs, Vercel build cache clear, CDN no-cache headers, PRs #73--78 |
+| Apr 8 | [Persona profile pages](current) | Per-persona "My Profile" page, user menu wired to internal route |
 
 ---
 
@@ -720,6 +722,7 @@ Features and improvements not yet started.
 | `src/app/pages/project-dashboard/components/collapsible-subnav.component.ts` | Collapsible side subnav for canvas/desktop |
 | `src/app/services/weather.service.ts` | Live weather data fetching with TTL cache and concurrent fetch guard |
 | `api/weather.ts` | Vercel Edge Function proxy for OpenWeatherMap API |
+| `src/app/pages/profile-page/profile-page.component.ts` | Per-persona "My Profile" page (mirrors Trimble profile layout) |
 | `src/app/services/auth.service.ts` | Trimble ID authentication (OAuth 2.0 PKCE, token management, dynamic redirect URIs) |
 | `src/app/pages/auth-callback/auth-callback.component.ts` | OAuth callback handler with NgZone.run() for Zone.js re-entry |
 | `vercel.json` | Vercel deployment config (build cache clear, CDN no-cache headers, SPA rewrites) |
