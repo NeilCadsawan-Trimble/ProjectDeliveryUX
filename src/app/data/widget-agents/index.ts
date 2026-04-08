@@ -1,6 +1,6 @@
 export type { AgentAction, AgentAlert, AgentDataState, WidgetAgent } from './shared';
 export { getSuggestions } from './shared';
-export { HOME_AGENTS } from './home-agents';
+export { HOME_AGENTS, KELLY_HOME_AGENTS } from './home-agents';
 export { PROJECT_AGENTS } from './project-agents';
 export { FINANCIALS_AGENTS } from './financials-agents';
 export { PORTFOLIO_AGENTS } from './portfolio-agents';
@@ -14,6 +14,15 @@ import {
   homeTimeOff,
   homeWeatherAgent,
   urgentNeedsAgent,
+  homeApKpis,
+  homeInvoiceQueue,
+  homePaymentSchedule,
+  homeVendorAging,
+  homePayAppsAgent,
+  homeLienWaiversAgent,
+  homeRetentionAgent,
+  homeApActivity,
+  homeCashOutflow,
 } from './home-agents';
 import {
   budgetAgent,
@@ -85,6 +94,15 @@ const ALL_AGENTS: Record<string, WidgetAgent> = {
   homeUrgentNeeds: urgentNeedsAgent,
   homeWeather: homeWeatherAgent,
   homeRecentActivity: recentActivity,
+  homeApKpis,
+  homeInvoiceQueue,
+  homePaymentSchedule,
+  homeVendorAging,
+  homePayApps: homePayAppsAgent,
+  homeLienWaivers: homeLienWaiversAgent,
+  homeRetention: homeRetentionAgent,
+  homeApActivity,
+  homeCashOutflow,
   projects: projectsWidget,
   openEstimates,
   recentActivity,

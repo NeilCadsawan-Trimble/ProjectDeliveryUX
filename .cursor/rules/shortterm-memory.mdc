@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: Apr 6, 2026
+**Current window**: Apr 7, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -31,122 +31,14 @@ If the date matches today, skip this section and proceed normally.
 
 ## Today's Sessions
 
-### Session 11 (Apr 3)
-- **Topic**: Memory consolidation
-- **What happened**:
- 1. Consolidated short-term memory (stale since Mar 31) into long-term memory.
- 2. Moved sessions 9-10 to history table. Added canvas zoom decisions, planned features (Google Cloud / webmail / calendar), updated test counts (84 unit / 325 static), added file map entries, added canvas zoom macOS fragile area.
-
-### Session 12 (Apr 3)
-- **Topic**: Project risk distribution, sort ordering, "Sort by Priority" menu
-- **What happened**:
- 1. Fixed project risk distribution to match target: 3 None, 3 Low, 1 Moderate, 1 High.
-   - Fixed `seen` key normalization in `buildUrgentNeeds` (leading zeros mismatch).
-   - Fixed year-less submittal dates in `dashboard-data.seed.ts`.
-   - Introduced `coreWarningCount` (excludes change-order warnings) for badge determination.
- 2. Fixed tile visual ordering: created `TILE_VISUAL_ORDER` constant matching grid layout (proj1, proj2, proj3, proj6, proj7, proj4, proj5, proj8) since proj4-7 positions don't follow numeric order in the grid.
- 3. Updated sort function to use `coreWarningCount` instead of full `warningCount`, aligning sort order with badge logic.
- 4. Added `AgentProjectData.coreWarningCount` to the interface and updated all tests (54 pass).
- 5. Added "Sort by Priority" menu item to both canvas and desktop Layout flyout menus. Only visible on `/projects` page. Resets tile positions to default priority order.
-
-### Session 13 (Apr 3)
-- **Topic**: RFI/Submittal compact mode on project dashboard
-- **What happened**:
-  1. Ported compact mode from home page to project dashboard for RFI and Submittal widgets.
-  2. Added `isRfiCompact` / `isSubmittalCompact` computed signals (colSpan <= 5 or mobile).
-  3. Added `rfiCompactItems` / `submittalCompactItems` data arrays and `rfiStatusCounts` / `submittalStatusCounts` computed signals.
-  4. Updated HTML template with `@if (isRfiCompact())` branching -- compact shows status summary tiles, full shows table.
-  5. Added `navigateToRfiList()` / `navigateToSubmittalList()` methods for compact tile click actions.
-  6. Updated skills (`dashboard-layout-lessons` section 22) and PROGRESS.md (Phase 16 expanded to 7 items).
-
-### Session 14 (Apr 3)
-- **Topic**: Navbar native rendering fallback skill documentation
-- **What happened**:
-  1. Added section 23 to `dashboard-layout-lessons` SKILL.md: "Modus Navbar Native Rendering Fallback (Stencil/Angular 20 Incompatibility)".
-  2. Documents the complete architecture: runtime detection via `navbarNativeRendered` signal, conditional fallback elements (Trimble logo, hamburger, search, notifications, help), correct icon ordering, background color consistency (`bg-card`), and the 4 navbar instances that must stay in sync.
-  3. Updated skill description to include navbar modification trigger.
-  4. Added entry to Known Fragile Areas table in longterm-memory.mdc.
-  5. Updated skill description in longterm-memory.mdc.
-
-### Session 15 (Apr 3)
-- **Topic**: Hamburger / side nav not expanding (shell + project dashboard)
-- **What happened**:
-  1. Removed `_reattachHamburgerEffect` and `attachHamburgerListener` from `dashboard-shell.component.ts`; they set `_hamburgerAttached` and blocked `onMainMenuToggle` from calling `navExpanded.set(open)` when native toolbar rendered.
-  2. `onMainMenuToggle` now always `this.navExpanded.set(open)`.
-  3. Project dashboard: added `(mainMenuOpenChange)="onMainMenuToggle($event)"` on canvas and desktop `modus-navbar`; removed `attachHamburgerListener`, `hamburgerBtn`, and `hamburgerEffect` (native path had no output binding before).
-  4. Updated `tests/static/dashboard-shell.spec.ts` and `dashboard-layout-lessons` section 16.
-
-### Session 16 (Apr 3)
-- **Topic**: Canvas hamburger vs sidenav horizontal alignment
-- **What happened**:
-  1. In `src/styles.css` (canvas `@media (min-width: 1920px)`), fixed hamburger used `left: 12px` and 32px hit target while `.custom-side-nav-item.selected` uses 4px margin + 48px tile on the 56px rail, so the menu sat ~8px to the right of the home tile.
-  2. Updated native `modus-wc-button[aria-label='Main menu']` and `.shell-navbar-hamburger` to `left: 4px; top: 4px;` with 48x48 box and `border-radius: 0.375rem` on fallback to match selected rail tiles; kept `padding-left: 56px` on start slot.
-
-### Session 17 (Apr 3)
-- **Topic**: Sidenav overlay, consistent row heights, mobile icon centering, button/title alignment
-- **What happened**:
-  1. Removed `pl-60` push behavior from `dashboard-shell.component.ts` and `project-dashboard.component.html` -- expanded sidenav now overlays via z-index.
-  2. Set `height: 56px; padding: 0;` on `.custom-side-nav-item` for consistent row heights between collapsed (56px = 48px tile + 4px margin each side) and expanded (56px explicit height) states.
-  3. Scoped expanded icon-slot override to desktop (`min-width: 768px`); added mobile-specific icon-slot rule (`flex: 1 1 auto; padding-left: 10px`) to center icons in 48px selected tile.
-  4. Replaced custom div-based "Create" buttons on Projects page with `<modus-button>` matching Financials "Export" button. Added `ModusButtonComponent` import.
-  5. Matched projects page outer padding (`py-4 md:py-6`) to home page for consistent title y-coordinate.
-  6. Updated static tests (390 passing), all lint/type-check/build clean.
-  7. Added section 24 to `dashboard-layout-lessons` SKILL.md.
-  8. Updated `PROGRESS.md` with Phase 17 (5 items), updated test counts to 390, added chat session entry.
-  9. Pushed to GitHub, created PR #56, merged to main.
-
-### Session 18 (Apr 4)
-- **Topic**: Skills documentation for subnav, toolbar, and layout engine changes
-- **What happened**:
-  1. Added sections 25-28 to `dashboard-layout-lessons` SKILL.md.
-
-### Session 19 (Apr 5)
-- **Topic**: Canvas mode broken on Vercel -- ng-content content projection bug
-- **What happened**:
-  1. Diagnosed root cause: `DashboardShellComponent` had two `<ng-content />` slots in `@if (isCanvas())`/`@else` branches. Angular's content projection can't handle this -- projected `<router-outlet />` from `DashboardLayoutComponent` was silently discarded.
-  2. Bug was introduced in commit `a681948` (PR #56, Apr 3) which converted `<router-outlet />` to `<ng-content />` for content projection architecture. The conversion maintained the two-branch pattern that worked with `<router-outlet />` but is fatal for `<ng-content />`.
-  3. Fix: moved the single `<ng-content />` outside all `@if`/`@else` blocks. Content wrapper uses CSS class bindings (`canvas-content` vs `shell-content-desktop`) to switch styling. `canvas-host` became `position: fixed` (no layout impact). Host element now handles panning mousedown.
-  4. Added 4 new static regression tests in `tests/static/dashboard-shell.spec.ts`: "has exactly ONE ng-content", "ng-content is NOT inside an @if or @else block", "uses canvas-content class", "uses shell-content-desktop class".
-  5. Added section 29 to `dashboard-layout-lessons` SKILL.md documenting the rule and root cause.
-  6. Added entry to Known Fragile Areas table in longterm-memory.mdc.
-  7. All 36 shell static tests pass. All lint + type-check pass. Build clean.
-  8. Pushed fix to `dev` (commit `647223a`). Vercel preview will auto-deploy.
-
-### Session 20 (Apr 5)
-- **Topic**: Restore stashed subnav mobile changes
-- **What happened**:
-  1. Restored stash containing subnav mobile mode changes (collapsible-subnav, project-dashboard, layout engine anchor priority).
-  2. Resolved merge conflicts in documentation files (shortterm-memory, SKILL.md).
-
-### Session 21 (Apr 5)
-- **Topic**: Draggable KPI widget, resize twitchiness fix, push-down only collision
-- **What happened**:
-  1. Converted locked `homeHeader` into draggable/resizable `homeKpis` widget with compact KPI display.
-  2. Moved "Welcome back, Frank" greeting to static text line above widget grid.
-  3. Updated `DashboardWidgetId`, `widget-registrations.ts`, `layout-defaults.service.ts`, canvas-push tests.
-  4. Fixed resize twitchiness: added `_hResizeActive` dead zone flag -- horizontal resize pipeline only activates when horizontal mouse delta exceeds half a column step (`currentStep / 2`).
-  5. Fixed widget jumping: changed `resolveCollisions` and `compactAll` to initialize `y` from `tops[id]` instead of `0`. Widgets can only be pushed down, never jump up over intervening widgets.
-  6. All lint, type-check, build passing. PR #66 created and merged to `main`.
-  7. Added sections 32-33 to `dashboard-layout-lessons` SKILL.md.
-  8. Added Phase 20 to PROGRESS.md, updated chat session history.
-
-### Session 22 (Apr 6)
-- **Topic**: Bert Humphries as Project Manager on all 8 projects
-- **What happened**:
-  1. Updated `owner` to `'Bert Humphries'` and `ownerInitials` to `'BH'` on all 8 entries in `PROJECTS` array (`dashboard-data.seed.ts`).
-  2. Added Bert Humphries (`id: 1`, `initials: 'BH'`, `role: 'Project Manager'`) to all 8 `PROJECT_DATA` team arrays in `project-data.ts`.
-  3. Displaced previous PMs re-titled: Sarah Chen -> Assistant Project Manager (proj 1, 7), Priya Nair -> Senior Engineer (proj 3, 8), Lena Brooks -> Project Coordinator (proj 5). Projects 2, 4, 6 had no prior PM role -- Bert added as new member.
-  4. Incremented Team Members summary stat counts on all 8 projects.
-  5. Added section 34 to `dashboard-layout-lessons` SKILL.md: Persona-Driven Project Ownership.
-  6. Updated PROGRESS.md with Phase 20 (Persona Data).
-  7. Type-check and build both passing.
+*(Fresh session -- Apr 7, 2026)*
 
 ## Active Context
 
 - On `dev` branch.
-- Bert Humphries (`BH`) is now the Project Manager and owner on all 8 projects.
-- Previous session's work (PR #66) merged to `main`.
+- Trimble ID authentication live (PRs #73-78). All persona routes gated.
+- Vercel deployment fixes applied (build cache clear, CDN no-cache headers).
 
 ## Pending Items
 
-- None outstanding from this session.
+- None outstanding.

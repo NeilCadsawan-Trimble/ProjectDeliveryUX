@@ -32,6 +32,15 @@ import type {
 } from '../dashboard-data';
 import type { Milestone, TeamMember, Task, Risk, ActivityEntry, Drawing, BudgetBreakdown } from '../project-data';
 import type { DrawingTile } from '../drawings-data';
+import type {
+  ApInvoice,
+  ApVendor,
+  ApPayApplication,
+  ApLienWaiver,
+  ApRetentionRecord,
+  ApActivityItem,
+  ApPaymentScheduleItem,
+} from '../dashboard-data.types';
 
 export interface AgentDataState {
   projects?: Project[];
@@ -44,6 +53,14 @@ export interface AgentDataState {
   rfis?: Rfi[];
   submittals?: Submittal[];
   calendar?: CalendarAppointment[];
+
+  apInvoices?: ApInvoice[];
+  apVendors?: ApVendor[];
+  apPayApplications?: ApPayApplication[];
+  apLienWaivers?: ApLienWaiver[];
+  apRetention?: ApRetentionRecord[];
+  apActivities?: ApActivityItem[];
+  apPaymentSchedule?: ApPaymentScheduleItem[];
 
   projectName?: string;
   projectStatus?: string;

@@ -795,66 +795,157 @@ export const financialsAR: WidgetAgent = {
 };
 
 // ---------------------------------------------------------------------------
-// Accounts Payable Agent
+// Accounts Payable Agent (enriched with Kelly AP data)
 // ---------------------------------------------------------------------------
 export const financialsAP: WidgetAgent = {
   id: 'financialsAP',
   name: 'Accounts Payable',
-  systemPrompt: 'You are an AP specialist for a general contracting company. You track vendor bills, payment schedules, and cash outflow management.',
-  suggestions: [
-    'What bills are coming due soon?',
-    'Which payables are overdue?',
-    'Show AP by vendor',
-    'What is total AP outstanding?',
-  ],
+  systemPrompt: 'You are an AP specialist for a general contracting company. You track vendor bills, invoice queues, pay applications, lien waivers, retention, payment schedules, vendor aging, and cash outflow management.',
+  suggestions(s) {
+    const invoices = s.apInvoices ?? [];
+    const waivers = s.apLienWaivers ?? [];
+    const schedule = s.apPaymentSchedule ?? [];
+    const onHold = invoices.filter(i => i.status === 'on-hold');
+    const missing = waivers.filter(w => w.status === 'missing');
+    const discounts = schedule.filter(p => p.discountAvailable > 0);
+    const base = ['Show AP by vendor', 'What is total AP outstanding?'];
+    if (onHold.length) return [`${onHold.length} invoice${onHold.length === 1 ? '' : 's'} on hold -- review needed`, ...base];
+    if (missing.length) return [`${missing.length} missing lien waiver${missing.length === 1 ? '' : 's'}`, ...base];
+    if (discounts.length) return [`${discounts.length} early-pay discount${discounts.length === 1 ? '' : 's'} available`, ...base];
+    return ['What bills are coming due soon?', 'Which payables are overdue?', ...base];
+  },
   insight(s) {
+    const invoices = s.apInvoices ?? [];
     const payables = s.payables ?? [];
+    const waivers = s.apLienWaivers ?? [];
+    const schedule = s.apPaymentSchedule ?? [];
+    const onHold = invoices.filter(i => i.status === 'on-hold');
+    if (onHold.length > 0) {
+      const total = onHold.reduce((sum, i) => sum + i.amount, 0);
+      return `${onHold.length} on hold (${formatCurrency(total)}) -- review needed`;
+    }
+    const missing = waivers.filter(w => w.status === 'missing');
+    if (missing.length > 0) return `${missing.length} missing lien waiver${missing.length === 1 ? '' : 's'} -- payment blocked`;
+    const discounts = schedule.filter(p => p.discountAvailable > 0);
+    if (discounts.length > 0) {
+      const total = discounts.reduce((sum, p) => sum + p.discountAvailable, 0);
+      return `${formatCurrency(total)} in early-pay discounts available`;
+    }
     const overdue = payables.filter(p => p.status === 'overdue');
     if (overdue.length > 0) {
       const total = overdue.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
       return `${overdue.length} overdue payable${overdue.length === 1 ? '' : 's'} totaling ${formatCurrency(total)}`;
     }
-    const unpaid = payables.filter(p => p.status !== 'paid');
-    if (unpaid.length > 0) {
-      const total = unpaid.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
-      return `${unpaid.length} unpaid payable${unpaid.length === 1 ? '' : 's'} (${formatCurrency(total)})`;
-    }
-    if (payables.length > 0) {
-      const total = payables.reduce((sum, p) => sum + p.amount, 0);
-      return `${payables.length} payables totaling ${formatCurrency(total)}`;
-    }
+    const pending = invoices.filter(i => i.status === 'pending');
+    if (pending.length > 0) return `${pending.length} pending invoice${pending.length === 1 ? '' : 's'} in queue`;
     return null;
   },
   alerts(s) {
     const payables = s.payables ?? [];
+    const invoices = s.apInvoices ?? [];
+    const waivers = s.apLienWaivers ?? [];
+    const vendors = s.apVendors ?? [];
     const overdue = payables.filter(p => p.status === 'overdue');
     const disputed = payables.filter(p => p.status === 'disputed');
-    if (overdue.length + disputed.length >= 3) return { level: 'critical', count: overdue.length + disputed.length, label: 'AP issues' };
+    const onHold = invoices.filter(i => i.status === 'on-hold');
+    const missing = waivers.filter(w => w.status === 'missing');
+    const aged90 = vendors.filter(v => v.aging90plus > 0);
+    const critCount = overdue.length + disputed.length + onHold.length + missing.length;
+    if (critCount >= 4) return { level: 'critical', count: critCount, label: 'AP issues' };
+    if (overdue.length + onHold.length >= 2) return { level: 'critical', count: overdue.length + onHold.length, label: 'AP attention needed' };
+    if (missing.length > 0) return { level: 'warning', count: missing.length, label: 'missing lien waivers' };
+    if (aged90.length > 0) return { level: 'warning', count: aged90.length, label: 'vendors 90+ days' };
     if (overdue.length > 0) return { level: 'warning', count: overdue.length, label: 'overdue payables' };
     return null;
   },
+  actions(s) {
+    const invoices = s.apInvoices ?? [];
+    const waivers = s.apLienWaivers ?? [];
+    const pending = invoices.filter(i => i.status === 'pending');
+    const missing = waivers.filter(w => w.status === 'missing');
+    const acts: AgentAction[] = [];
+    if (pending.length > 0) acts.push({ id: 'batch-approve', label: `Batch approve ${pending.length} pending invoices`, execute: () => `Approved ${pending.length} pending invoices.` });
+    if (missing.length > 0) acts.push({ id: 'send-waiver-requests', label: `Send ${missing.length} waiver requests`, execute: () => `Sent ${missing.length} waiver request emails.` });
+    return acts;
+  },
   buildContext(s) {
     const payables = s.payables ?? [];
+    const invoices = s.apInvoices ?? [];
+    const vendors = s.apVendors ?? [];
+    const payApps = s.apPayApplications ?? [];
+    const waivers = s.apLienWaivers ?? [];
+    const retention = s.apRetention ?? [];
+    const schedule = s.apPaymentSchedule ?? [];
     const unpaid = payables.filter(p => p.status !== 'paid');
     const totalOwed = unpaid.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
-    return `AP Overview: ${payables.length} total payables, ${unpaid.length} unpaid, ${formatCurrency(totalOwed)} owed. Vendors: ${[...new Set(payables.map(p => p.vendor))].join(', ')}.`;
+    const totalRetHeld = retention.reduce((sum, r) => sum + r.retentionHeld, 0);
+    const lines = [
+      `AP Overview: ${payables.length} payables, ${unpaid.length} unpaid, ${formatCurrency(totalOwed)} owed.`,
+      `Invoice Queue: ${invoices.length} total, ${invoices.filter(i => i.status === 'pending').length} pending, ${invoices.filter(i => i.status === 'on-hold').length} on hold.`,
+      `Vendors: ${vendors.map(v => `${v.name} (${formatCurrency(v.totalOwed)})`).join(', ')}.`,
+      `Pay Apps: ${payApps.length} total, ${payApps.filter(a => a.status === 'pending').length} pending.`,
+      `Lien Waivers: ${waivers.filter(w => w.status === 'missing').length} missing, ${waivers.filter(w => w.status === 'pending').length} pending, ${waivers.filter(w => w.status === 'received').length} received.`,
+      `Retention: ${formatCurrency(totalRetHeld)} held across ${retention.length} records.`,
+      `Payment Schedule: ${schedule.length} upcoming, ${schedule.filter(p => p.discountAvailable > 0).length} with discounts.`,
+    ];
+    return lines.join(' ');
   },
   localRespond(q, s) {
     const payables = s.payables ?? [];
+    const invoices = s.apInvoices ?? [];
+    const vendors = s.apVendors ?? [];
+    const waivers = s.apLienWaivers ?? [];
+    const retention = s.apRetention ?? [];
+    const schedule = s.apPaymentSchedule ?? [];
+    const payApps = s.apPayApplications ?? [];
     if (kw(q, 'overdue', 'past due', 'late')) {
       const overdue = payables.filter(p => p.status === 'overdue');
       if (overdue.length === 0) return 'No payables are currently overdue.';
       return `${overdue.length} overdue payables: ${overdue.map(p => `${p.vendor} - ${p.invoiceNumber} (${formatCurrency(p.amount)})`).join('; ')}.`;
     }
-    if (kw(q, 'vendor', 'supplier', 'sub')) {
-      const byVendor = new Map<string, number>();
-      for (const p of payables.filter(p => p.status !== 'paid')) { byVendor.set(p.vendor, (byVendor.get(p.vendor) ?? 0) + p.amount - p.amountPaid); }
-      const lines = [...byVendor.entries()].sort((a, b) => b[1] - a[1]).map(([v, t]) => `${v}: ${formatCurrency(t)}`);
-      return `Outstanding AP by vendor:\n${lines.join('\n')}`;
+    if (kw(q, 'on hold', 'hold', 'held invoice')) {
+      const onHold = invoices.filter(i => i.status === 'on-hold');
+      if (onHold.length === 0) return 'No invoices are currently on hold.';
+      return `${onHold.length} invoices on hold: ${onHold.map(i => `${i.vendor} #${i.invoiceNumber} (${formatCurrency(i.amount)})`).join('; ')}.`;
+    }
+    if (kw(q, 'lien', 'waiver')) {
+      const missing = waivers.filter(w => w.status === 'missing');
+      const pending = waivers.filter(w => w.status === 'pending');
+      return `Lien waivers: ${missing.length} missing, ${pending.length} pending, ${waivers.filter(w => w.status === 'received').length} received. ${missing.length > 0 ? 'Missing: ' + missing.map(w => `${w.vendor} - ${w.project}`).join('; ') + '.' : ''}`;
+    }
+    if (kw(q, 'retention', 'retainage')) {
+      const held = retention.reduce((sum, r) => sum + r.retentionHeld, 0);
+      const released = retention.reduce((sum, r) => sum + r.retentionReleased, 0);
+      const pendingRel = retention.reduce((sum, r) => sum + r.pendingRelease, 0);
+      return `Retention summary: ${formatCurrency(held)} held, ${formatCurrency(released)} released, ${formatCurrency(pendingRel)} pending release across ${retention.length} records.`;
+    }
+    if (kw(q, 'pay app', 'application', 'subcontractor pay')) {
+      const pendingApps = payApps.filter(a => a.status === 'pending');
+      const totalNet = payApps.reduce((sum, a) => sum + a.netDue, 0);
+      return `${payApps.length} pay applications (${formatCurrency(totalNet)} net due), ${pendingApps.length} pending approval. ${pendingApps.length > 0 ? 'Pending: ' + pendingApps.map(a => `${a.vendor} (${formatCurrency(a.netDue)})`).join('; ') + '.' : ''}`;
+    }
+    if (kw(q, 'discount', 'early pay', 'early-pay')) {
+      const withDiscount = schedule.filter(p => p.discountAvailable > 0);
+      if (withDiscount.length === 0) return 'No early-pay discounts currently available.';
+      const total = withDiscount.reduce((sum, p) => sum + p.discountAvailable, 0);
+      return `${withDiscount.length} payments with discounts totaling ${formatCurrency(total)}: ${withDiscount.map(p => `${p.vendor} (${formatCurrency(p.discountAvailable)} by ${p.discountDeadline})`).join('; ')}.`;
+    }
+    if (kw(q, 'vendor', 'supplier', 'sub', 'aging')) {
+      const lines = vendors.sort((a, b) => b.totalOwed - a.totalOwed).map(v => {
+        const aging = v.aging90plus > 0 ? ` (${formatCurrency(v.aging90plus)} 90+ days)` : '';
+        return `${v.name}: ${formatCurrency(v.totalOwed)} owed${aging}`;
+      });
+      return `Vendor aging:\n${lines.join('\n')}`;
+    }
+    if (kw(q, 'schedule', 'upcoming', 'due soon')) {
+      if (schedule.length === 0) return 'No upcoming scheduled payments.';
+      const lines = schedule.sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map(p => `${p.vendor} - ${formatCurrency(p.amount)} due ${p.dueDate}`);
+      return `Upcoming payments:\n${lines.join('\n')}`;
     }
     const unpaid = payables.filter(p => p.status !== 'paid');
     const total = unpaid.reduce((sum, p) => sum + p.amount - p.amountPaid, 0);
-    return `Total AP outstanding: ${formatCurrency(total)} across ${unpaid.length} payables. Ask about overdue items, vendor breakdown, or upcoming payments.`;
+    const pendingInv = invoices.filter(i => i.status === 'pending').length;
+    return `Total AP outstanding: ${formatCurrency(total)} across ${unpaid.length} payables. ${pendingInv} invoices pending in queue. Ask about overdue items, vendor aging, lien waivers, retention, discounts, or pay applications.`;
   },
 };
 

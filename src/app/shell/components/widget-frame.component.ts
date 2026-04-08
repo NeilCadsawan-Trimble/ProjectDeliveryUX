@@ -34,8 +34,8 @@ import { WidgetResizeHandleComponent } from './widget-resize-handle.component';
             <ng-content select="[headerTrailing]" />
           </div>
           @if (insight()) {
-            <div class="flex items-center gap-1.5 px-6 pb-3 -mt-1">
-              <i class="modus-icons text-xs text-primary" aria-hidden="true">lightning</i>
+            <div class="flex items-center gap-1.5 px-6 py-2 border-top-default -mt-1">
+              <i class="modus-icons text-xs text-primary flex-shrink-0" aria-hidden="true">lightning</i>
               <div class="text-xs text-foreground-60 truncate">{{ insight() }}</div>
             </div>
           }

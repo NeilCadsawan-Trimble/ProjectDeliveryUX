@@ -1565,6 +1565,38 @@ Where `CANVAS_STEP = 81` and `GAP_PX = 16`.
 
 ---
 
+## 35. Cross-Row Neighbor Leak in Push-Squeeze
+
+**File:** `src/app/shell/services/dashboard-layout-engine.ts` -- `applyResizePushSqueeze`
+
+### The bug
+
+When Widget A (row 1, col 1) is shorter than Widget B (row 1, cols 2-3), Widget C (row 2, col 1) starts higher than Widgets D/E (row 2, cols 2-3). Resizing Widget C skinnier caused Widget B to shrink and jump to col 3, opening a gap in row 1 col 2 that Widget D then filled.
+
+### Root cause
+
+The right/left neighbor filter used raw pixel vertical overlap (`sTop < rBottom && sBottom > rTop`). Widget B (Calendar) was tall enough that its bottom extended into Widget C's (Payment Schedule) vertical band. So B was incorrectly included as a "right neighbor" of C during push-squeeze, even though B is in a completely different logical row.
+
+### The fix: same-row gate
+
+Added `sTop >= rTop - gap` to both left-neighbor and right-neighbor filters. A widget is only a horizontal neighbor if its **top** starts at or near the resized widget's row:
+
+```typescript
+// Before (broken): any vertical pixel overlap counted
+if (sTop < rBottom && sBottom > rTop && snap[id].left >= lefts[resizedId])
+
+// After (fixed): neighbor must start in same logical row
+if (sTop >= rTop - gap && sTop < rBottom && sBottom > rTop && snap[id].left >= lefts[resizedId])
+```
+
+Calendar (top=0) fails the check against Payment Schedule (top ~280), so it's excluded. Invoice Queue and Vendor Aging (top ~386) pass and remain valid neighbors.
+
+### The rule
+
+In `applyResizePushSqueeze`, both left-neighbor and right-neighbor filters must include `sTop >= rTop - gap`. A widget whose top is significantly above the resized widget's top is in a different row and must never be treated as a horizontal neighbor. Without this gate, tall widgets in row N leak into the neighbor set of widgets in row N+1.
+
+---
+
 ## 34. Persona-Driven Project Ownership (Bert Humphries as PM)
 
 **Context**: The application supports multiple user personas (`frank`, `bert`, `kelly`, `dominique`) defined in `persona.service.ts`. When a persona is designated as Project Manager across all projects, the data must be updated in two places -- the dashboard tile data and the per-project detail data.
@@ -1629,3 +1661,4 @@ Where `CANVAS_STEP = 81` and `GAP_PX = 16`.
 | Widget height grid-snap + no scrollbar | page `*_HEIGHT` constants + storage keys | (visual: verify no internal scrollbar in Chromium + Safari) |
 | Horizontal resize dead zone (twitch fix) | `dashboard-layout-engine.ts` (`_hResizeActive`) | (visual: vertical resize, neighbors must not twitch) |
 | Push-down only collision (no jumping) | `dashboard-layout-engine.ts` (`resolveCollisions`, `compactAll`) | (visual: resize shorter, distant widgets must not jump up) |
+| Cross-row neighbor leak in push-squeeze | `dashboard-layout-engine.ts` (`applyResizePushSqueeze`) | (visual: resize widget in row 2, row 1 widgets must not move) |
