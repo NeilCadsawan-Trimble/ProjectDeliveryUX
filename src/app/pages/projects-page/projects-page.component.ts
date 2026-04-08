@@ -112,6 +112,22 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
   constructor() {
     super();
+
+    effect(() => {
+      if (this.viewMode() === 'timeline') {
+        untracked(() => this._scrollTimelineTo25Pct());
+      }
+    });
+  }
+
+  private _scrollTimelineTo25Pct(): void {
+    requestAnimationFrame(() => {
+      const el = document.querySelector('.timeline-scroll-container');
+      if (el) {
+        const offset = this.todayOffset() - el.clientWidth * 0.25;
+        el.scrollLeft = Math.max(0, offset);
+      }
+    });
   }
 
   protected override getEngineConfig(): DashboardLayoutConfig {
@@ -838,10 +854,52 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     return `${fmt.format(event.startDate)} - ${fmt.format(event.endDate)}`;
   }
 
+  eventDurationDays(event: ProjectCalendarEvent): number {
+    return Math.floor((event.endDate.getTime() - event.startDate.getTime()) / 86400000) + 1;
+  }
+
+  // -- Hover flyout state --
+  readonly hoveredEvent = signal<ProjectCalendarEvent | null>(null);
+  readonly hoveredProject = signal<string>('');
+  readonly flyoutPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  readonly clampedFlyoutPosition = computed(() => {
+    const pos = this.flyoutPosition();
+    const flyoutW = 300;
+    const flyoutH = 140;
+    let x = pos.x + 12;
+    let y = pos.y - 8;
+    if (typeof window !== 'undefined') {
+      if (x + flyoutW > window.innerWidth) x = pos.x - flyoutW - 12;
+      if (y + flyoutH > window.innerHeight) y = window.innerHeight - flyoutH - 8;
+      if (y < 0) y = 8;
+    }
+    return { x, y };
+  });
+
+  onBarMouseEnter(event: MouseEvent, calEvent: ProjectCalendarEvent, projectName: string): void {
+    this.hoveredEvent.set(calEvent);
+    this.hoveredProject.set(projectName);
+    this.flyoutPosition.set({ x: event.clientX, y: event.clientY });
+  }
+
+  onBarMouseMove(event: MouseEvent): void {
+    this.flyoutPosition.set({ x: event.clientX, y: event.clientY });
+  }
+
+  onBarMouseLeave(): void {
+    this.hoveredEvent.set(null);
+  }
+
+  navigateToProjectSchedule(event: ProjectCalendarEvent): void {
+    this.hoveredEvent.set(null);
+    this.router.navigate([`${this.pp}/project`, event.projectSlug], { queryParams: { page: 'schedule' } });
+  }
+
   scrollTimelineToToday(): void {
     const el = document.querySelector('.timeline-scroll-container');
     if (el) {
-      const offset = this.todayOffset() - el.clientWidth / 2;
+      const offset = this.todayOffset() - el.clientWidth * 0.25;
       el.scrollLeft = Math.max(0, offset);
     }
   }
@@ -876,7 +934,8 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   private static readonly TL_MIN_H = 200;
 
   readonly timelineHeight = signal<number>(
-    (typeof sessionStorage !== 'undefined' && parseInt(sessionStorage.getItem(this.personaKey('projects-timeline-height')) ?? '', 10)) || 400,
+    (typeof sessionStorage !== 'undefined' && parseInt(sessionStorage.getItem(this.personaKey('projects-timeline-height')) ?? '', 10))
+      || (typeof window !== 'undefined' ? Math.floor(window.innerHeight * 0.75) : 400),
   );
   readonly timelineResizing = signal(false);
   private _tlResizeStartY = 0;

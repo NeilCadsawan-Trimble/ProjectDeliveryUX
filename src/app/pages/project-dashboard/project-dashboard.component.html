@@ -296,6 +296,153 @@
         }
       } @else {
       @switch (activeNavItem()) {
+      @case ('schedule') {
+        <div class="flex flex-col gap-4 h-full">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="text-2xl font-bold text-foreground">Schedule ({{ scheduleFilteredEvents().length }} events)</div>
+          </div>
+
+          <div class="bg-card border-default rounded-lg mb-0" data-toolbar-search>
+            <div class="flex items-center justify-between px-4 py-2 gap-4">
+              <div class="flex items-center gap-2 flex-1 max-w-xs">
+                <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
+                  <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
+                  <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
+                    placeholder="Search events..." />
+                </div>
+                <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
+                  role="button" tabindex="0" aria-label="Filter">
+                  <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                @for (cat of scheduleCategories; track cat) {
+                  <div
+                    class="flex items-center gap-1 cursor-pointer select-none text-xs px-2 py-0.5 rounded-full transition-opacity"
+                    [class]="isScheduleCategoryActive(cat) ? 'opacity-100' : 'opacity-40'"
+                    (click)="toggleScheduleCategory(cat)"
+                  >
+                    <div class="w-2 h-2 rounded-full" [class]="scheduleCategoryMeta[cat].colorClass"></div>
+                    <div class="text-foreground">{{ scheduleCategoryMeta[cat].label }}</div>
+                  </div>
+                }
+                <div class="w-px h-5 bg-foreground-20 mx-1"></div>
+                <div class="flex items-center gap-2">
+                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">zoom_out</i>
+                  <input type="range" min="8" max="80" step="2"
+                    class="tile-zoom-slider"
+                    [value]="scheduleDayPx()"
+                    (input)="setScheduleZoom(+$any($event.target).value)"
+                    (change)="resetScheduleZoomAnchor()"
+                    (pointerdown)="resetScheduleZoomAnchor()"
+                    aria-label="Timeline zoom"
+                  />
+                  <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">zoom_in</i>
+                </div>
+                <div class="w-px h-5 bg-foreground-20 mx-1"></div>
+                <div class="flex items-center gap-1 text-xs text-primary cursor-pointer hover:underline" (click)="scrollScheduleToToday()">
+                  <i class="modus-icons text-xs" aria-hidden="true">calendar</i>
+                  <div>Today</div>
+                </div>
+                <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                  role="button" tabindex="0" aria-label="Add event">
+                  <i class="modus-icons text-base" aria-hidden="true">add</i>
+                </div>
+                <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                  role="button" tabindex="0" aria-label="Export">
+                  <i class="modus-icons text-base" aria-hidden="true">upload</i>
+                </div>
+                  <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                    role="button" tabindex="0" aria-label="Print">
+                    <i class="modus-icons text-base" aria-hidden="true">printer</i>
+                  </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-card border-default rounded-lg overflow-hidden flex-1 flex flex-col min-h-[300px]">
+            <div class="schedule-scroll-container overflow-x-auto overflow-y-auto flex-1">
+              <div class="relative" [style.min-width.px]="scheduleTotalWidth()">
+
+                <div class="flex border-bottom-default sticky top-0 z-10 bg-card">
+                  @for (month of scheduleMonths(); track month.label) {
+                    <div class="text-xs font-semibold text-foreground-60 border-right-default px-2 py-1.5 text-center flex-shrink-0"
+                      [style.width.px]="month.span * scheduleDayPx()">
+                      {{ month.label }}
+                    </div>
+                  }
+                </div>
+
+                <div class="flex border-bottom-default sticky top-[29px] z-10 bg-card">
+                  @for (day of scheduleDays(); track day.date.getTime()) {
+                    <div class="text-2xs text-center flex-shrink-0 py-0.5"
+                      [style.width.px]="scheduleDayPx()"
+                      [class]="day.isToday ? 'text-primary font-bold bg-primary-20' : day.isWeekend ? 'text-foreground-40 bg-muted' : 'text-foreground-60'">
+                      @if (scheduleDayPx() >= 18 && (day.dayOfMonth === 1 || day.dayOfMonth % 5 === 0 || day.isToday)) {
+                        {{ day.dayOfMonth }}
+                      } @else if (scheduleDayPx() < 18 && (day.dayOfMonth === 1 || day.isToday)) {
+                        {{ day.dayOfMonth }}
+                      }
+                    </div>
+                  }
+                </div>
+
+                <div class="relative" [style.min-height.px]="scheduleEventRows().length * scheduleRowStep + 16">
+                  <div
+                    class="absolute top-0 bottom-0 w-px bg-primary z-20 pointer-events-none"
+                    [style.left.px]="scheduleTodayOffset()"
+                  ></div>
+
+                  @for (eventRow of scheduleEventRows(); track $index; let rowIdx = $index) {
+                    @for (event of eventRow; track event.id) {
+                      <div
+                        class="absolute rounded text-sm flex items-center px-2 overflow-hidden whitespace-nowrap cursor-default transition-opacity hover:opacity-80"
+                        [class]="scheduleCategoryMeta[event.category].bgClass + ' ' + scheduleCategoryMeta[event.category].borderClass"
+                        [style.left.px]="scheduleEventLeft(event)"
+                        [style.width.px]="scheduleEventWidth(event)"
+                        [style.height.px]="64"
+                        [style.top.px]="4 + rowIdx * scheduleRowStep"
+                        (mouseenter)="onScheduleBarMouseEnter($event, event)"
+                        (mousemove)="onScheduleBarMouseMove($event)"
+                        (mouseleave)="onScheduleBarMouseLeave()"
+                      >
+                        <div class="text-foreground truncate">{{ event.title }}</div>
+                      </div>
+                    }
+                  }
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @if (hoveredScheduleEvent(); as evt) {
+          <div
+            class="fixed z-50 pointer-events-none bg-card border-default rounded-lg shadow-lg p-3 min-w-[220px] max-w-[300px]"
+            [style.left.px]="clampedScheduleFlyoutPosition().x"
+            [style.top.px]="clampedScheduleFlyoutPosition().y"
+          >
+            <div class="flex items-center gap-2 mb-1">
+              <div class="w-2 h-2 rounded-full flex-shrink-0" [class]="scheduleCategoryMeta[evt.category].colorClass"></div>
+              <div class="text-sm font-semibold text-foreground truncate">{{ evt.title }}</div>
+            </div>
+            <div class="text-xs text-foreground-60 mb-2">{{ scheduleCategoryMeta[evt.category].label }}</div>
+            <div class="flex items-center gap-1 text-xs text-foreground-80 mb-1">
+              <i class="modus-icons text-xs" aria-hidden="true">calendar</i>
+              <div>{{ formatScheduleEventDates(evt) }}</div>
+              <div class="text-foreground-40 mx-1">|</div>
+              <div>{{ scheduleEventDurationDays(evt) }} day(s)</div>
+            </div>
+            @if (evt.participants) {
+              <div class="flex items-center gap-1 text-xs text-foreground-60 mt-1">
+                <i class="modus-icons text-xs" aria-hidden="true">people_group</i>
+                <div>{{ evt.participants }}</div>
+              </div>
+            }
+          </div>
+        }
+      }
       @case ('drawings') {
         @if (isSubpageCanvasActive()) {
           <div class="relative overflow-visible" [style.min-height.px]="tileCanvasMinHeight()">

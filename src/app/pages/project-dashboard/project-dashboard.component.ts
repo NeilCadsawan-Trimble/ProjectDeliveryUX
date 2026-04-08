@@ -67,7 +67,7 @@ import {
   type SummaryStat,
 } from '../../data/project-data';
 import { rewriteDynamicNeeds, rewriteBudgetRisk } from '../projects-page/projects-page-utils';
-import type { Rfi, Submittal, JobCostCategory, ProjectJobCost, SubledgerTransaction, DailyReport, Inspection, PunchListItem, ChangeOrder, Contract, ProjectRevenue, BudgetHistoryPoint, WeatherForecast, ProjectAttentionItem, InspectionResult, ChangeOrderStatus, Invoice, Payable, PurchaseOrder, SubcontractLedgerEntry, InvoiceStatus, PayableStatus, PurchaseOrderStatus, SubcontractLedgerType, UrgentNeedItem, ProjectWeather, WeatherCondition, StaffingConflict, ContractStatus, ContractType, RfiStatus, SubmittalStatus, TimeOffStatus } from '../../data/dashboard-data.types';
+import type { Rfi, Submittal, JobCostCategory, ProjectJobCost, SubledgerTransaction, DailyReport, Inspection, PunchListItem, ChangeOrder, Contract, ProjectRevenue, BudgetHistoryPoint, WeatherForecast, ProjectAttentionItem, InspectionResult, ChangeOrderStatus, Invoice, Payable, PurchaseOrder, SubcontractLedgerEntry, InvoiceStatus, PayableStatus, PurchaseOrderStatus, SubcontractLedgerType, UrgentNeedItem, ProjectWeather, WeatherCondition, StaffingConflict, ContractStatus, ContractType, RfiStatus, SubmittalStatus, TimeOffStatus, ProjectCalendarEvent, ProjectEventCategory } from '../../data/dashboard-data.types';
 import { JOB_COST_CATEGORIES } from '../../data/dashboard-data.types';
 import { CATEGORY_COLORS } from '../../data/dashboard-data.seed';
 import { getJobCostSummary, getSubledger, budgetProgressClass, buildUrgentNeeds, urgentNeedCategoryIcon, weatherIcon as sharedWeatherIcon, weatherIconColor as sharedWeatherIconColor, workImpactBadge as sharedWorkImpactBadge, getProjectTimeOff, buildStaffingConflicts, coBadgeColor, coTypeLabel, statusBadgeColor as sharedStatusBadgeColor, inspectionResultBadge as sharedInspectionResultBadge, punchPriorityBadge as sharedPunchPriorityBadge, formatCurrency as sharedFormatCurrency, contractStatusBadge as sharedContractStatusBadge, contractTypeLabel as sharedContractTypeLabel, contractTypeIcon, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost } from '../../data/dashboard-data.formatters';
@@ -961,6 +961,220 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   handleNavbarSearchInput(event: InputEvent): void {
     const target = event.target as HTMLInputElement;
     this.navbarSearchQuery.set(target?.value ?? '');
+  }
+
+  // -- Schedule (Gantt) sub-page --
+  private static readonly SCHEDULE_MONTHS = 6;
+  private static readonly SCHEDULE_ROW_HEIGHT = 64;
+  private static readonly SCHEDULE_ROW_GAP = 8;
+
+  readonly scheduleDayPx = signal(24);
+
+  readonly scheduleRowStep = ProjectDashboardComponent.SCHEDULE_ROW_HEIGHT + ProjectDashboardComponent.SCHEDULE_ROW_GAP;
+
+  private get _scheduleTodayDayOffset(): number {
+    const start = this.scheduleStartDate();
+    return Math.floor((this.scheduleToday.getTime() - start.getTime()) / 86400000);
+  }
+
+  private _zoomAnchorOffset: number | null = null;
+
+  setScheduleZoom(newDayPx: number): void {
+    const el = document.querySelector('.schedule-scroll-container');
+    if (!el) {
+      this.scheduleDayPx.set(newDayPx);
+      return;
+    }
+    const todayDay = this._scheduleTodayDayOffset;
+
+    if (this._zoomAnchorOffset === null) {
+      const oldTodayPx = todayDay * this.scheduleDayPx();
+      this._zoomAnchorOffset = oldTodayPx - el.scrollLeft;
+    }
+
+    this.scheduleDayPx.set(newDayPx);
+
+    const newTodayPx = todayDay * newDayPx;
+    const desiredScroll = Math.max(0, newTodayPx - this._zoomAnchorOffset);
+    el.scrollLeft = desiredScroll;
+
+    requestAnimationFrame(() => {
+      el.scrollLeft = desiredScroll;
+    });
+  }
+
+  resetScheduleZoomAnchor(): void {
+    this._zoomAnchorOffset = null;
+  }
+
+  readonly scheduleCategoryMeta: Record<ProjectEventCategory, { label: string; colorClass: string; bgClass: string; borderClass: string }> = {
+    site: { label: 'Site Activities', colorClass: 'bg-primary', bgClass: 'bg-primary-20', borderClass: 'timeline-bar-site' },
+    financial: { label: 'Financial', colorClass: 'bg-warning', bgClass: 'bg-warning-20', borderClass: 'timeline-bar-financial' },
+    meeting: { label: 'Meetings', colorClass: 'bg-success', bgClass: 'bg-success-20', borderClass: 'timeline-bar-meeting' },
+    deadline: { label: 'Deadlines', colorClass: 'bg-destructive', bgClass: 'bg-destructive-20', borderClass: 'timeline-bar-deadline' },
+    inspection: { label: 'Inspections', colorClass: 'bg-secondary', bgClass: 'bg-secondary-20', borderClass: 'timeline-bar-inspection' },
+  };
+  readonly scheduleCategories: ProjectEventCategory[] = ['site', 'financial', 'meeting', 'deadline', 'inspection'];
+
+  readonly scheduleCategoryFilter = signal<Set<ProjectEventCategory>>(new Set(['site', 'financial', 'meeting', 'deadline', 'inspection']));
+
+  toggleScheduleCategory(cat: ProjectEventCategory): void {
+    this.scheduleCategoryFilter.update(s => {
+      const next = new Set(s);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      return next;
+    });
+  }
+
+  isScheduleCategoryActive(cat: ProjectEventCategory): boolean {
+    return this.scheduleCategoryFilter().has(cat);
+  }
+
+  readonly scheduleEvents = computed<ProjectCalendarEvent[]>(() =>
+    this.store.projectCalendarEvents().filter(e => e.projectId === this.projectId())
+  );
+
+  readonly scheduleFilteredEvents = computed<ProjectCalendarEvent[]>(() => {
+    const filter = this.scheduleCategoryFilter();
+    return this.scheduleEvents().filter(e => filter.has(e.category));
+  });
+
+  private readonly scheduleStartDate = signal<Date>(this.computeScheduleStart());
+
+  private computeScheduleStart(): Date {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 1);
+    return d;
+  }
+
+  readonly scheduleToday = new Date();
+
+  readonly scheduleDays = computed<{ date: Date; dayOfMonth: number; isWeekend: boolean; isToday: boolean }[]>(() => {
+    const start = this.scheduleStartDate();
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + ProjectDashboardComponent.SCHEDULE_MONTHS);
+    const days: { date: Date; dayOfMonth: number; isWeekend: boolean; isToday: boolean }[] = [];
+    const todayStr = this.scheduleToday.toDateString();
+    const d = new Date(start);
+    while (d < end) {
+      const dow = d.getDay();
+      days.push({ date: new Date(d), dayOfMonth: d.getDate(), isWeekend: dow === 0 || dow === 6, isToday: d.toDateString() === todayStr });
+      d.setDate(d.getDate() + 1);
+    }
+    return days;
+  });
+
+  readonly scheduleMonths = computed<{ label: string; span: number }[]>(() => {
+    const days = this.scheduleDays();
+    if (!days.length) return [];
+    const months: { label: string; span: number }[] = [];
+    let current = '';
+    let count = 0;
+    const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' });
+    for (const d of days) {
+      const label = fmt.format(d.date);
+      if (label !== current) {
+        if (current) months.push({ label: current, span: count });
+        current = label;
+        count = 1;
+      } else {
+        count++;
+      }
+    }
+    if (current) months.push({ label: current, span: count });
+    return months;
+  });
+
+  readonly scheduleTotalWidth = computed(() => this.scheduleDays().length * this.scheduleDayPx());
+
+  readonly scheduleTodayOffset = computed(() => {
+    const start = this.scheduleStartDate();
+    const diff = Math.floor((this.scheduleToday.getTime() - start.getTime()) / 86400000);
+    return diff * this.scheduleDayPx();
+  });
+
+  readonly scheduleEventRows = computed<ProjectCalendarEvent[][]>(() => {
+    const events = this.scheduleFilteredEvents().slice().sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+    const dayPx = this.scheduleDayPx();
+    const start = this.scheduleStartDate();
+    const rows: ProjectCalendarEvent[][] = [];
+    for (const evt of events) {
+      const evtLeft = Math.floor((evt.startDate.getTime() - start.getTime()) / 86400000) * dayPx;
+      const evtRight = evtLeft + Math.max((Math.floor((evt.endDate.getTime() - evt.startDate.getTime()) / 86400000) + 1) * dayPx - 2, 6);
+      let placed = false;
+      for (const row of rows) {
+        const lastInRow = row[row.length - 1];
+        const lastLeft = Math.floor((lastInRow.startDate.getTime() - start.getTime()) / 86400000) * dayPx;
+        const lastRight = lastLeft + Math.max((Math.floor((lastInRow.endDate.getTime() - lastInRow.startDate.getTime()) / 86400000) + 1) * dayPx - 2, 6);
+        if (evtLeft >= lastRight + 2) {
+          row.push(evt);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) rows.push([evt]);
+    }
+    return rows;
+  });
+
+  scheduleEventLeft(event: ProjectCalendarEvent): number {
+    const start = this.scheduleStartDate();
+    const diff = Math.floor((event.startDate.getTime() - start.getTime()) / 86400000);
+    return diff * this.scheduleDayPx();
+  }
+
+  scheduleEventWidth(event: ProjectCalendarEvent): number {
+    const days = Math.floor((event.endDate.getTime() - event.startDate.getTime()) / 86400000) + 1;
+    return Math.max(days * this.scheduleDayPx() - 2, 6);
+  }
+
+  formatScheduleEventDates(event: ProjectCalendarEvent): string {
+    const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+    if (event.startDate.getTime() === event.endDate.getTime()) return fmt.format(event.startDate);
+    return `${fmt.format(event.startDate)} - ${fmt.format(event.endDate)}`;
+  }
+
+  scheduleEventDurationDays(event: ProjectCalendarEvent): number {
+    return Math.floor((event.endDate.getTime() - event.startDate.getTime()) / 86400000) + 1;
+  }
+
+  scrollScheduleToToday(): void {
+    const el = document.querySelector('.schedule-scroll-container');
+    if (el) {
+      const offset = this.scheduleTodayOffset() - el.clientWidth / 2;
+      el.scrollLeft = Math.max(0, offset);
+    }
+  }
+
+  readonly hoveredScheduleEvent = signal<ProjectCalendarEvent | null>(null);
+  readonly scheduleFlyoutPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  readonly clampedScheduleFlyoutPosition = computed(() => {
+    const pos = this.scheduleFlyoutPosition();
+    const flyoutW = 300;
+    const flyoutH = 140;
+    let x = pos.x + 12;
+    let y = pos.y - 8;
+    if (typeof window !== 'undefined') {
+      if (x + flyoutW > window.innerWidth) x = pos.x - flyoutW - 12;
+      if (y + flyoutH > window.innerHeight) y = window.innerHeight - flyoutH - 8;
+      if (y < 0) y = 8;
+    }
+    return { x, y };
+  });
+
+  onScheduleBarMouseEnter(event: MouseEvent, calEvent: ProjectCalendarEvent): void {
+    this.hoveredScheduleEvent.set(calEvent);
+    this.scheduleFlyoutPosition.set({ x: event.clientX, y: event.clientY });
+  }
+
+  onScheduleBarMouseMove(event: MouseEvent): void {
+    this.scheduleFlyoutPosition.set({ x: event.clientX, y: event.clientY });
+  }
+
+  onScheduleBarMouseLeave(): void {
+    this.hoveredScheduleEvent.set(null);
   }
 
   readonly userCard = computed<INavbarUserCard>(() => this.personaService.userCard());
