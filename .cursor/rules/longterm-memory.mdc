@@ -85,11 +85,28 @@ Consult this file before asking the user a question. If the answer is here, act 
 - Other themes: default `var(--background)` is correct.
 
 ### Testing Strategy
-- **Unit tests** (`ng test`): 84 tests covering layout engine, canvas BFS push, widget layout service, canvas reset, collision regression.
-- **Static tests** (`npm run test:static` via Vitest): 325 tests across 9 files scanning source files for structural regressions.
+- **Unit tests** (`ng test`): 84+ tests covering layout engine, canvas BFS push, widget layout service, canvas reset, collision regression, projects sort.
+- **Static tests** (`npm run test:static` via Vitest): 413+ tests across 13 files scanning source files for structural regressions.
 - **E2E tests** (Playwright): 8 specs, minimal coverage. Configured but not primary gate.
 - **Lint checks** (`npm run lint:all`): Colors, borders, opacity, icons, icon names, inline styles.
 - **Type checking** (`npm run type-check`): Strict TypeScript validation.
+
+### Authentication
+- **Trimble ID**: OAuth 2.0 PKCE flow via `@trimble-oss/trimble-id`.
+- **Auth guard**: All persona routes protected; unauthenticated users redirected to `/login`.
+- **Auth callback**: Uses `NgZone.run()` for Zone.js re-entry after trimble-id token exchange (axios/CommonJS causes Zone.js context loss).
+- **Dynamic URIs**: `redirectUri` and `logoutRedirectUri` use `window.location.origin` (works on all Vercel deployments).
+- **Hard redirect fallback**: `window.location.replace` if Angular soft navigation fails post-auth.
+
+### Persona System
+- **Dashboard user**: Frank Mendoza (displayed in navbar and home page greeting).
+- **Project Manager**: Bert Humphries (`BH`) is the PM and owner on all 8 projects.
+- **Team rosters**: Previous PMs re-titled when Bert was added (Sarah Chen -> Asst PM, Priya Nair -> Senior Engineer, Lena Brooks -> Project Coordinator).
+
+### Live Weather
+- **API**: OpenWeatherMap REST API (current weather + 5-day forecast, imperial units).
+- **Proxy**: Vercel Edge Function (`api/weather.ts`) with 15-minute edge caching (`s-maxage`).
+- **Service**: `WeatherService` with TTL-based caching, concurrent fetch prevention, per-city deduplication.
 
 ### Git Identity
 - **Author name**: `NeilCadsawan-Trimble` (local config for this repo).
@@ -100,11 +117,18 @@ Consult this file before asking the user a question. If the answer is here, act 
 - PR #34: Canvas collision frozen-direction pushback fix
 - PR #35: Construction domain data + risks widget layout promotion
 - PR #38: Hamburger shadow DOM selector (incomplete fix, superseded by scoped encapsulation fix)
+- PR #56: Sidenav overlay, consistent row heights, mobile icon centering, UI consistency
+- PR #58: Live weather data (OpenWeatherMap API, Vercel Edge Function proxy, 23 regression tests)
+- PR #66: Draggable KPI widget, resize twitchiness fix, push-down only collision
+- PR #73-78: Trimble ID authentication (OAuth 2.0 PKCE), Vercel deployment fixes (cache busting, CDN headers)
 
 ### Deployment
 - **Vercel**: Connected to GitHub repo. Auto-deploys on push.
 - **Node version**: Set via `NODE_VERSION` env var in Vercel.
 - **Framework override**: Must NOT be set to null (breaks Git-triggered builds).
+- **Build cache**: Must clear `.angular/cache` before build (`rm -rf .angular/cache` in `vercel.json`). Stale cache caused auth routes to be missing in production.
+- **CDN headers**: HTML responses must include `Cache-Control: no-cache, no-store, must-revalidate` to prevent stale `index.html` serving.
+- **Edge Functions**: Weather proxy at `api/weather.ts` with 15-minute edge caching.
 
 ## Known Fragile Areas
 
@@ -124,6 +148,9 @@ These areas have broken multiple times. Extra care required:
 | Shell ng-content in conditional branches | Placing `<ng-content />` inside `@if`/`@else` branches silently destroys projected content. Broke ALL dashboard pages in canvas mode for 2 days (PR #56, Apr 3-5). | Shell must have **exactly 1** `<ng-content />` outside ALL conditional blocks. Static test enforces count and nesting. See skill section 29 |
 | Resize twitchiness (`dir='both'`) | Horizontal resize pipeline runs on every frame during vertical-only resize, causing pixel-column round-trip jitter that twitches neighbors | `_hResizeActive` gate: horizontal pipeline only activates after horizontal mouse delta exceeds half a column step. See skill section 32 |
 | Widget jumping (collision compaction) | `resolveCollisions` and `compactAll` starting at `y=0` causes distant widgets to teleport upward over intervening widgets | Always start at `tops[id]`; widgets can only move down. See skill section 33 |
+| Vercel CDN stale HTML | CDN caches `index.html` for 26+ hours, serving old JS bundles missing new routes | `Cache-Control: no-cache, no-store, must-revalidate` on HTML responses in `vercel.json` |
+| Vercel Angular build cache | `.angular/cache` persists stale route definitions across deploys | `rm -rf .angular/cache` before `npm run build` in `vercel.json` |
+| Zone.js context loss (auth callback) | trimble-id library uses axios/CommonJS which exits Zone.js context; post-auth `navigateByUrl` silently fails | Wrap in `NgZone.run()`; add `window.location.replace` hard-redirect fallback |
 
 ## Project File Map
 
@@ -147,6 +174,13 @@ These areas have broken multiple times. Extra care required:
 | Canvas panning/zoom | `src/app/shell/services/canvas-panning.ts` |
 | AI service | `src/app/services/ai.service.ts` |
 | AI tools service | `src/app/services/ai-tools.service.ts` |
+| Auth service | `src/app/services/auth.service.ts` |
+| Auth callback | `src/app/pages/auth-callback/auth-callback.component.ts` |
+| Weather service | `src/app/services/weather.service.ts` |
+| Weather API proxy | `api/weather.ts` |
+| Vercel config | `vercel.json` |
+| Projects layout config | `src/app/pages/projects-page/projects-page-layout.config.ts` |
+| Projects sort utils | `src/app/pages/projects-page/projects-page-utils.ts` |
 
 ## Planned Features (Not Yet Implemented)
 
@@ -188,3 +222,10 @@ These areas have broken multiple times. Extra care required:
 | 9 (Mar 30) | `b6cd3110-bece-4ecf-9fe2-fcbe115ee7c8` | Canvas collision frozen-direction pushback, construction domain data, risks widget layout promotion |
 | 10 (Mar 31) | *(multi-session)* | Hamburger scoped encapsulation fix, canvas Shift+scroll zoom macOS fix, webmail/calendar widget planning, Google Cloud project planning |
 | 11 (Apr 5) | `56f15e0d-1c0c-4cb6-82f7-2018d33f1ec3` | Draggable KPI widget, resize twitchiness fix (_hResizeActive dead zone), push-down only collision (no jumping), PR #66 merged to main |
+| 12 (Apr 3) | `a29bd855-b58b-4bf6-91ef-c3a10be2e2a3` | Risk distribution fixes, TILE_VISUAL_ORDER, Sort by Priority menu |
+| 13 (Apr 3) | `328a8c37-da05-488d-86ec-0a6b40525f96` | RFI/Submittal compact mode ported to project dashboard |
+| 14 (Apr 3) | `a54ba709-8451-4a34-a90f-ccb02aad30e5` | Sidenav overlay, consistent row heights, mobile centering, PR #56 |
+| 15 (Apr 3-5) | `57efcfde-5b2b-43c8-af3e-933f418e9ae1` | ng-content projection fix, canvas content centering, projects grid recalculation |
+| 16 (Apr 5) | `fb55d8c2-9c39-4110-99b0-9930aed93e09` | Live weather (OpenWeatherMap API, Edge Function, WeatherService), 23 regression tests, PR #58 |
+| 17 (Apr 6) | *(session)* | Bert Humphries as Project Manager on all 8 projects |
+| 18 (Apr 7) | `2c2f59d8-3267-405f-ae9b-62cbe76d9ac6` | Trimble ID auth (OAuth 2.0 PKCE), Vercel deployment fixes, PRs #73-78 |

@@ -14,6 +14,7 @@ export interface UserMenuItem {
   id: string;
   label: string;
   icon: string;
+  url?: string;
 }
 
 const SECTION_1_ITEMS: UserMenuItem[] = [
@@ -80,13 +81,13 @@ const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS.map(p => ({
         <div class="border-top-default"></div>
 
         <div class="py-1">
-          @for (item of section1; track item.id) {
+          @for (item of section1(); track item.id) {
             <div
               class="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted transition-colors duration-150"
               role="menuitem"
               tabindex="0"
-              (click)="onMenuAction(item.id)"
-              (keydown.enter)="onMenuAction(item.id)"
+              (click)="onMenuAction(item)"
+              (keydown.enter)="onMenuAction(item)"
             >
               <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
               <div class="text-sm text-foreground">{{ item.label }}</div>
@@ -174,7 +175,11 @@ export class UserMenuComponent {
   readonly isOpen = signal(false);
   readonly legalExpanded = signal(false);
 
-  readonly section1 = SECTION_1_ITEMS;
+  readonly section1 = computed(() =>
+    this.activePersonaSlug() === 'kelly'
+      ? SECTION_1_ITEMS.filter(i => i.id !== 'admin')
+      : SECTION_1_ITEMS
+  );
   readonly personaItems = PERSONA_MENU_ITEMS;
   readonly currentYear = new Date().getFullYear();
 
@@ -205,8 +210,11 @@ export class UserMenuComponent {
     this.close();
   }
 
-  onMenuAction(actionId: string): void {
-    this.menuAction.emit(actionId);
+  onMenuAction(item: UserMenuItem): void {
+    if (item.url) {
+      window.open(item.url, '_blank');
+    }
+    this.menuAction.emit(item.id);
     this.close();
   }
 

@@ -58,9 +58,14 @@ function buildBertNav(): PersonaNavConfig {
   return nav;
 }
 
+const KELLY_FIN_SUBNAV_KEYS = new Set([
+  'overview', 'accounts-payable', 'accounts-receivable', 'purchase-orders', 'cash-management',
+]);
+
 function buildKellyNav(): PersonaNavConfig {
   const nav = buildPersonaNav();
   nav.shellSideNav = nav.shellSideNav.filter(item => item.value !== 'projects');
+  nav.financialsPageSubNav = nav.financialsPageSubNav.filter(item => KELLY_FIN_SUBNAV_KEYS.has(item.value));
   return nav;
 }
 

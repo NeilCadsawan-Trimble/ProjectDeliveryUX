@@ -1512,7 +1512,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         if (id === resizedId || locked[id]) continue;
         const sTop = snap[id].top;
         const sBottom = sTop + snap[id].height;
-        if (sTop < rBottom && sBottom > rTop && (snap[id].left + snap[id].width) <= (snap[resizedId].left + snap[resizedId].width)) {
+        if (sTop >= rTop - gap && sTop < rBottom && sBottom > rTop && (snap[id].left + snap[id].width) <= (snap[resizedId].left + snap[resizedId].width)) {
           leftNeighbors.push(id);
         }
       }
@@ -1585,7 +1585,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         if (id === resizedId || locked[id]) continue;
         const sTop = snap[id].top;
         const sBottom = sTop + snap[id].height;
-        if (sTop < rBottom && sBottom > rTop && snap[id].left >= lefts[resizedId]) {
+        if (sTop >= rTop - gap && sTop < rBottom && sBottom > rTop && snap[id].left >= lefts[resizedId]) {
           rightNeighbors.push(id);
         }
       }

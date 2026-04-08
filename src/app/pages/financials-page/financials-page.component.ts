@@ -27,8 +27,17 @@ import { JOB_COST_CATEGORIES } from '../../data/dashboard-data.types';
 import { CATEGORY_COLORS } from '../../data/dashboard-data.seed';
 import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data.formatters';
 import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
-import { FINANCIALS_WIDGETS } from '../../data/widget-registrations';
+import { FINANCIALS_WIDGETS, KELLY_FINANCIALS_WIDGETS } from '../../data/widget-registrations';
 import { ChartComponent, type ApexAxisChartSeries } from 'ng-apexcharts';
+import { HomeInvoiceQueueComponent } from '../home-page/components/home-invoice-queue.component';
+import { HomeVendorAgingComponent } from '../home-page/components/home-vendor-aging.component';
+import { HomePayAppsComponent, type PayAppsView } from '../home-page/components/home-pay-apps.component';
+import { HomeLienWaiversComponent } from '../home-page/components/home-lien-waivers.component';
+import { HomeRetentionComponent } from '../home-page/components/home-retention.component';
+import { HomePaymentScheduleComponent } from '../home-page/components/home-payment-schedule.component';
+import { HomeApActivityComponent } from '../home-page/components/home-ap-activity.component';
+import { HomeApKpiCardsComponent, type ApKpiCard } from '../home-page/components/home-ap-kpi-cards.component';
+import { HomeCashOutflowComponent } from '../home-page/components/home-cash-outflow.component';
 
 type FinDetailType =
   | 'estimate' | 'changeOrder' | 'invoice' | 'payable' | 'purchaseOrder'
@@ -62,7 +71,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
 @Component({
   selector: 'app-financials-page',
-  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent, ChartComponent],
+  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent, ChartComponent, HomeInvoiceQueueComponent, HomeVendorAgingComponent, HomePayAppsComponent, HomeLienWaiversComponent, HomeRetentionComponent, HomePaymentScheduleComponent, HomeApActivityComponent, HomeApKpiCardsComponent, HomeCashOutflowComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     'class': 'block h-full',
@@ -286,7 +295,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
                 <div class="text-xs text-foreground-40 uppercase tracking-wide">{{ pf.isFade ? 'Profit Fade' : 'Profit Gain' }}</div>
                 <div class="flex items-center gap-2">
-                  <i class="modus-icons text-lg {{ pf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ pf.isFade ? 'trending_down' : 'arrow_up' }}</i>
+                  <i class="modus-icons text-lg {{ pf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ pf.isFade ? 'arrow_down' : 'arrow_up' }}</i>
                   <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%</div>
                 </div>
                 <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
@@ -350,7 +359,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <div class="text-xs text-foreground-60 font-medium">{{ cf.label }}</div>
                     </div>
                     <div class="flex items-center gap-1">
-                      <i class="modus-icons text-sm {{ cf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ cf.isFade ? 'trending_down' : 'arrow_up' }}</i>
+                      <i class="modus-icons text-sm {{ cf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ cf.isFade ? 'arrow_down' : 'arrow_up' }}</i>
                       <div class="text-sm font-bold {{ cf.isFade ? 'text-destructive' : 'text-success' }}">{{ cf.isFade ? '' : '+' }}{{ cf.fadeAmount }}%</div>
                     </div>
                   </div>
@@ -538,7 +547,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               </div>
             </div>
 
-            <!-- Stacked KPI cards -->
+            @if (!isKelly()) {
             <div class="flex-1 min-w-0 flex flex-col gap-3">
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
@@ -646,10 +655,21 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 </div>
               }
             </div>
+            } @else {
+            <div class="flex-1 min-w-0 flex flex-col gap-2 px-3 pb-3 overflow-y-auto">
+              <app-home-ap-kpi-cards [cards]="kellyApKpiCards()" />
+              @if (kellyApKpisInsight()) {
+                <div class="flex items-center gap-1.5 px-3 py-2 bg-muted rounded-lg flex-shrink-0">
+                  <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                  <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyApKpisInsight() }}</div>
+                </div>
+              }
+            </div>
+            }
           </div>
         </div>
 
-        @for (widgetId of financialsWidgets; track widgetId) {
+        @for (widgetId of financialsWidgets(); track widgetId) {
           <div
             [class]="isCanvasMode() ? 'absolute overflow-hidden'
                    : isMobile() ? 'absolute left-0 right-0 overflow-hidden'
@@ -1028,6 +1048,231 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
                 />
+
+              } @else if (widgetId === 'finInvoiceQueue') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-warning" aria-hidden="true">invoice</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Invoice Queue</div>
+                    </div>
+                  </div>
+                  @if (kellyInvoiceQueueInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyInvoiceQueueInsight() }}</div>
+                    </div>
+                  }
+                  <div class="flex-1 min-h-0 overflow-hidden">
+                    <app-home-invoice-queue [invoices]="pendingApInvoices()" />
+                  </div>
+                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+
+              } @else if (widgetId === 'finPaymentSchedule') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-destructive" aria-hidden="true">calendar</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Payment Schedule</div>
+                    </div>
+                  </div>
+                  @if (kellyPaymentScheduleInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyPaymentScheduleInsight() }}</div>
+                    </div>
+                  }
+                  <div class="flex-1 min-h-0 overflow-hidden">
+                    <app-home-payment-schedule [payments]="apPaymentSchedule()" />
+                  </div>
+                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+
+              } @else if (widgetId === 'finVendorAging') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-warning" aria-hidden="true">timer</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Vendor Aging</div>
+                    </div>
+                  </div>
+                  @if (kellyVendorAgingInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyVendorAgingInsight() }}</div>
+                    </div>
+                  }
+                  <div class="flex-1 min-h-0 overflow-hidden">
+                    <app-home-vendor-aging [vendors]="apVendors()" />
+                  </div>
+                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+
+              } @else if (widgetId === 'finPayApps') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-primary" aria-hidden="true">clipboard</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Pay Applications</div>
+                    </div>
+                    <div class="flex items-center gap-1 bg-muted rounded p-0.5" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                      <div
+                        class="flex items-center justify-center w-7 h-7 rounded cursor-pointer transition-colors duration-150"
+                        [class.bg-card]="payAppsView() === 'tile'"
+                        [class.text-foreground]="payAppsView() === 'tile'"
+                        [class.text-foreground-40]="payAppsView() !== 'tile'"
+                        (click)="payAppsView.set('tile')">
+                        <i class="modus-icons text-sm" aria-hidden="true">dashboard</i>
+                      </div>
+                      <div
+                        class="flex items-center justify-center w-7 h-7 rounded cursor-pointer transition-colors duration-150"
+                        [class.bg-card]="payAppsView() === 'table'"
+                        [class.text-foreground]="payAppsView() === 'table'"
+                        [class.text-foreground-40]="payAppsView() !== 'table'"
+                        (click)="payAppsView.set('table')">
+                        <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
+                      </div>
+                    </div>
+                  </div>
+                  @if (kellyPayAppsInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyPayAppsInsight() }}</div>
+                    </div>
+                  }
+                  <div class="flex-1 min-h-0 overflow-hidden">
+                    <app-home-pay-apps
+                      [payApps]="apPayApplications()"
+                      [view]="payAppsView()"
+                      [interactive]="true"
+                      [showViewAll]="true"
+                      (payAppClick)="navigateToApSubpage()"
+                      (viewAllClick)="navigateToApSubpage()"
+                    />
+                  </div>
+                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+
+              } @else if (widgetId === 'finLienWaivers') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-destructive" aria-hidden="true">file</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Lien Waivers</div>
+                    </div>
+                  </div>
+                  @if (kellyLienWaiversInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyLienWaiversInsight() }}</div>
+                    </div>
+                  }
+                  <div class="flex-1 min-h-0 overflow-hidden">
+                    <app-home-lien-waivers [waivers]="apLienWaivers()" />
+                  </div>
+                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+
+              } @else if (widgetId === 'finRetention') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">lock</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Retention Summary</div>
+                    </div>
+                  </div>
+                  @if (kellyRetentionInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyRetentionInsight() }}</div>
+                    </div>
+                  }
+                  <div class="flex-1 min-h-0 overflow-hidden">
+                    <app-home-retention [records]="apRetention()" />
+                  </div>
+                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+
+              } @else if (widgetId === 'finApActivity') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">AP Activity</div>
+                    </div>
+                  </div>
+                  @if (kellyApActivityInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyApActivityInsight() }}</div>
+                    </div>
+                  }
+                  <div class="flex-1 min-h-0 overflow-hidden">
+                    <app-home-ap-activity [activities]="apActivities()" />
+                  </div>
+                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+
+              } @else if (widgetId === 'finCashOutflow') {
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                  <div
+                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  >
+                    <div class="flex items-center gap-2">
+                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
+                      <i class="modus-icons text-lg text-destructive" aria-hidden="true">arrow_down</i>
+                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Cash Outflow</div>
+                    </div>
+                  </div>
+                  @if (kellyCashOutflowInsight()) {
+                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
+                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyCashOutflowInsight() }}</div>
+                    </div>
+                  }
+                  <div class="flex-1 min-h-0 overflow-hidden">
+                    <app-home-cash-outflow [payments]="apPaymentSchedule()" />
+                  </div>
+                </div>
+                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
               }
 
             </div>
@@ -1433,7 +1678,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         </div>
 
         <!-- Aging buckets -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           @for (bucket of agingBuckets(); track bucket.label) {
             <div class="bg-card rounded-lg p-4 border-default">
               <div class="text-xs text-foreground-60 mb-1">{{ bucket.label }}</div>
@@ -1525,6 +1770,30 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           </div>
         </div>
 
+        <!-- AP detail KPI strip -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Invoice Queue</div>
+            <div class="text-2xl font-bold text-foreground">{{ pendingApInvoices().length }}</div>
+            <div class="text-xs text-foreground-40 mt-1">{{ onHoldApInvoices().length }} on hold</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Retention Held</div>
+            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(apTotalRetentionHeld()) }}</div>
+            <div class="text-xs text-foreground-40 mt-1">{{ formatCurrency(apTotalRetentionPending()) }} pending release</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Lien Waivers</div>
+            <div class="text-2xl font-bold" [class]="apMissingWaivers() > 0 ? 'text-destructive' : 'text-foreground'">{{ apMissingWaivers() }} missing</div>
+            <div class="text-xs text-foreground-40 mt-1">{{ apLienWaivers().length }} total tracked</div>
+          </div>
+          <div class="bg-card rounded-lg p-4 border-default">
+            <div class="text-xs text-foreground-60 mb-1">Discounts Available</div>
+            <div class="text-2xl font-bold text-success">{{ formatCurrency(apDiscountsAvailable()) }}</div>
+            <div class="text-xs text-foreground-40 mt-1">{{ apPaymentSchedule().length }} scheduled payments</div>
+          </div>
+        </div>
+
         <!-- Payables table -->
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
@@ -1549,7 +1818,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex-shrink-0">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">credit_card</i>
@@ -1572,6 +1841,110 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           }
         </div>
         }
+
+        <!-- Invoice Queue -->
+        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
+              <div class="text-base font-semibold text-foreground">Invoice Queue</div>
+              <modus-badge color="secondary" size="sm">{{ pendingApInvoices().length }}</modus-badge>
+            </div>
+          </div>
+          <app-home-invoice-queue [invoices]="pendingApInvoices()" />
+        </div>
+
+        <!-- Vendor Aging -->
+        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">timer</i>
+              <div class="text-base font-semibold text-foreground">Vendor Aging</div>
+              <modus-badge color="secondary" size="sm">{{ apVendors().length }}</modus-badge>
+            </div>
+          </div>
+          <app-home-vendor-aging [vendors]="apVendors()" />
+        </div>
+
+        <!-- Pay Applications -->
+        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">clipboard</i>
+                <div class="text-base font-semibold text-foreground">Pay Applications</div>
+                <modus-badge color="secondary" size="sm">{{ apPayApplications().length }}</modus-badge>
+              </div>
+              <div class="flex items-center gap-1 bg-muted rounded p-0.5">
+                <div
+                  class="flex items-center justify-center w-7 h-7 rounded cursor-pointer transition-colors duration-150"
+                  [class.bg-card]="payAppsView() === 'tile'"
+                  [class.text-foreground]="payAppsView() === 'tile'"
+                  [class.text-foreground-40]="payAppsView() !== 'tile'"
+                  (click)="payAppsView.set('tile')">
+                  <i class="modus-icons text-sm" aria-hidden="true">dashboard</i>
+                </div>
+                <div
+                  class="flex items-center justify-center w-7 h-7 rounded cursor-pointer transition-colors duration-150"
+                  [class.bg-card]="payAppsView() === 'table'"
+                  [class.text-foreground]="payAppsView() === 'table'"
+                  [class.text-foreground-40]="payAppsView() !== 'table'"
+                  (click)="payAppsView.set('table')">
+                  <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <app-home-pay-apps [payApps]="apPayApplications()" [view]="payAppsView()" [showSummary]="false" />
+        </div>
+
+        <!-- Lien Waivers -->
+        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
+              <div class="text-base font-semibold text-foreground">Lien Waivers</div>
+              <modus-badge color="secondary" size="sm">{{ apLienWaivers().length }}</modus-badge>
+            </div>
+          </div>
+          <app-home-lien-waivers [waivers]="apLienWaivers()" />
+        </div>
+
+        <!-- Retention -->
+        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">lock</i>
+              <div class="text-base font-semibold text-foreground">Retention</div>
+              <modus-badge color="secondary" size="sm">{{ apRetention().length }}</modus-badge>
+            </div>
+          </div>
+          <app-home-retention [records]="apRetention()" />
+        </div>
+
+        <!-- Payment Schedule -->
+        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
+              <div class="text-base font-semibold text-foreground">Payment Schedule</div>
+              <modus-badge color="secondary" size="sm">{{ apPaymentSchedule().length }}</modus-badge>
+            </div>
+          </div>
+          <app-home-payment-schedule [payments]="apPaymentSchedule()" />
+        </div>
+
+        <!-- AP Activity -->
+        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0">
+          <div class="px-5 py-4 border-bottom-default">
+            <div class="flex items-center gap-2">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
+              <div class="text-base font-semibold text-foreground">AP Activity</div>
+              <modus-badge color="secondary" size="sm">{{ apActivities().length }}</modus-badge>
+            </div>
+          </div>
+          <app-home-ap-activity [activities]="apActivities()" />
+        </div>
       </div>
     }
 
@@ -2444,6 +2817,33 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly contracts = this.store.contracts;
   readonly subcontractLedger = this.store.subcontractLedger;
 
+  // AP Clerk data (shared across personas)
+  readonly apInvoices = this.store.apInvoices;
+  readonly apVendors = this.store.apVendors;
+  readonly apPayApplications = this.store.apPayApplications;
+  readonly payAppsView = signal<PayAppsView>('tile');
+  readonly apLienWaivers = this.store.apLienWaivers;
+  readonly apRetention = this.store.apRetention;
+  readonly apActivities = this.store.apActivities;
+  readonly apPaymentSchedule = this.store.apPaymentSchedule;
+
+  readonly pendingApInvoices = computed(() => this.apInvoices().filter(i => i.status === 'pending'));
+  readonly onHoldApInvoices = computed(() => this.apInvoices().filter(i => i.status === 'on-hold'));
+  readonly apTotalOutstanding = computed(() => this.apInvoices().filter(i => i.status !== 'paid').reduce((s, i) => s + i.amount, 0));
+  readonly apMissingWaivers = computed(() => this.apLienWaivers().filter(w => w.status === 'missing').length);
+  readonly apTotalRetentionHeld = computed(() => this.apRetention().reduce((s, r) => s + r.retentionHeld, 0));
+  readonly apTotalRetentionReleased = computed(() => this.apRetention().reduce((s, r) => s + r.retentionReleased, 0));
+  readonly apTotalRetentionPending = computed(() => this.apRetention().reduce((s, r) => s + r.pendingRelease, 0));
+  readonly apDiscountsAvailable = computed(() => this.apPaymentSchedule().filter(p => p.discountAvailable > 0).reduce((s, p) => s + p.discountAvailable, 0));
+  readonly apPaymentsDueThisWeek = computed(() => this.apPaymentSchedule().slice(0, 4).reduce((s, p) => s + p.amount, 0));
+
+  readonly kellyApKpiCards = computed<ApKpiCard[]>(() => [
+    { value: '' + this.pendingApInvoices().length, label: 'Invoices to Process', icon: 'invoice', iconBg: 'bg-warning-20', iconColor: 'text-warning' },
+    { value: sharedFormatCurrency(this.apTotalOutstanding()), label: 'Total Outstanding AP', icon: 'payment_instant', iconBg: 'bg-primary-20', iconColor: 'text-primary' },
+    { value: sharedFormatCurrency(this.apPaymentsDueThisWeek()), label: 'Payments Due This Week', icon: 'calendar', iconBg: 'bg-destructive-20', iconColor: 'text-destructive' },
+    { value: sharedFormatCurrency(this.apDiscountsAvailable()), label: 'Discounts Available', icon: 'offers', iconBg: 'bg-success-20', iconColor: 'text-success' },
+  ]);
+
   // Computed KPIs (reactive to store signal changes)
   readonly billedTotal = computed(() => this.billingEvents().filter(e => e.status !== 'scheduled').reduce((sum, e) => sum + e.amount, 0));
   readonly collectedTotal = computed(() => this.billingEvents().filter(e => e.status === 'completed').reduce((sum, e) => sum + e.amount, 0));
@@ -2504,6 +2904,98 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   protected override getEngineConfig(): DashboardLayoutConfig {
     const F = FinancialsPageComponent;
+    const slug = this.personaService.activePersonaSlug();
+
+    if (slug === 'kelly') {
+      const KELLY_NAV_HEIGHT = 294;
+      const ROW_H = 384;
+      const SMALL_ROW_H = 352;
+      const G = F.G;
+      const R1T = F.NAVKPI_TOP;
+      const R2T = R1T + ROW_H + G;
+      const R3T = R2T + ROW_H + G;
+      const R4T = R3T + ROW_H + G;
+
+      const kellyWidgets: DashboardWidgetId[] = [
+        'finTitle', 'finNavKpi',
+        'finInvoiceQueue',
+        'finPaymentSchedule', 'finVendorAging',
+        'finPayApps', 'finLienWaivers',
+        'finRetention', 'finApActivity', 'finCashOutflow',
+      ];
+
+      return {
+        widgets: kellyWidgets,
+        layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-financials:v29`,
+        canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-financials:v31`,
+        defaultColStarts: {
+          finTitle: 1, finNavKpi: 1,
+          finInvoiceQueue: 9,
+          finPaymentSchedule: 1, finVendorAging: 9,
+          finPayApps: 1, finLienWaivers: 9,
+          finRetention: 1, finApActivity: 9, finCashOutflow: 13,
+        },
+        defaultColSpans: {
+          finTitle: 16, finNavKpi: 8,
+          finInvoiceQueue: 8,
+          finPaymentSchedule: 8, finVendorAging: 8,
+          finPayApps: 8, finLienWaivers: 8,
+          finRetention: 8, finApActivity: 4, finCashOutflow: 4,
+        },
+        defaultTops: {
+          finTitle: 0, finNavKpi: F.NAVKPI_TOP,
+          finInvoiceQueue: R1T,
+          finPaymentSchedule: R2T, finVendorAging: R2T,
+          finPayApps: R3T, finLienWaivers: R3T,
+          finRetention: R4T, finApActivity: R4T, finCashOutflow: R4T,
+        },
+        defaultHeights: {
+          finTitle: F.TITLE_HEIGHT, finNavKpi: KELLY_NAV_HEIGHT,
+          finInvoiceQueue: ROW_H,
+          finPaymentSchedule: ROW_H, finVendorAging: ROW_H,
+          finPayApps: ROW_H, finLienWaivers: ROW_H,
+          finRetention: SMALL_ROW_H, finApActivity: SMALL_ROW_H, finCashOutflow: SMALL_ROW_H,
+        },
+        canvasDefaultLefts: {
+          finTitle: 0, finNavKpi: 0,
+          finInvoiceQueue: 656,
+          finPaymentSchedule: 0, finVendorAging: 656,
+          finPayApps: 0, finLienWaivers: 656,
+          finRetention: 0, finApActivity: 0, finCashOutflow: 656,
+        },
+        canvasDefaultPixelWidths: {
+          finTitle: 1280, finNavKpi: 640,
+          finInvoiceQueue: 624,
+          finPaymentSchedule: 640, finVendorAging: 624,
+          finPayApps: 640, finLienWaivers: 640,
+          finRetention: 640, finApActivity: 640, finCashOutflow: 640,
+        },
+        canvasDefaultTops: {
+          finTitle: 16, finNavKpi: 16 + F.TITLE_HEIGHT + G,
+          finInvoiceQueue: 16 + F.TITLE_HEIGHT + G,
+          finPaymentSchedule: 16 + F.TITLE_HEIGHT + G + ROW_H + G,
+          finVendorAging: 16 + F.TITLE_HEIGHT + G + ROW_H + G,
+          finPayApps: 16 + F.TITLE_HEIGHT + G + ROW_H * 2 + G * 2,
+          finLienWaivers: 16 + F.TITLE_HEIGHT + G + ROW_H * 2 + G * 2,
+          finRetention: 16 + F.TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
+          finApActivity: 16 + F.TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
+          finCashOutflow: 16 + F.TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
+        },
+        canvasDefaultHeights: {
+          finTitle: F.TITLE_HEIGHT, finNavKpi: KELLY_NAV_HEIGHT,
+          finInvoiceQueue: 336,
+          finPaymentSchedule: 336, finVendorAging: 336,
+          finPayApps: 336, finLienWaivers: 336,
+          finRetention: 336, finApActivity: 352, finCashOutflow: 352,
+        },
+        minColSpan: 1,
+        widgetMaxColSpans: {},
+        canvasGridMinHeightOffset: 200,
+        savesDesktopOnMobile: true,
+        onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
+      };
+    }
+
     return {
       widgets: ['finTitle', 'finNavKpi', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
       layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-financials:v17`,
@@ -2710,11 +3202,31 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
-  private readonly _registerFinancialsWidgets = (() => {
-    this.widgetFocusService.registerWidgets(FINANCIALS_WIDGETS);
-  })();
+  readonly isKelly = computed(() => this.personaService.activePersonaSlug() === 'kelly');
 
-  readonly financialsWidgets: DashboardWidgetId[] = ['finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
+  private readonly _registerFinancialsWidgets = effect(() => {
+    this.widgetFocusService.registerWidgets(this.isKelly() ? KELLY_FINANCIALS_WIDGETS : FINANCIALS_WIDGETS);
+  });
+
+  readonly financialsWidgets = computed<DashboardWidgetId[]>(() =>
+    this.isKelly()
+      ? ['finInvoiceQueue', 'finPaymentSchedule', 'finVendorAging', 'finPayApps', 'finLienWaivers', 'finRetention', 'finApActivity', 'finCashOutflow']
+      : ['finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders']
+  );
+
+  readonly kellyApKpisInsight = computed<string | null>(() => this.getFinWidgetInsight('finApKpis'));
+  readonly kellyInvoiceQueueInsight = computed<string | null>(() => this.getFinWidgetInsight('finInvoiceQueue'));
+  readonly kellyPaymentScheduleInsight = computed<string | null>(() => this.getFinWidgetInsight('finPaymentSchedule'));
+  readonly kellyVendorAgingInsight = computed<string | null>(() => this.getFinWidgetInsight('finVendorAging'));
+  readonly kellyPayAppsInsight = computed<string | null>(() => this.getFinWidgetInsight('finPayApps'));
+  readonly kellyLienWaiversInsight = computed<string | null>(() => this.getFinWidgetInsight('finLienWaivers'));
+  readonly kellyRetentionInsight = computed<string | null>(() => this.getFinWidgetInsight('finRetention'));
+  readonly kellyApActivityInsight = computed<string | null>(() => this.getFinWidgetInsight('finApActivity'));
+  readonly kellyCashOutflowInsight = computed<string | null>(() => this.getFinWidgetInsight('finCashOutflow'));
+
+  navigateToApSubpage(): void {
+    this.selectSubPage('accounts-payable');
+  }
 
   readonly finNavLinkItems = computed(() => this.finSubNavItems().filter(i => i.value !== 'overview'));
 
@@ -2725,7 +3237,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
     'job-costs': 'Cost breakdown by category and project across the portfolio',
     'job-billing': 'Billing schedules and invoice events across all projects',
     'accounts-receivable': 'Invoices, aging, and collection metrics',
-    'accounts-payable': 'Vendor payables, subcontractor payments, and aging',
+    'accounts-payable': 'Vendor payables, invoices, pay apps, lien waivers, retention, and payment schedules',
     'cash-management': 'Cash position, flow trends, and runway analysis',
     'general-ledger': 'Chart of accounts, journal entries, and trial balance',
     'purchase-orders': 'Material procurement, vendor deliveries, and committed spend',
@@ -2860,6 +3372,13 @@ export class FinancialsPageComponent extends DashboardPageBase {
       subcontractLedger: this.store.subcontractLedger(),
       allWeatherData: this.store.weatherData(),
       allJobCosts: this.store.projectJobCosts(),
+      apInvoices: this.store.apInvoices(),
+      apVendors: this.store.apVendors(),
+      apPayApplications: this.store.apPayApplications(),
+      apLienWaivers: this.store.apLienWaivers(),
+      apRetention: this.store.apRetention(),
+      apActivities: this.store.apActivities(),
+      apPaymentSchedule: this.store.apPaymentSchedule(),
       currentPage: 'financials',
       currentSubPage: this.activeSubPage(),
     };

@@ -2369,6 +2369,9 @@ modus-wc-badge[data-variant="text"][data-color="high-contrast"] { color: var(--m
 .modus-wc-btn.modus-wc-btn-md { height: var(--modus-wc-size-md, 40px); min-height: var(--modus-wc-size-md, 40px); }
 .modus-wc-btn.modus-wc-btn-lg { height: var(--modus-wc-size-lg, 48px); min-height: var(--modus-wc-size-lg, 48px); }
 
+/* Consistent rounded corners across all themes */
+.modus-wc-btn { border-radius: 0.375rem !important; }
+
 /* Disabled state */
 .modus-wc-btn:disabled,
 .modus-wc-btn.modus-wc-btn-disabled {

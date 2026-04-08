@@ -1,0 +1,98 @@
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+
+import type { ApInvoice } from '../../../data/dashboard-data.types';
+
+@Component({
+  selector: 'app-home-invoice-queue',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: [':host { display: contents; }'],
+  template: `
+    <div class="flex flex-col h-full min-h-0 overflow-y-auto">
+      @for (invoice of invoices(); track invoice.id) {
+        <div
+          class="flex items-center gap-3 px-3 py-2 border-bottom-default"
+          [attr.aria-label]="
+            'Invoice ' +
+            invoice.invoiceNumber +
+            ', ' +
+            invoice.vendor +
+            ', ' +
+            formatCurrency(invoice.amount) +
+            ', due ' +
+            invoice.dueDate +
+            ', ' +
+            statusLabel(invoice.status)
+          ">
+          <div class="flex-shrink-0">
+            <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">invoice</i>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+            <div class="text-foreground font-medium text-sm">{{ invoice.invoiceNumber }}</div>
+            <div class="text-foreground-60 text-sm truncate">{{ invoice.vendor }}</div>
+            <div class="text-foreground-40 text-xs truncate">{{ invoice.project }}</div>
+          </div>
+          <div class="flex flex-col items-end gap-1 flex-shrink-0">
+            <div class="text-foreground font-medium text-sm text-right tabular-nums">
+              {{ formatCurrency(invoice.amount) }}
+            </div>
+            <div class="text-foreground-60 text-xs whitespace-nowrap">{{ invoice.dueDate }}</div>
+          </div>
+          <div class="flex-shrink-0">
+            <div
+              class="rounded px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+              [class]="statusBadgeClass(invoice.status)">
+              {{ statusLabel(invoice.status) }}
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="px-3 py-6 text-center text-foreground-60 text-sm flex flex-col items-center gap-2">
+          <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">invoice</i>
+          <div>No pending invoices</div>
+        </div>
+      }
+    </div>
+  `,
+})
+export class HomeInvoiceQueueComponent {
+  readonly invoices = input.required<ApInvoice[]>();
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  statusLabel(status: ApInvoice['status']): string {
+    switch (status) {
+      case 'pending':
+        return 'Pending';
+      case 'approved':
+        return 'Approved';
+      case 'on-hold':
+        return 'On hold';
+      case 'paid':
+        return 'Paid';
+      default:
+        return status;
+    }
+  }
+
+  statusBadgeClass(status: ApInvoice['status']): string {
+    switch (status) {
+      case 'pending':
+        return 'bg-warning-20 text-warning';
+      case 'approved':
+        return 'bg-success-20 text-success';
+      case 'on-hold':
+        return 'bg-destructive-20 text-destructive';
+      case 'paid':
+        return 'bg-muted text-foreground-40';
+      default:
+        return 'bg-muted text-foreground-40';
+    }
+  }
+}

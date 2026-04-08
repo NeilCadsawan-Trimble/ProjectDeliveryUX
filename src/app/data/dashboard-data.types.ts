@@ -42,7 +42,31 @@ export type DashboardWidgetId =
   | 'finPurchaseOrders'
   | 'finPayroll'
   | 'finContracts'
-  | 'finSubcontractLedger';
+  | 'finSubcontractLedger'
+  | 'homeApKpis'
+  | 'homeInvoiceQueue'
+  | 'homePaymentSchedule'
+  | 'homeVendorAging'
+  | 'homePayApps'
+  | 'homeLienWaivers'
+  | 'homeRetention'
+  | 'homeApActivity'
+  | 'homeCashOutflow'
+  | 'homeMilestones'
+  | 'homeBudgetVariance'
+  | 'homeChangeOrders'
+  | 'homeFieldOps'
+  | 'homeDailyReports'
+  | 'homeTeamAllocation'
+  | 'homeContracts'
+  | 'finInvoiceQueue'
+  | 'finPaymentSchedule'
+  | 'finVendorAging'
+  | 'finPayApps'
+  | 'finLienWaivers'
+  | 'finRetention'
+  | 'finApActivity'
+  | 'finCashOutflow';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
@@ -561,6 +585,105 @@ export interface SubcontractLedgerEntry {
   invoiceRef?: string;
   period: string;
   runningBalance: number;
+}
+
+// ---------------------------------------------------------------------------
+// AP Clerk (Kelly) Home Dashboard
+// ---------------------------------------------------------------------------
+export type ApInvoiceStatus = 'pending' | 'approved' | 'on-hold' | 'paid';
+export type ApVendorType = 'subcontractor' | 'supplier' | 'consultant' | 'equipment-rental';
+export type ApPayAppStatus = 'pending' | 'approved' | 'paid';
+export type ApLienWaiverType = 'conditional' | 'unconditional';
+export type ApLienWaiverStatus = 'pending' | 'received' | 'missing';
+export type ApActivityType = 'payment' | 'approval' | 'receipt' | 'vendor-update' | 'hold' | 'discount-captured';
+
+export interface ApInvoice {
+  id: string;
+  invoiceNumber: string;
+  vendor: string;
+  project: string;
+  projectId: number;
+  amount: number;
+  dueDate: string;
+  receivedDate: string;
+  status: ApInvoiceStatus;
+  costCode: string;
+  poNumber: string;
+  daysOutstanding: number;
+}
+
+export interface ApVendor {
+  id: string;
+  name: string;
+  vendorType: ApVendorType;
+  totalOwed: number;
+  current: number;
+  aging30: number;
+  aging60: number;
+  aging90: number;
+  aging90plus: number;
+  lastPaymentDate: string;
+  lastPaymentAmount: number;
+}
+
+export interface ApPayApplication {
+  id: string;
+  vendor: string;
+  project: string;
+  projectId: number;
+  periodEnd: string;
+  contractValue: number;
+  previousBilled: number;
+  thisPeriod: number;
+  retentionRate: number;
+  retentionHeld: number;
+  netDue: number;
+  status: ApPayAppStatus;
+}
+
+export interface ApLienWaiver {
+  id: string;
+  vendor: string;
+  project: string;
+  projectId: number;
+  waiverType: ApLienWaiverType;
+  periodEnd: string;
+  amount: number;
+  status: ApLienWaiverStatus;
+  dueDate: string;
+}
+
+export interface ApRetentionRecord {
+  id: string;
+  project: string;
+  projectId: number;
+  vendor: string;
+  contractValue: number;
+  retentionRate: number;
+  retentionHeld: number;
+  retentionReleased: number;
+  pendingRelease: number;
+}
+
+export interface ApActivityItem {
+  id: string;
+  activityType: ApActivityType;
+  description: string;
+  vendor: string;
+  amount: number;
+  timestamp: string;
+  project: string;
+}
+
+export interface ApPaymentScheduleItem {
+  id: string;
+  vendor: string;
+  invoiceNumber: string;
+  amount: number;
+  dueDate: string;
+  project: string;
+  discountAvailable: number;
+  discountDeadline: string;
 }
 
 // ---------------------------------------------------------------------------

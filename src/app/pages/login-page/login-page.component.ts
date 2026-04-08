@@ -23,7 +23,7 @@ import { TrimbleLogoComponent } from '../../shell/components/trimble-logo.compon
         </div>
 
         @if (authService.error()) {
-          <div class="w-full bg-destructive-20 border-destructive rounded-md px-4 py-3">
+          <div class="bg-destructive-20 border-destructive rounded-md px-4 py-3">
             <div class="text-sm text-destructive flex items-center gap-2">
               <i class="modus-icons text-base" aria-hidden="true">warning</i>
               {{ authService.error() }}
@@ -31,7 +31,7 @@ import { TrimbleLogoComponent } from '../../shell/components/trimble-logo.compon
           </div>
         }
 
-        <div class="w-full flex flex-col gap-3">
+        <div class="flex flex-col items-center gap-3">
           @if (authService.isLoading()) {
             <div class="flex items-center justify-center gap-2 py-3">
               <div class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -41,10 +41,9 @@ import { TrimbleLogoComponent } from '../../shell/components/trimble-logo.compon
             <modus-button
               color="primary"
               variant="filled"
-              class="w-full"
               (buttonClick)="onSignIn()"
             >
-              <div class="flex items-center justify-center gap-2 w-full">
+              <div class="flex items-center justify-center gap-2">
                 <i class="modus-icons text-lg" aria-hidden="true">person</i>
                 Sign in with Trimble ID
               </div>

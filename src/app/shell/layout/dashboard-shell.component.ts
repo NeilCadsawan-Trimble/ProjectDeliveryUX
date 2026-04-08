@@ -815,7 +815,10 @@ export class DashboardShellComponent implements AfterViewInit {
   }
 
   onUserMenuAction(actionId: string): void {
-    console.log('User menu action:', actionId);
+    if (actionId === 'profile') {
+      void this.router.navigateByUrl(`/${this.personaService.activePersonaSlug()}/profile`);
+      return;
+    }
   }
 
   onPersonaSwitch(targetSlug: string): void {

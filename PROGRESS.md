@@ -3,7 +3,7 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 6, 2026
+**Last Updated**: April 7, 2026
 **Total Commits**: 200+
 
 ---
@@ -32,9 +32,10 @@
 | 18 | Canvas Content Alignment and ng-content Fix | Done | 6/6 |
 | 19 | Live Weather Data and Regression Tests | Done | 5/5 |
 | 20 | Persona Data: Bert Humphries as PM | Done | 3/3 |
-| 21 | Remaining Work | Not Started | 0/8 |
+| 21 | Trimble ID Authentication and Vercel Deployment Fixes | Done | 6/6 |
+| 22 | Remaining Work | Not Started | 0/8 |
 
-**Completed**: 169/177 items (95%)
+**Completed**: 175/183 items (96%)
 
 ---
 
@@ -549,13 +550,54 @@ Set Bert Humphries as the Project Manager across all 8 projects, aligning projec
 
 ---
 
-## Phase 21: Remaining Work
+## Phase 21: Trimble ID Authentication and Vercel Deployment Fixes (Apr 7)
+
+Added Trimble ID login gate with OAuth 2.0 PKCE flow, fixed post-auth blank page, and resolved Vercel caching issues preventing production deployments from serving updated code.
+
+### Trimble ID Authentication (PRs #73--76)
+- [x] Trimble ID login gate with OAuth 2.0 PKCE flow (`@trimble-oss/trimble-id`), `authGuard` on all persona routes, login page, and auth callback page
+- [x] Fixed post-auth blank page: wrapped `navigateByUrl` in `NgZone.run()` in `AuthCallbackComponent` to re-enter Angular's zone after trimble-id token exchange (axios/CommonJS causes Zone.js context loss)
+- [x] Added hard-redirect fallback (`window.location.replace`) if Angular soft navigation fails
+- [x] Made OAuth `redirectUri` and `logoutRedirectUri` dynamic via `window.location.origin` (works on all Vercel deployments, not just hardcoded prod URL)
+
+### Vercel Deployment Fixes (PRs #77--78)
+- [x] Fixed stale Angular build cache: added `rm -rf .angular/cache` before `npm run build` in `vercel.json` -- Vercel's persisted `.angular/cache` was serving route definitions from before the auth feature was added
+- [x] Fixed stale CDN cache: added `Cache-Control: no-cache, no-store, must-revalidate` headers for HTML responses in `vercel.json` -- CDN was serving 26-hour-old `index.html` referencing stale JS bundles missing auth routes
+
+**Root cause chain**: Production showed a blank page because (1) Vercel CDN cached the old `index.html` for 26+ hours, (2) even when fresh builds deployed, the Angular build cache persisted stale route definitions, and (3) the trimble-id library's CommonJS/axios internals caused Zone.js context loss on the auth callback.
+
+**PRs**: #73, #74, #75, #76, #77, #78
+**Tests**: All lint, type-check, and build passing
+
+---
+
+## Phase 22: Persona Profile Pages (Apr 8)
+
+Per-persona "My Profile" page mirroring the Trimble profile page layout, wired to the user menu dropdown.
+
+### Profile Page
+- [x] Created `ProfilePageComponent` with two-column layout: Basic Information (avatar, first/last name) + Preferences (country, language, timezone) on left; Account Management (Rocky Mountain Contracting, profile details, passkeys) on right
+- [x] Component reads `PersonaService.activePersona()` for persona-specific data (name, email, company)
+
+### Routing and Navigation
+- [x] Added `/:persona/profile` lazy-loaded route as child of `DashboardLayoutComponent` (protected by existing auth + persona guards)
+- [x] Wired user menu "My profile" action to navigate to `/:persona/profile` instead of opening external `https://myprofile.trimble.com/home`
+- [x] Updated `DashboardShellComponent.onUserMenuAction()` to handle `'profile'` action with internal routing
+
+**Key files**:
+- `src/app/pages/profile-page/profile-page.component.ts` (new)
+- `src/app/app.routes.ts` (added profile route)
+- `src/app/shell/components/user-menu.component.ts` (removed external URL)
+- `src/app/shell/layout/dashboard-shell.component.ts` (profile navigation handler)
+
+---
+
+## Phase 23: Remaining Work
 
 Features and improvements not yet started.
 
 ### Backend Integration
 - [ ] REST API integration (replace mock data in `src/app/data/`)
-- [ ] User authentication and authorization
 - [ ] Real-time data updates (WebSocket or polling)
 
 ### Testing
@@ -635,6 +677,7 @@ Features and improvements not yet started.
 | Apr 5 | [Weather regression tests](fb55d8c2-9c39-4110-99b0-9930aed93e09) | 23 new weather regression tests, PR #58 merged to main |
 | Apr 5 | [KPI widget and layout fixes](56f15e0d-1c0c-4cb6-82f7-2018d33f1ec3) | Draggable KPI widget, resize twitchiness fix, push-down only collision (no jumping), PR #66 merged to main |
 | Apr 6 | [Bert Humphries as PM](current) | Set Bert Humphries as Project Manager on all 8 projects, updated team rosters, skills section 34 |
+| Apr 7 | [Auth and Vercel fixes](2c2f59d8-3267-405f-ae9b-62cbe76d9ac6) | Trimble ID login gate, post-auth blank page fix (NgZone.run), dynamic OAuth URIs, Vercel build cache clear, CDN no-cache headers, PRs #73--78 |
 
 ---
 
@@ -677,6 +720,9 @@ Features and improvements not yet started.
 | `src/app/pages/project-dashboard/components/collapsible-subnav.component.ts` | Collapsible side subnav for canvas/desktop |
 | `src/app/services/weather.service.ts` | Live weather data fetching with TTL cache and concurrent fetch guard |
 | `api/weather.ts` | Vercel Edge Function proxy for OpenWeatherMap API |
+| `src/app/services/auth.service.ts` | Trimble ID authentication (OAuth 2.0 PKCE, token management, dynamic redirect URIs) |
+| `src/app/pages/auth-callback/auth-callback.component.ts` | OAuth callback handler with NgZone.run() for Zone.js re-entry |
+| `vercel.json` | Vercel deployment config (build cache clear, CDN no-cache headers, SPA rewrites) |
 | `src/styles.css` | Design system colors, side nav, canvas layout, custom utilities |
 | `src/app/pages/change-order-detail/change-order-detail-page.component.ts` | Standalone change order detail page |
 | `src/app/pages/estimate-detail/estimate-detail-page.component.ts` | Standalone estimate detail page |

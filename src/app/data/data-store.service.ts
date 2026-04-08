@@ -1,6 +1,13 @@
 import { Injectable, computed, signal } from '@angular/core';
 import type {
   ActivityItem,
+  ApActivityItem,
+  ApInvoice,
+  ApLienWaiver,
+  ApPayApplication,
+  ApPaymentScheduleItem,
+  ApRetentionRecord,
+  ApVendor,
   BillingEvent,
   BillingSchedule,
   BudgetHistoryPoint,
@@ -81,6 +88,16 @@ import {
   WEATHER_FORECAST,
 } from './dashboard-data.seed';
 import { PROJECT_DATA, type BudgetBreakdown, type ProjectDashboardData } from './project-data';
+import {
+  AP_ACTIVITIES_SEED,
+  AP_CALENDAR_APPOINTMENTS_SEED,
+  AP_INVOICES_SEED,
+  AP_LIEN_WAIVERS_SEED,
+  AP_PAY_APPLICATIONS_SEED,
+  AP_PAYMENT_SCHEDULE_SEED,
+  AP_RETENTION_SEED,
+  AP_VENDORS_SEED,
+} from './ap-data.seed';
 
 interface AttentionItem {
   id: number;
@@ -132,7 +149,7 @@ interface PersonaSnapshot {
   attentionItems: AttentionItem[];
 }
 
-function createFreshSnapshot(): PersonaSnapshot {
+function createFreshSnapshot(personaSlug?: string): PersonaSnapshot {
   return {
     rfis: [...RFIS_SEED],
     submittals: [...SUBMITTALS_SEED],
@@ -158,7 +175,7 @@ function createFreshSnapshot(): PersonaSnapshot {
     inspections: [...INSPECTIONS],
     punchListItems: [...PUNCH_LIST_ITEMS],
     activities: [...ACTIVITIES],
-    calendarAppointments: [...CALENDAR_APPOINTMENTS],
+    calendarAppointments: personaSlug === 'kelly' ? [...AP_CALENDAR_APPOINTMENTS_SEED] : [...CALENDAR_APPOINTMENTS],
     projectCalendarEvents: [...PROJECT_CALENDAR_EVENTS],
     dailyReports: [...DAILY_REPORTS],
     projectRevenue: [...PROJECT_REVENUE],
@@ -211,11 +228,20 @@ export class DataStoreService {
   readonly projectAttentionItems = signal<ProjectAttentionItem[]>([...PROJECT_ATTENTION_ITEMS]);
   readonly attentionItems = signal<AttentionItem[]>([...ATTENTION_ITEMS]);
 
+  // AP Clerk (Kelly) data -- not persona-snapshotted since only Kelly uses these
+  readonly apInvoices = signal<ApInvoice[]>([...AP_INVOICES_SEED]);
+  readonly apVendors = signal<ApVendor[]>([...AP_VENDORS_SEED]);
+  readonly apPayApplications = signal<ApPayApplication[]>([...AP_PAY_APPLICATIONS_SEED]);
+  readonly apLienWaivers = signal<ApLienWaiver[]>([...AP_LIEN_WAIVERS_SEED]);
+  readonly apRetention = signal<ApRetentionRecord[]>([...AP_RETENTION_SEED]);
+  readonly apActivities = signal<ApActivityItem[]>([...AP_ACTIVITIES_SEED]);
+  readonly apPaymentSchedule = signal<ApPaymentScheduleItem[]>([...AP_PAYMENT_SCHEDULE_SEED]);
+
   switchToPersona(slug: string): void {
     if (slug === this.currentPersonaSlug) return;
     this.personaStateMap.set(this.currentPersonaSlug, this.takeSnapshot());
     const cached = this.personaStateMap.get(slug);
-    const snapshot = cached ?? createFreshSnapshot();
+    const snapshot = cached ?? createFreshSnapshot(slug);
     this.loadSnapshot(snapshot);
     this.currentPersonaSlug = slug;
   }
