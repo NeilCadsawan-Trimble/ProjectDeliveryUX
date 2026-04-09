@@ -66,6 +66,16 @@ export abstract class DashboardPageBase {
     }
   });
 
+  private readonly _loadDefaultsEffect = effect(() => {
+    const tick = this.canvasResetService.loadDefaultsTick();
+    if (tick > 0) {
+      untracked(() => {
+        this.engine.loadSavedDefaults();
+        this.applyInitialHeaderLock();
+      });
+    }
+  });
+
   private readonly _saveDefaultsEffect = effect(() => {
     const tick = this.canvasResetService.saveDefaultsTick();
     if (tick > 0) {

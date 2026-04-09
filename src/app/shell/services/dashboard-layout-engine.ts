@@ -658,6 +658,36 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   resetToDefaults(): void {
+    try { localStorage.removeItem(this.canvasDefaultsKey); } catch { /* ignore */ }
+    try { localStorage.removeItem(this.desktopDefaultsKey); } catch { /* ignore */ }
+
+    if (this.isCanvasMode()) {
+      this.applyCanvasDefaults();
+      this.widgetZIndices.set({});
+      localStorage.removeItem(this.currentCanvasKey);
+      this.persistCanvasLayout();
+      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
+    } else {
+      this.widgetTops.set({ ...this.config.defaultTops });
+      this.widgetHeights.set({ ...this.config.defaultHeights });
+      this.widgetColStarts.set({ ...this.config.defaultColStarts });
+      this.widgetColSpans.set({ ...this.config.defaultColSpans });
+      this.widgetLefts.set({ ...(this.config.defaultLefts ?? {}) });
+      this.widgetPixelWidths.set({ ...(this.config.defaultPixelWidths ?? {}) });
+      const cols = typeof window !== 'undefined' ? this.getResponsiveColumns(window.innerWidth) : 0;
+      const widest = this.widestDesktopColumns();
+      if (cols > 0 && widest > 0 && cols < widest) {
+        const flowOrder = this.resolveReflowPlacementOrder();
+        this.reflowForColumns(cols, { flowOrder });
+      }
+      if (this.config.desktopSaveDefaultLayoutSizingOnly) {
+        this.syncPixelWidthsFromCols();
+      }
+      this.persistLayout();
+    }
+  }
+
+  loadSavedDefaults(): void {
     if (this.isCanvasMode()) {
       const saved = this._loadCustomCanvasDefaults();
       if (saved) {
@@ -682,24 +712,6 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       localStorage.removeItem(this.currentCanvasKey);
       this.persistCanvasLayout();
       requestAnimationFrame(() => this.cleanupCanvasOverlaps());
-    } else if (this.config.desktopSaveDefaultLayoutSizingOnly) {
-      try {
-        localStorage.removeItem(this.desktopDefaultsKey);
-      } catch { /* ignore */ }
-      this.widgetTops.set({ ...this.config.defaultTops });
-      this.widgetHeights.set({ ...this.config.defaultHeights });
-      this.widgetColStarts.set({ ...this.config.defaultColStarts });
-      this.widgetColSpans.set({ ...this.config.defaultColSpans });
-      this.widgetLefts.set({ ...(this.config.defaultLefts ?? {}) });
-      this.widgetPixelWidths.set({ ...(this.config.defaultPixelWidths ?? {}) });
-      const cols = typeof window !== 'undefined' ? this.getResponsiveColumns(window.innerWidth) : 0;
-      const widest = this.widestDesktopColumns();
-      if (cols > 0 && widest > 0 && cols < widest) {
-        const flowOrder = this.resolveReflowPlacementOrder();
-        this.reflowForColumns(cols, { flowOrder });
-      }
-      this.syncPixelWidthsFromCols();
-      this.persistLayout();
     } else {
       const saved = this._loadCustomDesktopDefaults();
       if (saved) {
@@ -722,6 +734,9 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       if (cols > 0 && widest > 0 && cols < widest) {
         const flowOrder = this.resolveReflowPlacementOrder();
         this.reflowForColumns(cols, { flowOrder });
+      }
+      if (this.config.desktopSaveDefaultLayoutSizingOnly) {
+        this.syncPixelWidthsFromCols();
       }
       this.persistLayout();
     }

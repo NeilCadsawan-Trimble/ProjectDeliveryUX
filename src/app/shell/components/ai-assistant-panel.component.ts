@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
@@ -192,6 +192,7 @@ import type { AgentAction } from '../../data/widget-agents';
       <div slot="footer" class="w-full overflow-hidden box-border min-h-[70px]">
         <div class="flex items-end gap-2 px-2 pt-2 pb-1">
           <textarea
+            #chatInput
             class="flex-1 min-h-[36px] max-h-[80px] px-3 py-1.5 text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40"
             [class.opacity-50]="controller().hasPendingAction()"
             [placeholder]="controller().hasPendingAction() ? 'Confirm or cancel the pending action first' : placeholder()"
@@ -231,11 +232,19 @@ import type { AgentAction } from '../../data/widget-agents';
 export class AiAssistantPanelComponent {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly chatInput = viewChild<ElementRef<HTMLTextAreaElement>>('chatInput');
 
   readonly controller = input.required<AiPanelController>();
   readonly welcomeText = input('Ask me anything about this page.');
   readonly placeholder = input('Type a message...');
   readonly showDisclaimer = input(true);
+
+  private readonly focusEffect = effect(() => {
+    const isOpen = this.controller().panelOpen();
+    if (isOpen) {
+      setTimeout(() => this.chatInput()?.nativeElement.focus(), 0);
+    }
+  });
 
   handleAction(action: AgentAction): void {
     this.controller().executeAction(action);

@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { PERSONAS, type Persona } from '../../services/persona.service';
+import { ThemeService } from '../../services/theme.service';
 
 const LANDING_SLUGS = ['frank', 'bert', 'kelly'] as const;
 
@@ -8,8 +9,11 @@ const LANDING_SLUGS = ['frank', 'bert', 'kelly'] as const;
   selector: 'app-persona-select',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="h-dvh bg-foreground flex flex-col items-center justify-center gap-10 px-6">
-      <div class="text-2xl font-semibold text-background text-center">
+    <div
+      class="h-dvh flex flex-col items-center justify-center gap-10 px-6"
+      [class]="outerBg()"
+    >
+      <div class="text-2xl font-semibold text-center" [class]="titleText()">
         Select a persona
       </div>
       <div class="flex flex-col md:flex-row items-stretch gap-6">
@@ -40,6 +44,12 @@ const LANDING_SLUGS = ['frank', 'bert', 'kelly'] as const;
 })
 export class PersonaSelectComponent {
   private readonly router = inject(Router);
+  private readonly themeService = inject(ThemeService);
+
+  private readonly isDark = computed(() => this.themeService.mode() === 'dark');
+
+  readonly outerBg = computed(() => this.isDark() ? 'bg-background' : 'bg-foreground');
+  readonly titleText = computed(() => this.isDark() ? 'text-foreground' : 'text-background');
 
   readonly personas: Persona[] = PERSONAS.filter(p =>
     (LANDING_SLUGS as readonly string[]).includes(p.slug),
