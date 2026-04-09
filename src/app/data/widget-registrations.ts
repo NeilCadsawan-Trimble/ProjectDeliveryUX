@@ -212,6 +212,14 @@ export const KELLY_HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'Which payments are the largest this month?',
     ],
   },
+  homeLearning: {
+    name: 'Learning Progress',
+    suggestions: [
+      'What course should I take next?',
+      'How close am I to completing the comptroller track?',
+      'How many hours have I logged so far?',
+    ],
+  },
 };
 
 export const PROJECTS_WIDGETS: Record<string, WidgetRegistration> = {

@@ -138,6 +138,7 @@
             [statusText]="capitalizeStatus(rfi.status)"
             (statusChange)="onDetailStatusChange($event)"
             (dueDateChange)="onDetailDueDateChange($event)"
+            (openInNewTab)="onOpenDetailInNewTab()"
           />
         }
         @if (detailSubmittal(); as sub) {
@@ -158,6 +159,7 @@
             [statusText]="capitalizeStatus(sub.status)"
             (statusChange)="onDetailStatusChange($event)"
             (dueDateChange)="onDetailDueDateChange($event)"
+            (openInNewTab)="onOpenDetailInNewTab()"
           />
         }
         <app-record-detail-views
@@ -169,6 +171,7 @@
           (statusChange)="onDetailStatusChange($event)"
           (assigneeChange)="onDetailAssigneeChange($event)"
           (linkedCoClick)="onLinkedCoClick($event)"
+          (openInNewTab)="onOpenDetailInNewTab()"
         />
         </div>
       </div>
@@ -904,6 +907,10 @@
                           }
                         </div>
                         <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="openTileDetailInNewTab('rfi', $any(detail).item.id)" aria-label="Open in new tab">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                           (click)="closeTileDetail('tile-rfi-' + rfi.id)" aria-label="Close detail">
                           <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
                         </div>
@@ -1015,6 +1022,10 @@
                           }
                         </div>
                         <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="openTileDetailInNewTab('submittal', $any(detail).item.id)" aria-label="Open in new tab">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                           (click)="closeTileDetail('tile-sub-' + sub.id)" aria-label="Close detail">
                           <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
                         </div>
@@ -1102,6 +1113,10 @@
                         <div class="text-sm font-semibold text-foreground truncate">{{ $any(detail).item.id }} - {{ $any(detail).item.date }}</div>
                       </div>
                       <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="openTileDetailInNewTab('dailyReport', $any(detail).item.id)" aria-label="Open in new tab">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
+                        </div>
                         <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                           (click)="closeTileDetail('tile-dr-' + dr.id)" aria-label="Close detail">
                           <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
@@ -1217,6 +1232,10 @@
                           <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
                         </div>
                         <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="openTileDetailInNewTab('punchItem', $any(detail).item.id)" aria-label="Open in new tab">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                           (click)="closeTileDetail('tile-pl-' + pl.id)" aria-label="Close detail">
                           <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
                         </div>
@@ -1322,6 +1341,10 @@
                           <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.result) }}</div>
                         </div>
                         <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="openTileDetailInNewTab('inspection', $any(detail).item.id)" aria-label="Open in new tab">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                           (click)="closeTileDetail('tile-ins-' + ins.id)" aria-label="Close detail">
                           <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
                         </div>
@@ -1421,6 +1444,10 @@
                         <div class="flex items-center gap-1.5 px-2 py-1 rounded-md">
                           <div class="w-2 h-2 rounded-full" [class]="severityDotClass($any(detail).item.severity)"></div>
                           <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.severity) }}</div>
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="openTileDetailInNewTab('attentionItem', $any(detail).item.id)" aria-label="Open in new tab">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
                         </div>
                         <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                           (click)="closeTileDetail('tile-ai-' + ai.id)" aria-label="Close detail">
@@ -1949,6 +1976,10 @@
                             <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
                           </div>
                           <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                            (click)="openTileDetailInNewTab('changeOrder', $any(detail).item.id)" aria-label="Open in new tab">
+                            <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
+                          </div>
+                          <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                             (click)="closeTileDetail('tile-co-' + co.id)" aria-label="Close detail">
                             <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
                           </div>
@@ -2084,6 +2115,10 @@
                           <div class="flex items-center gap-1.5 px-2 py-1 rounded-md">
                             <div class="w-2 h-2 rounded-full" [class]="changeOrderStatusDot($any(detail).item.status)"></div>
                             <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
+                          </div>
+                          <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                            (click)="openTileDetailInNewTab('changeOrder', $any(detail).item.id)" aria-label="Open in new tab">
+                            <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
                           </div>
                           <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                             (click)="closeTileDetail('tile-' + activeCoTilePrefix() + co.id)" aria-label="Close detail">
@@ -2450,6 +2485,10 @@
                         <div class="flex items-center gap-1.5 px-2 py-1 rounded-md">
                           <div class="w-2 h-2 rounded-full" [class]="contractStatusDotClass($any(detail).item.status)"></div>
                           <div class="text-xs font-medium text-foreground">{{ capitalizeStatus($any(detail).item.status) }}</div>
+                        </div>
+                        <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                          (click)="openTileDetailInNewTab('contract', $any(detail).item.id)" aria-label="Open in new tab">
+                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
                         </div>
                         <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                           (click)="closeTileDetail('tile-ct-' + ct.id)" aria-label="Close detail">
@@ -2904,12 +2943,21 @@
                     <i class="modus-icons text-lg" aria-hidden="true">arrow_left</i>
                     <div class="text-sm font-medium">{{ detailBackLabel() }}</div>
                   </div>
-                  <div
-                    class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                    (click)="closeCanvasDetail(wId)"
-                    aria-label="Close detail"
-                  >
-                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                      (click)="openCanvasDetailInNewTab(detail)"
+                      aria-label="Open in new tab"
+                    >
+                      <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
+                    </div>
+                    <div
+                      class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                      (click)="closeCanvasDetail(wId)"
+                      aria-label="Close detail"
+                    >
+                      <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                    </div>
                   </div>
                 </div>
                 <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()[detail.type === 'rfi' ? 'rfi-detail' : detail.type === 'drawing' ? 'drawing-detail' : 'submittal-detail'] }" />
@@ -2937,6 +2985,7 @@
                       [statusText]="capitalizeStatus(detail.item.status)"
                       (statusChange)="onCanvasDetailStatusChange(wId, $event)"
                       (dueDateChange)="onCanvasDetailDueDateChange(wId, $event)"
+                      (openInNewTab)="openCanvasDetailInNewTab(detail)"
                     />
                   }
                   @if (detail.type === 'submittal') {
@@ -2957,6 +3006,7 @@
                       [statusText]="capitalizeStatus(detail.item.status)"
                       (statusChange)="onCanvasDetailStatusChange(wId, $event)"
                       (dueDateChange)="onCanvasDetailDueDateChange(wId, $event)"
+                      (openInNewTab)="openCanvasDetailInNewTab(detail)"
                     />
                   }
                   @if (detail.type === 'drawing') {

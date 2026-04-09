@@ -134,7 +134,7 @@ export class AuthService {
   }
 
   getReturnUrl(): string {
-    return localStorage.getItem(STORAGE_KEYS.returnUrl) || '/frank';
+    return localStorage.getItem(STORAGE_KEYS.returnUrl) || '/select';
   }
 
   setReturnUrl(url: string): void {

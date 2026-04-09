@@ -66,7 +66,8 @@ export type DashboardWidgetId =
   | 'finLienWaivers'
   | 'finRetention'
   | 'finApActivity'
-  | 'finCashOutflow';
+  | 'finCashOutflow'
+  | 'homeLearning';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
@@ -701,4 +702,30 @@ export interface ProjectCalendarEvent {
   endDate: Date;
   category: ProjectEventCategory;
   participants?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Learning / Trimble Learn
+// ---------------------------------------------------------------------------
+export type LearningCourseStatus = 'not-started' | 'in-progress' | 'completed';
+
+export interface LearningCourse {
+  id: string;
+  title: string;
+  provider: string;
+  category: string;
+  durationMinutes: number;
+  completedMinutes: number;
+  status: LearningCourseStatus;
+  completedDate?: string;
+  url: string;
+}
+
+export interface LearningPlan {
+  id: string;
+  name: string;
+  description: string;
+  totalCourses: number;
+  completedCourses: number;
+  courses: LearningCourse[];
 }

@@ -327,6 +327,7 @@ export class ProjectDashboardNavigationService {
   private navigateToDetail(type: 'rfi' | 'submittal', item: Rfi | Submittal, sourceWidgetId?: string): void {
     if (this.ctx.isCanvas() && sourceWidgetId) {
       this.ctx.openCanvasDetail(sourceWidgetId, { type, item } as DetailView);
+      this.pushDetailUrl(type, item.id);
       return;
     }
     this.ctx.detailSourceLabel.set(this.ctx.currentPageLabel());
@@ -334,7 +335,7 @@ export class ProjectDashboardNavigationService {
     this.pushDetailUrl(type, item.id);
   }
 
-  private pushDetailUrl(type: string, id: string): void {
+  buildDetailUrl(type: string, id: string): string {
     const params = new URLSearchParams();
     params.set('view', type);
     params.set('id', id);
@@ -344,7 +345,12 @@ export class ProjectDashboardNavigationService {
       if (nav === 'records') params.set('subpage', this.ctx.activeRecordsPage());
       else if (nav === 'financials') params.set('subpage', this.ctx.activeFinancialsPage());
     }
-    window.history.pushState({ detailType: type, detailId: id }, '', window.location.pathname + '?' + params.toString());
+    return window.location.pathname + '?' + params.toString();
+  }
+
+  private pushDetailUrl(type: string, id: string): void {
+    const url = this.buildDetailUrl(type, id);
+    window.history.pushState({ detailType: type, detailId: id }, '', url);
   }
 
   private resolveFromLabel(from: string): string {

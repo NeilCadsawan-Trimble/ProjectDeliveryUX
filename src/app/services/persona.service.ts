@@ -11,6 +11,7 @@ export interface Persona {
   slug: string;
   name: string;
   firstName: string;
+  title: string;
   email: string;
   company: string;
   initials: string;
@@ -18,10 +19,10 @@ export interface Persona {
 }
 
 export const PERSONAS: Persona[] = [
-  { slug: 'frank', name: 'Frank Mendoza', firstName: 'Frank', email: 'frank.mendoza@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'FM', defaultTheme: { theme: 'modus-modern', mode: 'light' } },
-  { slug: 'bert', name: 'Bert Humphries', firstName: 'Bert', email: 'bert.humphries@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'BH', defaultTheme: { theme: 'modus-classic', mode: 'dark' } },
-  { slug: 'kelly', name: 'Kelly Marshall', firstName: 'Kelly', email: 'kelly.marshall@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'KM', defaultTheme: { theme: 'connect', mode: 'light' } },
-  { slug: 'dominique', name: 'Dominique Marques', firstName: 'Dominique', email: 'dominique.marques@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'DM', defaultTheme: { theme: 'modus-modern', mode: 'dark' } },
+  { slug: 'frank', name: 'Frank Mendoza', firstName: 'Frank', title: 'Owner', email: 'frank.mendoza@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'FM', defaultTheme: { theme: 'modus-modern', mode: 'light' } },
+  { slug: 'bert', name: 'Bert Humphries', firstName: 'Bert', title: 'Project Manager', email: 'bert.humphries@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'BH', defaultTheme: { theme: 'modus-classic', mode: 'dark' } },
+  { slug: 'kelly', name: 'Kelly Marshall', firstName: 'Kelly', title: 'Office Admin', email: 'kelly.marshall@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'KM', defaultTheme: { theme: 'connect', mode: 'light' } },
+  { slug: 'dominique', name: 'Dominique Marques', firstName: 'Dominique', title: 'Field Engineer', email: 'dominique.marques@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'DM', defaultTheme: { theme: 'modus-modern', mode: 'dark' } },
 ];
 
 const PERSONA_MAP = new Map<string, Persona>(PERSONAS.map(p => [p.slug, p]));

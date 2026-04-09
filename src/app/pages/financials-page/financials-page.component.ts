@@ -19,6 +19,8 @@ import { WidgetResizeHandleComponent } from '../../shell/components/widget-resiz
 import { CollapsibleSubnavComponent } from '../project-dashboard/components/collapsible-subnav.component';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
+import { FINANCIALS_DEFAULT_LAYOUT } from '../../data/layout-seeds/financials-default.layout';
+import { FINANCIALS_KELLY_LAYOUT } from '../../data/layout-seeds/financials-kelly.layout';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 import { getPersonaNav } from '../../data/persona-nav.config';
 import { DataStoreService } from '../../data/data-store.service';
@@ -2903,143 +2905,14 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private static readonly CO_TOP = FinancialsPageComponent.JOB_COSTS_TOP + FinancialsPageComponent.JOB_COSTS_HEIGHT + FinancialsPageComponent.G;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    const F = FinancialsPageComponent;
     const slug = this.personaService.activePersonaSlug();
-
-    if (slug === 'kelly') {
-      const KELLY_NAV_HEIGHT = 294;
-      const ROW_H = 384;
-      const SMALL_ROW_H = 352;
-      const G = F.G;
-      const R1T = F.NAVKPI_TOP;
-      const R2T = R1T + ROW_H + G;
-      const R3T = R2T + ROW_H + G;
-      const R4T = R3T + ROW_H + G;
-
-      const kellyWidgets: DashboardWidgetId[] = [
-        'finTitle', 'finNavKpi',
-        'finInvoiceQueue',
-        'finPaymentSchedule', 'finVendorAging',
-        'finPayApps', 'finLienWaivers',
-        'finRetention', 'finApActivity', 'finCashOutflow',
-      ];
-
-      return {
-        widgets: kellyWidgets,
-        layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-financials:v29`,
-        canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-financials:v31`,
-        defaultColStarts: {
-          finTitle: 1, finNavKpi: 1,
-          finInvoiceQueue: 9,
-          finPaymentSchedule: 1, finVendorAging: 9,
-          finPayApps: 1, finLienWaivers: 9,
-          finRetention: 1, finApActivity: 9, finCashOutflow: 13,
-        },
-        defaultColSpans: {
-          finTitle: 16, finNavKpi: 8,
-          finInvoiceQueue: 8,
-          finPaymentSchedule: 8, finVendorAging: 8,
-          finPayApps: 8, finLienWaivers: 8,
-          finRetention: 8, finApActivity: 4, finCashOutflow: 4,
-        },
-        defaultTops: {
-          finTitle: 0, finNavKpi: F.NAVKPI_TOP,
-          finInvoiceQueue: R1T,
-          finPaymentSchedule: R2T, finVendorAging: R2T,
-          finPayApps: R3T, finLienWaivers: R3T,
-          finRetention: R4T, finApActivity: R4T, finCashOutflow: R4T,
-        },
-        defaultHeights: {
-          finTitle: F.TITLE_HEIGHT, finNavKpi: KELLY_NAV_HEIGHT,
-          finInvoiceQueue: ROW_H,
-          finPaymentSchedule: ROW_H, finVendorAging: ROW_H,
-          finPayApps: ROW_H, finLienWaivers: ROW_H,
-          finRetention: SMALL_ROW_H, finApActivity: SMALL_ROW_H, finCashOutflow: SMALL_ROW_H,
-        },
-        canvasDefaultLefts: {
-          finTitle: 0, finNavKpi: 0,
-          finInvoiceQueue: 656,
-          finPaymentSchedule: 0, finVendorAging: 656,
-          finPayApps: 0, finLienWaivers: 656,
-          finRetention: 0, finApActivity: 0, finCashOutflow: 656,
-        },
-        canvasDefaultPixelWidths: {
-          finTitle: 1280, finNavKpi: 640,
-          finInvoiceQueue: 624,
-          finPaymentSchedule: 640, finVendorAging: 624,
-          finPayApps: 640, finLienWaivers: 640,
-          finRetention: 640, finApActivity: 640, finCashOutflow: 640,
-        },
-        canvasDefaultTops: {
-          finTitle: 16, finNavKpi: 16 + F.TITLE_HEIGHT + G,
-          finInvoiceQueue: 16 + F.TITLE_HEIGHT + G,
-          finPaymentSchedule: 16 + F.TITLE_HEIGHT + G + ROW_H + G,
-          finVendorAging: 16 + F.TITLE_HEIGHT + G + ROW_H + G,
-          finPayApps: 16 + F.TITLE_HEIGHT + G + ROW_H * 2 + G * 2,
-          finLienWaivers: 16 + F.TITLE_HEIGHT + G + ROW_H * 2 + G * 2,
-          finRetention: 16 + F.TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
-          finApActivity: 16 + F.TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
-          finCashOutflow: 16 + F.TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
-        },
-        canvasDefaultHeights: {
-          finTitle: F.TITLE_HEIGHT, finNavKpi: KELLY_NAV_HEIGHT,
-          finInvoiceQueue: 336,
-          finPaymentSchedule: 336, finVendorAging: 336,
-          finPayApps: 336, finLienWaivers: 336,
-          finRetention: 336, finApActivity: 352, finCashOutflow: 352,
-        },
-        minColSpan: 1,
-        widgetMaxColSpans: {},
-        canvasGridMinHeightOffset: 200,
-        savesDesktopOnMobile: true,
-        onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-      };
-    }
+    const isKelly = slug === 'kelly';
+    const seed = isKelly ? FINANCIALS_KELLY_LAYOUT : FINANCIALS_DEFAULT_LAYOUT;
 
     return {
-      widgets: ['finTitle', 'finNavKpi', 'finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'],
-      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-financials:v17`,
-      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-financials:v19`,
-      defaultColStarts: { finTitle: 1, finNavKpi: 1, finRevenueChart: 9, finOpenEstimates: 1, finBudgetByProject: 1, finJobCosts: 1, finChangeOrders: 1 },
-      defaultColSpans: { finTitle: 16, finNavKpi: 8, finRevenueChart: 8, finOpenEstimates: 16, finBudgetByProject: 16, finJobCosts: 16, finChangeOrders: 16 },
-      defaultTops: {
-        finTitle: 0,
-        finNavKpi: F.NAVKPI_TOP,
-        finRevenueChart: F.REVENUE_TOP,
-        finOpenEstimates: F.ESTIMATES_TOP,
-        finBudgetByProject: F.BUDGET_TOP,
-        finJobCosts: F.JOB_COSTS_TOP,
-        finChangeOrders: F.CO_TOP,
-      },
-      defaultHeights: {
-        finTitle: F.TITLE_HEIGHT,
-        finNavKpi: F.NAVKPI_HEIGHT,
-        finRevenueChart: F.REVENUE_HEIGHT,
-        finOpenEstimates: F.ESTIMATES_HEIGHT,
-        finBudgetByProject: F.BUDGET_HEIGHT,
-        finJobCosts: F.JOB_COSTS_HEIGHT,
-        finChangeOrders: F.CO_HEIGHT,
-      },
-      canvasDefaultLefts: { finTitle: 0, finNavKpi: 0, finRevenueChart: 656, finOpenEstimates: 0, finBudgetByProject: 0, finJobCosts: 0, finChangeOrders: 0 },
-      canvasDefaultPixelWidths: { finTitle: 1280, finNavKpi: 640, finRevenueChart: 624, finOpenEstimates: 1280, finBudgetByProject: 1280, finJobCosts: 1280, finChangeOrders: 1280 },
-      canvasDefaultTops: {
-        finTitle: 16,
-        finNavKpi: 16 + F.TITLE_HEIGHT + F.G,
-        finRevenueChart: 16 + F.TITLE_HEIGHT + F.G,
-        finOpenEstimates: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G,
-        finBudgetByProject: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G,
-        finJobCosts: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G + F.BUDGET_HEIGHT + F.G,
-        finChangeOrders: 16 + F.TITLE_HEIGHT + F.G + F.NAVKPI_HEIGHT + F.G + F.ESTIMATES_HEIGHT + F.G + F.BUDGET_HEIGHT + F.G + F.JOB_COSTS_HEIGHT + F.G,
-      },
-      canvasDefaultHeights: {
-        finTitle: F.TITLE_HEIGHT,
-        finNavKpi: F.NAVKPI_HEIGHT,
-        finRevenueChart: F.REVENUE_HEIGHT,
-        finOpenEstimates: F.ESTIMATES_HEIGHT,
-        finBudgetByProject: F.BUDGET_HEIGHT,
-        finJobCosts: F.JOB_COSTS_HEIGHT,
-        finChangeOrders: F.CO_HEIGHT,
-      },
+      ...seed,
+      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-financials:${isKelly ? 'v29' : 'v17'}`,
+      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-financials:${isKelly ? 'v31' : 'v19'}`,
       minColSpan: 1,
       widgetMaxColSpans: {},
       canvasGridMinHeightOffset: 200,

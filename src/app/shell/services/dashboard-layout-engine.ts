@@ -678,8 +678,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       } else {
         this.applyCanvasDefaults();
       }
+      this.widgetZIndices.set({});
       localStorage.removeItem(this.currentCanvasKey);
       this.persistCanvasLayout();
+      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
     } else if (this.config.desktopSaveDefaultLayoutSizingOnly) {
       try {
         localStorage.removeItem(this.desktopDefaultsKey);
@@ -764,6 +766,66 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         localStorage.setItem(this.desktopDefaultsKey, JSON.stringify(snapshot));
       } catch { /* quota exceeded */ }
     }
+  }
+
+  /**
+   * Returns the current layout state formatted as a TypeScript `LayoutSeed` constant
+   * ready to paste into a seed file. Captures desktop grid positions when in desktop
+   * mode, or canvas pixel positions when in canvas mode.
+   */
+  exportLayoutSeed(): string {
+    const widgets = this.config.widgets;
+    const isCanvas = this.isCanvasMode();
+    const indent = '  ';
+
+    const fmtRecord = (name: string, rec: Record<string, number>): string => {
+      const entries = widgets
+        .filter(id => rec[id] !== undefined)
+        .map(id => `${id}: ${rec[id]}`);
+      if (entries.length <= 4) {
+        return `${indent}${name}: { ${entries.join(', ')} },`;
+      }
+      const lines = entries.map(e => `${indent}${indent}${e},`);
+      return `${indent}${name}: {\n${lines.join('\n')}\n${indent}},`;
+    };
+
+    const widgetArray = widgets.map(w => `'${w}'`).join(', ');
+    const sections: string[] = [];
+    sections.push(`${indent}widgets: [${widgetArray}],`);
+
+    if (isCanvas) {
+      sections.push(fmtRecord('defaultColStarts', this.config.defaultColStarts));
+      sections.push(fmtRecord('defaultColSpans', this.config.defaultColSpans));
+      sections.push(fmtRecord('defaultTops', this.config.defaultTops));
+      sections.push(fmtRecord('defaultHeights', this.config.defaultHeights));
+      sections.push(fmtRecord('canvasDefaultLefts', this.widgetLefts()));
+      sections.push(fmtRecord('canvasDefaultPixelWidths', this.widgetPixelWidths()));
+      sections.push(fmtRecord('canvasDefaultTops', this.widgetTops()));
+      sections.push(fmtRecord('canvasDefaultHeights', this.widgetHeights()));
+    } else {
+      sections.push(fmtRecord('defaultColStarts', this.widgetColStarts()));
+      sections.push(fmtRecord('defaultColSpans', this.widgetColSpans()));
+      sections.push(fmtRecord('defaultTops', this.widgetTops()));
+      sections.push(fmtRecord('defaultHeights', this.widgetHeights()));
+      sections.push(fmtRecord('canvasDefaultLefts', this.config.canvasDefaultLefts));
+      sections.push(fmtRecord('canvasDefaultPixelWidths', this.config.canvasDefaultPixelWidths));
+      if (this.config.canvasDefaultTops) {
+        sections.push(fmtRecord('canvasDefaultTops', this.config.canvasDefaultTops));
+      }
+      if (this.config.canvasDefaultHeights) {
+        sections.push(fmtRecord('canvasDefaultHeights', this.config.canvasDefaultHeights));
+      }
+    }
+
+    const mode = isCanvas ? 'canvas' : 'desktop';
+    return [
+      `import type { LayoutSeed } from './layout-seed.types';`,
+      ``,
+      `// Exported from live ${mode} layout`,
+      `export const LAYOUT_SEED: LayoutSeed = {`,
+      ...sections,
+      `};`,
+    ].join('\n');
   }
 
   private _loadCustomCanvasDefaults(): Record<string, Record<string, number>> | null {
@@ -1256,10 +1318,11 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       for (const otherId of this.config.widgets) {
         if (otherId === movedId || !locked[otherId]) continue;
 
-        const oTop = tops[otherId];
-        const oLeft = lefts[otherId];
-        const oW = widths[otherId];
-        const oH = heights[otherId];
+        const oTop = tops[otherId] ?? 0;
+        const oLeft = lefts[otherId] ?? 0;
+        const oW = widths[otherId] ?? 0;
+        const oH = heights[otherId] ?? 0;
+        if (oW <= 0 || oH <= 0) continue;
         const oRight = oLeft + oW;
         const oBottom = oTop + oH;
 
@@ -2059,6 +2122,16 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         if (layout.lefts?.[id] != null) lefts[id] = layout.lefts[id];
         if (layout.widths?.[id] != null) widths[id] = layout.widths[id];
       }
+      const cdT = this.config.canvasDefaultTops ?? {};
+      const cdH = this.config.canvasDefaultHeights ?? {};
+      const cdL = this.config.canvasDefaultLefts ?? {};
+      const cdW = this.config.canvasDefaultPixelWidths ?? {};
+      for (const id of this.config.widgets) {
+        if (tops[id] == null) tops[id] = cdT[id] ?? 0;
+        if (heights[id] == null || heights[id] <= 0) heights[id] = cdH[id] ?? heights[id] ?? 0;
+        if (lefts[id] == null) lefts[id] = cdL[id] ?? 0;
+        if (widths[id] == null || widths[id] <= 0) widths[id] = cdW[id] ?? widths[id] ?? 0;
+      }
       this.enforceMaxColSpans(colSpans, widths);
       this.widgetTops.set(tops);
       this.widgetHeights.set(heights);
@@ -2112,14 +2185,26 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       const gridRect = gridEl.getBoundingClientRect();
       const headerRect = headerEl.getBoundingClientRect();
       headerBottom = headerRect.bottom - gridRect.top;
+    } else {
+      const locked = this.widgetLocked();
+      for (const id of widgets) {
+        if (locked[id]) {
+          headerBottom = Math.max(headerBottom, (tops[id] ?? 0) + (heights[id] ?? 0));
+        }
+      }
     }
 
+    const locked = this.widgetLocked();
     const zIndices = this.widgetZIndices();
-    const sorted = [...widgets].sort(
-      (x, y) => (zIndices[x] ?? 0) - (zIndices[y] ?? 0),
-    );
+    const sorted = [...widgets].sort((x, y) => {
+      const xL = locked[x] ? 0 : 1;
+      const yL = locked[y] ? 0 : 1;
+      if (xL !== yL) return xL - yL;
+      return (zIndices[x] ?? 0) - (zIndices[y] ?? 0);
+    });
 
     for (const id of sorted) {
+      if (locked[id]) continue;
       if (tops[id] < headerBottom + gap) {
         tops[id] = headerBottom + gap;
       }
@@ -2137,6 +2222,8 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const placed: string[] = [sorted[0]];
     for (let k = 1; k < sorted.length; k++) {
       const mover = sorted[k];
+
+      if (locked[mover]) { placed.push(mover); continue; }
 
       for (let attempt = 0; attempt < 30; attempt++) {
         const colliding: string[] = [];

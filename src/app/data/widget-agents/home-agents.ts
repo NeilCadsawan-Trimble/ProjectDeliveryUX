@@ -1454,6 +1454,91 @@ export const homeContractsAgent: WidgetAgent = {
   },
 };
 
+export const homeLearningAgent: WidgetAgent = {
+  id: 'homeLearning',
+  name: 'Learning Progress',
+  systemPrompt: 'You are a learning advisor helping Kelly track her progress toward becoming a comptroller. You understand her accounting coursework on Trimble Learn and can suggest next steps, estimate completion timelines, and recommend study strategies.',
+  suggestions(s) {
+    const plan = s.learningPlan;
+    if (!plan) return ['What courses are available?', 'How do I start the comptroller track?'];
+    const inProgress = plan.courses.filter(c => c.status === 'in-progress');
+    const remaining = plan.courses.filter(c => c.status === 'not-started');
+    const pct = Math.round((plan.completedCourses / plan.totalCourses) * 100);
+    if (inProgress.length) return [`Continue "${inProgress[0].title}" (${Math.round((inProgress[0].completedMinutes / inProgress[0].durationMinutes) * 100)}% done)`, `${pct}% through the comptroller track`, 'What should I focus on next?'];
+    if (remaining.length) return [`Start "${remaining[0].title}"`, `${plan.completedCourses} of ${plan.totalCourses} courses completed`, 'How many hours remain?'];
+    return ['You completed all courses!', 'Show my learning summary'];
+  },
+  insight(s) {
+    const plan = s.learningPlan;
+    if (!plan) return null;
+    const inProgress = plan.courses.filter(c => c.status === 'in-progress');
+    if (inProgress.length) {
+      const next = inProgress[0];
+      return `${plan.completedCourses} of ${plan.totalCourses} completed -- "${next.title}" in progress`;
+    }
+    const remaining = plan.courses.filter(c => c.status === 'not-started');
+    if (remaining.length) return `${plan.completedCourses} of ${plan.totalCourses} completed -- ready for "${remaining[0].title}"`;
+    return `All ${plan.totalCourses} courses completed!`;
+  },
+  alerts(s) {
+    const plan = s.learningPlan;
+    if (!plan) return null;
+    const stalled = plan.courses.filter(c => c.status === 'in-progress' && c.completedMinutes > 0 && c.completedMinutes < c.durationMinutes * 0.3);
+    if (stalled.length) return { level: 'warning' as const, count: stalled.length, label: 'stalled course(s)' };
+    return null;
+  },
+  actions: () => [
+    { id: 'open-trimble-learn', label: 'Open Trimble Learn', execute: () => 'Opening learn.trimble.com in a new tab.' },
+    { id: 'mark-complete', label: 'Mark current course complete', execute: (st) => {
+      const plan = st.learningPlan;
+      const ip = plan?.courses.filter(c => c.status === 'in-progress') ?? [];
+      return ip.length ? `Marked "${ip[0].title}" as complete.` : 'No in-progress courses to complete.';
+    }},
+  ],
+  buildContext(s) {
+    const plan = s.learningPlan;
+    if (!plan) return 'No learning plan available.';
+    const lines = plan.courses.map(c => {
+      const pct = c.durationMinutes ? Math.round((c.completedMinutes / c.durationMinutes) * 100) : 0;
+      return `  ${c.title} [${c.category}]: ${c.status}, ${pct}% (${c.completedMinutes}/${c.durationMinutes} min)${c.completedDate ? `, done ${c.completedDate}` : ''}`;
+    });
+    const totalMin = plan.courses.reduce((sum, c) => sum + c.completedMinutes, 0);
+    const remainMin = plan.courses.reduce((sum, c) => sum + (c.durationMinutes - c.completedMinutes), 0);
+    return `Learning Plan: ${plan.name}\n${plan.description}\nProgress: ${plan.completedCourses}/${plan.totalCourses} courses, ${Math.round(totalMin / 60)}h logged, ${Math.round(remainMin / 60)}h remaining\n\nCourses:\n${lines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const plan = s.learningPlan;
+    if (!plan) return 'No learning plan data available.';
+    const completed = plan.courses.filter(c => c.status === 'completed');
+    const inProgress = plan.courses.filter(c => c.status === 'in-progress');
+    const notStarted = plan.courses.filter(c => c.status === 'not-started');
+    const totalMin = plan.courses.reduce((sum, c) => sum + c.completedMinutes, 0);
+    const remainMin = plan.courses.reduce((sum, c) => sum + (c.durationMinutes - c.completedMinutes), 0);
+
+    if (kw(q, 'next', 'recommend', 'should', 'focus')) {
+      if (inProgress.length) return `Continue **${inProgress[0].title}** -- you're ${Math.round((inProgress[0].completedMinutes / inProgress[0].durationMinutes) * 100)}% through it. After that, ${notStarted.length ? `"${notStarted[0].title}" is next in the track.` : 'you\'ll have completed the full track!'}`;
+      if (notStarted.length) return `Start **${notStarted[0].title}** (${notStarted[0].category}) -- estimated ${Math.round(notStarted[0].durationMinutes / 60)} hours.`;
+      return 'You\'ve completed all courses in the comptroller track!';
+    }
+    if (kw(q, 'how close', 'progress', 'percent', 'status', 'completion')) {
+      const pct = Math.round((plan.completedCourses / plan.totalCourses) * 100);
+      return `You're **${pct}%** through the Comptroller Preparation Track:\n- ${completed.length} completed\n- ${inProgress.length} in progress\n- ${notStarted.length} not started\n\n${Math.round(totalMin / 60)} hours logged, ~${Math.round(remainMin / 60)} hours remaining.`;
+    }
+    if (kw(q, 'hours', 'time', 'logged', 'spent')) {
+      return `You've logged **${Math.round(totalMin / 60)} hours** so far. Approximately **${Math.round(remainMin / 60)} hours** remain to complete the full track.`;
+    }
+    if (kw(q, 'completed', 'done', 'finished')) {
+      if (!completed.length) return 'No courses completed yet.';
+      return `Completed courses (${completed.length}):\n${completed.map(c => `- **${c.title}** (${c.category}) -- ${c.completedDate}`).join('\n')}`;
+    }
+    if (kw(q, 'remaining', 'left', 'not started')) {
+      if (!notStarted.length) return 'All courses are either in progress or completed!';
+      return `Remaining courses (${notStarted.length}):\n${notStarted.map(c => `- **${c.title}** (${c.category}) -- ~${Math.round(c.durationMinutes / 60)}h`).join('\n')}`;
+    }
+    return `Comptroller track: ${plan.completedCourses}/${plan.totalCourses} courses done (${Math.round((plan.completedCourses / plan.totalCourses) * 100)}%). ${Math.round(totalMin / 60)}h logged, ${Math.round(remainMin / 60)}h remaining.`;
+  },
+};
+
 export const HOME_AGENTS: WidgetAgent[] = [
   homeTimeOff,
   homeCalendar,
@@ -1482,5 +1567,6 @@ export const KELLY_HOME_AGENTS: WidgetAgent[] = [
   homeRetentionAgent,
   homeApActivity,
   homeCashOutflow,
+  homeLearningAgent,
 ];
 

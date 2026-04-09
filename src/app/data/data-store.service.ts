@@ -1,4 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { CrossTabSyncService } from './cross-tab-sync.service';
 import type {
   ActivityItem,
   ApActivityItem,
@@ -98,6 +99,8 @@ import {
   AP_RETENTION_SEED,
   AP_VENDORS_SEED,
 } from './ap-data.seed';
+import type { LearningPlan } from './dashboard-data.types';
+import { LEARNING_PLAN_SEED } from './learning-data.seed';
 
 interface AttentionItem {
   id: number;
@@ -189,8 +192,18 @@ function createFreshSnapshot(personaSlug?: string): PersonaSnapshot {
 
 @Injectable({ providedIn: 'root' })
 export class DataStoreService {
+  private readonly sync = inject(CrossTabSyncService);
   private readonly personaStateMap = new Map<string, PersonaSnapshot>();
   private currentPersonaSlug = 'frank';
+
+  constructor() {
+    this.sync.init(this.currentPersonaSlug, (method, args) => {
+      const fn = (this as Record<string, unknown>)[method];
+      if (typeof fn === 'function') {
+        fn.call(this, ...args, true);
+      }
+    });
+  }
 
   readonly rfis = signal<Rfi[]>([...RFIS_SEED]);
   readonly submittals = signal<Submittal[]>([...SUBMITTALS_SEED]);
@@ -237,6 +250,9 @@ export class DataStoreService {
   readonly apActivities = signal<ApActivityItem[]>([...AP_ACTIVITIES_SEED]);
   readonly apPaymentSchedule = signal<ApPaymentScheduleItem[]>([...AP_PAYMENT_SCHEDULE_SEED]);
 
+  // Learning data (Kelly only)
+  readonly learningPlan = signal<LearningPlan>(structuredClone(LEARNING_PLAN_SEED));
+
   switchToPersona(slug: string): void {
     if (slug === this.currentPersonaSlug) return;
     this.personaStateMap.set(this.currentPersonaSlug, this.takeSnapshot());
@@ -244,6 +260,7 @@ export class DataStoreService {
     const snapshot = cached ?? createFreshSnapshot(slug);
     this.loadSnapshot(snapshot);
     this.currentPersonaSlug = slug;
+    this.sync.setPersona(slug);
   }
 
   private takeSnapshot(): PersonaSnapshot {
@@ -358,130 +375,151 @@ export class DataStoreService {
     return this.projects().find(p => p.id === id);
   }
 
-  updateProjectStatus(projectId: number, newStatus: ProjectStatus): void {
+  updateProjectStatus(projectId: number, newStatus: ProjectStatus, _remote = false): void {
     this.projects.update(list =>
       list.map(p => p.id === projectId ? { ...p, status: newStatus } : p)
     );
+    if (!_remote) this.sync.broadcast('updateProjectStatus', [projectId, newStatus]);
   }
 
-  updateProject(projectId: number, patch: Partial<Project>): void {
+  updateProject(projectId: number, patch: Partial<Project>, _remote = false): void {
     this.projects.update(list =>
       list.map(p => p.id === projectId ? { ...p, ...patch } : p)
     );
+    if (!_remote) this.sync.broadcast('updateProject', [projectId, patch]);
   }
 
-  updateProjectDetail(projectId: number, patch: Partial<ProjectDashboardData>): void {
+  updateProjectDetail(projectId: number, patch: Partial<ProjectDashboardData>, _remote = false): void {
     this.projectDetailData.update(data => ({
       ...data,
       [projectId]: { ...data[projectId], ...patch },
     }));
+    if (!_remote) this.sync.broadcast('updateProjectDetail', [projectId, patch]);
   }
 
-  updateWeather(projectId: number, patch: Partial<ProjectWeather>): void {
+  updateWeather(projectId: number, patch: Partial<ProjectWeather>, _remote = false): void {
     this.weatherData.update(list =>
       list.map(w => w.projectId === projectId ? { ...w, ...patch } : w)
     );
+    if (!_remote) this.sync.broadcast('updateWeather', [projectId, patch]);
   }
 
-  updateBudgetHistory(projectId: number, points: BudgetHistoryPoint[]): void {
+  updateBudgetHistory(projectId: number, points: BudgetHistoryPoint[], _remote = false): void {
     this.budgetHistory.update(data => ({ ...data, [projectId]: points }));
+    if (!_remote) this.sync.broadcast('updateBudgetHistory', [projectId, points]);
   }
 
-  updateRfiStatus(id: string, newStatus: RfiStatus): void {
+  updateRfiStatus(id: string, newStatus: RfiStatus, _remote = false): void {
     this.rfis.update(list =>
       list.map(r => r.id === id ? { ...r, status: newStatus } : r)
     );
+    if (!_remote) this.sync.broadcast('updateRfiStatus', [id, newStatus]);
   }
 
-  updateSubmittalStatus(id: string, newStatus: SubmittalStatus): void {
+  updateSubmittalStatus(id: string, newStatus: SubmittalStatus, _remote = false): void {
     this.submittals.update(list =>
       list.map(s => s.id === id ? { ...s, status: newStatus } : s)
     );
+    if (!_remote) this.sync.broadcast('updateSubmittalStatus', [id, newStatus]);
   }
 
-  updateChangeOrderStatus(id: string, newStatus: ChangeOrderStatus): void {
+  updateChangeOrderStatus(id: string, newStatus: ChangeOrderStatus, _remote = false): void {
     this.changeOrders.update(list =>
       list.map(co => co.id === id ? { ...co, status: newStatus } : co)
     );
+    if (!_remote) this.sync.broadcast('updateChangeOrderStatus', [id, newStatus]);
   }
 
-  updateEstimateStatus(id: string, newStatus: EstimateStatus): void {
+  updateEstimateStatus(id: string, newStatus: EstimateStatus, _remote = false): void {
     this.estimates.update(list =>
       list.map(e => e.id === id ? { ...e, status: newStatus } : e)
     );
+    if (!_remote) this.sync.broadcast('updateEstimateStatus', [id, newStatus]);
   }
 
-  updateTimeOffStatus(id: number, newStatus: TimeOffStatus): void {
+  updateTimeOffStatus(id: number, newStatus: TimeOffStatus, _remote = false): void {
     this.timeOffRequests.update(list =>
       list.map(r => r.id === id ? { ...r, status: newStatus } : r)
     );
+    if (!_remote) this.sync.broadcast('updateTimeOffStatus', [id, newStatus]);
   }
 
-  updateInvoiceStatus(id: string, newStatus: InvoiceStatus): void {
+  updateInvoiceStatus(id: string, newStatus: InvoiceStatus, _remote = false): void {
     this.invoices.update(list =>
       list.map(inv => inv.id === id ? { ...inv, status: newStatus } : inv)
     );
+    if (!_remote) this.sync.broadcast('updateInvoiceStatus', [id, newStatus]);
   }
 
-  updatePayableStatus(id: string, newStatus: PayableStatus): void {
+  updatePayableStatus(id: string, newStatus: PayableStatus, _remote = false): void {
     this.payables.update(list =>
       list.map(p => p.id === id ? { ...p, status: newStatus } : p)
     );
+    if (!_remote) this.sync.broadcast('updatePayableStatus', [id, newStatus]);
   }
 
-  updatePurchaseOrderStatus(id: string, newStatus: PurchaseOrderStatus): void {
+  updatePurchaseOrderStatus(id: string, newStatus: PurchaseOrderStatus, _remote = false): void {
     this.purchaseOrders.update(list =>
       list.map(po => po.id === id ? { ...po, status: newStatus } : po)
     );
+    if (!_remote) this.sync.broadcast('updatePurchaseOrderStatus', [id, newStatus]);
   }
 
-  updateInspectionResult(id: string, newResult: InspectionResult): void {
+  updateInspectionResult(id: string, newResult: InspectionResult, _remote = false): void {
     this.inspections.update(list =>
       list.map(i => i.id === id ? { ...i, result: newResult } : i)
     );
+    if (!_remote) this.sync.broadcast('updateInspectionResult', [id, newResult]);
   }
 
-  updatePunchListStatus(id: string, newStatus: 'open' | 'in-progress' | 'completed' | 'verified'): void {
+  updatePunchListStatus(id: string, newStatus: 'open' | 'in-progress' | 'completed' | 'verified', _remote = false): void {
     this.punchListItems.update(list =>
       list.map(p => p.id === id ? { ...p, status: newStatus } : p)
     );
+    if (!_remote) this.sync.broadcast('updatePunchListStatus', [id, newStatus]);
   }
 
-  updateContractStatus(id: string, newStatus: ContractStatus): void {
+  updateContractStatus(id: string, newStatus: ContractStatus, _remote = false): void {
     this.contracts.update(list =>
       list.map(c => c.id === id ? { ...c, status: newStatus } : c)
     );
+    if (!_remote) this.sync.broadcast('updateContractStatus', [id, newStatus]);
   }
 
-  updateChangeOrderAmount(id: string, amount: number): void {
+  updateChangeOrderAmount(id: string, amount: number, _remote = false): void {
     this.changeOrders.update(list =>
       list.map(co => co.id === id ? { ...co, amount } : co)
     );
+    if (!_remote) this.sync.broadcast('updateChangeOrderAmount', [id, amount]);
   }
 
-  updateInvoiceAmount(id: string, amount: number): void {
+  updateInvoiceAmount(id: string, amount: number, _remote = false): void {
     this.invoices.update(list =>
       list.map(inv => inv.id === id ? { ...inv, amount } : inv)
     );
+    if (!_remote) this.sync.broadcast('updateInvoiceAmount', [id, amount]);
   }
 
-  updatePayableAmount(id: string, amount: number): void {
+  updatePayableAmount(id: string, amount: number, _remote = false): void {
     this.payables.update(list =>
       list.map(p => p.id === id ? { ...p, amount } : p)
     );
+    if (!_remote) this.sync.broadcast('updatePayableAmount', [id, amount]);
   }
 
-  updatePurchaseOrderAmount(id: string, amount: number): void {
+  updatePurchaseOrderAmount(id: string, amount: number, _remote = false): void {
     this.purchaseOrders.update(list =>
       list.map(po => po.id === id ? { ...po, amount } : po)
     );
+    if (!_remote) this.sync.broadcast('updatePurchaseOrderAmount', [id, amount]);
   }
 
-  updateCashPosition(patch: Partial<CashPosition>): void {
+  updateCashPosition(patch: Partial<CashPosition>, _remote = false): void {
     this.cashPosition.update(cp => ({ ...cp, ...patch }));
+    if (!_remote) this.sync.broadcast('updateCashPosition', [patch]);
   }
 
-  updateEstimateValue(id: string, valueRaw: number): void {
+  updateEstimateValue(id: string, valueRaw: number, _remote = false): void {
     const fmtValue = valueRaw >= 1_000_000
       ? `$${(valueRaw / 1_000_000).toFixed(1)}M`
       : valueRaw >= 1_000
@@ -490,27 +528,31 @@ export class DataStoreService {
     this.estimates.update(list =>
       list.map(e => e.id === id ? { ...e, valueRaw, value: fmtValue } : e)
     );
+    if (!_remote) this.sync.broadcast('updateEstimateValue', [id, valueRaw]);
   }
 
-  updateContractValue(id: string, revisedValue: number): void {
+  updateContractValue(id: string, revisedValue: number, _remote = false): void {
     this.contracts.update(list =>
       list.map(c => c.id === id ? { ...c, revisedValue } : c)
     );
+    if (!_remote) this.sync.broadcast('updateContractValue', [id, revisedValue]);
   }
 
-  updateBillingEvent(id: string, patch: Partial<Pick<BillingEvent, 'amount' | 'status'>>): void {
+  updateBillingEvent(id: string, patch: Partial<Pick<BillingEvent, 'amount' | 'status'>>, _remote = false): void {
     this.billingEvents.update(list =>
       list.map(be => be.id === id ? { ...be, ...patch } : be)
     );
+    if (!_remote) this.sync.broadcast('updateBillingEvent', [id, patch]);
   }
 
-  updatePayrollRecord(id: string, patch: Partial<Pick<PayrollRecord, 'grossPay' | 'netPay' | 'taxes' | 'benefits'>>): void {
+  updatePayrollRecord(id: string, patch: Partial<Pick<PayrollRecord, 'grossPay' | 'netPay' | 'taxes' | 'benefits'>>, _remote = false): void {
     this.payrollRecords.update(list =>
       list.map(pr => pr.id === id ? { ...pr, ...patch } : pr)
     );
+    if (!_remote) this.sync.broadcast('updatePayrollRecord', [id, patch]);
   }
 
-  updateMilestoneStatus(projectId: number, milestoneId: number, status: string): void {
+  updateMilestoneStatus(projectId: number, milestoneId: number, status: string, _remote = false): void {
     this.projectDetailData.update(data => {
       const proj = data[projectId];
       if (!proj) return data;
@@ -524,9 +566,10 @@ export class DataStoreService {
         },
       };
     });
+    if (!_remote) this.sync.broadcast('updateMilestoneStatus', [projectId, milestoneId, status]);
   }
 
-  updateTaskStatus(projectId: number, taskId: number, status: string): void {
+  updateTaskStatus(projectId: number, taskId: number, status: string, _remote = false): void {
     this.projectDetailData.update(data => {
       const proj = data[projectId];
       if (!proj) return data;
@@ -540,9 +583,10 @@ export class DataStoreService {
         },
       };
     });
+    if (!_remote) this.sync.broadcast('updateTaskStatus', [projectId, taskId, status]);
   }
 
-  updateRiskSeverity(projectId: number, riskId: number, severity: string): void {
+  updateRiskSeverity(projectId: number, riskId: number, severity: string, _remote = false): void {
     this.projectDetailData.update(data => {
       const proj = data[projectId];
       if (!proj) return data;
@@ -556,9 +600,10 @@ export class DataStoreService {
         },
       };
     });
+    if (!_remote) this.sync.broadcast('updateRiskSeverity', [projectId, riskId, severity]);
   }
 
-  adjustLatestRevenue(delta: number): void {
+  adjustLatestRevenue(delta: number, _remote = false): void {
     this.monthlyRevenue.update(rev => {
       const updated = { ...rev } as Record<RevenueTimeRange, RevenueDataPoint[]>;
       for (const range of Object.keys(updated) as RevenueTimeRange[]) {
@@ -579,9 +624,10 @@ export class DataStoreService {
       }
       return updated;
     });
+    if (!_remote) this.sync.broadcast('adjustLatestRevenue', [delta]);
   }
 
-  adjustCashFlowInflows(delta: number): void {
+  adjustCashFlowInflows(delta: number, _remote = false): void {
     this.cashFlowHistory.update(history => {
       if (history.length === 0) return history;
       const entries = [...history];
@@ -596,9 +642,10 @@ export class DataStoreService {
       };
       return entries;
     });
+    if (!_remote) this.sync.broadcast('adjustCashFlowInflows', [delta]);
   }
 
-  adjustCashFlowOutflows(delta: number): void {
+  adjustCashFlowOutflows(delta: number, _remote = false): void {
     this.cashFlowHistory.update(history => {
       if (history.length === 0) return history;
       const entries = [...history];
@@ -613,9 +660,10 @@ export class DataStoreService {
       };
       return entries;
     });
+    if (!_remote) this.sync.broadcast('adjustCashFlowOutflows', [delta]);
   }
 
-  updateBudgetBreakdownItem(projectId: number, label: string, newAmount: string): void {
+  updateBudgetBreakdownItem(projectId: number, label: string, newAmount: string, _remote = false): void {
     this.projectDetailData.update(data => {
       const proj = data[projectId];
       if (!proj) return data;
@@ -635,5 +683,6 @@ export class DataStoreService {
         },
       };
     });
+    if (!_remote) this.sync.broadcast('updateBudgetBreakdownItem', [projectId, label, newAmount]);
   }
 }

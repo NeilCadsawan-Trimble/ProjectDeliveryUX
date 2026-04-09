@@ -23,6 +23,7 @@ import {
   homeRetentionAgent,
   homeApActivity,
   homeCashOutflow,
+  homeLearningAgent,
 } from './home-agents';
 import {
   budgetAgent,
@@ -103,6 +104,7 @@ const ALL_AGENTS: Record<string, WidgetAgent> = {
   homeRetention: homeRetentionAgent,
   homeApActivity,
   homeCashOutflow,
+  homeLearning: homeLearningAgent,
   projects: projectsWidget,
   openEstimates,
   recentActivity,
