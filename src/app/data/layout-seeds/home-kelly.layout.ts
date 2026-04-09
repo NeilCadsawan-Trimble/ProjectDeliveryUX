@@ -39,11 +39,11 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
   },
   canvasDefaultLefts: {
     homeHeader: 0, homeApKpis: 0, homeInvoiceQueue: 0, homePaymentSchedule: 891,
-    homeCalendar: 0, homeVendorAging: 891, homeRetention: 640, homeApActivity: 0, homeLearning: 0,
+    homeCalendar: 0, homeVendorAging: 0, homeRetention: 648, homeApActivity: 0, homeLearning: 0,
   },
   canvasDefaultPixelWidths: {
     homeHeader: 1280, homeApKpis: 389, homeInvoiceQueue: 875, homePaymentSchedule: 389,
-    homeCalendar: 875, homeVendorAging: 640, homeRetention: 640, homeApActivity: 1280, homeLearning: 640,
+    homeCalendar: 875, homeVendorAging: 632, homeRetention: 632, homeApActivity: 1280, homeLearning: 640,
   },
   canvasDefaultTops: {
     homeHeader: 0, homeApKpis: H + 16, homeInvoiceQueue: H + 288, homePaymentSchedule: H + 288,
