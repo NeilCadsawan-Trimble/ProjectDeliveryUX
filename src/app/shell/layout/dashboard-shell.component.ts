@@ -40,6 +40,7 @@ import { DataStoreService } from '../../data/data-store.service';
 import { WeatherService } from '../../services/weather.service';
 import { AuthService } from '../../services/auth.service';
 import { getAgent, getSuggestions, type AgentDataState } from '../../data/widget-agents';
+import { environment } from '../../../environments/environment';
 
 export interface ShellNavItem {
   value: string;
@@ -306,6 +307,17 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
                     <div class="text-sm">Save as Default Layout</div>
                   </div>
+                  @if (isDevMode) {
+                    <div class="border-top-default my-1"></div>
+                    <div
+                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                      role="menuitem"
+                      (click)="resetMenuAction('export-layout'); $event.stopPropagation()"
+                    >
+                      <i class="modus-icons text-base" aria-hidden="true">clipboard</i>
+                      <div class="text-sm">{{ exportLayoutCopied() ? 'Copied to Clipboard' : 'Export Layout Seed' }}</div>
+                    </div>
+                  }
                 </div>
               }
             </div>
@@ -515,6 +527,17 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
                       <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
                     </div>
+                    @if (isDevMode) {
+                      <div class="border-bottom-default mx-3 my-1"></div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('export-layout')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">clipboard</i>
+                        <div class="text-sm">{{ exportLayoutCopied() ? 'Copied to Clipboard' : 'Export Layout Seed' }}</div>
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -604,6 +627,17 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
                       <div class="text-sm">Save as Default Layout</div>
                     </div>
+                    @if (isDevMode) {
+                      <div class="border-top-default my-1"></div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="resetMenuAction('export-layout'); $event.stopPropagation()"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">clipboard</i>
+                        <div class="text-sm">{{ exportLayoutCopied() ? 'Copied to Clipboard' : 'Export Layout Seed' }}</div>
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -754,6 +788,9 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly aiToolsService = inject(AiToolsService);
   private readonly weatherService = inject(WeatherService);
 
+  readonly isDevMode = !environment.production;
+  readonly exportLayoutCopied = signal(false);
+
   private readonly _aiShellContextEffect = effect(() => {
     const nav = this.activeNav();
     const items = this.sideNavItems();
@@ -852,7 +889,7 @@ export class DashboardShellComponent implements AfterViewInit {
     if (titleOv) titleOv.onSelect(id);
   }
 
-  resetMenuAction(action: 'view' | 'widgets' | 'sort-by-priority' | 'save-defaults' | 'save-all-defaults'): void {
+  resetMenuAction(action: 'view' | 'widgets' | 'sort-by-priority' | 'save-defaults' | 'save-all-defaults' | 'export-layout'): void {
     this.resetMenuOpen.set(false);
     this.desktopResetMenuOpen.set(false);
     if (action === 'view') {
@@ -870,7 +907,22 @@ export class DashboardShellComponent implements AfterViewInit {
       this.canvasResetService.triggerSaveDefaults();
       const count = this.layoutDefaults.saveAllVisitedDefaults();
       console.log(`Saved default layouts for ${count} dashboards`);
+    } else if (action === 'export-layout') {
+      this.exportCurrentLayout();
     }
+  }
+
+  private exportCurrentLayout(): void {
+    this.canvasResetService.triggerExportLayout();
+    requestAnimationFrame(() => {
+      const seed = this.canvasResetService.lastExportedSeed();
+      if (seed) {
+        navigator.clipboard.writeText(seed).then(() => {
+          this.exportLayoutCopied.set(true);
+          setTimeout(() => this.exportLayoutCopied.set(false), 3000);
+        });
+      }
+    });
   }
 
   moreMenuAction(action: string): void {
@@ -881,6 +933,9 @@ export class DashboardShellComponent implements AfterViewInit {
         break;
       case 'darkMode':
         this.toggleDarkMode();
+        break;
+      case 'export-layout':
+        this.exportCurrentLayout();
         break;
     }
   }

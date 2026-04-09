@@ -12,6 +12,8 @@ import { Router } from '@angular/router';
 import { DataStoreService } from '../../data/data-store.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
+import { HOME_DEFAULT_LAYOUT } from '../../data/layout-seeds/home-default.layout';
+import { HOME_KELLY_LAYOUT } from '../../data/layout-seeds/home-kelly.layout';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
@@ -74,6 +76,7 @@ import { HomeLienWaiversComponent } from './components/home-lien-waivers.compone
 import { HomeRetentionComponent } from './components/home-retention.component';
 import { HomeApActivityComponent } from './components/home-ap-activity.component';
 import { HomeCashOutflowComponent } from './components/home-cash-outflow.component';
+import { HomeLearningProgressComponent } from './components/home-learning-progress.component';
 import { HomeBudgetVarianceComponent } from './components/home-budget-variance.component';
 import { HomeChangeOrdersComponent } from './components/home-change-orders.component';
 import { HomeFieldOpsComponent } from './components/home-field-ops.component';
@@ -104,6 +107,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
     HomeRetentionComponent,
     HomeApActivityComponent,
     HomeCashOutflowComponent,
+    HomeLearningProgressComponent,
     HomeBudgetVarianceComponent,
     HomeChangeOrdersComponent,
     HomeFieldOpsComponent,
@@ -206,6 +210,10 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         }
                       </div>
                     }
+                  </div>
+                  <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                    (click)="openCanvasDetailInNewTab(widgetId)" (mousedown)="$event.stopPropagation()" aria-label="Open in new tab">
+                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
                   </div>
                   <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                     (click)="closeCanvasDetail(widgetId)" aria-label="Close detail">
@@ -330,6 +338,10 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         [style.left.px]="drawingEditMode() ? 16 : 2"></div>
                     </div>
                     <div class="text-2xs font-medium" [class.text-primary]="drawingEditMode()" [class.text-foreground-40]="!drawingEditMode()">Edit</div>
+                  </div>
+                  <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                    (click)="openCanvasDetailInNewTab(widgetId)" (mousedown)="$event.stopPropagation()" aria-label="Open in new tab">
+                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
                   </div>
                   <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                     (click)="closeCanvasDetail(widgetId)" (mousedown)="$event.stopPropagation()" aria-label="Close detail">
@@ -1724,6 +1736,24 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   <app-home-cash-outflow [payments]="apPaymentSchedule()" />
                 </app-widget-frame>
 
+              } @else if (widgetId === 'homeLearning') {
+                <app-widget-frame
+                  [title]="'Learning Progress'"
+                  [icon]="'learn'"
+                  [iconClass]="'text-primary'"
+                  [insight]="learningInsight()"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <app-home-learning-progress [plan]="learningPlan()" />
+                </app-widget-frame>
+
               } @else if (widgetId === 'homeMilestones') {
                 <app-widget-frame
                   [title]="'Cross-Project Milestones'"
@@ -1907,117 +1937,14 @@ export class HomePageComponent extends DashboardPageBase {
   private static readonly CANVAS_HEADER_OFFSET = HomePageComponent.CANVAS_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    const H = HomePageComponent.CANVAS_HEADER_OFFSET;
     const slug = this.personaService.activePersonaSlug();
-
-    if (slug === 'kelly') {
-      const R1 = HomePageComponent.ROW_1_HEIGHT;
-      const R2T = R1 + DashboardLayoutEngine.GAP_PX;
-      const R3T = R2T + HomePageComponent.ROW_2_HEIGHT + DashboardLayoutEngine.GAP_PX;
-      const R4T = R3T + HomePageComponent.ROW_2_HEIGHT + DashboardLayoutEngine.GAP_PX;
-      return {
-        widgets: ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity'],
-        layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-home-v11`,
-        canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:v18`,
-        defaultColStarts: { homeHeader: 1, homeApKpis: 1, homeInvoiceQueue: 7, homePaymentSchedule: 1, homeCalendar: 7, homeVendorAging: 1, homeRetention: 9, homeApActivity: 1 },
-        defaultColSpans: { homeHeader: 16, homeApKpis: 6, homeInvoiceQueue: 10, homePaymentSchedule: 6, homeCalendar: 10, homeVendorAging: 8, homeRetention: 8, homeApActivity: 16 },
-        defaultTops: { homeHeader: 0, homeApKpis: 0, homeInvoiceQueue: 0, homePaymentSchedule: R2T, homeCalendar: R2T, homeVendorAging: R3T, homeRetention: R3T, homeApActivity: R4T },
-        defaultHeights: { homeHeader: 0, homeApKpis: HomePageComponent.KPI_HEIGHT, homeInvoiceQueue: HomePageComponent.ROW_1_HEIGHT, homePaymentSchedule: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT, homeVendorAging: HomePageComponent.ROW_2_HEIGHT, homeRetention: HomePageComponent.ROW_2_HEIGHT, homeApActivity: 384 },
-        canvasDefaultLefts: { homeHeader: 0, homeApKpis: 0, homeInvoiceQueue: 0, homePaymentSchedule: 891, homeCalendar: 0, homeVendorAging: 891, homeRetention: 640, homeApActivity: 0 },
-        canvasDefaultPixelWidths: { homeHeader: 1280, homeApKpis: 389, homeInvoiceQueue: 875, homePaymentSchedule: 389, homeCalendar: 875, homeVendorAging: 640, homeRetention: 640, homeApActivity: 1280 },
-        canvasDefaultTops: { homeHeader: 0, homeApKpis: H + 16, homeInvoiceQueue: H + 288, homePaymentSchedule: H + 288, homeCalendar: H + 640, homeVendorAging: H + 1120, homeRetention: H + 1120, homeApActivity: H + 1472 },
-        canvasDefaultHeights: { homeHeader: HomePageComponent.CANVAS_HEADER_HEIGHT, homeApKpis: 256, homeInvoiceQueue: 336, homePaymentSchedule: 336, homeCalendar: 464, homeVendorAging: 336, homeRetention: 336, homeApActivity: 352 },
-        minColSpan: 4,
-        canvasGridMinHeightOffset: 100,
-        savesDesktopOnMobile: true,
-        onBeforeMobileCompact: () => this.applyMobileHeights(),
-        onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-      };
-    }
+    const isKelly = slug === 'kelly';
+    const seed = isKelly ? HOME_KELLY_LAYOUT : HOME_DEFAULT_LAYOUT;
 
     return {
-      widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts'],
-      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-home-v10`,
-      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:v17`,
-      defaultColStarts: {
-        homeHeader: 1, homeKpis: 1, homeUrgentNeeds: 7, homeWeather: 1, homeRfis: 7, homeSubmittals: 12,
-        homeTimeOff: 1, homeCalendar: 7, homeDrawings: 1, homeRecentActivity: 7,
-        homeMilestones: 1, homeBudgetVariance: 7,
-        homeChangeOrders: 1, homeFieldOps: 7,
-        homeDailyReports: 1, homeTeamAllocation: 7,
-        homeContracts: 1,
-      },
-      defaultColSpans: {
-        homeHeader: 16, homeKpis: 6, homeUrgentNeeds: 10, homeWeather: 6, homeRfis: 5, homeSubmittals: 5,
-        homeTimeOff: 6, homeCalendar: 10, homeDrawings: 6, homeRecentActivity: 10,
-        homeMilestones: 6, homeBudgetVariance: 10,
-        homeChangeOrders: 6, homeFieldOps: 10,
-        homeDailyReports: 6, homeTeamAllocation: 10,
-        homeContracts: 16,
-      },
-      defaultTops: {
-        homeHeader: 0, homeKpis: 0, homeUrgentNeeds: 0,
-        homeWeather: HomePageComponent.ROW_2_TOP, homeRfis: HomePageComponent.ROW_2_TOP, homeSubmittals: HomePageComponent.ROW_2_TOP,
-        homeTimeOff: HomePageComponent.ROW_3_TOP, homeCalendar: HomePageComponent.ROW_3_TOP,
-        homeDrawings: HomePageComponent.ROW_4_TOP, homeRecentActivity: HomePageComponent.ROW_4_TOP,
-        homeMilestones: HomePageComponent.ROW_5_TOP, homeBudgetVariance: HomePageComponent.ROW_5_TOP,
-        homeChangeOrders: HomePageComponent.ROW_6_TOP, homeFieldOps: HomePageComponent.ROW_6_TOP,
-        homeDailyReports: HomePageComponent.ROW_7_TOP, homeTeamAllocation: HomePageComponent.ROW_7_TOP,
-        homeContracts: HomePageComponent.ROW_8_TOP,
-      },
-      defaultHeights: {
-        homeHeader: 0, homeKpis: HomePageComponent.KPI_HEIGHT, homeUrgentNeeds: HomePageComponent.ROW_1_HEIGHT,
-        homeWeather: HomePageComponent.ROW_2_HEIGHT, homeRfis: HomePageComponent.ROW_2_HEIGHT, homeSubmittals: HomePageComponent.ROW_2_HEIGHT,
-        homeTimeOff: HomePageComponent.ROW_2_HEIGHT, homeCalendar: HomePageComponent.ROW_3_MAX_HEIGHT,
-        homeDrawings: HomePageComponent.ROW_2_HEIGHT, homeRecentActivity: HomePageComponent.ROW_4_HEIGHT,
-        homeMilestones: HomePageComponent.ROW_5_HEIGHT, homeBudgetVariance: HomePageComponent.ROW_5_HEIGHT,
-        homeChangeOrders: HomePageComponent.ROW_6_HEIGHT, homeFieldOps: HomePageComponent.ROW_6_HEIGHT,
-        homeDailyReports: HomePageComponent.ROW_7_HEIGHT, homeTeamAllocation: HomePageComponent.ROW_7_HEIGHT,
-        homeContracts: HomePageComponent.ROW_5_HEIGHT,
-      },
-      canvasDefaultLefts: {
-        homeHeader: 0, homeKpis: 0, homeUrgentNeeds: 0, homeWeather: 891, homeTimeOff: 0, homeCalendar: 0,
-        homeRfis: 891, homeSubmittals: 891, homeDrawings: 1296, homeRecentActivity: 0,
-        homeMilestones: 0, homeBudgetVariance: 500,
-        homeChangeOrders: 0, homeFieldOps: 500,
-        homeDailyReports: 0, homeTeamAllocation: 500,
-        homeContracts: 0,
-      },
-      canvasDefaultPixelWidths: {
-        homeHeader: 1280, homeKpis: 389, homeUrgentNeeds: 875, homeWeather: 389, homeTimeOff: 875, homeCalendar: 875,
-        homeRfis: 389, homeSubmittals: 389, homeDrawings: 470, homeRecentActivity: 875,
-        homeMilestones: 480, homeBudgetVariance: 780,
-        homeChangeOrders: 480, homeFieldOps: 780,
-        homeDailyReports: 480, homeTeamAllocation: 780,
-        homeContracts: 1280,
-      },
-      canvasDefaultTops: {
-        homeHeader: 0,
-        homeKpis: H + 16,
-        homeUrgentNeeds: H + 288,
-        homeWeather: H + 288,
-        homeCalendar: H + 640,
-        homeSubmittals: H + 832,
-        homeTimeOff: H + 1120,
-        homeRfis: H + 1264,
-        homeRecentActivity: H + 1568,
-        homeDrawings: H + 1936,
-        homeMilestones: H + 2400,
-        homeBudgetVariance: H + 2400,
-        homeChangeOrders: H + 2752,
-        homeFieldOps: H + 2752,
-        homeDailyReports: H + 3104,
-        homeTeamAllocation: H + 3104,
-        homeContracts: H + 3456,
-      },
-      canvasDefaultHeights: {
-        homeHeader: HomePageComponent.CANVAS_HEADER_HEIGHT, homeKpis: 256, homeUrgentNeeds: 336, homeWeather: 528,
-        homeTimeOff: 432, homeCalendar: 464, homeRfis: 432, homeSubmittals: 416, homeDrawings: 448, homeRecentActivity: 352,
-        homeMilestones: 336, homeBudgetVariance: 336,
-        homeChangeOrders: 336, homeFieldOps: 336,
-        homeDailyReports: 336, homeTeamAllocation: 336,
-        homeContracts: 336,
-      },
+      ...seed,
+      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-home-${isKelly ? 'v13' : 'v11'}`,
+      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:${isKelly ? 'v20' : 'v18'}`,
       minColSpan: 4,
       canvasGridMinHeightOffset: 100,
       savesDesktopOnMobile: true,
@@ -2194,6 +2121,7 @@ export class HomePageComponent extends DashboardPageBase {
   readonly apRetention = this.store.apRetention;
   readonly apActivities = this.store.apActivities;
   readonly apPaymentSchedule = this.store.apPaymentSchedule;
+  readonly learningPlan = this.store.learningPlan;
 
   readonly pendingApInvoices = computed(() => this.apInvoices().filter(i => i.status === 'pending'));
   readonly totalOutstandingAp = computed(() => this.apInvoices().filter(i => i.status !== 'paid').reduce((s, i) => s + i.amount, 0));
@@ -2211,7 +2139,7 @@ export class HomePageComponent extends DashboardPageBase {
 
   readonly homeWidgets = computed<DashboardWidgetId[]>(() =>
     this.isKelly()
-      ? ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity']
+      ? ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity', 'homeLearning']
       : ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts']
   );
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
@@ -2759,6 +2687,7 @@ export class HomePageComponent extends DashboardPageBase {
       apRetention: this.store.apRetention(),
       apActivities: this.store.apActivities(),
       apPaymentSchedule: this.store.apPaymentSchedule(),
+      learningPlan: this.store.learningPlan(),
       dailyReports: this.store.dailyReports(),
       inspections: this.store.inspections(),
       punchListItems: this.store.punchListItems(),
@@ -2792,6 +2721,7 @@ export class HomePageComponent extends DashboardPageBase {
   readonly retentionInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeRetention'));
   readonly apActivityInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeApActivity'));
   readonly cashOutflowInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeCashOutflow'));
+  readonly learningInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeLearning'));
 
   readonly milestonesInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeMilestones'));
   readonly budgetVarianceInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeBudgetVariance'));
@@ -3321,6 +3251,30 @@ export class HomePageComponent extends DashboardPageBase {
 
   onCanvasDetailDueDateChange(widgetId: string, newDate: string): void {
     this._detailMgr.updateField(widgetId, 'dueDate', newDate);
+  }
+
+  openCanvasDetailInNewTab(widgetId: string): void {
+    const detail = this._detailMgr.canvasDetailViews()[widgetId];
+    if (!detail) return;
+
+    if (detail.type === 'rfi' || detail.type === 'submittal') {
+      const projectName = (detail.item as { project?: string }).project;
+      const slug = projectName ? this.findProjectSlug(projectName) : null;
+      if (slug) {
+        const url = `${this.personaPrefix()}/project/${slug}?view=${detail.type}&id=${detail.item.id}&from=home`;
+        window.open(url, '_blank', 'noopener');
+      }
+    } else if (detail.type === 'drawing') {
+      const drawing = detail.item as DrawingTile;
+      const project = this.store.projects().find(p => {
+        const drawings = ALL_DRAWINGS_BY_PROJECT[p.id];
+        return drawings?.some(d => d.id === drawing.id);
+      });
+      if (project) {
+        const url = `${this.personaPrefix()}/project/${project.slug}?page=drawings&view=drawing&id=${drawing.id}`;
+        window.open(url, '_blank', 'noopener');
+      }
+    }
   }
 
   selectCreateItem(_item: NavItem): void {

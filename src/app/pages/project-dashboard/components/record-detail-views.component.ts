@@ -41,9 +41,16 @@ import type {
           <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-primary-20">
             <i class="modus-icons text-xl text-primary" aria-hidden="true">clipboard</i>
           </div>
-          <div>
+          <div class="flex-1">
             <div class="text-xs text-foreground-60 uppercase tracking-wide">Daily Report</div>
             <div class="text-xl font-bold text-foreground">{{ report.date }}</div>
+          </div>
+          <div
+            class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+            role="button" tabindex="0" aria-label="Open in new tab"
+            (click)="openInNewTab.emit()" (keydown.enter)="openInNewTab.emit()"
+          >
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">launch</i>
           </div>
         </div>
         <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-4">
@@ -79,6 +86,13 @@ import type {
           <div class="flex-1">
             <div class="text-xs text-foreground-60 uppercase tracking-wide">Inspection {{ insp.id }}</div>
             <div class="text-xl font-bold text-foreground">{{ insp.type }}</div>
+          </div>
+          <div
+            class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+            role="button" tabindex="0" aria-label="Open in new tab"
+            (click)="openInNewTab.emit()" (keydown.enter)="openInNewTab.emit()"
+          >
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">launch</i>
           </div>
           <modus-badge [color]="inspectionResultBadge(insp.result)">{{ insp.result | titlecase }}</modus-badge>
         </div>
@@ -119,6 +133,7 @@ import type {
         [statusDotClass]="statusDot(punch.status)"
         [statusText]="capitalize(punch.status)"
         (statusChange)="statusChange.emit($event)"
+        (openInNewTab)="openInNewTab.emit()"
       />
     }
     @if (changeOrder(); as co) {
@@ -130,6 +145,13 @@ import type {
           <div class="flex-1">
             <div class="text-xs text-foreground-60 uppercase tracking-wide">Change Order {{ co.id }}</div>
             <div class="text-xl font-bold text-foreground">{{ co.description }}</div>
+          </div>
+          <div
+            class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+            role="button" tabindex="0" aria-label="Open in new tab"
+            (click)="openInNewTab.emit()" (keydown.enter)="openInNewTab.emit()"
+          >
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">launch</i>
           </div>
           <modus-badge [color]="changeOrderStatusBadge(co.status)">{{ co.status | titlecase }}</modus-badge>
         </div>
@@ -156,6 +178,13 @@ import type {
           <div class="flex-1">
             <div class="text-xs text-foreground-60 uppercase tracking-wide">{{ contractTypeLabel(ct.contractType) }} {{ ct.id }}</div>
             <div class="text-xl font-bold text-foreground">{{ ct.title }}</div>
+          </div>
+          <div
+            class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+            role="button" tabindex="0" aria-label="Open in new tab"
+            (click)="openInNewTab.emit()" (keydown.enter)="openInNewTab.emit()"
+          >
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">launch</i>
           </div>
           <modus-badge [color]="contractStatusBadge(ct.status)">{{ ct.status | titlecase }}</modus-badge>
         </div>
@@ -203,6 +232,7 @@ export class RecordDetailViewsComponent {
   readonly statusChange = output<string>();
   readonly assigneeChange = output<string>();
   readonly linkedCoClick = output<string>();
+  readonly openInNewTab = output<void>();
 
   readonly PUNCH_STATUS_OPTIONS = PUNCH_STATUS_OPTIONS;
   readonly ASSIGNEE_OPTIONS = ASSIGNEE_OPTIONS;

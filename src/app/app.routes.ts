@@ -32,7 +32,7 @@ const personaGuard: CanActivateFn = (route) => {
     personaService.setActivePersona(slug);
     return true;
   }
-  return router.createUrlTree(['/frank']);
+  return router.createUrlTree(['/select']);
 };
 
 /**
@@ -378,7 +378,16 @@ export const routes: Routes = [
       import('./pages/auth-callback/auth-callback.component').then((m) => m.AuthCallbackComponent),
     title: 'Signing In...',
   },
-  { path: '', redirectTo: 'frank', pathMatch: 'full' as const },
+  { path: '', redirectTo: 'select', pathMatch: 'full' as const },
+  {
+    path: 'select',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/persona-select/persona-select.component').then(
+        (m) => m.PersonaSelectComponent,
+      ),
+    title: 'Select Persona',
+  },
   {
     path: ':persona',
     canActivate: [authGuard, personaGuard],

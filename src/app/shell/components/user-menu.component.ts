@@ -24,11 +24,15 @@ const SECTION_1_ITEMS: UserMenuItem[] = [
   { id: 'admin', label: 'Admin settings', icon: 'cloud_download' },
 ];
 
-const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS.map(p => ({
-  id: p.slug,
-  label: p.name,
-  icon: 'person',
-}));
+const VISIBLE_PERSONA_SLUGS = new Set(['frank', 'bert', 'kelly']);
+
+const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS
+  .filter(p => VISIBLE_PERSONA_SLUGS.has(p.slug))
+  .map(p => ({
+    id: p.slug,
+    label: p.name,
+    icon: 'person',
+  }));
 
 @Component({
   selector: 'user-menu',

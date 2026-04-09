@@ -18,6 +18,17 @@ export type { StatusOption } from '../../data/dashboard-item-status';
             <div class="text-sm text-foreground-60">{{ typeLabel() }}</div>
           </div>
         </div>
+        <div class="flex items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+            role="button"
+            tabindex="0"
+            aria-label="Open in new tab"
+            (click)="openInNewTab.emit(); $event.stopPropagation()"
+            (keydown.enter)="openInNewTab.emit(); $event.stopPropagation()"
+          >
+            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">launch</i>
+          </div>
         <div class="relative">
           <div
             class="flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors duration-150 select-none"
@@ -46,6 +57,7 @@ export type { StatusOption } from '../../data/dashboard-item-status';
               }
             </div>
           }
+        </div>
         </div>
       </div>
       }
@@ -152,6 +164,7 @@ export class ItemDetailViewComponent {
   readonly statusOptions = input.required<StatusOption[]>();
   readonly statusChange = output<string>();
   readonly dueDateChange = output<string>();
+  readonly openInNewTab = output<void>();
 
   readonly field1Label = input<string>('Project');
   readonly field1Value = input<string>('');

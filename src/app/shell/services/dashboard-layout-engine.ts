@@ -766,6 +766,66 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     }
   }
 
+  /**
+   * Returns the current layout state formatted as a TypeScript `LayoutSeed` constant
+   * ready to paste into a seed file. Captures desktop grid positions when in desktop
+   * mode, or canvas pixel positions when in canvas mode.
+   */
+  exportLayoutSeed(): string {
+    const widgets = this.config.widgets;
+    const isCanvas = this.isCanvasMode();
+    const indent = '  ';
+
+    const fmtRecord = (name: string, rec: Record<string, number>): string => {
+      const entries = widgets
+        .filter(id => rec[id] !== undefined)
+        .map(id => `${id}: ${rec[id]}`);
+      if (entries.length <= 4) {
+        return `${indent}${name}: { ${entries.join(', ')} },`;
+      }
+      const lines = entries.map(e => `${indent}${indent}${e},`);
+      return `${indent}${name}: {\n${lines.join('\n')}\n${indent}},`;
+    };
+
+    const widgetArray = widgets.map(w => `'${w}'`).join(', ');
+    const sections: string[] = [];
+    sections.push(`${indent}widgets: [${widgetArray}],`);
+
+    if (isCanvas) {
+      sections.push(fmtRecord('defaultColStarts', this.config.defaultColStarts));
+      sections.push(fmtRecord('defaultColSpans', this.config.defaultColSpans));
+      sections.push(fmtRecord('defaultTops', this.config.defaultTops));
+      sections.push(fmtRecord('defaultHeights', this.config.defaultHeights));
+      sections.push(fmtRecord('canvasDefaultLefts', this.widgetLefts()));
+      sections.push(fmtRecord('canvasDefaultPixelWidths', this.widgetPixelWidths()));
+      sections.push(fmtRecord('canvasDefaultTops', this.widgetTops()));
+      sections.push(fmtRecord('canvasDefaultHeights', this.widgetHeights()));
+    } else {
+      sections.push(fmtRecord('defaultColStarts', this.widgetColStarts()));
+      sections.push(fmtRecord('defaultColSpans', this.widgetColSpans()));
+      sections.push(fmtRecord('defaultTops', this.widgetTops()));
+      sections.push(fmtRecord('defaultHeights', this.widgetHeights()));
+      sections.push(fmtRecord('canvasDefaultLefts', this.config.canvasDefaultLefts));
+      sections.push(fmtRecord('canvasDefaultPixelWidths', this.config.canvasDefaultPixelWidths));
+      if (this.config.canvasDefaultTops) {
+        sections.push(fmtRecord('canvasDefaultTops', this.config.canvasDefaultTops));
+      }
+      if (this.config.canvasDefaultHeights) {
+        sections.push(fmtRecord('canvasDefaultHeights', this.config.canvasDefaultHeights));
+      }
+    }
+
+    const mode = isCanvas ? 'canvas' : 'desktop';
+    return [
+      `import type { LayoutSeed } from './layout-seed.types';`,
+      ``,
+      `// Exported from live ${mode} layout`,
+      `export const LAYOUT_SEED: LayoutSeed = {`,
+      ...sections,
+      `};`,
+    ].join('\n');
+  }
+
   private _loadCustomCanvasDefaults(): Record<string, Record<string, number>> | null {
     try {
       const raw = localStorage.getItem(this.canvasDefaultsKey);

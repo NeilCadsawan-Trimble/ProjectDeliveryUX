@@ -40,6 +40,7 @@ import type {
   ApRetentionRecord,
   ApActivityItem,
   ApPaymentScheduleItem,
+  LearningPlan,
 } from '../dashboard-data.types';
 
 export interface AgentDataState {
@@ -61,6 +62,7 @@ export interface AgentDataState {
   apRetention?: ApRetentionRecord[];
   apActivities?: ApActivityItem[];
   apPaymentSchedule?: ApPaymentScheduleItem[];
+  learningPlan?: LearningPlan;
 
   projectName?: string;
   projectStatus?: string;

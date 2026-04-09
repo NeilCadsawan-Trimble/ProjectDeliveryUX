@@ -73,6 +73,16 @@ export abstract class DashboardPageBase {
     }
   });
 
+  private readonly _exportLayoutEffect = effect(() => {
+    const tick = this.canvasResetService.exportLayoutTick();
+    if (tick > 0) {
+      untracked(() => {
+        const seed = this.engine.exportLayoutSeed();
+        this.canvasResetService.lastExportedSeed.set(seed);
+      });
+    }
+  });
+
   readonly isMobile = this.engine.isMobile;
   readonly isCanvasMode = this.engine.isCanvasMode;
   readonly widgetColStarts = this.engine.widgetColStarts;
