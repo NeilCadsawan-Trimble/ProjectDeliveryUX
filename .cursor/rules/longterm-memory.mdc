@@ -230,4 +230,5 @@ These areas have broken multiple times. Extra care required:
 | 16 (Apr 5) | `fb55d8c2-9c39-4110-99b0-9930aed93e09` | Live weather (OpenWeatherMap API, Edge Function, WeatherService), 23 regression tests, PR #58 |
 | 17 (Apr 6) | *(session)* | Bert Humphries as Project Manager on all 8 projects |
 | 18 (Apr 7) | `2c2f59d8-3267-405f-ae9b-62cbe76d9ac6` | Trimble ID auth (OAuth 2.0 PKCE), Vercel deployment fixes, PRs #73-78 |
-| 19 (Apr 8) | *(current)* | Persona profile pages, user menu internal navigation |
+| 19 (Apr 8) | *(session)* | Persona profile pages, user menu internal navigation |
+| 20 (Apr 9-10) | `b1397210-081e-4c0b-a8b0-fb54c1a16492` | Subnav layout gap fix, layout seed system 4-bug fix, skill section 36 |

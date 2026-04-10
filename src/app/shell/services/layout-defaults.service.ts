@@ -7,8 +7,10 @@ interface DashboardKeyPair {
 }
 
 const STATIC_BASES: DashboardKeyPair[] = [
-  { desktop: 'dashboard-home-v9', canvas: 'canvas-layout:dashboard-home:v16' },
+  { desktop: 'dashboard-home-v11', canvas: 'canvas-layout:dashboard-home:v18' },
+  { desktop: 'dashboard-home-v13', canvas: 'canvas-layout:dashboard-home:v20' },
   { desktop: 'dashboard-financials:v17', canvas: 'canvas-layout:dashboard-financials:v19' },
+  { desktop: 'dashboard-financials:v29', canvas: 'canvas-layout:dashboard-financials:v31' },
   { desktop: 'dashboard-projects:v18', canvas: 'canvas-layout:dashboard-projects:v21' },
 ];
 
@@ -16,8 +18,8 @@ const PROJECT_IDS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 function projectBases(id: number): DashboardKeyPair {
   return {
-    desktop: `project-${id}-v5`,
-    canvas: `canvas-layout:project-${id}:v7`,
+    desktop: `project-${id}-v6`,
+    canvas: `canvas-layout:project-${id}:v8`,
   };
 }
 

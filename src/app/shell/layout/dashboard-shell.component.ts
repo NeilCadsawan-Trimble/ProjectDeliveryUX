@@ -302,6 +302,14 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   <div
                     class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
                     role="menuitem"
+                    (click)="resetMenuAction('load-defaults'); $event.stopPropagation()"
+                  >
+                    <i class="modus-icons text-base" aria-hidden="true">refresh</i>
+                    <div class="text-sm">Load Default Layout</div>
+                  </div>
+                  <div
+                    class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="menuitem"
                     (click)="resetMenuAction('save-defaults'); $event.stopPropagation()"
                   >
                     <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
@@ -622,6 +630,14 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     <div
                       class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
                       role="menuitem"
+                      (click)="resetMenuAction('load-defaults'); $event.stopPropagation()"
+                    >
+                      <i class="modus-icons text-base" aria-hidden="true">refresh</i>
+                      <div class="text-sm">Load Default Layout</div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                      role="menuitem"
                       (click)="resetMenuAction('save-defaults'); $event.stopPropagation()"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
@@ -889,7 +905,7 @@ export class DashboardShellComponent implements AfterViewInit {
     if (titleOv) titleOv.onSelect(id);
   }
 
-  resetMenuAction(action: 'view' | 'widgets' | 'sort-by-priority' | 'save-defaults' | 'save-all-defaults' | 'export-layout'): void {
+  resetMenuAction(action: 'view' | 'widgets' | 'load-defaults' | 'sort-by-priority' | 'save-defaults' | 'save-all-defaults' | 'export-layout'): void {
     this.resetMenuOpen.set(false);
     this.desktopResetMenuOpen.set(false);
     if (action === 'view') {
@@ -901,6 +917,11 @@ export class DashboardShellComponent implements AfterViewInit {
         this.panning.resetView();
       }
       this.canvasResetService.triggerResetWidgets();
+    } else if (action === 'load-defaults') {
+      if (this.isCanvas()) {
+        this.panning.resetView();
+      }
+      this.canvasResetService.triggerLoadDefaults();
     } else if (action === 'save-defaults') {
       this.canvasResetService.triggerSaveDefaults();
     } else if (action === 'save-all-defaults') {

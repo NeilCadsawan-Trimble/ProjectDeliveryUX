@@ -13,6 +13,9 @@ export class CanvasResetService {
   private readonly _exportLayoutTick = signal(0);
   readonly exportLayoutTick = this._exportLayoutTick.asReadonly();
 
+  private readonly _loadDefaultsTick = signal(0);
+  readonly loadDefaultsTick = this._loadDefaultsTick.asReadonly();
+
   /** Holds the last exported layout seed TypeScript string. */
   readonly lastExportedSeed = signal('');
 
@@ -20,6 +23,10 @@ export class CanvasResetService {
 
   triggerResetWidgets(): void {
     this._resetWidgetsTick.update((n) => n + 1);
+  }
+
+  triggerLoadDefaults(): void {
+    this._loadDefaultsTick.update((n) => n + 1);
   }
 
   triggerSaveDefaults(): void {

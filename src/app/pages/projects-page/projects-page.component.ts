@@ -741,7 +741,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
   readonly eventsByProject = computed(() => {
     const events = this.timelineEvents();
-    const dayPx = ProjectsPageComponent.DAY_PX;
+    const dayPx = this.timelineDayPx();
     const start = this.timelineStartDate();
 
     return this.store.projects().map(p => {
@@ -775,7 +775,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     });
   });
 
-  private static readonly DAY_PX = 24;
+  readonly timelineDayPx = signal(24);
   private static readonly TIMELINE_MONTHS = 6;
 
   readonly timelineStartDate = signal<Date>(this.computeTimelineStart());
@@ -829,23 +829,23 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     return months;
   });
 
-  readonly timelineTotalWidth = computed(() => this.timelineDays().length * ProjectsPageComponent.DAY_PX);
+  readonly timelineTotalWidth = computed(() => this.timelineDays().length * this.timelineDayPx());
 
   readonly todayOffset = computed(() => {
     const start = this.timelineStartDate();
     const diff = Math.floor((this.timelineToday.getTime() - start.getTime()) / 86400000);
-    return diff * ProjectsPageComponent.DAY_PX;
+    return diff * this.timelineDayPx();
   });
 
   eventLeft(event: ProjectCalendarEvent): number {
     const start = this.timelineStartDate();
     const diff = Math.floor((event.startDate.getTime() - start.getTime()) / 86400000);
-    return diff * ProjectsPageComponent.DAY_PX;
+    return diff * this.timelineDayPx();
   }
 
   eventWidth(event: ProjectCalendarEvent): number {
     const days = Math.floor((event.endDate.getTime() - event.startDate.getTime()) / 86400000) + 1;
-    return Math.max(days * ProjectsPageComponent.DAY_PX - 2, 6);
+    return Math.max(days * this.timelineDayPx() - 2, 6);
   }
 
   formatEventDates(event: ProjectCalendarEvent): string {
@@ -910,6 +910,42 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
       next.setMonth(next.getMonth() + months);
       return next;
     });
+  }
+
+  // ─── Timeline zoom ──────────────────────────────────────────────────
+  private _tlZoomAnchorOffset: number | null = null;
+
+  private get _timelineTodayDayOffset(): number {
+    const start = this.timelineStartDate();
+    return Math.floor((this.timelineToday.getTime() - start.getTime()) / 86400000);
+  }
+
+  setTimelineZoom(newDayPx: number): void {
+    const el = document.querySelector('.timeline-scroll-container');
+    if (!el) {
+      this.timelineDayPx.set(newDayPx);
+      return;
+    }
+    const todayDay = this._timelineTodayDayOffset;
+
+    if (this._tlZoomAnchorOffset === null) {
+      const oldTodayPx = todayDay * this.timelineDayPx();
+      this._tlZoomAnchorOffset = oldTodayPx - el.scrollLeft;
+    }
+
+    this.timelineDayPx.set(newDayPx);
+
+    const newTodayPx = todayDay * newDayPx;
+    const desiredScroll = Math.max(0, newTodayPx - this._tlZoomAnchorOffset);
+    el.scrollLeft = desiredScroll;
+
+    requestAnimationFrame(() => {
+      el.scrollLeft = desiredScroll;
+    });
+  }
+
+  resetTimelineZoomAnchor(): void {
+    this._tlZoomAnchorOffset = null;
   }
 
   // ─── Timeline row height (distributes available space) ─────────────

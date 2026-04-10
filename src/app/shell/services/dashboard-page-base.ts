@@ -4,6 +4,7 @@ import { CanvasResetService } from './canvas-reset.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from './dashboard-layout-engine';
 import { WidgetFocusService } from './widget-focus.service';
 import { WidgetLayoutService } from './widget-layout.service';
+import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 
 /**
  * Shared dashboard layout wiring: engine lifecycle, canvas reset/save effects,
@@ -33,6 +34,10 @@ export abstract class DashboardPageBase {
 
   protected abstract applyInitialHeaderLock(): void;
 
+  protected getLayoutSeedForCurrentPersona(): LayoutSeed | null {
+    return null;
+  }
+
   private readonly _registerEngineDestroy = this.destroyRef.onDestroy(() => {
     this.engine.destroy();
   });
@@ -47,6 +52,8 @@ export abstract class DashboardPageBase {
       const prevLK = this._prevLayoutKey;
       const prevCK = this._prevCanvasKey;
       untracked(() => {
+        const newSeed = this.getLayoutSeedForCurrentPersona();
+        if (newSeed) this.engine.updateConfigForNewSeed(newSeed);
         this.engine.reinitLayout(prevLK ?? undefined, prevCK ?? undefined);
         this.applyInitialHeaderLock();
       });
@@ -61,6 +68,16 @@ export abstract class DashboardPageBase {
     if (tick > 0) {
       untracked(() => {
         this.engine.resetToDefaults();
+        this.applyInitialHeaderLock();
+      });
+    }
+  });
+
+  private readonly _loadDefaultsEffect = effect(() => {
+    const tick = this.canvasResetService.loadDefaultsTick();
+    if (tick > 0) {
+      untracked(() => {
+        this.engine.loadSavedDefaults();
         this.applyInitialHeaderLock();
       });
     }

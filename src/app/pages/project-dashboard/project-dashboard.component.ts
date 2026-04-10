@@ -192,7 +192,10 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     if (this._prevProjectId !== null && this._prevProjectId !== id) {
       const prevLK = this._prevProjectLayoutKey;
       const prevCK = this._prevProjectCanvasKey;
-      untracked(() => this.engine.reinitLayout(prevLK ?? undefined, prevCK ?? undefined));
+      untracked(() => {
+        this.engine.reinitLayout(prevLK ?? undefined, prevCK ?? undefined);
+        this.applyInitialHeaderLock();
+      });
     }
     this._prevProjectId = id;
     this._prevProjectLayoutKey = this.engine.currentLayoutKey;

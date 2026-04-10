@@ -151,6 +151,20 @@ describe('DashboardShellComponent (regression)', () => {
     });
   });
 
+  describe('Load Default Layout', () => {
+    it('has Load Default Layout menu item', () => {
+      expect(SRC).toContain('Load Default Layout');
+    });
+
+    it('calls canvasResetService.triggerLoadDefaults', () => {
+      expect(SRC).toContain('triggerLoadDefaults');
+    });
+
+    it('has refresh icon for load defaults option', () => {
+      expect(SRC).toContain('>refresh<');
+    });
+  });
+
   describe('Save as Default Layout', () => {
     it('has Save as Default Layout menu item', () => {
       expect(SRC).toContain('Save as Default Layout');

@@ -2,6 +2,7 @@ import { signal, computed, type WritableSignal, type Signal } from '@angular/cor
 import type { WidgetLayoutService } from './widget-layout.service';
 import { runCanvasPushBfs, type WidgetRect } from './canvas-push';
 import type { CanvasItemHost } from './canvas-item-host';
+import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 
 export interface DashboardLayoutConfig {
   widgets: string[];
@@ -658,6 +659,37 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   resetToDefaults(): void {
+    try { localStorage.removeItem(this.canvasDefaultsKey); } catch { /* ignore */ }
+    try { localStorage.removeItem(this.desktopDefaultsKey); } catch { /* ignore */ }
+
+    if (this.isCanvasMode()) {
+      this.applyCanvasDefaults();
+      this.widgetZIndices.set({});
+      localStorage.removeItem(this.currentCanvasKey);
+      this.persistCanvasLayout();
+      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
+    } else {
+      this.widgetTops.set({ ...this.config.defaultTops });
+      this.widgetHeights.set({ ...this.config.defaultHeights });
+      this.widgetColStarts.set({ ...this.config.defaultColStarts });
+      this.widgetColSpans.set({ ...this.config.defaultColSpans });
+      this.widgetLefts.set({ ...(this.config.defaultLefts ?? {}) });
+      this.widgetPixelWidths.set({ ...(this.config.defaultPixelWidths ?? {}) });
+      const cols = typeof window !== 'undefined' ? this.getResponsiveColumns(window.innerWidth) : 0;
+      const widest = this.widestDesktopColumns();
+      if (cols > 0 && widest > 0 && cols < widest) {
+        const flowOrder = this.resolveReflowPlacementOrder();
+        this.reflowForColumns(cols, { flowOrder });
+      }
+      if (this.config.desktopSaveDefaultLayoutSizingOnly) {
+        this.syncPixelWidthsFromCols();
+      }
+      this.compactAll();
+      this.persistLayout();
+    }
+  }
+
+  loadSavedDefaults(): void {
     if (this.isCanvasMode()) {
       const saved = this._loadCustomCanvasDefaults();
       if (saved) {
@@ -682,24 +714,6 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       localStorage.removeItem(this.currentCanvasKey);
       this.persistCanvasLayout();
       requestAnimationFrame(() => this.cleanupCanvasOverlaps());
-    } else if (this.config.desktopSaveDefaultLayoutSizingOnly) {
-      try {
-        localStorage.removeItem(this.desktopDefaultsKey);
-      } catch { /* ignore */ }
-      this.widgetTops.set({ ...this.config.defaultTops });
-      this.widgetHeights.set({ ...this.config.defaultHeights });
-      this.widgetColStarts.set({ ...this.config.defaultColStarts });
-      this.widgetColSpans.set({ ...this.config.defaultColSpans });
-      this.widgetLefts.set({ ...(this.config.defaultLefts ?? {}) });
-      this.widgetPixelWidths.set({ ...(this.config.defaultPixelWidths ?? {}) });
-      const cols = typeof window !== 'undefined' ? this.getResponsiveColumns(window.innerWidth) : 0;
-      const widest = this.widestDesktopColumns();
-      if (cols > 0 && widest > 0 && cols < widest) {
-        const flowOrder = this.resolveReflowPlacementOrder();
-        this.reflowForColumns(cols, { flowOrder });
-      }
-      this.syncPixelWidthsFromCols();
-      this.persistLayout();
     } else {
       const saved = this._loadCustomDesktopDefaults();
       if (saved) {
@@ -723,6 +737,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         const flowOrder = this.resolveReflowPlacementOrder();
         this.reflowForColumns(cols, { flowOrder });
       }
+      if (this.config.desktopSaveDefaultLayoutSizingOnly) {
+        this.syncPixelWidthsFromCols();
+      }
+      this.compactAll();
       this.persistLayout();
     }
   }
@@ -995,6 +1013,18 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   private applyDesktopDefaultLayoutAfterDrag(): void {
     if (!this.config.desktopSnapToDefaultLayoutAfterDrag) return;
     this.reconcileDesktopCanonicalPlacementAndSavedSizing();
+  }
+
+  updateConfigForNewSeed(seed: LayoutSeed): void {
+    this.config.widgets = seed.widgets;
+    this.config.defaultColStarts = seed.defaultColStarts;
+    this.config.defaultColSpans = seed.defaultColSpans;
+    this.config.defaultTops = seed.defaultTops;
+    this.config.defaultHeights = seed.defaultHeights;
+    this.config.canvasDefaultLefts = seed.canvasDefaultLefts;
+    this.config.canvasDefaultPixelWidths = seed.canvasDefaultPixelWidths;
+    if (seed.canvasDefaultTops) this.config.canvasDefaultTops = seed.canvasDefaultTops;
+    if (seed.canvasDefaultHeights) this.config.canvasDefaultHeights = seed.canvasDefaultHeights;
   }
 
   reinitLayout(prevLayoutKey?: string, prevCanvasKey?: string): void {
