@@ -1015,7 +1015,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   }
 
   // ─── Timeline row height (distributes available space) ─────────────
-  private static readonly TL_CHROME_PX = 121;
+  private static readonly TL_CHROME_PX = 130;
   private static readonly TL_CANVAS_CHROME_PX = 81;
   private static readonly TL_ROW_MIN = 34;
 

@@ -183,7 +183,7 @@
                   {{ row.project.ownerInitials }}
                 </div>
                 <div class="min-w-0">
-                  <div class="text-xs font-medium text-foreground truncate">{{ row.project.name }}</div>
+                  <div class="text-xs font-medium text-foreground line-clamp-2">{{ row.project.name }}</div>
                   <div class="text-2xs text-foreground-60 truncate">{{ row.project.status }}</div>
                 </div>
               </div>
@@ -1031,7 +1031,7 @@
     </div>
 
     <!-- Timeline body -->
-    <div class="flex flex-1 min-h-0 overflow-hidden">
+    <div class="flex flex-1 min-h-0 overflow-auto">
       <!-- Fixed project name column -->
       <div class="flex-shrink-0 w-48 border-right-default bg-card z-10 sticky left-0">
         <div class="h-10 border-bottom-default sticky top-0 bg-card z-20"></div>
@@ -1046,7 +1046,7 @@
               {{ row.project.ownerInitials }}
             </div>
             <div class="min-w-0">
-              <div class="text-xs font-medium text-foreground truncate">{{ row.project.name }}</div>
+              <div class="text-xs font-medium text-foreground line-clamp-2">{{ row.project.name }}</div>
               <div class="text-2xs text-foreground-60 truncate">{{ row.project.status }}</div>
             </div>
           </div>
