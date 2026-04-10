@@ -1149,14 +1149,21 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   readonly clampedScheduleFlyoutPosition = computed(() => {
     const pos = this.scheduleFlyoutPosition();
     const flyoutW = 300;
-    const flyoutH = 140;
+    const flyoutH = 160;
+    const pad = 8;
+    if (typeof window === 'undefined') return { x: pos.x + 12, y: pos.y - 8 };
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
     let x = pos.x + 12;
+    if (x + flyoutW > vw - pad) x = pos.x - flyoutW - 12;
+    if (x < pad) x = pad;
+
     let y = pos.y - 8;
-    if (typeof window !== 'undefined') {
-      if (x + flyoutW > window.innerWidth) x = pos.x - flyoutW - 12;
-      if (y + flyoutH > window.innerHeight) y = window.innerHeight - flyoutH - 8;
-      if (y < 0) y = 8;
-    }
+    if (y + flyoutH > vh - pad) y = vh - flyoutH - pad;
+    if (y < pad) y = pad;
+
     return { x, y };
   });
 
