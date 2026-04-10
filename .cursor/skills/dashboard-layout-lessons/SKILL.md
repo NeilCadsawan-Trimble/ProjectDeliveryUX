@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, or the toolbar search/filter layout. Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, the toolbar search/filter layout, or the layout seed/reset/persona-switch system. Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -1620,6 +1620,53 @@ In `applyResizePushSqueeze`, both left-neighbor and right-neighbor filters must 
 
 ---
 
+## 36. Layout Seed System -- Frozen Config, Missing compactAll, Stale Keys, Missing Header Lock
+
+**Context**: The layout seed system manages default widget positions for each dashboard page. Seeds are stored in `src/app/data/layout-seeds/*.layout.ts`. Each page passes its seed into `DashboardLayoutEngine` via `getEngineConfig()`. The engine persists layouts to sessionStorage (desktop) and localStorage (canvas). "Reset Layout" restores the seed. Persona-specific pages (Home, Financials) have different seeds per persona (e.g., Kelly has AP-focused widgets, Frank has PM-focused widgets).
+
+### Bug A: Frozen engine config on persona switch
+
+`DashboardPageBase` constructs the engine once: `new DashboardLayoutEngine(this.getEngineConfig(), ...)`. For pages with persona-specific seeds, the seed is chosen at construction time. When the persona switches, `reinitLayout()` resets signals to `config.default*`, but those defaults are frozen from the original persona. The template renders the new persona's widgets (via a dynamic `computed`), but the engine has no position data for them -- they all render at `undefined` positions, causing overlaps.
+
+The storage key closures also captured a stale `isKelly` const, so the version suffix was frozen (e.g., always `v11` even after switching to kelly who needs `v13`).
+
+**Fix**: Added `updateConfigForNewSeed(seed: LayoutSeed)` to `DashboardLayoutEngine` that hot-swaps the widget list and all default geometry. Added `getLayoutSeedForCurrentPersona(): LayoutSeed | null` virtual method on `DashboardPageBase` (returns null by default). `_personaSwitchEffect` calls it before `reinitLayout()`. `HomePageComponent` and `FinancialsPageComponent` override it to return the correct seed. Storage key closures now evaluate `isKelly` live instead of capturing a const.
+
+### Bug B: Missing compactAll on desktop reset/load
+
+`resetToDefaults()` and `loadSavedDefaults()` set seed positions but did not call `compactAll()` in their desktop branches. `applyModeLayout()` always calls `compactAll()` after restore, but the reset/load paths skipped it. This left positional conflicts unresolved.
+
+**Fix**: Added `this.compactAll()` before `this.persistLayout()` in both methods' desktop branches.
+
+### Bug C: Stale LayoutDefaultsService version keys
+
+`layout-defaults.service.ts` had hardcoded version strings (`STATIC_BASES` and `projectBases()`) that were outdated:
+- Home: `v9`/`v16` (actual: `v11`/`v18` default, `v13`/`v20` kelly)
+- Financials: only default (actual: also `v29`/`v31` kelly)
+- Projects: `v5`/`v7` (actual: `v6`/`v8`)
+
+`saveAllVisitedDefaults()` was reading/writing under wrong keys, making the feature non-functional.
+
+**Fix**: Updated all version strings and added both default and kelly variants for Home and Financials.
+
+### Bug D: Missing applyInitialHeaderLock after project change
+
+`_projectChangeEffect` in `ProjectDashboardComponent` called `reinitLayout()` but not `applyInitialHeaderLock()`. The base class persona switch effect does call it, but project changes within the same persona did not.
+
+**Fix**: Added `this.applyInitialHeaderLock()` after `reinitLayout()` in `_projectChangeEffect`.
+
+### Rules
+
+1. **Engine config is constructed once** -- if defaults vary by persona/context, provide `getLayoutSeedForCurrentPersona()` and the base will hot-swap before reinit.
+2. **Always call `compactAll()` after restoring desktop positions** -- whether from seed, saved defaults, or sessionStorage. `applyModeLayout` does it; any other path that sets positions directly must too.
+3. **Keep `LayoutDefaultsService` version keys in sync** -- when bumping a page's `layoutStorageKey` or `canvasStorageKey`, also update `layout-defaults.service.ts`.
+4. **Call `applyInitialHeaderLock()` after `reinitLayout()`** -- any effect that calls `reinitLayout` must also re-lock headers.
+5. **Storage key closures must not capture stale values** -- evaluate dynamic conditions (like `isKelly`) inside the closure, not outside it.
+
+**Files changed**: `dashboard-layout-engine.ts`, `dashboard-page-base.ts`, `layout-defaults.service.ts`, `home-page.component.ts`, `financials-page.component.ts`, `project-dashboard.component.ts`
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1662,3 +1709,7 @@ In `applyResizePushSqueeze`, both left-neighbor and right-neighbor filters must 
 | Horizontal resize dead zone (twitch fix) | `dashboard-layout-engine.ts` (`_hResizeActive`) | (visual: vertical resize, neighbors must not twitch) |
 | Push-down only collision (no jumping) | `dashboard-layout-engine.ts` (`resolveCollisions`, `compactAll`) | (visual: resize shorter, distant widgets must not jump up) |
 | Cross-row neighbor leak in push-squeeze | `dashboard-layout-engine.ts` (`applyResizePushSqueeze`) | (visual: resize widget in row 2, row 1 widgets must not move) |
+| Frozen engine config on persona switch | `dashboard-page-base.ts`, `dashboard-layout-engine.ts`, page components | (visual: switch persona, verify correct seed layout) |
+| Missing compactAll on desktop reset/load | `dashboard-layout-engine.ts` (`resetToDefaults`, `loadSavedDefaults`) | (visual: Reset Layout, verify no overlaps) |
+| Stale LayoutDefaultsService version keys | `layout-defaults.service.ts` | (Save All Defaults, verify keys match actual storage keys) |
+| Missing header lock after project change | `project-dashboard.component.ts` (`_projectChangeEffect`) | (visual: switch project, verify header stays locked) |

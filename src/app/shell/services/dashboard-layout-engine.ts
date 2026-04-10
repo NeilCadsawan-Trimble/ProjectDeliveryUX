@@ -2,6 +2,7 @@ import { signal, computed, type WritableSignal, type Signal } from '@angular/cor
 import type { WidgetLayoutService } from './widget-layout.service';
 import { runCanvasPushBfs, type WidgetRect } from './canvas-push';
 import type { CanvasItemHost } from './canvas-item-host';
+import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 
 export interface DashboardLayoutConfig {
   widgets: string[];
@@ -683,6 +684,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       if (this.config.desktopSaveDefaultLayoutSizingOnly) {
         this.syncPixelWidthsFromCols();
       }
+      this.compactAll();
       this.persistLayout();
     }
   }
@@ -738,6 +740,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       if (this.config.desktopSaveDefaultLayoutSizingOnly) {
         this.syncPixelWidthsFromCols();
       }
+      this.compactAll();
       this.persistLayout();
     }
   }
@@ -1010,6 +1013,18 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   private applyDesktopDefaultLayoutAfterDrag(): void {
     if (!this.config.desktopSnapToDefaultLayoutAfterDrag) return;
     this.reconcileDesktopCanonicalPlacementAndSavedSizing();
+  }
+
+  updateConfigForNewSeed(seed: LayoutSeed): void {
+    this.config.widgets = seed.widgets;
+    this.config.defaultColStarts = seed.defaultColStarts;
+    this.config.defaultColSpans = seed.defaultColSpans;
+    this.config.defaultTops = seed.defaultTops;
+    this.config.defaultHeights = seed.defaultHeights;
+    this.config.canvasDefaultLefts = seed.canvasDefaultLefts;
+    this.config.canvasDefaultPixelWidths = seed.canvasDefaultPixelWidths;
+    if (seed.canvasDefaultTops) this.config.canvasDefaultTops = seed.canvasDefaultTops;
+    if (seed.canvasDefaultHeights) this.config.canvasDefaultHeights = seed.canvasDefaultHeights;
   }
 
   reinitLayout(prevLayoutKey?: string, prevCanvasKey?: string): void {

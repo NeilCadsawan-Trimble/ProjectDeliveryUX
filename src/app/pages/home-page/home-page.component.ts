@@ -14,6 +14,7 @@ import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/s
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { HOME_DEFAULT_LAYOUT } from '../../data/layout-seeds/home-default.layout';
 import { HOME_KELLY_LAYOUT } from '../../data/layout-seeds/home-kelly.layout';
+import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
@@ -1937,20 +1938,30 @@ export class HomePageComponent extends DashboardPageBase {
   private static readonly CANVAS_HEADER_OFFSET = HomePageComponent.CANVAS_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    const slug = this.personaService.activePersonaSlug();
-    const isKelly = slug === 'kelly';
-    const seed = isKelly ? HOME_KELLY_LAYOUT : HOME_DEFAULT_LAYOUT;
+    const seed = this.personaService.activePersonaSlug() === 'kelly'
+      ? HOME_KELLY_LAYOUT : HOME_DEFAULT_LAYOUT;
 
     return {
       ...seed,
-      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-home-${isKelly ? 'v13' : 'v11'}`,
-      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:${isKelly ? 'v20' : 'v18'}`,
+      layoutStorageKey: () => {
+        const k = this.personaService.activePersonaSlug() === 'kelly';
+        return `${this.personaService.activePersonaSlug()}:dashboard-home-${k ? 'v13' : 'v11'}`;
+      },
+      canvasStorageKey: () => {
+        const k = this.personaService.activePersonaSlug() === 'kelly';
+        return `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:${k ? 'v20' : 'v18'}`;
+      },
       minColSpan: 4,
       canvasGridMinHeightOffset: 100,
       savesDesktopOnMobile: true,
       onBeforeMobileCompact: () => this.applyMobileHeights(),
       onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
     };
+  }
+
+  protected override getLayoutSeedForCurrentPersona(): LayoutSeed {
+    return this.personaService.activePersonaSlug() === 'kelly'
+      ? HOME_KELLY_LAYOUT : HOME_DEFAULT_LAYOUT;
   }
 
   protected override applyInitialHeaderLock(): void {

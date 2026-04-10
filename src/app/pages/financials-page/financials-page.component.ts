@@ -21,6 +21,7 @@ import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/s
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { FINANCIALS_DEFAULT_LAYOUT } from '../../data/layout-seeds/financials-default.layout';
 import { FINANCIALS_KELLY_LAYOUT } from '../../data/layout-seeds/financials-kelly.layout';
+import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 import { getPersonaNav } from '../../data/persona-nav.config';
 import { DataStoreService } from '../../data/data-store.service';
@@ -2905,20 +2906,30 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private static readonly CO_TOP = FinancialsPageComponent.JOB_COSTS_TOP + FinancialsPageComponent.JOB_COSTS_HEIGHT + FinancialsPageComponent.G;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    const slug = this.personaService.activePersonaSlug();
-    const isKelly = slug === 'kelly';
-    const seed = isKelly ? FINANCIALS_KELLY_LAYOUT : FINANCIALS_DEFAULT_LAYOUT;
+    const seed = this.personaService.activePersonaSlug() === 'kelly'
+      ? FINANCIALS_KELLY_LAYOUT : FINANCIALS_DEFAULT_LAYOUT;
 
     return {
       ...seed,
-      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:dashboard-financials:${isKelly ? 'v29' : 'v17'}`,
-      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-financials:${isKelly ? 'v31' : 'v19'}`,
+      layoutStorageKey: () => {
+        const k = this.personaService.activePersonaSlug() === 'kelly';
+        return `${this.personaService.activePersonaSlug()}:dashboard-financials:${k ? 'v29' : 'v17'}`;
+      },
+      canvasStorageKey: () => {
+        const k = this.personaService.activePersonaSlug() === 'kelly';
+        return `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-financials:${k ? 'v31' : 'v19'}`;
+      },
       minColSpan: 1,
       widgetMaxColSpans: {},
       canvasGridMinHeightOffset: 200,
       savesDesktopOnMobile: true,
       onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
     };
+  }
+
+  protected override getLayoutSeedForCurrentPersona(): LayoutSeed {
+    return this.personaService.activePersonaSlug() === 'kelly'
+      ? FINANCIALS_KELLY_LAYOUT : FINANCIALS_DEFAULT_LAYOUT;
   }
 
   protected override applyInitialHeaderLock(): void {

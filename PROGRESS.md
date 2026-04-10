@@ -3,7 +3,7 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 8, 2026
+**Last Updated**: April 10, 2026
 **Total Commits**: 200+
 
 ---
@@ -35,10 +35,11 @@
 | 20    | Persona Data: Bert Humphries as PM                    | Done        | 3/3   |
 | 21    | Trimble ID Authentication and Vercel Deployment Fixes | Done        | 6/6   |
 | 22    | Persona Profile Pages                                 | Done        | 5/5   |
-| 23    | Remaining Work                                        | Not Started | 0/8   |
+| 23    | Subnav Layout Gap and Layout Seed Reset Fixes         | Done        | 6/6   |
+| 24    | Remaining Work                                        | Not Started | 0/8   |
 
 
-**Completed**: 180/188 items (96%)
+**Completed**: 186/194 items (96%)
 
 ---
 
@@ -663,7 +664,33 @@ Per-persona "My Profile" page mirroring the Trimble profile page layout, wired t
 
 ---
 
-## Phase 23: Remaining Work
+## Phase 23: Subnav Layout Gap and Layout Seed Reset Fixes (Apr 9--10)
+
+Fixed subnav-to-content gap on project dashboard and resolved four layout seed/reset system bugs causing overlaps and wrong defaults on persona switch.
+
+### Subnav Layout Gap Fix
+
+- Fixed missing 16px gap between expanded subnav and main content on project dashboard detail/records/financials sections
+- Content now expands to full width when subnav is collapsed (no residual left padding)
+- Toolbar left-padding preserved unchanged (wrapped content sections in separate conditional-padding divs to avoid cascading into toolbar)
+
+### Layout Seed System Fixes (4 bugs)
+
+- **Frozen engine config on persona switch**: Added `updateConfigForNewSeed(seed)` to `DashboardLayoutEngine` and `getLayoutSeedForCurrentPersona()` virtual method on `DashboardPageBase`; overridden in `HomePageComponent` and `FinancialsPageComponent` for persona-specific seeds
+- **Missing `compactAll()` on desktop reset/load**: Added `compactAll()` before `persistLayout()` in `resetToDefaults()` and `loadSavedDefaults()` desktop branches -- resolves overlaps after "Reset Layout"
+- **Stale `LayoutDefaultsService` keys**: Updated `STATIC_BASES` and `projectBases()` version strings to match actual storage keys; added Kelly-variant keys for Home and Financials
+- **Missing header lock after project change**: Added `applyInitialHeaderLock()` after `reinitLayout()` in `ProjectDashboardComponent._projectChangeEffect`
+
+### Skills Updated
+
+- Added section 36 to `dashboard-layout-lessons` SKILL.md: Layout Seed System -- Frozen Config, Missing compactAll, Stale Keys, Missing Header Lock
+
+**Key files**: `dashboard-layout-engine.ts`, `dashboard-page-base.ts`, `layout-defaults.service.ts`, `home-page.component.ts`, `financials-page.component.ts`, `project-dashboard.component.ts`, `project-dashboard.component.html`
+**Tests**: lint, type-check, and build all passing
+
+---
+
+## Phase 24: Remaining Work
 
 Features and improvements not yet started.
 
@@ -758,6 +785,7 @@ Features and improvements not yet started.
 | Apr 6     | [Bert Humphries as PM](current)                                       | Set Bert Humphries as Project Manager on all 8 projects, updated team rosters, skills section 34                                                                                          |
 | Apr 7     | [Auth and Vercel fixes](2c2f59d8-3267-405f-ae9b-62cbe76d9ac6)         | Trimble ID login gate, post-auth blank page fix (NgZone.run), dynamic OAuth URIs, Vercel build cache clear, CDN no-cache headers, PRs #73--78                                             |
 | Apr 8     | [Persona profile pages](current)                                      | Per-persona "My Profile" page, user menu wired to internal route                                                                                                                          |
+| Apr 9--10 | [Layout seed fixes](b1397210-081e-4c0b-a8b0-fb54c1a16492)             | Subnav layout gap fix, layout seed system 4-bug fix (frozen config, compactAll, stale keys, header lock), skill section 36                                                                |
 
 
 ---
@@ -792,7 +820,9 @@ Features and improvements not yet started.
 | `src/app/data/dashboard-data.types.ts`                                        | Type aliases and interfaces                                                              |
 | `src/app/data/dashboard-data.seed.ts`                                         | Static/mock data arrays                                                                  |
 | `src/app/data/dashboard-data.formatters.ts`                                   | Shared utility functions (badge colors, formatters, builders)                            |
-| `src/app/shell/services/dashboard-page-base.ts`                               | Abstract base class for shared dashboard engine boilerplate                              |
+| `src/app/shell/services/dashboard-page-base.ts`                               | Abstract base class for shared dashboard engine boilerplate (incl. persona seed swap)    |
+| `src/app/shell/services/layout-defaults.service.ts`                           | Manages "Save All Defaults" with versioned storage key pairs                             |
+| `src/app/data/layout-seeds/`                                                  | Per-page layout seed definitions (LayoutSeed types, default/kelly variants)              |
 | `src/app/pages/project-dashboard/project-dashboard.component.html`            | Extracted project dashboard template (4,014 lines)                                       |
 | `src/app/pages/project-dashboard/project-dashboard-navigation.service.ts`     | Navigation methods and URL state management                                              |
 | `src/app/pages/project-dashboard/components/canvas-tile-shell.component.ts`   | Reusable canvas tile wrapper component                                                   |
