@@ -858,22 +858,39 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     return Math.floor((event.endDate.getTime() - event.startDate.getTime()) / 86400000) + 1;
   }
 
-  // -- Hover flyout state --
+  // -- Hover / tap flyout state --
   readonly hoveredEvent = signal<ProjectCalendarEvent | null>(null);
+  readonly tappedEvent = signal<ProjectCalendarEvent | null>(null);
   readonly hoveredProject = signal<string>('');
+  readonly tappedProject = signal<string>('');
   readonly flyoutPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  readonly activeFlyoutEvent = computed(() =>
+    this.hoveredEvent() ?? this.tappedEvent()
+  );
+
+  readonly activeFlyoutProject = computed(() =>
+    this.hoveredEvent() ? this.hoveredProject() : this.tappedProject()
+  );
 
   readonly clampedFlyoutPosition = computed(() => {
     const pos = this.flyoutPosition();
     const flyoutW = 300;
-    const flyoutH = 140;
+    const flyoutH = 160;
+    const pad = 8;
+    if (typeof window === 'undefined') return { x: pos.x + 12, y: pos.y - 8 };
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
     let x = pos.x + 12;
+    if (x + flyoutW > vw - pad) x = pos.x - flyoutW - 12;
+    if (x < pad) x = pad;
+
     let y = pos.y - 8;
-    if (typeof window !== 'undefined') {
-      if (x + flyoutW > window.innerWidth) x = pos.x - flyoutW - 12;
-      if (y + flyoutH > window.innerHeight) y = window.innerHeight - flyoutH - 8;
-      if (y < 0) y = 8;
-    }
+    if (y + flyoutH > vh - pad) y = vh - flyoutH - pad;
+    if (y < pad) y = pad;
+
     return { x, y };
   });
 
@@ -891,8 +908,57 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     this.hoveredEvent.set(null);
   }
 
+  onBarTap(mouseEvent: MouseEvent, calEvent: ProjectCalendarEvent, projectName: string): void {
+    mouseEvent.stopPropagation();
+    if (this.tappedEvent()?.id === calEvent.id) {
+      this.navigateToProjectSchedule(calEvent);
+    } else {
+      this.tappedEvent.set(calEvent);
+      this.tappedProject.set(projectName);
+      this.flyoutPosition.set({ x: mouseEvent.clientX, y: mouseEvent.clientY });
+    }
+  }
+
+  dismissTimelineTap(): void {
+    this.tappedEvent.set(null);
+  }
+
+  // -- Pinch-to-zoom on timeline --
+  private _tlPinchStartDist = 0;
+  private _tlPinchStartDayPx = 0;
+
+  onTimelinePinchStart(event: TouchEvent): void {
+    if (event.touches.length === 2) {
+      event.preventDefault();
+      const dx = event.touches[0].clientX - event.touches[1].clientX;
+      const dy = event.touches[0].clientY - event.touches[1].clientY;
+      this._tlPinchStartDist = Math.hypot(dx, dy);
+      this._tlPinchStartDayPx = this.timelineDayPx();
+    }
+  }
+
+  onTimelinePinchMove(event: TouchEvent): void {
+    if (event.touches.length === 2 && this._tlPinchStartDist > 0) {
+      event.preventDefault();
+      const dx = event.touches[0].clientX - event.touches[1].clientX;
+      const dy = event.touches[0].clientY - event.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const scale = dist / this._tlPinchStartDist;
+      const newDayPx = Math.min(80, Math.max(8, Math.round(this._tlPinchStartDayPx * scale)));
+      this.setTimelineZoom(newDayPx);
+    }
+  }
+
+  onTimelinePinchEnd(): void {
+    if (this._tlPinchStartDist > 0) {
+      this._tlPinchStartDist = 0;
+      this.resetTimelineZoomAnchor();
+    }
+  }
+
   navigateToProjectSchedule(event: ProjectCalendarEvent): void {
     this.hoveredEvent.set(null);
+    this.tappedEvent.set(null);
     this.router.navigate([`${this.pp}/project`, event.projectSlug], { queryParams: { page: 'schedule' } });
   }
 
@@ -949,7 +1015,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   }
 
   // ─── Timeline row height (distributes available space) ─────────────
-  private static readonly TL_CHROME_PX = 121;
+  private static readonly TL_CHROME_PX = 130;
   private static readonly TL_CANVAS_CHROME_PX = 81;
   private static readonly TL_ROW_MIN = 34;
 

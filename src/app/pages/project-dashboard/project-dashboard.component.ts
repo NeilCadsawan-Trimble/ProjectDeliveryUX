@@ -946,11 +946,22 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   // -- Schedule (Gantt) sub-page --
   private static readonly SCHEDULE_MONTHS = 6;
   private static readonly SCHEDULE_ROW_HEIGHT = 64;
+  private static readonly SCHEDULE_ROW_HEIGHT_MOBILE = 48;
   private static readonly SCHEDULE_ROW_GAP = 8;
 
   readonly scheduleDayPx = signal(24);
 
-  readonly scheduleRowStep = ProjectDashboardComponent.SCHEDULE_ROW_HEIGHT + ProjectDashboardComponent.SCHEDULE_ROW_GAP;
+  readonly scheduleIsMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  private _scheduleMobileMq: MediaQueryList | null = null;
+  private readonly _scheduleMobileMqHandler = (e: MediaQueryListEvent) => this.scheduleIsMobile.set(e.matches);
+
+  readonly scheduleBarHeight = computed(() =>
+    this.scheduleIsMobile()
+      ? ProjectDashboardComponent.SCHEDULE_ROW_HEIGHT_MOBILE
+      : ProjectDashboardComponent.SCHEDULE_ROW_HEIGHT
+  );
+
+  readonly scheduleRowStep = computed(() => this.scheduleBarHeight() + ProjectDashboardComponent.SCHEDULE_ROW_GAP);
 
   private get _scheduleTodayDayOffset(): number {
     const start = this.scheduleStartDate();
@@ -1128,19 +1139,31 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
   readonly hoveredScheduleEvent = signal<ProjectCalendarEvent | null>(null);
+  readonly tappedScheduleEvent = signal<ProjectCalendarEvent | null>(null);
   readonly scheduleFlyoutPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  readonly activeScheduleFlyoutEvent = computed(() =>
+    this.hoveredScheduleEvent() ?? this.tappedScheduleEvent()
+  );
 
   readonly clampedScheduleFlyoutPosition = computed(() => {
     const pos = this.scheduleFlyoutPosition();
     const flyoutW = 300;
-    const flyoutH = 140;
+    const flyoutH = 160;
+    const pad = 8;
+    if (typeof window === 'undefined') return { x: pos.x + 12, y: pos.y - 8 };
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
     let x = pos.x + 12;
+    if (x + flyoutW > vw - pad) x = pos.x - flyoutW - 12;
+    if (x < pad) x = pad;
+
     let y = pos.y - 8;
-    if (typeof window !== 'undefined') {
-      if (x + flyoutW > window.innerWidth) x = pos.x - flyoutW - 12;
-      if (y + flyoutH > window.innerHeight) y = window.innerHeight - flyoutH - 8;
-      if (y < 0) y = 8;
-    }
+    if (y + flyoutH > vh - pad) y = vh - flyoutH - pad;
+    if (y < pad) y = pad;
+
     return { x, y };
   });
 
@@ -1155,6 +1178,53 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   onScheduleBarMouseLeave(): void {
     this.hoveredScheduleEvent.set(null);
+  }
+
+  onScheduleBarTap(event: MouseEvent, calEvent: ProjectCalendarEvent): void {
+    event.stopPropagation();
+    if (this.tappedScheduleEvent()?.id === calEvent.id) {
+      this.tappedScheduleEvent.set(null);
+    } else {
+      this.tappedScheduleEvent.set(calEvent);
+      this.scheduleFlyoutPosition.set({ x: event.clientX, y: event.clientY });
+    }
+  }
+
+  dismissScheduleTap(): void {
+    this.tappedScheduleEvent.set(null);
+  }
+
+  // -- Pinch-to-zoom on schedule chart --
+  private _pinchStartDist = 0;
+  private _pinchStartDayPx = 0;
+
+  onSchedulePinchStart(event: TouchEvent): void {
+    if (event.touches.length === 2) {
+      event.preventDefault();
+      const dx = event.touches[0].clientX - event.touches[1].clientX;
+      const dy = event.touches[0].clientY - event.touches[1].clientY;
+      this._pinchStartDist = Math.hypot(dx, dy);
+      this._pinchStartDayPx = this.scheduleDayPx();
+    }
+  }
+
+  onSchedulePinchMove(event: TouchEvent): void {
+    if (event.touches.length === 2 && this._pinchStartDist > 0) {
+      event.preventDefault();
+      const dx = event.touches[0].clientX - event.touches[1].clientX;
+      const dy = event.touches[0].clientY - event.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const scale = dist / this._pinchStartDist;
+      const newDayPx = Math.min(80, Math.max(8, Math.round(this._pinchStartDayPx * scale)));
+      this.setScheduleZoom(newDayPx);
+    }
+  }
+
+  onSchedulePinchEnd(): void {
+    if (this._pinchStartDist > 0) {
+      this._pinchStartDist = 0;
+      this.resetScheduleZoomAnchor();
+    }
   }
 
   readonly userCard = computed<INavbarUserCard>(() => this.personaService.userCard());
@@ -2120,6 +2190,11 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       this.isCompactMobile.set(this._compactMq.matches);
       this._compactMq.addEventListener('change', this._compactMqHandler);
       this.destroyRef.onDestroy(() => this._compactMq?.removeEventListener('change', this._compactMqHandler));
+
+      this._scheduleMobileMq = window.matchMedia('(max-width: 767px)');
+      this.scheduleIsMobile.set(this._scheduleMobileMq.matches);
+      this._scheduleMobileMq.addEventListener('change', this._scheduleMobileMqHandler);
+      this.destroyRef.onDestroy(() => this._scheduleMobileMq?.removeEventListener('change', this._scheduleMobileMqHandler));
     }
   }
 

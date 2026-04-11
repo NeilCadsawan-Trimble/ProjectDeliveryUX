@@ -302,12 +302,12 @@
       @case ('schedule') {
         <div class="flex flex-col gap-4 h-full">
           <div class="flex items-center justify-between flex-wrap gap-2">
-            <div class="text-2xl font-bold text-foreground">Schedule ({{ scheduleFilteredEvents().length }} events)</div>
+            <div class="text-lg md:text-2xl font-bold text-foreground">Schedule ({{ scheduleFilteredEvents().length }} events)</div>
           </div>
 
           <div class="bg-card border-default rounded-lg mb-0" data-toolbar-search>
-            <div class="flex items-center justify-between px-4 py-2 gap-4">
-              <div class="flex items-center gap-2 flex-1 max-w-xs">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between px-3 md:px-4 py-2 gap-2 md:gap-4">
+              <div class="flex items-center gap-2 w-full md:w-auto md:flex-1 md:max-w-xs">
                 <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
                   <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
                   <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
@@ -317,23 +317,44 @@
                   role="button" tabindex="0" aria-label="Filter">
                   <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
                 </div>
+                <div class="flex md:hidden items-center gap-1">
+                  <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150 text-primary"
+                    role="button" tabindex="0" aria-label="Go to today" (click)="scrollScheduleToToday()">
+                    <i class="modus-icons text-base" aria-hidden="true">calendar</i>
+                  </div>
+                  <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                    role="button" tabindex="0" aria-label="Add event">
+                    <i class="modus-icons text-base" aria-hidden="true">add</i>
+                  </div>
+                  <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                    role="button" tabindex="0" aria-label="Export">
+                    <i class="modus-icons text-base" aria-hidden="true">upload</i>
+                  </div>
+                  <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                    role="button" tabindex="0" aria-label="Print">
+                    <i class="modus-icons text-base" aria-hidden="true">printer</i>
+                  </div>
+                </div>
               </div>
-              <div class="flex items-center gap-2">
+
+              <div class="flex items-center gap-2 flex-wrap">
                 @for (cat of scheduleCategories; track cat) {
                   <div
-                    class="flex items-center gap-1 cursor-pointer select-none text-xs px-2 py-0.5 rounded-full transition-opacity"
+                    class="flex items-center gap-1 cursor-pointer select-none text-xs px-1.5 md:px-2 py-0.5 rounded-full transition-opacity"
                     [class]="isScheduleCategoryActive(cat) ? 'opacity-100' : 'opacity-40'"
                     (click)="toggleScheduleCategory(cat)"
+                    [attr.aria-label]="scheduleCategoryMeta[cat].label"
+                    [attr.title]="scheduleCategoryMeta[cat].label"
                   >
-                    <div class="w-2 h-2 rounded-full" [class]="scheduleCategoryMeta[cat].colorClass"></div>
-                    <div class="text-foreground">{{ scheduleCategoryMeta[cat].label }}</div>
+                    <div class="w-2.5 h-2.5 md:w-2 md:h-2 rounded-full" [class]="scheduleCategoryMeta[cat].colorClass"></div>
+                    <div class="text-foreground hidden md:inline">{{ scheduleCategoryMeta[cat].label }}</div>
                   </div>
                 }
-                <div class="w-px h-5 bg-foreground-20 mx-1"></div>
-                <div class="flex items-center gap-2">
+                <div class="w-px h-5 bg-foreground-20 mx-1 hidden md:block"></div>
+                <div class="flex items-center gap-2 flex-1 md:flex-none">
                   <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">zoom_out</i>
                   <input type="range" min="8" max="80" step="2"
-                    class="tile-zoom-slider"
+                    class="tile-zoom-slider flex-1 md:flex-none"
                     [value]="scheduleDayPx()"
                     (input)="setScheduleZoom(+$any($event.target).value)"
                     (change)="resetScheduleZoomAnchor()"
@@ -342,29 +363,36 @@
                   />
                   <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">zoom_in</i>
                 </div>
-                <div class="w-px h-5 bg-foreground-20 mx-1"></div>
-                <div class="flex items-center gap-1 text-xs text-primary cursor-pointer hover:underline" (click)="scrollScheduleToToday()">
-                  <i class="modus-icons text-xs" aria-hidden="true">calendar</i>
-                  <div>Today</div>
-                </div>
-                <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
-                  role="button" tabindex="0" aria-label="Add event">
-                  <i class="modus-icons text-base" aria-hidden="true">add</i>
-                </div>
-                <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
-                  role="button" tabindex="0" aria-label="Export">
-                  <i class="modus-icons text-base" aria-hidden="true">upload</i>
-                </div>
+                <div class="w-px h-5 bg-foreground-20 mx-1 hidden md:block"></div>
+                <div class="hidden md:flex items-center gap-2">
+                  <div class="flex items-center gap-1 text-xs text-primary cursor-pointer hover:underline" (click)="scrollScheduleToToday()">
+                    <i class="modus-icons text-xs" aria-hidden="true">calendar</i>
+                    <div>Today</div>
+                  </div>
+                  <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                    role="button" tabindex="0" aria-label="Add event">
+                    <i class="modus-icons text-base" aria-hidden="true">add</i>
+                  </div>
+                  <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
+                    role="button" tabindex="0" aria-label="Export">
+                    <i class="modus-icons text-base" aria-hidden="true">upload</i>
+                  </div>
                   <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer transition-colors duration-150 hover:bg-secondary text-foreground-60"
                     role="button" tabindex="0" aria-label="Print">
                     <i class="modus-icons text-base" aria-hidden="true">printer</i>
                   </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="bg-card border-default rounded-lg overflow-hidden flex-1 flex flex-col min-h-[300px]">
-            <div class="schedule-scroll-container overflow-x-auto overflow-y-auto flex-1">
+          <div class="bg-card border-default rounded-lg overflow-hidden flex-1 flex flex-col min-h-[200px] md:min-h-[300px]"
+            (click)="dismissScheduleTap()">
+            <div class="schedule-scroll-container overflow-x-auto overflow-y-auto flex-1"
+              (touchstart)="onSchedulePinchStart($event)"
+              (touchmove)="onSchedulePinchMove($event)"
+              (touchend)="onSchedulePinchEnd()"
+              (touchcancel)="onSchedulePinchEnd()">
               <div class="relative" [style.min-width.px]="scheduleTotalWidth()">
 
                 <div class="flex border-bottom-default sticky top-0 z-10 bg-card">
@@ -390,7 +418,7 @@
                   }
                 </div>
 
-                <div class="relative" [style.min-height.px]="scheduleEventRows().length * scheduleRowStep + 16">
+                <div class="relative" [style.min-height.px]="scheduleEventRows().length * scheduleRowStep() + 16">
                   <div
                     class="absolute top-0 bottom-0 w-px bg-primary z-20 pointer-events-none"
                     [style.left.px]="scheduleTodayOffset()"
@@ -399,15 +427,18 @@
                   @for (eventRow of scheduleEventRows(); track $index; let rowIdx = $index) {
                     @for (event of eventRow; track event.id) {
                       <div
-                        class="absolute rounded text-sm flex items-center px-2 overflow-hidden whitespace-nowrap cursor-default transition-opacity hover:opacity-80"
+                        class="absolute rounded flex items-center px-2 overflow-hidden whitespace-nowrap cursor-pointer transition-opacity hover:opacity-80"
+                        [class.text-sm]="!scheduleIsMobile()"
+                        [class.text-xs]="scheduleIsMobile()"
                         [class]="scheduleCategoryMeta[event.category].bgClass + ' ' + scheduleCategoryMeta[event.category].borderClass"
                         [style.left.px]="scheduleEventLeft(event)"
                         [style.width.px]="scheduleEventWidth(event)"
-                        [style.height.px]="64"
-                        [style.top.px]="4 + rowIdx * scheduleRowStep"
+                        [style.height.px]="scheduleBarHeight()"
+                        [style.top.px]="4 + rowIdx * scheduleRowStep()"
                         (mouseenter)="onScheduleBarMouseEnter($event, event)"
                         (mousemove)="onScheduleBarMouseMove($event)"
                         (mouseleave)="onScheduleBarMouseLeave()"
+                        (click)="onScheduleBarTap($event, event)"
                       >
                         <div class="text-foreground truncate">{{ event.title }}</div>
                       </div>
@@ -420,11 +451,14 @@
           </div>
         </div>
 
-        @if (hoveredScheduleEvent(); as evt) {
+        @if (activeScheduleFlyoutEvent(); as evt) {
           <div
-            class="fixed z-50 pointer-events-none bg-card border-default rounded-lg shadow-lg p-3 min-w-[220px] max-w-[300px]"
+            class="fixed z-50 bg-card border-default rounded-lg shadow-lg p-3 min-w-[220px] max-w-[300px]"
+            [class.pointer-events-none]="!tappedScheduleEvent()"
+            [class.pointer-events-auto]="!!tappedScheduleEvent()"
             [style.left.px]="clampedScheduleFlyoutPosition().x"
             [style.top.px]="clampedScheduleFlyoutPosition().y"
+            (click)="dismissScheduleTap()"
           >
             <div class="flex items-center gap-2 mb-1">
               <div class="w-2 h-2 rounded-full flex-shrink-0" [class]="scheduleCategoryMeta[evt.category].colorClass"></div>

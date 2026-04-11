@@ -2118,6 +2118,22 @@ modus-wc-utility-panel .modus-wc-utility-panel-footer {
   transform: scale(1.3);
 }
 
+@media (max-width: 767px) {
+  .tile-zoom-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+  }
+  .tile-zoom-slider::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+  }
+  .tile-zoom-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+  }
+}
+
 .chart-grid-line {
   stroke: var(--border);
   stroke-width: 0.5;
