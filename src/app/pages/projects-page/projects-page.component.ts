@@ -43,6 +43,8 @@ import {
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import type { Milestone, TeamMember, Risk } from '../../data/project-data';
 import { TILE_IDS, TILE_VISUAL_ORDER, buildProjectsLayoutConfig } from './projects-page-layout.config';
+import { PROJECTS_DEFAULT_LAYOUT } from '../../data/layout-seeds/projects-default.layout';
+import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { rewriteDynamicNeeds, injectScheduleOverdue, sortProjectsByUrgency, rewriteBudgetRisk } from './projects-page-utils';
 import { RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, type NavItem } from '../project-dashboard/project-dashboard.config';
 import { CreateMenuDropdownComponent } from '../../shared/create-menu-dropdown.component';
@@ -139,6 +141,10 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
   protected override applyInitialHeaderLock(): void {
     this.engine.widgetLocked.update(l => ({ ...l, projsHeader: true }));
+  }
+
+  protected override getLayoutSeedForCurrentPersona(): LayoutSeed {
+    return PROJECTS_DEFAULT_LAYOUT;
   }
 
   protected override resolveGridElement(): HTMLElement | undefined {

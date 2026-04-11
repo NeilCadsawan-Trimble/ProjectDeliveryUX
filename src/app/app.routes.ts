@@ -416,6 +416,18 @@ export const routes: Routes = [
             title: 'My Profile',
           },
           {
+            path: 'account-settings',
+            loadComponent: () =>
+              import('./pages/account-settings-page/account-settings-page.component').then((m) => m.AccountSettingsPageComponent),
+            title: 'Account Settings',
+          },
+          {
+            path: 'my-products',
+            loadComponent: () =>
+              import('./pages/my-products-page/my-products-page.component').then((m) => m.MyProductsPageComponent),
+            title: 'My Products',
+          },
+          {
             path: 'projects',
             loadComponent: () =>
               import('./pages/projects-page/projects-page.component').then((m) => m.ProjectsPageComponent),

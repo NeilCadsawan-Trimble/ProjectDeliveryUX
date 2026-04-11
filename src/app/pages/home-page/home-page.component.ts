@@ -6,6 +6,7 @@ import {
   effect,
   signal,
   inject,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -2165,7 +2166,8 @@ export class HomePageComponent extends DashboardPageBase {
   private readonly createDropdownCanvas = viewChild<CreateMenuDropdownComponent>('createDropdownCanvas');
 
   private readonly _registerHomeWidgets = effect(() => {
-    this.widgetFocusService.registerWidgets(this.isKelly() ? KELLY_HOME_WIDGETS : HOME_WIDGETS);
+    const widgets = this.isKelly() ? KELLY_HOME_WIDGETS : HOME_WIDGETS;
+    untracked(() => this.widgetFocusService.registerWidgets(widgets));
   });
 
   private readonly pageHeaderRef = viewChild<ElementRef>('pageHeader');
