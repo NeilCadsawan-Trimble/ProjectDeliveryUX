@@ -8,7 +8,7 @@ interface DashboardKeyPair {
 
 const STATIC_BASES: DashboardKeyPair[] = [
   { desktop: 'dashboard-home-v11', canvas: 'canvas-layout:dashboard-home:v18' },
-  { desktop: 'dashboard-home-v13', canvas: 'canvas-layout:dashboard-home:v20' },
+  { desktop: 'dashboard-home-v14', canvas: 'canvas-layout:dashboard-home:v21' },
   { desktop: 'dashboard-financials:v17', canvas: 'canvas-layout:dashboard-financials:v19' },
   { desktop: 'dashboard-financials:v29', canvas: 'canvas-layout:dashboard-financials:v31' },
   { desktop: 'dashboard-projects:v18', canvas: 'canvas-layout:dashboard-projects:v21' },

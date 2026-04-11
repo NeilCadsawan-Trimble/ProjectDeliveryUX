@@ -1945,11 +1945,11 @@ export class HomePageComponent extends DashboardPageBase {
       ...seed,
       layoutStorageKey: () => {
         const k = this.personaService.activePersonaSlug() === 'kelly';
-        return `${this.personaService.activePersonaSlug()}:dashboard-home-${k ? 'v13' : 'v11'}`;
+        return `${this.personaService.activePersonaSlug()}:dashboard-home-${k ? 'v14' : 'v11'}`;
       },
       canvasStorageKey: () => {
         const k = this.personaService.activePersonaSlug() === 'kelly';
-        return `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:${k ? 'v20' : 'v18'}`;
+        return `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:${k ? 'v21' : 'v18'}`;
       },
       minColSpan: 4,
       canvasGridMinHeightOffset: 100,
