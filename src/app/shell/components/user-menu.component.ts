@@ -20,8 +20,8 @@ export interface UserMenuItem {
 const SECTION_1_ITEMS: UserMenuItem[] = [
   { id: 'profile', label: 'My profile', icon: 'person' },
   { id: 'products', label: 'My products', icon: 'home' },
-  { id: 'support', label: 'Support center', icon: 'chat' },
-  { id: 'admin', label: 'Admin settings', icon: 'cloud_download' },
+  { id: 'support', label: 'Support center', icon: 'chat', url: 'https://www.trimble.com/en/support' },
+  { id: 'admin', label: 'Account settings', icon: 'cloud_download' },
 ];
 
 const VISIBLE_PERSONA_SLUGS = new Set(['frank', 'bert', 'kelly']);
@@ -179,11 +179,12 @@ export class UserMenuComponent {
   readonly isOpen = signal(false);
   readonly legalExpanded = signal(false);
 
-  readonly section1 = computed(() =>
-    this.activePersonaSlug() === 'kelly'
+  readonly section1 = computed(() => {
+    const slug = this.activePersonaSlug();
+    return slug === 'kelly' || slug === 'bert'
       ? SECTION_1_ITEMS.filter(i => i.id !== 'admin')
-      : SECTION_1_ITEMS
-  );
+      : SECTION_1_ITEMS;
+  });
   readonly personaItems = PERSONA_MENU_ITEMS;
   readonly currentYear = new Date().getFullYear();
 

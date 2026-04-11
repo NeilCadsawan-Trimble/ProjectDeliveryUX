@@ -222,6 +222,11 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.persistLockedState({});
   }
 
+  /** Re-reads lock state from sessionStorage for the current persona's layout key. */
+  reloadLockedState(): void {
+    this.widgetLocked.set(this.loadLockedState());
+  }
+
   private get lockedKey(): string {
     return `${this.currentLayoutKey}__locked`;
   }
@@ -687,6 +692,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       this.compactAll();
       this.persistLayout();
     }
+    this.reloadLockedState();
   }
 
   loadSavedDefaults(): void {
@@ -743,6 +749,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       this.compactAll();
       this.persistLayout();
     }
+    this.reloadLockedState();
   }
 
   saveAsDefaultLayout(): void {
@@ -1029,6 +1036,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
   reinitLayout(prevLayoutKey?: string, prevCanvasKey?: string): void {
     if (prevLayoutKey) {
+      this.persistLockedState(this.widgetLocked());
       this.layoutService.save(prevLayoutKey, this.isMobile(), {
         tops: this.widgetTops(),
         heights: this.widgetHeights(),
@@ -1061,6 +1069,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this._savedDesktopForMobile = null;
 
     this.applyModeLayout();
+    this.reloadLockedState();
   }
 
   private applyModeLayout(): void {

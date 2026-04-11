@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -3089,7 +3090,8 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly isKelly = computed(() => this.personaService.activePersonaSlug() === 'kelly');
 
   private readonly _registerFinancialsWidgets = effect(() => {
-    this.widgetFocusService.registerWidgets(this.isKelly() ? KELLY_FINANCIALS_WIDGETS : FINANCIALS_WIDGETS);
+    const widgets = this.isKelly() ? KELLY_FINANCIALS_WIDGETS : FINANCIALS_WIDGETS;
+    untracked(() => this.widgetFocusService.registerWidgets(widgets));
   });
 
   readonly financialsWidgets = computed<DashboardWidgetId[]>(() =>

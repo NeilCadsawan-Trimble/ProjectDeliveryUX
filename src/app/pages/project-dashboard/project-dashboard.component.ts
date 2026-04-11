@@ -51,6 +51,7 @@ import { getPersonaNav } from '../../data/persona-nav.config';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { PROJECT_DETAIL_LAYOUT } from '../../data/layout-seeds/project-detail.layout';
+import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { SubpageTileCanvas, type TileRect, type TileDetailView } from '../../shell/services/subpage-tile-canvas';
 import { AiService } from '../../services/ai.service';
@@ -182,6 +183,10 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   protected override applyInitialHeaderLock(): void {
     this.engine.widgetLocked.update(l => ({ ...l, projHeader: true }));
+  }
+
+  protected override getLayoutSeedForCurrentPersona(): LayoutSeed {
+    return PROJECT_DETAIL_LAYOUT;
   }
 
   private _prevProjectId: number | null = null;

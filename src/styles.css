@@ -297,6 +297,10 @@
 }
 
 /* Color-specific border utilities */
+.border-foreground {
+  border: 1px solid var(--foreground);
+}
+
 .border-primary {
   border: 1px solid var(--primary);
 }

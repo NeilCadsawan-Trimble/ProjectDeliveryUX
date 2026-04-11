@@ -767,7 +767,7 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly activeNav = computed(() => {
     const suffix = this.routeSuffix();
     const items = this.sideNavItems();
-    if (suffix === '/profile') return '';
+    if (suffix === '/profile' || suffix === '/account-settings' || suffix === '/my-products') return '';
     if (suffix.startsWith('/project/')) {
       const projects = items.find((i) => i.value === 'projects');
       return projects?.value ?? 'projects';
@@ -869,8 +869,17 @@ export class DashboardShellComponent implements AfterViewInit {
   }
 
   onUserMenuAction(actionId: string): void {
+    const slug = this.personaService.activePersonaSlug();
     if (actionId === 'profile') {
-      void this.router.navigateByUrl(`/${this.personaService.activePersonaSlug()}/profile`);
+      void this.router.navigateByUrl(`/${slug}/profile`);
+      return;
+    }
+    if (actionId === 'admin') {
+      void this.router.navigateByUrl(`/${slug}/account-settings`);
+      return;
+    }
+    if (actionId === 'products') {
+      void this.router.navigateByUrl(`/${slug}/my-products`);
       return;
     }
   }
