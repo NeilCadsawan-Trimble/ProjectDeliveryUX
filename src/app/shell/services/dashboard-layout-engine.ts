@@ -798,7 +798,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
    * ready to paste into a seed file. Captures desktop grid positions when in desktop
    * mode, or canvas pixel positions when in canvas mode.
    */
-  exportLayoutSeed(): string {
+  exportLayoutSeed(constName = 'LAYOUT_SEED'): string {
     const widgets = this.config.widgets;
     const isCanvas = this.isCanvasMode();
     const indent = '  ';
@@ -847,9 +847,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       `import type { LayoutSeed } from './layout-seed.types';`,
       ``,
       `// Exported from live ${mode} layout`,
-      `export const LAYOUT_SEED: LayoutSeed = {`,
+      `export const ${constName}: LayoutSeed = {`,
       ...sections,
       `};`,
+      ``,
     ].join('\n');
   }
 

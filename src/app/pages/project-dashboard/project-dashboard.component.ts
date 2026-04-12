@@ -45,7 +45,6 @@ import { AiIconComponent } from '../../shell/components/ai-icon.component';
 import { UserMenuComponent } from '../../shell/components/user-menu.component';
 import { TrimbleLogoComponent } from '../../shell/components/trimble-logo.component';
 
-import { ThemeService } from '../../services/theme.service';
 import { PersonaService } from '../../services/persona.service';
 import { getPersonaNav } from '../../data/persona-nav.config';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
@@ -146,7 +145,6 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
   providers: [ProjectDashboardNavigationService],
 })
 export class ProjectDashboardComponent extends DashboardPageBase implements OnInit, AfterViewInit {
-  private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
   private readonly projectNav = inject(ProjectDashboardNavigationService);

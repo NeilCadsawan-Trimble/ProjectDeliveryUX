@@ -1,5 +1,6 @@
 import { DestroyRef, Directive, effect, inject, untracked } from '@angular/core';
 import { PersonaService } from '../../services/persona.service';
+import { ThemeService } from '../../services/theme.service';
 import { CanvasResetService } from './canvas-reset.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from './dashboard-layout-engine';
 import { WidgetFocusService } from './widget-focus.service';
@@ -19,6 +20,7 @@ export abstract class DashboardPageBase {
   readonly widgetFocusService = inject(WidgetFocusService);
   protected readonly canvasResetService = inject(CanvasResetService);
   protected readonly personaService = inject(PersonaService);
+  protected readonly themeService = inject(ThemeService);
 
   protected abstract getEngineConfig(): DashboardLayoutConfig;
 
@@ -69,6 +71,7 @@ export abstract class DashboardPageBase {
       untracked(() => {
         this.engine.resetToDefaults();
         this.applyInitialHeaderLock();
+        this.restoreThemeFromDefaults();
       });
     }
   });
@@ -79,6 +82,7 @@ export abstract class DashboardPageBase {
       untracked(() => {
         this.engine.loadSavedDefaults();
         this.applyInitialHeaderLock();
+        this.restoreThemeFromDefaults();
       });
     }
   });
@@ -86,7 +90,10 @@ export abstract class DashboardPageBase {
   private readonly _saveDefaultsEffect = effect(() => {
     const tick = this.canvasResetService.saveDefaultsTick();
     if (tick > 0) {
-      untracked(() => this.engine.saveAsDefaultLayout());
+      untracked(() => {
+        this.engine.saveAsDefaultLayout();
+        this.saveThemeWithDefaults();
+      });
     }
   });
 
@@ -94,7 +101,8 @@ export abstract class DashboardPageBase {
     const tick = this.canvasResetService.exportLayoutTick();
     if (tick > 0) {
       untracked(() => {
-        const seed = this.engine.exportLayoutSeed();
+        const constName = this.canvasResetService.exportConstName();
+        const seed = this.engine.exportLayoutSeed(constName);
         this.canvasResetService.lastExportedSeed.set(seed);
       });
     }
@@ -116,6 +124,28 @@ export abstract class DashboardPageBase {
   readonly widgetGridColumns = this.engine.widgetGridColumns;
   readonly dragLeft = this.engine.dragLeft;
   readonly dragWidth = this.engine.dragWidth;
+
+  private get themeDefaultsKey(): string {
+    return `theme-defaults:${this.engine.currentLayoutKey}`;
+  }
+
+  private saveThemeWithDefaults(): void {
+    try {
+      const config = this.themeService.getThemeConfig();
+      localStorage.setItem(this.themeDefaultsKey, JSON.stringify(config));
+    } catch { /* quota exceeded */ }
+  }
+
+  private restoreThemeFromDefaults(): void {
+    try {
+      const raw = localStorage.getItem(this.themeDefaultsKey);
+      if (!raw) return;
+      const config = JSON.parse(raw);
+      if (config?.theme && config?.mode) {
+        this.themeService.setTheme(config.theme, config.mode);
+      }
+    } catch { /* ignore */ }
+  }
 
   ngAfterViewInit(): void {
     this.engine.gridElAccessor = () => this.resolveGridElement();

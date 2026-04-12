@@ -1917,6 +1917,7 @@ modus-wc-progress.progress-primary .modus-wc-progress {
     margin-right: 0 !important;
     box-sizing: border-box !important;
     width: 100% !important;
+    pointer-events: none !important;
   }
 
   /* Drawing detail: expand canvas-content to full viewport width so the

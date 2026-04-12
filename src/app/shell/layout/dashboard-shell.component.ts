@@ -323,7 +323,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="resetMenuAction('export-layout'); $event.stopPropagation()"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">clipboard</i>
-                      <div class="text-sm">{{ exportLayoutCopied() ? 'Copied to Clipboard' : 'Export Layout Seed' }}</div>
+                      <div class="text-sm">{{ exportLayoutLabel() }}</div>
                     </div>
                   }
                 </div>
@@ -543,7 +543,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                         (click)="moreMenuAction('export-layout')"
                       >
                         <i class="modus-icons text-base" aria-hidden="true">clipboard</i>
-                        <div class="text-sm">{{ exportLayoutCopied() ? 'Copied to Clipboard' : 'Export Layout Seed' }}</div>
+                        <div class="text-sm">{{ exportLayoutLabel() }}</div>
                       </div>
                     }
                   </div>
@@ -651,7 +651,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                         (click)="resetMenuAction('export-layout'); $event.stopPropagation()"
                       >
                         <i class="modus-icons text-base" aria-hidden="true">clipboard</i>
-                        <div class="text-sm">{{ exportLayoutCopied() ? 'Copied to Clipboard' : 'Export Layout Seed' }}</div>
+                        <div class="text-sm">{{ exportLayoutLabel() }}</div>
                       </div>
                     }
                   </div>
@@ -805,7 +805,7 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly weatherService = inject(WeatherService);
 
   readonly isDevMode = !environment.production;
-  readonly exportLayoutCopied = signal(false);
+  readonly exportLayoutLabel = signal('Export Layout Seed');
 
   private readonly _aiShellContextEffect = effect(() => {
     const nav = this.activeNav();
@@ -942,16 +942,67 @@ export class DashboardShellComponent implements AfterViewInit {
     }
   }
 
+  private getSeedFileTarget(): { filePath: string; constName: string } | null {
+    const page = this.getPageName();
+    const slug = this.personaService.activePersonaSlug();
+    const isKelly = slug === 'kelly';
+
+    const map: Record<string, { filePath: string; constName: string }> = {
+      'home:kelly': { filePath: 'src/app/data/layout-seeds/home-kelly.layout.ts', constName: 'HOME_KELLY_LAYOUT' },
+      'home:default': { filePath: 'src/app/data/layout-seeds/home-default.layout.ts', constName: 'HOME_DEFAULT_LAYOUT' },
+      'financials:kelly': { filePath: 'src/app/data/layout-seeds/financials-kelly.layout.ts', constName: 'FINANCIALS_KELLY_LAYOUT' },
+      'financials:default': { filePath: 'src/app/data/layout-seeds/financials-default.layout.ts', constName: 'FINANCIALS_DEFAULT_LAYOUT' },
+      'projects:default': { filePath: 'src/app/data/layout-seeds/projects-default.layout.ts', constName: 'PROJECTS_DEFAULT_LAYOUT' },
+      'project-dashboard:default': { filePath: 'src/app/data/layout-seeds/project-detail.layout.ts', constName: 'PROJECT_DETAIL_LAYOUT' },
+    };
+
+    const variant = isKelly ? 'kelly' : 'default';
+    return map[`${page}:${variant}`] ?? map[`${page}:default`] ?? null;
+  }
+
   private exportCurrentLayout(): void {
+    const target = this.getSeedFileTarget();
+    if (target) {
+      this.canvasResetService.exportConstName.set(target.constName);
+    }
+
     this.canvasResetService.triggerExportLayout();
     requestAnimationFrame(() => {
       const seed = this.canvasResetService.lastExportedSeed();
-      if (seed) {
+      if (!seed) return;
+
+      if (!target) {
         navigator.clipboard.writeText(seed).then(() => {
-          this.exportLayoutCopied.set(true);
-          setTimeout(() => this.exportLayoutCopied.set(false), 3000);
+          this.exportLayoutLabel.set('Copied to Clipboard');
+          setTimeout(() => this.exportLayoutLabel.set('Export Layout Seed'), 3000);
         });
+        return;
       }
+
+      this.canvasResetService.triggerSaveDefaults();
+
+      requestAnimationFrame(() => {
+        fetch('http://localhost:3001/api/save-layout-seed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filePath: target.filePath, content: seed }),
+        })
+          .then((resp) => {
+            if (!resp.ok) throw new Error(`Save failed: ${resp.status}`);
+            return resp.json();
+          })
+          .then(() => {
+            this.exportLayoutLabel.set(`Saved to ${target.filePath.split('/').pop()}`);
+            setTimeout(() => this.exportLayoutLabel.set('Export Layout Seed'), 4000);
+          })
+          .catch((err) => {
+            console.error('Failed to save layout seed, falling back to clipboard:', err);
+            navigator.clipboard.writeText(seed).then(() => {
+              this.exportLayoutLabel.set('Copied to Clipboard (save failed)');
+              setTimeout(() => this.exportLayoutLabel.set('Export Layout Seed'), 4000);
+            });
+          });
+      });
     });
   }
 

@@ -84,7 +84,8 @@ export function runCanvasPushBfs(
       pushH = hPen <= vPen;
     }
 
-    const dirRef = (pusherId === movedId) ? p : rects[movedId];
+    const usePusherAsDir = pusherId === movedId || !!isLocked[pusherId];
+    const dirRef = usePusherAsDir ? p : rects[movedId];
     const dirCX = dirRef.left + dirRef.width / 2;
 
     let candidate: WidgetRect;
@@ -145,24 +146,40 @@ export function runCanvasPushBfs(
     if (!anyFixed) break;
   }
 
-  // All-pairs cleanup: resolve any remaining overlaps between non-mover
-  // widgets that the BFS cascade missed. Freezing is disabled here to
-  // avoid incorrect direction-based freezing of intermediate widgets.
-  // The mover is excluded as both pusher and target to prevent oscillation
-  // when the mover and an adjacent widget have identical sizes (same
-  // width × height), which causes conflicting push directions.
+  // Unified all-pairs cleanup: resolve remaining overlaps between non-mover
+  // widgets. Locked widgets act as pushers (immovable) but never as targets.
+  // Frozen widgets (blocked by locked widgets during BFS) are also excluded
+  // as targets -- their overlaps are resolved by the wall cascade below.
+  // Non-locked pairs use area-based priority. Freezing is disabled to avoid
+  // incorrect direction-based freezing of intermediate widgets. The mover is
+  // excluded as both pusher and target to prevent oscillation when the mover
+  // and an adjacent widget have identical sizes.
   canFreeze = false;
-  for (let pass = 0; pass < ids.length * 3; pass++) {
+  for (let pass = 0; pass < ids.length * 4; pass++) {
     let anyFixed = false;
     for (const aId of ids) {
-      if (isLocked[aId] || aId === movedId) continue;
+      if (aId === movedId) continue;
       for (const bId of ids) {
-        if (bId === aId || isLocked[bId] || bId === movedId) continue;
+        if (bId === aId || bId === movedId) continue;
         if (!hasOverlap(aId, bId)) continue;
-        const aSize = rects[aId].width * rects[aId].height;
-        const bSize = rects[bId].width * rects[bId].height;
-        const pusherId = aSize >= bSize ? aId : bId;
-        const targetId = pusherId === aId ? bId : aId;
+
+        const aLocked = !!isLocked[aId];
+        const bLocked = !!isLocked[bId];
+        if (aLocked && bLocked) continue;
+
+        let pusherId: string;
+        let targetId: string;
+        if (aLocked) { pusherId = aId; targetId = bId; }
+        else if (bLocked) { pusherId = bId; targetId = aId; }
+        else {
+          const aSize = rects[aId].width * rects[aId].height;
+          const bSize = rects[bId].width * rects[bId].height;
+          pusherId = aSize >= bSize ? aId : bId;
+          targetId = pusherId === aId ? bId : aId;
+        }
+
+        if (isLocked[targetId] || frozen.has(targetId)) continue;
+
         const prev = { ...rects[targetId] };
         pushAway(pusherId, targetId);
         if (rects[targetId].left !== prev.left || rects[targetId].top !== prev.top) {
