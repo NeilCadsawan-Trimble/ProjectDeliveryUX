@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { resolve, normalize } from 'node:path';
 
 const PORT = 3001;
 
@@ -51,6 +52,11 @@ const server = createServer(async (req, res) => {
 
   if (req.url?.startsWith('/api/weather')) {
     await handleWeather(req, res);
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/api/save-layout-seed') {
+    await handleSaveLayoutSeed(req, res);
     return;
   }
 
@@ -231,6 +237,48 @@ async function handleWeather(req, res) {
     console.error('Weather proxy error:', err);
     res.writeHead(502, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Failed to fetch weather' }));
+  }
+}
+
+const ALLOWED_SEED_DIR = 'src/app/data/layout-seeds/';
+
+async function handleSaveLayoutSeed(req, res) {
+  let body = '';
+  for await (const chunk of req) body += chunk;
+
+  let parsed;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid JSON' }));
+    return;
+  }
+
+  const { filePath, content } = parsed;
+  if (!filePath || !content) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'filePath and content are required' }));
+    return;
+  }
+
+  const normalized = normalize(filePath);
+  if (!normalized.startsWith(ALLOWED_SEED_DIR) || normalized.includes('..')) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'filePath must be inside src/app/data/layout-seeds/' }));
+    return;
+  }
+
+  try {
+    const absolute = resolve(process.cwd(), normalized);
+    writeFileSync(absolute, content, 'utf-8');
+    console.log(`Layout seed saved: ${normalized}`);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, path: normalized }));
+  } catch (err) {
+    console.error('Failed to save layout seed:', err);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Failed to write file' }));
   }
 }
 

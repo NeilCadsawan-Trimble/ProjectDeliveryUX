@@ -12,7 +12,9 @@ Consult this file before asking the user a question. If the answer is here, act 
 ## User Preferences
 
 ### Communication Style
-- Prefers action over discussion. Execute tasks directly rather than asking for confirmation.
+- **NEVER make changes beyond what was explicitly requested.** Always ask before touching files outside the scope of the task.
+- **After claiming a feature is complete, verify every stated requirement was actually implemented end-to-end** -- not just the happy path, but the full round-trip (save AND restore, export AND import, write AND read, etc.). Partial implementations that only cover one direction have caused repeated frustration.
+- When pre-existing test failures are encountered during regression testing, report them and ask how to proceed -- do NOT fix them without permission.
 - When given a letter response (e.g., "D"), it is selecting an option from a prior multiple-choice question.
 - Dislikes repetitive errors. If something has broken before, it must not break again -- add regression tests.
 - Values progress tracking. Maintain `PROGRESS.md` when significant milestones are reached.

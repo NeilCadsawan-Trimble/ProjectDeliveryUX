@@ -19,6 +19,9 @@ export class CanvasResetService {
   /** Holds the last exported layout seed TypeScript string. */
   readonly lastExportedSeed = signal('');
 
+  /** The export constant name to use when generating the seed file. */
+  readonly exportConstName = signal('LAYOUT_SEED');
+
   readonly canvasZoom = signal(1);
 
   triggerResetWidgets(): void {
