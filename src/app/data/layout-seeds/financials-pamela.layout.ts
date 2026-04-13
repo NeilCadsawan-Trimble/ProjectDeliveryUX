@@ -1,8 +1,11 @@
 import type { LayoutSeed } from './layout-seed.types';
 
 const G = 16;
+const STEP = (1280 + G) / 16;  // 81px -- one grid column step
+const colWidth = (cols: number) => cols * STEP - G;
+
 const TITLE_HEIGHT = 80;
-const NAVKPI_HEIGHT = 512;
+const NAVKPI_HEIGHT = 224;
 const NAVKPI_TOP = TITLE_HEIGHT + G;
 const ESTIMATES_HEIGHT = 512;
 const ESTIMATES_TOP = NAVKPI_TOP + NAVKPI_HEIGHT + G;
@@ -40,15 +43,15 @@ export const FINANCIALS_PAMELA_LAYOUT: LayoutSeed = {
     finJobCosts: 0, finChangeOrders: 0,
   },
   canvasDefaultPixelWidths: {
-    finTitle: 1280, finNavKpi: 640, finOpenEstimates: 1280,
-    finJobCosts: 1280, finChangeOrders: 1280,
+    finTitle: colWidth(16), finNavKpi: colWidth(8), finOpenEstimates: colWidth(16),
+    finJobCosts: colWidth(16), finChangeOrders: colWidth(16),
   },
   canvasDefaultTops: {
-    finTitle: 16,
-    finNavKpi: 16 + TITLE_HEIGHT + G,
-    finOpenEstimates: 16 + TITLE_HEIGHT + G + NAVKPI_HEIGHT + G,
-    finJobCosts: 16 + TITLE_HEIGHT + G + NAVKPI_HEIGHT + G + ESTIMATES_HEIGHT + G,
-    finChangeOrders: 16 + TITLE_HEIGHT + G + NAVKPI_HEIGHT + G + ESTIMATES_HEIGHT + G + JOB_COSTS_HEIGHT + G,
+    finTitle: G,
+    finNavKpi: G + TITLE_HEIGHT + G,
+    finOpenEstimates: G + TITLE_HEIGHT + G + NAVKPI_HEIGHT + G,
+    finJobCosts: G + TITLE_HEIGHT + G + NAVKPI_HEIGHT + G + ESTIMATES_HEIGHT + G,
+    finChangeOrders: G + TITLE_HEIGHT + G + NAVKPI_HEIGHT + G + ESTIMATES_HEIGHT + G + JOB_COSTS_HEIGHT + G,
   },
   canvasDefaultHeights: {
     finTitle: TITLE_HEIGHT,

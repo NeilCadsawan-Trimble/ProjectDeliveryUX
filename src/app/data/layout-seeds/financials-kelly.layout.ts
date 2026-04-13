@@ -1,6 +1,10 @@
 import type { LayoutSeed } from './layout-seed.types';
 
 const G = 16;
+const STEP = (1280 + G) / 16;  // 81px -- one grid column step
+const colWidth = (cols: number) => cols * STEP - G;
+const colLeft = (col: number) => (col - 1) * STEP;
+
 const TITLE_HEIGHT = 80;
 const NAVKPI_TOP = TITLE_HEIGHT + G;
 const KELLY_NAV_HEIGHT = 294;
@@ -50,28 +54,28 @@ export const FINANCIALS_KELLY_LAYOUT: LayoutSeed = {
   },
   canvasDefaultLefts: {
     finTitle: 0, finNavKpi: 0,
-    finInvoiceQueue: 656,
-    finPaymentSchedule: 0, finVendorAging: 656,
-    finPayApps: 0, finLienWaivers: 656,
-    finRetention: 0, finApActivity: 0, finCashOutflow: 656,
+    finInvoiceQueue: colLeft(9),
+    finPaymentSchedule: 0, finVendorAging: colLeft(9),
+    finPayApps: 0, finLienWaivers: colLeft(9),
+    finRetention: 0, finApActivity: colLeft(9), finCashOutflow: colLeft(13),
   },
   canvasDefaultPixelWidths: {
-    finTitle: 1280, finNavKpi: 640,
-    finInvoiceQueue: 624,
-    finPaymentSchedule: 640, finVendorAging: 624,
-    finPayApps: 640, finLienWaivers: 640,
-    finRetention: 640, finApActivity: 640, finCashOutflow: 640,
+    finTitle: colWidth(16), finNavKpi: colWidth(8),
+    finInvoiceQueue: colWidth(8),
+    finPaymentSchedule: colWidth(8), finVendorAging: colWidth(8),
+    finPayApps: colWidth(8), finLienWaivers: colWidth(8),
+    finRetention: colWidth(8), finApActivity: colWidth(4), finCashOutflow: colWidth(4),
   },
   canvasDefaultTops: {
-    finTitle: 16, finNavKpi: 16 + TITLE_HEIGHT + G,
-    finInvoiceQueue: 16 + TITLE_HEIGHT + G,
-    finPaymentSchedule: 16 + TITLE_HEIGHT + G + ROW_H + G,
-    finVendorAging: 16 + TITLE_HEIGHT + G + ROW_H + G,
-    finPayApps: 16 + TITLE_HEIGHT + G + ROW_H * 2 + G * 2,
-    finLienWaivers: 16 + TITLE_HEIGHT + G + ROW_H * 2 + G * 2,
-    finRetention: 16 + TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
-    finApActivity: 16 + TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
-    finCashOutflow: 16 + TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
+    finTitle: G, finNavKpi: G + TITLE_HEIGHT + G,
+    finInvoiceQueue: G + TITLE_HEIGHT + G,
+    finPaymentSchedule: G + TITLE_HEIGHT + G + ROW_H + G,
+    finVendorAging: G + TITLE_HEIGHT + G + ROW_H + G,
+    finPayApps: G + TITLE_HEIGHT + G + ROW_H * 2 + G * 2,
+    finLienWaivers: G + TITLE_HEIGHT + G + ROW_H * 2 + G * 2,
+    finRetention: G + TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
+    finApActivity: G + TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
+    finCashOutflow: G + TITLE_HEIGHT + G + ROW_H * 3 + G * 3,
   },
   canvasDefaultHeights: {
     finTitle: TITLE_HEIGHT, finNavKpi: KELLY_NAV_HEIGHT,

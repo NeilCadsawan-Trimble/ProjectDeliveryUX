@@ -422,7 +422,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div class="flex items-center gap-3">
               <div class="text-2xl font-bold text-foreground truncate">{{ meta.title }}</div>
               @if (meta.status) {
-                <modus-badge [color]="meta.statusColor ?? 'secondary'" variant="outlined" size="sm">{{ meta.status }}</modus-badge>
+                <modus-badge [color]="meta.statusColor ?? 'secondary'" size="sm">{{ meta.status }}</modus-badge>
               }
             </div>
             <div class="text-sm text-foreground-60">{{ meta.subtitle }}</div>
@@ -440,9 +440,9 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 <div>Estimated Profit Margin</div>
               </div>
               <div class="flex items-baseline gap-6 flex-wrap">
-                <div class="text-2xl font-bold text-foreground">$6 M.</div>
-                <div class="text-2xl font-bold text-foreground">$8,170,000</div>
-                <div class="text-2xl font-bold text-foreground">26.38%</div>
+                <div class="text-2xl font-bold text-foreground">$6,000,000</div>
+                <div class="text-2xl font-bold text-foreground">$8,200,000</div>
+                <div class="text-2xl font-bold text-foreground">26.83%</div>
               </div>
               <div class="mt-auto flex flex-col gap-3 pt-3">
                 <div class="flex items-center gap-4 text-xs text-foreground-60 flex-wrap">
@@ -514,21 +514,106 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <app-estimate-assembly-hub [hub]="hub" />
         }
 
+        @if (isEldoradoEstimate() && isPamela()) {
+          <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
+            <!-- Header -->
+            <div class="px-5 pt-5 pb-4 flex flex-wrap items-start justify-between gap-4">
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-2">
+                  <i class="modus-icons text-lg text-primary" aria-hidden="true">refresh</i>
+                  <div class="text-lg font-semibold text-foreground">Live Supplier Exchange Integration</div>
+                </div>
+                <div class="text-sm text-foreground-60">Real-time quote updates from integrated supplier APIs and bid exchanges</div>
+              </div>
+              <modus-badge color="success" size="sm">3 Active Feeds</modus-badge>
+            </div>
+
+            <!-- Supplier Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 px-5 pb-4">
+              <!-- ABC Concrete Supply -->
+              <div class="border-default rounded-lg p-4 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-semibold text-foreground">ABC Concrete Supply</div>
+                    <div class="text-xs text-foreground-60">Div 03 - Cast-in-Place Concrete</div>
+                  </div>
+                  <modus-badge color="success" size="sm">API</modus-badge>
+                </div>
+                <div class="text-2xl font-bold text-foreground">$798,000</div>
+                <div class="flex items-center justify-between text-xs text-foreground-60">
+                  <div>Reliability: 95%</div>
+                  <div>2024-02-20</div>
+                </div>
+                <div class="flex items-center gap-1 text-xs text-foreground-60">
+                  <i class="modus-icons text-xs" aria-hidden="true">refresh</i> Updated: 1 hour ago
+                </div>
+              </div>
+
+              <!-- Steel Reinforcing Co. -->
+              <div class="border-default rounded-lg p-4 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-semibold text-foreground">Steel Reinforcing Co.</div>
+                    <div class="text-xs text-foreground-60">Div 03 - Rebar</div>
+                  </div>
+                  <modus-badge color="success" size="sm">API</modus-badge>
+                </div>
+                <div class="text-2xl font-bold text-foreground">$268,250</div>
+                <div class="flex items-center justify-between text-xs text-foreground-60">
+                  <div>Reliability: 92%</div>
+                  <div>2024-02-19</div>
+                </div>
+                <div class="flex items-center gap-1 text-xs text-foreground-60">
+                  <i class="modus-icons text-xs" aria-hidden="true">refresh</i> Updated: 2 hours ago
+                </div>
+              </div>
+
+              <!-- Premier Drywall Systems -->
+              <div class="border-default rounded-lg p-4 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-semibold text-foreground">Premier Drywall Systems</div>
+                    <div class="text-xs text-foreground-60">Div 09 - Gypsum Board</div>
+                  </div>
+                  <modus-badge color="secondary" size="sm">Email</modus-badge>
+                </div>
+                <div class="text-2xl font-bold text-foreground">$208,250</div>
+                <div class="flex items-center justify-between text-xs text-foreground-60">
+                  <div>Reliability: 88%</div>
+                  <div>2024-02-21</div>
+                </div>
+                <div class="flex items-center gap-1 text-xs text-foreground-60">
+                  <i class="modus-icons text-xs" aria-hidden="true">refresh</i> Updated: 3 hours ago
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer info -->
+            <div class="mx-5 mb-5 bg-muted rounded-lg px-4 py-3 flex items-start gap-2">
+              <i class="modus-icons text-base text-foreground-60 mt-0.5" aria-hidden="true">info</i>
+              <div>
+                <div class="text-sm font-semibold text-foreground">Auto-Refresh Integration</div>
+                <div class="text-xs text-foreground-60">Supplier quotes are automatically refreshed every 2 hours through API integrations with major suppliers and bid exchanges. Email quotes are parsed and integrated automatically. This ensures PMs always see the most current pricing without manual data entry.</div>
+              </div>
+            </div>
+          </div>
+        }
+
       </div>
     } @else if (activeSubPage() === 'overview') {
-    <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
+    <div [class]="isCanvasMode() ? 'py-4 md:py-6 pointer-events-none' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
       <!-- Widget area -->
       <div
-        [class]="isCanvasMode() ? 'relative overflow-visible mb-6' : isMobile() ? 'relative mb-6' : 'relative mb-6 widget-grid-desktop'"
+        [class]="isCanvasMode() ? 'relative overflow-visible mb-6 pointer-events-none' : isMobile() ? 'relative mb-6' : 'relative mb-6 widget-grid-desktop'"
         [style.height.px]="isMobile() ? mobileGridHeight() : null"
         [style.min-height.px]="isCanvasMode() ? canvasGridMinHeight() : (!isMobile() ? desktopGridMinHeight() : null)"
         #financialsWidgetGrid
       >
         <!-- finTitle widget (locked, full width) -->
         <div
-          [class]="isCanvasMode() ? 'absolute overflow-hidden'
-                 : isMobile() ? 'absolute left-0 right-0 overflow-hidden'
-                 : 'overflow-hidden'"
+          [class]="isCanvasMode() ? 'absolute overflow-hidden pointer-events-auto'
+                 : isMobile() ? 'absolute left-0 right-0 overflow-hidden pointer-events-auto'
+                 : 'overflow-hidden pointer-events-auto'"
           [attr.data-widget-id]="'finTitle'"
           [style.grid-column]="!isMobile() && !isCanvasMode() ? widgetGridColumns()['finTitle'] : null"
           [style.grid-row]="!isMobile() && !isCanvasMode() ? '1' : null"
@@ -553,9 +638,9 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
         <!-- finNavKpi widget (locked, 8 cols) -->
         <div
-          [class]="isCanvasMode() ? 'absolute overflow-hidden'
-                 : isMobile() ? 'absolute left-0 right-0 overflow-hidden'
-                 : 'overflow-hidden'"
+          [class]="isCanvasMode() ? 'absolute overflow-hidden pointer-events-auto'
+                 : isMobile() ? 'absolute left-0 right-0 overflow-hidden pointer-events-auto'
+                 : 'overflow-hidden pointer-events-auto'"
           [attr.data-widget-id]="'finNavKpi'"
           [style.grid-column]="!isMobile() && !isCanvasMode() ? widgetGridColumns()['finNavKpi'] : null"
           [style.grid-row]="!isMobile() && !isCanvasMode() ? '1' : null"
@@ -629,72 +714,66 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             </div>
 
             @if (isPamela()) {
-            <div class="flex-1 min-w-0 flex flex-col gap-3">
-              <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
-                <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Pipeline Value</div>
-                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
-                    [class.bg-success-20]="pipelineColor() === 'success'"
-                    [class.bg-warning-20]="pipelineColor() === 'warning'"
-                    [class.bg-destructive-20]="pipelineColor() === 'destructive'">
-                    <i class="modus-icons text-lg" aria-hidden="true"
-                      [class.text-success]="pipelineColor() === 'success'"
-                      [class.text-warning]="pipelineColor() === 'warning'"
-                      [class.text-destructive]="pipelineColor() === 'destructive'">bar_graph</i>
-                  </div>
+            <div class="flex-1 min-w-0 flex flex-col gap-2">
+              <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
+                <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
+                  [class.bg-success-20]="pipelineColor() === 'success'"
+                  [class.bg-warning-20]="pipelineColor() === 'warning'"
+                  [class.bg-destructive-20]="pipelineColor() === 'destructive'">
+                  <i class="modus-icons text-base" aria-hidden="true"
+                    [class.text-success]="pipelineColor() === 'success'"
+                    [class.text-warning]="pipelineColor() === 'warning'"
+                    [class.text-destructive]="pipelineColor() === 'destructive'">bar_graph</i>
                 </div>
-                <div class="flex items-center gap-3">
-                  <div class="text-3xl font-bold flex-shrink-0"
+                <div class="min-w-0">
+                  <div class="text-xs text-foreground-60">Pipeline Value</div>
+                  <div class="text-lg font-bold leading-tight"
                     [class.text-success]="pipelineColor() === 'success'"
                     [class.text-warning]="pipelineColor() === 'warning'"
                     [class.text-destructive]="pipelineColor() === 'destructive'">{{ fmtCurrency(pamelaEstPipeline()) }}</div>
                 </div>
-                <div class="text-xs text-foreground-60">{{ pamelaOpenCount() }} open estimates across {{ pamelaProjectCount() }} projects</div>
+                <div class="text-xs text-foreground-60 ml-auto flex-shrink-0">{{ pamelaOpenCount() }} open / {{ pamelaProjectCount() }} projects</div>
               </div>
-              <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
-                <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Win Rate</div>
-                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
-                    [class.bg-success-20]="winRateColor() === 'success'"
-                    [class.bg-warning-20]="winRateColor() === 'warning'"
-                    [class.bg-destructive-20]="winRateColor() === 'destructive'">
-                    <i class="modus-icons text-lg" aria-hidden="true"
-                      [class.text-success]="winRateColor() === 'success'"
-                      [class.text-warning]="winRateColor() === 'warning'"
-                      [class.text-destructive]="winRateColor() === 'destructive'">check_circle</i>
-                  </div>
+              <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
+                <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
+                  [class.bg-success-20]="winRateColor() === 'success'"
+                  [class.bg-warning-20]="winRateColor() === 'warning'"
+                  [class.bg-destructive-20]="winRateColor() === 'destructive'">
+                  <i class="modus-icons text-base" aria-hidden="true"
+                    [class.text-success]="winRateColor() === 'success'"
+                    [class.text-warning]="winRateColor() === 'warning'"
+                    [class.text-destructive]="winRateColor() === 'destructive'">check_circle</i>
                 </div>
-                <div class="flex items-center gap-3">
-                  <div class="text-3xl font-bold flex-shrink-0"
+                <div class="min-w-0">
+                  <div class="text-xs text-foreground-60">Win Rate</div>
+                  <div class="text-lg font-bold leading-tight"
                     [class.text-success]="winRateColor() === 'success'"
                     [class.text-warning]="winRateColor() === 'warning'"
                     [class.text-destructive]="winRateColor() === 'destructive'">{{ pamelaWinRate() }}%</div>
                 </div>
-                <div class="text-xs text-foreground-60">{{ estimatesApprovedCount() }} approved of {{ estimates().length }} total</div>
+                <div class="text-xs text-foreground-60 ml-auto flex-shrink-0">{{ estimatesApprovedCount() }} approved of {{ estimates().length }}</div>
               </div>
-              <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
-                <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Overdue Estimates</div>
-                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
-                    [class.bg-success-20]="overdueColor() === 'success'"
-                    [class.bg-warning-20]="overdueColor() === 'warning'"
-                    [class.bg-destructive-20]="overdueColor() === 'destructive'">
-                    <i class="modus-icons text-lg" aria-hidden="true"
-                      [class.text-success]="overdueColor() === 'success'"
-                      [class.text-warning]="overdueColor() === 'warning'"
-                      [class.text-destructive]="overdueColor() === 'destructive'">{{ estimatesOverdueCount() > 0 ? 'warning' : 'check_circle' }}</i>
-                  </div>
+              <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
+                <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
+                  [class.bg-success-20]="overdueColor() === 'success'"
+                  [class.bg-warning-20]="overdueColor() === 'warning'"
+                  [class.bg-destructive-20]="overdueColor() === 'destructive'">
+                  <i class="modus-icons text-base" aria-hidden="true"
+                    [class.text-success]="overdueColor() === 'success'"
+                    [class.text-warning]="overdueColor() === 'warning'"
+                    [class.text-destructive]="overdueColor() === 'destructive'">{{ estimatesOverdueCount() > 0 ? 'warning' : 'check_circle' }}</i>
                 </div>
-                <div class="flex items-center gap-3">
-                  <div class="text-3xl font-bold flex-shrink-0"
+                <div class="min-w-0">
+                  <div class="text-xs text-foreground-60">Overdue Estimates</div>
+                  <div class="text-lg font-bold leading-tight"
                     [class.text-success]="overdueColor() === 'success'"
                     [class.text-warning]="overdueColor() === 'warning'"
                     [class.text-destructive]="overdueColor() === 'destructive'">{{ estimatesOverdueCount() }}</div>
                 </div>
-                <div class="text-xs text-foreground-60">{{ estimatesUnderReviewCount() }} under review, {{ pamelaAwaitingCount() }} awaiting approval</div>
+                <div class="text-xs text-foreground-60 ml-auto flex-shrink-0">{{ estimatesUnderReviewCount() }} review, {{ pamelaAwaitingCount() }} awaiting</div>
               </div>
               @if (finKpiInsight()) {
-                <div class="flex items-center gap-1.5 px-5 py-2 bg-card border-default rounded-lg flex-shrink-0">
+                <div class="flex items-center gap-1.5 px-4 py-2 bg-card border-default rounded-lg flex-shrink-0">
                   <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                   <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
                 </div>
@@ -824,10 +903,10 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
         @for (widgetId of financialsWidgets(); track widgetId) {
           <div
-            [class]="isCanvasMode() ? 'absolute overflow-hidden'
-                   : isMobile() ? 'absolute left-0 right-0 overflow-hidden'
-                   : moveTargetId() === widgetId ? 'absolute overflow-hidden'
-                   : 'overflow-hidden'"
+            [class]="isCanvasMode() ? 'absolute overflow-hidden pointer-events-auto'
+                   : isMobile() ? 'absolute left-0 right-0 overflow-hidden pointer-events-auto'
+                   : moveTargetId() === widgetId ? 'absolute overflow-hidden pointer-events-auto'
+                   : 'overflow-hidden pointer-events-auto'"
             [attr.data-widget-id]="widgetId"
             [style.grid-column]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? widgetGridColumns()[widgetId] : null"
             [style.grid-row]="!isMobile() && !isCanvasMode() && moveTargetId() !== widgetId ? '1' : null"
@@ -978,7 +1057,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                           <div role="cell" class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
                         }
                         <div role="cell">
-                          <modus-badge [color]="estimateBadgeColor(estimate.status)" variant="outlined" size="sm">
+                          <modus-badge [color]="estimateBadgeColor(estimate.status)" size="sm">
                             {{ estimate.status }}
                           </modus-badge>
                         </div>
@@ -1460,6 +1539,36 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search estimates...' }" />
         </div>
 
+        @if (isPamela()) {
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Pipeline Value</div>
+            <div class="text-2xl font-bold"
+              [class.text-success]="pipelineColor() === 'success'"
+              [class.text-warning]="pipelineColor() === 'warning'"
+              [class.text-destructive]="pipelineColor() === 'destructive'">{{ fmtCurrency(pamelaEstPipeline()) }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Open Estimates</div>
+            <div class="text-2xl font-bold text-foreground">{{ pamelaOpenCount() }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Win Rate</div>
+            <div class="text-2xl font-bold"
+              [class.text-success]="winRateColor() === 'success'"
+              [class.text-warning]="winRateColor() === 'warning'"
+              [class.text-destructive]="winRateColor() === 'destructive'">{{ pamelaWinRate() }}%</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Awaiting Approval</div>
+            <div class="text-2xl font-bold text-warning">{{ pamelaAwaitingCount() }}</div>
+          </div>
+          <div class="bg-card rounded-lg border-default p-4 text-center">
+            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Overdue</div>
+            <div class="text-2xl font-bold text-destructive">{{ estimatesOverdueCount() }}</div>
+          </div>
+        </div>
+        } @else {
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg border-default p-4 text-center">
             <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Estimates</div>
@@ -1482,14 +1591,15 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div class="text-2xl font-bold text-destructive">{{ estimatesOverdueCount() }}</div>
           </div>
         </div>
+        }
 
         @if (isMobile()) {
           <div class="flex flex-col gap-3">
-            @for (est of estimates(); track est.id) {
+            @for (est of (isPamela() ? pamelaOpenEstimates() : estimates()); track est.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToEstimate(est.id)">
                 <div class="flex items-center justify-between mb-2">
                   <div class="text-sm font-mono text-primary font-medium">{{ est.id }}</div>
-                  <modus-badge [color]="estimateBadgeColor(est.status)" variant="outlined" size="sm">{{ est.status }}</modus-badge>
+                  <modus-badge [color]="estimateBadgeColor(est.status)" size="sm">{{ est.status }}</modus-badge>
                 </div>
                 <div class="text-sm font-medium text-foreground mb-1">{{ est.project }}</div>
                 <div class="text-xs text-foreground-40 mb-3">{{ est.client }}</div>
@@ -1515,8 +1625,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
             <div>ID</div>
             <div>Project / Client</div>
             <div>Type</div>
@@ -1525,8 +1635,9 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div>Requested By</div>
             <div>Due Date</div>
           </div>
-          @for (est of estimates(); track est.id) {
-            <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="navigateToEstimate(est.id)">
+          <div class="overflow-y-auto flex-1">
+          @for (est of (isPamela() ? pamelaOpenEstimates() : estimates()); track est.id) {
+            <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToEstimate(est.id)">
               <div class="text-sm font-mono text-primary font-medium">{{ est.id }}</div>
               <div>
                 <div class="text-sm font-medium text-foreground truncate">{{ est.project }}</div>
@@ -1534,7 +1645,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               </div>
               <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ est.type }}</div>
               <div class="text-sm font-semibold text-foreground text-right">{{ est.value }}</div>
-              <div><modus-badge [color]="estimateBadgeColor(est.status)" variant="outlined" size="sm">{{ est.status }}</modus-badge></div>
+              <div><modus-badge [color]="estimateBadgeColor(est.status)" size="sm">{{ est.status }}</modus-badge></div>
               <div class="flex items-center gap-2 min-w-0">
                 <div class="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-2xs font-semibold flex-shrink-0">
                   {{ est.requestedByInitials }}
@@ -1555,6 +1666,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               </div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -1622,8 +1734,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
             <div>ID</div>
             <div>Project</div>
             <div>Description</div>
@@ -1631,8 +1743,9 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div>Status</div>
             <div>Date</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (co of filteredChangeOrders(); track co.id) {
-            <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="navigateToChangeOrder(co.id)">
+            <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToChangeOrder(co.id)">
               <div class="text-sm font-medium text-primary">{{ co.id }}</div>
               <div class="text-sm text-foreground truncate">{{ co.project }}</div>
               <div class="text-sm text-foreground truncate">{{ co.description }}</div>
@@ -1646,6 +1759,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm">No change orders in this category</div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -1708,16 +1822,17 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
             <div>Project</div>
             <div class="text-right">Budget</div>
             @for (cat of jobCostCategories; track cat) {
               <div class="text-right">{{ cat }}</div>
             }
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (p of projectJobCosts(); track p.projectId) {
-            <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="openJobCostDetail(p)">
+            <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="openJobCostDetail(p)">
               <div class="text-sm font-medium text-foreground truncate">{{ p.projectName }}</div>
               <div class="text-sm text-foreground-60 text-right">{{ p.budgetUsed }}</div>
               @for (cat of jobCostCategories; track cat) {
@@ -1725,6 +1840,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               }
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -1779,17 +1895,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="px-5 py-4 border-bottom-default">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">invoice</i>
               <div class="text-base font-semibold text-foreground">Billing Events</div>
               <modus-badge color="secondary" size="sm">{{ billingEvents().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <div>Description</div><div>Period</div><div class="text-right">Amount</div><div>Status</div><div>Date</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (ev of billingEvents(); track ev.id) {
             <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToBillingEvent(ev.id)">
               <div class="text-sm text-foreground truncate">{{ ev.description }}</div>
@@ -1799,6 +1916,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm text-foreground-60">{{ ev.billingDate }}</div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -1871,17 +1989,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="px-5 py-4 border-bottom-default">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
               <div class="text-base font-semibold text-foreground">Invoices</div>
               <modus-badge color="secondary" size="sm">{{ invoices().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <div>Invoice #</div><div class="text-right">Amount</div><div class="text-right">Paid</div><div>Status</div><div>Terms</div><div>Due</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (inv of invoices(); track inv.id) {
             <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToInvoice(inv.id)">
               <div class="text-sm font-medium text-primary">{{ inv.invoiceNumber }}</div>
@@ -1892,6 +2011,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm text-foreground-60">{{ inv.dueDate }}</div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -1971,17 +2091,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden flex-shrink-0">
-          <div class="px-5 py-4 border-bottom-default">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">credit_card</i>
               <div class="text-base font-semibold text-foreground">Payables</div>
               <modus-badge color="secondary" size="sm">{{ payables().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <div>Vendor</div><div>Description</div><div class="text-right">Amount</div><div>Status</div><div>Due</div><div>Cost Code</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (p of payables(); track p.id) {
             <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayable(p.id)">
               <div class="text-sm text-foreground truncate">{{ p.vendor }}</div>
@@ -1992,6 +2113,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm text-foreground-60">{{ p.costCode }}</div>
             </div>
           }
+          </div>
         </div>
         }
 
@@ -2153,16 +2275,17 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="px-5 py-4 border-bottom-default">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
               <div class="text-base font-semibold text-foreground">Cash Flow History</div>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <div>Month</div><div class="text-right">Inflow</div><div class="text-right">Outflow</div><div class="text-right">Net</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (cf of cashFlowHistory(); track cf.month) {
             <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToCashFlow(cf.month)">
               <div class="text-sm font-medium text-foreground">{{ cf.month }}</div>
@@ -2171,6 +2294,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm font-medium text-right" [class]="cf.netCash >= 0 ? 'text-success' : 'text-destructive'">{{ formatCurrency(cf.netCash) }}</div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -2225,17 +2349,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden mb-6">
-          <div class="px-5 py-4 border-bottom-default">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col min-h-0 mb-6 max-h-[50%]">
+          <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
               <div class="text-base font-semibold text-foreground">Chart of Accounts</div>
               <modus-badge color="secondary" size="sm">{{ glAccounts().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <div>Acct #</div><div>Name</div><div>Type</div><div class="text-right">Balance</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (acct of glAccounts(); track acct.code) {
             <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToGlAccount(acct.code)">
               <div class="text-sm font-medium text-primary">{{ acct.code }}</div>
@@ -2244,6 +2369,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(acct.balance) }}</div>
             </div>
           }
+          </div>
         </div>
         }
 
@@ -2281,17 +2407,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="px-5 py-4 border-bottom-default">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">file_edit</i>
               <div class="text-base font-semibold text-foreground">Recent Journal Entries</div>
               <modus-badge color="secondary" size="sm">{{ glEntries().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <div>Entry #</div><div>Account</div><div>Description</div><div class="text-right">Debit</div><div class="text-right">Credit</div><div>Date</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (entry of glEntries(); track entry.id) {
             <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToGlEntry(entry.id)">
               <div class="text-sm font-medium text-primary">{{ entry.id }}</div>
@@ -2302,6 +2429,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm text-foreground-60">{{ entry.date }}</div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -2362,17 +2490,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="px-5 py-4 border-bottom-default">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">shopping_cart</i>
               <div class="text-base font-semibold text-foreground">Purchase Orders</div>
               <modus-badge color="secondary" size="sm">{{ purchaseOrders().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <div>PO #</div><div>Vendor</div><div>Description</div><div class="text-right">Amount</div><div>Status</div><div>Delivery</div><div>Project</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (po of purchaseOrders(); track po.id) {
             <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPurchaseOrder(po.id)">
               <div class="text-sm font-medium text-primary">{{ po.poNumber }}</div>
@@ -2384,6 +2513,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm text-foreground-60 truncate">{{ po.project }}</div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -2457,16 +2587,17 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden mb-6">
-          <div class="px-5 py-4 border-bottom-default">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col min-h-0 mb-6 max-h-[50%]">
+          <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
               <div class="text-base font-semibold text-foreground">Monthly Summary</div>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <div>Month</div><div class="text-right">Gross</div><div class="text-right">Net</div><div class="text-right">Headcount</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (mp of monthlyPayroll(); track mp.month) {
             <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayrollMonthly(mp.month)">
               <div class="text-sm font-medium text-foreground">{{ mp.month }}</div>
@@ -2475,6 +2606,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm text-foreground-60 text-right">{{ mp.headcount }}</div>
             </div>
           }
+          </div>
         </div>
         }
 
@@ -2509,17 +2641,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="px-5 py-4 border-bottom-default">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">people_group</i>
               <div class="text-base font-semibold text-foreground">Weekly Payroll Detail</div>
               <modus-badge color="secondary" size="sm">{{ payrollRecords().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+          <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <div>Period</div><div class="text-right">Gross</div><div class="text-right">Net</div><div>Status</div><div class="text-right">Emp</div><div class="text-right">Hours</div><div class="text-right">OT</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (pr of payrollRecords(); track pr.id) {
             <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayrollRecord(pr.id)">
               <div class="text-sm font-medium text-foreground">{{ pr.period }}</div>
@@ -2531,6 +2664,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm text-right" [class]="pr.overtimeHours > 70 ? 'text-warning font-medium' : 'text-foreground-60'">{{ pr.overtimeHours }}</div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -2598,8 +2732,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
             <div>Contract</div>
             <div>Type</div>
             <div class="text-right">Original</div>
@@ -2608,8 +2742,9 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div>Status</div>
             <div>Project</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (c of contracts(); track c.id) {
-            <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="navigateToContract(c.id)">
+            <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToContract(c.id)">
               <div>
                 <div class="text-sm font-medium text-foreground truncate">{{ c.title }}</div>
                 <div class="text-xs text-foreground-40">{{ c.vendor }}</div>
@@ -2624,6 +2759,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-xs text-foreground-40 truncate">{{ c.project }}</div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -2684,8 +2820,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden">
-          <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+          <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
             <div>Description</div>
             <div>Vendor</div>
             <div>Type</div>
@@ -2694,8 +2830,9 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div>Date</div>
             <div class="text-right">Balance</div>
           </div>
+          <div class="overflow-y-auto flex-1">
           @for (entry of subcontractLedger(); track entry.id) {
-            <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 border-top-default hover:bg-muted items-center cursor-pointer" (click)="navigateToSubcontractLedgerEntry(entry.id)">
+            <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToSubcontractLedgerEntry(entry.id)">
               <div>
                 <div class="text-sm font-medium text-foreground truncate">{{ entry.description }}</div>
                 <div class="text-xs text-foreground-40">{{ entry.project }}</div>
@@ -2710,6 +2847,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="text-sm text-foreground text-right">{{ formatCurrency(entry.runningBalance) }}</div>
             </div>
           }
+          </div>
         </div>
         }
       </div>
@@ -3111,12 +3249,12 @@ export class FinancialsPageComponent extends DashboardPageBase {
       ...seed,
       layoutStorageKey: () => {
         const s = this.personaService.activePersonaSlug();
-        const ver = s === 'kelly' ? 'v29' : s === 'pamela' ? 'v31' : 'v17';
+        const ver = s === 'kelly' ? 'v30' : s === 'pamela' ? 'v33' : 'v18';
         return `${s}:dashboard-financials:${ver}`;
       },
       canvasStorageKey: () => {
         const s = this.personaService.activePersonaSlug();
-        const ver = s === 'kelly' ? 'v31' : s === 'pamela' ? 'v33' : 'v19';
+        const ver = s === 'kelly' ? 'v32' : s === 'pamela' ? 'v35' : 'v20';
         return `${s}:canvas-layout:dashboard-financials:${ver}`;
       },
       minColSpan: 1,
@@ -3363,6 +3501,11 @@ export class FinancialsPageComponent extends DashboardPageBase {
   });
 
   readonly estimates = this.store.estimates;
+  readonly pamelaOpenEstimates = computed(() =>
+    this.estimates()
+      .filter(e => e.status !== 'Approved')
+      .sort((a, b) => a.daysLeft - b.daysLeft)
+  );
   readonly estimateBadgeColor = estimateBadgeColor;
   readonly dueDateClass = dueDateClass;
 
