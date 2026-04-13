@@ -3,7 +3,7 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 10, 2026
+**Last Updated**: April 13, 2026
 **Total Commits**: 200+
 
 ---
@@ -36,10 +36,12 @@
 | 21    | Trimble ID Authentication and Vercel Deployment Fixes | Done        | 6/6   |
 | 22    | Persona Profile Pages                                 | Done        | 5/5   |
 | 23    | Subnav Layout Gap and Layout Seed Reset Fixes         | Done        | 6/6   |
-| 24    | Remaining Work                                        | Not Started | 0/8   |
+| 24    | Pamela Chen Persona (Senior Estimator)                | Done        | 3/3   |
+| 25    | Independent Per-Persona Layout Seeds                  | Done        | 5/5   |
+| 26    | Remaining Work                                        | Not Started | 0/8   |
 
 
-**Completed**: 186/194 items (96%)
+**Completed**: 194/202 items (96%)
 
 ---
 
@@ -690,7 +692,49 @@ Fixed subnav-to-content gap on project dashboard and resolved four layout seed/r
 
 ---
 
-## Phase 24: Remaining Work
+## Phase 24: Pamela Chen Persona -- Senior Estimator (Apr 12)
+
+New persona with role-specific home and financials dashboard layouts.
+
+### Persona Setup
+
+- Created Pamela Chen (Senior Estimator) persona in `PersonaService` with Classic Light default theme
+- Created `home-pamela.layout.ts` with 8 estimator-focused widgets: Estimator KPIs, Open Estimates, Calendar, RFIs, Change Orders, Budget Variance, Recent Activity
+- Created `financials-pamela.layout.ts` with estimator-relevant financials widgets
+
+### Widget Registry
+
+- Added `homeEstimatorKpis` widget to home page widget registry with estimator-specific KPI cards (Active Estimates, Pending Bids, Win Rate, Pipeline Value)
+
+**Tests**: Build passing
+
+---
+
+## Phase 25: Independent Per-Persona Layout Seeds (Apr 13)
+
+Eliminated ALL shared "default" layout seed files. Every persona now has its own independent seed file for every page. 5 personas x 4 pages = 20 seed files total.
+
+### Architecture Change
+
+- Deleted all shared default seeds: `home-default.layout.ts`, `financials-default.layout.ts`, `projects-default.layout.ts`, `project-detail.layout.ts`
+- Created 20 independent per-persona seed files: `{page}-{persona}.layout.ts` for all combinations (home, financials, projects, project-detail) x (frank, bert, kelly, dominique, pamela)
+- Updated all 4 page components (`home-page`, `financials-page`, `projects-page`, `project-dashboard`) to route each persona slug to its own dedicated seed via `switch` statement
+- Updated `buildProjectsLayoutConfig()` to accept seed as parameter instead of hardcoded import
+- Updated `project-dashboard` `getEngineConfig()` to use `this.getLayoutSeedForCurrentPersona()`
+- Updated export tool file map in `dashboard-shell.component.ts` to map every `{page}:{persona}` to its own file
+
+### Test and Documentation Updates
+
+- Fixed `canvas-grid-alignment.spec.ts` to scan seed files instead of component files (was silently empty, finding no geometry maps)
+- Rewrote `layout-seeds.spec.ts` with 288 tests: file existence, widget lists, cross-contamination, geometry consistency, per-persona routing, export map validation
+- Updated SKILL.md section 37 (full rewrite for independent seed architecture)
+- Updated longterm-memory Known Fragile Areas and Project File Map
+
+**Tests**: Build passing, 1282 tests (1277 pass, 5 pre-existing alignment issues in `contracts` widget height)
+
+---
+
+## Phase 26: Remaining Work
 
 Features and improvements not yet started.
 
@@ -715,23 +759,24 @@ Features and improvements not yet started.
 
 ## Regression Test Coverage
 
-### Covered (Static Tests -- `tests/static/` -- 413+ tests)
+### Covered (Static Tests -- `tests/static/` -- 1280+ tests)
 
 
 | Area                  | File                            | Tests                                                                                                                                                                                  |
 | --------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dashboard shell       | `dashboard-shell.spec.ts`       | 38 tests: hamburger, navExpanded, weather service init, reset flyout, labels, dynamic back button, overlay behavior, single ng-content, canvas/desktop CSS classes                     |
-| Home page             | `home-page.spec.ts`             | 11 tests: widgets, urgent needs, weather outlook                                                                                                                                       |
-| Projects page         | `projects-page.spec.ts`         | 14 structural tests                                                                                                                                                                    |
-| Financials page       | `financials-page.spec.ts`       | 6 structural tests                                                                                                                                                                     |
-| Project dashboard     | `project-dashboard.spec.ts`     | 115 tests: widgets, weather service init, tile detail, subnav, layout menu, per-prefix canvas completeness, grid/list parity, toolbar icons, canvas rendering parity, overlay behavior |
+| Dashboard shell       | `dashboard-shell.spec.ts`       | 50 tests: hamburger, navExpanded, weather service init, reset flyout, labels, dynamic back button, overlay behavior, single ng-content, canvas/desktop CSS classes                     |
+| Home page             | `home-page.spec.ts`             | 20 tests: widgets, urgent needs, weather outlook, persona routing                                                                                                                      |
+| Projects page         | `projects-page.spec.ts`         | 19 structural tests                                                                                                                                                                    |
+| Financials page       | `financials-page.spec.ts`       | 11 structural tests                                                                                                                                                                    |
+| Project dashboard     | `project-dashboard.spec.ts`     | 125 tests: widgets, weather service init, tile detail, subnav, layout menu, per-prefix canvas completeness, grid/list parity, toolbar icons, canvas rendering parity, overlay behavior |
 | Weather service       | `weather-service.spec.ts`       | 18 tests: initPromise banned, fetch guards, date filtering, error logging, API proxy structure, seed data dynamic dates                                                                |
-| CSS regressions       | `styles.spec.ts`                | 22 tests: side nav overflow, reset flyout, canvas navbar, row heights, expanded alignment, mobile centering                                                                            |
+| CSS regressions       | `styles.spec.ts`                | 23 tests: side nav overflow, reset flyout, canvas navbar, row heights, expanded alignment, mobile centering                                                                            |
 | Canvas panning        | `canvas-panning.spec.ts`        | 10 tests: spacebar panning, lock canvas                                                                                                                                                |
-| Canvas grid alignment | `canvas-grid-alignment.spec.ts` | 72 tests: grid alignment, column parity, canvas structure                                                                                                                              |
-| Template safety       | `template-safety.spec.ts`       | 100 tests: arrow function prevention, private member access                                                                                                                            |
+| Canvas grid alignment | `canvas-grid-alignment.spec.ts` | 580+ tests: canvas tops/heights GAP alignment, pixel widths, 1280px grid fill (scans all 20 seed files)                                                                               |
+| Layout seeds          | `layout-seeds.spec.ts`          | 288 tests: file existence (20 files), widget lists, cross-contamination, geometry keys, persona routing, export map                                                                    |
+| Template safety       | `template-safety.spec.ts`       | 123 tests: arrow function prevention, private member access                                                                                                                            |
 | Side nav click util   | `side-nav-click.util.spec.ts`   | 7 tests: navigation click handling                                                                                                                                                     |
-| Signal safety         | `signal-safety.spec.ts`         | 2 tests: signal initialization patterns                                                                                                                                                |
+| Signal safety         | `signal-safety.spec.ts`         | 4 tests: signal initialization patterns                                                                                                                                                |
 | Modus navbar wrapper  | `modus-navbar-wrapper.spec.ts`  | 2 tests: flushPropsToWc, native rendering                                                                                                                                              |
 
 
@@ -786,6 +831,8 @@ Features and improvements not yet started.
 | Apr 7     | [Auth and Vercel fixes](2c2f59d8-3267-405f-ae9b-62cbe76d9ac6)         | Trimble ID login gate, post-auth blank page fix (NgZone.run), dynamic OAuth URIs, Vercel build cache clear, CDN no-cache headers, PRs #73--78                                             |
 | Apr 8     | [Persona profile pages](current)                                      | Per-persona "My Profile" page, user menu wired to internal route                                                                                                                          |
 | Apr 9--10 | [Layout seed fixes](b1397210-081e-4c0b-a8b0-fb54c1a16492)             | Subnav layout gap fix, layout seed system 4-bug fix (frozen config, compactAll, stale keys, header lock), skill section 36                                                                |
+| Apr 12    | [Pamela Chen persona](current)                                        | Senior Estimator persona, Open Estimates widget, home/financials layout seeds                                                                                                              |
+| Apr 13    | [Independent layout seeds](fe9bcb72-dbe7-42b8-9b30-0983a749b0b3)      | Eliminated all shared default seeds, 20 independent per-persona seed files, 288 layout-seed tests, canvas-grid-alignment rewrite, SKILL section 37 rewrite                                |
 
 
 ---
@@ -822,7 +869,7 @@ Features and improvements not yet started.
 | `src/app/data/dashboard-data.formatters.ts`                                   | Shared utility functions (badge colors, formatters, builders)                            |
 | `src/app/shell/services/dashboard-page-base.ts`                               | Abstract base class for shared dashboard engine boilerplate (incl. persona seed swap)    |
 | `src/app/shell/services/layout-defaults.service.ts`                           | Manages "Save All Defaults" with versioned storage key pairs                             |
-| `src/app/data/layout-seeds/`                                                  | Per-page layout seed definitions (LayoutSeed types, default/kelly variants)              |
+| `src/app/data/layout-seeds/`                                                  | 20 independent per-persona layout seeds (5 personas x 4 pages), no shared defaults       |
 | `src/app/pages/project-dashboard/project-dashboard.component.html`            | Extracted project dashboard template (4,014 lines)                                       |
 | `src/app/pages/project-dashboard/project-dashboard-navigation.service.ts`     | Navigation methods and URL state management                                              |
 | `src/app/pages/project-dashboard/components/canvas-tile-shell.component.ts`   | Reusable canvas tile wrapper component                                                   |

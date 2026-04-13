@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: Apr 12, 2026
+**Current window**: Apr 13, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -31,17 +31,38 @@ If the date matches today, skip this section and proceed normally.
 
 ## Today's Sessions
 
-*(Apr 12, 2026)*
+*(Apr 13, 2026)*
 
-### Session 21: Pamela Chen Persona (Senior Estimator)
-- Creating new persona: Pamela Chen, Senior Estimator
-- New Open Estimates widget + home dashboard layout seed for estimator persona
+### Session 22: Fix canvas mode for Frank/Bert
+- HOME_DEFAULT_LAYOUT seed was overwritten with Pamela's 8-widget estimator layout during commit 6c352a3
+- Restored correct 18-widget Frank/Bert layout from HEAD~2
+- FINANCIALS_DEFAULT_LAYOUT also had dimension changes restored (finNavKpi height, colSpan swaps)
+- Build passing after fix
+
+### Session 23: Fully independent per-persona layout seeds
+- **Eliminated ALL shared "default" seed files.** 5 personas x 4 pages = 20 independent seed files.
+- Deleted: `home-default.layout.ts`, `financials-default.layout.ts`, `projects-default.layout.ts`, `project-detail.layout.ts`
+- Created per-persona seeds: `{page}-{persona}.layout.ts` for all combinations
+- Updated routing in all 4 page components (`home-page`, `financials-page`, `projects-page`, `project-dashboard`) to use per-persona switch statements
+- Updated `buildProjectsLayoutConfig()` to accept seed as parameter (no hardcoded import)
+- Updated `project-dashboard` `getEngineConfig()` to use `this.getLayoutSeedForCurrentPersona()` (not hardcoded)
+- Updated export tool map in `dashboard-shell` to map every `{page}:{persona}` combination
+- Fixed `canvas-grid-alignment.spec.ts` to scan seed files instead of component files (was silently empty)
+- Rewrote `layout-seeds.spec.ts`: 288 tests covering file existence, widget lists, contamination, geometry, routing, and export map
+- Updated SKILL.md section 37, longterm-memory Known Fragile Areas, Project File Map
+- Build passes, 700+ static tests pass
+
+### Session 24: Update skills and PROGRESS.md
+- Updated PROGRESS.md: added Phase 24 (Pamela Chen), Phase 25 (Independent Layout Seeds), renumbered Phase 26 (Remaining Work)
+- Updated regression test coverage table (1280+ tests, updated per-file counts)
+- Updated chat sessions table with Apr 12 and Apr 13 sessions
+- Updated longterm-memory: session 22 added, static test count updated to 1280+
+- Updated layout seeds directory description in Key Files
 
 ## Active Context
 
 - On `dev` branch.
-- Layout seed system working correctly for persona switches, Reset Layout, and browser cache clear.
-- Build passing (pre-existing SVG color lint warnings remain).
+- Changes not yet pushed to GitHub.
 
 ## Pending Items
 

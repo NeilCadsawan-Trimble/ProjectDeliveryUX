@@ -1,6 +1,6 @@
 import type { LayoutSeed } from './layout-seed.types';
 
-export const PROJECT_DETAIL_LAYOUT: LayoutSeed = {
+export const PROJECT_DETAIL_DOMINIQUE_LAYOUT: LayoutSeed = {
   widgets: [
     'projHeader', 'risks', 'milestones', 'tasks', 'rfis', 'submittals',
     'dailyReports', 'fieldOps', 'drawing', 'weather', 'budget', 'team',
@@ -26,7 +26,7 @@ export const PROJECT_DETAIL_LAYOUT: LayoutSeed = {
     projHeader: 0, milestones: 512, tasks: 400, risks: 352, rfis: 320,
     submittals: 320, dailyReports: 400, fieldOps: 400,
     drawing: 416, weather: 240, budget: 448, team: 400,
-    activity: 352, changeOrders: 400, contracts: 380,
+    activity: 352, changeOrders: 400, contracts: 384,
   },
   canvasDefaultLefts: {
     projHeader: 0, risks: 0, milestones: 0, tasks: 0, rfis: 0, submittals: 0,
@@ -59,6 +59,6 @@ export const PROJECT_DETAIL_LAYOUT: LayoutSeed = {
     projHeader: 144, risks: 352, milestones: 512, tasks: 400, rfis: 320,
     submittals: 320, dailyReports: 400, fieldOps: 400,
     drawing: 416, weather: 240, budget: 448, team: 400,
-    activity: 352, changeOrders: 400, contracts: 380,
+    activity: 352, changeOrders: 400, contracts: 384,
   },
 };

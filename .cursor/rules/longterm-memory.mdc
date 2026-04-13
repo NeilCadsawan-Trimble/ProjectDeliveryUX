@@ -88,7 +88,7 @@ Consult this file before asking the user a question. If the answer is here, act 
 
 ### Testing Strategy
 - **Unit tests** (`ng test`): 84+ tests covering layout engine, canvas BFS push, widget layout service, canvas reset, collision regression, projects sort.
-- **Static tests** (`npm run test:static` via Vitest): 413+ tests across 13 files scanning source files for structural regressions.
+- **Static tests** (`npm run test:static` via Vitest): 1280+ tests across 14 files scanning source files for structural regressions.
 - **E2E tests** (Playwright): 8 specs, minimal coverage. Configured but not primary gate.
 - **Lint checks** (`npm run lint:all`): Colors, borders, opacity, icons, icon names, inline styles.
 - **Type checking** (`npm run type-check`): Strict TypeScript validation.
@@ -153,6 +153,7 @@ These areas have broken multiple times. Extra care required:
 | Vercel CDN stale HTML | CDN caches `index.html` for 26+ hours, serving old JS bundles missing new routes | `Cache-Control: no-cache, no-store, must-revalidate` on HTML responses in `vercel.json` |
 | Vercel Angular build cache | `.angular/cache` persists stale route definitions across deploys | `rm -rf .angular/cache` before `npm run build` in `vercel.json` |
 | Zone.js context loss (auth callback) | trimble-id library uses axios/CommonJS which exits Zone.js context; post-auth `navigateByUrl` silently fails | Wrap in `NgZone.run()`; add `window.location.replace` hard-redirect fallback |
+| Layout seed sharing across personas | Shared "default" seeds meant editing one persona broke others; `exportLayoutSeed()` run with wrong persona overwrote shared file (broke Frank/Bert canvas mode Apr 12-13) | Eliminated ALL shared seeds. 5 personas x 4 pages = 20 independent seed files. 288 static tests in `layout-seeds.spec.ts` enforce file existence, widget lists, no-contamination, geometry, per-persona routing, and export map. See skill section 37 |
 
 ## Project File Map
 
@@ -184,6 +185,8 @@ These areas have broken multiple times. Extra care required:
 | Vercel config | `vercel.json` |
 | Projects layout config | `src/app/pages/projects-page/projects-page-layout.config.ts` |
 | Projects sort utils | `src/app/pages/projects-page/projects-page-utils.ts` |
+| Layout seeds (20 files) | `src/app/data/layout-seeds/{page}-{persona}.layout.ts` |
+| Layout seed types | `src/app/data/layout-seeds/layout-seed.types.ts` |
 
 ## Planned Features (Not Yet Implemented)
 
@@ -234,3 +237,5 @@ These areas have broken multiple times. Extra care required:
 | 18 (Apr 7) | `2c2f59d8-3267-405f-ae9b-62cbe76d9ac6` | Trimble ID auth (OAuth 2.0 PKCE), Vercel deployment fixes, PRs #73-78 |
 | 19 (Apr 8) | *(session)* | Persona profile pages, user menu internal navigation |
 | 20 (Apr 9-10) | `b1397210-081e-4c0b-a8b0-fb54c1a16492` | Subnav layout gap fix, layout seed system 4-bug fix, skill section 36 |
+| 21 (Apr 12) | *(session)* | Pamela Chen persona (Senior Estimator), Open Estimates widget, home/financials layout seeds |
+| 22 (Apr 13) | `fe9bcb72-dbe7-42b8-9b30-0983a749b0b3` | Fix canvas for Frank/Bert (default seed overwrote), then fully independent per-persona layout seeds (20 files, 288 tests), canvas-grid-alignment rewrite, SKILL section 37 rewrite |

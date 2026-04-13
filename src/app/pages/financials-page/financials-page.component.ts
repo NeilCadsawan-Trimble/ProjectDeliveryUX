@@ -20,8 +20,10 @@ import { WidgetResizeHandleComponent } from '../../shell/components/widget-resiz
 import { CollapsibleSubnavComponent } from '../project-dashboard/components/collapsible-subnav.component';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
-import { FINANCIALS_DEFAULT_LAYOUT } from '../../data/layout-seeds/financials-default.layout';
+import { FINANCIALS_FRANK_LAYOUT } from '../../data/layout-seeds/financials-frank.layout';
+import { FINANCIALS_BERT_LAYOUT } from '../../data/layout-seeds/financials-bert.layout';
 import { FINANCIALS_KELLY_LAYOUT } from '../../data/layout-seeds/financials-kelly.layout';
+import { FINANCIALS_DOMINIQUE_LAYOUT } from '../../data/layout-seeds/financials-dominique.layout';
 import { FINANCIALS_PAMELA_LAYOUT } from '../../data/layout-seeds/financials-pamela.layout';
 import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
@@ -3240,21 +3242,18 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private static readonly CO_TOP = FinancialsPageComponent.JOB_COSTS_TOP + FinancialsPageComponent.JOB_COSTS_HEIGHT + FinancialsPageComponent.G;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    const slug = this.personaService.activePersonaSlug();
-    const seed = slug === 'kelly' ? FINANCIALS_KELLY_LAYOUT
-      : slug === 'pamela' ? FINANCIALS_PAMELA_LAYOUT
-      : FINANCIALS_DEFAULT_LAYOUT;
+    const seed = this.getLayoutSeedForCurrentPersona();
 
     return {
       ...seed,
       layoutStorageKey: () => {
         const s = this.personaService.activePersonaSlug();
-        const ver = s === 'kelly' ? 'v30' : s === 'pamela' ? 'v33' : 'v18';
+        const ver = s === 'kelly' ? 'v30' : s === 'pamela' ? 'v33' : 'v19';
         return `${s}:dashboard-financials:${ver}`;
       },
       canvasStorageKey: () => {
         const s = this.personaService.activePersonaSlug();
-        const ver = s === 'kelly' ? 'v32' : s === 'pamela' ? 'v35' : 'v20';
+        const ver = s === 'kelly' ? 'v32' : s === 'pamela' ? 'v35' : 'v21';
         return `${s}:canvas-layout:dashboard-financials:${ver}`;
       },
       minColSpan: 1,
@@ -3267,9 +3266,14 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
   protected override getLayoutSeedForCurrentPersona(): LayoutSeed {
     const slug = this.personaService.activePersonaSlug();
-    return slug === 'kelly' ? FINANCIALS_KELLY_LAYOUT
-      : slug === 'pamela' ? FINANCIALS_PAMELA_LAYOUT
-      : FINANCIALS_DEFAULT_LAYOUT;
+    switch (slug) {
+      case 'frank': return FINANCIALS_FRANK_LAYOUT;
+      case 'bert': return FINANCIALS_BERT_LAYOUT;
+      case 'kelly': return FINANCIALS_KELLY_LAYOUT;
+      case 'dominique': return FINANCIALS_DOMINIQUE_LAYOUT;
+      case 'pamela': return FINANCIALS_PAMELA_LAYOUT;
+      default: return FINANCIALS_FRANK_LAYOUT;
+    }
   }
 
   protected override applyInitialHeaderLock(): void {
