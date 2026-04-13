@@ -22,6 +22,7 @@ import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/s
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { FINANCIALS_DEFAULT_LAYOUT } from '../../data/layout-seeds/financials-default.layout';
 import { FINANCIALS_KELLY_LAYOUT } from '../../data/layout-seeds/financials-kelly.layout';
+import { FINANCIALS_PAMELA_LAYOUT } from '../../data/layout-seeds/financials-pamela.layout';
 import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
 import { getPersonaNav } from '../../data/persona-nav.config';
@@ -31,7 +32,7 @@ import { JOB_COST_CATEGORIES } from '../../data/dashboard-data.types';
 import { CATEGORY_COLORS } from '../../data/dashboard-data.seed';
 import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data.formatters';
 import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
-import { FINANCIALS_WIDGETS, KELLY_FINANCIALS_WIDGETS } from '../../data/widget-registrations';
+import { FINANCIALS_WIDGETS, KELLY_FINANCIALS_WIDGETS, PAMELA_FINANCIALS_WIDGETS } from '../../data/widget-registrations';
 import { ChartComponent, type ApexAxisChartSeries } from 'ng-apexcharts';
 import { HomeInvoiceQueueComponent } from '../home-page/components/home-invoice-queue.component';
 import { HomeVendorAgingComponent } from '../home-page/components/home-vendor-aging.component';
@@ -551,7 +552,79 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               </div>
             </div>
 
-            @if (!isKelly()) {
+            @if (isPamela()) {
+            <div class="flex-1 min-w-0 flex flex-col gap-3">
+              <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground-60">Pipeline Value</div>
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                    [class.bg-success-20]="pipelineColor() === 'success'"
+                    [class.bg-warning-20]="pipelineColor() === 'warning'"
+                    [class.bg-destructive-20]="pipelineColor() === 'destructive'">
+                    <i class="modus-icons text-lg" aria-hidden="true"
+                      [class.text-success]="pipelineColor() === 'success'"
+                      [class.text-warning]="pipelineColor() === 'warning'"
+                      [class.text-destructive]="pipelineColor() === 'destructive'">bar_graph</i>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-3xl font-bold flex-shrink-0"
+                    [class.text-success]="pipelineColor() === 'success'"
+                    [class.text-warning]="pipelineColor() === 'warning'"
+                    [class.text-destructive]="pipelineColor() === 'destructive'">{{ fmtCurrency(pamelaEstPipeline()) }}</div>
+                </div>
+                <div class="text-xs text-foreground-60">{{ pamelaOpenCount() }} open estimates across {{ pamelaProjectCount() }} projects</div>
+              </div>
+              <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground-60">Win Rate</div>
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                    [class.bg-success-20]="winRateColor() === 'success'"
+                    [class.bg-warning-20]="winRateColor() === 'warning'"
+                    [class.bg-destructive-20]="winRateColor() === 'destructive'">
+                    <i class="modus-icons text-lg" aria-hidden="true"
+                      [class.text-success]="winRateColor() === 'success'"
+                      [class.text-warning]="winRateColor() === 'warning'"
+                      [class.text-destructive]="winRateColor() === 'destructive'">check_circle</i>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-3xl font-bold flex-shrink-0"
+                    [class.text-success]="winRateColor() === 'success'"
+                    [class.text-warning]="winRateColor() === 'warning'"
+                    [class.text-destructive]="winRateColor() === 'destructive'">{{ pamelaWinRate() }}%</div>
+                </div>
+                <div class="text-xs text-foreground-60">{{ estimatesApprovedCount() }} approved of {{ estimates().length }} total</div>
+              </div>
+              <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-foreground-60">Overdue Estimates</div>
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                    [class.bg-success-20]="overdueColor() === 'success'"
+                    [class.bg-warning-20]="overdueColor() === 'warning'"
+                    [class.bg-destructive-20]="overdueColor() === 'destructive'">
+                    <i class="modus-icons text-lg" aria-hidden="true"
+                      [class.text-success]="overdueColor() === 'success'"
+                      [class.text-warning]="overdueColor() === 'warning'"
+                      [class.text-destructive]="overdueColor() === 'destructive'">{{ estimatesOverdueCount() > 0 ? 'warning' : 'check_circle' }}</i>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-3xl font-bold flex-shrink-0"
+                    [class.text-success]="overdueColor() === 'success'"
+                    [class.text-warning]="overdueColor() === 'warning'"
+                    [class.text-destructive]="overdueColor() === 'destructive'">{{ estimatesOverdueCount() }}</div>
+                </div>
+                <div class="text-xs text-foreground-60">{{ estimatesUnderReviewCount() }} under review, {{ pamelaAwaitingCount() }} awaiting approval</div>
+              </div>
+              @if (finKpiInsight()) {
+                <div class="flex items-center gap-1.5 px-5 py-2 bg-card border-default rounded-lg flex-shrink-0">
+                  <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
+                  <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
+                </div>
+              }
+            </div>
+            } @else if (!isKelly()) {
             <div class="flex-1 min-w-0 flex flex-col gap-3">
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
@@ -2877,6 +2950,41 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly estimatesUnderReviewCount = computed(() => this.estimates().filter(e => e.status === 'Under Review').length);
   readonly estimatesOverdueCount = computed(() => this.estimates().filter(e => e.daysLeft < 0).length);
 
+  // Pamela estimator KPIs
+  readonly pamelaEstPipeline = computed(() =>
+    this.estimates().filter(e => e.status !== 'Approved').reduce((s, e) => s + e.valueRaw, 0)
+  );
+  readonly pamelaOpenCount = computed(() =>
+    this.estimates().filter(e => e.status !== 'Approved').length
+  );
+  readonly pamelaProjectCount = computed(() => {
+    const projects = new Set(this.estimates().filter(e => e.status !== 'Approved').map(e => e.project));
+    return projects.size;
+  });
+  readonly pamelaWinRate = computed(() => {
+    const total = this.estimates().length;
+    if (total === 0) return 0;
+    return Math.round((this.estimatesApprovedCount() / total) * 100);
+  });
+  readonly pamelaAwaitingCount = computed(() =>
+    this.estimates().filter(e => e.status === 'Awaiting Approval').length
+  );
+  readonly pipelineColor = computed<'success' | 'warning' | 'destructive'>(() => {
+    const v = this.pamelaEstPipeline();
+    if (v >= 500_000) return 'success';
+    if (v >= 100_000) return 'warning';
+    return 'destructive';
+  });
+  readonly winRateColor = computed<'success' | 'warning' | 'destructive'>(() => {
+    const r = this.pamelaWinRate();
+    if (r >= 40) return 'success';
+    if (r >= 20) return 'warning';
+    return 'destructive';
+  });
+  readonly overdueColor = computed<'success' | 'warning' | 'destructive'>(() =>
+    this.estimatesOverdueCount() === 0 ? 'success' : this.estimatesOverdueCount() <= 2 ? 'warning' : 'destructive'
+  );
+
   // Change orders sub-page KPIs
   readonly coSubpageAll = this.store.changeOrders;
   readonly coSubpageTotalValue = computed(() => this.store.changeOrders().reduce((s, c) => s + c.amount, 0));
@@ -2907,18 +3015,22 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private static readonly CO_TOP = FinancialsPageComponent.JOB_COSTS_TOP + FinancialsPageComponent.JOB_COSTS_HEIGHT + FinancialsPageComponent.G;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    const seed = this.personaService.activePersonaSlug() === 'kelly'
-      ? FINANCIALS_KELLY_LAYOUT : FINANCIALS_DEFAULT_LAYOUT;
+    const slug = this.personaService.activePersonaSlug();
+    const seed = slug === 'kelly' ? FINANCIALS_KELLY_LAYOUT
+      : slug === 'pamela' ? FINANCIALS_PAMELA_LAYOUT
+      : FINANCIALS_DEFAULT_LAYOUT;
 
     return {
       ...seed,
       layoutStorageKey: () => {
-        const k = this.personaService.activePersonaSlug() === 'kelly';
-        return `${this.personaService.activePersonaSlug()}:dashboard-financials:${k ? 'v29' : 'v17'}`;
+        const s = this.personaService.activePersonaSlug();
+        const ver = s === 'kelly' ? 'v29' : s === 'pamela' ? 'v31' : 'v17';
+        return `${s}:dashboard-financials:${ver}`;
       },
       canvasStorageKey: () => {
-        const k = this.personaService.activePersonaSlug() === 'kelly';
-        return `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-financials:${k ? 'v31' : 'v19'}`;
+        const s = this.personaService.activePersonaSlug();
+        const ver = s === 'kelly' ? 'v31' : s === 'pamela' ? 'v33' : 'v19';
+        return `${s}:canvas-layout:dashboard-financials:${ver}`;
       },
       minColSpan: 1,
       widgetMaxColSpans: {},
@@ -2929,8 +3041,10 @@ export class FinancialsPageComponent extends DashboardPageBase {
   }
 
   protected override getLayoutSeedForCurrentPersona(): LayoutSeed {
-    return this.personaService.activePersonaSlug() === 'kelly'
-      ? FINANCIALS_KELLY_LAYOUT : FINANCIALS_DEFAULT_LAYOUT;
+    const slug = this.personaService.activePersonaSlug();
+    return slug === 'kelly' ? FINANCIALS_KELLY_LAYOUT
+      : slug === 'pamela' ? FINANCIALS_PAMELA_LAYOUT
+      : FINANCIALS_DEFAULT_LAYOUT;
   }
 
   protected override applyInitialHeaderLock(): void {
@@ -3088,17 +3202,24 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   readonly isKelly = computed(() => this.personaService.activePersonaSlug() === 'kelly');
+  readonly isPamela = computed(() => this.personaService.activePersonaSlug() === 'pamela');
 
   private readonly _registerFinancialsWidgets = effect(() => {
-    const widgets = this.isKelly() ? KELLY_FINANCIALS_WIDGETS : FINANCIALS_WIDGETS;
+    const widgets = this.isKelly() ? KELLY_FINANCIALS_WIDGETS
+      : this.isPamela() ? PAMELA_FINANCIALS_WIDGETS
+      : FINANCIALS_WIDGETS;
     untracked(() => this.widgetFocusService.registerWidgets(widgets));
   });
 
-  readonly financialsWidgets = computed<DashboardWidgetId[]>(() =>
-    this.isKelly()
-      ? ['finInvoiceQueue', 'finPaymentSchedule', 'finVendorAging', 'finPayApps', 'finLienWaivers', 'finRetention', 'finApActivity', 'finCashOutflow']
-      : ['finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders']
-  );
+  readonly financialsWidgets = computed<DashboardWidgetId[]>(() => {
+    if (this.isKelly()) {
+      return ['finInvoiceQueue', 'finPaymentSchedule', 'finVendorAging', 'finPayApps', 'finLienWaivers', 'finRetention', 'finApActivity', 'finCashOutflow'];
+    }
+    if (this.isPamela()) {
+      return ['finOpenEstimates', 'finJobCosts', 'finChangeOrders'];
+    }
+    return ['finRevenueChart', 'finOpenEstimates', 'finBudgetByProject', 'finJobCosts', 'finChangeOrders'];
+  });
 
   readonly kellyApKpisInsight = computed<string | null>(() => this.getFinWidgetInsight('finApKpis'));
   readonly kellyInvoiceQueueInsight = computed<string | null>(() => this.getFinWidgetInsight('finInvoiceQueue'));

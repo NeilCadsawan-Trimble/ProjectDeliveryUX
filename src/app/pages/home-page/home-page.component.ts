@@ -15,6 +15,7 @@ import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/s
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
 import { HOME_DEFAULT_LAYOUT } from '../../data/layout-seeds/home-default.layout';
 import { HOME_KELLY_LAYOUT } from '../../data/layout-seeds/home-kelly.layout';
+import { HOME_PAMELA_LAYOUT } from '../../data/layout-seeds/home-pamela.layout';
 import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
@@ -67,7 +68,7 @@ import {
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import { rewriteDynamicNeeds } from '../projects-page/projects-page-utils';
 import { ALL_DRAWINGS_BY_PROJECT, type DrawingTile } from '../../data/drawings-data';
-import { HOME_WIDGETS, KELLY_HOME_WIDGETS } from '../../data/widget-registrations';
+import { HOME_WIDGETS, KELLY_HOME_WIDGETS, PAMELA_HOME_WIDGETS } from '../../data/widget-registrations';
 import { HomeKpiCardsComponent, type KpiCard } from './components/home-kpi-cards.component';
 import { HomeApKpiCardsComponent, type ApKpiCard } from './components/home-ap-kpi-cards.component';
 import { HomeInvoiceQueueComponent } from './components/home-invoice-queue.component';
@@ -85,6 +86,7 @@ import { HomeFieldOpsComponent } from './components/home-field-ops.component';
 import { HomeDailyReportsComponent } from './components/home-daily-reports.component';
 import { HomeTeamAllocationComponent } from './components/home-team-allocation.component';
 import { HomeContractsComponent } from './components/home-contracts.component';
+import { HomeOpenEstimatesComponent } from './components/home-open-estimates.component';
 import { PROJECT_DATA, type TeamMember, type Milestone } from '../../data/project-data';
 import type { ProjectTeamInput } from './components/home-team-allocation.component';
 import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
@@ -116,6 +118,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
     HomeDailyReportsComponent,
     HomeTeamAllocationComponent,
     HomeContractsComponent,
+    HomeOpenEstimatesComponent,
     WidgetFrameComponent,
     CreateMenuDropdownComponent,
     StatusFilterPillsComponent,
@@ -437,9 +440,26 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                     <app-home-kpi-cards [cards]="kpiCards()" [compact]="true" (cardClick)="handleKpiCardClick($event)" />
                   </div>
                 </app-widget-frame>
-              }
 
-              @else if (widgetId === 'homeTimeOff') {
+              } @else if (widgetId === 'homeEstimatorKpis') {
+                <app-widget-frame
+                  [title]="'Estimator Metrics'"
+                  [icon]="'bar_graph_square'"
+                  [iconClass]="'text-primary'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-4 py-3'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <div class="p-3 flex flex-col gap-2 overflow-y-auto flex-1">
+                    <app-home-kpi-cards [cards]="estimatorKpiCards()" [compact]="true" (cardClick)="handleEstimatorKpiClick($event)" />
+                  </div>
+                </app-widget-frame>
+
+              } @else if (widgetId === 'homeTimeOff') {
                 <div class="bg-card rounded-lg flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
@@ -1901,6 +1921,24 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                 >
                   <app-home-contracts [contracts]="allContracts()" (contractClick)="handleContractClick($event)" />
                 </app-widget-frame>
+
+              } @else if (widgetId === 'homeOpenEstimates') {
+                <app-widget-frame
+                  [title]="'Open Estimates'"
+                  [icon]="'description'"
+                  [iconClass]="'text-primary'"
+                  [insight]="openEstimatesInsight()"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <app-home-open-estimates [estimates]="estimates()" (estimateClick)="navigateToEstimate($event)" />
+                </app-widget-frame>
               }
 
             </div>
@@ -1939,18 +1977,22 @@ export class HomePageComponent extends DashboardPageBase {
   private static readonly CANVAS_HEADER_OFFSET = HomePageComponent.CANVAS_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    const seed = this.personaService.activePersonaSlug() === 'kelly'
-      ? HOME_KELLY_LAYOUT : HOME_DEFAULT_LAYOUT;
+    const slug = this.personaService.activePersonaSlug();
+    const seed = slug === 'kelly' ? HOME_KELLY_LAYOUT
+      : slug === 'pamela' ? HOME_PAMELA_LAYOUT
+      : HOME_DEFAULT_LAYOUT;
 
     return {
       ...seed,
       layoutStorageKey: () => {
-        const k = this.personaService.activePersonaSlug() === 'kelly';
-        return `${this.personaService.activePersonaSlug()}:dashboard-home-${k ? 'v14' : 'v11'}`;
+        const s = this.personaService.activePersonaSlug();
+        const ver = s === 'kelly' ? 'v14' : s === 'pamela' ? 'v16' : 'v12';
+        return `${s}:dashboard-home-${ver}`;
       },
       canvasStorageKey: () => {
-        const k = this.personaService.activePersonaSlug() === 'kelly';
-        return `${this.personaService.activePersonaSlug()}:canvas-layout:dashboard-home:${k ? 'v21' : 'v18'}`;
+        const s = this.personaService.activePersonaSlug();
+        const ver = s === 'kelly' ? 'v21' : s === 'pamela' ? 'v23' : 'v19';
+        return `${s}:canvas-layout:dashboard-home:${ver}`;
       },
       minColSpan: 4,
       canvasGridMinHeightOffset: 100,
@@ -1961,8 +2003,10 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   protected override getLayoutSeedForCurrentPersona(): LayoutSeed {
-    return this.personaService.activePersonaSlug() === 'kelly'
-      ? HOME_KELLY_LAYOUT : HOME_DEFAULT_LAYOUT;
+    const slug = this.personaService.activePersonaSlug();
+    return slug === 'kelly' ? HOME_KELLY_LAYOUT
+      : slug === 'pamela' ? HOME_PAMELA_LAYOUT
+      : HOME_DEFAULT_LAYOUT;
   }
 
   protected override applyInitialHeaderLock(): void {
@@ -2147,13 +2191,39 @@ export class HomePageComponent extends DashboardPageBase {
     { value: formatCurrency(this.discountsAvailable()), label: 'Discounts Available', icon: 'offers', iconBg: 'bg-success-20', iconColor: 'text-success' },
   ]);
 
-  private readonly isKelly = computed(() => this.personaService.activePersonaSlug() === 'kelly');
-
-  readonly homeWidgets = computed<DashboardWidgetId[]>(() =>
-    this.isKelly()
-      ? ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity', 'homeLearning']
-      : ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts']
+  private readonly overdueEstimatesCount = computed(() =>
+    this.estimates().filter(e => e.daysLeft < 0 && e.status !== 'Approved').length,
   );
+  private readonly awaitingApprovalCount = computed(() =>
+    this.estimates().filter(e => e.status === 'Awaiting Approval').length,
+  );
+  private readonly underReviewCount = computed(() =>
+    this.estimates().filter(e => e.status === 'Under Review').length,
+  );
+
+  readonly estimatorKpiCards = computed<KpiCard[]>(() => [
+    { value: this.totalEstimateValue(), label: 'Pipeline Value', icon: 'bar_graph', iconBg: 'bg-primary-20', iconColor: 'text-primary', ariaPrefix: 'Pipeline Value', action: 'est-pipeline', subtitle: `${this.openEstimatesCount()} open estimates` },
+    { value: '' + this.awaitingApprovalCount(), label: 'Awaiting Approval', icon: 'timer', iconBg: 'bg-warning-20', iconColor: 'text-warning', ariaPrefix: 'Awaiting Approval', action: 'est-awaiting' },
+    { value: '' + this.overdueEstimatesCount(), label: 'Overdue Estimates', icon: 'warning', iconBg: 'bg-destructive-20', iconColor: 'text-destructive', ariaPrefix: 'Overdue Estimates', action: 'est-overdue' },
+    { value: '' + this.underReviewCount(), label: 'Under Review', icon: 'description', iconBg: 'bg-success-20', iconColor: 'text-success', ariaPrefix: 'Under Review', action: 'est-review' },
+  ]);
+
+  handleEstimatorKpiClick(action: string): void {
+    this.navigateToFinancials();
+  }
+
+  private readonly isKelly = computed(() => this.personaService.activePersonaSlug() === 'kelly');
+  private readonly isPamela = computed(() => this.personaService.activePersonaSlug() === 'pamela');
+
+  readonly homeWidgets = computed<DashboardWidgetId[]>(() => {
+    if (this.isKelly()) {
+      return ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity', 'homeLearning'];
+    }
+    if (this.isPamela()) {
+      return ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity'];
+    }
+    return ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates'];
+  });
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   readonly allCreateItems: NavItem[] = [...RECORDS_SUB_NAV_ITEMS, ...FINANCIALS_SUB_NAV_ITEMS];
@@ -2166,7 +2236,9 @@ export class HomePageComponent extends DashboardPageBase {
   private readonly createDropdownCanvas = viewChild<CreateMenuDropdownComponent>('createDropdownCanvas');
 
   private readonly _registerHomeWidgets = effect(() => {
-    const widgets = this.isKelly() ? KELLY_HOME_WIDGETS : HOME_WIDGETS;
+    const widgets = this.isKelly() ? KELLY_HOME_WIDGETS
+      : this.isPamela() ? PAMELA_HOME_WIDGETS
+      : HOME_WIDGETS;
     untracked(() => this.widgetFocusService.registerWidgets(widgets));
   });
 
@@ -2644,6 +2716,10 @@ export class HomePageComponent extends DashboardPageBase {
     this.navigateToProject(projectId);
   }
 
+  navigateToEstimate(id: string): void {
+    this.router.navigate([`${this.personaPrefix()}/financials/estimates`, id]);
+  }
+
   handleContractClick(event: { projectId: number; contractId: string }): void {
     this.navigateToProjectPage(event.projectId, {
       page: 'financials', subpage: 'contracts',
@@ -2743,6 +2819,7 @@ export class HomePageComponent extends DashboardPageBase {
   readonly dailyReportsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeDailyReports'));
   readonly teamAllocationInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeTeamAllocation'));
   readonly contractsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeContracts'));
+  readonly openEstimatesInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeOpenEstimates'));
 
   readonly staffingByProject = computed(() => {
     const conflicts = this.allStaffingConflicts();

@@ -59,6 +59,7 @@ export type DashboardWidgetId =
   | 'homeDailyReports'
   | 'homeTeamAllocation'
   | 'homeContracts'
+  | 'homeOpenEstimates'
   | 'finInvoiceQueue'
   | 'finPaymentSchedule'
   | 'finVendorAging'
@@ -67,7 +68,8 @@ export type DashboardWidgetId =
   | 'finRetention'
   | 'finApActivity'
   | 'finCashOutflow'
-  | 'homeLearning';
+  | 'homeLearning'
+  | 'homeEstimatorKpis';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';

@@ -193,10 +193,10 @@ import type { AgentAction } from '../../data/widget-agents';
         <div class="flex items-end gap-2 px-2 pt-2 pb-1">
           <textarea
             #chatInput
-            class="flex-1 min-h-[36px] max-h-[80px] px-3 py-1.5 text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40"
+            class="flex-1 min-h-[72px] max-h-[160px] text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40 p-1"
             [class.opacity-50]="controller().hasPendingAction()"
             [placeholder]="controller().hasPendingAction() ? 'Confirm or cancel the pending action first' : placeholder()"
-            rows="1"
+            rows="2"
             [value]="controller().inputText()"
             (input)="controller().inputText.set($any($event.target).value)"
             (keydown)="controller().handleKeydown($event)"
@@ -216,7 +216,7 @@ import type { AgentAction } from '../../data/widget-agents';
               [class.text-primary-foreground]="controller().inputText().trim().length > 0 && !controller().thinking() && !controller().hasPendingAction()"
               [class.text-foreground-40]="!controller().inputText().trim().length || controller().thinking() || controller().hasPendingAction()"
               aria-hidden="true"
-            >send</i>
+            >paper_plane</i>
           </div>
         </div>
         @if (showDisclaimer()) {
