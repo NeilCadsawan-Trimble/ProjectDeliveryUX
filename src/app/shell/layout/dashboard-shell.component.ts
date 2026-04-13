@@ -945,19 +945,31 @@ export class DashboardShellComponent implements AfterViewInit {
   private getSeedFileTarget(): { filePath: string; constName: string } | null {
     const page = this.getPageName();
     const slug = this.personaService.activePersonaSlug();
-    const isKelly = slug === 'kelly';
 
     const map: Record<string, { filePath: string; constName: string }> = {
+      'home:frank': { filePath: 'src/app/data/layout-seeds/home-frank.layout.ts', constName: 'HOME_FRANK_LAYOUT' },
+      'home:bert': { filePath: 'src/app/data/layout-seeds/home-bert.layout.ts', constName: 'HOME_BERT_LAYOUT' },
       'home:kelly': { filePath: 'src/app/data/layout-seeds/home-kelly.layout.ts', constName: 'HOME_KELLY_LAYOUT' },
-      'home:default': { filePath: 'src/app/data/layout-seeds/home-default.layout.ts', constName: 'HOME_DEFAULT_LAYOUT' },
+      'home:dominique': { filePath: 'src/app/data/layout-seeds/home-dominique.layout.ts', constName: 'HOME_DOMINIQUE_LAYOUT' },
+      'home:pamela': { filePath: 'src/app/data/layout-seeds/home-pamela.layout.ts', constName: 'HOME_PAMELA_LAYOUT' },
+      'financials:frank': { filePath: 'src/app/data/layout-seeds/financials-frank.layout.ts', constName: 'FINANCIALS_FRANK_LAYOUT' },
+      'financials:bert': { filePath: 'src/app/data/layout-seeds/financials-bert.layout.ts', constName: 'FINANCIALS_BERT_LAYOUT' },
       'financials:kelly': { filePath: 'src/app/data/layout-seeds/financials-kelly.layout.ts', constName: 'FINANCIALS_KELLY_LAYOUT' },
-      'financials:default': { filePath: 'src/app/data/layout-seeds/financials-default.layout.ts', constName: 'FINANCIALS_DEFAULT_LAYOUT' },
-      'projects:default': { filePath: 'src/app/data/layout-seeds/projects-default.layout.ts', constName: 'PROJECTS_DEFAULT_LAYOUT' },
-      'project-dashboard:default': { filePath: 'src/app/data/layout-seeds/project-detail.layout.ts', constName: 'PROJECT_DETAIL_LAYOUT' },
+      'financials:dominique': { filePath: 'src/app/data/layout-seeds/financials-dominique.layout.ts', constName: 'FINANCIALS_DOMINIQUE_LAYOUT' },
+      'financials:pamela': { filePath: 'src/app/data/layout-seeds/financials-pamela.layout.ts', constName: 'FINANCIALS_PAMELA_LAYOUT' },
+      'projects:frank': { filePath: 'src/app/data/layout-seeds/projects-frank.layout.ts', constName: 'PROJECTS_FRANK_LAYOUT' },
+      'projects:bert': { filePath: 'src/app/data/layout-seeds/projects-bert.layout.ts', constName: 'PROJECTS_BERT_LAYOUT' },
+      'projects:kelly': { filePath: 'src/app/data/layout-seeds/projects-kelly.layout.ts', constName: 'PROJECTS_KELLY_LAYOUT' },
+      'projects:dominique': { filePath: 'src/app/data/layout-seeds/projects-dominique.layout.ts', constName: 'PROJECTS_DOMINIQUE_LAYOUT' },
+      'projects:pamela': { filePath: 'src/app/data/layout-seeds/projects-pamela.layout.ts', constName: 'PROJECTS_PAMELA_LAYOUT' },
+      'project-dashboard:frank': { filePath: 'src/app/data/layout-seeds/project-detail-frank.layout.ts', constName: 'PROJECT_DETAIL_FRANK_LAYOUT' },
+      'project-dashboard:bert': { filePath: 'src/app/data/layout-seeds/project-detail-bert.layout.ts', constName: 'PROJECT_DETAIL_BERT_LAYOUT' },
+      'project-dashboard:kelly': { filePath: 'src/app/data/layout-seeds/project-detail-kelly.layout.ts', constName: 'PROJECT_DETAIL_KELLY_LAYOUT' },
+      'project-dashboard:dominique': { filePath: 'src/app/data/layout-seeds/project-detail-dominique.layout.ts', constName: 'PROJECT_DETAIL_DOMINIQUE_LAYOUT' },
+      'project-dashboard:pamela': { filePath: 'src/app/data/layout-seeds/project-detail-pamela.layout.ts', constName: 'PROJECT_DETAIL_PAMELA_LAYOUT' },
     };
 
-    const variant = isKelly ? 'kelly' : 'default';
-    return map[`${page}:${variant}`] ?? map[`${page}:default`] ?? null;
+    return map[`${page}:${slug}`] ?? map[`${page}:default`] ?? null;
   }
 
   private exportCurrentLayout(): void {

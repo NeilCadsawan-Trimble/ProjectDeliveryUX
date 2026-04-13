@@ -13,8 +13,10 @@ import { Router } from '@angular/router';
 import { DataStoreService } from '../../data/data-store.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
-import { HOME_DEFAULT_LAYOUT } from '../../data/layout-seeds/home-default.layout';
+import { HOME_FRANK_LAYOUT } from '../../data/layout-seeds/home-frank.layout';
+import { HOME_BERT_LAYOUT } from '../../data/layout-seeds/home-bert.layout';
 import { HOME_KELLY_LAYOUT } from '../../data/layout-seeds/home-kelly.layout';
+import { HOME_DOMINIQUE_LAYOUT } from '../../data/layout-seeds/home-dominique.layout';
 import { HOME_PAMELA_LAYOUT } from '../../data/layout-seeds/home-pamela.layout';
 import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
@@ -1977,10 +1979,7 @@ export class HomePageComponent extends DashboardPageBase {
   private static readonly CANVAS_HEADER_OFFSET = HomePageComponent.CANVAS_HEADER_HEIGHT + DashboardLayoutEngine.GAP_PX;
 
   protected override getEngineConfig(): DashboardLayoutConfig {
-    const slug = this.personaService.activePersonaSlug();
-    const seed = slug === 'kelly' ? HOME_KELLY_LAYOUT
-      : slug === 'pamela' ? HOME_PAMELA_LAYOUT
-      : HOME_DEFAULT_LAYOUT;
+    const seed = this.getLayoutSeedForCurrentPersona();
 
     return {
       ...seed,
@@ -2004,9 +2003,14 @@ export class HomePageComponent extends DashboardPageBase {
 
   protected override getLayoutSeedForCurrentPersona(): LayoutSeed {
     const slug = this.personaService.activePersonaSlug();
-    return slug === 'kelly' ? HOME_KELLY_LAYOUT
-      : slug === 'pamela' ? HOME_PAMELA_LAYOUT
-      : HOME_DEFAULT_LAYOUT;
+    switch (slug) {
+      case 'frank': return HOME_FRANK_LAYOUT;
+      case 'bert': return HOME_BERT_LAYOUT;
+      case 'kelly': return HOME_KELLY_LAYOUT;
+      case 'dominique': return HOME_DOMINIQUE_LAYOUT;
+      case 'pamela': return HOME_PAMELA_LAYOUT;
+      default: return HOME_FRANK_LAYOUT;
+    }
   }
 
   protected override applyInitialHeaderLock(): void {

@@ -15,7 +15,7 @@ const ROW3 = ROW2 + H_STD + GAP;
 const TIMELINE_OFFSET = HEADER_OFFSET;
 const TILES_OFFSET = HEADER_OFFSET + H_TIMELINE + GAP;
 
-export const PROJECTS_DEFAULT_LAYOUT: LayoutSeed = {
+export const PROJECTS_KELLY_LAYOUT: LayoutSeed = {
   widgets: [
     'projsHeader', 'projsTimeline',
     'proj1', 'proj2', 'proj3', 'proj4', 'proj5', 'proj6', 'proj7', 'proj8',

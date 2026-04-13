@@ -1667,6 +1667,45 @@ The storage key closures also captured a stale `isKelly` const, so the version s
 
 ---
 
+## 37. Layout Seed Independence (No Shared Seeds)
+
+**Context**: 5 personas x 4 pages = 20 independent layout seed files. Every persona has its own seed for every page. NO shared "default" seeds exist. Seed files live in `src/app/data/layout-seeds/{page}-{persona}.layout.ts`.
+
+**Seed file naming**:
+- `home-frank.layout.ts`, `home-bert.layout.ts`, `home-kelly.layout.ts`, `home-dominique.layout.ts`, `home-pamela.layout.ts`
+- `financials-frank.layout.ts`, `financials-bert.layout.ts`, `financials-kelly.layout.ts`, `financials-dominique.layout.ts`, `financials-pamela.layout.ts`
+- `projects-frank.layout.ts`, `projects-bert.layout.ts`, `projects-kelly.layout.ts`, `projects-dominique.layout.ts`, `projects-pamela.layout.ts`
+- `project-detail-frank.layout.ts`, `project-detail-bert.layout.ts`, `project-detail-kelly.layout.ts`, `project-detail-dominique.layout.ts`, `project-detail-pamela.layout.ts`
+
+**History**: Shared "default" seeds (`home-default.layout.ts`, etc.) previously served Frank, Bert, and Dominique. This caused two critical failures:
+1. Editing one persona's layout silently broke the other two.
+2. `exportLayoutSeed()` run with the wrong active persona overwrote the shared file, corrupting all three personas.
+
+**Architecture**:
+- Each page component's `getLayoutSeedForCurrentPersona()` uses a `switch` on persona slug, returning that persona's own seed constant.
+- `getEngineConfig()` calls `getLayoutSeedForCurrentPersona()` (not a hardcoded seed).
+- The export tool in `dashboard-shell.component.ts` maps `{page}:{persona}` to the correct file.
+- `buildProjectsLayoutConfig()` accepts a `seed` parameter (not a hardcoded import).
+
+**Regression tests**: `tests/static/layout-seeds.spec.ts` (288 tests) enforces:
+1. No shared default files exist (`home-default`, `financials-default`, `projects-default`, `project-detail.layout.ts` are all forbidden)
+2. All 20 per-persona seed files exist
+3. Exact widget lists per persona
+4. Cross-persona contamination checks
+5. Geometry key consistency for all 20 seeds
+6. Per-persona routing in all 4 page components (every slug maps to its own seed)
+7. Export tool maps every persona to its own file
+
+**Rules**:
+1. **NEVER create shared/default seed files** -- every persona gets its own file, period.
+2. **When adding a new persona**: create 4 new seed files (one per page), add routing cases to all 4 page components, add export map entries, and add expected widget lists to `layout-seeds.spec.ts`.
+3. **When modifying a persona's layout**: only touch that persona's seed file. Never touch another persona's file in the same change.
+4. **Run static tests after any seed change**: `npx vitest run tests/static/layout-seeds.spec.ts`
+
+**Files**: 20 seed files in `src/app/data/layout-seeds/`, routing in all 4 page components, export map in `dashboard-shell.component.ts`, `projects-page-layout.config.ts`, `tests/static/layout-seeds.spec.ts`
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1680,7 +1719,7 @@ The storage key closures also captured a stale `isKelly` const, so the version s
 | Side nav dark background | `src/styles.css` | (visual, test all 6 themes) |
 | Widget deselection | `dashboard-shell.component.ts` | `tests/static/dashboard-shell.spec.ts` |
 | Tile detail template pattern | `project-dashboard.component.ts` | `tests/static/project-dashboard.spec.ts` |
-| Canvas grid alignment | all page components | `tests/static/canvas-grid-alignment.spec.ts` |
+| Canvas grid alignment | all seed files in `layout-seeds/` | `tests/static/canvas-grid-alignment.spec.ts` |
 | View mode parity | all page components | `tests/static/project-dashboard.spec.ts` (canvas parity) |
 | Template arrow functions | all `.component.ts` | `tests/static/template-safety.spec.ts` |
 | Template private member access | all `.component.ts` | `tests/static/template-safety.spec.ts` |
@@ -1713,3 +1752,4 @@ The storage key closures also captured a stale `isKelly` const, so the version s
 | Missing compactAll on desktop reset/load | `dashboard-layout-engine.ts` (`resetToDefaults`, `loadSavedDefaults`) | (visual: Reset Layout, verify no overlaps) |
 | Stale LayoutDefaultsService version keys | `layout-defaults.service.ts` | (Save All Defaults, verify keys match actual storage keys) |
 | Missing header lock after project change | `project-dashboard.component.ts` (`_projectChangeEffect`) | (visual: switch project, verify header stays locked) |
+| Layout seed independence (20 files, no shared defaults) | `src/app/data/layout-seeds/{page}-{persona}.layout.ts` | `tests/static/layout-seeds.spec.ts` (288 tests: file existence, widget lists, cross-contamination, geometry, routing, export map) |

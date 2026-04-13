@@ -43,7 +43,11 @@ import {
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import type { Milestone, TeamMember, Risk } from '../../data/project-data';
 import { TILE_IDS, TILE_VISUAL_ORDER, buildProjectsLayoutConfig } from './projects-page-layout.config';
-import { PROJECTS_DEFAULT_LAYOUT } from '../../data/layout-seeds/projects-default.layout';
+import { PROJECTS_FRANK_LAYOUT } from '../../data/layout-seeds/projects-frank.layout';
+import { PROJECTS_BERT_LAYOUT } from '../../data/layout-seeds/projects-bert.layout';
+import { PROJECTS_KELLY_LAYOUT } from '../../data/layout-seeds/projects-kelly.layout';
+import { PROJECTS_DOMINIQUE_LAYOUT } from '../../data/layout-seeds/projects-dominique.layout';
+import { PROJECTS_PAMELA_LAYOUT } from '../../data/layout-seeds/projects-pamela.layout';
 import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { rewriteDynamicNeeds, injectScheduleOverdue, sortProjectsByUrgency, rewriteBudgetRisk } from './projects-page-utils';
 import { RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, type NavItem } from '../project-dashboard/project-dashboard.config';
@@ -134,6 +138,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
   protected override getEngineConfig(): DashboardLayoutConfig {
     return buildProjectsLayoutConfig(
+      this.getLayoutSeedForCurrentPersona(),
       (id) => this.widgetFocusService.selectWidget(id),
       () => this.personaService.activePersonaSlug(),
     );
@@ -144,7 +149,15 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   }
 
   protected override getLayoutSeedForCurrentPersona(): LayoutSeed {
-    return PROJECTS_DEFAULT_LAYOUT;
+    const slug = this.personaService.activePersonaSlug();
+    switch (slug) {
+      case 'frank': return PROJECTS_FRANK_LAYOUT;
+      case 'bert': return PROJECTS_BERT_LAYOUT;
+      case 'kelly': return PROJECTS_KELLY_LAYOUT;
+      case 'dominique': return PROJECTS_DOMINIQUE_LAYOUT;
+      case 'pamela': return PROJECTS_PAMELA_LAYOUT;
+      default: return PROJECTS_FRANK_LAYOUT;
+    }
   }
 
   protected override resolveGridElement(): HTMLElement | undefined {
