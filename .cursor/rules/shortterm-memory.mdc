@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: Apr 10, 2026
+**Current window**: Apr 12, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -31,27 +31,18 @@ If the date matches today, skip this section and proceed normally.
 
 ## Today's Sessions
 
-*(Apr 10, 2026)*
+*(Apr 12, 2026)*
 
-### Session 20: Subnav Layout Gap and Layout Seed Reset Fixes
-- **Subnav gap fix**: Added conditional `[class.md:pl-4]="!sideSubNavCollapsed()"` wrappers around content sections (not toolbar) in project dashboard template for detail, records, and financials views
-- **Layout seed system -- 4-bug fix**:
-  1. Frozen engine config on persona switch: Added `updateConfigForNewSeed()` to `DashboardLayoutEngine` and `getLayoutSeedForCurrentPersona()` virtual on `DashboardPageBase`; overridden in Home/Financials
-  2. Missing `compactAll()` in desktop `resetToDefaults()`/`loadSavedDefaults()` -- overlaps after Reset Layout
-  3. Stale `LayoutDefaultsService` version keys updated (Home, Financials, Projects all versions aligned)
-  4. Missing `applyInitialHeaderLock()` after `reinitLayout()` in `_projectChangeEffect`
-- Updated skills (section 36), PROGRESS.md (Phase 23), long-term memory session history
-- Consolidated short-term memory from Apr 8
+### Session 21: Pamela Chen Persona (Senior Estimator)
+- Creating new persona: Pamela Chen, Senior Estimator
+- New Open Estimates widget + home dashboard layout seed for estimator persona
 
 ## Active Context
 
 - On `dev` branch.
-- Dev server running at localhost:4200.
 - Layout seed system working correctly for persona switches, Reset Layout, and browser cache clear.
-- All layout storage key versions in sync across pages and LayoutDefaultsService.
 - Build passing (pre-existing SVG color lint warnings remain).
 
 ## Pending Items
 
 - Changes not yet pushed to GitHub.
-- Pre-existing Milestone type error in home-page.component.ts noted in prior session (may have been resolved).

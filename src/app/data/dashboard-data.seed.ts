@@ -32,6 +32,7 @@ import type {
   TimeOffRequest,
   WeatherCondition,
   WeatherForecast,
+  EstimateAssemblyHub,
 } from './dashboard-data.types';
 
 const _DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -58,6 +59,12 @@ function buildForecast(patterns: ForecastPattern[]): WeatherForecast[] {
       ...p,
     };
   });
+}
+
+function futureDateLabel(daysFromNow: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export const PROJECTS: Project[] = [
@@ -90,6 +97,7 @@ export const ESTIMATES: Estimate[] = [
   { id: 'EST-2026-045', project: 'Shopping Center Facade Renovation', client: 'Brightline Co', type: 'Fixed Price', value: '$175,000', valueRaw: 175000, status: 'Under Review', requestedBy: 'Lena Brooks', requestedByInitials: 'LB', dueDate: 'Apr 5, 2026', daysLeft: 9 },
   { id: 'EST-2026-055', project: 'Regional Airport Taxiway Repair', client: 'NexGen Analytics', type: 'Milestone', value: '$510,000', valueRaw: 510000, status: 'Under Review', requestedBy: 'Tom Evans', requestedByInitials: 'TE', dueDate: 'Apr 6, 2026', daysLeft: 10 },
   // --- Due in 2-4 weeks (5) ---
+  { id: 'EST-2026-065', project: 'Eldorado Canyon Community Center', client: 'Apex Corp', type: 'Fixed Price', value: '$560,000', valueRaw: 560000, status: 'Draft', requestedBy: 'Pamela Chen', requestedByInitials: 'PC', dueDate: futureDateLabel(14), daysLeft: 14 },
   { id: 'EST-2026-043', project: 'Transit Hub Post-Occupancy', client: 'GlobalTech Ltd', type: 'Retainer', value: '$45,000/mo', valueRaw: 45000, status: 'Draft', requestedBy: 'Priya Nair', requestedByInitials: 'PN', dueDate: 'Apr 10, 2026', daysLeft: 14 },
   { id: 'EST-2026-046', project: 'Bridge Deck Inspection', client: 'Trimble Internal', type: 'Fixed Price', value: '$38,000', valueRaw: 38000, status: 'Draft', requestedBy: 'Mike Osei', requestedByInitials: 'MO', dueDate: 'Apr 12, 2026', daysLeft: 16 },
   { id: 'EST-2026-048', project: 'Warehouse Loading Dock Expansion', client: 'DataDrive AI', type: 'Milestone', value: '$410,000', valueRaw: 410000, status: 'Under Review', requestedBy: 'Priya Nair', requestedByInitials: 'PN', dueDate: 'Apr 15, 2026', daysLeft: 19 },
@@ -1572,3 +1580,72 @@ export const SUBCONTRACT_LEDGER: SubcontractLedgerEntry[] = [
   { id: 'SL-041', subcontractId: 'SC-2026-004', vendor: 'CoolAir Mechanical', projectId: 4, project: 'Lakeside Medical Center', type: 'retainage-held', description: 'Retainage held on PA-003 (10%)', amount: -6200, date: '2026-06-15', payApp: 'PA-003', period: 'Jun 2026', runningBalance: 122200 },
   { id: 'SL-042', subcontractId: 'SC-2026-003', vendor: 'WaterTight Systems', projectId: 2, project: 'Harbor View Condominiums', type: 'retainage-release', description: 'Full retainage release -- waterproofing warranty approved', amount: 8400, date: '2026-06-20', payApp: 'RR-001', period: 'Jun 2026', runningBalance: 0 },
 ];
+
+// ---------------------------------------------------------------------------
+// Estimate Assembly Hub (per-persona)
+// ---------------------------------------------------------------------------
+
+const COST_ESTIMATE_DELIVERABLES_PAMELA = [
+  { name: 'Equipment Verification', editedAgo: '2 hours ago', owner: 'Pamela Chen', ownerInitials: 'PC', ownerRole: 'Lead Estimator', status: 'Flagged' as const, statusLabel: 'Flagged', context: 'Excel document needs to be reviewed/verified by estimator and uploaded', warning: 'Flagged by Bert - needs review and upload', primaryAction: 'Verify' },
+  { name: 'MEP Labor & Quotes', editedAgo: '4 hours ago', owner: 'Jennifer Lopez', ownerInitials: 'JL', ownerRole: 'MEP Estimator', status: 'Handoff' as const, statusLabel: 'Handoff to Pamela', context: 'HVAC quotes normalized', primaryAction: 'Accept', secondaryAction: 'Review' },
+  { name: 'Overhead & Contingency', editedAgo: '1 day ago', owner: 'David Chen', ownerInitials: 'DC', ownerRole: 'Senior Estimator', status: 'Validated' as const, statusLabel: 'Validated', context: 'Returned: 3.5% contingency is too thin for phased renovation.' },
+  { name: 'Section Sign-off', editedAgo: '1 day ago', owner: 'Pamela Chen', ownerInitials: 'PC', ownerRole: 'Lead Estimator', status: 'Blocked' as const, statusLabel: 'Blocked', context: 'Blocked - Waiting on David\'s contingency update', warning: 'Cannot sign off until contingency is resolved', primaryAction: 'Resolve' },
+];
+
+const COST_ESTIMATE_DELIVERABLES_PM = [
+  { name: 'Equipment Verification', editedAgo: '2 hours ago', owner: 'Pamela Chen', ownerInitials: 'PC', ownerRole: 'Lead Estimator', status: 'Flagged' as const, statusLabel: 'Flagged', context: 'Excel document needs to be reviewed/verified by estimator and uploaded', warning: 'Flagged by Bert - needs review and upload', primaryAction: 'Send note to Pamela', secondaryAction: 'Review' },
+  { name: 'MEP Labor & Quotes', editedAgo: '4 hours ago', owner: 'Jennifer Lopez', ownerInitials: 'JL', ownerRole: 'MEP Estimator', status: 'Handoff' as const, statusLabel: 'Handoff to Pamela', context: 'HVAC quotes normalized' },
+  { name: 'Overhead & Contingency', editedAgo: '1 day ago', owner: 'David Chen', ownerInitials: 'DC', ownerRole: 'Senior Estimator', status: 'Validated' as const, statusLabel: 'Validated', context: 'Returned: 3.5% contingency is too thin for phased renovation.' },
+  { name: 'Section Sign-off', editedAgo: '1 day ago', owner: 'Pamela Chen', ownerInitials: 'PC', ownerRole: 'Lead Estimator', status: 'Blocked' as const, statusLabel: 'Blocked', context: 'Blocked - Waiting on David\'s contingency update', warning: 'Cannot sign off until contingency is resolved', primaryAction: 'Send note to Pamela', secondaryAction: 'Review' },
+];
+
+export const ESTIMATE_ASSEMBLY_HUBS: Record<string, EstimateAssemblyHub> = {
+  pamela: {
+    title: 'Shared Bid Assembly Hub',
+    subtitle: 'Task workflows grouped by bid package section',
+    kpis: [
+      { label: 'Blocked', value: 1, color: 'destructive' },
+      { label: 'Flagged', value: 1, color: 'destructive' },
+      { label: 'Handoff', value: 1, color: 'primary' },
+      { label: 'Validated', value: 1, color: 'success' },
+      { label: 'Day Until Deadline', value: 1, color: 'success' },
+    ],
+    sections: [
+      { name: 'Cost Estimate', status: 'Blocked', owner: 'Pamela Chen', ownerInitials: 'PC', ownerRole: 'Lead Estimator', completePct: 25, expanded: true, deliverables: COST_ESTIMATE_DELIVERABLES_PAMELA },
+    ],
+  },
+  bert: {
+    title: 'Shared Bid Assembly Hub',
+    subtitle: 'Task workflows grouped by bid package section',
+    kpis: [
+      { label: 'Blocked', value: 1, color: 'destructive' },
+      { label: 'Flagged', value: 1, color: 'destructive' },
+      { label: 'Active/Handoff', value: 5, color: 'primary' },
+      { label: 'Completed/Validated', value: 5, color: 'success' },
+      { label: 'Day Until Deadline', value: 1, color: 'success' },
+    ],
+    sections: [
+      { name: 'Cost Estimate', status: 'Blocked', owner: 'Pamela Chen', ownerInitials: 'PC', ownerRole: 'Lead Estimator', completePct: 25, expanded: true, deliverables: COST_ESTIMATE_DELIVERABLES_PM },
+      { name: 'Field Data', status: 'Active', owner: 'Marcus Sanchez', ownerInitials: 'MS', ownerRole: 'Field Supervisor', completePct: 0, description: 'Drone Topo Survey for Earthwork Verification', deliverables: [] },
+      { name: 'Executive Summary', status: 'In Progress', owner: '', ownerInitials: '', ownerRole: '', completePct: 75, description: 'AI draft generated highlighting why Rocky Mountain is best', deliverables: [] },
+      { name: 'Safety Plan', status: 'Completed', owner: 'Sarah Martinez', ownerInitials: 'SM', ownerRole: 'Safety Director', completePct: 100, deliverables: [] },
+    ],
+  },
+  frank: {
+    title: 'Shared Bid Assembly Hub',
+    subtitle: 'Task workflows grouped by bid package section',
+    kpis: [
+      { label: 'Blocked', value: 1, color: 'destructive' },
+      { label: 'Flagged', value: 1, color: 'destructive' },
+      { label: 'Active/Handoff', value: 5, color: 'primary' },
+      { label: 'Completed/Validated', value: 5, color: 'success' },
+      { label: 'Day Until Deadline', value: 1, color: 'success' },
+    ],
+    sections: [
+      { name: 'Cost Estimate', status: 'Blocked', owner: 'Pamela Chen', ownerInitials: 'PC', ownerRole: 'Lead Estimator', completePct: 25, expanded: true, deliverables: COST_ESTIMATE_DELIVERABLES_PM },
+      { name: 'Field Data', status: 'Active', owner: 'Marcus Sanchez', ownerInitials: 'MS', ownerRole: 'Field Supervisor', completePct: 0, description: 'Drone Topo Survey for Earthwork Verification', deliverables: [] },
+      { name: 'Executive Summary', status: 'In Progress', owner: '', ownerInitials: '', ownerRole: '', completePct: 75, description: 'AI draft generated highlighting why Rocky Mountain is best', deliverables: [] },
+      { name: 'Safety Plan', status: 'Completed', owner: 'Sarah Martinez', ownerInitials: 'SM', ownerRole: 'Safety Director', completePct: 100, deliverables: [] },
+    ],
+  },
+};

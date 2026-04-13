@@ -24,7 +24,7 @@ const SECTION_1_ITEMS: UserMenuItem[] = [
   { id: 'admin', label: 'Account settings', icon: 'cloud_download' },
 ];
 
-const VISIBLE_PERSONA_SLUGS = new Set(['frank', 'bert', 'kelly']);
+const VISIBLE_PERSONA_SLUGS = new Set(['frank', 'bert', 'kelly', 'pamela']);
 
 const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS
   .filter(p => VISIBLE_PERSONA_SLUGS.has(p.slug))

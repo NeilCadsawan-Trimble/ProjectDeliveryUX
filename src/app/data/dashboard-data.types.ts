@@ -731,3 +731,51 @@ export interface LearningPlan {
   completedCourses: number;
   courses: LearningCourse[];
 }
+
+// ---------------------------------------------------------------------------
+// Estimate Assembly Hub
+// ---------------------------------------------------------------------------
+export type AssemblySectionStatus =
+  | 'Blocked' | 'Flagged' | 'Active' | 'In Progress' | 'Completed';
+
+export type AssemblyDeliverableStatus =
+  | 'Flagged' | 'Handoff' | 'Validated' | 'Blocked';
+
+export interface AssemblyDeliverable {
+  name: string;
+  editedAgo: string;
+  owner: string;
+  ownerInitials: string;
+  ownerRole: string;
+  status: AssemblyDeliverableStatus;
+  statusLabel: string;
+  context: string;
+  warning?: string;
+  primaryAction?: string;
+  secondaryAction?: string;
+}
+
+export interface AssemblySection {
+  name: string;
+  status: AssemblySectionStatus;
+  owner: string;
+  ownerInitials: string;
+  ownerRole: string;
+  completePct: number;
+  description?: string;
+  expanded?: boolean;
+  deliverables: AssemblyDeliverable[];
+}
+
+export interface AssemblyKpi {
+  label: string;
+  value: number;
+  color?: 'destructive' | 'warning' | 'primary' | 'success' | 'secondary';
+}
+
+export interface EstimateAssemblyHub {
+  title: string;
+  subtitle: string;
+  kpis: AssemblyKpi[];
+  sections: AssemblySection[];
+}
