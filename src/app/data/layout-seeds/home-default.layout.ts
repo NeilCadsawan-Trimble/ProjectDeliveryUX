@@ -2,7 +2,7 @@ import type { LayoutSeed } from './layout-seed.types';
 
 // Exported from live desktop layout
 export const HOME_DEFAULT_LAYOUT: LayoutSeed = {
-  widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts'],
+  widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates'],
   defaultColStarts: {
     homeHeader: 1,
     homeKpis: 1,
@@ -19,8 +19,9 @@ export const HOME_DEFAULT_LAYOUT: LayoutSeed = {
     homeChangeOrders: 1,
     homeFieldOps: 7,
     homeDailyReports: 1,
-    homeTeamAllocation: 7,
+    homeTeamAllocation: 1,
     homeContracts: 7,
+    homeOpenEstimates: 7,
   },
   defaultColSpans: {
     homeHeader: 16,
@@ -38,8 +39,9 @@ export const HOME_DEFAULT_LAYOUT: LayoutSeed = {
     homeChangeOrders: 6,
     homeFieldOps: 10,
     homeDailyReports: 6,
-    homeTeamAllocation: 10,
+    homeTeamAllocation: 6,
     homeContracts: 10,
+    homeOpenEstimates: 10,
   },
   defaultTops: {
     homeHeader: 0,
@@ -48,17 +50,18 @@ export const HOME_DEFAULT_LAYOUT: LayoutSeed = {
     homeWeather: 864,
     homeTimeOff: 2352,
     homeCalendar: 352,
-    homeRfis: 2288,
-    homeSubmittals: 2288,
+    homeRfis: 2768,
+    homeSubmittals: 2768,
     homeDrawings: 1648,
-    homeRecentActivity: 1888,
+    homeRecentActivity: 2368,
     homeMilestones: 2000,
     homeBudgetVariance: 816,
     homeChangeOrders: 1216,
     homeFieldOps: 1168,
     homeDailyReports: 304,
-    homeTeamAllocation: 2640,
+    homeTeamAllocation: 2736,
     homeContracts: 1520,
+    homeOpenEstimates: 1888,
   },
   defaultHeights: {
     homeHeader: 0,
@@ -76,8 +79,9 @@ export const HOME_DEFAULT_LAYOUT: LayoutSeed = {
     homeChangeOrders: 416,
     homeFieldOps: 336,
     homeDailyReports: 544,
-    homeTeamAllocation: 336,
+    homeTeamAllocation: 352,
     homeContracts: 352,
+    homeOpenEstimates: 464,
   },
   canvasDefaultLefts: {
     homeHeader: 0,
@@ -97,6 +101,7 @@ export const HOME_DEFAULT_LAYOUT: LayoutSeed = {
     homeDailyReports: -486,
     homeTeamAllocation: 1458,
     homeContracts: 0,
+    homeOpenEstimates: 0,
   },
   canvasDefaultPixelWidths: {
     homeHeader: 1280,
@@ -116,6 +121,7 @@ export const HOME_DEFAULT_LAYOUT: LayoutSeed = {
     homeDailyReports: 470,
     homeTeamAllocation: 470,
     homeContracts: 632,
+    homeOpenEstimates: 632,
   },
   canvasDefaultTops: {
     homeHeader: 16,
@@ -135,6 +141,7 @@ export const HOME_DEFAULT_LAYOUT: LayoutSeed = {
     homeDailyReports: 800,
     homeTeamAllocation: 752,
     homeContracts: 656,
+    homeOpenEstimates: 1952,
   },
   canvasDefaultHeights: {
     homeHeader: 80,
@@ -154,5 +161,6 @@ export const HOME_DEFAULT_LAYOUT: LayoutSeed = {
     homeDailyReports: 576,
     homeTeamAllocation: 416,
     homeContracts: 416,
+    homeOpenEstimates: 464,
   },
 };

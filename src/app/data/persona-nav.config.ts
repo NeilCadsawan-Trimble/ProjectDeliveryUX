@@ -69,11 +69,22 @@ function buildKellyNav(): PersonaNavConfig {
   return nav;
 }
 
+const PAMELA_FIN_SUBNAV_KEYS = new Set([
+  'overview', 'estimates', 'change-orders', 'job-costs', 'contracts',
+]);
+
+function buildPamelaNav(): PersonaNavConfig {
+  const nav = buildPersonaNav();
+  nav.financialsPageSubNav = nav.financialsPageSubNav.filter(item => PAMELA_FIN_SUBNAV_KEYS.has(item.value));
+  return nav;
+}
+
 export const PERSONA_NAV: Record<string, PersonaNavConfig> = {
   frank: buildPersonaNav(),
   bert: buildBertNav(),
   kelly: buildKellyNav(),
   dominique: buildPersonaNav(),
+  pamela: buildPamelaNav(),
 };
 
 /**

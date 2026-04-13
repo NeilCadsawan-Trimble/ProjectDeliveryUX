@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { PERSONAS, type Persona } from '../../services/persona.service';
 import { ThemeService } from '../../services/theme.service';
 
-const LANDING_SLUGS = ['frank', 'bert', 'kelly'] as const;
+const LANDING_SLUGS = ['frank', 'bert', 'kelly', 'pamela'] as const;
 
 @Component({
   selector: 'app-persona-select',

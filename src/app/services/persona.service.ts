@@ -23,6 +23,7 @@ export const PERSONAS: Persona[] = [
   { slug: 'bert', name: 'Bert Humphries', firstName: 'Bert', title: 'Project Manager', email: 'bert.humphries@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'BH', defaultTheme: { theme: 'modus-classic', mode: 'dark' } },
   { slug: 'kelly', name: 'Kelly Marshall', firstName: 'Kelly', title: 'Office Admin', email: 'kelly.marshall@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'KM', defaultTheme: { theme: 'connect', mode: 'light' } },
   { slug: 'dominique', name: 'Dominique Marques', firstName: 'Dominique', title: 'Field Engineer', email: 'dominique.marques@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'DM', defaultTheme: { theme: 'modus-modern', mode: 'dark' } },
+  { slug: 'pamela', name: 'Pamela Chen', firstName: 'Pamela', title: 'Senior Estimator', email: 'pamela.chen@rockymtncontracting.com', company: 'Rocky Mountain Contracting', initials: 'PC', defaultTheme: { theme: 'modus-classic', mode: 'light' } },
 ];
 
 const PERSONA_MAP = new Map<string, Persona>(PERSONAS.map(p => [p.slug, p]));

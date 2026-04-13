@@ -129,6 +129,14 @@ export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'Are any contracts expiring soon?',
     ],
   },
+  homeOpenEstimates: {
+    name: 'Open Estimates',
+    suggestions: [
+      'Show overdue estimates',
+      'What is the total estimate pipeline value?',
+      'Which estimates need approval?',
+    ],
+  },
 };
 
 export const KELLY_HOME_WIDGETS: Record<string, WidgetRegistration> = {
@@ -218,6 +226,65 @@ export const KELLY_HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'What course should I take next?',
       'How close am I to completing the comptroller track?',
       'How many hours have I logged so far?',
+    ],
+  },
+};
+
+export const PAMELA_HOME_WIDGETS: Record<string, WidgetRegistration> = {
+  homeEstimatorKpis: {
+    name: 'Estimator Metrics',
+    suggestions: [
+      'What is my current win rate?',
+      'How many estimates are in the pipeline?',
+      'What is the average estimate turnaround time?',
+    ],
+  },
+  homeOpenEstimates: {
+    name: 'Open Estimates',
+    suggestions: [
+      'Show overdue estimates',
+      'What is the total estimate pipeline value?',
+      'Which estimates need approval?',
+    ],
+  },
+  homeCalendar: {
+    name: 'Calendar',
+    suggestions: [
+      'What meetings do I have today?',
+      'Show my schedule for this week',
+      'When is the next bid walk?',
+    ],
+  },
+  homeRfis: {
+    name: 'RFIs',
+    suggestions: [
+      'Are there RFIs affecting my active estimates?',
+      'Which RFIs are overdue?',
+      'Show RFIs that could impact pricing',
+    ],
+  },
+  homeChangeOrders: {
+    name: 'Change Orders',
+    suggestions: [
+      'How many change orders are pending?',
+      'What is the total pending CO value?',
+      'Which COs originated from estimate revisions?',
+    ],
+  },
+  homeBudgetVariance: {
+    name: 'Budget Variance',
+    suggestions: [
+      'Which projects are over budget vs. original estimate?',
+      'Show estimate-to-actual variance by project',
+      'Where are my estimates most accurate?',
+    ],
+  },
+  homeRecentActivity: {
+    name: 'Recent Activity',
+    suggestions: [
+      'What changed today on my estimates?',
+      'Show the most recent updates',
+      'Any new estimate requests?',
     ],
   },
 };
@@ -544,10 +611,51 @@ export const PROJECT_DETAIL_WIDGETS: Record<string, WidgetRegistration> = {
   },
 };
 
+export const PAMELA_FINANCIALS_WIDGETS: Record<string, WidgetRegistration> = {
+  finTitle: {
+    name: 'Financials Title',
+    suggestions: [],
+  },
+  finNavKpi: {
+    name: 'Estimator KPIs',
+    suggestions: [
+      'What is the current pipeline value?',
+      'How has my win rate changed this quarter?',
+      'How many estimates are overdue?',
+    ],
+  },
+  finOpenEstimates: {
+    name: 'Open Estimates',
+    suggestions: [
+      'Show overdue estimates',
+      'Which estimates are awaiting approval?',
+      'What is the total pipeline value?',
+    ],
+  },
+  finJobCosts: {
+    name: 'Job Costs',
+    suggestions: [
+      'Which cost categories are trending over budget?',
+      'Show job cost breakdown for recent estimates',
+      'Where are my estimates vs actuals most divergent?',
+    ],
+  },
+  finChangeOrders: {
+    name: 'Change Orders',
+    suggestions: [
+      'How many change orders originated from estimate revisions?',
+      'What is the total pending CO value?',
+      'Which COs are impacting project budgets the most?',
+    ],
+  },
+};
+
 export const ALL_WIDGETS: Record<string, WidgetRegistration> = {
   ...HOME_WIDGETS,
+  ...PAMELA_HOME_WIDGETS,
   ...PROJECTS_WIDGETS,
   ...FINANCIALS_WIDGETS,
   ...KELLY_FINANCIALS_WIDGETS,
+  ...PAMELA_FINANCIALS_WIDGETS,
   ...PROJECT_DETAIL_WIDGETS,
 };
