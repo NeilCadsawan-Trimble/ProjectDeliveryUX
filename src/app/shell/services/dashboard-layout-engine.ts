@@ -241,10 +241,11 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     }
   }
 
-  private persistLockedState(state: Record<string, boolean>): void {
+  private persistLockedState(state: Record<string, boolean>, explicitKey?: string): void {
     if (typeof sessionStorage === 'undefined') return;
     try {
-      sessionStorage.setItem(this.lockedKey, JSON.stringify(state));
+      const key = explicitKey ? `${explicitKey}__locked` : this.lockedKey;
+      sessionStorage.setItem(key, JSON.stringify(state));
     } catch { /* quota exceeded */ }
   }
 
@@ -1037,7 +1038,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
   reinitLayout(prevLayoutKey?: string, prevCanvasKey?: string): void {
     if (prevLayoutKey) {
-      this.persistLockedState(this.widgetLocked());
+      this.persistLockedState(this.widgetLocked(), prevLayoutKey);
       this.layoutService.save(prevLayoutKey, this.isMobile(), {
         tops: this.widgetTops(),
         heights: this.widgetHeights(),
@@ -1048,16 +1049,14 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       });
     }
     if (prevCanvasKey && this.isCanvasMode()) {
-      const layout: Record<string, Record<string, number>> = {
-        tops: {}, heights: {}, lefts: {}, widths: {},
-      };
-      for (const id of this.config.widgets) {
-        layout['tops'][id] = this.widgetTops()[id];
-        layout['heights'][id] = this.widgetHeights()[id];
-        layout['lefts'][id] = this.widgetLefts()[id];
-        layout['widths'][id] = this.widgetPixelWidths()[id];
-      }
-      try { localStorage.setItem(prevCanvasKey, JSON.stringify(layout)); } catch { /* quota */ }
+      try {
+        localStorage.setItem(prevCanvasKey, JSON.stringify({
+          tops: this.widgetTops(),
+          heights: this.widgetHeights(),
+          lefts: this.widgetLefts(),
+          widths: this.widgetPixelWidths(),
+        }));
+      } catch { /* quota */ }
     }
 
     this.widgetTops.set({ ...this.config.defaultTops });
@@ -1066,6 +1065,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.widgetColSpans.set({ ...this.config.defaultColSpans });
     this.widgetLefts.set({ ...this.config.defaultLefts });
     this.widgetPixelWidths.set({ ...this.config.defaultPixelWidths });
+    this.widgetZIndices.set({});
+    this._zCounter = 0;
+    this._interactionSeq = 0;
+    this._widgetLastInteraction = {};
     this._savedDesktopForCanvas = null;
     this._savedDesktopForMobile = null;
 
