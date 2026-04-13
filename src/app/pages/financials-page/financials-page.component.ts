@@ -43,6 +43,8 @@ import { HomePaymentScheduleComponent } from '../home-page/components/home-payme
 import { HomeApActivityComponent } from '../home-page/components/home-ap-activity.component';
 import { HomeApKpiCardsComponent, type ApKpiCard } from '../home-page/components/home-ap-kpi-cards.component';
 import { HomeCashOutflowComponent } from '../home-page/components/home-cash-outflow.component';
+import { EstimateAssemblyHubComponent } from './components/estimate-assembly-hub.component';
+import { ESTIMATE_ASSEMBLY_HUBS } from '../../data/dashboard-data.seed';
 
 type FinDetailType =
   | 'estimate' | 'changeOrder' | 'invoice' | 'payable' | 'purchaseOrder'
@@ -76,7 +78,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
 @Component({
   selector: 'app-financials-page',
-  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent, ChartComponent, HomeInvoiceQueueComponent, HomeVendorAgingComponent, HomePayAppsComponent, HomeLienWaiversComponent, HomeRetentionComponent, HomePaymentScheduleComponent, HomeApActivityComponent, HomeApKpiCardsComponent, HomeCashOutflowComponent],
+  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent, ChartComponent, HomeInvoiceQueueComponent, HomeVendorAgingComponent, HomePayAppsComponent, HomeLienWaiversComponent, HomeRetentionComponent, HomePaymentScheduleComponent, HomeApActivityComponent, HomeApKpiCardsComponent, HomeCashOutflowComponent, EstimateAssemblyHubComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     'class': 'block h-full',
@@ -427,16 +429,90 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           </div>
         </div>
 
-        <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-muted">
-            @for (field of meta.fields; track field.label) {
-              <div class="bg-card px-5 py-4 flex flex-col gap-1">
-                <div class="text-xs text-foreground-60 uppercase tracking-wide font-semibold">{{ field.label }}</div>
-                <div class="text-base text-foreground" [class.font-bold]="field.highlight" [class.text-primary]="field.highlight">{{ field.value }}</div>
+        @if (isEldoradoEstimate()) {
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <!-- Project Estimate -->
+            <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-1">
+              <div class="text-base font-semibold text-foreground mb-2">Project Estimate</div>
+              <div class="flex gap-6 flex-wrap text-2xs text-foreground-60 uppercase tracking-wide font-semibold">
+                <div>Actual</div>
+                <div>Proposal Cost</div>
+                <div>Estimated Profit Margin</div>
               </div>
-            }
+              <div class="flex items-baseline gap-6 flex-wrap">
+                <div class="text-2xl font-bold text-foreground">$6 M.</div>
+                <div class="text-2xl font-bold text-foreground">$8,170,000</div>
+                <div class="text-2xl font-bold text-foreground">26.38%</div>
+              </div>
+              <div class="mt-auto flex flex-col gap-3 pt-3">
+                <div class="flex items-center gap-4 text-xs text-foreground-60 flex-wrap">
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">calendar</i> Updated July 3, 2026</div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">dashboard</i> Confidence: 91%</div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">bar_graph_line</i> Complexity: 87%</div>
+                </div>
+                <div>
+                  <modus-button variant="outlined" size="sm" color="primary">Check Estimation</modus-button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bid Intelligence -->
+            <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-1">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-base font-semibold text-foreground">Bid Intelligence</div>
+                <modus-badge color="warning" size="sm">Medium</modus-badge>
+              </div>
+              <div class="text-2xs invisible">&#8203;</div>
+              <div class="flex items-baseline gap-2">
+                <div class="text-2xl font-bold text-foreground">78%</div>
+                <div class="text-base text-foreground-60">win probability</div>
+              </div>
+              <div class="mt-auto flex flex-col gap-3 pt-3">
+                <div class="flex items-center gap-4 text-xs text-foreground-60 flex-wrap">
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">people_group</i> 4-6 expected bidders</div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">auto_target</i> Target: 8-12% margin</div>
+                </div>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <modus-button variant="outlined" size="sm" color="primary">View Risks</modus-button>
+                  <div class="bg-warning-20 text-warning text-xs font-medium px-3 py-1 rounded-full">Copper pricing, Seismic survey</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Field Intelligence -->
+            <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-1">
+              <div class="text-base font-semibold text-foreground mb-2">Field Intelligence</div>
+              <div class="text-2xs invisible">&#8203;</div>
+              <div class="text-2xl font-bold text-foreground">Geotechnical ready</div>
+              <div class="mt-auto flex flex-col gap-3 pt-3">
+                <div class="flex items-center gap-4 text-xs text-foreground-60 flex-wrap">
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">location</i> 4230 Riverside Blvd</div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">ruler</i> 32,000 ft&#178; &middot; 2 Stories</div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">map</i> 4.2 mi&#178; Lot</div>
+                </div>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <modus-button variant="outlined" size="sm" color="secondary">View Safety Risks</modus-button>
+                  <div class="bg-warning-20 text-warning text-xs font-medium px-3 py-1 rounded-full">Wetland detected - NE corner</div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        } @else {
+          <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-muted">
+              @for (field of meta.fields; track field.label) {
+                <div class="bg-card px-5 py-4 flex flex-col gap-1">
+                  <div class="text-xs text-foreground-60 uppercase tracking-wide font-semibold">{{ field.label }}</div>
+                  <div class="text-base text-foreground" [class.font-bold]="field.highlight" [class.text-primary]="field.highlight">{{ field.value }}</div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (assemblyHub(); as hub) {
+          <app-estimate-assembly-hub [hub]="hub" />
+        }
 
       </div>
     } @else if (activeSubPage() === 'overview') {
@@ -2879,6 +2955,17 @@ export class FinancialsPageComponent extends DashboardPageBase {
       default: return null;
     }
   });
+
+  readonly isEldoradoEstimate = computed(() => {
+    const entity = this.finDetailEntity();
+    return this.finDetailType() === 'estimate' && !!entity && (entity as Estimate).id === 'EST-2026-065';
+  });
+
+  readonly assemblyHub = computed(() =>
+    this.isEldoradoEstimate()
+      ? (ESTIMATE_ASSEMBLY_HUBS[this.personaService.activePersonaSlug()] ?? null)
+      : null
+  );
 
   // Financial data references (reactive via store signals)
   readonly invoices = this.store.invoices;
