@@ -17,6 +17,7 @@ import { WidgetLayoutService } from '../../shell/services/widget-layout.service'
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { ViewportBreakpointsService } from '../../shell/services/viewport-breakpoints.service';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import type {
   DashboardWidgetId,
@@ -30,16 +31,11 @@ import type {
 } from '../../data/dashboard-data';
 import { HOME_ESTIMATE_CARDS, CALENDAR_APPOINTMENTS, BIDDING_TASKS } from '../../data/dashboard-data';
 import { HomePageHeroComponent } from './home-page-hero.component';
-import { ModusButtonGroupComponent } from '../../components/modus-button-group.component';
-import { ModusButtonComponent } from '../../components/modus-button.component';
-
 @Component({
   selector: 'app-home-page',
   imports: [
     WidgetResizeHandleComponent,
     HomePageHeroComponent,
-    ModusButtonGroupComponent,
-    ModusButtonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -50,7 +46,7 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
   template: `
     <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
       <div #pageHeader>
-        <app-home-page-hero [formattedDate]="today" (createClick)="onCreateClick()" />
+        <app-home-page-hero (createClick)="onCreateClick()" />
       </div>
 
       <div
@@ -73,11 +69,10 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
               @if (widgetId === 'homeAllEstimates') {
                 <div
                   #allEstimatesMeasureRoot
-                  class="bg-card rounded-lg overflow-hidden flex flex-col w-full min-w-0 h-full min-h-0"
+                  class="home-figma-widget-shell rounded-2xl overflow-hidden flex flex-col w-full min-w-0 h-full min-h-0"
+                  [class.home-figma-widget-shell--selected]="selectedWidgetId() === widgetId"
                   [class.home-all-estimates-cq]="!isMobile()"
                   [class.max-h-full]="isMobile()"
-                  [class.border-default]="selectedWidgetId() !== widgetId"
-                  [class.border-primary]="selectedWidgetId() === widgetId"
                 >
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
@@ -97,7 +92,11 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
                     class="p-4 flex flex-col gap-4 min-h-0 flex-1 overflow-y-auto overscroll-contain"
                   >
                     @for (card of homeEstimateCards(); track card.id) {
-                      <div class="rounded-lg bg-background flex flex-col transition-colors duration-200 border-default">
+                      <div
+                        class="rounded-2xl home-figma-inner-card flex flex-col transition-colors duration-200"
+                        [class.border-thick-primary]="card.progressVariant === 'in_progress'"
+                        [class.border-default]="card.progressVariant !== 'in_progress'"
+                      >
                         <div
                           class="p-4 flex gap-3 select-none"
                           [class.cursor-pointer]="!isHomeAllEstimatesWideLayout()"
@@ -109,73 +108,89 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
                           (keydown.enter)="onEstimateCardHeaderKeydown(card.id, $event)"
                           (keydown.space)="onEstimateCardHeaderKeydown(card.id, $event)"
                         >
-                          <div class="w-10 h-10 rounded-lg bg-card border-default flex items-center justify-center flex-shrink-0">
-                            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">{{ card.listIcon }}</i>
+                          <div [class]="estimateListIconWellClass(card)">
+                            <i [class]="estimateListIconGlyphClass(card)" aria-hidden="true">{{ card.listIcon }}</i>
                           </div>
                           <div class="flex-1 min-w-0 flex flex-col gap-3">
-                            <div class="flex items-start justify-between gap-2">
-                              <div class="text-sm font-semibold text-foreground leading-snug pr-2">{{ card.title }}</div>
+                            <div class="flex items-start justify-between gap-2 min-w-0 w-full">
+                              <div class="text-sm font-semibold text-foreground leading-snug pr-2 min-w-0 flex-1">
+                                {{ card.title }}
+                              </div>
                               <div class="flex items-center gap-2 flex-shrink-0">
                                 <div class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ homeEstimateCardBadgeClass(card.statusLabel) }}">
                                   {{ card.statusLabel }}
                                 </div>
                                 @if (!isHomeAllEstimatesWideLayout()) {
-                                  <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">{{ isEstimateCardExpanded(card.id) ? 'expand_less' : 'arrow_right' }}</i>
+                                  <i
+                                    class="modus-icons home-estimate-row-chevron text-foreground-40"
+                                    aria-hidden="true"
+                                  >{{ isEstimateCardExpanded(card.id) ? 'expand_less' : 'chevron_right' }}</i>
                                 }
                               </div>
                             </div>
-                            <div class="text-xs text-foreground-60 leading-snug">{{ card.description }}</div>
-                            @if (card.showProgressBar) {
-                              <div class="flex flex-col gap-3 home-all-estimates-progress-row">
-                                <div class="flex-1 min-w-0">
-                                  <div class="flex items-center justify-between text-xs text-foreground-60 mb-1">
-                                    <div>Progress</div>
-                                    <div class="font-semibold text-foreground">{{ card.progressPct }}%</div>
-                                  </div>
-                                  <div class="h-2 rounded-full bg-muted overflow-hidden">
-                                    <div
-                                      class="h-full rounded-full transition-all duration-300"
-                                      [class]="estimateProgressFillClass(card)"
-                                      [style.width.%]="card.progressPct"
-                                    ></div>
-                                  </div>
-                                </div>
-                                <div class="home-all-estimates-progress-meta flex flex-wrap items-center gap-x-2 text-xs text-foreground-60">
-                                  <div class="flex items-center gap-1">
-                                    <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                                    <div>{{ card.dateLine }}</div>
-                                  </div>
-                                  @if (card.membersLabel) {
-                                    <div aria-hidden="true">•</div>
-                                    <div class="flex items-center gap-1">
-                                      <i class="modus-icons text-sm" aria-hidden="true">people_group</i>
-                                      <div>{{ card.membersLabel }}</div>
-                                    </div>
-                                  }
-                                </div>
-                              </div>
-                            } @else {
-                              <div class="flex flex-wrap items-center gap-x-2 text-xs text-foreground-60">
-                                <div class="flex items-center gap-1">
-                                  <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                            @if (card.progressVariant === 'archived') {
+                              <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 text-xs">
+                                <div class="text-foreground-60 leading-snug min-w-0 flex-1">{{ card.description }}</div>
+                                <div class="flex items-center gap-1 flex-shrink-0 text-foreground-60">
+                                  <i class="modus-icons home-estimate-meta-icon text-foreground-60" aria-hidden="true">calendar</i>
                                   <div>{{ card.dateLine }}</div>
                                 </div>
                               </div>
+                            } @else {
+                              <div class="text-xs text-foreground-60 leading-snug">{{ card.description }}</div>
+                              @if (card.showProgressBar) {
+                                <div class="flex flex-col gap-3 home-all-estimates-progress-row">
+                                  <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between text-xs text-foreground-60 mb-1">
+                                      <div>Progress</div>
+                                      <div class="font-semibold text-foreground">{{ card.progressPct }}%</div>
+                                    </div>
+                                    <div class="home-figma-progress-track rounded-full bg-muted overflow-hidden">
+                                      <div
+                                        class="h-full rounded-full transition-all duration-300"
+                                        [class]="estimateProgressFillClass(card)"
+                                        [style.width.%]="card.progressPct"
+                                      ></div>
+                                    </div>
+                                  </div>
+                                  <div class="home-all-estimates-progress-meta flex flex-wrap items-center gap-x-2 text-xs text-foreground-60">
+                                    <div class="flex items-center gap-1">
+                                      <i class="modus-icons home-estimate-meta-icon text-foreground-60" aria-hidden="true">calendar</i>
+                                      <div>{{ card.dateLine }}</div>
+                                    </div>
+                                    @if (card.membersLabel) {
+                                      <div aria-hidden="true">•</div>
+                                      <div class="flex items-center gap-1">
+                                        <i
+                                          class="modus-icons home-estimate-meta-icon text-foreground-60"
+                                          aria-hidden="true"
+                                        >{{ estimateMembersRowIcon(card) }}</i>
+                                        <div>{{ card.membersLabel }}</div>
+                                      </div>
+                                    }
+                                  </div>
+                                </div>
+                              }
                             }
                           </div>
                         </div>
                         @if (showHomeEstimateCardDetails(card.id)) {
-                          <div class="px-4 pb-4 flex flex-col gap-4 border-top-default mx-3">
-                            <div class="flex items-center gap-2 pt-3">
-                              <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">toggle_center</i>
+                          <div class="px-4 pb-4 flex flex-col gap-[10.5px] border-top-default pt-[15px]">
+                            <div class="flex items-center gap-2">
+                              <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">bullseye</i>
                               <div class="text-xs font-semibold text-primary">Performance Snapshot</div>
                             </div>
                             <div class="grid grid-cols-1 gap-2 home-all-estimates-metrics-grid">
                               @for (m of card.metrics; track m.label) {
-                                <div class="rounded-lg border-default bg-card px-2 py-1.5 flex flex-col gap-1">
+                                <div
+                                  class="rounded-2xl bg-app-canvas flex flex-col gap-1 px-2 py-1.5 min-h-0"
+                                >
                                   <div class="flex items-center gap-1 min-w-0">
-                                    <i class="modus-icons text-2xs text-foreground-60 flex-shrink-0" aria-hidden="true">{{ m.labelIcon }}</i>
-                                    <div class="text-2xs font-semibold text-foreground leading-tight">{{ m.label }}</div>
+                                    <i
+                                      class="modus-icons text-2xs text-foreground-60 flex-shrink-0"
+                                      aria-hidden="true"
+                                    >{{ m.labelIcon }}</i>
+                                    <div [class]="estimateMetricLabelClass(card)">{{ m.label }}</div>
                                   </div>
                                   <div class="flex items-center gap-1 flex-wrap">
                                     <div class="text-xs font-semibold text-foreground">{{ m.value }}</div>
@@ -191,26 +206,33 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
                                 </div>
                               }
                             </div>
-                            <div class="flex flex-col gap-2">
+                            <div class="flex flex-col gap-1.75">
                               @for (ins of card.insights; track ins.text) {
-                                @if (ins.layout === 'simple') {
-                                  <div class="flex items-center gap-2 rounded-md px-2 py-2 bg-warning-20">
-                                    <i class="modus-icons text-sm text-warning flex-shrink-0" aria-hidden="true">warning</i>
-                                    <div class="text-xs text-foreground leading-snug">{{ ins.text }}</div>
+                                @if (ins.tone === 'positive') {
+                                  <div
+                                    class="home-estimate-insight-row home-estimate-insight-row--positive flex items-stretch min-h-[30px] rounded-r-lg overflow-hidden"
+                                  >
+                                    <div class="w-[3px] flex-shrink-0 bg-success" aria-hidden="true"></div>
+                                    <div class="flex items-center gap-3 pl-3 pr-2 py-1 min-w-0 flex-1">
+                                      <i
+                                        class="modus-icons home-estimate-insight-icon text-success flex-shrink-0"
+                                        aria-hidden="true"
+                                      >check_circle</i>
+                                      <div class="text-xs font-semibold text-foreground leading-snug">{{ ins.text }}</div>
+                                    </div>
                                   </div>
                                 } @else {
                                   <div
-                                    class="flex items-center gap-2 rounded-md px-3 py-2 min-w-0"
-                                    [class.bg-success-20]="ins.tone === 'positive'"
-                                    [class.bg-warning-20]="ins.tone === 'caution'"
+                                    class="home-estimate-insight-row home-estimate-insight-row--caution flex items-stretch min-h-[30px] rounded-r-lg overflow-hidden"
                                   >
-                                    <i
-                                      class="modus-icons text-xs flex-shrink-0"
-                                      [class.text-success]="ins.tone === 'positive'"
-                                      [class.text-warning]="ins.tone === 'caution'"
-                                      aria-hidden="true"
-                                    >{{ ins.tone === 'positive' ? 'check' : 'warning' }}</i>
-                                    <div class="text-xs leading-snug text-foreground">{{ ins.text }}</div>
+                                    <div class="w-[3px] flex-shrink-0 bg-warning" aria-hidden="true"></div>
+                                    <div class="flex items-center gap-3 pl-3 pr-2 py-1 min-w-0 flex-1">
+                                      <i
+                                        class="modus-icons home-estimate-insight-icon text-warning flex-shrink-0"
+                                        aria-hidden="true"
+                                      >warning</i>
+                                      <div class="text-xs font-semibold text-foreground leading-snug">{{ ins.text }}</div>
+                                    </div>
                                   </div>
                                 }
                               }
@@ -235,10 +257,9 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
               }
               @else if (widgetId === 'homeTasks') {
                 <div
-                  class="bg-card rounded-lg overflow-hidden flex flex-col w-full min-w-0 h-full min-h-0"
+                  class="home-figma-widget-shell rounded-2xl overflow-hidden flex flex-col w-full min-w-0 h-full min-h-0"
+                  [class.home-figma-widget-shell--selected]="selectedWidgetId() === widgetId"
                   [class.max-h-full]="isMobile()"
-                  [class.border-default]="selectedWidgetId() !== widgetId"
-                  [class.border-primary]="selectedWidgetId() === widgetId"
                 >
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
@@ -263,27 +284,31 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
                   </div>
                   <div class="p-4 flex flex-col gap-4 min-h-0 flex-1 overflow-y-auto overscroll-contain">
                     <div
-                      class="flex flex-col gap-3 flex-shrink-0 bg-card"
+                      class="flex flex-col gap-3 flex-shrink-0 bg-app-widget-surface"
                       (mousedown)="$event.stopPropagation()"
                       (touchstart)="$event.stopPropagation()"
                     >
-                      <div class="min-w-0 overflow-x-auto">
-                        <modus-button-group
-                          selectionType="single"
-                          variant="outlined"
-                          color="primary"
-                          ariaLabel="Task schedule"
-                        >
-                          @for (tab of taskScheduleTabs; track tab.key) {
-                            <modus-button
-                              size="sm"
-                              [pressed]="taskScheduleTab() === tab.key"
-                              (buttonClick)="onTaskScheduleTabSelect(tab.key)"
-                            >
+                      <div
+                        class="task-schedule-segmented w-full min-w-0"
+                        role="tablist"
+                        aria-label="Task schedule"
+                      >
+                        @for (tab of taskScheduleTabs; track tab.key) {
+                          <div
+                            role="tab"
+                            class="task-schedule-segmented__seg"
+                            [class.task-schedule-segmented__seg--active]="taskScheduleTab() === tab.key"
+                            [attr.aria-selected]="taskScheduleTab() === tab.key"
+                            tabindex="0"
+                            (click)="onTaskScheduleTabSelect(tab.key)"
+                            (keydown.enter)="onTaskScheduleTabSelect(tab.key)"
+                            (keydown.space)="$event.preventDefault(); onTaskScheduleTabSelect(tab.key)"
+                          >
+                            <div class="min-w-0 w-full truncate text-sm font-semibold">
                               {{ taskScheduleTabDisplayLabel(tab.key) }}
-                            </modus-button>
-                          }
-                        </modus-button-group>
+                            </div>
+                          </div>
+                        }
                       </div>
                       <div class="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Priority filter">
                         <div class="text-xs text-foreground-60">Priority:</div>
@@ -309,10 +334,10 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
                       </div>
                     </div>
                     @for (task of filteredTasks(); track task.id) {
-                      <div class="rounded-lg bg-background flex flex-col transition-colors duration-200 border-default">
+                      <div class="rounded-xl home-figma-inner-card border-default flex flex-col transition-colors duration-200">
                         <div class="p-4 flex gap-3 select-none">
-                          <div class="w-10 h-10 rounded-lg bg-card border-default flex items-center justify-center flex-shrink-0">
-                            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">check_circle</i>
+                          <div class="w-9 h-9 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                            <i class="modus-icons text-base text-foreground-60" aria-hidden="true">check_circle</i>
                           </div>
                           <div class="flex-1 min-w-0 flex flex-col gap-3">
                             <div class="flex items-start justify-between gap-2">
@@ -382,7 +407,10 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
                 />
               }
               @else if (widgetId === 'homeCalendar') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div
+                  class="home-figma-widget-shell rounded-2xl overflow-hidden flex flex-col h-full"
+                  [class.home-figma-widget-shell--selected]="selectedWidgetId() === widgetId"
+                >
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -572,6 +600,7 @@ export class HomePageComponent implements AfterViewInit {
       onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
     },
     inject(WidgetLayoutService),
+    inject(ViewportBreakpointsService),
   );
 
   private readonly _onHomeAllEstimatesWindowResize = (): void => {
@@ -891,6 +920,47 @@ export class HomePageComponent implements AfterViewInit {
       default:
         return 'bg-primary';
     }
+  }
+
+  /** Metric tile labels: muted on Archive aggregate tiles (Figma 2:23632). */
+  estimateMetricLabelClass(card: HomeEstimateCard): string {
+    if (card.progressVariant === 'archived') {
+      return 'text-2xs font-semibold text-foreground-60 leading-tight';
+    }
+    return 'text-2xs font-semibold text-foreground leading-tight';
+  }
+
+  /**
+   * Icon well — 35×35 (2:36091). Archive: neutral 10%; completed: success pale; else primary 10%.
+   */
+  estimateListIconWellClass(card: HomeEstimateCard): string {
+    const base = 'home-estimate-list-icon-well ';
+    if (card.progressVariant === 'complete') {
+      return `${base}bg-success-20`;
+    }
+    if (card.progressVariant === 'archived') {
+      return `${base}bg-foreground-10`;
+    }
+    return `${base}bg-primary-10`;
+  }
+
+  /** Leading glyph — primary / success / muted by status (17.5px). */
+  estimateListIconGlyphClass(card: HomeEstimateCard): string {
+    const base = 'modus-icons home-estimate-list-icon-glyph flex-shrink-0 ';
+    if (card.progressVariant === 'complete') {
+      return `${base}text-success`;
+    }
+    if (card.progressVariant === 'archived') {
+      return `${base}text-foreground-60`;
+    }
+    return `${base}text-primary`;
+  }
+
+  /** Calendar row: single user vs group (Figma uses Users vs one person). */
+  estimateMembersRowIcon(card: HomeEstimateCard): 'person' | 'people_group' {
+    const m = card.membersLabel;
+    if (!m) return 'people_group';
+    return /^1\s+(member|person)/i.test(m) ? 'person' : 'people_group';
   }
 
   taskPriorityLabel(priority: BiddingTask['priority']): string {

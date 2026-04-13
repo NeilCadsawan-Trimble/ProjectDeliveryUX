@@ -133,10 +133,15 @@ export interface HomeEstimateInsight {
   layout?: 'accent' | 'simple';
 }
 
+/**
+ * Leading glyph in list row — Figma 2:36091:
+ * building (Eldorado, Clubhouse), green check (Completed), archive drawer (Archive).
+ */
+export type HomeEstimateListIcon = 'building_corporate' | 'check_circle' | 'archive_square';
+
 export interface HomeEstimateCard {
   id: string;
-  /** Leading icon in card row (Figma: document vs archive). */
-  listIcon: 'document' | 'archive_square';
+  listIcon: HomeEstimateListIcon;
   title: string;
   description: string;
   statusLabel: HomeEstimateCardStatus;
@@ -156,7 +161,7 @@ export interface HomeEstimateCard {
 export const HOME_ESTIMATE_CARDS: HomeEstimateCard[] = [
   {
     id: 'hec-eldorado',
-    listIcon: 'document',
+    listIcon: 'building_corporate',
     title: 'Eldorado Canyon Community Center',
     description: 'Community center construction project in Eldorado Canyon',
     statusLabel: 'In Progress',
@@ -165,10 +170,11 @@ export const HOME_ESTIMATE_CARDS: HomeEstimateCard[] = [
     showProgressBar: true,
     dateLine: 'Due Mar 15, 2026',
     membersLabel: '2 members',
+    /* Performance Snapshot metric glyphs — Figma 2:23632: $ / clock / trophy-ribbon */
     metrics: [
-      { label: 'Projected Margin', value: '19.2%', trend: 'up', labelIcon: 'line_graph' },
-      { label: 'Schedule Adherence', value: '92%', trend: 'up', labelIcon: 'calendar' },
-      { label: 'Under Budget', value: '+$12.5K', trend: 'up', labelIcon: 'monetarization' },
+      { label: 'Projected Margin', value: '19.2%', trend: 'up', labelIcon: 'costs' },
+      { label: 'Schedule Adherence', value: '92%', trend: 'up', labelIcon: 'clock' },
+      { label: 'Under Budget', value: '+$12.5K', trend: 'up', labelIcon: 'certificate' },
     ],
     insights: [
       { text: 'Local suppliers reduced delays by 28%', tone: 'positive' },
@@ -177,7 +183,7 @@ export const HOME_ESTIMATE_CARDS: HomeEstimateCard[] = [
   },
   {
     id: 'hec-housing',
-    listIcon: 'document',
+    listIcon: 'check_circle',
     title: 'Housing Complex - Division 3',
     description: 'Previous Housing Complex project successfully completed',
     statusLabel: 'Completed',
@@ -187,9 +193,9 @@ export const HOME_ESTIMATE_CARDS: HomeEstimateCard[] = [
     dateLine: 'Completed Feb 28, 2026',
     membersLabel: '2 members',
     metrics: [
-      { label: 'Final Margin', value: '21.4%', trend: 'up', labelIcon: 'line_graph' },
-      { label: 'On-Time Delivery', value: '100%', trend: 'up', labelIcon: 'calendar' },
-      { label: 'Under Budget', value: '+$45.2K', trend: 'up', labelIcon: 'monetarization' },
+      { label: 'Final Margin', value: '21.4%', trend: 'up', labelIcon: 'costs' },
+      { label: 'On-Time Delivery', value: '100%', trend: 'up', labelIcon: 'clock' },
+      { label: 'Under Budget', value: '+$45.2K', trend: 'up', labelIcon: 'certificate' },
     ],
     insights: [
       { text: 'AI doc review caught all compliance issues', tone: 'positive' },
@@ -198,9 +204,9 @@ export const HOME_ESTIMATE_CARDS: HomeEstimateCard[] = [
   },
   {
     id: 'hec-clubhouse',
-    listIcon: 'document',
+    listIcon: 'building_corporate',
     title: 'Clubhouse Build',
-    description: 'Private clubhouse construction project',
+    description: 'New clubhouse construction project',
     statusLabel: 'Planning',
     progressPct: 30,
     progressVariant: 'planning',
@@ -208,9 +214,9 @@ export const HOME_ESTIMATE_CARDS: HomeEstimateCard[] = [
     dateLine: 'Due Apr 20, 2026',
     membersLabel: '1 member',
     metrics: [
-      { label: 'Target Margin', value: '16.8%', trend: 'up', labelIcon: 'line_graph' },
-      { label: 'Planning Phase', value: '—', trend: 'none', labelIcon: 'calendar' },
-      { label: 'Budget Status', value: 'On Track', trend: 'up', labelIcon: 'bar_graph_line' },
+      { label: 'Target Margin', value: '16.8%', trend: 'up', labelIcon: 'costs' },
+      { label: 'Planning Phase', value: '—', trend: 'none', labelIcon: 'clock' },
+      { label: 'Budget Status', value: 'On Track', trend: 'up', labelIcon: 'certificate' },
     ],
     insights: [
       { text: 'Need 2+ electrical quotes by Mar 25', tone: 'caution', layout: 'simple' },
@@ -233,10 +239,10 @@ export const HOME_ESTIMATE_CARDS: HomeEstimateCard[] = [
         label: 'Avg Margin (18 projects)',
         value: '18.3%',
         trend: 'up',
-        labelIcon: 'line_graph',
+        labelIcon: 'costs',
       },
-      { label: 'On-Time Rate', value: '83%', trend: 'down', labelIcon: 'calendar' },
-      { label: 'Budget Adherence', value: '91%', trend: 'up', labelIcon: 'bar_graph_line' },
+      { label: 'On-Time Rate', value: '83%', trend: 'down', labelIcon: 'clock' },
+      { label: 'Budget Adherence', value: '91%', trend: 'up', labelIcon: 'certificate' },
     ],
     insights: [
       { text: 'Early sub engagement: 89% success', tone: 'positive' },

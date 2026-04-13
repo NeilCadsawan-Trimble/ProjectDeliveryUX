@@ -1,5 +1,10 @@
 import { signal, computed, type WritableSignal, type Signal } from '@angular/core';
 import type { WidgetLayoutService } from './widget-layout.service';
+import {
+  ViewportBreakpointsService,
+  type ViewportBreakpointState,
+  readBreakpointFlags,
+} from './viewport-breakpoints.service';
 
 export interface DashboardLayoutConfig {
   widgets: string[];
@@ -87,11 +92,20 @@ export class DashboardLayoutEngine {
   private _savedDesktopForMobile: LayoutSnapshot | null = null;
   private _savedDesktopForCanvas: LayoutSnapshot | null = null;
 
-  readonly abortCtrl = new AbortController();
+  private readonly _sharedViewport?: ViewportBreakpointsService;
+  private _viewportBreakpointHook?: (prev: ViewportBreakpointState, next: ViewportBreakpointState) => void;
 
-  constructor(config: DashboardLayoutConfig, layoutService: WidgetLayoutService) {
+  readonly abortCtrl = new AbortController();
+  private _localBreakpointRo: ResizeObserver | undefined;
+
+  constructor(
+    config: DashboardLayoutConfig,
+    layoutService: WidgetLayoutService,
+    sharedViewport?: ViewportBreakpointsService,
+  ) {
     this.config = config;
     this.layoutService = layoutService;
+    this._sharedViewport = sharedViewport;
 
     this.widgetColStarts = signal({ ...config.defaultColStarts });
     this.widgetColSpans = signal({ ...config.defaultColSpans });
@@ -101,8 +115,13 @@ export class DashboardLayoutEngine {
     this.widgetPixelWidths = signal({ ...config.defaultPixelWidths });
     this.moveTargetId = signal<string | null>(null);
     this.widgetZIndices = signal<Record<string, number>>({});
-    this.isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-    this.isCanvasMode = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
+    if (sharedViewport) {
+      this.isMobile = sharedViewport.isMobile;
+      this.isCanvasMode = sharedViewport.isCanvasMode;
+    } else {
+      this.isMobile = signal(false);
+      this.isCanvasMode = signal(false);
+    }
 
     const offset = config.canvasGridMinHeightOffset ?? 200;
     this.canvasGridMinHeight = computed(() => {
@@ -117,6 +136,12 @@ export class DashboardLayoutEngine {
   }
 
   destroy(): void {
+    if (this._sharedViewport && this._viewportBreakpointHook) {
+      this._sharedViewport.unregisterBreakpointHook(this._viewportBreakpointHook);
+      this._viewportBreakpointHook = undefined;
+    }
+    this._localBreakpointRo?.disconnect();
+    this._localBreakpointRo = undefined;
     this.abortCtrl.abort();
   }
 
@@ -151,74 +176,96 @@ export class DashboardLayoutEngine {
     return max;
   }
 
+  private applyBreakpointSideEffects(
+    wasMobile: boolean,
+    wasCanvas: boolean,
+    nowMobile: boolean,
+    nowCanvas: boolean,
+  ): void {
+    if (wasCanvas && !nowCanvas) {
+      this.persistCanvasLayout();
+      if (this._savedDesktopForCanvas) {
+        this.restoreSnapshot(this._savedDesktopForCanvas);
+        this._savedDesktopForCanvas = null;
+      } else {
+        this.restoreDesktopLayout();
+      }
+    } else if (!wasCanvas && nowCanvas) {
+      if (!wasMobile) {
+        this._savedDesktopForCanvas = this.snapshotLayout();
+      }
+      if (!this.restoreCanvasLayout()) {
+        this.applyCanvasDefaults();
+      }
+      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
+    } else if (nowMobile && !wasMobile) {
+      if (this.config.savesDesktopOnMobile) {
+        this._savedDesktopForMobile = this.snapshotLayout();
+      }
+      const restoredMobile = this.restoreMobileLayout();
+      if (restoredMobile) {
+        this.config.onBeforeMobileCompact?.();
+        this.compactAll();
+      } else {
+        this.config.onBeforeMobileCompact?.();
+        this.stackAllForMobile();
+      }
+    } else if (!nowMobile && wasMobile && !nowCanvas) {
+      this.persistLayout();
+      if (this.config.savesDesktopOnMobile && this._savedDesktopForMobile) {
+        this.restoreSnapshot(this._savedDesktopForMobile);
+        this._savedDesktopForMobile = null;
+      } else {
+        this.restoreDesktopLayout();
+      }
+    } else if (!nowMobile && !nowCanvas) {
+      if (!this._moveTarget && !this._resizeTarget) {
+        this.syncPixelWidthsFromCols();
+      }
+    }
+  }
+
   init(): void {
-    const startMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const startCanvas = typeof window !== 'undefined' && window.innerWidth >= 2000;
-    this.isMobile.set(startMobile);
-    this.isCanvasMode.set(startCanvas);
+    if (!this._sharedViewport) {
+      const { isMobile, isCanvas } = readBreakpointFlags();
+      this.isMobile.set(isMobile);
+      this.isCanvasMode.set(isCanvas);
+    }
+
     this.applyModeLayout();
 
     if (typeof window === 'undefined') return;
 
-    const mq = window.matchMedia('(max-width: 767px)');
-    const canvasQuery = window.matchMedia('(min-width: 2000px)');
+    if (this._sharedViewport) {
+      this._viewportBreakpointHook = (prev, next) => {
+        this.applyBreakpointSideEffects(prev.mobile, prev.canvas, next.mobile, next.canvas);
+      };
+      this._sharedViewport.registerBreakpointHook(this._viewportBreakpointHook);
+    } else {
+      const onBreakpointChange = (): void => {
+        const wasMobile = this.isMobile();
+        const wasCanvas = this.isCanvasMode();
+        const { isMobile: nowMobile, isCanvas: nowCanvas } = readBreakpointFlags();
 
-    const onBreakpointChange = (): void => {
-      const w = window.innerWidth;
-      const wasMobile = this.isMobile();
-      const wasCanvas = this.isCanvasMode();
-      const nowMobile = w < 768;
-      const nowCanvas = w >= 2000;
+        if (wasMobile === nowMobile && wasCanvas === nowCanvas) return;
 
-      this.isMobile.set(nowMobile);
-      this.isCanvasMode.set(nowCanvas);
+        this.isMobile.set(nowMobile);
+        this.isCanvasMode.set(nowCanvas);
+        this.applyBreakpointSideEffects(wasMobile, wasCanvas, nowMobile, nowCanvas);
+      };
 
-      if (wasCanvas && !nowCanvas) {
-        this.persistCanvasLayout();
-        if (this._savedDesktopForCanvas) {
-          this.restoreSnapshot(this._savedDesktopForCanvas);
-          this._savedDesktopForCanvas = null;
-        } else {
-          this.restoreDesktopLayout();
-        }
-      } else if (!wasCanvas && nowCanvas) {
-        if (!wasMobile) {
-          this._savedDesktopForCanvas = this.snapshotLayout();
-        }
-        if (!this.restoreCanvasLayout()) {
-          this.applyCanvasDefaults();
-        }
-        requestAnimationFrame(() => this.cleanupCanvasOverlaps());
-      } else if (nowMobile && !wasMobile) {
-        if (this.config.savesDesktopOnMobile) {
-          this._savedDesktopForMobile = this.snapshotLayout();
-        }
-        const restoredMobile = this.restoreMobileLayout();
-        if (restoredMobile) {
-          this.config.onBeforeMobileCompact?.();
-          this.compactAll();
-        } else {
-          this.config.onBeforeMobileCompact?.();
-          this.stackAllForMobile();
-        }
-      } else if (!nowMobile && wasMobile && !nowCanvas) {
-        this.persistLayout();
-        if (this.config.savesDesktopOnMobile && this._savedDesktopForMobile) {
-          this.restoreSnapshot(this._savedDesktopForMobile);
-          this._savedDesktopForMobile = null;
-        } else {
-          this.restoreDesktopLayout();
-        }
-      } else if (!nowMobile && !nowCanvas) {
-        if (!this._moveTarget && !this._resizeTarget) {
-          this.syncPixelWidthsFromCols();
-        }
+      window.addEventListener('resize', onBreakpointChange, { signal: this.abortCtrl.signal });
+      window.visualViewport?.addEventListener('resize', onBreakpointChange, {
+        signal: this.abortCtrl.signal,
+      });
+      window.addEventListener('orientationchange', onBreakpointChange, { signal: this.abortCtrl.signal });
+      window.addEventListener('load', onBreakpointChange, { once: true, signal: this.abortCtrl.signal });
+
+      if (typeof ResizeObserver !== 'undefined') {
+        this._localBreakpointRo = new ResizeObserver(() => onBreakpointChange());
+        this._localBreakpointRo.observe(document.documentElement);
       }
-    };
-
-    mq.addEventListener('change', onBreakpointChange, { signal: this.abortCtrl.signal });
-    canvasQuery.addEventListener('change', onBreakpointChange, { signal: this.abortCtrl.signal });
-    window.addEventListener('resize', onBreakpointChange, { signal: this.abortCtrl.signal });
+    }
 
     requestAnimationFrame(() => {
       if (!this.isMobile() && !this.isCanvasMode()) {

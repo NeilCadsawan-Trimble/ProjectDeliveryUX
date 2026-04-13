@@ -1,7 +1,18 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModusWcNavbar } from '@trimble-oss/moduswebcomponents-angular';
 import type { Components } from '@trimble-oss/moduswebcomponents';
+
+/** Host element type for imperative prop sync (Angular may bind before Stencil is ready). */
+type ModusWcNavbarHost = Components.ModusWcNavbar & HTMLElement;
 
 /**
  * Text replacements for the navbar.
@@ -113,6 +124,7 @@ export interface ModusNavbarProps {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <modus-wc-navbar
+      #wcNavbar
       [appsMenuOpen]="appsMenuOpen()"
       [condensed]="condensed()"
       [condensedMenuOpen]="condensedMenuOpen()"
@@ -150,7 +162,9 @@ export interface ModusNavbarProps {
     </modus-wc-navbar>
   `,
 })
-export class ModusNavbarComponent {
+export class ModusNavbarComponent implements AfterViewInit {
+  private readonly wcNavbar = viewChild<ElementRef<ModusWcNavbarHost>>('wcNavbar');
+
   /** The open state of the apps menu. */
   readonly appsMenuOpen = input<boolean | undefined>(false);
 
@@ -164,7 +178,7 @@ export class ModusNavbarComponent {
   readonly className = input<string | undefined>();
 
   /** The open state of the main menu. */
-  readonly mainMenuOpen = input<boolean | undefined>(undefined);
+  readonly mainMenuOpen = input<boolean | undefined>(false);
 
   /** The open state of the notifications menu. */
   readonly notificationsMenuOpen = input<boolean | undefined>(false);
@@ -193,7 +207,7 @@ export class ModusNavbarComponent {
     notifications: false,
     search: false,
     searchInput: false,
-    user: true,
+    user: false,
   });
 
   /** Emits when the AI button is clicked or activated via keyboard. */
@@ -240,6 +254,31 @@ export class ModusNavbarComponent {
 
   /** Emits when the user menu open state changes. */
   readonly userMenuOpenChange = output<boolean>();
+
+  ngAfterViewInit(): void {
+    this.flushPropsToWc();
+  }
+
+  /**
+   * Effects run before wcEl exists -- push props once the host is in the DOM so Stencil matches Angular (Vercel: avoids duplicate native user / wrong visibility).
+   */
+  private flushPropsToWc(): void {
+    const ref = this.wcNavbar();
+    if (!ref) return;
+    const el = ref.nativeElement;
+    el.appsMenuOpen = this.appsMenuOpen();
+    el.condensed = this.condensed();
+    el.condensedMenuOpen = this.condensedMenuOpen();
+    el.customClass = this.className();
+    el.mainMenuOpen = this.mainMenuOpen();
+    el.notificationsMenuOpen = this.notificationsMenuOpen();
+    el.searchDebounceMs = this.searchDebounceMs();
+    el.searchInputOpen = this.searchInputOpen();
+    el.textOverrides = this.textOverrides();
+    el.userCard = this.userCard();
+    el.userMenuOpen = this.userMenuOpen();
+    el.visibility = this.visibility();
+  }
 
   handleAiClick(event: CustomEvent<MouseEvent | KeyboardEvent>): void {
     this.aiClick.emit(event.detail);

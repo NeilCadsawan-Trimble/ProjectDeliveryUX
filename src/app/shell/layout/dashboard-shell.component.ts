@@ -9,6 +9,7 @@ import {
   signal,
   inject,
   input,
+  untracked,
 } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -18,6 +19,7 @@ import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel
 import { AiIconComponent } from '../components/ai-icon.component';
 import { Subscription } from 'rxjs';
 import { ThemeService } from '../services/theme.service';
+import { ViewportBreakpointsService } from '../services/viewport-breakpoints.service';
 import { CanvasResetService } from '../services/canvas-reset.service';
 import { WidgetFocusService } from '../services/widget-focus.service';
 import { AiService, type AiChatMessage } from '../../services/ai.service';
@@ -90,7 +92,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
 
     @if (isCanvas()) {
-      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="onPanMouseDown($event)" (wheel)="onCanvasWheel($event)">
+      <div class="canvas-host bg-app-canvas text-foreground canvas-mode" (mousedown)="onPanMouseDown($event)" (wheel)="onCanvasWheel($event)">
 
         <div class="canvas-navbar">
           <modus-navbar
@@ -103,32 +105,64 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             (trimbleLogoClick)="navigateHome()"
             (aiClick)="toggleAiPanel()"
           >
-            <div slot="start" class="flex items-center gap-3">
-              <div class="w-px h-5 bg-foreground-20"></div>
-              <div class="text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
+            <div slot="start" class="flex items-center gap-3 min-w-0">
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
+              <div class="text-2xl font-semibold text-foreground tracking-wide truncate" [attr.title]="appTitle()">{{ appTitle() }}</div>
             </div>
-            <div slot="end" class="flex items-center gap-1">
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                aria-label="AI assistant"
-                (click)="toggleAiPanel()"
-                (keydown.enter)="toggleAiPanel()"
-                tabindex="0"
-              >
-                <ai-icon variant="nav" [isDark]="isDark()" />
+            @if (isMobile()) {
+              <div slot="end" class="flex items-center gap-1">
+                <div class="relative">
+                  <div
+                    class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="button"
+                    aria-label="More options"
+                    [attr.aria-expanded]="moreMenuOpen()"
+                    (click)="toggleMoreMenu()"
+                    (keydown.enter)="toggleMoreMenu()"
+                    tabindex="0"
+                  >
+                    <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
+                  </div>
+                  @if (moreMenuOpen()) {
+                    <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('search')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">search</i>
+                        <div class="text-sm">Search</div>
+                      </div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('notifications')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">notifications</i>
+                        <div class="text-sm">Notifications</div>
+                      </div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('help')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">help</i>
+                        <div class="text-sm">Help</div>
+                      </div>
+                      <div class="border-bottom-default mx-3 my-1"></div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('darkMode')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+                        <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
+                      </div>
+                    </div>
+                  }
+                </div>
               </div>
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-                (click)="toggleDarkMode()"
-                (keydown.enter)="toggleDarkMode()"
-                tabindex="0"
-              >
-                <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-              </div>
-            </div>
+            }
           </modus-navbar>
         </div>
         <div class="canvas-navbar-shadow"></div>
@@ -213,7 +247,8 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
 
       </div>
     } @else {
-      <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
+      <div class="h-full flex flex-col bg-app-canvas text-foreground overflow-hidden">
+        <div class="shell-navbar-strip">
           <modus-navbar
             [userCard]="userCard()"
             [visibility]="navbarVisibility()"
@@ -224,90 +259,71 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             (trimbleLogoClick)="navigateHome()"
             (aiClick)="toggleAiPanel()"
           >
-            <div slot="start" class="flex items-center gap-3">
-              <div class="w-px h-5 bg-foreground-20"></div>
-              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
+            <div slot="start" class="flex items-center gap-3 min-w-0">
+              <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
+              <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [attr.title]="appTitle()">{{ appTitle() }}</div>
             </div>
-            <div slot="end" class="flex items-center gap-1">
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                aria-label="AI assistant"
-                (click)="toggleAiPanel()"
-                (keydown.enter)="toggleAiPanel()"
-                tabindex="0"
-              >
-                <ai-icon variant="nav" [isDark]="isDark()" />
-              </div>
-              <div
-                class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-                (click)="toggleDarkMode()"
-                (keydown.enter)="toggleDarkMode()"
-                tabindex="0"
-              >
-                <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-              </div>
             @if (isMobile()) {
-              <div class="relative">
-                <div
-                  class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button"
-                  aria-label="More options"
-                  [attr.aria-expanded]="moreMenuOpen()"
-                  (click)="toggleMoreMenu()"
-                  (keydown.enter)="toggleMoreMenu()"
-                  tabindex="0"
-                >
-                  <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
-                </div>
-                @if (moreMenuOpen()) {
-                  <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
-                    <div
-                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                      role="menuitem"
-                      (click)="moreMenuAction('search')"
-                    >
-                      <i class="modus-icons text-base" aria-hidden="true">search</i>
-                      <div class="text-sm">Search</div>
-                    </div>
-                    <div
-                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                      role="menuitem"
-                      (click)="moreMenuAction('notifications')"
-                    >
-                      <i class="modus-icons text-base" aria-hidden="true">notifications</i>
-                      <div class="text-sm">Notifications</div>
-                    </div>
-                    <div
-                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                      role="menuitem"
-                      (click)="moreMenuAction('help')"
-                    >
-                      <i class="modus-icons text-base" aria-hidden="true">help</i>
-                      <div class="text-sm">Help</div>
-                    </div>
-                    <div class="border-bottom-default mx-3 my-1"></div>
-                    <div
-                      class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
-                      role="menuitem"
-                      (click)="moreMenuAction('darkMode')"
-                    >
-                      <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-                      <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
-                    </div>
+              <div slot="end" class="flex items-center gap-1">
+                <div class="relative">
+                  <div
+                    class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="button"
+                    aria-label="More options"
+                    [attr.aria-expanded]="moreMenuOpen()"
+                    (click)="toggleMoreMenu()"
+                    (keydown.enter)="toggleMoreMenu()"
+                    tabindex="0"
+                  >
+                    <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
                   </div>
-                }
+                  @if (moreMenuOpen()) {
+                    <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('search')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">search</i>
+                        <div class="text-sm">Search</div>
+                      </div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('notifications')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">notifications</i>
+                        <div class="text-sm">Notifications</div>
+                      </div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('help')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">help</i>
+                        <div class="text-sm">Help</div>
+                      </div>
+                      <div class="border-bottom-default mx-3 my-1"></div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('darkMode')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+                        <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
+                      </div>
+                    </div>
+                  }
+                </div>
               </div>
             }
-          </div>
-        </modus-navbar>
+          </modus-navbar>
+        </div>
 
         <div class="navbar-shadow"></div>
 
         <div class="flex flex-1 overflow-hidden">
-          <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+          <div class="flex-1 overflow-auto bg-app-canvas md:pl-14" role="main" id="main-content" tabindex="-1">
             <router-outlet />
           </div>
         </div>
@@ -545,7 +561,7 @@ export class DashboardShellComponent implements AfterViewInit {
     return {
       user: true,
       mainMenu: !canvas,
-      ai: false,
+      ai: true,
       notifications: !mobile,
       apps: false,
       help: !mobile,
@@ -555,8 +571,17 @@ export class DashboardShellComponent implements AfterViewInit {
   });
 
   readonly navExpanded = signal(false);
-  readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-  readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 2000 : false);
+
+  private readonly viewport = inject(ViewportBreakpointsService);
+  /** Same signals as {@link DashboardLayoutEngine} when pages pass the shared viewport service. */
+  readonly isMobile = this.viewport.isMobile;
+  readonly isCanvas = this.viewport.isCanvasMode;
+
+  private readonly _collapseSideNavWhenDesktop = effect(() => {
+    if (!this.isMobile()) {
+      untracked(() => this.navExpanded.set(false));
+    }
+  });
 
   readonly isPanReady = signal(false);
   readonly isPanning = signal(false);
@@ -943,9 +968,6 @@ export class DashboardShellComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.isMobile.set(window.innerWidth < 768);
-    this.isCanvas.set(window.innerWidth >= 2000);
-
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -954,49 +976,7 @@ export class DashboardShellComponent implements AfterViewInit {
       .subscribe((e) => this.currentUrl.set(e.urlAfterRedirects));
     this.currentUrl.set(this.router.url);
 
-    const mq = window.matchMedia('(max-width: 767px)');
-    const mqCanvas = window.matchMedia('(min-width: 2000px)');
-
-    const onBreakpointChange = (e: MediaQueryListEvent | MediaQueryList) => {
-      this.isMobile.set(e.matches);
-      if (!e.matches) this.navExpanded.set(false);
-    };
-    mq.addEventListener('change', onBreakpointChange as (e: MediaQueryListEvent) => void, { signal: this._abortCtrl.signal });
-
-    const onCanvasChange = (e: MediaQueryListEvent | MediaQueryList) => {
-      this.isCanvas.set(e.matches);
-    };
-    mqCanvas.addEventListener('change', onCanvasChange as (e: MediaQueryListEvent) => void, { signal: this._abortCtrl.signal });
-
-    window.addEventListener('resize', () => {
-      const mobile = window.innerWidth < 768;
-      if (mobile !== this.isMobile()) onBreakpointChange(mq);
-      const canvas = window.innerWidth >= 2000;
-      if (canvas !== this.isCanvas()) onCanvasChange(mqCanvas);
-    }, { signal: this._abortCtrl.signal });
-
     this.attachHamburgerListener();
-    this.reorderNavbarEnd();
-  }
-
-  private reorderNavbarEnd(): void {
-    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
-    if (!navbarWc) return;
-    const tryReorder = () => {
-      const shadow = navbarWc.shadowRoot;
-      if (!shadow) { requestAnimationFrame(tryReorder); return; }
-      const endDiv = shadow.querySelector('div[slot="end"]') as HTMLElement | null;
-      if (!endDiv) { requestAnimationFrame(tryReorder); return; }
-      const endSlot = endDiv.querySelector(':scope > slot[name="end"]') as HTMLElement | null;
-      if (endSlot) endSlot.style.order = '1';
-      for (const child of Array.from(endDiv.children)) {
-        const el = child as HTMLElement;
-        if (el.getAttribute('aria-label') === 'User profile') el.style.order = '2';
-      }
-      const userMenu = endDiv.querySelector(':scope > div.user') as HTMLElement | null;
-      if (userMenu) userMenu.style.order = '2';
-    };
-    requestAnimationFrame(tryReorder);
   }
 
   private attachHamburgerListener(): void {

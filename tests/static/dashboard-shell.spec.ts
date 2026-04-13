@@ -10,6 +10,18 @@ const SRC = readFileSync(
 );
 
 describe('DashboardShellComponent (regression)', () => {
+  it('shares ViewportBreakpointsService with layout pages (single mobile/canvas source)', () => {
+    expect(SRC).toContain('ViewportBreakpointsService');
+    expect(SRC).toContain('readonly isMobile = this.viewport.isMobile');
+    expect(SRC).toContain('readonly isCanvas = this.viewport.isCanvasMode');
+    expect(SRC).not.toContain('this.isMobile.set(window.innerWidth');
+  });
+
+  it('uses Figma app canvas (#f1f1f6 via --app-canvas) for shell chrome', () => {
+    const n = (SRC.match(/bg-app-canvas/g) ?? []).length;
+    expect(n).toBeGreaterThanOrEqual(3);
+  });
+
   describe('hamburger button', () => {
     it('has attachHamburgerListener method', () => {
       expect(SRC).toContain('attachHamburgerListener');

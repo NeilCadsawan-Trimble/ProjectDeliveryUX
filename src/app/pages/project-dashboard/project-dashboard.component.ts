@@ -19,7 +19,6 @@ import { ModusProgressComponent } from '../../components/modus-progress.componen
 import { ModusNavbarComponent, type INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
-import { AiIconComponent } from '../../shell/components/ai-icon.component';
 
 import { Subscription } from 'rxjs';
 import { ThemeService } from '../../shell/services/theme.service';
@@ -27,6 +26,7 @@ import { WidgetLayoutService } from '../../shell/services/widget-layout.service'
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { ViewportBreakpointsService } from '../../shell/services/viewport-breakpoints.service';
 import { AiService, type AiChatMessage } from '../../services/ai.service';
 import {
   type ProjectDashboardData,
@@ -41,7 +41,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetResizeHandleComponent, AiIconComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, ModusBadgeComponent, ModusProgressComponent, ModusNavbarComponent, ModusUtilityPanelComponent, WidgetResizeHandleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -378,7 +378,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
     </ng-template>
 
     @if (isCanvas()) {
-      <div class="canvas-host bg-background text-foreground canvas-mode" (mousedown)="onPanMouseDown($event)" (wheel)="onCanvasWheel($event)">
+      <div class="canvas-host bg-app-canvas text-foreground canvas-mode" (mousedown)="onPanMouseDown($event)" (wheel)="onCanvasWheel($event)">
         <div class="canvas-navbar">
           <modus-navbar
             [userCard]="userCard"
@@ -388,6 +388,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
             (searchClick)="searchInputOpen.set(!searchInputOpen())"
             (searchInputOpenChange)="searchInputOpen.set($event)"
             (trimbleLogoClick)="navigateHome()"
+            (aiClick)="toggleAiPanel()"
           >
             <div slot="start" class="flex items-center gap-3 w-full min-w-0">
               <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
@@ -435,28 +436,60 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 }
               </div>
             </div>
-            <div slot="end" class="flex items-center gap-1">
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                aria-label="AI assistant"
-                (click)="toggleAiPanel()"
-                (keydown.enter)="toggleAiPanel()"
-                tabindex="0"
-              >
-                <ai-icon variant="nav" [isDark]="isDark()" />
+            @if (isMobile()) {
+              <div slot="end" class="flex items-center gap-1">
+                <div class="relative">
+                  <div
+                    class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                    role="button"
+                    aria-label="More options"
+                    [attr.aria-expanded]="moreMenuOpen()"
+                    (click)="toggleMoreMenu()"
+                    (keydown.enter)="toggleMoreMenu()"
+                    tabindex="0"
+                  >
+                    <i class="modus-icons text-xl" aria-hidden="true">more_vertical</i>
+                  </div>
+                  @if (moreMenuOpen()) {
+                    <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] py-1">
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('search')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">search</i>
+                        <div class="text-sm">Search</div>
+                      </div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('notifications')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">notifications</i>
+                        <div class="text-sm">Notifications</div>
+                      </div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('help')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">help</i>
+                        <div class="text-sm">Help</div>
+                      </div>
+                      <div class="border-bottom-default mx-3 my-1"></div>
+                      <div
+                        class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
+                        role="menuitem"
+                        (click)="moreMenuAction('darkMode')"
+                      >
+                        <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
+                        <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
+                      </div>
+                    </div>
+                  }
+                </div>
               </div>
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-                (click)="toggleDarkMode()"
-                (keydown.enter)="toggleDarkMode()"
-                tabindex="0"
-              >
-                <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-              </div>
-            </div>
+            }
           </modus-navbar>
         </div>
         <div class="canvas-navbar-shadow navbar-shadow"></div>
@@ -541,8 +574,8 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
       </div>
     } @else {
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
-    <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
-      <!-- Navbar -->
+    <div class="h-full flex flex-col bg-app-canvas text-foreground overflow-hidden">
+      <div class="shell-navbar-strip">
       <modus-navbar
         [userCard]="userCard"
         [visibility]="navbarVisibility()"
@@ -551,6 +584,7 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
         (searchClick)="searchInputOpen.set(!searchInputOpen())"
         (searchInputOpenChange)="searchInputOpen.set($event)"
         (trimbleLogoClick)="navigateHome()"
+        (aiClick)="toggleAiPanel()"
       >
         <div slot="start" class="flex items-center gap-3 w-full min-w-0">
           <div class="w-px h-5 bg-foreground-20 flex-shrink-0"></div>
@@ -598,57 +632,8 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
             }
           </div>
         </div>
-        <div slot="end" class="flex items-center gap-1">
-          <!-- AI assistant button -->
-          <div
-            class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-            role="button"
-            aria-label="AI assistant"
-            (click)="toggleAiPanel()"
-            (keydown.enter)="toggleAiPanel()"
-            tabindex="0"
-          >
-            @if (isDark()) {
-              <svg class="h-4 w-auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <radialGradient id="ai-nav-grad-dark" cx="18%" cy="18%" r="70%">
-                    <stop offset="0%" stop-color="#9933FF" />
-                    <stop offset="50%" stop-color="#9933FF" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </radialGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34zm199.83-634.65-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97m403.73 374.35c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16m45.08-114.58c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2" fill="#FEFEFE"/>
-                <path d="m320.13 489.53c0 142.28 115.34 257.62 257.62 257.62s257.62-115.34 257.62-257.62-115.34-257.62-257.62-257.62-257.62 115.34-257.62 257.62" fill="url(#ai-nav-grad-dark)" transform="translate(-256, 0)"/>
-              </svg>
-            } @else {
-              <svg class="h-4 w-auto" fill="none" viewBox="0 0 887 982" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="ai-nav-grad-light" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="20%" stop-color="#9933FF" />
-                    <stop offset="60%" stop-color="#0066CC" />
-                    <stop offset="100%" stop-color="#0066CC" />
-                  </linearGradient>
-                </defs>
-                <path d="m36.76 749.83v231.56l201.3-116.22c-77.25-16.64-147.52-56.92-201.3-115.34z" fill="#0066CC"/>
-                <path d="m236.59 115.18-199.83-115.18v230.14c56.05-60.9 128.22-99.28 199.83-114.97z" fill="#9933FF"/>
-                <path d="m685.40 374.91c23.68 75.15 23.76 156.75-.59 232.74l201.86-116.54c-9.54-5.51-189.55-109.44-201.26-116.2z" fill="#0066CC"/>
-                <path d="m577.75 489.53c0 142.28-115.34 257.62-257.62 257.62s-257.62-115.34-257.62-257.62 115.34-257.62 257.63-257.62 257.62 115.34 257.62 257.62m62.57-.44c0-176.82-143.34-320.16-320.16-320.16s-320.17 143.33-320.17 320.16 143.34 320.16 320.16 320.16 320.16-143.34 320.16-320.16" fill="url(#ai-nav-grad-light)"/>
-              </svg>
-            }
-          </div>
-          <!-- Desktop: dark mode toggle -->
-          <div
-            class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-            role="button"
-            [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-            (click)="toggleDarkMode()"
-            (keydown.enter)="toggleDarkMode()"
-            tabindex="0"
-          >
-            <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-          </div>
-          <!-- Mobile: more menu with dark mode + other actions -->
-          @if (isMobile()) {
+        @if (isMobile()) {
+          <div slot="end" class="flex items-center gap-1">
             <div class="relative">
               <div
                 class="flex items-center justify-center w-9 h-9 rounded-lg cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
@@ -699,16 +684,17 @@ type ProjectWidgetId = 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' |
                 </div>
               }
             </div>
-          }
-        </div>
+          </div>
+        }
       </modus-navbar>
+      </div>
 
       <div class="navbar-shadow"></div>
 
       <!-- Body -->
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
-        <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+        <div class="flex-1 overflow-auto bg-app-canvas md:pl-14" role="main" id="main-content" tabindex="-1">
           <div class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
@@ -937,7 +923,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: true,
     onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-  }, inject(WidgetLayoutService));
+  }, inject(WidgetLayoutService), inject(ViewportBreakpointsService));
 
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
 
@@ -1025,7 +1011,7 @@ export class ProjectDashboardComponent implements AfterViewInit {
     return {
       user: true,
       mainMenu: !canvas,
-      ai: false,
+      ai: true,
       notifications: !mobile,
       apps: false,
       help: !mobile,
@@ -1127,8 +1113,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
     this.engine.headerElAccessor = () => this.pageHeaderRef()?.nativeElement as HTMLElement | undefined;
     this.engine.init();
 
-    this.fixNavbarLayout();
-    this.reorderNavbarEnd();
     this.attachHamburgerListener();
   }
 
@@ -1149,53 +1133,6 @@ export class ProjectDashboardComponent implements AfterViewInit {
       requestAnimationFrame(tryAttach);
     };
     tryAttach();
-  }
-
-  private fixNavbarLayout(): void {
-    const toolbar = this.elementRef.nativeElement.querySelector('modus-wc-toolbar');
-    if (!toolbar?.shadowRoot) {
-      setTimeout(() => this.fixNavbarLayout(), 100);
-      return;
-    }
-    const navbarDiv = toolbar.shadowRoot.querySelector('.modus-wc-navbar') as HTMLElement | null;
-    const startEl = toolbar.shadowRoot.querySelector('.modus-wc-navbar-start') as HTMLElement | null;
-    const endEl = toolbar.shadowRoot.querySelector('.modus-wc-navbar-end') as HTMLElement | null;
-    if (navbarDiv) {
-      navbarDiv.style.display = 'flex';
-      navbarDiv.style.alignItems = 'center';
-    }
-    if (startEl) {
-      startEl.style.flex = '1 1 0%';
-      startEl.style.minWidth = '0';
-      startEl.style.overflow = 'hidden';
-    }
-    if (endEl) {
-      endEl.style.flex = '0 0 auto';
-      endEl.style.marginLeft = 'auto';
-    }
-  }
-
-  private reorderNavbarEnd(): void {
-    const navbarWc = this.elementRef.nativeElement.querySelector('modus-wc-navbar');
-    if (!navbarWc) return;
-    const tryReorder = () => {
-      const shadow = navbarWc.shadowRoot;
-      if (!shadow) { requestAnimationFrame(tryReorder); return; }
-      const endDiv = shadow.querySelector('div[slot="end"]') as HTMLElement | null;
-      if (!endDiv) { requestAnimationFrame(tryReorder); return; }
-      const endSlot = endDiv.querySelector(':scope > slot[name="end"]') as HTMLElement | null;
-      if (endSlot) endSlot.style.order = '1';
-      for (const child of Array.from(endDiv.children)) {
-        const el = child as HTMLElement;
-        const label = el.getAttribute('aria-label') || '';
-        if (label === 'User profile') {
-          el.style.order = '2';
-        }
-      }
-      const userMenu = endDiv.querySelector(':scope > div.user') as HTMLElement | null;
-      if (userMenu) userMenu.style.order = '2';
-    };
-    requestAnimationFrame(tryReorder);
   }
 
   focusMain(): void {

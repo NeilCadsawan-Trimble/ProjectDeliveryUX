@@ -22,6 +22,7 @@ import { WidgetLayoutService } from '../../shell/services/widget-layout.service'
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { ViewportBreakpointsService } from '../../shell/services/viewport-breakpoints.service';
 import { EXAMPLE_PROJECTS, EXAMPLE_TASKS, EXAMPLE_ACTIVITIES } from '../../data/example-data';
 import type { ExampleProject } from '../../data/example-data';
 
@@ -47,7 +48,7 @@ type WidgetId = 'details' | 'tasks' | 'activity';
     '(document:touchend)': 'onDocumentTouchEnd()',
   },
   template: `
-    <div class="h-full flex flex-col bg-background text-foreground overflow-hidden">
+    <div class="h-full flex flex-col bg-app-canvas text-foreground overflow-hidden">
       <modus-navbar
         [userCard]="userCard"
         [visibility]="{ user: true, mainMenu: true, ai: false, notifications: true, help: true, search: true, searchInput: true }"
@@ -140,7 +141,7 @@ type WidgetId = 'details' | 'tasks' | 'activity';
           </div>
         </div>
 
-        <div class="flex-1 overflow-auto bg-background" role="main" id="main-content" tabindex="-1">
+        <div class="flex-1 overflow-auto bg-app-canvas" role="main" id="main-content" tabindex="-1">
           <div class="px-4 py-4 md:px-6 md:py-6 max-w-screen-xl mx-auto">
             <div class="flex items-start justify-between mb-6">
               <div>
@@ -331,7 +332,7 @@ export class ExampleProjectComponent implements AfterViewInit {
     canvasGridMinHeightOffset: 100,
     savesDesktopOnMobile: true,
     onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-  }, inject(WidgetLayoutService));
+  }, inject(WidgetLayoutService), inject(ViewportBreakpointsService));
 
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
 

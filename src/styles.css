@@ -76,12 +76,22 @@
   --radius-card: 16px;
   --radius-badge: 4px;
 
+  /* Figma WC-2.0 workflow: full-page canvas + white widget shells (light themes) */
+  --app-canvas: #f1f1f6;
+  --app-widget-surface: #ffffff;
+
+  /* Breakpoint flags (0/1): JS reads via getComputedStyle so Angular state matches CSS @media in every Chromium host. */
+  --app-bp-mobile: 0;
+  --app-bp-canvas: 0;
+
   /* Opacity variants for design system colors (20%, 40%, 60%, 80%) */
   /* Foreground opacity */
   --foreground-80: color-mix(in srgb, var(--foreground) 80%, transparent);
   --foreground-60: color-mix(in srgb, var(--foreground) 60%, transparent);
   --foreground-40: color-mix(in srgb, var(--foreground) 40%, transparent);
   --foreground-20: color-mix(in srgb, var(--foreground) 20%, transparent);
+  /* Archive row icon well (Figma 2:23632 ~10% neutral) */
+  --foreground-10: color-mix(in srgb, var(--foreground) 10%, transparent);
 
   /* Card opacity */
   --card-80: color-mix(in srgb, var(--card) 80%, transparent);
@@ -121,6 +131,7 @@
   --primary-60: color-mix(in srgb, var(--primary) 60%, transparent);
   --primary-40: color-mix(in srgb, var(--primary) 40%, transparent);
   --primary-20: color-mix(in srgb, var(--primary) 20%, transparent);
+  --primary-10: color-mix(in srgb, var(--primary) 10%, transparent);
 
   --primary-foreground-80: color-mix(in srgb, var(--primary-foreground) 80%, transparent);
   --primary-foreground-60: color-mix(in srgb, var(--primary-foreground) 60%, transparent);
@@ -184,7 +195,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--app-canvas);
+    color: var(--foreground);
   }
 }
 
@@ -755,6 +767,10 @@
   background-color: var(--foreground-20);
 }
 
+.bg-foreground-10 {
+  background-color: var(--foreground-10);
+}
+
 .bg-card-80 {
   background-color: var(--card-80);
 }
@@ -817,6 +833,10 @@
 
 .bg-primary-20 {
   background-color: var(--primary-20);
+}
+
+.bg-primary-10 {
+  background-color: var(--primary-10);
 }
 
 .bg-success-80 {
@@ -1465,6 +1485,31 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   pointer-events: none;
 }
 
+/* Full-width top bar: no left inset — avoids canvas-colored gap; main menu aligns with 56px icon rail. */
+.shell-navbar-strip {
+  position: relative;
+  z-index: 1005;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Column flex shells: strip (or bare navbar) must not shrink. */
+app-dashboard-shell div.h-full.flex.flex-col > .shell-navbar-strip,
+app-project-dashboard div.h-full.flex.flex-col > .shell-navbar-strip,
+app-example-project div.h-full.flex.flex-col > modus-navbar {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+/* Consistent layout for custom elements across Chromium builds (host defaults differ). */
+modus-navbar,
+modus-wc-navbar {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 modus-wc-navbar .main-menu {
   visibility: hidden !important;
   pointer-events: none !important;
@@ -1527,7 +1572,7 @@ modus-wc-navbar .main-menu {
   left: 0;
   width: 56px;
   height: calc(100vh - 56px);
-  background: var(--background);
+  background: var(--app-canvas);
   box-shadow: 4px 0 4px -2px rgba(36, 35, 45, 0.25);
   z-index: 999;
   display: flex;
@@ -1586,6 +1631,10 @@ modus-wc-navbar .main-menu {
 }
 
 @media (max-width: 767px) {
+  :root {
+    --app-bp-mobile: 1;
+  }
+
   .custom-side-nav {
     width: 240px;
   }
@@ -1611,6 +1660,10 @@ modus-wc-navbar .main-menu {
  * ======================================== */
 
 @media (min-width: 2000px) {
+  :root {
+    --app-bp-canvas: 1;
+  }
+
   /* The canvas host fills the viewport exactly; native scroll is disabled so all
      movement comes from CSS transforms on .canvas-content (spacebar+drag or wheel). */
   .canvas-host {
@@ -1618,7 +1671,7 @@ modus-wc-navbar .main-menu {
     width: 100%;
     height: 100vh;
     overflow: hidden;
-    background: var(--background);
+    background: var(--app-canvas);
   }
 
   /* Dot-grid background to reinforce the infinite-canvas feel */
@@ -1672,7 +1725,7 @@ modus-wc-navbar .main-menu {
     max-height: 800px;
     width: 56px;
     z-index: 1000;
-    background: var(--background);
+    background: var(--app-canvas);
     box-shadow: 4px 0 4px -2px rgba(36, 35, 45, 0.25);
     display: flex;
     flex-direction: column;
@@ -1846,6 +1899,153 @@ modus-wc-navbar .main-menu {
   font-size: 9px;
   text-anchor: middle;
   opacity: 0.4;
+}
+
+/*
+ * Figma Home Page (WC-2.0 Workflow Collab): #f1f1f6 canvas, #fff widget shells, hero + widget polish.
+ */
+html[data-theme$="-dark"] {
+  --app-canvas: var(--background);
+  --app-widget-surface: var(--card);
+}
+
+.bg-app-canvas {
+  background-color: var(--app-canvas);
+}
+
+.bg-app-widget-surface {
+  background-color: var(--app-widget-surface);
+}
+
+/* Home welcome banner — Figma 2:36076 (white surface, no border, Modus DropShadow/md) */
+.home-figma-hero-card {
+  background: var(--app-widget-surface);
+  border: none;
+  border-radius: var(--radius-card);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+}
+
+.home-figma-widget-shell {
+  background: var(--app-widget-surface);
+  border: none;
+  border-radius: var(--radius-card);
+  box-shadow: 0 2px 14px rgba(36, 35, 45, 0.07);
+}
+
+.home-figma-widget-shell--selected {
+  box-shadow: 0 4px 22px rgba(36, 35, 45, 0.11);
+}
+
+/* Stacked rows / chips inside widgets: white surface, no border, light lift */
+.home-figma-inner-card {
+  background: var(--app-widget-surface);
+  box-shadow: 0 1px 6px rgba(36, 35, 45, 0.06);
+}
+
+.home-figma-progress-track {
+  height: 7px;
+}
+
+/* All Estimates list row — icon well 35×35,16px radius, Figma 2:36091. */
+.home-estimate-list-icon-well {
+  width: 35px;
+  height: 35px;
+  min-width: 35px;
+  min-height: 35px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.home-estimate-list-icon-glyph {
+  font-size: 17.5px;
+  line-height: 1;
+}
+
+.home-estimate-meta-icon {
+  font-size: 12.25px;
+  line-height: 1;
+}
+
+.home-estimate-row-chevron {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.home-estimate-insight-icon {
+  font-size: 12.25px;
+  line-height: 1;
+}
+
+/* All Estimates insight banners — Figma 2:23632 (node 464:22034 / 464:22113) */
+.home-estimate-insight-row--positive {
+  background-color: rgba(224, 236, 207, 0.3);
+}
+
+.home-estimate-insight-row--caution {
+  background-color: rgba(255, 245, 228, 0.6);
+}
+
+/*
+ * Tasks widget — schedule tabs (Figma 2:36277): pill track + sliding dark selected segment.
+ */
+.task-schedule-segmented {
+  display: flex;
+  align-items: stretch;
+  gap: 0.375rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.2rem 0.35rem;
+  box-sizing: border-box;
+  background-color: color-mix(in srgb, var(--border) 30%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+}
+
+.task-schedule-segmented__seg {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.4rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  color: var(--foreground);
+  font-size: var(--modus-wc-font-size-sm);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.task-schedule-segmented__seg:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.task-schedule-segmented__seg--active {
+  background-color: var(--foreground);
+  color: var(--background);
+  box-shadow: 0 1px 3px rgba(36, 35, 45, 0.12);
+}
+
+html[data-theme$="-dark"] .task-schedule-segmented__seg--active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+html[data-theme$="-dark"] .task-schedule-segmented {
+  background-color: color-mix(in srgb, var(--muted) 45%, transparent);
 }
 
 /*

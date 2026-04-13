@@ -20,6 +20,7 @@ import { WidgetLayoutService } from '../../shell/services/widget-layout.service'
 import { CanvasResetService } from '../../shell/services/canvas-reset.service';
 import { WidgetFocusService } from '../../shell/services/widget-focus.service';
 import { DashboardLayoutEngine } from '../../shell/services/dashboard-layout-engine';
+import { ViewportBreakpointsService } from '../../shell/services/viewport-breakpoints.service';
 import type {
   DashboardWidgetId,
   Project,
@@ -404,7 +405,7 @@ export class ProjectsPageComponent implements AfterViewInit {
     canvasGridMinHeightOffset: 200,
     savesDesktopOnMobile: true,
     onWidgetSelect: (id) => this.widgetFocusService.selectWidget(id),
-  }, inject(WidgetLayoutService));
+  }, inject(WidgetLayoutService), inject(ViewportBreakpointsService));
 
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => this.engine.destroy());
 

@@ -22,6 +22,10 @@ const HERO = readFileSync(
 );
 
 describe('HomePageComponent (template regression)', () => {
+  it('shares ViewportBreakpointsService with the shell for consistent breakpoints', () => {
+    expect(SRC).toContain('inject(ViewportBreakpointsService)');
+  });
+
   describe('desktop padding', () => {
     it('has px-4 on the root content wrapper', () => {
       expect(SRC).toContain('class="px-4 py-4 md:py-6 max-w-screen-xl mx-auto"');
@@ -41,6 +45,16 @@ describe('HomePageComponent (template regression)', () => {
       expect(HERO).not.toContain('text-foreground-80 mt-2');
       expect(HERO).not.toContain('bidding phase');
     });
+
+    it('wraps hero in Figma 2:36076 welcome banner (title row + Create md pill)', () => {
+      expect(HERO).toContain('home-figma-hero-card');
+      expect(HERO).toContain('text-3xl');
+      expect(HERO).toContain('font-semibold');
+      expect(HERO).toContain('leading-8');
+      expect(HERO).toContain('size="md"');
+      expect(HERO).toContain('className="!rounded-full"');
+      expect(HERO).not.toContain('formattedDate');
+    });
   });
 
   describe('resize handles', () => {
@@ -58,6 +72,13 @@ describe('HomePageComponent (template regression)', () => {
   });
 
   describe('bidding dashboard widgets', () => {
+    it('uses Figma-aligned elevated shells on the three home widgets (shadow, no border)', () => {
+      const n = (SRC.match(/class="home-figma-widget-shell /g) ?? []).length;
+      expect(n).toBe(3);
+      expect(SRC).toContain('home-figma-widget-shell--selected');
+      expect(SRC).not.toContain('[class.border-default]="selectedWidgetId()');
+    });
+
     it('registers homeAllEstimates, homeTasks, and homeCalendar on the layout engine', () => {
       expect(SRC).toContain("'homeAllEstimates'");
       expect(SRC).toContain("'homeTasks'");
@@ -66,6 +87,12 @@ describe('HomePageComponent (template regression)', () => {
 
     it('has task schedule tab handler for mobile height updates', () => {
       expect(SRC).toContain('onTaskScheduleTabSelect');
+    });
+
+    it('uses Figma-style pill segmented control for schedule tabs (not modus-button-group)', () => {
+      expect(SRC).toContain('task-schedule-segmented');
+      expect(SRC).toContain('role="tablist"');
+      expect(SRC).not.toContain('<modus-button-group');
     });
   });
 
@@ -84,9 +111,11 @@ describe('HomePageComponent (template regression)', () => {
   describe('All Estimates expanded content', () => {
     it('renders Performance Snapshot only when showHomeEstimateCardDetails is true', () => {
       const guardIdx = SRC.indexOf('@if (showHomeEstimateCardDetails(card.id))');
-      const snapshotIdx = SRC.indexOf('text-primary">Performance Snapshot<');
+      const snapshotIdx = SRC.indexOf('Performance Snapshot');
       expect(guardIdx).toBeGreaterThanOrEqual(0);
       expect(snapshotIdx).toBeGreaterThan(guardIdx);
+      expect(SRC).toContain('bullseye');
+      expect(SRC).toContain('text-xs font-semibold text-primary">Performance Snapshot<');
     });
 
     it('uses a desktop pixel breakpoint for wide estimate layout', () => {
@@ -95,6 +124,18 @@ describe('HomePageComponent (template regression)', () => {
       expect(SRC).toContain("widgetPixelWidths()['homeAllEstimates']");
       expect(SRC).toContain('home-all-estimates-cq');
       expect(SRC).toContain('home-all-estimates-progress-row');
+    });
+
+    it('uses Figma-style estimate list wells, expanded snapshot, borders (2:36091 / 2:23632)', () => {
+      expect(SRC).toContain('home-estimate-list-icon-well');
+      expect(SRC).toContain('estimateListIconWellClass');
+      expect(SRC).toContain('estimateListIconGlyphClass');
+      expect(SRC).toContain('estimateMembersRowIcon');
+      expect(SRC).toContain('home-estimate-meta-icon');
+      expect(SRC).toContain('[class.border-thick-primary]');
+      expect(SRC).toContain('border-thick-primary');
+      expect(SRC).toContain('home-estimate-insight-row--positive');
+      expect(SRC).toContain('chevron_right');
     });
   });
 });
