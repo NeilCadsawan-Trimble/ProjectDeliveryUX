@@ -890,7 +890,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               }
             </div>
             } @else {
-            <div class="flex-1 min-w-0 flex flex-col gap-2 px-3 pb-3 overflow-y-auto">
+            <div class="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
               <app-home-ap-kpi-cards [cards]="kellyApKpiCards()" />
               @if (kellyApKpisInsight()) {
                 <div class="flex items-center gap-1.5 px-3 py-2 bg-muted rounded-lg flex-shrink-0">

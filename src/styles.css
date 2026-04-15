@@ -520,6 +520,25 @@
   box-shadow: 0 4px 16px rgba(36, 35, 45, 0.18), 0 1px 4px rgba(36, 35, 45, 0.12);
 }
 
+/* Always-dark toolbar for drawing markup overlay on white canvas */
+.toolbar-dark-always {
+  background-color: #252a2e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1f1f6;
+}
+
+.toolbar-dark-always .tool-btn:hover {
+  background-color: #353a40;
+}
+
+.toolbar-dark-always .tool-btn-active {
+  background-color: #353a40;
+}
+
+.toolbar-dark-always .tool-corner {
+  color: rgba(241, 241, 246, 0.35);
+}
+
 .shadow-bottom {
   box-shadow: 0 4px 8px rgba(36, 35, 45, 0.12);
 }
