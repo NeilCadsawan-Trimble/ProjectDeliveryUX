@@ -8,7 +8,7 @@ import type { ApActivityItem, ApActivityType } from '../../../data/dashboard-dat
   template: `
     <div class="flex flex-col gap-0 h-full min-h-0 overflow-y-auto">
       @for (a of activities(); track a.id) {
-        <div class="flex gap-3 px-3 py-2.5 border-bottom-default last:border-b-0 items-start">
+        <div class="flex gap-3 px-3 py-2.5 border-bottom-default last:border-b-0 items-start flex-shrink-0">
           <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
             <i class="modus-icons text-base text-primary" aria-hidden="true">{{ iconFor(a.activityType) }}</i>
           </div>

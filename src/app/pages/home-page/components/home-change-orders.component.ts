@@ -26,7 +26,7 @@ import type { ChangeOrder } from '../../../data/dashboard-data.types';
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
         @for (co of pendingOrders(); track co.id) {
-          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150 flex-shrink-0"
             role="button" tabindex="0"
             (click)="orderClick.emit({ projectId: co.projectId, orderId: co.id })"
             (keydown.enter)="orderClick.emit({ projectId: co.projectId, orderId: co.id })">

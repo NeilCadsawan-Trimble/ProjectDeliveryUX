@@ -10,7 +10,7 @@ const STATUS_ORDER: ApLienWaiverStatus[] = ['missing', 'pending', 'received'];
   template: `
     <div class="flex flex-col gap-4 h-full min-h-0 overflow-y-auto p-4">
       @for (block of groupedWaivers(); track block.status) {
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2 flex-shrink-0">
           <div class="flex items-center gap-2">
             <div
               class="rounded px-2 py-1 text-xs font-semibold"

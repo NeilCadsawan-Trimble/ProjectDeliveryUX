@@ -13,7 +13,7 @@ export interface PaymentScheduleGroup {
   template: `
     <div class="flex flex-col h-full min-h-0 overflow-y-auto">
       @for (group of groupedPayments(); track group.dueDate) {
-        <div class="border-bottom-default last:border-b-0">
+        <div class="border-bottom-default last:border-b-0 flex-shrink-0">
           <div class="sticky top-0 z-[1] bg-muted px-3 py-2 text-sm font-semibold text-foreground">
             Due {{ group.dueDate }}
           </div>

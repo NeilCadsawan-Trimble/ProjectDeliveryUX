@@ -23,7 +23,7 @@ export interface BudgetRow {
         <div>Budget Used</div>
       </div>
       @for (row of rows(); track row.id) {
-        <div class="flex flex-col gap-1.5 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+        <div class="flex flex-col gap-1.5 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150 flex-shrink-0"
           role="button" tabindex="0"
           (click)="rowClick.emit(row.slug)"
           (keydown.enter)="rowClick.emit(row.slug)">

@@ -38,7 +38,7 @@ export interface DailyReportRow {
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
         @for (row of latestReports(); track row.id) {
-          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150 flex-shrink-0"
             role="button" tabindex="0"
             (click)="reportClick.emit({ projectId: row.projectId, reportId: row.id })"
             (keydown.enter)="reportClick.emit({ projectId: row.projectId, reportId: row.id })">

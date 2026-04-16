@@ -27,7 +27,7 @@ import type { Estimate, EstimateStatus } from '../../../data/dashboard-data.type
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
         @for (est of openEstimates(); track est.id) {
-          <div class="flex items-center gap-3 px-4 py-3 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+          <div class="flex items-center gap-3 px-4 py-3 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150 flex-shrink-0"
             role="button" tabindex="0"
             (click)="estimateClick.emit(est.id)"
             (keydown.enter)="estimateClick.emit(est.id)">

@@ -24,7 +24,7 @@ import type { DailyReport } from '../../../data/dashboard-data.types';
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
         @for (r of recentReports(); track r.id) {
-          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
+          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 flex-shrink-0">
             <div class="flex items-center justify-between gap-2">
               <div class="text-sm font-medium text-foreground">{{ r.date }}</div>
               <div class="flex items-center gap-1.5 shrink-0">

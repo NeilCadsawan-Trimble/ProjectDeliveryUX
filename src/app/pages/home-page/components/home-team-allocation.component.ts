@@ -39,7 +39,7 @@ interface PersonRow {
       <div class="flex-1 min-h-0 overflow-y-auto">
         @if (viewMode() === 'person') {
           @for (person of people(); track person.name) {
-            <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
+            <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 flex-shrink-0">
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0 flex-1">
                   <div class="text-sm font-medium text-foreground truncate">{{ person.name }}</div>
@@ -68,7 +68,7 @@ interface PersonRow {
           }
         } @else {
           @for (pt of projectTeams(); track pt.projectName) {
-            <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+            <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150 flex-shrink-0"
               role="button" tabindex="0"
               (click)="projectClick.emit(pt.projectId)"
               (keydown.enter)="projectClick.emit(pt.projectId)">

@@ -27,7 +27,7 @@ import type { Contract, ContractStatus } from '../../../data/dashboard-data.type
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
         @for (c of activeContracts(); track c.id) {
-          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150 flex-shrink-0"
             role="button" tabindex="0"
             (click)="contractClick.emit({ projectId: c.projectId, contractId: c.id })"
             (keydown.enter)="contractClick.emit({ projectId: c.projectId, contractId: c.id })">

@@ -33,7 +33,7 @@ export type PayAppsView = 'tile' | 'table';
         <div class="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto p-4 pt-2">
           @for (app of payApps(); track app.id) {
             <div
-              class="bg-background border-default rounded-lg overflow-hidden transition-shadow duration-200"
+              class="bg-background border-default rounded-lg overflow-hidden transition-shadow duration-200 flex-shrink-0"
               [class.hover:shadow-lg]="true"
               [class.cursor-pointer]="interactive()"
               (click)="interactive() && payAppClick.emit(app)">

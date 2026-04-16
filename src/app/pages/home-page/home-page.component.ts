@@ -95,6 +95,11 @@ import { WidgetFrameComponent } from '../../shell/components/widget-frame.compon
 import { CreateMenuDropdownComponent } from '../../shared/create-menu-dropdown.component';
 import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.component';
 
+// ── Area-adaptive block system ──────────────────────────────────
+const HOME_HEADER_PX = 56;
+const HOME_INSIGHT_PX = 32;
+const HOME_MIN_CONTENT_PX = 80;
+
 @Component({
   selector: 'app-home-page',
   imports: [
@@ -438,7 +443,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <div class="p-3 flex flex-col gap-2 overflow-y-auto flex-1">
+                  <div class="p-3 flex flex-col gap-2 overflow-hidden flex-1">
                     <app-home-kpi-cards [cards]="kpiCards()" [compact]="true" (cardClick)="handleKpiCardClick($event)" />
                   </div>
                 </app-widget-frame>
@@ -456,7 +461,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <div class="p-3 flex flex-col gap-2 overflow-y-auto flex-1">
+                  <div class="p-3 flex flex-col gap-2 overflow-hidden flex-1">
                     <app-home-kpi-cards [cards]="estimatorKpiCards()" [compact]="true" (cardClick)="handleEstimatorKpiClick($event)" />
                   </div>
                 </app-widget-frame>
@@ -554,7 +559,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       </div>
                     }
                   </div>
-                  @if (timeOffInsight()) {
+                  @if (showHomeBlock(widgetId, 'insight') && timeOffInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ timeOffInsight() }}</div>
@@ -860,7 +865,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       </div>
                     </div>
                   </div>
-                  @if (calendarInsight()) {
+                  @if (showHomeBlock(widgetId, 'insight') && calendarInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ calendarInsight() }}</div>
@@ -1008,7 +1013,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       }
                     </div>
                   </div>
-                  @if (rfisInsight()) {
+                  @if (showHomeBlock(widgetId, 'insight') && rfisInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ rfisInsight() }}</div>
@@ -1129,7 +1134,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       }
                     </div>
                   </div>
-                  @if (submittalsInsight()) {
+                  @if (showHomeBlock(widgetId, 'insight') && submittalsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ submittalsInsight() }}</div>
@@ -1226,7 +1231,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  @if (drawingsInsight()) {
+                  @if (showHomeBlock(widgetId, 'insight') && drawingsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ drawingsInsight() }}</div>
@@ -1286,7 +1291,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       </div>
                     </div>
                   }
-                  @if (weatherInsight()) {
+                  @if (showHomeBlock(widgetId, 'insight') && weatherInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ weatherInsight() }}</div>
@@ -1379,7 +1384,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       }
                     </div>
                   </div>
-                  @if (urgentNeedsInsight()) {
+                  @if (showHomeBlock(widgetId, 'insight') && urgentNeedsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ urgentNeedsInsight() }}</div>
@@ -1538,7 +1543,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  @if (recentActivityInsight()) {
+                  @if (showHomeBlock(widgetId, 'insight') && recentActivityInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <div class="text-xs text-foreground-60 truncate leading-none">{{ recentActivityInsight() }}</div>
@@ -1576,7 +1581,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'AP Metrics'"
                   [icon]="'dashboard'"
                   [iconClass]="'text-primary'"
-                  [insight]="apKpisInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? apKpisInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1596,7 +1601,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Invoice Queue'"
                   [icon]="'invoice'"
                   [iconClass]="'text-warning'"
-                  [insight]="invoiceQueueInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? invoiceQueueInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1614,7 +1619,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Payment Schedule'"
                   [icon]="'calendar'"
                   [iconClass]="'text-destructive'"
-                  [insight]="paymentScheduleInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? paymentScheduleInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1632,7 +1637,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Vendor Aging'"
                   [icon]="'timer'"
                   [iconClass]="'text-warning'"
-                  [insight]="vendorAgingInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? vendorAgingInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1650,7 +1655,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Pay Applications'"
                   [icon]="'clipboard'"
                   [iconClass]="'text-primary'"
-                  [insight]="payAppsInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? payAppsInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1693,7 +1698,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Lien Waivers'"
                   [icon]="'file'"
                   [iconClass]="'text-destructive'"
-                  [insight]="lienWaiversInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? lienWaiversInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1711,7 +1716,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Retention Summary'"
                   [icon]="'lock'"
                   [iconClass]="'text-foreground-60'"
-                  [insight]="retentionInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? retentionInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1729,7 +1734,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'AP Activity'"
                   [icon]="'history'"
                   [iconClass]="'text-foreground-60'"
-                  [insight]="apActivityInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? apActivityInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1747,7 +1752,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Cash Outflow'"
                   [icon]="'trending_down'"
                   [iconClass]="'text-destructive'"
-                  [insight]="cashOutflowInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? cashOutflowInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1765,7 +1770,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Learning Progress'"
                   [icon]="'learn'"
                   [iconClass]="'text-primary'"
-                  [insight]="learningInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? learningInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1783,7 +1788,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Cross-Project Milestones'"
                   [icon]="'flag'"
                   [iconClass]="'text-primary'"
-                  [insight]="milestonesInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? milestonesInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1821,7 +1826,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Budget Variance'"
                   [icon]="'bar_graph_square'"
                   [iconClass]="'text-warning'"
-                  [insight]="budgetVarianceInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? budgetVarianceInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1839,7 +1844,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Change Orders'"
                   [icon]="'swap'"
                   [iconClass]="'text-warning'"
-                  [insight]="changeOrdersInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? changeOrdersInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1857,7 +1862,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Field Operations'"
                   [icon]="'clipboard'"
                   [iconClass]="'text-success'"
-                  [insight]="fieldOpsInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? fieldOpsInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1875,7 +1880,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Daily Reports'"
                   [icon]="'calendar'"
                   [iconClass]="'text-primary'"
-                  [insight]="dailyReportsInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? dailyReportsInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1893,7 +1898,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Team Allocation'"
                   [icon]="'people'"
                   [iconClass]="'text-primary'"
-                  [insight]="teamAllocationInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? teamAllocationInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1911,7 +1916,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Contract Status'"
                   [icon]="'document'"
                   [iconClass]="'text-success'"
-                  [insight]="contractsInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? contractsInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -1929,7 +1934,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [title]="'Open Estimates'"
                   [icon]="'description'"
                   [iconClass]="'text-primary'"
-                  [insight]="openEstimatesInsight()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? openEstimatesInsight() : null"
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
@@ -2861,6 +2866,27 @@ export class HomePageComponent extends DashboardPageBase {
   ];
   readonly timeOffActiveFilter = signal<'all' | 'Pending' | 'Approved' | 'Denied'>('all');
   readonly timeOffMobileExpanded = signal(false);
+  // ── Area-adaptive visible blocks ───────────────────────────────
+  readonly homeVisibleBlocks = computed<Record<string, Set<string>>>(() => {
+    const heights = this.widgetHeights();
+    const result: Record<string, Set<string>> = {};
+
+    for (const widgetId of this.homeWidgets()) {
+      const h = heights[widgetId] ?? 384;
+      const blocks = new Set<string>();
+      const avail = h - HOME_HEADER_PX;
+      if (HOME_MIN_CONTENT_PX + HOME_INSIGHT_PX <= avail) {
+        blocks.add('insight');
+      }
+      result[widgetId] = blocks;
+    }
+    return result;
+  });
+
+  showHomeBlock(widgetId: string, block: string): boolean {
+    return this.homeVisibleBlocks()[widgetId]?.has(block) ?? false;
+  }
+
   readonly isTimeOffCompact = computed(
     () => this.isMobile() || (this.widgetColSpans()['homeTimeOff'] ?? 16) <= 6
   );

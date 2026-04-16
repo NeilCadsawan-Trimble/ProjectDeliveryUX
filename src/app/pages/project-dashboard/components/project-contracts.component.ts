@@ -27,7 +27,7 @@ import type { Contract, ContractStatus } from '../../../data/dashboard-data.type
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
         @for (c of sortedContracts(); track c.id) {
-          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
+          <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 flex-shrink-0">
             <div class="flex items-center justify-between gap-2">
               <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ c.title }}</div>
               <div class="rounded px-1.5 py-0.5 text-2xs font-medium shrink-0" [class]="statusBadgeClass(c.status)">

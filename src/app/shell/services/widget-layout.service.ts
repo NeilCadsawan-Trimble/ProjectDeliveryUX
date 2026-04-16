@@ -22,6 +22,13 @@ export class WidgetLayoutService {
     } catch { /* quota exceeded or private browsing */ }
   }
 
+  remove(dashboardId: string, mobile: boolean): void {
+    const key = this.PREFIX + dashboardId + (mobile ? ':mobile' : ':desktop');
+    try {
+      sessionStorage.removeItem(key);
+    } catch { /* private browsing */ }
+  }
+
   load(dashboardId: string, mobile: boolean): WidgetLayout | null {
     const key = this.PREFIX + dashboardId + (mobile ? ':mobile' : ':desktop');
     try {

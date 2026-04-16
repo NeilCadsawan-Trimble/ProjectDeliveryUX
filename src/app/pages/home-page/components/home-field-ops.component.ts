@@ -64,7 +64,7 @@ import type { Inspection, PunchListItem } from '../../../data/dashboard-data.typ
       <div class="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto">
         <div class="text-2xs font-medium text-foreground-60 mb-1">Recent failed inspections</div>
         @for (insp of failedInspections(); track insp.id) {
-          <div class="flex items-center justify-between gap-2 py-1.5 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
+          <div class="flex items-center justify-between gap-2 py-1.5 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150 flex-shrink-0"
             role="button" tabindex="0"
             (click)="inspectionClick.emit({ projectId: insp.projectId, inspectionId: insp.id })"
             (keydown.enter)="inspectionClick.emit({ projectId: insp.projectId, inspectionId: insp.id })">

@@ -732,6 +732,7 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   readonly isCanvas = signal(typeof window !== 'undefined' ? window.innerWidth >= 1920 : false);
   private readonly canvasResetService = inject(CanvasResetService);
+  private readonly personaService = inject(PersonaService);
 
   readonly panning = new CanvasPanning(() => this.isCanvas());
   private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
@@ -755,6 +756,16 @@ export class DashboardShellComponent implements AfterViewInit {
 
   private readonly _syncZoomEffect = effect(() => {
     this.canvasResetService.canvasZoom.set(this.panning.canvasZoom());
+  });
+
+  private readonly viewMode = computed(() => {
+    if (this.isMobile()) return 'mobile' as const;
+    if (this.isCanvas()) return 'canvas' as const;
+    return 'desktop' as const;
+  });
+
+  private readonly _syncViewModeEffect = effect(() => {
+    this.personaService.setViewMode(this.viewMode());
   });
 
   private readonly routeSuffix = computed(() => {
@@ -798,7 +809,6 @@ export class DashboardShellComponent implements AfterViewInit {
 
   readonly widgetFocusService = inject(WidgetFocusService);
   readonly navHistory = inject(NavigationHistoryService);
-  private readonly personaService = inject(PersonaService);
   private readonly layoutDefaults = inject(LayoutDefaultsService);
   private readonly aiService = inject(AiService);
   private readonly aiToolsService = inject(AiToolsService);

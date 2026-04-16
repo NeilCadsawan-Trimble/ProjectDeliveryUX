@@ -34,7 +34,7 @@ import type { ApRetentionRecord } from '../../../data/dashboard-data.types';
       </div>
 
       @for (r of records(); track r.id) {
-        <div class="flex flex-col gap-2 py-2 border-bottom-default last:border-b-0 md:grid md:grid-cols-[1fr_auto_auto_auto_auto_auto] md:items-center md:gap-x-2">
+        <div class="flex flex-col gap-2 py-2 border-bottom-default last:border-b-0 md:grid md:grid-cols-[1fr_auto_auto_auto_auto_auto] md:items-center md:gap-x-2 flex-shrink-0">
           <div class="min-w-0">
             <div class="text-sm font-medium text-foreground">{{ r.vendor }}</div>
             <div class="text-xs text-foreground-60">{{ r.project }}</div>

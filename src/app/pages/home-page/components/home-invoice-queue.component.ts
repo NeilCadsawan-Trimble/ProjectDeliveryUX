@@ -10,7 +10,7 @@ import type { ApInvoice } from '../../../data/dashboard-data.types';
     <div class="flex flex-col h-full min-h-0 overflow-y-auto">
       @for (invoice of invoices(); track invoice.id) {
         <div
-          class="flex items-center gap-3 px-3 py-2 border-bottom-default"
+          class="flex items-center gap-3 px-3 py-2 border-bottom-default flex-shrink-0"
           [attr.aria-label]="
             'Invoice ' +
             invoice.invoiceNumber +

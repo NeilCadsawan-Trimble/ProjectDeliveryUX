@@ -34,7 +34,7 @@ import type { LearningPlan } from '../../../data/dashboard-data.types';
       <div class="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
         <div class="flex flex-col gap-1.5">
           @for (course of plan().courses; track course.id) {
-          <div class="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted transition-colors duration-150">
+          <div class="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted transition-colors duration-150 flex-shrink-0">
             @if (course.status === 'completed') {
               <i class="modus-icons text-base text-success flex-shrink-0" aria-hidden="true">check_circle</i>
             } @else if (course.status === 'in-progress') {
