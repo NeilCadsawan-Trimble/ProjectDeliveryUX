@@ -44,6 +44,7 @@ import { PanoramaViewerComponent } from '../../shared/detail/panorama-viewer.com
 import { AiIconComponent } from '../../shell/components/ai-icon.component';
 import { UserMenuComponent } from '../../shell/components/user-menu.component';
 import { TrimbleLogoComponent } from '../../shell/components/trimble-logo.component';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
 import { PersonaService } from '../../services/persona.service';
 import { getPersonaNav } from '../../data/persona-nav.config';
@@ -127,7 +128,7 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',

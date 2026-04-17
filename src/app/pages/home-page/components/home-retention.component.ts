@@ -1,63 +1,65 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApRetentionRecord } from '../../../data/dashboard-data.types';
 
 @Component({
   selector: 'app-home-retention',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto p-4">
       <div class="grid grid-cols-3 gap-2 text-center">
         <div class="rounded-lg bg-muted px-2 py-2">
-          <div class="text-2xs text-foreground-60">Total held</div>
-          <div class="text-sm font-bold text-foreground tabular-nums">{{ formatCurrency(totals().held) }}</div>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Total held</modus-typography>
+          <modus-typography hierarchy="p" size="sm" weight="bold" className="text-foreground tabular-nums">{{ formatCurrency(totals().held) }}</modus-typography>
         </div>
         <div class="rounded-lg bg-muted px-2 py-2">
-          <div class="text-2xs text-foreground-60">Total released</div>
-          <div class="text-sm font-bold text-success tabular-nums">{{ formatCurrency(totals().released) }}</div>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Total released</modus-typography>
+          <modus-typography hierarchy="p" size="sm" weight="bold" className="text-success tabular-nums">{{ formatCurrency(totals().released) }}</modus-typography>
         </div>
         <div class="rounded-lg bg-muted px-2 py-2">
-          <div class="text-2xs text-foreground-60">Total pending</div>
-          <div class="text-sm font-bold text-warning tabular-nums">{{ formatCurrency(totals().pending) }}</div>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Total pending</modus-typography>
+          <modus-typography hierarchy="p" size="sm" weight="bold" className="text-warning tabular-nums">{{ formatCurrency(totals().pending) }}</modus-typography>
         </div>
       </div>
 
       <div class="border-bottom-default"></div>
 
-      <div class="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-2 gap-y-1 text-2xs text-foreground-60 font-medium max-md:hidden">
-        <div>Vendor / project</div>
-        <div class="text-right">Contract</div>
-        <div class="text-right">Rate</div>
-        <div class="text-right">Held</div>
-        <div class="text-right">Released</div>
-        <div class="text-right">Pending</div>
+      <div class="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-2 gap-y-1 max-md:hidden">
+        <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Vendor / project</modus-typography>
+        <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-right">Contract</modus-typography>
+        <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-right">Rate</modus-typography>
+        <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-right">Held</modus-typography>
+        <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-right">Released</modus-typography>
+        <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-right">Pending</modus-typography>
       </div>
 
       @for (r of records(); track r.id) {
         <div class="flex flex-col gap-2 py-2 border-bottom-default last:border-b-0 md:grid md:grid-cols-[1fr_auto_auto_auto_auto_auto] md:items-center md:gap-x-2">
           <div class="min-w-0">
-            <div class="text-sm font-medium text-foreground">{{ r.vendor }}</div>
-            <div class="text-xs text-foreground-60">{{ r.project }}</div>
+            <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ r.vendor }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ r.project }}</modus-typography>
           </div>
           <div class="flex justify-between md:block md:text-right">
-            <div class="text-2xs text-foreground-60 md:hidden">Contract</div>
-            <div class="text-xs text-foreground tabular-nums">{{ formatCurrency(r.contractValue) }}</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 md:hidden">Contract</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground tabular-nums">{{ formatCurrency(r.contractValue) }}</modus-typography>
           </div>
           <div class="flex justify-between md:block md:text-right">
-            <div class="text-2xs text-foreground-60 md:hidden">Rate</div>
-            <div class="text-xs text-foreground tabular-nums">{{ retentionPct(r.retentionRate) }}</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 md:hidden">Rate</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground tabular-nums">{{ retentionPct(r.retentionRate) }}</modus-typography>
           </div>
           <div class="flex justify-between md:block md:text-right">
-            <div class="text-2xs text-foreground-60 md:hidden">Held</div>
-            <div class="text-xs text-foreground tabular-nums">{{ formatCurrency(r.retentionHeld) }}</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 md:hidden">Held</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground tabular-nums">{{ formatCurrency(r.retentionHeld) }}</modus-typography>
           </div>
           <div class="flex justify-between md:block md:text-right">
-            <div class="text-2xs text-foreground-60 md:hidden">Released</div>
-            <div class="text-xs text-success tabular-nums">{{ formatCurrency(r.retentionReleased) }}</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 md:hidden">Released</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-success tabular-nums">{{ formatCurrency(r.retentionReleased) }}</modus-typography>
           </div>
           <div class="flex justify-between md:block md:text-right">
-            <div class="text-2xs text-foreground-60 md:hidden">Pending</div>
-            <div class="text-xs text-warning tabular-nums">{{ formatCurrency(r.pendingRelease) }}</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 md:hidden">Pending</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-warning tabular-nums">{{ formatCurrency(r.pendingRelease) }}</modus-typography>
           </div>
         </div>
       }

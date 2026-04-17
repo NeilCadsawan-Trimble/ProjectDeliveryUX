@@ -1,48 +1,49 @@
 import { TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ChangeOrder } from '../../../data/dashboard-data.types';
 
 @Component({
   selector: 'app-project-change-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TitleCasePipe],
+  imports: [TitleCasePipe, ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col gap-2 h-full min-h-0 p-4">
       <div class="grid grid-cols-3 gap-2 shrink-0">
         <div class="flex flex-col items-center gap-1 rounded-lg bg-warning-20 py-2">
-          <div class="text-lg font-bold text-warning tabular-nums">{{ pendingCount() }}</div>
-          <div class="text-2xs text-foreground-60">Pending</div>
-          <div class="text-2xs font-medium text-foreground tabular-nums">{{ fmtCurrency(pendingAmount()) }}</div>
+          <modus-typography size="lg" weight="bold" className="text-warning tabular-nums">{{ pendingCount() }}</modus-typography>
+          <modus-typography size="xs" className="text-foreground-60">Pending</modus-typography>
+          <modus-typography size="xs" weight="semibold" className="text-foreground tabular-nums">{{ fmtCurrency(pendingAmount()) }}</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-1 rounded-lg bg-success-20 py-2">
-          <div class="text-lg font-bold text-success tabular-nums">{{ approvedCount() }}</div>
-          <div class="text-2xs text-foreground-60">Approved</div>
-          <div class="text-2xs font-medium text-foreground tabular-nums">{{ fmtCurrency(approvedAmount()) }}</div>
+          <modus-typography size="lg" weight="bold" className="text-success tabular-nums">{{ approvedCount() }}</modus-typography>
+          <modus-typography size="xs" className="text-foreground-60">Approved</modus-typography>
+          <modus-typography size="xs" weight="semibold" className="text-foreground tabular-nums">{{ fmtCurrency(approvedAmount()) }}</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-1 rounded-lg bg-destructive-20 py-2">
-          <div class="text-lg font-bold text-destructive tabular-nums">{{ rejectedCount() }}</div>
-          <div class="text-2xs text-foreground-60">Rejected</div>
-          <div class="text-2xs font-medium text-foreground tabular-nums">{{ fmtCurrency(rejectedAmount()) }}</div>
+          <modus-typography size="lg" weight="bold" className="text-destructive tabular-nums">{{ rejectedCount() }}</modus-typography>
+          <modus-typography size="xs" className="text-foreground-60">Rejected</modus-typography>
+          <modus-typography size="xs" weight="semibold" className="text-foreground tabular-nums">{{ fmtCurrency(rejectedAmount()) }}</modus-typography>
         </div>
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
         @for (co of sortedOrders(); track co.id) {
           <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
             <div class="flex items-center justify-between gap-2">
-              <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ co.description }}</div>
-              <div class="text-sm font-semibold tabular-nums" [class]="co.amount >= 0 ? 'text-foreground' : 'text-destructive'">{{ fmtCurrency(co.amount) }}</div>
+              <modus-typography size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ co.description }}</modus-typography>
+              <modus-typography size="sm" weight="semibold" [className]="'tabular-nums ' + (co.amount >= 0 ? 'text-foreground' : 'text-destructive')">{{ fmtCurrency(co.amount) }}</modus-typography>
             </div>
-            <div class="flex items-center gap-2 text-2xs">
-              <div class="rounded px-1.5 py-0.5 font-medium" [class]="statusClass(co.status)">{{ co.status | titlecase }}</div>
-              <div class="text-foreground-40">{{ co.requestedBy }}</div>
+            <div class="flex items-center gap-2">
+              <modus-typography size="xs" weight="semibold" [className]="'text-2xs rounded px-1.5 py-0.5 ' + statusClass(co.status)">{{ co.status | titlecase }}</modus-typography>
+              <modus-typography size="xs" className="text-2xs text-foreground-40">{{ co.requestedBy }}</modus-typography>
               <div class="w-1 h-1 rounded-full bg-foreground-20"></div>
-              <div class="text-foreground-40">{{ co.requestDate }}</div>
+              <modus-typography size="xs" className="text-2xs text-foreground-40">{{ co.requestDate }}</modus-typography>
             </div>
           </div>
         }
         @if (sortedOrders().length === 0) {
-          <div class="text-sm text-foreground-40 text-center py-6">No change orders</div>
+          <modus-typography size="sm" className="text-foreground-40 text-center py-6">No change orders</modus-typography>
         }
       </div>
     </div>

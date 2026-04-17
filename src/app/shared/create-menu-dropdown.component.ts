@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { ModusButtonComponent } from '../components/modus-button.component';
 import { ModusTextInputComponent } from '../components/modus-text-input.component';
+import { ModusTypographyComponent } from '../components/modus-typography.component';
 import type { NavItem } from '../pages/project-dashboard/project-dashboard.config';
 
 @Component({
   selector: 'app-create-menu-dropdown',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModusButtonComponent, ModusTextInputComponent],
+  imports: [ModusButtonComponent, ModusTextInputComponent, ModusTypographyComponent],
   host: { class: 'relative flex-shrink-0', '[attr.data-create-dropdown]': 'true' },
   template: `
     <modus-button color="primary" variant="filled" size="sm" icon="add" iconPosition="left"
@@ -25,12 +26,12 @@ import type { NavItem } from '../pages/project-dashboard/project-dashboard.confi
       </div>
       @if (!searchQuery()) {
       <div class="p-2">
-        <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wider px-2 py-1.5">Frequently Used</div>
+        <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wider px-2 py-1.5">Frequently Used</modus-typography>
         @for (item of frequentItems(); track item.value) {
         <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
           (click)="selectItem(item)">
           <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
-          <div class="text-sm text-foreground">{{ item.label }}</div>
+          <modus-typography hierarchy="p" size="sm">{{ item.label }}</modus-typography>
         </div>
         }
       </div>
@@ -40,10 +41,10 @@ import type { NavItem } from '../pages/project-dashboard/project-dashboard.confi
         <div class="flex items-center gap-3 px-2 py-2 rounded cursor-pointer hover:bg-muted transition-colors"
           (click)="selectItem(item)">
           <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
-          <div class="text-sm text-foreground">{{ item.label }}</div>
+          <modus-typography hierarchy="p" size="sm">{{ item.label }}</modus-typography>
         </div>
         } @empty {
-        <div class="text-sm text-foreground-40 px-2 py-3 text-center">No items found</div>
+        <modus-typography hierarchy="p" size="sm" className="text-foreground-40 px-2 py-3 text-center">No items found</modus-typography>
         }
       </div>
       }

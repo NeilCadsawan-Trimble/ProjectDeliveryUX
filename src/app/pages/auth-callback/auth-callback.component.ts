@@ -1,35 +1,38 @@
 import { ChangeDetectionStrategy, Component, NgZone, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { ModusLoaderComponent } from '../../components/modus-loader.component';
+import { ModusButtonComponent } from '../../components/modus-button.component';
 @Component({
   selector: 'app-auth-callback',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent, ModusLoaderComponent, ModusButtonComponent],
   template: `
     <div class="min-h-screen bg-background flex items-center justify-center">
       <div class="flex flex-col items-center gap-4">
         @if (authService.error()) {
           <div class="flex flex-col items-center gap-4 max-w-sm px-6">
-            <i class="modus-icons text-4xl text-destructive" aria-hidden="true">warning</i>
-            <div class="text-lg font-semibold text-foreground text-center">
+            <i class="modus-icons text-4xl text-error" aria-hidden="true">warning</i>
+            <modus-typography hierarchy="h1" size="lg" weight="semibold" className="text-center">
               Authentication Failed
-            </div>
-            <div class="text-sm text-foreground-60 text-center">
+            </modus-typography>
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-center">
               {{ authService.error() }}
-            </div>
-            <div
-              class="text-sm text-primary cursor-pointer hover:underline"
-              role="button"
-              tabindex="0"
-              (click)="goToLogin()"
-              (keydown.enter)="goToLogin()"
+            </modus-typography>
+            <modus-button
+              color="primary"
+              variant="borderless"
+              (buttonClick)="goToLogin()"
             >
               Return to login
-            </div>
+            </modus-button>
           </div>
         } @else {
-          <div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <div class="text-sm text-foreground-60">Completing sign-in...</div>
+          <modus-loader size="sm" color="primary" />
+          <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
+            Completing sign-in...
+          </modus-typography>
         }
       </div>
     </div>

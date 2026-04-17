@@ -2,6 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
 } from '@angular/core';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { ModusButtonComponent } from '../../components/modus-button.component';
+import { ModusAlertComponent } from '../../components/modus-alert.component';
 
 interface ProductEntry {
   title: string;
@@ -99,27 +102,28 @@ const PRODUCTS: ProductEntry[] = [
 @Component({
   selector: 'app-my-products-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent, ModusButtonComponent, ModusAlertComponent],
   template: `
     <div class="flex flex-col min-h-full bg-background">
       <div class="w-full max-w-[960px] mx-auto px-6 py-8 flex flex-col gap-6 flex-1">
 
         <div class="text-center flex flex-col gap-2">
-          <div class="text-2xl font-bold text-foreground">My Products</div>
-          <div class="text-sm text-foreground-60">
+          <modus-typography hierarchy="h1" size="xl" weight="bold">My Products</modus-typography>
+          <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
             Once an admin assigns you a license, you'll see it here. If you were assigned
             a license but don't see it here, please try refreshing the page.
-          </div>
+          </modus-typography>
         </div>
 
-        <!-- Can't find your product? -->
-        <div class="bg-muted rounded-lg p-5 flex flex-col gap-1">
-          <div class="text-sm font-bold text-foreground">Can't find your product?</div>
-          <div class="text-sm text-foreground-60">
+        <modus-alert
+          alertTitle="Can't find your product?"
+          variant="info"
+        >
+          <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
             If you were using a different portal to access assigned products before, you may be able to find what you're looking for here.
-          </div>
-        </div>
+          </modus-typography>
+        </modus-alert>
 
-        <!-- Products grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 border-default rounded-lg overflow-hidden bg-card">
           @for (product of products; track product.title; let i = $index) {
             <div
@@ -127,14 +131,14 @@ const PRODUCTS: ProductEntry[] = [
               [class.border-bottom-default]="i < products.length - 2"
               [class.border-right-default]="i % 2 === 0"
             >
-              <div class="text-sm font-bold text-foreground">{{ product.title }}</div>
-              <div class="text-xs text-foreground-60 leading-relaxed">{{ product.description }}</div>
+              <modus-typography hierarchy="h3" size="sm" weight="bold">{{ product.title }}</modus-typography>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-60 leading-relaxed">{{ product.description }}</modus-typography>
               @if (product.bullets) {
                 <div class="flex flex-col gap-0.5 ml-4">
                   @for (bullet of product.bullets; track bullet) {
-                    <div class="text-xs text-foreground-60 leading-relaxed flex items-start gap-1">
+                    <div class="flex items-start gap-1">
                       <div class="mt-1.5 w-1 h-1 rounded-full bg-foreground-40 flex-shrink-0"></div>
-                      <div>{{ bullet }}</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 leading-relaxed">{{ bullet }}</modus-typography>
                     </div>
                   }
                 </div>
@@ -143,18 +147,19 @@ const PRODUCTS: ProductEntry[] = [
           }
         </div>
 
-        <!-- Bottom row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="flex flex-col gap-1">
-            <div class="text-sm font-bold text-foreground">Admin Console</div>
-            <div class="text-xs text-foreground-60">
+            <modus-typography hierarchy="h3" size="sm" weight="bold">Admin Console</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">
               Are you an admin looking to manage your subscriptions? Head over to
-              <div class="inline font-semibold text-foreground cursor-pointer underline decoration-warning decoration-2 underline-offset-4">Admin Console</div>.
-            </div>
+              <div class="inline">
+                <modus-button color="warning" variant="borderless" size="sm">Admin Console</modus-button>
+              </div>.
+            </modus-typography>
           </div>
           <div class="flex flex-col gap-1">
-            <div class="text-sm text-foreground-60">Still having trouble?</div>
-            <div class="text-sm font-semibold text-foreground cursor-pointer underline decoration-warning decoration-2 underline-offset-4">Contact us</div>
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-60">Still having trouble?</modus-typography>
+            <modus-button color="warning" variant="borderless" size="sm">Contact us</modus-button>
           </div>
         </div>
 
@@ -163,19 +168,19 @@ const PRODUCTS: ProductEntry[] = [
       <div class="w-full bg-foreground text-background px-8 py-6">
         <div class="max-w-[960px] mx-auto grid grid-cols-[auto_1fr_auto] gap-8 items-start">
           <div class="flex flex-col gap-1 flex-shrink-0">
-            <div class="text-lg font-bold tracking-tight">Trimble.</div>
-            <div class="text-2xs text-background-60">&copy; {{ currentYear }}, Trimble Inc.</div>
+            <modus-typography hierarchy="p" size="lg" weight="bold" className="tracking-tight">Trimble.</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-background-60">&copy; {{ currentYear }}, Trimble Inc.</modus-typography>
           </div>
-          <div class="text-2xs leading-relaxed text-background-60">
+          <modus-typography hierarchy="p" size="xs" className="leading-relaxed text-background-60">
             Trimble is a global technology company that connects the physical and digital worlds, transforming the ways work gets done. With relentless innovation in precise positioning, modeling and data analytics, Trimble enables essential industries including construction, geospatial and transportation. Whether it's helping customers build and maintain infrastructure, design and construct buildings, optimize global supply chains or map the world, Trimble is at the forefront, driving productivity and progress.
-          </div>
-          <div class="flex flex-col gap-1 text-xs flex-shrink-0">
-            <div class="cursor-pointer hover:underline">Legal Terms and Conditions</div>
-            <div class="cursor-pointer hover:underline">Website Terms of Use</div>
-            <div class="cursor-pointer hover:underline">Privacy Center</div>
-            <div class="cursor-pointer hover:underline">Privacy Notice</div>
-            <div class="cursor-pointer hover:underline">California Notice at Collection</div>
-            <div class="cursor-pointer hover:underline">Your Privacy Choices (US)</div>
+          </modus-typography>
+          <div class="flex flex-col gap-1 flex-shrink-0">
+            <modus-button color="secondary" variant="borderless" size="sm">Legal Terms and Conditions</modus-button>
+            <modus-button color="secondary" variant="borderless" size="sm">Website Terms of Use</modus-button>
+            <modus-button color="secondary" variant="borderless" size="sm">Privacy Center</modus-button>
+            <modus-button color="secondary" variant="borderless" size="sm">Privacy Notice</modus-button>
+            <modus-button color="secondary" variant="borderless" size="sm">California Notice at Collection</modus-button>
+            <modus-button color="secondary" variant="borderless" size="sm">Your Privacy Choices (US)</modus-button>
           </div>
         </div>
       </div>

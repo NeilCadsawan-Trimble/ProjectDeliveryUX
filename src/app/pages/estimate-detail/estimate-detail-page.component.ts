@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { ModusCardComponent } from '../../components/modus-card.component';
 import type { Estimate, EstimateStatus } from '../../data/dashboard-data.types';
 import { estimateBadgeColor, dueDateClass, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data.formatters';
 import { DataStoreService } from '../../data/data-store.service';
@@ -80,7 +82,7 @@ function buildHistory(est: Estimate): HistoryEntry[] {
 
 @Component({
   selector: 'app-estimate-detail-page',
-  imports: [DetailPageLayoutComponent],
+  imports: [DetailPageLayoutComponent, ModusTypographyComponent, ModusCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-detail-page-layout
@@ -93,151 +95,157 @@ function buildHistory(est: Estimate): HistoryEntry[] {
     >
       @if (estimate(); as est) {
         <!-- Header card -->
-        <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
-          <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
-            <div class="flex items-center gap-4">
-              <div class="w-11 h-11 rounded-lg flex items-center justify-center" [class]="statusBg()">
-                <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">description</i>
-              </div>
-              <div>
-                <div class="text-xl font-semibold text-foreground">{{ est.id }}</div>
-                <div class="text-sm text-foreground-60">{{ est.project }}</div>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="relative">
-                <div class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-muted transition-colors duration-150"
-                  role="button" tabindex="0"
-                  (click)="statusOpen.set(!statusOpen())"
-                  (keydown.enter)="statusOpen.set(!statusOpen())">
-                  <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
-                  <div class="text-sm font-medium text-foreground">{{ est.status }}</div>
-                  <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
+        <modus-card [padding]="'compact'" className="overflow-hidden mb-6">
+          <div>
+            <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-lg flex items-center justify-center" [class]="statusBg()">
+                  <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">description</i>
                 </div>
-                @if (statusOpen()) {
-                  <div class="fixed inset-0 z-[9998]" (click)="statusOpen.set(false)"></div>
-                  <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-[9999] min-w-[200px] py-1 overflow-hidden">
-                    @for (opt of estStatusOptions; track opt.value) {
-                      <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
-                        role="option" [attr.aria-selected]="opt.value === est.status"
-                        (click)="changeStatus(opt.value)">
-                        <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
-                        <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
-                        @if (opt.value === est.status) {
-                          <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
-                        }
-                      </div>
-                    }
+                <div>
+                  <modus-typography hierarchy="h2" size="lg" weight="semibold">{{ est.id }}</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">{{ est.project }}</modus-typography>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="relative">
+                  <div class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-muted transition-colors duration-150"
+                    role="button" tabindex="0"
+                    (click)="statusOpen.set(!statusOpen())"
+                    (keydown.enter)="statusOpen.set(!statusOpen())">
+                    <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
+                    <modus-typography hierarchy="p" size="sm" className="font-medium text-foreground">{{ est.status }}</modus-typography>
+                    <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
                   </div>
-                }
-              </div>
-            </div>
-          </div>
-
-          <div class="px-6 py-6 flex flex-col gap-6">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div>
-                <div class="detail-field-label">Client</div>
-                <div class="text-base text-foreground">{{ est.client }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Type</div>
-                <div class="text-base text-foreground">{{ est.type }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Value</div>
-                <div class="text-xl font-bold text-foreground">{{ est.value }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Due Date</div>
-                <div class="text-base text-foreground">{{ est.dueDate }}</div>
-                <div class="text-xs mt-0.5" [class]="dueDateClass(est.daysLeft)">
-                  @if (est.daysLeft < 0) {
-                    {{ -est.daysLeft }} days overdue
-                  } @else if (est.daysLeft === 0) {
-                    Due today
-                  } @else {
-                    {{ est.daysLeft }} days remaining
+                  @if (statusOpen()) {
+                    <div class="fixed inset-0 z-[9998]" (click)="statusOpen.set(false)"></div>
+                    <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-[9999] min-w-[200px] py-1 overflow-hidden">
+                      @for (opt of estStatusOptions; track opt.value) {
+                        <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                          role="option" [attr.aria-selected]="opt.value === est.status"
+                          (click)="changeStatus(opt.value)">
+                          <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
+                          <modus-typography hierarchy="p" size="sm" className="font-medium text-foreground">{{ opt.label }}</modus-typography>
+                          @if (opt.value === est.status) {
+                            <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
+                          }
+                        </div>
+                      }
+                    </div>
                   }
                 </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div class="detail-field-label">Requested By</div>
-                <div class="flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0">
-                    {{ est.requestedByInitials }}
-                  </div>
-                  <div class="text-base text-foreground">{{ est.requestedBy }}</div>
+            <div class="px-6 py-6 flex flex-col gap-6">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <div class="detail-field-label">Client</div>
+                  <modus-typography hierarchy="p" size="md">{{ est.client }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Type</div>
+                  <modus-typography hierarchy="p" size="md">{{ est.type }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Value</div>
+                  <modus-typography hierarchy="h2" size="lg" weight="bold">{{ est.value }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Due Date</div>
+                  <modus-typography hierarchy="p" size="md">{{ est.dueDate }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" [className]="'mt-0.5 ' + dueDateClass(est.daysLeft)">
+                    @if (est.daysLeft < 0) {
+                      {{ -est.daysLeft }} days overdue
+                    } @else if (est.daysLeft === 0) {
+                      Due today
+                    } @else {
+                      {{ est.daysLeft }} days remaining
+                    }
+                  </modus-typography>
                 </div>
               </div>
-              <div>
-                <div class="detail-field-label">Project</div>
-                <div class="text-base text-foreground">{{ est.project }}</div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div class="detail-field-label">Requested By</div>
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-primary-20 text-primary flex items-center justify-center flex-shrink-0">
+                      <modus-typography size="xs" weight="semibold">{{ est.requestedByInitials }}</modus-typography>
+                    </div>
+                    <modus-typography hierarchy="p" size="md">{{ est.requestedBy }}</modus-typography>
+                  </div>
+                </div>
+                <div>
+                  <div class="detail-field-label">Project</div>
+                  <modus-typography hierarchy="p" size="md">{{ est.project }}</modus-typography>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </modus-card>
 
         <!-- Line Items -->
-        <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
-          <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
-            <div class="text-base font-semibold text-foreground">Line Items</div>
-            <div class="text-xs text-foreground-40">{{ lineItems().length }} items</div>
-          </div>
+        <modus-card [padding]="'compact'" className="overflow-hidden mb-6">
+          <div>
+            <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
+              <modus-typography hierarchy="h3" size="md" weight="semibold">Line Items</modus-typography>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ lineItems().length }} items</modus-typography>
+            </div>
 
-          <div class="overflow-x-auto">
-            <div class="min-w-[600px]">
-              <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-                <div>Description</div>
-                <div class="text-right">Qty</div>
-                <div class="text-right">Unit</div>
-                <div class="text-right">Unit Cost</div>
-                <div class="text-right">Total</div>
-              </div>
-              @for (item of lineItems(); track item.description) {
-                <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] gap-3 px-6 py-3.5 border-bottom-default items-center last:border-b-0">
-                  <div class="text-sm text-foreground">{{ item.description }}</div>
-                  <div class="text-sm text-foreground-80 text-right">{{ item.qty }}</div>
-                  <div class="text-sm text-foreground-80 text-right">{{ item.unit }}</div>
-                  <div class="text-sm text-foreground-80 text-right">{{ formatCurrency(item.unitCost) }}</div>
-                  <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(item.total) }}</div>
+            <div class="overflow-x-auto">
+              <div class="min-w-[600px]">
+                <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] gap-3 px-6 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide">
+                  <modus-typography size="xs" weight="semibold">Description</modus-typography>
+                  <modus-typography size="xs" weight="semibold" className="text-right">Qty</modus-typography>
+                  <modus-typography size="xs" weight="semibold" className="text-right">Unit</modus-typography>
+                  <modus-typography size="xs" weight="semibold" className="text-right">Unit Cost</modus-typography>
+                  <modus-typography size="xs" weight="semibold" className="text-right">Total</modus-typography>
                 </div>
-              }
-              <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] gap-3 px-6 py-4 bg-muted border-top-default">
-                <div class="text-sm font-semibold text-foreground">Total</div>
-                <div></div>
-                <div></div>
-                <div></div>
-                <div class="text-base font-bold text-foreground text-right">{{ est.value }}</div>
+                @for (item of lineItems(); track item.description) {
+                  <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] gap-3 px-6 py-3.5 border-bottom-default items-center last:border-b-0">
+                    <modus-typography hierarchy="p" size="sm">{{ item.description }}</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-80 text-right">{{ item.qty }}</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-80 text-right">{{ item.unit }}</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-80 text-right">{{ formatCurrency(item.unitCost) }}</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-right">{{ formatCurrency(item.total) }}</modus-typography>
+                  </div>
+                }
+                <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] gap-3 px-6 py-4 bg-muted border-top-default">
+                  <modus-typography hierarchy="p" size="sm" weight="semibold">Total</modus-typography>
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                  <modus-typography hierarchy="p" size="md" weight="bold" className="text-right">{{ est.value }}</modus-typography>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </modus-card>
 
         <!-- Activity History -->
-        <div class="bg-card border-default rounded-lg overflow-hidden">
-          <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
-            <div class="text-base font-semibold text-foreground">Activity History</div>
-          </div>
+        <modus-card [padding]="'compact'" className="overflow-hidden">
           <div>
-            @for (entry of history(); track entry.action; let last = $last) {
-              <div class="flex items-start gap-4 px-6 py-4" [class.border-bottom-default]="!last">
-                <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <div class="text-xs font-semibold text-foreground-60">{{ entry.actorInitials }}</div>
+            <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
+              <modus-typography hierarchy="h3" size="md" weight="semibold">Activity History</modus-typography>
+            </div>
+            <div>
+              @for (entry of history(); track entry.action; let last = $last) {
+                <div class="flex items-start gap-4 px-6 py-4" [class.border-bottom-default]="!last">
+                  <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">{{ entry.actorInitials }}</modus-typography>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <modus-typography hierarchy="p" size="sm">{{ entry.action }}</modus-typography>
+                    <modus-typography hierarchy="p" size="xs" className="text-foreground-40 mt-0.5">{{ entry.actor }} -- {{ entry.date }}</modus-typography>
+                  </div>
                 </div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm text-foreground">{{ entry.action }}</div>
-                  <div class="text-xs text-foreground-40 mt-0.5">{{ entry.actor }} -- {{ entry.date }}</div>
-                </div>
-              </div>
-            }
+              }
+            </div>
           </div>
-        </div>
+        </modus-card>
       }
     </app-detail-page-layout>
   `,

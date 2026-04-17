@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { PERSONAS } from '../../services/persona.service';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
 export interface UserMenuItem {
   id: string;
@@ -36,6 +37,7 @@ const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS
 
 @Component({
   selector: 'user-menu',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'relative',
@@ -55,8 +57,8 @@ const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS
       @if (avatarSrc()) {
         <img [src]="avatarSrc()" [alt]="name()" class="w-full h-full object-cover" />
       } @else {
-        <div class="w-full h-full flex items-center justify-center bg-secondary text-foreground text-xs font-semibold">
-          {{ initials() }}
+        <div class="w-full h-full flex items-center justify-center bg-secondary">
+          <modus-typography hierarchy="p" size="xs" weight="semibold">{{ initials() }}</modus-typography>
         </div>
       }
     </div>
@@ -73,13 +75,13 @@ const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS
               <img [src]="avatarSrc()" [alt]="name()" class="w-full h-full object-cover" />
             </div>
           } @else {
-            <div class="w-16 h-16 rounded-full flex items-center justify-center bg-secondary text-foreground text-xl font-semibold mb-1">
-              {{ initials() }}
+            <div class="w-16 h-16 rounded-full flex items-center justify-center bg-secondary mb-1">
+              <modus-typography hierarchy="p" size="xl" weight="semibold">{{ initials() }}</modus-typography>
             </div>
           }
-          <div class="text-xs text-foreground-60">{{ company() }}</div>
-          <div class="text-sm font-semibold text-foreground">{{ name() }}</div>
-          <div class="text-xs text-foreground-60">{{ email() }}</div>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ company() }}</modus-typography>
+          <modus-typography hierarchy="p" size="sm" weight="semibold">{{ name() }}</modus-typography>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ email() }}</modus-typography>
         </div>
 
         <div class="border-top-default"></div>
@@ -94,13 +96,13 @@ const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS
               (keydown.enter)="onMenuAction(item)"
             >
               <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
-              <div class="text-sm text-foreground">{{ item.label }}</div>
+              <modus-typography hierarchy="p" size="sm">{{ item.label }}</modus-typography>
             </div>
           }
         </div>
 
         <div class="px-4 py-1.5">
-          <div class="text-xs font-medium text-foreground-60">Switch User</div>
+          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Switch User</modus-typography>
         </div>
         <div class="border-top-default"></div>
 
@@ -119,7 +121,7 @@ const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS
               } @else {
                 <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ item.icon }}</i>
               }
-              <div class="text-sm" [class.font-semibold]="item.id === activePersonaSlug()" [class.text-primary]="item.id === activePersonaSlug()" [class.text-foreground]="item.id !== activePersonaSlug()">{{ item.label }}</div>
+              <modus-typography hierarchy="p" size="sm" [weight]="item.id === activePersonaSlug() ? 'semibold' : 'normal'" [className]="item.id === activePersonaSlug() ? 'text-primary' : ''">{{ item.label }}</modus-typography>
             </div>
           }
         </div>
@@ -135,14 +137,14 @@ const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS
           (keydown.enter)="legalExpanded.set(!legalExpanded())"
         >
           <i class="modus-icons text-base text-foreground-60 transition-transform duration-150" [class.rotate-180]="legalExpanded()" aria-hidden="true">expand_more</i>
-          <div class="text-sm text-foreground">Legal</div>
+          <modus-typography hierarchy="p" size="sm">Legal</modus-typography>
         </div>
 
         @if (legalExpanded()) {
           <div class="px-4 pb-2">
-            <div class="text-xs text-foreground-60 leading-relaxed px-7">
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 leading-relaxed px-7">
               Terms of use, privacy policy, and other legal information.
-            </div>
+            </modus-typography>
           </div>
         }
 
@@ -154,12 +156,12 @@ const PERSONA_MENU_ITEMS: UserMenuItem[] = PERSONAS
           (keydown.enter)="onSignOut()"
         >
           <i class="modus-icons text-base text-foreground-60" aria-hidden="true">sign_out</i>
-          <div class="text-sm text-foreground">Sign out</div>
+          <modus-typography hierarchy="p" size="sm">Sign out</modus-typography>
         </div>
 
         <div class="border-top-default"></div>
         <div class="px-4 py-2 text-center">
-          <div class="text-2xs text-foreground-40">&copy;{{ currentYear }}, Trimble Inc.</div>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-40">&copy;{{ currentYear }}, Trimble Inc.</modus-typography>
         </div>
       </div>
     }

@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApPayApplication, ApPayAppStatus } from '../../../data/dashboard-data.types';
 
 export type PayAppsView = 'tile' | 'table';
 
 @Component({
   selector: 'app-home-pay-apps',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
@@ -15,16 +16,16 @@ export type PayAppsView = 'tile' | 'table';
       @if (showSummary()) {
         <div class="grid grid-cols-3 gap-2 px-4 pt-3 pb-2 flex-shrink-0">
           <div class="rounded-lg bg-muted px-3 py-2 text-center">
-            <div class="text-2xs text-foreground-60">Pending</div>
-            <div class="text-sm font-bold text-warning tabular-nums">{{ summary().pendingCount }} / {{ formatCurrency(summary().pendingTotal) }}</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Pending</modus-typography>
+            <modus-typography hierarchy="p" size="sm" weight="bold" className="text-warning tabular-nums">{{ summary().pendingCount }} / {{ formatCurrency(summary().pendingTotal) }}</modus-typography>
           </div>
           <div class="rounded-lg bg-muted px-3 py-2 text-center">
-            <div class="text-2xs text-foreground-60">Approved</div>
-            <div class="text-sm font-bold text-success tabular-nums">{{ summary().approvedCount }} / {{ formatCurrency(summary().approvedTotal) }}</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Approved</modus-typography>
+            <modus-typography hierarchy="p" size="sm" weight="bold" className="text-success tabular-nums">{{ summary().approvedCount }} / {{ formatCurrency(summary().approvedTotal) }}</modus-typography>
           </div>
           <div class="rounded-lg bg-muted px-3 py-2 text-center">
-            <div class="text-2xs text-foreground-60">Total Net Due</div>
-            <div class="text-sm font-bold text-primary tabular-nums">{{ formatCurrency(summary().totalNetDue) }}</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Total Net Due</modus-typography>
+            <modus-typography hierarchy="p" size="sm" weight="bold" className="text-primary tabular-nums">{{ formatCurrency(summary().totalNetDue) }}</modus-typography>
           </div>
         </div>
       }
@@ -39,12 +40,12 @@ export type PayAppsView = 'tile' | 'table';
               (click)="interactive() && payAppClick.emit(app)">
               <div class="px-4 py-3 flex items-center justify-between">
                 <div class="min-w-0">
-                  <div class="text-sm font-semibold text-foreground truncate">{{ app.vendor }}</div>
-                  <div class="text-xs text-foreground-60 truncate">{{ app.project }}</div>
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ app.vendor }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ app.project }}</modus-typography>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   <div
-                    class="rounded px-2 py-0.5 text-2xs font-medium"
+                    class="rounded px-2 py-0.5"
                     [class.bg-warning-20]="app.status === 'pending'"
                     [class.text-warning]="app.status === 'pending'"
                     [class.bg-success-20]="app.status === 'approved'"
@@ -52,7 +53,7 @@ export type PayAppsView = 'tile' | 'table';
                     [class.bg-muted]="app.status === 'paid'"
                     [class.text-foreground]="app.status === 'paid'"
                   >
-                    {{ statusLabel(app.status) }}
+                    <modus-typography size="xs" weight="semibold" className="text-2xs">{{ statusLabel(app.status) }}</modus-typography>
                   </div>
                   @if (interactive()) {
                     <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
@@ -66,49 +67,49 @@ export type PayAppsView = 'tile' | 'table';
                     [style.width.%]="billedPct(app)"
                   ></div>
                 </div>
-                <div class="text-2xs text-foreground-40">Billed {{ formatCurrency(app.previousBilled + app.thisPeriod) }} of {{ formatCurrency(app.contractValue) }}</div>
-                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                  <div class="text-foreground-60">Contract value</div>
-                  <div class="text-foreground tabular-nums text-right">{{ formatCurrency(app.contractValue) }}</div>
-                  <div class="text-foreground-60">Previous billed</div>
-                  <div class="text-foreground tabular-nums text-right">{{ formatCurrency(app.previousBilled) }}</div>
-                  <div class="text-foreground-60">This period</div>
-                  <div class="text-foreground tabular-nums text-right">{{ formatCurrency(app.thisPeriod) }}</div>
-                  <div class="text-foreground-60">Retention held</div>
-                  <div class="text-foreground tabular-nums text-right">{{ formatCurrency(app.retentionHeld) }}</div>
-                  <div class="text-foreground-60">Net due</div>
-                  <div class="text-sm font-semibold text-primary tabular-nums text-right">{{ formatCurrency(app.netDue) }}</div>
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-40">Billed {{ formatCurrency(app.previousBilled + app.thisPeriod) }} of {{ formatCurrency(app.contractValue) }}</modus-typography>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Contract value</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground tabular-nums text-right">{{ formatCurrency(app.contractValue) }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Previous billed</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground tabular-nums text-right">{{ formatCurrency(app.previousBilled) }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60">This period</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground tabular-nums text-right">{{ formatCurrency(app.thisPeriod) }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Retention held</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground tabular-nums text-right">{{ formatCurrency(app.retentionHeld) }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Net due</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-primary tabular-nums text-right">{{ formatCurrency(app.netDue) }}</modus-typography>
                 </div>
-                <div class="text-2xs text-foreground-40">Period end {{ app.periodEnd }}</div>
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-40">Period end {{ app.periodEnd }}</modus-typography>
               </div>
             </div>
           }
         </div>
       } @else {
         <div class="flex-1 min-h-0 overflow-y-auto">
-          <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.6fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-            <div>Vendor</div>
-            <div>Project</div>
-            <div class="text-right">Contract</div>
-            <div class="text-right">This Period</div>
-            <div class="text-right">Net Due</div>
-            <div class="text-right">Billed %</div>
-            <div>Status</div>
+          <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.6fr)] gap-3 px-5 py-3 bg-muted border-bottom-default uppercase tracking-wide">
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Vendor</modus-typography>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Project</modus-typography>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-right">Contract</modus-typography>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-right">This Period</modus-typography>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-right">Net Due</modus-typography>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-right">Billed %</modus-typography>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Status</modus-typography>
           </div>
           @for (app of payApps(); track app.id) {
             <div
               class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.6fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150"
               [class.cursor-pointer]="interactive()"
               (click)="interactive() && payAppClick.emit(app)">
-              <div class="text-sm text-foreground truncate">{{ app.vendor }}</div>
-              <div class="text-sm text-foreground-60 truncate">{{ app.project }}</div>
-              <div class="text-sm text-foreground tabular-nums text-right">{{ formatCurrency(app.contractValue) }}</div>
-              <div class="text-sm text-foreground tabular-nums text-right">{{ formatCurrency(app.thisPeriod) }}</div>
-              <div class="text-sm font-medium text-primary tabular-nums text-right">{{ formatCurrency(app.netDue) }}</div>
-              <div class="text-sm text-foreground tabular-nums text-right">{{ billedPct(app) | number:'1.0-0' }}%</div>
+              <modus-typography hierarchy="p" size="sm" className="text-foreground truncate">{{ app.vendor }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" className="text-foreground-60 truncate">{{ app.project }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" className="text-foreground tabular-nums text-right">{{ formatCurrency(app.contractValue) }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" className="text-foreground tabular-nums text-right">{{ formatCurrency(app.thisPeriod) }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-primary tabular-nums text-right">{{ formatCurrency(app.netDue) }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" className="text-foreground tabular-nums text-right">{{ billedPct(app) | number:'1.0-0' }}%</modus-typography>
               <div>
                 <div
-                  class="rounded px-2 py-0.5 text-2xs font-medium inline-block"
+                  class="rounded px-2 py-0.5 inline-block"
                   [class.bg-warning-20]="app.status === 'pending'"
                   [class.text-warning]="app.status === 'pending'"
                   [class.bg-success-20]="app.status === 'approved'"
@@ -116,7 +117,7 @@ export type PayAppsView = 'tile' | 'table';
                   [class.bg-muted]="app.status === 'paid'"
                   [class.text-foreground]="app.status === 'paid'"
                 >
-                  {{ statusLabel(app.status) }}
+                  <modus-typography size="xs" weight="semibold" className="text-2xs">{{ statusLabel(app.status) }}</modus-typography>
                 </div>
               </div>
             </div>
@@ -127,8 +128,8 @@ export type PayAppsView = 'tile' | 'table';
       <!-- View All footer -->
       @if (showViewAll()) {
         <div class="px-4 py-3 border-top-default text-center flex-shrink-0">
-          <div class="text-sm text-primary cursor-pointer hover:underline inline-flex items-center gap-1" (click)="viewAllClick.emit()">
-            View all in Accounts Payable
+          <div class="text-primary cursor-pointer hover:underline inline-flex items-center gap-1" (click)="viewAllClick.emit()">
+            <modus-typography hierarchy="p" size="sm" className="text-primary">View all in Accounts Payable</modus-typography>
             <i class="modus-icons text-xs" aria-hidden="true">arrow_right</i>
           </div>
         </div>

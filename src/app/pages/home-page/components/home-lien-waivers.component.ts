@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApLienWaiver, ApLienWaiverStatus } from '../../../data/dashboard-data.types';
 
 const STATUS_ORDER: ApLienWaiverStatus[] = ['missing', 'pending', 'received'];
 
 @Component({
   selector: 'app-home-lien-waivers',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
@@ -13,7 +15,7 @@ const STATUS_ORDER: ApLienWaiverStatus[] = ['missing', 'pending', 'received'];
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-2">
             <div
-              class="rounded px-2 py-1 text-xs font-semibold"
+              class="rounded px-2 py-1"
               [class.bg-destructive-20]="block.status === 'missing'"
               [class.text-destructive]="block.status === 'missing'"
               [class.bg-warning-20]="block.status === 'pending'"
@@ -21,18 +23,18 @@ const STATUS_ORDER: ApLienWaiverStatus[] = ['missing', 'pending', 'received'];
               [class.bg-success-20]="block.status === 'received'"
               [class.text-success]="block.status === 'received'"
             >
-              {{ statusTitle(block.status) }} ({{ block.items.length }})
+              <modus-typography size="xs" weight="semibold">{{ statusTitle(block.status) }} ({{ block.items.length }})</modus-typography>
             </div>
           </div>
           @for (w of block.items; track w.id) {
             <div class="bg-background border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200">
               <div class="px-4 py-3 flex items-center justify-between">
                 <div class="min-w-0">
-                  <div class="text-sm font-medium text-foreground truncate">{{ w.vendor }}</div>
-                  <div class="text-xs text-foreground-60 truncate">{{ w.project }}</div>
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ w.vendor }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ w.project }}</modus-typography>
                 </div>
                 <div
-                  class="rounded px-2 py-0.5 text-2xs font-medium shrink-0"
+                  class="rounded px-2 py-0.5 shrink-0"
                   [class.bg-destructive-20]="w.status === 'missing'"
                   [class.text-destructive]="w.status === 'missing'"
                   [class.bg-warning-20]="w.status === 'pending'"
@@ -40,15 +42,15 @@ const STATUS_ORDER: ApLienWaiverStatus[] = ['missing', 'pending', 'received'];
                   [class.bg-success-20]="w.status === 'received'"
                   [class.text-success]="w.status === 'received'"
                 >
-                  {{ statusTitle(w.status) }}
+                  <modus-typography size="xs" weight="semibold" className="text-2xs">{{ statusTitle(w.status) }}</modus-typography>
                 </div>
               </div>
               <div class="px-4 py-3 flex flex-col gap-2">
-                <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <div class="text-foreground-60">{{ waiverTypeLabel(w.waiverType) }}</div>
-                  <div class="font-semibold text-foreground tabular-nums">{{ formatCurrency(w.amount) }}</div>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ waiverTypeLabel(w.waiverType) }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground tabular-nums">{{ formatCurrency(w.amount) }}</modus-typography>
                 </div>
-                <div class="text-2xs text-foreground-40">Due {{ w.dueDate }} · Period {{ w.periodEnd }}</div>
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-40">Due {{ w.dueDate }} · Period {{ w.periodEnd }}</modus-typography>
               </div>
             </div>
           }

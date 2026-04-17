@@ -1,28 +1,30 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { Contract, ContractStatus } from '../../../data/dashboard-data.types';
 
 @Component({
   selector: 'app-home-contracts',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col gap-2 h-full min-h-0 p-4">
       <div class="grid grid-cols-4 gap-2 shrink-0">
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-success-20 py-2">
-          <div class="text-lg font-bold text-success tabular-nums">{{ activeCount() }}</div>
-          <div class="text-2xs text-foreground-60">Active</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-success tabular-nums">{{ activeCount() }}</modus-typography>
+          <modus-typography size="xs" className="text-foreground-60">Active</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-warning-20 py-2">
-          <div class="text-lg font-bold text-warning tabular-nums">{{ pendingCount() }}</div>
-          <div class="text-2xs text-foreground-60">Pending</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-warning tabular-nums">{{ pendingCount() }}</modus-typography>
+          <modus-typography size="xs" className="text-foreground-60">Pending</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-muted py-2">
-          <div class="text-lg font-bold text-foreground tabular-nums">{{ draftCount() }}</div>
-          <div class="text-2xs text-foreground-60">Draft</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-foreground tabular-nums">{{ draftCount() }}</modus-typography>
+          <modus-typography size="xs" className="text-foreground-60">Draft</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-primary-20 py-2">
-          <div class="text-lg font-bold text-primary tabular-nums">{{ fmtCurrency(totalValue()) }}</div>
-          <div class="text-2xs text-foreground-60">Total Value</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-primary tabular-nums">{{ fmtCurrency(totalValue()) }}</modus-typography>
+          <modus-typography size="xs" className="text-foreground-60">Total Value</modus-typography>
         </div>
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
@@ -32,24 +34,26 @@ import type { Contract, ContractStatus } from '../../../data/dashboard-data.type
             (click)="contractClick.emit({ projectId: c.projectId, contractId: c.id })"
             (keydown.enter)="contractClick.emit({ projectId: c.projectId, contractId: c.id })">
             <div class="flex items-center justify-between gap-2">
-              <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ c.title }}</div>
-              <div class="rounded px-1.5 py-0.5 text-2xs font-medium shrink-0" [class]="statusBadgeClass(c.status)">
-                {{ statusLabel(c.status) }}
+              <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ c.title }}</modus-typography>
+              <div class="rounded px-1.5 py-0.5 shrink-0" [class]="statusBadgeClass(c.status)">
+                <modus-typography size="xs" weight="semibold" className="text-2xs">{{ statusLabel(c.status) }}</modus-typography>
               </div>
             </div>
-            <div class="flex items-center gap-2 text-2xs text-foreground-60">
-              <div class="truncate">{{ c.vendor }}</div>
+            <div class="flex items-center gap-2">
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ c.vendor }}</modus-typography>
               <div class="w-1 h-1 rounded-full bg-foreground-20"></div>
-              <div class="truncate">{{ c.project }}</div>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ c.project }}</modus-typography>
             </div>
-            <div class="flex items-center justify-between gap-2 text-xs">
-              <div class="text-foreground-60 tabular-nums">{{ fmtCurrency(c.revisedValue) }}</div>
-              <div class="text-2xs text-foreground-40">Ends {{ c.endDate }}</div>
+            <div class="flex items-center justify-between gap-2">
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-60 tabular-nums">{{ fmtCurrency(c.revisedValue) }}</modus-typography>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-40">Ends {{ c.endDate }}</modus-typography>
             </div>
           </div>
         }
         @if (activeContracts().length === 0) {
-          <div class="text-sm text-foreground-40 text-center py-6">No active contracts</div>
+          <div class="text-center py-6">
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-40">No active contracts</modus-typography>
+          </div>
         }
       </div>
     </div>

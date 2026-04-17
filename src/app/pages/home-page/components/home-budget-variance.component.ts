@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { Project } from '../../../data/dashboard-data.types';
 
 export interface BudgetRow {
@@ -15,12 +16,13 @@ export interface BudgetRow {
 @Component({
   selector: 'app-home-budget-variance',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col gap-1 h-full min-h-0 overflow-y-auto p-4">
-      <div class="flex items-center justify-between text-2xs text-foreground-60 font-medium px-1 mb-1">
-        <div>Project</div>
-        <div>Budget Used</div>
+      <div class="flex items-center justify-between px-1 mb-1">
+        <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Project</modus-typography>
+        <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Budget Used</modus-typography>
       </div>
       @for (row of rows(); track row.id) {
         <div class="flex flex-col gap-1.5 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
@@ -28,14 +30,14 @@ export interface BudgetRow {
           (click)="rowClick.emit(row.slug)"
           (keydown.enter)="rowClick.emit(row.slug)">
           <div class="flex items-center justify-between gap-3">
-            <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ row.name }}</div>
-            <div class="text-xs tabular-nums text-foreground-60 shrink-0">{{ row.budgetUsed }} / {{ row.budgetTotal }}</div>
+            <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ row.name }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 tabular-nums shrink-0">{{ row.budgetUsed }} / {{ row.budgetTotal }}</modus-typography>
           </div>
           <div class="flex items-center gap-2">
             <div class="flex-1 h-2 rounded-full bg-muted overflow-hidden">
               <div class="h-full rounded-full transition-all" [class]="row.barClass" [style.width.%]="row.budgetPct"></div>
             </div>
-            <div class="text-xs font-semibold tabular-nums w-10 text-right" [class]="row.statusClass">{{ row.budgetPct }}%</div>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" [className]="'tabular-nums w-10 text-right ' + row.statusClass">{{ row.budgetPct }}%</modus-typography>
           </div>
         </div>
       }

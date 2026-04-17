@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { DailyReport } from '../../../data/dashboard-data.types';
 
 export interface DailyReportRow {
@@ -17,23 +18,24 @@ export interface DailyReportRow {
 
 @Component({
   selector: 'app-home-daily-reports',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col gap-2 h-full min-h-0 p-4">
       <div class="grid grid-cols-3 gap-2 shrink-0">
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-primary-20 py-2">
-          <div class="text-lg font-bold text-primary tabular-nums">{{ totalCrew() }}</div>
-          <div class="text-2xs text-foreground-60">Total Crew</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-primary tabular-nums">{{ totalCrew() }}</modus-typography>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Total Crew</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-success-20 py-2">
-          <div class="text-lg font-bold text-success tabular-nums">{{ totalHours() }}</div>
-          <div class="text-2xs text-foreground-60">Total Hours</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-success tabular-nums">{{ totalHours() }}</modus-typography>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Total Hours</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-0.5 rounded-lg py-2"
           [class]="totalSafetyIncidents() > 0 ? 'bg-destructive-20' : 'bg-muted'">
-          <div class="text-lg font-bold tabular-nums" [class]="totalSafetyIncidents() > 0 ? 'text-destructive' : 'text-foreground'">{{ totalSafetyIncidents() }}</div>
-          <div class="text-2xs text-foreground-60">Safety Incidents</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" [className]="'tabular-nums ' + (totalSafetyIncidents() > 0 ? 'text-destructive' : 'text-foreground')">{{ totalSafetyIncidents() }}</modus-typography>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Safety Incidents</modus-typography>
         </div>
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
@@ -43,12 +45,14 @@ export interface DailyReportRow {
             (click)="reportClick.emit({ projectId: row.projectId, reportId: row.id })"
             (keydown.enter)="reportClick.emit({ projectId: row.projectId, reportId: row.id })">
             <div class="flex items-center justify-between gap-2">
-              <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ row.project }}</div>
+              <div class="min-w-0 flex-1 truncate">
+                <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ row.project }}</modus-typography>
+              </div>
               <div class="flex items-center gap-1.5 shrink-0">
                 @if (row.hasSafetyIncidents) {
                   <div class="flex items-center gap-1 rounded px-1.5 py-0.5 bg-destructive-20">
                     <i class="modus-icons text-xs text-destructive" aria-hidden="true">warning</i>
-                    <div class="text-2xs font-medium text-destructive">{{ row.safetyIncidents }}</div>
+                    <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ row.safetyIncidents }}</modus-typography>
                   </div>
                 }
                 @if (row.hasIssues) {
@@ -56,14 +60,14 @@ export interface DailyReportRow {
                 }
               </div>
             </div>
-            <div class="flex items-center gap-3 text-2xs text-foreground-60">
-              <div>{{ row.date }}</div>
+            <div class="flex items-center gap-3">
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ row.date }}</modus-typography>
               <div class="w-1 h-1 rounded-full bg-foreground-20"></div>
-              <div>{{ row.crewCount }} crew</div>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ row.crewCount }} crew</modus-typography>
               <div class="w-1 h-1 rounded-full bg-foreground-20"></div>
-              <div>{{ row.hoursWorked }}h</div>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ row.hoursWorked }}h</modus-typography>
             </div>
-            <div class="text-xs text-foreground-60 truncate">{{ row.workPerformed }}</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ row.workPerformed }}</modus-typography>
           </div>
         }
       </div>

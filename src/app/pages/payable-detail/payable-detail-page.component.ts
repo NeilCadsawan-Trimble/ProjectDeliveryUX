@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { ModusCardComponent } from '../../components/modus-card.component';
 import type { Payable } from '../../data/dashboard-data.types';
 import { payableStatusBadge, formatCurrency as sharedFormatCurrency } from '../../data/dashboard-data.formatters';
 import { DataStoreService } from '../../data/data-store.service';
@@ -9,7 +11,7 @@ import { useBackNavigation } from '../../shared/go-back';
 
 @Component({
   selector: 'app-payable-detail-page',
-  imports: [ModusBadgeComponent, DetailPageLayoutComponent],
+  imports: [ModusBadgeComponent, DetailPageLayoutComponent, ModusTypographyComponent, ModusCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-detail-page-layout
@@ -22,96 +24,100 @@ import { useBackNavigation } from '../../shared/go-back';
     >
       @if (payable(); as p) {
         <!-- Header card -->
-        <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
-          <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
-            <div class="flex items-center gap-4">
-              <div class="w-11 h-11 rounded-lg bg-warning-20 flex items-center justify-center">
-                <i class="modus-icons text-xl text-warning" aria-hidden="true">credit_card</i>
-              </div>
-              <div>
-                <div class="text-xl font-semibold text-foreground">{{ p.vendor }}</div>
-                <div class="text-sm text-foreground-60">{{ p.invoiceNumber }}</div>
-              </div>
-            </div>
-            <modus-badge [color]="payableStatusBadge(p.status)">{{ p.status }}</modus-badge>
-          </div>
-
-          <!-- KPI row 1 -->
-          <div class="px-6 py-6 flex flex-col gap-6">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div>
-                <div class="detail-field-label">Amount</div>
-                <div class="text-xl font-bold text-foreground">{{ formatCurrency(p.amount) }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Amount Paid</div>
-                <div class="text-base text-foreground">{{ formatCurrency(p.amountPaid) }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Remaining</div>
-                <div class="text-base font-semibold" [class]="remaining() > 0 ? 'text-warning' : 'text-success'">
-                  {{ formatCurrency(remaining()) }}
+        <modus-card [padding]="'compact'" className="overflow-hidden mb-6">
+          <div>
+            <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-lg bg-warning-20 flex items-center justify-center">
+                  <i class="modus-icons text-xl text-warning" aria-hidden="true">credit_card</i>
+                </div>
+                <div>
+                  <modus-typography hierarchy="h2" size="lg" weight="semibold">{{ p.vendor }}</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">{{ p.invoiceNumber }}</modus-typography>
                 </div>
               </div>
-              <div>
-                <div class="detail-field-label">Cost Code</div>
-                <div class="text-base text-foreground">{{ p.costCode }}</div>
-              </div>
+              <modus-badge [color]="payableStatusBadge(p.status)">{{ p.status }}</modus-badge>
             </div>
 
-            <!-- KPI row 2 -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div>
-                <div class="detail-field-label">Received Date</div>
-                <div class="text-base text-foreground">{{ p.receivedDate }}</div>
+            <!-- KPI row 1 -->
+            <div class="px-6 py-6 flex flex-col gap-6">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <div class="detail-field-label">Amount</div>
+                  <modus-typography hierarchy="h2" size="lg" weight="bold">{{ formatCurrency(p.amount) }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Amount Paid</div>
+                  <modus-typography hierarchy="p" size="md">{{ formatCurrency(p.amountPaid) }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Remaining</div>
+                  <modus-typography hierarchy="h3" size="md" weight="semibold" [className]="remaining() > 0 ? 'text-warning' : 'text-success'">
+                    {{ formatCurrency(remaining()) }}
+                  </modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Cost Code</div>
+                  <modus-typography hierarchy="p" size="md">{{ p.costCode }}</modus-typography>
+                </div>
               </div>
-              <div>
-                <div class="detail-field-label">Due Date</div>
-                <div class="text-base text-foreground">{{ p.dueDate }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Paid Date</div>
-                <div class="text-base text-foreground">{{ p.paidDate ?? 'Pending' }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Description</div>
-                <div class="text-base text-foreground">{{ p.description }}</div>
+
+              <!-- KPI row 2 -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <div class="detail-field-label">Received Date</div>
+                  <modus-typography hierarchy="p" size="md">{{ p.receivedDate }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Due Date</div>
+                  <modus-typography hierarchy="p" size="md">{{ p.dueDate }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Paid Date</div>
+                  <modus-typography hierarchy="p" size="md">{{ p.paidDate ?? 'Pending' }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Description</div>
+                  <modus-typography hierarchy="p" size="md">{{ p.description }}</modus-typography>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </modus-card>
 
         <!-- Payment Details card -->
-        <div class="bg-card border-default rounded-lg overflow-hidden">
-          <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">info</i>
-            <div class="text-base font-semibold text-foreground">Payment Details</div>
-          </div>
-          <div class="px-6 py-5">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-8">
-              <div>
-                <div class="detail-field-label">Vendor</div>
-                <div class="text-sm text-foreground">{{ p.vendor }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Invoice #</div>
-                <div class="text-sm text-foreground">{{ p.invoiceNumber }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Description</div>
-                <div class="text-sm text-foreground">{{ p.description }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Cost Code</div>
-                <div class="text-sm text-foreground">{{ p.costCode }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Linked Contract</div>
-                <div class="text-sm text-foreground">{{ p.linkedContractId ?? 'None' }}</div>
+        <modus-card [padding]="'compact'" className="overflow-hidden">
+          <div>
+            <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">info</i>
+              <modus-typography hierarchy="h3" size="md" weight="semibold">Payment Details</modus-typography>
+            </div>
+            <div class="px-6 py-5">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-8">
+                <div>
+                  <div class="detail-field-label">Vendor</div>
+                  <modus-typography hierarchy="p" size="sm">{{ p.vendor }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Invoice #</div>
+                  <modus-typography hierarchy="p" size="sm">{{ p.invoiceNumber }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Description</div>
+                  <modus-typography hierarchy="p" size="sm">{{ p.description }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Cost Code</div>
+                  <modus-typography hierarchy="p" size="sm">{{ p.costCode }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Linked Contract</div>
+                  <modus-typography hierarchy="p" size="sm">{{ p.linkedContractId ?? 'None' }}</modus-typography>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </modus-card>
       }
     </app-detail-page-layout>
   `,

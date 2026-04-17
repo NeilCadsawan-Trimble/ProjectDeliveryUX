@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, injec
 import { Router } from '@angular/router';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { ModusUtilityPanelComponent } from '../../components/modus-utility-panel.component';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
 import { AiIconComponent } from './ai-icon.component';
 import { AiPanelController } from '../services/ai-panel-controller';
 import type { AgentAction } from '../../data/widget-agents';
 
 @Component({
   selector: 'ai-assistant-panel',
-  imports: [ModusUtilityPanelComponent, AiIconComponent],
+  imports: [ModusUtilityPanelComponent, ModusTypographyComponent, AiIconComponent],
   host: {
     '(click)': '$event.stopPropagation()',
   },
@@ -26,8 +27,8 @@ import type { AgentAction } from '../../data/widget-agents';
             <ai-icon variant="solid-white" size="sm" />
           </div>
           <div class="min-w-0">
-            <div class="text-base font-semibold text-foreground truncate">{{ controller().title() }}</div>
-            <div class="text-xs text-foreground-60 truncate">{{ controller().subtitle() }}</div>
+            <modus-typography hierarchy="h3" size="md" weight="semibold" className="truncate">{{ controller().title() }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ controller().subtitle() }}</modus-typography>
           </div>
         </div>
         <div class="flex items-center gap-1">
@@ -60,13 +61,13 @@ import type { AgentAction } from '../../data/widget-agents';
               <ai-icon variant="solid-colored" size="lg" />
             </div>
             <div class="text-center">
-              <div class="text-base font-semibold text-foreground">How can I help?</div>
-              <div class="text-sm text-foreground-60 mt-1">{{ welcomeText() }}</div>
+              <modus-typography hierarchy="h3" size="md" weight="semibold">How can I help?</modus-typography>
+              <modus-typography hierarchy="p" size="sm" className="text-foreground-60 mt-1">{{ welcomeText() }}</modus-typography>
             </div>
             <div class="flex flex-col gap-2 w-full mt-2">
               @for (suggestion of controller().suggestions(); track suggestion) {
                 <div
-                  class="px-4 py-2.5 rounded-lg border-default bg-card text-sm text-foreground cursor-pointer hover:bg-muted transition-colors duration-150 text-left"
+                  class="px-4 py-2.5 rounded-lg border-default bg-card cursor-pointer hover:bg-muted transition-colors duration-150 text-left"
                   (click)="controller().selectSuggestion(suggestion)"
                   role="button"
                   tabindex="0"
@@ -76,7 +77,7 @@ import type { AgentAction } from '../../data/widget-agents';
                 >
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">chevron_right</i>
-                    <div>{{ suggestion }}</div>
+                    <modus-typography hierarchy="p" size="sm">{{ suggestion }}</modus-typography>
                   </div>
                 </div>
               }
@@ -84,11 +85,11 @@ import type { AgentAction } from '../../data/widget-agents';
 
             @if (controller().actions().length > 0) {
               <div class="w-full mt-3 border-top-default pt-3">
-                <div class="text-xs font-semibold text-foreground-60 uppercase tracking-wider mb-2 px-1">Quick Actions</div>
+                <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wider mb-2 px-1">Quick Actions</modus-typography>
                 <div class="flex flex-col gap-1.5">
                   @for (action of controller().actions(); track action.id) {
                     <div
-                      class="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted text-sm text-foreground cursor-pointer hover:bg-secondary transition-colors duration-150"
+                      class="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted cursor-pointer hover:bg-secondary transition-colors duration-150"
                       (click)="handleAction(action)"
                       role="button"
                       tabindex="0"
@@ -96,7 +97,7 @@ import type { AgentAction } from '../../data/widget-agents';
                       (keydown.enter)="handleAction(action)"
                     >
                       <i class="modus-icons text-sm text-primary flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div>{{ action.label }}</div>
+                      <modus-typography hierarchy="p" size="sm">{{ action.label }}</modus-typography>
                     </div>
                   }
                 </div>
@@ -110,8 +111,8 @@ import type { AgentAction } from '../../data/widget-agents';
             @for (msg of controller().messages(); track msg.id) {
               @if (msg.role === 'user') {
                 <div class="flex justify-end">
-                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-sm bg-primary text-primary-foreground text-sm leading-relaxed">
-                    {{ msg.text }}
+                  <div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-sm bg-primary text-primary-foreground">
+                    <modus-typography hierarchy="p" size="sm" className="leading-relaxed">{{ msg.text }}</modus-typography>
                   </div>
                 </div>
               } @else {
@@ -121,33 +122,33 @@ import type { AgentAction } from '../../data/widget-agents';
                   </div>
                   <div class="flex flex-col gap-2 max-w-[85%]">
                     @if (msg.text) {
-                      <div class="px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-sm text-foreground leading-relaxed whitespace-pre-wrap ai-msg-body"
+                      <modus-typography size="sm" className="px-4 py-2.5 rounded-2xl rounded-tl-sm bg-card border-default text-foreground leading-relaxed whitespace-pre-wrap ai-msg-body"
                         [innerHTML]="renderMessage(msg.text)"
                         (click)="onMessageClick($event)"
-                      ></div>
+                      ></modus-typography>
                     }
                     @if (msg.pendingAction) {
                       <div class="rounded-xl border-primary bg-primary-20 p-3">
                         <div class="flex items-center gap-2 mb-2">
                           <i class="modus-icons text-sm text-primary" aria-hidden="true">file_edit</i>
-                          <div class="text-xs font-semibold text-primary uppercase tracking-wider">Proposed Change</div>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-primary uppercase tracking-wider">Proposed Change</modus-typography>
                         </div>
-                        <div class="text-sm text-foreground mb-3">{{ msg.pendingAction.description }}</div>
+                        <modus-typography hierarchy="p" size="sm" className="mb-3">{{ msg.pendingAction.description }}</modus-typography>
                         <div class="flex items-center gap-2">
                           <div
-                            class="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity"
+                            class="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground cursor-pointer hover:opacity-90 transition-opacity"
                             role="button"
                             tabindex="0"
                             (click)="controller().confirmAction(msg.id)"
                             (keydown.enter)="controller().confirmAction(msg.id)"
-                          >Confirm</div>
+                          ><modus-typography hierarchy="p" size="xs" className="font-medium">Confirm</modus-typography></div>
                           <div
-                            class="px-3 py-1.5 rounded-lg border-default bg-card text-foreground text-xs font-medium cursor-pointer hover:bg-muted transition-colors"
+                            class="px-3 py-1.5 rounded-lg border-default bg-card cursor-pointer hover:bg-muted transition-colors"
                             role="button"
                             tabindex="0"
                             (click)="controller().cancelAction(msg.id)"
                             (keydown.enter)="controller().cancelAction(msg.id)"
-                          >Cancel</div>
+                          ><modus-typography hierarchy="p" size="xs" className="font-medium">Cancel</modus-typography></div>
                         </div>
                       </div>
                     }
@@ -175,12 +176,12 @@ import type { AgentAction } from '../../data/widget-agents';
               <div class="flex flex-wrap gap-1.5 mt-1">
                 @for (action of controller().actions(); track action.id) {
                   <div
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs text-foreground cursor-pointer hover:bg-secondary transition-colors duration-150"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted cursor-pointer hover:bg-secondary transition-colors duration-150"
                     (click)="handleAction(action)"
                     role="button"
                   >
                     <i class="modus-icons text-xs text-primary" aria-hidden="true">lightning</i>
-                    <div>{{ action.label }}</div>
+                    <modus-typography hierarchy="p" size="xs">{{ action.label }}</modus-typography>
                   </div>
                 }
               </div>
@@ -193,7 +194,7 @@ import type { AgentAction } from '../../data/widget-agents';
         <div class="flex items-end gap-2 px-2 pt-2 pb-1">
           <textarea
             #chatInput
-            class="flex-1 min-h-[72px] max-h-[160px] text-sm rounded-lg border-default bg-background text-foreground resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40 p-1"
+            class="flex-1 min-h-[72px] max-h-[160px] rounded-lg border-default bg-background text-foreground text-sm resize-none outline-none focus:border-primary transition-colors duration-150 placeholder:text-foreground-40 p-1"
             [class.opacity-50]="controller().hasPendingAction()"
             [placeholder]="controller().hasPendingAction() ? 'Confirm or cancel the pending action first' : placeholder()"
             rows="2"
@@ -221,7 +222,7 @@ import type { AgentAction } from '../../data/widget-agents';
         </div>
         @if (showDisclaimer()) {
           <div class="text-center pb-1">
-            <div class="text-2xs text-foreground-40 leading-tight">AI may make mistakes. Verify important info.</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-40 leading-tight">AI may make mistakes. Verify important info.</modus-typography>
           </div>
         }
       </div>

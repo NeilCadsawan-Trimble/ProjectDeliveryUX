@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../../components/modus-badge.component';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import { EmptyStateComponent } from './empty-state.component';
 import {
   coBadgeColor,
@@ -34,7 +35,7 @@ type ViewMode = 'grid' | 'list';
 @Component({
   selector: 'app-financials-subpages',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModusBadgeComponent, EmptyStateComponent, TitleCasePipe],
+  imports: [ModusBadgeComponent, ModusTypographyComponent, EmptyStateComponent, TitleCasePipe],
   template: `
     @switch (activePage()) {
       @case ('change-order-requests') {
@@ -43,14 +44,14 @@ type ViewMode = 'grid' | 'list';
             @for (co of changeOrders(); track co.id) {
               <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0" (click)="changeOrderClick.emit(co)" (keydown.enter)="changeOrderClick.emit(co)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
-                  <div class="text-base font-semibold text-foreground">{{ co.id }}</div>
+                  <modus-typography size="md" weight="semibold" className="text-foreground">{{ co.id }}</modus-typography>
                   <modus-badge [color]="changeOrderStatusBadge(co.status)">{{ co.status | titlecase }}</modus-badge>
                 </div>
                 <div class="px-5 py-4 flex flex-col gap-2">
-                  <div class="text-sm text-foreground line-clamp-2">{{ co.description }}</div>
-                  <div class="flex items-center justify-between text-xs text-foreground-60">
-                    <div class="text-sm font-medium text-foreground">{{ formatCurrency(co.amount) }}</div>
-                    <div>{{ co.requestDate }}</div>
+                  <modus-typography size="sm" className="text-foreground line-clamp-2">{{ co.description }}</modus-typography>
+                  <div class="flex items-center justify-between text-foreground-60">
+                    <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(co.amount) }}</modus-typography>
+                    <modus-typography size="xs" className="text-foreground-60">{{ co.requestDate }}</modus-typography>
                   </div>
                 </div>
               </div>
@@ -63,13 +64,13 @@ type ViewMode = 'grid' | 'list';
             @for (co of changeOrders(); track co.id) {
               <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer active:bg-muted transition-colors" tabindex="0" (click)="changeOrderClick.emit(co)" (keydown.enter)="changeOrderClick.emit(co)">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-semibold text-primary">{{ co.id }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-primary">{{ co.id }}</modus-typography>
                   <modus-badge [color]="changeOrderStatusBadge(co.status)">{{ co.status | titlecase }}</modus-badge>
                 </div>
-                <div class="text-sm text-foreground truncate">{{ co.description }}</div>
+                <modus-typography size="sm" className="text-foreground truncate">{{ co.description }}</modus-typography>
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(co.amount) }}</div>
-                  <div class="text-xs text-foreground-60">{{ co.requestDate }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(co.amount) }}</modus-typography>
+                  <modus-typography size="xs" className="text-foreground-60">{{ co.requestDate }}</modus-typography>
                 </div>
               </div>
             } @empty {
@@ -78,24 +79,29 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
-            <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-              <div>ID</div><div>Description</div><div>Amount</div><div>Status</div><div>Requested By</div><div>Date</div>
+            <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">ID</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Description</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Amount</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Requested By</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography>
             </div>
             <div class="overflow-y-auto flex-1">
             @for (co of changeOrders(); track co.id) {
               <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="changeOrderClick.emit(co)" (keydown.enter)="changeOrderClick.emit(co)">
-                <div class="text-sm font-medium text-primary">{{ co.id }}</div>
-                <div class="text-sm text-foreground truncate">{{ co.description }}</div>
-                <div class="text-sm font-medium text-foreground">{{ formatCurrency(co.amount) }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-primary">{{ co.id }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground truncate">{{ co.description }}</modus-typography>
+                <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(co.amount) }}</modus-typography>
                 <div><modus-badge [color]="changeOrderStatusBadge(co.status)">{{ co.status | titlecase }}</modus-badge></div>
-                <div class="text-sm text-foreground-60 truncate">{{ co.requestedBy }}</div>
-                <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
+                <modus-typography size="sm" className="text-foreground-60 truncate">{{ co.requestedBy }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60">{{ co.requestDate }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
-                <div class="text-sm">No Change Orders for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No Change Orders for this project</modus-typography>
               </div>
             }
             </div>
@@ -106,20 +112,20 @@ type ViewMode = 'grid' | 'list';
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           @for (rev of revenueData(); track rev.projectId) {
             <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-              <div class="text-xs text-foreground-60">Contract Value</div>
-              <div class="text-lg font-bold text-foreground">{{ rev.contractValue }}</div>
+              <modus-typography size="xs" className="text-foreground-60">Contract Value</modus-typography>
+              <modus-typography size="lg" weight="bold" className="text-foreground">{{ rev.contractValue }}</modus-typography>
             </div>
             <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-              <div class="text-xs text-foreground-60">Invoiced</div>
-              <div class="text-lg font-bold text-foreground">{{ rev.invoiced }}</div>
+              <modus-typography size="xs" className="text-foreground-60">Invoiced</modus-typography>
+              <modus-typography size="lg" weight="bold" className="text-foreground">{{ rev.invoiced }}</modus-typography>
             </div>
             <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-              <div class="text-xs text-foreground-60">Collected</div>
-              <div class="text-lg font-bold text-success">{{ rev.collected }}</div>
+              <modus-typography size="xs" className="text-foreground-60">Collected</modus-typography>
+              <modus-typography size="lg" weight="bold" className="text-success">{{ rev.collected }}</modus-typography>
             </div>
             <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-              <div class="text-xs text-foreground-60">Outstanding</div>
-              <div class="text-lg font-bold" [class]="rev.outstandingRaw > 0 ? 'text-warning' : 'text-foreground'">{{ rev.outstanding }}</div>
+              <modus-typography size="xs" className="text-foreground-60">Outstanding</modus-typography>
+              <modus-typography size="lg" weight="bold" [className]="rev.outstandingRaw > 0 ? 'text-warning' : 'text-foreground'">{{ rev.outstanding }}</modus-typography>
             </div>
           }
         </div>
@@ -127,23 +133,23 @@ type ViewMode = 'grid' | 'list';
           <div class="flex flex-col gap-2">
             @for (rev of revenueData(); track rev.projectId) {
               <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2">
-                <div class="text-sm font-semibold text-foreground">{{ rev.projectName }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-foreground">{{ rev.projectName }}</modus-typography>
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1">
                   <div class="flex items-center justify-between">
-                    <div class="text-xs text-foreground-60">Contract</div>
-                    <div class="text-sm text-foreground">{{ rev.contractValue }}</div>
+                    <modus-typography size="xs" className="text-foreground-60">Contract</modus-typography>
+                    <modus-typography size="sm" className="text-foreground">{{ rev.contractValue }}</modus-typography>
                   </div>
                   <div class="flex items-center justify-between">
-                    <div class="text-xs text-foreground-60">Invoiced</div>
-                    <div class="text-sm text-foreground">{{ rev.invoiced }}</div>
+                    <modus-typography size="xs" className="text-foreground-60">Invoiced</modus-typography>
+                    <modus-typography size="sm" className="text-foreground">{{ rev.invoiced }}</modus-typography>
                   </div>
                   <div class="flex items-center justify-between">
-                    <div class="text-xs text-foreground-60">Collected</div>
-                    <div class="text-sm text-success">{{ rev.collected }}</div>
+                    <modus-typography size="xs" className="text-foreground-60">Collected</modus-typography>
+                    <modus-typography size="sm" className="text-success">{{ rev.collected }}</modus-typography>
                   </div>
                   <div class="flex items-center justify-between">
-                    <div class="text-xs text-foreground-60">Outstanding</div>
-                    <div class="text-sm" [class]="rev.outstandingRaw > 0 ? 'text-warning font-medium' : 'text-foreground-60'">{{ rev.outstanding }}</div>
+                    <modus-typography size="xs" className="text-foreground-60">Outstanding</modus-typography>
+                    <modus-typography size="sm" [weight]="rev.outstandingRaw > 0 ? 'semibold' : 'normal'" [className]="rev.outstandingRaw > 0 ? 'text-warning' : 'text-foreground-60'">{{ rev.outstanding }}</modus-typography>
                   </div>
                 </div>
               </div>
@@ -153,23 +159,28 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
-            <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-              <div>Project</div><div>Contract</div><div>Invoiced</div><div>Collected</div><div>Outstanding</div><div>Retainage</div>
+            <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Project</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Contract</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Invoiced</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Collected</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Outstanding</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Retainage</modus-typography>
             </div>
             <div class="overflow-y-auto flex-1">
             @for (rev of revenueData(); track rev.projectId) {
               <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center">
-                <div class="text-sm font-medium text-foreground">{{ rev.projectName }}</div>
-                <div class="text-sm text-foreground">{{ rev.contractValue }}</div>
-                <div class="text-sm text-foreground">{{ rev.invoiced }}</div>
-                <div class="text-sm text-success">{{ rev.collected }}</div>
-                <div class="text-sm" [class]="rev.outstandingRaw > 0 ? 'text-warning font-medium' : 'text-foreground-60'">{{ rev.outstanding }}</div>
-                <div class="text-sm text-foreground-60">{{ rev.retainage }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-foreground">{{ rev.projectName }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground">{{ rev.contractValue }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground">{{ rev.invoiced }}</modus-typography>
+                <modus-typography size="sm" className="text-success">{{ rev.collected }}</modus-typography>
+                <modus-typography size="sm" [weight]="rev.outstandingRaw > 0 ? 'semibold' : 'normal'" [className]="rev.outstandingRaw > 0 ? 'text-warning' : 'text-foreground-60'">{{ rev.outstanding }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60">{{ rev.retainage }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">bar_graph</i>
-                <div class="text-sm">No revenue data for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No revenue data for this project</modus-typography>
               </div>
             }
             </div>
@@ -179,20 +190,20 @@ type ViewMode = 'grid' | 'list';
       @case ('contracts') {
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Total Contracts</div>
-            <div class="text-lg font-bold text-foreground">{{ contracts().length }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Total Contracts</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-foreground">{{ contracts().length }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Original Value</div>
-            <div class="text-lg font-bold text-foreground">{{ formatCurrency(contractOriginalTotal()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Original Value</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-foreground">{{ formatCurrency(contractOriginalTotal()) }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Revised Value</div>
-            <div class="text-lg font-bold text-foreground">{{ formatCurrency(contractRevisedTotal()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Revised Value</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-foreground">{{ formatCurrency(contractRevisedTotal()) }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">CO Growth</div>
-            <div class="text-lg font-bold" [class]="contractGrowth() > 0 ? 'text-warning' : 'text-success'">{{ contractGrowth() > 0 ? '+' : '' }}{{ formatCurrency(contractGrowth()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">CO Growth</modus-typography>
+            <modus-typography size="lg" weight="bold" [className]="contractGrowth() > 0 ? 'text-warning' : 'text-success'">{{ contractGrowth() > 0 ? '+' : '' }}{{ formatCurrency(contractGrowth()) }}</modus-typography>
           </div>
         </div>
         @if (viewMode() === 'grid') {
@@ -202,23 +213,23 @@ type ViewMode = 'grid' | 'list';
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-base" aria-hidden="true" [class]="ct.contractType === 'prime' ? 'text-primary' : 'text-foreground-60'">{{ contractIcon(ct.contractType) }}</i>
-                    <div class="text-base font-semibold text-foreground">{{ ct.id }}</div>
+                    <modus-typography size="md" weight="semibold" className="text-foreground">{{ ct.id }}</modus-typography>
                   </div>
                   <modus-badge [color]="contractStatusColor(ct.status)">{{ ct.status | titlecase }}</modus-badge>
                 </div>
                 <div class="px-5 py-4 flex flex-col gap-2">
-                  <div class="text-sm text-foreground line-clamp-2">{{ ct.title }}</div>
-                  <div class="text-xs text-foreground-60">{{ ct.vendor }}</div>
-                  <div class="flex items-center justify-between text-xs text-foreground-60">
-                    <div class="text-sm font-medium text-foreground">{{ formatCurrency(ct.revisedValue) }}</div>
+                  <modus-typography size="sm" className="text-foreground line-clamp-2">{{ ct.title }}</modus-typography>
+                  <modus-typography size="xs" className="text-foreground-60">{{ ct.vendor }}</modus-typography>
+                  <div class="flex items-center justify-between text-foreground-60">
+                    <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(ct.revisedValue) }}</modus-typography>
                     @if (ct.revisedValue > ct.originalValue) {
-                      <div class="text-warning">+{{ formatCurrency(ct.revisedValue - ct.originalValue) }}</div>
+                      <modus-typography size="xs" className="text-warning">+{{ formatCurrency(ct.revisedValue - ct.originalValue) }}</modus-typography>
                     }
                   </div>
                   @if (ct.linkedChangeOrderIds.length > 0) {
-                    <div class="flex items-center gap-1 text-xs text-primary">
+                    <div class="flex items-center gap-1 text-primary">
                       <i class="modus-icons text-xs" aria-hidden="true">link</i>
-                      {{ ct.linkedChangeOrderIds.length }} linked CO{{ ct.linkedChangeOrderIds.length > 1 ? 's' : '' }}
+                      <modus-typography size="xs" className="text-primary">{{ ct.linkedChangeOrderIds.length }} linked CO{{ ct.linkedChangeOrderIds.length > 1 ? 's' : '' }}</modus-typography>
                     </div>
                   }
                 </div>
@@ -234,18 +245,18 @@ type ViewMode = 'grid' | 'list';
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <i class="modus-icons text-sm" aria-hidden="true" [class]="ct.contractType === 'prime' ? 'text-primary' : 'text-foreground-60'">{{ contractIcon(ct.contractType) }}</i>
-                    <div class="text-sm font-semibold text-primary">{{ ct.id }}</div>
+                    <modus-typography size="sm" weight="semibold" className="text-primary">{{ ct.id }}</modus-typography>
                   </div>
                   <modus-badge [color]="contractStatusColor(ct.status)">{{ ct.status | titlecase }}</modus-badge>
                 </div>
-                <div class="text-sm text-foreground truncate">{{ ct.title }}</div>
-                <div class="text-xs text-foreground-60">{{ ct.vendor }}</div>
+                <modus-typography size="sm" className="text-foreground truncate">{{ ct.title }}</modus-typography>
+                <modus-typography size="xs" className="text-foreground-60">{{ ct.vendor }}</modus-typography>
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(ct.revisedValue) }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(ct.revisedValue) }}</modus-typography>
                   @if (ct.linkedChangeOrderIds.length > 0) {
-                    <div class="flex items-center gap-1 text-xs text-primary">
+                    <div class="flex items-center gap-1 text-primary">
                       <i class="modus-icons text-xs" aria-hidden="true">link</i>
-                      {{ ct.linkedChangeOrderIds.length }} CO{{ ct.linkedChangeOrderIds.length > 1 ? 's' : '' }}
+                      <modus-typography size="xs" className="text-primary">{{ ct.linkedChangeOrderIds.length }} CO{{ ct.linkedChangeOrderIds.length > 1 ? 's' : '' }}</modus-typography>
                     </div>
                   }
                 </div>
@@ -256,28 +267,34 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
-            <div class="grid grid-cols-[80px_1fr_120px_100px_100px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-              <div>ID</div><div>Title / Vendor</div><div>Type</div><div>Original</div><div>Revised</div><div>Status</div><div>COs</div>
+            <div class="grid grid-cols-[80px_1fr_120px_100px_100px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">ID</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Title / Vendor</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Type</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Original</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Revised</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">COs</modus-typography>
             </div>
             <div class="overflow-y-auto flex-1">
             @for (ct of contracts(); track ct.id) {
               <div class="grid grid-cols-[80px_1fr_120px_100px_100px_80px_60px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="contractClick.emit(ct)" (keydown.enter)="contractClick.emit(ct)">
-                <div class="text-sm font-medium text-primary">{{ ct.id }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-primary">{{ ct.id }}</modus-typography>
                 <div class="flex flex-col gap-0.5 min-w-0">
-                  <div class="text-sm text-foreground truncate">{{ ct.title }}</div>
-                  <div class="text-xs text-foreground-60 truncate">{{ ct.vendor }}</div>
+                  <modus-typography size="sm" className="text-foreground truncate">{{ ct.title }}</modus-typography>
+                  <modus-typography size="xs" className="text-foreground-60 truncate">{{ ct.vendor }}</modus-typography>
                 </div>
-                <div class="text-xs text-foreground-60">{{ contractTypeLabel(ct.contractType) }}</div>
-                <div class="text-sm text-foreground-60">{{ formatCurrency(ct.originalValue) }}</div>
-                <div class="text-sm font-medium text-foreground">{{ formatCurrency(ct.revisedValue) }}</div>
+                <modus-typography size="xs" className="text-foreground-60">{{ contractTypeLabel(ct.contractType) }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60">{{ formatCurrency(ct.originalValue) }}</modus-typography>
+                <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(ct.revisedValue) }}</modus-typography>
                 <div><modus-badge [color]="contractStatusColor(ct.status)">{{ ct.status | titlecase }}</modus-badge></div>
-                <div class="text-sm text-foreground-60 text-center">{{ ct.linkedChangeOrderIds.length }}</div>
+                <modus-typography size="sm" className="text-foreground-60 text-center">{{ ct.linkedChangeOrderIds.length }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">copy_content</i>
-                <div class="text-sm">No Contracts for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No Contracts for this project</modus-typography>
               </div>
             }
             </div>
@@ -288,47 +305,47 @@ type ViewMode = 'grid' | 'list';
         @if (budgetHistory().length > 0) {
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-              <div class="text-xs text-foreground-60">Current Spend vs Plan</div>
+              <modus-typography size="xs" className="text-foreground-60">Current Spend vs Plan</modus-typography>
               @if (lastBudgetPoint(); as last) {
-                <div class="text-lg font-bold" [class]="(last.actual || 0) > last.planned ? 'text-destructive' : 'text-success'">
+                <modus-typography size="lg" weight="bold" [className]="(last.actual || 0) > last.planned ? 'text-destructive' : 'text-success'">
                   {{ formatCurrency(last.actual || last.forecast) }} / {{ formatCurrency(last.planned) }}
-                </div>
+                </modus-typography>
               }
             </div>
             <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-              <div class="text-xs text-foreground-60">Forecast at Completion</div>
+              <modus-typography size="xs" className="text-foreground-60">Forecast at Completion</modus-typography>
               @if (lastBudgetPoint(); as last) {
-                <div class="text-lg font-bold text-foreground">{{ formatCurrency(last.forecast) }}</div>
+                <modus-typography size="lg" weight="bold" className="text-foreground">{{ formatCurrency(last.forecast) }}</modus-typography>
               }
             </div>
             <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-              <div class="text-xs text-foreground-60">Months Tracked</div>
-              <div class="text-lg font-bold text-foreground">{{ budgetHistory().length }}</div>
+              <modus-typography size="xs" className="text-foreground-60">Months Tracked</modus-typography>
+              <modus-typography size="lg" weight="bold" className="text-foreground">{{ budgetHistory().length }}</modus-typography>
             </div>
           </div>
           @if (isMobile()) {
             <div class="flex flex-col gap-2">
               @for (point of budgetHistory(); track point.month) {
                 <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2">
-                  <div class="text-sm font-semibold text-foreground">{{ point.month }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-foreground">{{ point.month }}</modus-typography>
                   <div class="grid grid-cols-2 gap-x-4 gap-y-1">
                     <div class="flex items-center justify-between">
-                      <div class="text-xs text-foreground-60">Planned</div>
-                      <div class="text-sm text-foreground-60">{{ formatCurrency(point.planned) }}</div>
+                      <modus-typography size="xs" className="text-foreground-60">Planned</modus-typography>
+                      <modus-typography size="sm" className="text-foreground-60">{{ formatCurrency(point.planned) }}</modus-typography>
                     </div>
                     <div class="flex items-center justify-between">
-                      <div class="text-xs text-foreground-60">Actual</div>
-                      <div class="text-sm" [class]="point.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ point.actual > 0 ? formatCurrency(point.actual) : '--' }}</div>
+                      <modus-typography size="xs" className="text-foreground-60">Actual</modus-typography>
+                      <modus-typography size="sm" [className]="point.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ point.actual > 0 ? formatCurrency(point.actual) : '--' }}</modus-typography>
                     </div>
                     <div class="flex items-center justify-between">
-                      <div class="text-xs text-foreground-60">Forecast</div>
-                      <div class="text-sm text-foreground-60">{{ formatCurrency(point.forecast) }}</div>
+                      <modus-typography size="xs" className="text-foreground-60">Forecast</modus-typography>
+                      <modus-typography size="sm" className="text-foreground-60">{{ formatCurrency(point.forecast) }}</modus-typography>
                     </div>
                     <div class="flex items-center justify-between">
-                      <div class="text-xs text-foreground-60">Variance</div>
-                      <div class="text-sm" [class]="point.actual > 0 ? (point.actual > point.planned ? 'text-destructive font-medium' : 'text-success') : 'text-foreground-40'">
+                      <modus-typography size="xs" className="text-foreground-60">Variance</modus-typography>
+                      <modus-typography size="sm" [weight]="point.actual > 0 && point.actual > point.planned ? 'semibold' : 'normal'" [className]="point.actual > 0 ? (point.actual > point.planned ? 'text-destructive' : 'text-success') : 'text-foreground-40'">
                         {{ point.actual > 0 ? formatCurrency(point.actual - point.planned) : '--' }}
-                      </div>
+                      </modus-typography>
                     </div>
                   </div>
                 </div>
@@ -336,19 +353,23 @@ type ViewMode = 'grid' | 'list';
             </div>
           } @else {
             <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
-              <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-                <div>Month</div><div>Planned</div><div>Actual</div><div>Forecast</div><div>Variance</div>
+              <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
+                <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Month</modus-typography>
+                <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Planned</modus-typography>
+                <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Actual</modus-typography>
+                <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Forecast</modus-typography>
+                <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Variance</modus-typography>
               </div>
               <div class="overflow-y-auto flex-1">
               @for (point of budgetHistory(); track point.month) {
                 <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center">
-                  <div class="text-sm font-medium text-foreground">{{ point.month }}</div>
-                  <div class="text-sm text-foreground-60">{{ formatCurrency(point.planned) }}</div>
-                  <div class="text-sm" [class]="point.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ point.actual > 0 ? formatCurrency(point.actual) : '--' }}</div>
-                  <div class="text-sm text-foreground-60">{{ formatCurrency(point.forecast) }}</div>
-                  <div class="text-sm" [class]="point.actual > 0 ? (point.actual > point.planned ? 'text-destructive font-medium' : 'text-success') : 'text-foreground-40'">
+                  <modus-typography size="sm" weight="semibold" className="text-foreground">{{ point.month }}</modus-typography>
+                  <modus-typography size="sm" className="text-foreground-60">{{ formatCurrency(point.planned) }}</modus-typography>
+                  <modus-typography size="sm" [className]="point.actual > 0 ? 'text-foreground' : 'text-foreground-40'">{{ point.actual > 0 ? formatCurrency(point.actual) : '--' }}</modus-typography>
+                  <modus-typography size="sm" className="text-foreground-60">{{ formatCurrency(point.forecast) }}</modus-typography>
+                  <modus-typography size="sm" [weight]="point.actual > 0 && point.actual > point.planned ? 'semibold' : 'normal'" [className]="point.actual > 0 ? (point.actual > point.planned ? 'text-destructive' : 'text-success') : 'text-foreground-40'">
                     {{ point.actual > 0 ? formatCurrency(point.actual - point.planned) : '--' }}
-                  </div>
+                  </modus-typography>
                 </div>
               }
               </div>
@@ -361,20 +382,20 @@ type ViewMode = 'grid' | 'list';
       @case ('purchase-orders') {
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Total POs</div>
-            <div class="text-lg font-bold text-foreground">{{ purchaseOrders().length }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Total POs</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-foreground">{{ purchaseOrders().length }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Total Value</div>
-            <div class="text-lg font-bold text-foreground">{{ formatCurrency(poTotalValue()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Total Value</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-foreground">{{ formatCurrency(poTotalValue()) }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Open / Issued</div>
-            <div class="text-lg font-bold text-primary">{{ poOpenCount() }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Open / Issued</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-primary">{{ poOpenCount() }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Received</div>
-            <div class="text-lg font-bold text-success">{{ formatCurrency(poReceivedValue()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Received</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-success">{{ formatCurrency(poReceivedValue()) }}</modus-typography>
           </div>
         </div>
         @if (viewMode() === 'grid') {
@@ -383,15 +404,15 @@ type ViewMode = 'grid' | 'list';
               <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0"
                 (click)="purchaseOrderClick.emit(po)" (keydown.enter)="purchaseOrderClick.emit(po)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
-                  <div class="text-base font-semibold text-foreground">{{ po.poNumber }}</div>
+                  <modus-typography size="md" weight="semibold" className="text-foreground">{{ po.poNumber }}</modus-typography>
                   <modus-badge [color]="poStatusBadge(po.status)">{{ po.status | titlecase }}</modus-badge>
                 </div>
                 <div class="px-5 py-4 flex flex-col gap-2">
-                  <div class="text-sm text-foreground line-clamp-2">{{ po.description }}</div>
-                  <div class="text-xs text-foreground-60">{{ po.vendor }}</div>
-                  <div class="flex items-center justify-between text-xs text-foreground-60">
-                    <div class="text-sm font-medium text-foreground">{{ formatCurrency(po.amount) }}</div>
-                    <div>{{ po.issueDate }}</div>
+                  <modus-typography size="sm" className="text-foreground line-clamp-2">{{ po.description }}</modus-typography>
+                  <modus-typography size="xs" className="text-foreground-60">{{ po.vendor }}</modus-typography>
+                  <div class="flex items-center justify-between text-foreground-60">
+                    <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(po.amount) }}</modus-typography>
+                    <modus-typography size="xs" className="text-foreground-60">{{ po.issueDate }}</modus-typography>
                   </div>
                 </div>
               </div>
@@ -405,14 +426,14 @@ type ViewMode = 'grid' | 'list';
               <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer" tabindex="0"
                 (click)="purchaseOrderClick.emit(po)" (keydown.enter)="purchaseOrderClick.emit(po)">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-semibold text-primary">{{ po.poNumber }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-primary">{{ po.poNumber }}</modus-typography>
                   <modus-badge [color]="poStatusBadge(po.status)">{{ po.status | titlecase }}</modus-badge>
                 </div>
-                <div class="text-sm text-foreground truncate">{{ po.description }}</div>
-                <div class="text-xs text-foreground-60">{{ po.vendor }}</div>
+                <modus-typography size="sm" className="text-foreground truncate">{{ po.description }}</modus-typography>
+                <modus-typography size="xs" className="text-foreground-60">{{ po.vendor }}</modus-typography>
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(po.amount) }}</div>
-                  <div class="text-xs text-foreground-60">{{ po.issueDate }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(po.amount) }}</modus-typography>
+                  <modus-typography size="xs" className="text-foreground-60">{{ po.issueDate }}</modus-typography>
                 </div>
               </div>
             } @empty {
@@ -421,25 +442,31 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
-            <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-              <div>PO #</div><div>Description</div><div>Vendor</div><div>Amount</div><div>Received</div><div>Status</div><div>Date</div>
+            <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">PO #</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Description</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Vendor</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Amount</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Received</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography>
             </div>
             <div class="overflow-y-auto flex-1">
             @for (po of purchaseOrders(); track po.id) {
               <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
                 (click)="purchaseOrderClick.emit(po)" (keydown.enter)="purchaseOrderClick.emit(po)">
-                <div class="text-sm font-medium text-primary">{{ po.poNumber }}</div>
-                <div class="text-sm text-foreground truncate">{{ po.description }}</div>
-                <div class="text-sm text-foreground-60 truncate">{{ po.vendor }}</div>
-                <div class="text-sm font-medium text-foreground">{{ formatCurrency(po.amount) }}</div>
-                <div class="text-sm text-foreground-60">{{ formatCurrency(po.amountReceived) }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-primary">{{ po.poNumber }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground truncate">{{ po.description }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60 truncate">{{ po.vendor }}</modus-typography>
+                <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(po.amount) }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60">{{ formatCurrency(po.amountReceived) }}</modus-typography>
                 <div><modus-badge [color]="poStatusBadge(po.status)">{{ po.status | titlecase }}</modus-badge></div>
-                <div class="text-sm text-foreground-60">{{ po.issueDate }}</div>
+                <modus-typography size="sm" className="text-foreground-60">{{ po.issueDate }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">shopping_cart</i>
-                <div class="text-sm">No Purchase Orders for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No Purchase Orders for this project</modus-typography>
               </div>
             }
             </div>
@@ -449,20 +476,20 @@ type ViewMode = 'grid' | 'list';
       @case ('contract-invoices') {
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Total Invoices</div>
-            <div class="text-lg font-bold text-foreground">{{ invoices().length }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Total Invoices</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-foreground">{{ invoices().length }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Total Invoiced</div>
-            <div class="text-lg font-bold text-foreground">{{ formatCurrency(invTotalAmount()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Total Invoiced</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-foreground">{{ formatCurrency(invTotalAmount()) }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Collected</div>
-            <div class="text-lg font-bold text-success">{{ formatCurrency(invPaidAmount()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Collected</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-success">{{ formatCurrency(invPaidAmount()) }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Outstanding</div>
-            <div class="text-lg font-bold" [class]="invOutstanding() > 0 ? 'text-warning' : 'text-foreground'">{{ formatCurrency(invOutstanding()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Outstanding</modus-typography>
+            <modus-typography size="lg" weight="bold" [className]="invOutstanding() > 0 ? 'text-warning' : 'text-foreground'">{{ formatCurrency(invOutstanding()) }}</modus-typography>
           </div>
         </div>
         @if (viewMode() === 'grid') {
@@ -471,20 +498,20 @@ type ViewMode = 'grid' | 'list';
               <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0"
                 (click)="invoiceClick.emit(inv)" (keydown.enter)="invoiceClick.emit(inv)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
-                  <div class="text-base font-semibold text-foreground">{{ inv.invoiceNumber }}</div>
+                  <modus-typography size="md" weight="semibold" className="text-foreground">{{ inv.invoiceNumber }}</modus-typography>
                   <modus-badge [color]="invStatusBadge(inv.status)">{{ inv.status | titlecase }}</modus-badge>
                 </div>
                 <div class="px-5 py-4 flex flex-col gap-2">
                   <div class="flex items-center justify-between">
-                    <div class="text-sm font-medium text-foreground">{{ formatCurrency(inv.amount) }}</div>
-                    <div class="text-xs text-foreground-60">{{ inv.terms }}</div>
+                    <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(inv.amount) }}</modus-typography>
+                    <modus-typography size="xs" className="text-foreground-60">{{ inv.terms }}</modus-typography>
                   </div>
-                  <div class="flex items-center justify-between text-xs text-foreground-60">
-                    <div>Issued: {{ inv.issueDate }}</div>
-                    <div>Due: {{ inv.dueDate }}</div>
+                  <div class="flex items-center justify-between text-foreground-60">
+                    <modus-typography size="xs" className="text-foreground-60">Issued: {{ inv.issueDate }}</modus-typography>
+                    <modus-typography size="xs" className="text-foreground-60">Due: {{ inv.dueDate }}</modus-typography>
                   </div>
                   @if (inv.retainageHeld > 0) {
-                    <div class="text-xs text-foreground-60">Retainage: {{ formatCurrency(inv.retainageHeld) }}</div>
+                    <modus-typography size="xs" className="text-foreground-60">Retainage: {{ formatCurrency(inv.retainageHeld) }}</modus-typography>
                   }
                 </div>
               </div>
@@ -498,16 +525,16 @@ type ViewMode = 'grid' | 'list';
               <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer" tabindex="0"
                 (click)="invoiceClick.emit(inv)" (keydown.enter)="invoiceClick.emit(inv)">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-semibold text-primary">{{ inv.invoiceNumber }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-primary">{{ inv.invoiceNumber }}</modus-typography>
                   <modus-badge [color]="invStatusBadge(inv.status)">{{ inv.status | titlecase }}</modus-badge>
                 </div>
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(inv.amount) }}</div>
-                  <div class="text-sm text-success">Paid {{ formatCurrency(inv.amountPaid) }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(inv.amount) }}</modus-typography>
+                  <modus-typography size="sm" className="text-success">Paid {{ formatCurrency(inv.amountPaid) }}</modus-typography>
                 </div>
-                <div class="flex items-center justify-between text-xs text-foreground-60">
-                  <div>{{ inv.issueDate }} - {{ inv.dueDate }}</div>
-                  <div>{{ inv.terms }}</div>
+                <div class="flex items-center justify-between text-foreground-60">
+                  <modus-typography size="xs" className="text-foreground-60">{{ inv.issueDate }} - {{ inv.dueDate }}</modus-typography>
+                  <modus-typography size="xs" className="text-foreground-60">{{ inv.terms }}</modus-typography>
                 </div>
               </div>
             } @empty {
@@ -516,25 +543,31 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
-            <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-              <div>Invoice #</div><div>Amount</div><div>Paid</div><div>Status</div><div>Issued</div><div>Due</div><div>Terms</div>
+            <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Invoice #</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Amount</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Paid</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Issued</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Due</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Terms</modus-typography>
             </div>
             <div class="overflow-y-auto flex-1">
             @for (inv of invoices(); track inv.id) {
               <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
                 (click)="invoiceClick.emit(inv)" (keydown.enter)="invoiceClick.emit(inv)">
-                <div class="text-sm font-medium text-primary">{{ inv.invoiceNumber }}</div>
-                <div class="text-sm font-medium text-foreground">{{ formatCurrency(inv.amount) }}</div>
-                <div class="text-sm text-success">{{ formatCurrency(inv.amountPaid) }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-primary">{{ inv.invoiceNumber }}</modus-typography>
+                <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(inv.amount) }}</modus-typography>
+                <modus-typography size="sm" className="text-success">{{ formatCurrency(inv.amountPaid) }}</modus-typography>
                 <div><modus-badge [color]="invStatusBadge(inv.status)">{{ inv.status | titlecase }}</modus-badge></div>
-                <div class="text-sm text-foreground-60">{{ inv.issueDate }}</div>
-                <div class="text-sm text-foreground-60">{{ inv.dueDate }}</div>
-                <div class="text-xs text-foreground-60">{{ inv.terms }}</div>
+                <modus-typography size="sm" className="text-foreground-60">{{ inv.issueDate }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60">{{ inv.dueDate }}</modus-typography>
+                <modus-typography size="xs" className="text-foreground-60">{{ inv.terms }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">invoice</i>
-                <div class="text-sm">No Contract Invoices for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No Contract Invoices for this project</modus-typography>
               </div>
             }
             </div>
@@ -544,20 +577,20 @@ type ViewMode = 'grid' | 'list';
       @case ('general-invoices') {
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Total Payables</div>
-            <div class="text-lg font-bold text-foreground">{{ payables().length }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Total Payables</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-foreground">{{ payables().length }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Total Owed</div>
-            <div class="text-lg font-bold text-foreground">{{ formatCurrency(payTotalAmount()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Total Owed</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-foreground">{{ formatCurrency(payTotalAmount()) }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Paid</div>
-            <div class="text-lg font-bold text-success">{{ formatCurrency(payPaidAmount()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Paid</modus-typography>
+            <modus-typography size="lg" weight="bold" className="text-success">{{ formatCurrency(payPaidAmount()) }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-4 flex flex-col gap-1">
-            <div class="text-xs text-foreground-60">Outstanding</div>
-            <div class="text-lg font-bold" [class]="payOutstanding() > 0 ? 'text-warning' : 'text-foreground'">{{ formatCurrency(payOutstanding()) }}</div>
+            <modus-typography size="xs" className="text-foreground-60">Outstanding</modus-typography>
+            <modus-typography size="lg" weight="bold" [className]="payOutstanding() > 0 ? 'text-warning' : 'text-foreground'">{{ formatCurrency(payOutstanding()) }}</modus-typography>
           </div>
         </div>
         @if (viewMode() === 'grid') {
@@ -566,15 +599,15 @@ type ViewMode = 'grid' | 'list';
               <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0"
                 (click)="payableClick.emit(p)" (keydown.enter)="payableClick.emit(p)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
-                  <div class="text-base font-semibold text-foreground">{{ p.invoiceNumber }}</div>
+                  <modus-typography size="md" weight="semibold" className="text-foreground">{{ p.invoiceNumber }}</modus-typography>
                   <modus-badge [color]="payStatusBadge(p.status)">{{ p.status | titlecase }}</modus-badge>
                 </div>
                 <div class="px-5 py-4 flex flex-col gap-2">
-                  <div class="text-sm text-foreground line-clamp-2">{{ p.description }}</div>
-                  <div class="text-xs text-foreground-60">{{ p.vendor }}</div>
-                  <div class="flex items-center justify-between text-xs text-foreground-60">
-                    <div class="text-sm font-medium text-foreground">{{ formatCurrency(p.amount) }}</div>
-                    <div>Due: {{ p.dueDate }}</div>
+                  <modus-typography size="sm" className="text-foreground line-clamp-2">{{ p.description }}</modus-typography>
+                  <modus-typography size="xs" className="text-foreground-60">{{ p.vendor }}</modus-typography>
+                  <div class="flex items-center justify-between text-foreground-60">
+                    <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(p.amount) }}</modus-typography>
+                    <modus-typography size="xs" className="text-foreground-60">Due: {{ p.dueDate }}</modus-typography>
                   </div>
                 </div>
               </div>
@@ -588,14 +621,14 @@ type ViewMode = 'grid' | 'list';
               <div class="bg-card border-default rounded-lg px-4 py-3 flex flex-col gap-2 cursor-pointer" tabindex="0"
                 (click)="payableClick.emit(p)" (keydown.enter)="payableClick.emit(p)">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-semibold text-primary">{{ p.invoiceNumber }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-primary">{{ p.invoiceNumber }}</modus-typography>
                   <modus-badge [color]="payStatusBadge(p.status)">{{ p.status | titlecase }}</modus-badge>
                 </div>
-                <div class="text-sm text-foreground truncate">{{ p.description }}</div>
-                <div class="text-xs text-foreground-60">{{ p.vendor }}</div>
+                <modus-typography size="sm" className="text-foreground truncate">{{ p.description }}</modus-typography>
+                <modus-typography size="xs" className="text-foreground-60">{{ p.vendor }}</modus-typography>
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground">{{ formatCurrency(p.amount) }}</div>
-                  <div class="text-xs text-foreground-60">Due {{ p.dueDate }}</div>
+                  <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(p.amount) }}</modus-typography>
+                  <modus-typography size="xs" className="text-foreground-60">Due {{ p.dueDate }}</modus-typography>
                 </div>
               </div>
             } @empty {
@@ -604,25 +637,31 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col" [style.max-height]="listMaxHeight()">
-            <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-              <div>Invoice #</div><div>Description</div><div>Vendor</div><div>Amount</div><div>Paid</div><div>Status</div><div>Due</div>
+            <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Invoice #</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Description</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Vendor</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Amount</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Paid</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Due</modus-typography>
             </div>
             <div class="overflow-y-auto flex-1">
             @for (p of payables(); track p.id) {
               <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
                 (click)="payableClick.emit(p)" (keydown.enter)="payableClick.emit(p)">
-                <div class="text-sm font-medium text-primary">{{ p.invoiceNumber }}</div>
-                <div class="text-sm text-foreground truncate">{{ p.description }}</div>
-                <div class="text-sm text-foreground-60 truncate">{{ p.vendor }}</div>
-                <div class="text-sm font-medium text-foreground">{{ formatCurrency(p.amount) }}</div>
-                <div class="text-sm text-success">{{ formatCurrency(p.amountPaid) }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-primary">{{ p.invoiceNumber }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground truncate">{{ p.description }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60 truncate">{{ p.vendor }}</modus-typography>
+                <modus-typography size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(p.amount) }}</modus-typography>
+                <modus-typography size="sm" className="text-success">{{ formatCurrency(p.amountPaid) }}</modus-typography>
                 <div><modus-badge [color]="payStatusBadge(p.status)">{{ p.status | titlecase }}</modus-badge></div>
-                <div class="text-sm text-foreground-60">{{ p.dueDate }}</div>
+                <modus-typography size="sm" className="text-foreground-60">{{ p.dueDate }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">invoice</i>
-                <div class="text-sm">No Vendor Invoices for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No Vendor Invoices for this project</modus-typography>
               </div>
             }
             </div>

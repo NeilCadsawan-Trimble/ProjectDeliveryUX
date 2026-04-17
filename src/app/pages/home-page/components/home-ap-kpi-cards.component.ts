@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 
 export interface ApKpiCard {
   value: string;
@@ -10,6 +11,7 @@ export interface ApKpiCard {
 
 @Component({
   selector: 'app-home-ap-kpi-cards',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
@@ -22,8 +24,10 @@ export interface ApKpiCard {
           >
             <i class="modus-icons text-base" [class]="card.iconColor" aria-hidden="true">{{ card.icon }}</i>
           </div>
-          <div class="text-lg font-bold text-foreground flex-shrink-0">{{ card.value }}</div>
-          <div class="min-w-0 flex-1 text-sm text-foreground-60 truncate">{{ card.label }}</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="flex-shrink-0">{{ card.value }}</modus-typography>
+          <div class="min-w-0 flex-1 truncate">
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-60">{{ card.label }}</modus-typography>
+          </div>
         </div>
       }
     }

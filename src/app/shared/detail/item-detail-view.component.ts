@@ -1,12 +1,17 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import type { StatusOption } from '../../data/dashboard-item-status';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { ModusCardComponent } from '../../components/modus-card.component';
+import { ModusButtonComponent } from '../../components/modus-button.component';
 export type { StatusOption } from '../../data/dashboard-item-status';
 
 @Component({
   selector: 'app-item-detail-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent, ModusCardComponent, ModusButtonComponent],
   template: `
-    <div class="bg-card border-default rounded-lg">
+    <modus-card [padding]="'compact'">
+      <div>
       @if (!hideHeader()) {
       <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
         <div class="flex items-center gap-4">
@@ -14,20 +19,23 @@ export type { StatusOption } from '../../data/dashboard-item-status';
             <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">{{ icon() }}</i>
           </div>
           <div>
-            <div class="text-xl font-semibold text-foreground">{{ number() }}</div>
-            <div class="text-sm text-foreground-60">{{ typeLabel() }}</div>
+            <modus-typography hierarchy="h2" size="lg" weight="semibold">{{ number() }}</modus-typography>
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-60">{{ typeLabel() }}</modus-typography>
           </div>
         </div>
         <div class="flex items-center gap-3">
           <div
-            class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-            role="button"
-            tabindex="0"
-            aria-label="Open in new tab"
             (click)="openInNewTab.emit(); $event.stopPropagation()"
             (keydown.enter)="openInNewTab.emit(); $event.stopPropagation()"
           >
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">launch</i>
+            <modus-button
+              color="secondary"
+              variant="borderless"
+              size="sm"
+              icon="launch"
+              iconPosition="only"
+              ariaLabel="Open in new tab"
+            ></modus-button>
           </div>
         <div class="relative">
           <div
@@ -36,7 +44,7 @@ export type { StatusOption } from '../../data/dashboard-item-status';
             (click)="toggleStatusDropdown(); $event.stopPropagation()"
           >
             <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
-            <div class="text-sm font-medium text-foreground">{{ statusText() }}</div>
+            <modus-typography hierarchy="p" size="sm" weight="semibold">{{ statusText() }}</modus-typography>
             <i class="modus-icons text-sm text-foreground-60 transition-transform duration-150" [class.rotate-180]="statusDropdownOpen()" aria-hidden="true">expand_more</i>
           </div>
           @if (statusDropdownOpen()) {
@@ -49,7 +57,7 @@ export type { StatusOption } from '../../data/dashboard-item-status';
                   (click)="onStatusSelect(opt.value); $event.stopPropagation()"
                 >
                   <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
-                  <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
+                  <modus-typography hierarchy="p" size="sm" weight="semibold">{{ opt.label }}</modus-typography>
                   @if (opt.value === currentStatus()) {
                     <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
                   }
@@ -63,29 +71,29 @@ export type { StatusOption } from '../../data/dashboard-item-status';
       }
       <div class="px-6 py-6 flex flex-col gap-6">
         <div>
-          <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Subject</div>
-          <div class="text-base text-foreground">{{ subject() }}</div>
+          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Subject</modus-typography>
+          <modus-typography hierarchy="p" size="md">{{ subject() }}</modus-typography>
         </div>
         @if (question()) {
           <div>
-            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Question</div>
-            <div class="text-base text-foreground">{{ question() }}</div>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Question</modus-typography>
+            <modus-typography hierarchy="p" size="md">{{ question() }}</modus-typography>
           </div>
         }
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">{{ field1Label() }}</div>
-            <div class="text-base text-foreground">{{ field1Value() }}</div>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">{{ field1Label() }}</modus-typography>
+            <modus-typography hierarchy="p" size="md">{{ field1Value() }}</modus-typography>
           </div>
           <div>
-            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">Assignee</div>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Assignee</modus-typography>
             <div class="relative">
               <div
                 class="flex items-center gap-2 px-3 py-1.5 -ml-3 rounded-md cursor-pointer hover:bg-muted transition-colors duration-150 select-none"
                 [attr.aria-expanded]="assigneeDropdownOpen()"
                 (click)="toggleAssigneeDropdown(); $event.stopPropagation()"
               >
-                <div class="text-base text-foreground">{{ assignee() }}</div>
+                <modus-typography hierarchy="p" size="md">{{ assignee() }}</modus-typography>
                 <i class="modus-icons text-sm text-foreground-60 transition-transform duration-150" [class.rotate-180]="assigneeDropdownOpen()" aria-hidden="true">expand_more</i>
               </div>
               @if (assigneeDropdownOpen()) {
@@ -97,7 +105,7 @@ export type { StatusOption } from '../../data/dashboard-item-status';
                       [attr.aria-selected]="name === assignee()"
                       (click)="onAssigneeSelect(name); $event.stopPropagation()"
                     >
-                      <div class="text-sm font-medium text-foreground">{{ name }}</div>
+                      <modus-typography hierarchy="p" size="sm" weight="semibold">{{ name }}</modus-typography>
                       @if (name === assignee()) {
                         <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
                       }
@@ -110,29 +118,29 @@ export type { StatusOption } from '../../data/dashboard-item-status';
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">{{ field3Label() }}</div>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">{{ field3Label() }}</modus-typography>
             @if (field3DateEditable()) {
               <div class="relative flex items-center gap-2">
-                <div class="text-base text-foreground">{{ field3Value() }}</div>
+                <modus-typography hierarchy="p" size="md">{{ field3Value() }}</modus-typography>
                 <i class="modus-icons text-base text-foreground-60 cursor-pointer hover:text-primary transition-colors duration-150"
                    aria-hidden="true"
                    (click)="openDatePicker(field3DateInput)">calendar</i>
                 <input #field3DateInput type="date" class="absolute opacity-0 w-0 h-0 pointer-events-none" (change)="onDueDateChange($event)" />
               </div>
             } @else {
-              <div class="text-base text-foreground">{{ field3Value() }}</div>
+              <modus-typography hierarchy="p" size="md">{{ field3Value() }}</modus-typography>
             }
           </div>
           <div>
-            <div class="text-xs font-semibold text-foreground-40 uppercase tracking-wide mb-1.5">{{ field4Label() }}</div>
+            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">{{ field4Label() }}</modus-typography>
             @if (field4ShowStatus()) {
               <div class="flex items-center gap-2">
                 <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
-                <div class="text-base font-medium text-foreground">{{ statusText() }}</div>
+                <modus-typography hierarchy="p" size="md" weight="semibold">{{ statusText() }}</modus-typography>
               </div>
             } @else {
               <div class="relative flex items-center gap-2">
-                <div class="text-base text-foreground">{{ field4Value() }}</div>
+                <modus-typography hierarchy="p" size="md">{{ field4Value() }}</modus-typography>
                 <i class="modus-icons text-base text-foreground-60 cursor-pointer hover:text-primary transition-colors duration-150"
                    aria-hidden="true"
                    (click)="openDatePicker(field4DateInput)">calendar</i>
@@ -142,7 +150,8 @@ export type { StatusOption } from '../../data/dashboard-item-status';
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </modus-card>
   `,
   host: {
     '(document:click)': 'onDocumentClick($event)',
