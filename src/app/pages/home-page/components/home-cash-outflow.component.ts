@@ -25,8 +25,8 @@ interface OutflowGroup {
           </div>
           @for (p of g.items; track p.id) {
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <modus-typography hierarchy="p" size="xs" className="text-foreground truncate min-w-0">{{ p.vendor }}</modus-typography>
-              <modus-typography hierarchy="p" size="xs" className="text-foreground tabular-nums shrink-0">{{ formatCurrency(p.amount) }}</modus-typography>
+              <modus-typography class="min-w-0" hierarchy="p" size="xs" className="text-foreground truncate">{{ p.vendor }}</modus-typography>
+              <modus-typography class="shrink-0" hierarchy="p" size="xs" className="text-foreground tabular-nums">{{ formatCurrency(p.amount) }}</modus-typography>
             </div>
           }
           @if (g.items.length === 0) {

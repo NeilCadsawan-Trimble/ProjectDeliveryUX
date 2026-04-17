@@ -31,8 +31,8 @@ import type { Contract, ContractStatus } from '../../../data/dashboard-data.type
         @for (c of sortedContracts(); track c.id) {
           <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
             <div class="flex items-center justify-between gap-2">
-              <modus-typography size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ c.title }}</modus-typography>
-              <modus-typography size="xs" weight="semibold" [className]="'text-2xs rounded px-1.5 py-0.5 shrink-0 ' + statusBadgeClass(c.status)">
+              <modus-typography class="min-w-0 flex-1" size="sm" weight="semibold" className="text-foreground truncate">{{ c.title }}</modus-typography>
+              <modus-typography class="shrink-0" size="xs" weight="semibold" [className]="'text-2xs rounded px-1.5 py-0.5 ' + statusBadgeClass(c.status)">
                 {{ statusLabel(c.status) }}
               </modus-typography>
             </div>

@@ -662,7 +662,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">payment_instant</i>
                 <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">Financials</modus-typography>
                 @if (navLinkTotalAlerts() > 0) {
-                  <modus-typography size="xs" weight="bold" className="text-2xs flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1"
+                  <modus-typography class="flex-shrink-0" size="xs" weight="bold" className="text-2xs min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1"
                     [class.bg-destructive]="navLinkHasCriticalAlerts()"
                     [class.text-destructive-foreground]="navLinkHasCriticalAlerts()"
                     [class.bg-warning]="!navLinkHasCriticalAlerts()"
@@ -697,7 +697,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography size="sm" [weight]="activeSubPage() === item.value ? 'semibold' : 'normal'" className="truncate">{{ item.label }}</modus-typography>
                     </div>
                     @if (finSubnavAlerts()[item.value]; as alert) {
-                      <modus-typography size="xs" weight="bold" className="text-2xs flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-1 mr-1"
+                      <modus-typography class="flex-shrink-0 mr-1" size="xs" weight="bold" className="text-2xs min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-1"
                         [class.bg-destructive]="alert.level === 'critical'"
                         [class.text-destructive-foreground]="alert.level === 'critical'"
                         [class.bg-warning]="alert.level === 'warning'"
@@ -734,7 +734,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     [class.text-warning]="pipelineColor() === 'warning'"
                     [class.text-destructive]="pipelineColor() === 'destructive'">{{ fmtCurrency(pamelaEstPipeline()) }}</modus-typography>
                 </div>
-                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 ml-auto flex-shrink-0">{{ pamelaOpenCount() }} open / {{ pamelaProjectCount() }} projects</modus-typography>
+                <modus-typography class="ml-auto flex-shrink-0" hierarchy="p" size="xs" className="text-foreground-60">{{ pamelaOpenCount() }} open / {{ pamelaProjectCount() }} projects</modus-typography>
               </div>
               <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
@@ -753,7 +753,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     [class.text-warning]="winRateColor() === 'warning'"
                     [class.text-destructive]="winRateColor() === 'destructive'">{{ pamelaWinRate() }}%</modus-typography>
                 </div>
-                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 ml-auto flex-shrink-0">{{ estimatesApprovedCount() }} approved of {{ estimates().length }}</modus-typography>
+                <modus-typography class="ml-auto flex-shrink-0" hierarchy="p" size="xs" className="text-foreground-60">{{ estimatesApprovedCount() }} approved of {{ estimates().length }}</modus-typography>
               </div>
               <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
@@ -772,7 +772,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     [class.text-warning]="overdueColor() === 'warning'"
                     [class.text-destructive]="overdueColor() === 'destructive'">{{ estimatesOverdueCount() }}</modus-typography>
                 </div>
-                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 ml-auto flex-shrink-0">{{ estimatesUnderReviewCount() }} review, {{ pamelaAwaitingCount() }} awaiting</modus-typography>
+                <modus-typography class="ml-auto flex-shrink-0" hierarchy="p" size="xs" className="text-foreground-60">{{ estimatesUnderReviewCount() }} review, {{ pamelaAwaitingCount() }} awaiting</modus-typography>
               </div>
               @if (finKpiInsight()) {
                 <div class="flex items-center gap-1.5 px-4 py-2 bg-card border-default rounded-lg flex-shrink-0">
@@ -797,7 +797,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <modus-typography hierarchy="p" size="3xl" weight="bold" className="flex-shrink-0"
+                  <modus-typography class="flex-shrink-0" hierarchy="p" size="3xl" weight="bold"
                     [class.text-success]="grossMarginColor() === 'success'"
                     [class.text-warning]="grossMarginColor() === 'warning'"
                     [class.text-destructive]="grossMarginColor() === 'destructive'">{{ grossMarginPct() }}%</modus-typography>
@@ -830,7 +830,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <modus-typography hierarchy="p" size="3xl" weight="bold" className="flex-shrink-0"
+                  <modus-typography class="flex-shrink-0" hierarchy="p" size="3xl" weight="bold"
                     [class.text-success]="cashRunwayColor() === 'success'"
                     [class.text-warning]="cashRunwayColor() === 'warning'"
                     [class.text-destructive]="cashRunwayColor() === 'destructive'">{{ cashRunwayMonths() }} mo</modus-typography>
@@ -863,7 +863,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <modus-typography hierarchy="p" size="3xl" weight="bold" className="flex-shrink-0"
+                  <modus-typography class="flex-shrink-0" hierarchy="p" size="3xl" weight="bold"
                     [class.text-success]="arColor() === 'success'"
                     [class.text-warning]="arColor() === 'warning'"
                     [class.text-destructive]="arColor() === 'destructive'">{{ fmtCurrency(totalOutstandingAR()) }}</modus-typography>
@@ -1065,7 +1065,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                         </div>
                         @if (!estimatesNarrow()) {
                           <div role="cell" class="flex items-center gap-2 min-w-0">
-                            <modus-typography size="xs" weight="semibold" className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground flex-shrink-0">
+                            <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground">
                               {{ estimate.requestedByInitials }}
                             </modus-typography>
                             <modus-typography  hierarchy="p" size="xs" className="text-foreground-80 truncate">{{ estimate.requestedBy }}</modus-typography>
@@ -1611,7 +1611,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 </div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2 min-w-0">
-                    <modus-typography size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground flex-shrink-0">{{ est.requestedByInitials }}</modus-typography>
+                    <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground">{{ est.requestedByInitials }}</modus-typography>
                     <modus-typography  hierarchy="p" size="xs" className="text-foreground-80 truncate">{{ est.requestedBy }}</modus-typography>
                   </div>
                   <div class="text-right">
@@ -1649,7 +1649,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ est.value }}</modus-typography>
               <div><modus-badge [color]="estimateBadgeColor(est.status)" size="sm">{{ est.status }}</modus-badge></div>
               <div class="flex items-center gap-2 min-w-0">
-                <modus-typography size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground flex-shrink-0">
+                <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground">
                   {{ est.requestedByInitials }}
                 </modus-typography>
                 <modus-typography  hierarchy="p" size="xs" className="text-foreground-80 truncate">{{ est.requestedBy }}</modus-typography>

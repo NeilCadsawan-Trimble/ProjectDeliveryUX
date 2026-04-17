@@ -33,7 +33,7 @@ import type { ChangeOrder } from '../../../data/dashboard-data.types';
             (click)="orderClick.emit({ projectId: co.projectId, orderId: co.id })"
             (keydown.enter)="orderClick.emit({ projectId: co.projectId, orderId: co.id })">
             <div class="flex items-center justify-between gap-2">
-              <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ co.project }}</modus-typography>
+              <modus-typography class="min-w-0 flex-1" hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ co.project }}</modus-typography>
               <modus-typography hierarchy="p" size="sm" weight="semibold" [className]="'tabular-nums ' + (co.amount >= 0 ? 'text-foreground' : 'text-destructive')">{{ fmtCurrency(co.amount) }}</modus-typography>
             </div>
             <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ co.description }}</modus-typography>

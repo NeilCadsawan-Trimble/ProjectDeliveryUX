@@ -180,7 +180,7 @@
                 [style.height.px]="canvasTimelineRowHeight()"
                 (click)="navigateToProject(row.project)"
               >
-                <modus-typography size="xs" weight="semibold" className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center text-primary">
+                <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center text-primary">
                   {{ row.project.ownerInitials }}
                 </modus-typography>
                 <div class="min-w-0">
@@ -212,9 +212,10 @@
               <div class="flex h-6 border-bottom-default sticky top-10 bg-card z-10">
                 @for (day of timelineDays(); track $index) {
                   <modus-typography
+                    class="flex-shrink-0"
                     size="xs"
                     [weight]="day.isToday ? 'bold' : 'normal'"
-                    className="text-2xs flex items-center justify-center flex-shrink-0"
+                    className="text-2xs flex items-center justify-center"
                     [style.width.px]="timelineDayPx()"
                     [class.bg-muted]="day.isWeekend"
                     [class.text-foreground-40]="day.isWeekend"
@@ -335,7 +336,7 @@
                     <div class="flex flex-col gap-2.5 tile-block-link" [style.order]="blockOrder(widgetId, 'owner')" (click)="navigateToBlock(project, 'owner', $event)">
                       @if (isLargeWidget(widgetId)) {
                         <div class="flex items-center gap-2">
-                          <modus-typography size="xs" weight="semibold" className="text-2xs w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground flex-shrink-0">{{ project.ownerInitials }}</modus-typography>
+                          <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="text-2xs w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground">{{ project.ownerInitials }}</modus-typography>
                           <div class="flex flex-col min-w-0">
                             <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground truncate">{{ project.owner }}</modus-typography>
                             <modus-typography className="text-2xs text-foreground-40">Project Manager</modus-typography>
@@ -347,7 +348,7 @@
                         </div>
                       } @else {
                         <div class="flex items-center gap-1.5">
-                          <modus-typography size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground flex-shrink-0">{{ project.ownerInitials }}</modus-typography>
+                          <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground">{{ project.ownerInitials }}</modus-typography>
                           <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ project.owner }}</modus-typography>
                         </div>
                         <div class="flex items-center gap-1 text-foreground-60">
@@ -414,7 +415,7 @@
                           </div>
                           @if (wd.firstImpactedForecast; as impact) {
                             <div class="flex items-start gap-1.5">
-                              <modus-typography weight="semibold" className="text-2xs px-1.5 py-0.5 rounded flex-shrink-0"
+                              <modus-typography class="flex-shrink-0" weight="semibold" className="text-2xs px-1.5 py-0.5 rounded"
                                 [class.bg-destructive-20]="impact.workImpact === 'major'" [class.text-destructive]="impact.workImpact === 'major'"
                                 [class.bg-warning-20]="impact.workImpact === 'minor'" [class.text-warning]="impact.workImpact === 'minor'"
                               >{{ impact.workImpact === 'major' ? 'Stop Work' : 'Caution' }}</modus-typography>
@@ -481,7 +482,7 @@
                       <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'urgentNeeds')" (click)="navigateToBlock(project, 'owner', $event)">
                         <i class="modus-icons text-sm text-primary" aria-hidden="true">file_new</i>
                         <modus-typography className="text-2xs text-primary truncate hover:underline">{{ project.latestDrawingName }}</modus-typography>
-                        <modus-typography className="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</modus-typography>
+                        <modus-typography class="flex-shrink-0" className="text-2xs text-foreground-40">{{ project.latestDrawingVersion }}</modus-typography>
                       </div>
                     }
                   }
@@ -525,7 +526,7 @@
                         @if (team.total > 3) {
                           <modus-typography className="text-2xs text-foreground-40">+{{ team.total - 3 }} more</modus-typography>
                         }
-                        <modus-typography className="text-2xs text-foreground-60 ml-auto">{{ team.total }} members</modus-typography>
+                        <modus-typography class="ml-auto" className="text-2xs text-foreground-60">{{ team.total }} members</modus-typography>
                       </div>
                     }
                   }
@@ -534,7 +535,7 @@
                       <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'riskSummary')" (click)="navigateToBlock(project, 'riskSummary', $event)">
                         <i class="modus-icons text-xs flex-shrink-0" [class.text-destructive]="risk.severity === 'high'" [class.text-warning]="risk.severity === 'medium'" [class.text-foreground-40]="risk.severity === 'low'" aria-hidden="true">warning</i>
                         <modus-typography weight="semibold" className="text-2xs text-foreground truncate">{{ risk.title }}</modus-typography>
-                        <modus-typography weight="semibold" className="text-2xs px-1.5 py-0.5 rounded-full flex-shrink-0"
+                        <modus-typography class="flex-shrink-0" weight="semibold" className="text-2xs px-1.5 py-0.5 rounded-full"
                           [class.bg-destructive-20]="risk.severity === 'high'" [class.text-destructive]="risk.severity === 'high'"
                           [class.bg-warning-20]="risk.severity === 'medium'" [class.text-warning]="risk.severity === 'medium'"
                           [class.bg-muted]="risk.severity === 'low'" [class.text-foreground-60]="risk.severity === 'low'"
@@ -557,7 +558,7 @@
                     <div class="flex flex-col gap-1 tile-block-link" [style.order]="blockOrder(widgetId, 'budget')" (click)="navigateToBlock(project, 'budget', $event)">
                       <div class="flex items-center justify-between">
                         <modus-typography className="text-2xs text-foreground-40 uppercase tracking-wide">Budget</modus-typography>
-                        <modus-typography size="xs" className="text-2xs flex-shrink-0"><modus-typography size="xs" className="text-2xs" [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</modus-typography></modus-typography>
+                        <modus-typography class="flex-shrink-0" size="xs" className="text-2xs"><modus-typography size="xs" className="text-2xs" [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</modus-typography></modus-typography>
                       </div>
                       <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
                       <div class="flex items-center justify-between">
@@ -637,11 +638,11 @@
                         @for (cat of cats; track cat.label) {
                           <div class="flex items-center gap-2">
                             <div class="w-1.5 h-1.5 rounded-full flex-shrink-0" [class]="cat.colorClass"></div>
-                            <modus-typography className="text-2xs text-foreground-60 w-20 flex-shrink-0">{{ cat.label }}</modus-typography>
+                            <modus-typography class="flex-shrink-0" className="text-2xs text-foreground-60 w-20">{{ cat.label }}</modus-typography>
                             <div class="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                               <div [class]="cat.colorClass" [style.width.%]="cat.pct" class="h-full rounded-full"></div>
                             </div>
-                            <modus-typography weight="semibold" className="text-2xs text-foreground w-12 text-right flex-shrink-0">{{ formatJobCostAmount(cat.amount) }}</modus-typography>
+                            <modus-typography class="flex-shrink-0" weight="semibold" className="text-2xs text-foreground w-12 text-right">{{ formatJobCostAmount(cat.amount) }}</modus-typography>
                           </div>
                         }
                       </div>
@@ -683,7 +684,7 @@
               @if (showBlock(widgetId, 'owner')) {
                 <div class="flex items-center justify-between tile-block-link" [style.order]="blockOrder(widgetId, 'owner')" (click)="navigateToBlock(project, 'owner', $event)">
                   <div class="flex items-center gap-1.5">
-                    <modus-typography size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground flex-shrink-0">{{ project.ownerInitials }}</modus-typography>
+                    <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground">{{ project.ownerInitials }}</modus-typography>
                     <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate max-w-[80px]">{{ project.owner }}</modus-typography>
                   </div>
                   <div class="flex items-center gap-1 text-foreground-60">
@@ -705,7 +706,7 @@
                 <div class="flex flex-col gap-1 tile-block-link" [style.order]="blockOrder(widgetId, 'budget')" (click)="navigateToBlock(project, 'budget', $event)">
                   <div class="flex items-center justify-between">
                     <modus-typography className="text-2xs text-foreground-40 uppercase tracking-wide">Budget</modus-typography>
-                    <modus-typography size="xs" className="text-2xs flex-shrink-0"><modus-typography size="xs" className="text-2xs" [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</modus-typography></modus-typography>
+                    <modus-typography class="flex-shrink-0" size="xs" className="text-2xs"><modus-typography size="xs" className="text-2xs" [class]="budgetPctColor(project.budgetPct)">{{ project.budgetPct }}%</modus-typography></modus-typography>
                   </div>
                   <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
                   <div class="flex items-center justify-between">
@@ -768,7 +769,7 @@
                   <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'urgentNeeds')" (click)="navigateToBlock(project, 'owner', $event)">
                     <i class="modus-icons text-sm text-primary" aria-hidden="true">file_new</i>
                     <modus-typography className="text-2xs text-primary truncate hover:underline">{{ project.latestDrawingName }}</modus-typography>
-                    <modus-typography className="text-2xs text-foreground-40 flex-shrink-0">{{ project.latestDrawingVersion }}</modus-typography>
+                    <modus-typography class="flex-shrink-0" className="text-2xs text-foreground-40">{{ project.latestDrawingVersion }}</modus-typography>
                   </div>
                 }
               }
@@ -879,7 +880,7 @@
                       </div>
                       @if (wd.firstImpactedForecast; as impact) {
                         <div class="flex items-start gap-1.5">
-                          <modus-typography weight="semibold" className="text-2xs px-1.5 py-0.5 rounded flex-shrink-0"
+                          <modus-typography class="flex-shrink-0" weight="semibold" className="text-2xs px-1.5 py-0.5 rounded"
                             [class.bg-destructive-20]="impact.workImpact === 'major'" [class.text-destructive]="impact.workImpact === 'major'"
                             [class.bg-warning-20]="impact.workImpact === 'minor'" [class.text-warning]="impact.workImpact === 'minor'"
                           >{{ impact.workImpact === 'major' ? 'Stop Work' : 'Caution' }}</modus-typography>
@@ -926,7 +927,7 @@
                     @if (team.total > 3) {
                         <modus-typography className="text-2xs text-foreground-40">+{{ team.total - 3 }} more</modus-typography>
                         }
-                        <modus-typography className="text-2xs text-foreground-60 ml-auto">{{ team.total }} members</modus-typography>
+                        <modus-typography class="ml-auto" className="text-2xs text-foreground-60">{{ team.total }} members</modus-typography>
                       </div>
                     }
                   }
@@ -935,7 +936,7 @@
                   <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'riskSummary')" (click)="navigateToBlock(project, 'riskSummary', $event)">
                     <i class="modus-icons text-xs flex-shrink-0" [class.text-destructive]="risk.severity === 'high'" [class.text-warning]="risk.severity === 'medium'" [class.text-foreground-40]="risk.severity === 'low'" aria-hidden="true">warning</i>
                     <modus-typography weight="semibold" className="text-2xs text-foreground truncate">{{ risk.title }}</modus-typography>
-                    <modus-typography weight="semibold" className="text-2xs px-1.5 py-0.5 rounded-full flex-shrink-0"
+                    <modus-typography class="flex-shrink-0" weight="semibold" className="text-2xs px-1.5 py-0.5 rounded-full"
                       [class.bg-destructive-20]="risk.severity === 'high'" [class.text-destructive]="risk.severity === 'high'"
                       [class.bg-warning-20]="risk.severity === 'medium'" [class.text-warning]="risk.severity === 'medium'"
                       [class.bg-muted]="risk.severity === 'low'" [class.text-foreground-60]="risk.severity === 'low'"
@@ -1042,7 +1043,7 @@
             [style.height.px]="timelineRowHeight()"
             (click)="navigateToProject(row.project)"
           >
-            <modus-typography size="xs" weight="semibold" className="flex-shrink-0 w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center text-primary">
+            <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center text-primary">
               {{ row.project.ownerInitials }}
             </modus-typography>
             <div class="min-w-0">
@@ -1077,9 +1078,10 @@
           <div class="flex h-6 border-bottom-default sticky top-10 bg-card z-10">
             @for (day of timelineDays(); track $index) {
               <modus-typography
+                class="flex-shrink-0"
                 size="xs"
                 [weight]="day.isToday ? 'bold' : 'normal'"
-                className="text-2xs flex items-center justify-center flex-shrink-0"
+                className="text-2xs flex items-center justify-center"
                 [style.width.px]="timelineDayPx()"
                 [class.bg-muted]="day.isWeekend"
                 [class.text-foreground-40]="day.isWeekend"

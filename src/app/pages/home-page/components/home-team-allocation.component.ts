@@ -75,8 +75,8 @@ interface PersonRow {
               (click)="projectClick.emit(pt.projectId)"
               (keydown.enter)="projectClick.emit(pt.projectId)">
               <div class="flex items-center justify-between gap-2">
-                <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ pt.projectName }}</modus-typography>
-                <modus-typography hierarchy="p" size="xs" className="text-foreground-60 shrink-0">{{ pt.team.length }} members</modus-typography>
+                <modus-typography class="min-w-0 flex-1" hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ pt.projectName }}</modus-typography>
+                <modus-typography class="shrink-0" hierarchy="p" size="xs" className="text-foreground-60">{{ pt.team.length }} members</modus-typography>
               </div>
               <div class="flex flex-wrap gap-1">
                 @for (m of pt.team; track m.id) {

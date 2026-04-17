@@ -28,7 +28,7 @@ import { WidgetResizeHandleComponent } from './widget-resize-handle.component';
               <i class="modus-icons text-lg flex-shrink-0" [class]="iconClass()" aria-hidden="true">{{ icon() }}</i>
               <modus-typography hierarchy="h4" [size]="titleSize()" [weight]="titleWeight()" [className]="titleClassName()">{{ title() }}</modus-typography>
               @if (titleMeta(); as meta) {
-                <modus-typography hierarchy="p" size="xs" className="text-foreground-40 flex-shrink-0">{{ meta }}</modus-typography>
+                <modus-typography class="flex-shrink-0" hierarchy="p" size="xs" className="text-foreground-40">{{ meta }}</modus-typography>
               }
               <ng-content select="[headerExtra]" />
             </div>

@@ -397,7 +397,7 @@
 
                 <div class="flex border-bottom-default sticky top-0 z-10 bg-card">
                   @for (month of scheduleMonths(); track month.label) {
-                    <modus-typography size="xs" weight="semibold" className="text-foreground-60 border-right-default px-2 py-1.5 text-center flex-shrink-0"
+                    <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="text-foreground-60 border-right-default px-2 py-1.5 text-center"
                       [style.width.px]="month.span * scheduleDayPx()">
                       {{ month.label }}
                     </modus-typography>
@@ -406,7 +406,7 @@
 
                 <div class="flex border-bottom-default sticky top-[29px] z-10 bg-card">
                   @for (day of scheduleDays(); track day.date.getTime()) {
-                    <modus-typography size="xs" [weight]="day.isToday ? 'bold' : 'normal'" className="text-2xs text-center flex-shrink-0 py-0.5"
+                    <modus-typography class="flex-shrink-0" size="xs" [weight]="day.isToday ? 'bold' : 'normal'" className="text-2xs text-center py-0.5"
                       [style.width.px]="scheduleDayPx()"
                       [class]="day.isToday ? 'text-primary bg-primary-20' : day.isWeekend ? 'text-foreground-40 bg-muted' : 'text-foreground-60'">
                       @if (scheduleDayPx() >= 18 && (day.dayOfMonth === 1 || day.dayOfMonth % 5 === 0 || day.isToday)) {
@@ -1911,7 +1911,7 @@
                   <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
                     <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
                     <modus-typography hierarchy="p" size="md" weight="semibold">Transaction Ledger</modus-typography>
-                    <modus-typography hierarchy="p" size="xs" className="text-foreground-40 ml-auto">{{ subledgerTransactions().length }} entries</modus-typography>
+                    <modus-typography class="ml-auto" hierarchy="p" size="xs" className="text-foreground-40">{{ subledgerTransactions().length }} entries</modus-typography>
                   </div>
                   <div class="absolute left-0 right-0 bottom-0 overflow-y-auto" style="top: 53px">
                     <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />
@@ -3103,7 +3103,7 @@
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between mb-1">
                           <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ ms.name }}</modus-typography>
-                          <modus-typography size="xs" className="text-foreground-60 flex-shrink-0 ml-2">{{ ms.dueDate }}</modus-typography>
+                          <modus-typography class="flex-shrink-0 ml-2" size="xs" className="text-foreground-60">{{ ms.dueDate }}</modus-typography>
                         </div>
                         @if (ms.status !== 'completed') {
                           <modus-progress [value]="ms.progress" [max]="100" [className]="milestoneProgressClass(ms.status)" />
@@ -3388,7 +3388,7 @@
                     <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ newestDrawingTile().title }}</modus-typography>
                     <div class="flex items-center justify-between">
                       <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ newestDrawingTile().subtitle }}</modus-typography>
-                      <modus-typography size="xs" className="text-foreground-40 flex-shrink-0 ml-2">{{ newestDrawingTile().date }}</modus-typography>
+                      <modus-typography class="flex-shrink-0 ml-2" size="xs" className="text-foreground-40">{{ newestDrawingTile().date }}</modus-typography>
                     </div>
                   </div>
                 </div>
@@ -3665,7 +3665,7 @@
                                 </div>
                               }
                             </div>
-                            <modus-typography size="xs" className="text-foreground-60 flex-shrink-0">{{ conflict.absentCount }}/{{ conflict.teamSize }} absent</modus-typography>
+                            <modus-typography class="flex-shrink-0" size="xs" className="text-foreground-60">{{ conflict.absentCount }}/{{ conflict.teamSize }} absent</modus-typography>
                           </div>
                           <div class="flex items-center gap-2">
                             <div class="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
@@ -3677,7 +3677,7 @@
                                 [style.width.%]="conflict.absentPct"
                               ></div>
                             </div>
-                            <modus-typography size="xs" className="text-2xs text-foreground-60 w-10 text-right flex-shrink-0">{{ conflict.absentPct }}%</modus-typography>
+                            <modus-typography class="flex-shrink-0" size="xs" className="text-2xs text-foreground-60 w-10 text-right">{{ conflict.absentPct }}%</modus-typography>
                           </div>
                           <modus-typography size="xs" className="text-2xs text-foreground-60">{{ conflict.reason }} -- {{ conflict.absentees.join(', ') }}</modus-typography>
                         </div>
@@ -4610,7 +4610,7 @@
           <div class="flex items-center gap-2 px-5 py-4 border-bottom-default flex-shrink-0">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
             <modus-typography hierarchy="p" size="md" weight="semibold">Transaction Ledger</modus-typography>
-            <modus-typography hierarchy="p" size="xs" className="text-foreground-40 ml-auto">{{ subledgerTransactions().length }} entries</modus-typography>
+            <modus-typography class="ml-auto" hierarchy="p" size="xs" className="text-foreground-40">{{ subledgerTransactions().length }} entries</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
             <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />

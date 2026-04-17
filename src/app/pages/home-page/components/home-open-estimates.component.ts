@@ -41,7 +41,7 @@ import type { Estimate, EstimateStatus } from '../../../data/dashboard-data.type
             <div class="flex-1 min-w-0 flex flex-col gap-0.5">
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0 flex-1">
-                  <modus-typography hierarchy="p" size="xs" weight="semibold" className="font-mono text-primary shrink-0">{{ est.id }}</modus-typography>
+                  <modus-typography class="shrink-0" hierarchy="p" size="xs" weight="semibold" className="font-mono text-primary">{{ est.id }}</modus-typography>
                   <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ est.project }}</modus-typography>
                 </div>
                 <div class="rounded px-1.5 py-0.5 shrink-0" [class]="statusBadgeClass(est.status)">
@@ -52,9 +52,9 @@ import type { Estimate, EstimateStatus } from '../../../data/dashboard-data.type
                 <div class="flex items-center gap-2 min-w-0">
                   <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ est.client }}</modus-typography>
                   <div class="w-1 h-1 rounded-full bg-foreground-20 shrink-0"></div>
-                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60 shrink-0">{{ est.type }}</modus-typography>
+                  <modus-typography class="shrink-0" hierarchy="p" size="xs" className="text-foreground-60">{{ est.type }}</modus-typography>
                 </div>
-                <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground tabular-nums shrink-0">{{ est.value }}</modus-typography>
+                <modus-typography class="shrink-0" hierarchy="p" size="xs" weight="semibold" className="text-foreground tabular-nums">{{ est.value }}</modus-typography>
               </div>
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-1.5 min-w-0">
