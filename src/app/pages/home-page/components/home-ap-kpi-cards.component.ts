@@ -24,7 +24,7 @@ export interface ApKpiCard {
           >
             <i class="modus-icons text-base" [class]="card.iconColor" aria-hidden="true">{{ card.icon }}</i>
           </div>
-          <modus-typography hierarchy="h2" size="lg" weight="bold" className="flex-shrink-0">{{ card.value }}</modus-typography>
+          <modus-typography class="flex-shrink-0" hierarchy="h2" size="lg" weight="bold">{{ card.value }}</modus-typography>
           <div class="min-w-0 flex-1 truncate">
             <modus-typography hierarchy="p" size="sm" className="text-foreground-60">{{ card.label }}</modus-typography>
           </div>

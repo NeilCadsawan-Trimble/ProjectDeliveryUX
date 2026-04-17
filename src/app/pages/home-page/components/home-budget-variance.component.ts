@@ -30,8 +30,8 @@ export interface BudgetRow {
           (click)="rowClick.emit(row.slug)"
           (keydown.enter)="rowClick.emit(row.slug)">
           <div class="flex items-center justify-between gap-3">
-            <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ row.name }}</modus-typography>
-            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 tabular-nums shrink-0">{{ row.budgetUsed }} / {{ row.budgetTotal }}</modus-typography>
+            <modus-typography class="min-w-0 flex-1" hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ row.name }}</modus-typography>
+            <modus-typography class="shrink-0" hierarchy="p" size="xs" className="text-foreground-60 tabular-nums">{{ row.budgetUsed }} / {{ row.budgetTotal }}</modus-typography>
           </div>
           <div class="flex items-center gap-2">
             <div class="flex-1 h-2 rounded-full bg-muted overflow-hidden">

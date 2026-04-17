@@ -71,7 +71,7 @@ import type { Inspection, PunchListItem } from '../../../data/dashboard-data.typ
               <modus-typography size="xs" weight="semibold" className="text-foreground truncate">{{ insp.type }}</modus-typography>
               <modus-typography size="xs" className="text-foreground-40 truncate">{{ insp.notes }}</modus-typography>
             </div>
-            <modus-typography size="xs" className="text-foreground-60 shrink-0">{{ insp.date }}</modus-typography>
+            <modus-typography class="shrink-0" size="xs" className="text-foreground-60">{{ insp.date }}</modus-typography>
           </div>
         }
         @if (failedInspections().length === 0) {

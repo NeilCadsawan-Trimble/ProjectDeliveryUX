@@ -717,7 +717,7 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                                   [style.width.%]="proj.worstWeek ? proj.worstWeek.absentPct : 0"
                                 ></div>
                               </div>
-                              <modus-typography hierarchy="p" size="xs" className="text-foreground-60 w-10 text-right flex-shrink-0">
+                              <modus-typography class="flex-shrink-0" hierarchy="p" size="xs" className="text-foreground-60 w-10 text-right">
                                 @if (proj.worstWeek) {
                                   {{ proj.worstWeek.absentPct }}%
                                 } @else {
@@ -1569,7 +1569,7 @@ import { ModusTextInputComponent } from '../../components/modus-text-input.compo
                             {{ activity.text }}
                           </modus-typography>
                         </div>
-                        <modus-typography hierarchy="p" size="xs" className="text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</modus-typography>
+                        <modus-typography class="flex-shrink-0 mt-0.5" hierarchy="p" size="xs" className="text-foreground-40">{{ activity.timeAgo }}</modus-typography>
                       </div>
                     }
                   </div>

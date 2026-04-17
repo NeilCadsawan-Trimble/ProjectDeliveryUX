@@ -1118,6 +1118,10 @@
 
 /* Modus Divider Visibility Fix */
 /* IMPORTANT: The divider component uses Shadow DOM, so we must style the custom element directly */
+modus-wc-typography {
+  display: block;
+}
+
 /* We also target the internal div using ::part() or deep selectors as fallback */
 modus-wc-divider {
   display: block;

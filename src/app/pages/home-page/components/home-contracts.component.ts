@@ -34,7 +34,7 @@ import type { Contract, ContractStatus } from '../../../data/dashboard-data.type
             (click)="contractClick.emit({ projectId: c.projectId, contractId: c.id })"
             (keydown.enter)="contractClick.emit({ projectId: c.projectId, contractId: c.id })">
             <div class="flex items-center justify-between gap-2">
-              <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ c.title }}</modus-typography>
+              <modus-typography class="min-w-0 flex-1" hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ c.title }}</modus-typography>
               <div class="rounded px-1.5 py-0.5 shrink-0" [class]="statusBadgeClass(c.status)">
                 <modus-typography size="xs" weight="semibold" className="text-2xs">{{ statusLabel(c.status) }}</modus-typography>
               </div>

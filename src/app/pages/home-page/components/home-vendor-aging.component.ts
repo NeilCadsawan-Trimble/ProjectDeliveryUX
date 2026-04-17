@@ -38,7 +38,7 @@ import type { ApVendor, ApVendorType } from '../../../data/dashboard-data.types'
       @for (v of vendors(); track v.id) {
         <div class="flex flex-col gap-2 py-2 border-bottom-default last:border-b-0">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate min-w-0">{{ v.name }}</modus-typography>
+            <modus-typography class="min-w-0" hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ v.name }}</modus-typography>
             <div class="rounded px-2 py-0.5 bg-primary-20 text-primary shrink-0">
               <modus-typography size="xs" weight="semibold" className="text-2xs">{{ vendorTypeLabel(v.vendorType) }}</modus-typography>
             </div>

@@ -31,7 +31,7 @@ import type { ChangeOrder } from '../../../data/dashboard-data.types';
         @for (co of sortedOrders(); track co.id) {
           <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
             <div class="flex items-center justify-between gap-2">
-              <modus-typography size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ co.description }}</modus-typography>
+              <modus-typography class="min-w-0 flex-1" size="sm" weight="semibold" className="text-foreground truncate">{{ co.description }}</modus-typography>
               <modus-typography size="sm" weight="semibold" [className]="'tabular-nums ' + (co.amount >= 0 ? 'text-foreground' : 'text-destructive')">{{ fmtCurrency(co.amount) }}</modus-typography>
             </div>
             <div class="flex items-center gap-2">

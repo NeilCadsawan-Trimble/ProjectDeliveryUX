@@ -53,6 +53,7 @@ export interface ModusTypographyProps {
   selector: 'modus-typography',
   imports: [CommonModule, ModusWcTypography],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { style: 'display: block' },
   template: `
     <modus-wc-typography
       [customClass]="className()"
