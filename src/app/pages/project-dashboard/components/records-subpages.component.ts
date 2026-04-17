@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../../components/modus-badge.component';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import { EmptyStateComponent } from './empty-state.component';
 import {
   itemStatusDot as getStatusDot,
@@ -25,7 +26,7 @@ type ViewMode = 'grid' | 'list';
 @Component({
   selector: 'app-records-subpages',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModusBadgeComponent, EmptyStateComponent, TitleCasePipe],
+  imports: [ModusBadgeComponent, ModusTypographyComponent, EmptyStateComponent, TitleCasePipe],
   template: `
     @switch (activePage()) {
       @case ('daily-reports') {
@@ -33,11 +34,11 @@ type ViewMode = 'grid' | 'list';
           @for (day of weatherForecast(); track day.date) {
             <div class="flex flex-col items-center gap-1 min-w-[72px] px-3 py-3 rounded-lg"
               [class]="day.workImpact === 'major' ? 'bg-destructive-20' : day.workImpact === 'minor' ? 'bg-warning-20' : 'bg-muted'">
-              <div class="text-xs font-medium text-foreground">{{ day.day }}</div>
+              <modus-typography size="xs" weight="semibold" className="text-foreground">{{ day.day }}</modus-typography>
               <i class="modus-icons text-lg" aria-hidden="true">{{ weatherIcon(day.condition) }}</i>
-              <div class="text-xs text-foreground-60">{{ day.highF }}F</div>
+              <modus-typography size="xs" className="text-foreground-60">{{ day.highF }}F</modus-typography>
               @if (day.precipPct > 30) {
-                <div class="text-2xs text-primary">{{ day.precipPct }}%</div>
+                <modus-typography size="xs" className="text-primary">{{ day.precipPct }}%</modus-typography>
               }
             </div>
           }
@@ -47,19 +48,19 @@ type ViewMode = 'grid' | 'list';
             @for (report of dailyReports(); track report.id) {
               <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0" (click)="dailyReportClick.emit(report)" (keydown.enter)="dailyReportClick.emit(report)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
-                  <div class="text-base font-semibold text-foreground">{{ report.date }}</div>
+                  <modus-typography size="md" weight="semibold" className="text-foreground">{{ report.date }}</modus-typography>
                   @if (report.safetyIncidents > 0) {
                     <modus-badge color="danger">Safety</modus-badge>
                   }
                 </div>
                 <div class="px-5 py-4 flex flex-col gap-2">
-                  <div class="flex items-center gap-1.5 text-xs text-foreground-60">
+                  <div class="flex items-center gap-1.5 text-foreground-60">
                     <i class="modus-icons text-sm" aria-hidden="true">{{ weatherIcon(report.weather.split(',')[0].toLowerCase().trim()) }}</i>
-                    <div>{{ report.weather }}</div>
+                    <modus-typography size="xs" className="text-foreground-60">{{ report.weather }}</modus-typography>
                   </div>
-                  <div class="flex items-center justify-between text-xs text-foreground-60">
-                    <div class="flex items-center gap-1.5"><i class="modus-icons text-sm" aria-hidden="true">person</i>{{ report.author }}</div>
-                    <div>{{ report.crewCount }} crew / {{ report.hoursWorked }} hrs</div>
+                  <div class="flex items-center justify-between text-foreground-60">
+                    <div class="flex items-center gap-1.5"><i class="modus-icons text-sm" aria-hidden="true">person</i><modus-typography size="xs" className="text-foreground-60">{{ report.author }}</modus-typography></div>
+                    <modus-typography size="xs" className="text-foreground-60">{{ report.crewCount }} crew / {{ report.hoursWorked }} hrs</modus-typography>
                   </div>
                 </div>
               </div>
@@ -69,23 +70,28 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[100px_1fr_120px_80px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-              <div>Date</div><div>Author</div><div>Weather</div><div>Crew</div><div>Hours</div><div>Safety</div>
+            <div class="grid grid-cols-[100px_1fr_120px_80px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Author</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Weather</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Crew</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Hours</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Safety</modus-typography>
             </div>
             @for (report of dailyReports(); track report.id) {
               <div class="grid grid-cols-[100px_1fr_120px_80px_80px_60px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="dailyReportClick.emit(report)" (keydown.enter)="dailyReportClick.emit(report)">
-                <div class="text-sm font-medium text-primary">{{ report.date }}</div>
-                <div class="text-sm text-foreground truncate">{{ report.author }}</div>
-                <div class="text-sm text-foreground-60 truncate">{{ report.weather }}</div>
-                <div class="text-sm text-foreground-60">{{ report.crewCount }}</div>
-                <div class="text-sm text-foreground-60">{{ report.hoursWorked }}</div>
-                <div class="text-sm" [class]="report.safetyIncidents > 0 ? 'text-destructive font-medium' : 'text-foreground-60'">{{ report.safetyIncidents }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-primary">{{ report.date }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground truncate">{{ report.author }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60 truncate">{{ report.weather }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60">{{ report.crewCount }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60">{{ report.hoursWorked }}</modus-typography>
+                <modus-typography size="sm" [weight]="report.safetyIncidents > 0 ? 'semibold' : 'normal'" [className]="report.safetyIncidents > 0 ? 'text-destructive' : 'text-foreground-60'">{{ report.safetyIncidents }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
-                <div class="text-sm">No Daily Reports for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No Daily Reports for this project</modus-typography>
               </div>
             }
           </div>
@@ -98,19 +104,19 @@ type ViewMode = 'grid' | 'list';
               <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0" (click)="punchItemClick.emit(item)" (keydown.enter)="punchItemClick.emit(item)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
                   <div class="flex items-center gap-3">
-                    <div class="text-base font-semibold text-foreground">{{ item.id }}</div>
+                    <modus-typography size="md" weight="semibold" className="text-foreground">{{ item.id }}</modus-typography>
                     <modus-badge [color]="punchPriorityBadge(item.priority)">{{ item.priority | titlecase }}</modus-badge>
                   </div>
                   <div class="flex items-center gap-1.5">
                     <div class="w-2 h-2 rounded-full" [class]="statusDot(item.status)"></div>
-                    <div class="text-xs font-medium text-foreground-60">{{ capitalize(item.status) }}</div>
+                    <modus-typography size="xs" weight="semibold" className="text-foreground-60">{{ capitalize(item.status) }}</modus-typography>
                   </div>
                 </div>
                 <div class="px-5 py-4 flex flex-col gap-2">
-                  <div class="text-sm text-foreground line-clamp-2">{{ item.description }}</div>
-                  <div class="flex items-center justify-between text-xs text-foreground-60">
-                    <div>{{ item.location }}</div>
-                    <div>{{ item.assignee }}</div>
+                  <modus-typography size="sm" className="text-foreground line-clamp-2">{{ item.description }}</modus-typography>
+                  <div class="flex items-center justify-between text-foreground-60">
+                    <modus-typography size="xs" className="text-foreground-60">{{ item.location }}</modus-typography>
+                    <modus-typography size="xs" className="text-foreground-60">{{ item.assignee }}</modus-typography>
                   </div>
                 </div>
               </div>
@@ -120,26 +126,31 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[80px_1fr_120px_80px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-              <div>ID</div><div>Description</div><div>Location</div><div>Priority</div><div>Status</div><div>Assignee</div>
+            <div class="grid grid-cols-[80px_1fr_120px_80px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">ID</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Description</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Location</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Priority</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Assignee</modus-typography>
             </div>
             @for (item of punchItems(); track item.id) {
               <div class="grid grid-cols-[80px_1fr_120px_80px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="punchItemClick.emit(item)" (keydown.enter)="punchItemClick.emit(item)">
-                <div class="text-sm font-medium text-primary">{{ item.id }}</div>
-                <div class="text-sm text-foreground truncate">{{ item.description }}</div>
-                <div class="text-sm text-foreground-60 truncate">{{ item.location }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-primary">{{ item.id }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground truncate">{{ item.description }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60 truncate">{{ item.location }}</modus-typography>
                 <div><modus-badge [color]="punchPriorityBadge(item.priority)">{{ item.priority | titlecase }}</modus-badge></div>
                 <div class="flex items-center gap-1.5">
                   <div class="w-2 h-2 rounded-full" [class]="statusDot(item.status)"></div>
-                  <div class="text-xs text-foreground-60">{{ capitalize(item.status) }}</div>
+                  <modus-typography size="xs" className="text-foreground-60">{{ capitalize(item.status) }}</modus-typography>
                 </div>
-                <div class="text-sm text-foreground-60 truncate">{{ item.assignee }}</div>
+                <modus-typography size="sm" className="text-foreground-60 truncate">{{ item.assignee }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">warning</i>
-                <div class="text-sm">No Punch Items for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No Punch Items for this project</modus-typography>
               </div>
             }
           </div>
@@ -151,16 +162,16 @@ type ViewMode = 'grid' | 'list';
             @for (insp of inspections(); track insp.id) {
               <div class="bg-card border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer" tabindex="0" (click)="inspectionClick.emit(insp)" (keydown.enter)="inspectionClick.emit(insp)">
                 <div class="px-5 py-4 flex items-center justify-between border-bottom-default">
-                  <div class="text-base font-semibold text-foreground">{{ insp.type }}</div>
+                  <modus-typography size="md" weight="semibold" className="text-foreground">{{ insp.type }}</modus-typography>
                   <modus-badge [color]="inspectionResultBadge(insp.result)">{{ insp.result | titlecase }}</modus-badge>
                 </div>
                 <div class="px-5 py-4 flex flex-col gap-2">
-                  <div class="flex items-center justify-between text-xs text-foreground-60">
-                    <div>{{ insp.inspector }}</div>
-                    <div>{{ insp.date }}</div>
+                  <div class="flex items-center justify-between text-foreground-60">
+                    <modus-typography size="xs" className="text-foreground-60">{{ insp.inspector }}</modus-typography>
+                    <modus-typography size="xs" className="text-foreground-60">{{ insp.date }}</modus-typography>
                   </div>
                   @if (insp.followUp) {
-                    <div class="text-xs text-warning truncate">{{ insp.followUp }}</div>
+                    <modus-typography size="xs" className="text-warning truncate">{{ insp.followUp }}</modus-typography>
                   }
                 </div>
               </div>
@@ -170,23 +181,28 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[80px_1fr_120px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-              <div>ID</div><div>Type</div><div>Date</div><div>Inspector</div><div>Result</div><div>Follow-up</div>
+            <div class="grid grid-cols-[80px_1fr_120px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">ID</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Type</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Inspector</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Result</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Follow-up</modus-typography>
             </div>
             @for (insp of inspections(); track insp.id) {
               <div class="grid grid-cols-[80px_1fr_120px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="inspectionClick.emit(insp)" (keydown.enter)="inspectionClick.emit(insp)">
-                <div class="text-sm font-medium text-primary">{{ insp.id }}</div>
-                <div class="text-sm text-foreground truncate">{{ insp.type }}</div>
-                <div class="text-sm text-foreground-60">{{ insp.date }}</div>
-                <div class="text-sm text-foreground-60 truncate">{{ insp.inspector }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-primary">{{ insp.id }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground truncate">{{ insp.type }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60">{{ insp.date }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60 truncate">{{ insp.inspector }}</modus-typography>
                 <div><modus-badge [color]="inspectionResultBadge(insp.result)">{{ insp.result | titlecase }}</modus-badge></div>
-                <div class="text-sm text-foreground-60 truncate">{{ insp.followUp || '--' }}</div>
+                <modus-typography size="sm" className="text-foreground-60 truncate">{{ insp.followUp || '--' }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">check_circle</i>
-                <div class="text-sm">No Inspections for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No Inspections for this project</modus-typography>
               </div>
             }
           </div>
@@ -207,12 +223,12 @@ type ViewMode = 'grid' | 'list';
                     </i>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-foreground truncate">{{ item.title }}</div>
+                    <modus-typography size="sm" weight="semibold" className="text-foreground truncate">{{ item.title }}</modus-typography>
                   </div>
                   <modus-badge [color]="severityBadgeColor(item.severity)">{{ item.category }}</modus-badge>
                 </div>
                 <div class="px-5 py-3">
-                  <div class="text-sm text-foreground-60">{{ item.subtitle }}</div>
+                  <modus-typography size="sm" className="text-foreground-60">{{ item.subtitle }}</modus-typography>
                 </div>
               </div>
             } @empty {
@@ -221,21 +237,24 @@ type ViewMode = 'grid' | 'list';
           </div>
         } @else {
           <div class="bg-card border-default rounded-lg overflow-hidden">
-            <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-              <div>Severity</div><div>Title</div><div>Description</div><div>Category</div>
+            <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3 bg-muted border-bottom-default">
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Severity</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Title</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Description</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Category</modus-typography>
             </div>
             @for (item of actionItems(); track item.id) {
               <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="actionItemClick.emit(item)" (keydown.enter)="actionItemClick.emit(item)">
                 <div><modus-badge [color]="severityBadgeColor(item.severity)">{{ item.severity | titlecase }}</modus-badge></div>
-                <div class="text-sm font-medium text-foreground truncate">{{ item.title }}</div>
-                <div class="text-sm text-foreground-60 truncate">{{ item.subtitle }}</div>
-                <div class="text-xs text-foreground-60">{{ item.category }}</div>
+                <modus-typography size="sm" weight="semibold" className="text-foreground truncate">{{ item.title }}</modus-typography>
+                <modus-typography size="sm" className="text-foreground-60 truncate">{{ item.subtitle }}</modus-typography>
+                <modus-typography size="xs" className="text-foreground-60">{{ item.category }}</modus-typography>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">info</i>
-                <div class="text-sm">No Action Items for this project</div>
+                <modus-typography size="sm" className="text-foreground-40">No Action Items for this project</modus-typography>
               </div>
             }
           </div>

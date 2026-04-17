@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { LearningPlan } from '../../../data/dashboard-data.types';
 
 @Component({
   selector: 'app-home-learning-progress',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: flex; flex-direction: column; height: 100%; min-height: 0; }'],
   template: `
@@ -10,11 +12,11 @@ import type { LearningPlan } from '../../../data/dashboard-data.types';
       <div class="flex-shrink-0 flex flex-col gap-3 px-4 pb-2">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <div class="text-sm font-semibold text-foreground">{{ plan().name }}</div>
+            <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ plan().name }}</modus-typography>
           </div>
-          <div class="text-xs text-foreground-60">
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">
             {{ plan().completedCourses }} of {{ plan().totalCourses }} courses
-          </div>
+          </modus-typography>
         </div>
 
         <div class="flex flex-col gap-1">
@@ -24,9 +26,9 @@ import type { LearningPlan } from '../../../data/dashboard-data.types';
               [style.width.%]="progressPercent()"
             ></div>
           </div>
-          <div class="flex items-center justify-between text-xs text-foreground-60">
-            <div>{{ progressPercent() }}% complete</div>
-            <div>{{ totalHoursLogged() }}h logged</div>
+          <div class="flex items-center justify-between">
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ progressPercent() }}% complete</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ totalHoursLogged() }}h logged</modus-typography>
           </div>
         </div>
       </div>
@@ -50,16 +52,16 @@ import type { LearningPlan } from '../../../data/dashboard-data.types';
                 rel="noopener noreferrer"
                 class="text-sm text-foreground hover:text-primary truncate block transition-colors duration-150"
               >{{ course.title }}</a>
-              <div class="text-xs text-foreground-60">{{ course.category }}</div>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ course.category }}</modus-typography>
             </div>
 
             <div class="flex-shrink-0 w-16 text-right">
               @if (course.status === 'completed') {
-                <div class="text-xs text-success font-medium">Done</div>
+                <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-success">Done</modus-typography>
               } @else if (course.status === 'in-progress') {
-                <div class="text-xs text-primary font-medium">{{ coursePercent(course) }}%</div>
+                <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-primary">{{ coursePercent(course) }}%</modus-typography>
               } @else {
-                <div class="text-xs text-foreground-40">{{ courseDuration(course) }}</div>
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ courseDuration(course) }}</modus-typography>
               }
             </div>
           </div>

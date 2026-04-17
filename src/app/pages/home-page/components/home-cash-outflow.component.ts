@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApPaymentScheduleItem } from '../../../data/dashboard-data.types';
 
 interface OutflowGroup {
@@ -12,23 +13,24 @@ interface OutflowGroup {
 @Component({
   selector: 'app-home-cash-outflow',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col gap-4 h-full min-h-0 overflow-y-auto p-4">
       @for (g of groups(); track g.key) {
         <div class="bg-background border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 px-4 pt-3 pb-4 flex flex-col gap-2 shrink-0">
           <div class="flex items-center justify-between">
-            <div class="text-sm font-medium text-foreground">{{ g.label }}</div>
-            <div class="text-sm font-bold text-primary tabular-nums">{{ formatCurrency(g.total) }}</div>
+            <modus-typography hierarchy="h3" size="sm" weight="semibold">{{ g.label }}</modus-typography>
+            <modus-typography hierarchy="p" size="sm" weight="bold" className="text-primary tabular-nums">{{ formatCurrency(g.total) }}</modus-typography>
           </div>
           @for (p of g.items; track p.id) {
-            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div class="text-foreground truncate min-w-0">{{ p.vendor }}</div>
-              <div class="text-foreground tabular-nums shrink-0">{{ formatCurrency(p.amount) }}</div>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <modus-typography hierarchy="p" size="xs" className="text-foreground truncate min-w-0">{{ p.vendor }}</modus-typography>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground tabular-nums shrink-0">{{ formatCurrency(p.amount) }}</modus-typography>
             </div>
           }
           @if (g.items.length === 0) {
-            <div class="text-xs text-foreground-40">No payments</div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-40">No payments</modus-typography>
           }
         </div>
       }

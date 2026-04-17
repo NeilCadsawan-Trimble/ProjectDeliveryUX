@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 
 export interface KpiCard {
   value: string;
@@ -13,6 +14,7 @@ export interface KpiCard {
 
 @Component({
   selector: 'app-home-kpi-cards',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
@@ -29,11 +31,11 @@ export interface KpiCard {
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-baseline gap-2">
-              <div class="text-lg font-bold text-foreground">{{ card.value }}</div>
-              <div class="text-sm text-foreground-60 truncate">{{ card.label }}</div>
+              <modus-typography hierarchy="h2" size="lg" weight="bold">{{ card.value }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" className="text-foreground-60 truncate">{{ card.label }}</modus-typography>
             </div>
             @if (card.subtitle) {
-              <div class="text-xs text-foreground-40 truncate">{{ card.subtitle }}</div>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-40 truncate">{{ card.subtitle }}</modus-typography>
             }
           </div>
           <i class="modus-icons text-sm text-foreground-40 flex-shrink-0" aria-hidden="true">chevron_right</i>
@@ -51,10 +53,10 @@ export interface KpiCard {
             <i class="modus-icons text-2xl" [class]="card.iconColor" aria-hidden="true">{{ card.icon }}</i>
           </div>
           <div class="flex-1 min-w-0">
-            <div class="text-2xl font-bold text-foreground">{{ card.value }}</div>
-            <div class="text-sm text-foreground-60">{{ card.label }}</div>
+            <modus-typography hierarchy="h2" size="2xl" weight="bold">{{ card.value }}</modus-typography>
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-60">{{ card.label }}</modus-typography>
             @if (card.subtitle) {
-              <div class="text-xs text-foreground-40 mt-0.5 truncate">{{ card.subtitle }}</div>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-40 mt-0.5 truncate">{{ card.subtitle }}</modus-typography>
             }
           </div>
           <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">chevron_right</i>

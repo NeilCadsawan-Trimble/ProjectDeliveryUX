@@ -1,28 +1,30 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { Estimate, EstimateStatus } from '../../../data/dashboard-data.types';
 
 @Component({
   selector: 'app-home-open-estimates',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col h-full min-h-0">
       <div class="grid grid-cols-4 gap-2 shrink-0 px-4 pt-4 pb-2">
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-primary-20 py-2">
-          <div class="text-lg font-bold text-primary tabular-nums">{{ totalCount() }}</div>
-          <div class="text-2xs text-foreground-60">Total</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-primary tabular-nums">{{ totalCount() }}</modus-typography>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Total</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-warning-20 py-2">
-          <div class="text-lg font-bold text-warning tabular-nums">{{ awaitingCount() }}</div>
-          <div class="text-2xs text-foreground-60">Awaiting</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-warning tabular-nums">{{ awaitingCount() }}</modus-typography>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Awaiting</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-destructive-20 py-2">
-          <div class="text-lg font-bold text-destructive tabular-nums">{{ overdueCount() }}</div>
-          <div class="text-2xs text-foreground-60">Overdue</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-destructive tabular-nums">{{ overdueCount() }}</modus-typography>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Overdue</modus-typography>
         </div>
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-success-20 py-2">
-          <div class="text-lg font-bold text-success tabular-nums">{{ fmtCurrency(pipelineValue()) }}</div>
-          <div class="text-2xs text-foreground-60">Pipeline</div>
+          <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-success tabular-nums">{{ fmtCurrency(pipelineValue()) }}</modus-typography>
+          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Pipeline</modus-typography>
         </div>
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
@@ -33,33 +35,33 @@ import type { Estimate, EstimateStatus } from '../../../data/dashboard-data.type
             (keydown.enter)="estimateClick.emit(est.id)">
             <div class="w-10 h-10 rounded-lg flex flex-col items-center justify-center shrink-0"
               [class]="dateBadgeClass(est.daysLeft)">
-              <div class="text-2xs font-medium leading-none">{{ monthAbbr(est.dueDate) }}</div>
-              <div class="text-sm font-bold leading-tight">{{ dayOfMonth(est.dueDate) }}</div>
+              <modus-typography hierarchy="p" size="xs" weight="semibold" className="leading-none">{{ monthAbbr(est.dueDate) }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" weight="bold" className="leading-tight">{{ dayOfMonth(est.dueDate) }}</modus-typography>
             </div>
             <div class="flex-1 min-w-0 flex flex-col gap-0.5">
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0 flex-1">
-                  <div class="text-xs font-mono text-primary font-medium shrink-0">{{ est.id }}</div>
-                  <div class="text-sm font-medium text-foreground truncate">{{ est.project }}</div>
+                  <modus-typography hierarchy="p" size="xs" weight="semibold" className="font-mono text-primary shrink-0">{{ est.id }}</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ est.project }}</modus-typography>
                 </div>
-                <div class="rounded px-1.5 py-0.5 text-2xs font-medium shrink-0" [class]="statusBadgeClass(est.status)">
-                  {{ est.status }}
+                <div class="rounded px-1.5 py-0.5 shrink-0" [class]="statusBadgeClass(est.status)">
+                  <modus-typography size="xs" weight="semibold" className="text-2xs">{{ est.status }}</modus-typography>
                 </div>
               </div>
               <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2 text-2xs text-foreground-60 min-w-0">
-                  <div class="truncate">{{ est.client }}</div>
+                <div class="flex items-center gap-2 min-w-0">
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ est.client }}</modus-typography>
                   <div class="w-1 h-1 rounded-full bg-foreground-20 shrink-0"></div>
-                  <div class="shrink-0">{{ est.type }}</div>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60 shrink-0">{{ est.type }}</modus-typography>
                 </div>
-                <div class="text-xs font-semibold text-foreground tabular-nums shrink-0">{{ est.value }}</div>
+                <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground tabular-nums shrink-0">{{ est.value }}</modus-typography>
               </div>
-              <div class="flex items-center justify-between gap-2 text-2xs">
-                <div class="flex items-center gap-1.5 text-foreground-60 min-w-0">
-                  <div class="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-2xs font-semibold shrink-0">
-                    {{ est.requestedByInitials }}
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <div class="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground shrink-0">
+                    <modus-typography size="xs" weight="semibold" className="text-2xs">{{ est.requestedByInitials }}</modus-typography>
                   </div>
-                  <div class="truncate">{{ est.requestedBy }}</div>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ est.requestedBy }}</modus-typography>
                 </div>
                 <div class="shrink-0" [class]="dueDateClass(est.daysLeft)">
                   @if (est.daysLeft < 0) {
@@ -75,7 +77,9 @@ import type { Estimate, EstimateStatus } from '../../../data/dashboard-data.type
           </div>
         }
         @if (openEstimates().length === 0) {
-          <div class="text-sm text-foreground-40 text-center py-6">No open estimates</div>
+          <div class="text-center py-6">
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-40">No open estimates</modus-typography>
+          </div>
         }
       </div>
     </div>

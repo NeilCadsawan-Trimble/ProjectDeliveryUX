@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ModusTypographyComponent } from '../components/modus-typography.component';
 
 @Component({
   selector: 'app-status-filter-pills',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent],
   host: {
     class: 'flex items-center gap-2 px-5 py-3 border-bottom-default flex-shrink-0 overflow-x-auto',
     role: 'radiogroup',
@@ -13,7 +15,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   template: `
     @for (f of options(); track f) {
       <div
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-colors duration-150 select-none"
         [class.bg-primary]="active() === f && f !== 'overdue' && f !== 'upcoming' && f !== 'closed'"
         [class.text-primary-foreground]="active() === f && f !== 'overdue' && f !== 'upcoming' && f !== 'closed'"
         [class.bg-muted]="active() !== f"
@@ -29,14 +31,14 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         (keydown.enter)="filterChange.emit(f)"
         (keydown.space)="$event.preventDefault(); filterChange.emit(f)"
       >
-        <div>{{ f.charAt(0).toUpperCase() + f.slice(1) }}</div>
-        <div class="px-1.5 py-0.5 rounded-full text-2xs font-bold"
+        <modus-typography size="xs" weight="semibold">{{ f.charAt(0).toUpperCase() + f.slice(1) }}</modus-typography>
+        <div class="px-1.5 py-0.5 rounded-full"
           [class.bg-primary-foreground]="active() === f && f === 'all'"
           [class.text-primary]="active() === f && f === 'all'"
           [class.bg-secondary]="active() !== f"
           [class.text-foreground-60]="active() !== f"
           aria-hidden="true"
-        >{{ counts()[f] }}</div>
+        ><modus-typography size="xs" weight="bold" className="text-2xs">{{ counts()[f] }}</modus-typography></div>
       </div>
     }
   `,

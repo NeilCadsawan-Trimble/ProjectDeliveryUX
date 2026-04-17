@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModusWcMenuItem } from '@trimble-oss/moduswebcomponents-angular';
+import { ModusWcMenuItem, ModusWcIcon } from '@trimble-oss/moduswebcomponents-angular';
 import type { Components, ModusSize } from '@trimble-oss/moduswebcomponents';
 
 /**
@@ -40,7 +40,7 @@ export interface ModusMenuItemProps {
  */
 @Component({
   selector: 'modus-menu-item',
-  imports: [CommonModule, ModusWcMenuItem],
+  imports: [CommonModule, ModusWcMenuItem, ModusWcIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <modus-wc-menu-item
@@ -50,8 +50,6 @@ export interface ModusMenuItemProps {
       [disabled]="disabled()"
       [focused]="focused()"
       [label]="label()"
-      [startIcon]="startIcon()"
-      [attr.start-icon]="startIcon()"
       [selected]="selected()"
       [attr.selected]="selected() ? '' : null"
       [size]="size()"
@@ -61,6 +59,9 @@ export interface ModusMenuItemProps {
       [value]="value()"
       (itemSelect)="handleItemSelect($event)"
     >
+      @if (startIcon()) {
+        <modus-wc-icon slot="start-icon" [name]="startIcon()!" size="sm" [decorative]="true" />
+      }
       <ng-content select="[slot='start-icon']" slot="start-icon" />
     </modus-wc-menu-item>
   `,

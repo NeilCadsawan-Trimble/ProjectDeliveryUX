@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModusButtonComponent } from '../../components/modus-button.component';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
 /**
  * Home page component.
@@ -16,7 +17,7 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, ModusButtonComponent],
+  imports: [CommonModule, ModusButtonComponent, ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen flex flex-col bg-background">
@@ -24,10 +25,10 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
         <div class="max-w-4xl w-full space-y-8">
           <!-- Header -->
           <div class="text-center space-y-4">
-            <div class="text-4xl font-bold text-foreground">Modus Angular App</div>
-            <div class="text-xl text-foreground-60">
+            <modus-typography hierarchy="h1" size="3xl" weight="bold" className="text-foreground">Modus Angular App</modus-typography>
+            <modus-typography hierarchy="p" size="xl" className="text-foreground-60">
               A production-ready Angular boilerplate with Modus Design System integration.
-            </div>
+            </modus-typography>
           </div>
 
           <!-- Dev Panel Hint -->
@@ -42,52 +43,46 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
 
           <!-- Getting Started -->
           <div class="bg-card border-default rounded-lg p-6 space-y-4">
-            <div class="text-lg font-semibold text-foreground">Getting Started</div>
+            <modus-typography hierarchy="h2" size="lg" weight="semibold" className="text-foreground">Getting Started</modus-typography>
             <div class="space-y-4 text-foreground-80">
               <div class="flex gap-3">
-                <div
-                  class="flex-shrink-0 w-6 h-6 rounded-full bg-muted-foreground text-background flex items-center justify-center text-sm font-bold"
-                >
-                  1
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-muted-foreground text-background flex items-center justify-center">
+                  <modus-typography size="sm" weight="bold">1</modus-typography>
                 </div>
                 <div>
-                  <div class="font-medium text-foreground">Build Your App</div>
-                  <div class="text-sm text-foreground-60">
+                  <modus-typography hierarchy="h4" className="font-medium text-foreground">Build Your App</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                     Start developing in
                     <code class="px-1 py-0.5 bg-muted rounded text-sm">src/app/pages/</code>
                     - add your routes in
                     <code class="px-1 py-0.5 bg-muted rounded text-sm">app.routes.ts</code>.
-                  </div>
+                  </modus-typography>
                 </div>
               </div>
               <div class="flex gap-3">
-                <div
-                  class="flex-shrink-0 w-6 h-6 rounded-full bg-muted-foreground text-background flex items-center justify-center text-sm font-bold"
-                >
-                  2
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-muted-foreground text-background flex items-center justify-center">
+                  <modus-typography size="sm" weight="bold">2</modus-typography>
                 </div>
                 <div>
-                  <div class="font-medium text-foreground">Use the Dev Panel</div>
-                  <div class="text-sm text-foreground-60">
+                  <modus-typography hierarchy="h4" className="font-medium text-foreground">Use the Dev Panel</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                     Press
-                    <div class="inline px-1.5 py-0.5 bg-muted rounded text-xs font-mono">
+                    <modus-typography size="xs" className="inline px-1.5 py-0.5 bg-muted rounded font-mono">
                       Ctrl+Shift+D
-                    </div>
+                    </modus-typography>
                     to browse components, colors, and icons.
-                  </div>
+                  </modus-typography>
                 </div>
               </div>
               <div class="flex gap-3">
-                <div
-                  class="flex-shrink-0 w-6 h-6 rounded-full bg-muted-foreground text-background flex items-center justify-center text-sm font-bold"
-                >
-                  3
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-muted-foreground text-background flex items-center justify-center">
+                  <modus-typography size="sm" weight="bold">3</modus-typography>
                 </div>
                 <div>
-                  <div class="font-medium text-foreground">Deploy</div>
-                  <div class="text-sm text-foreground-60">
+                  <modus-typography hierarchy="h4" className="font-medium text-foreground">Deploy</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                     In production, the Dev Panel is automatically hidden. Your app ships clean.
-                  </div>
+                  </modus-typography>
                 </div>
               </div>
             </div>
@@ -95,61 +90,61 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
 
           <!-- MCP Servers -->
           <div class="bg-card border-default rounded-lg p-6 space-y-4">
-            <div class="text-lg font-semibold text-foreground">MCP Servers Included</div>
-            <div class="text-sm text-foreground-60 mb-4">
+            <modus-typography hierarchy="h2" size="lg" weight="semibold" className="text-foreground">MCP Servers Included</modus-typography>
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-60 mb-4">
               Pre-configured Model Context Protocol servers for AI-assisted development.
-            </div>
+            </modus-typography>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="p-4 bg-card rounded-lg border-thick-dashed">
-                <div class="font-medium text-foreground mb-1">Modus Docs MCP</div>
-                <div class="text-sm text-foreground-60">
+                <modus-typography hierarchy="h4" className="font-medium text-foreground mb-1">Modus Docs MCP</modus-typography>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                   Access Modus Web Components documentation directly in your AI assistant. Get
                   component props, usage examples, and best practices.
-                </div>
+                </modus-typography>
               </div>
               <div class="p-4 bg-card rounded-lg border-thick-dashed">
-                <div class="font-medium text-foreground mb-1">Context7 MCP</div>
-                <div class="text-sm text-foreground-60">
+                <modus-typography hierarchy="h4" className="font-medium text-foreground mb-1">Context7 MCP</modus-typography>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                   Up-to-date library documentation for Angular, Tailwind, and other
                   dependencies.
-                </div>
+                </modus-typography>
               </div>
             </div>
           </div>
 
           <!-- Cursor Rules -->
           <div class="bg-card border-default rounded-lg p-6 space-y-4">
-            <div class="text-lg font-semibold text-foreground">AI-Powered Development Rules</div>
-            <div class="text-sm text-foreground-60 mb-4">
+            <modus-typography hierarchy="h2" size="lg" weight="semibold" className="text-foreground">AI-Powered Development Rules</modus-typography>
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-60 mb-4">
               Comprehensive Cursor rules ensure consistent, high-quality code generation.
-            </div>
+            </modus-typography>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="space-y-3">
                 <div class="flex items-start gap-2">
                   <i class="modus-icons text-muted-foreground mt-0.5">widgets</i>
                   <div>
-                    <div class="font-medium text-foreground">Component Patterns</div>
-                    <div class="text-sm text-foreground-60">
+                    <modus-typography hierarchy="h4" className="font-medium text-foreground">Component Patterns</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                       Angular integration, state management, event handling for Modus Web Components
-                    </div>
+                    </modus-typography>
                   </div>
                 </div>
                 <div class="flex items-start gap-2">
                   <i class="modus-icons text-muted-foreground mt-0.5">palette</i>
                   <div>
-                    <div class="font-medium text-foreground">Design System Compliance</div>
-                    <div class="text-sm text-foreground-60">
+                    <modus-typography hierarchy="h4" className="font-medium text-foreground">Design System Compliance</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                       Color usage, border utilities, opacity patterns, icon guidelines
-                    </div>
+                    </modus-typography>
                   </div>
                 </div>
                 <div class="flex items-start gap-2">
                   <i class="modus-icons text-muted-foreground mt-0.5">accessibility</i>
                   <div>
-                    <div class="font-medium text-foreground">Accessibility Standards</div>
-                    <div class="text-sm text-foreground-60">
+                    <modus-typography hierarchy="h4" className="font-medium text-foreground">Accessibility Standards</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                       Semantic HTML patterns, ARIA attributes, keyboard navigation
-                    </div>
+                    </modus-typography>
                   </div>
                 </div>
               </div>
@@ -157,28 +152,28 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
                 <div class="flex items-start gap-2">
                   <i class="modus-icons text-muted-foreground mt-0.5">dashboard</i>
                   <div>
-                    <div class="font-medium text-foreground">UX Foundations</div>
-                    <div class="text-sm text-foreground-60">
+                    <modus-typography hierarchy="h4" className="font-medium text-foreground">UX Foundations</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                       Gestalt laws, visual hierarchy, spacing rhythms, interaction patterns
-                    </div>
+                    </modus-typography>
                   </div>
                 </div>
                 <div class="flex items-start gap-2">
                   <i class="modus-icons text-muted-foreground mt-0.5">wrench</i>
                   <div>
-                    <div class="font-medium text-foreground">Development Workflow</div>
-                    <div class="text-sm text-foreground-60">
+                    <modus-typography hierarchy="h4" className="font-medium text-foreground">Development Workflow</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                       Linting commands, quality gates, testing procedures
-                    </div>
+                    </modus-typography>
                   </div>
                 </div>
                 <div class="flex items-start gap-2">
                   <i class="modus-icons text-muted-foreground mt-0.5">bug</i>
                   <div>
-                    <div class="font-medium text-foreground">Known Issues</div>
-                    <div class="text-sm text-foreground-60">
+                    <modus-typography hierarchy="h4" className="font-medium text-foreground">Known Issues</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                       Checkbox value inversion, modal patterns, select vs dropdown
-                    </div>
+                    </modus-typography>
                   </div>
                 </div>
               </div>
@@ -187,32 +182,30 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
 
           <!-- Quality Automation -->
           <div class="bg-card border-default rounded-lg p-6 space-y-4">
-            <div class="text-lg font-semibold text-foreground">Quality Automation</div>
-            <div class="text-sm text-foreground-60 mb-4">
+            <modus-typography hierarchy="h2" size="lg" weight="semibold" className="text-foreground">Quality Automation</modus-typography>
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-60 mb-4">
               Pre-configured Husky hooks and GitHub workflows for automated quality assurance.
-            </div>
+            </modus-typography>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="p-4 bg-card rounded-lg border-thick-dashed">
-                <div class="font-medium text-foreground mb-2">Pre-commit Hooks</div>
-                <div class="text-sm text-foreground-60 space-y-1">
-                  <div>TypeScript type checking</div>
-                  <div>Design system color validation</div>
-                  <div>Modus icon usage verification</div>
-                  <div>Border and opacity pattern checks</div>
+                <modus-typography hierarchy="h4" className="font-medium text-foreground mb-2">Pre-commit Hooks</modus-typography>
+                <div class="space-y-1">
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">TypeScript type checking</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">Design system color validation</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">Modus icon usage verification</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">Border and opacity pattern checks</modus-typography>
                 </div>
               </div>
               <div class="p-4 bg-card rounded-lg border-thick-dashed">
-                <div class="font-medium text-foreground mb-2">Linting Scripts</div>
-                <div class="text-sm text-foreground-60 space-y-1">
-                  <div>Inline style detection</div>
-                  <div>Semantic HTML enforcement</div>
-                  <div>Icon name validation (700+ icons)</div>
-                  <div>
+                <modus-typography hierarchy="h4" className="font-medium text-foreground mb-2">Linting Scripts</modus-typography>
+                <div class="space-y-1">
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">Inline style detection</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">Semantic HTML enforcement</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">Icon name validation (700+ icons)</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
                     Run all checks with
-                    <code class="px-1 py-0.5 bg-muted rounded text-xs font-mono"
-                      >npm run lint:all</code
-                    >
-                  </div>
+                    <code class="px-1 py-0.5 bg-muted rounded text-xs font-mono">npm run lint:all</code>
+                  </modus-typography>
                 </div>
               </div>
             </div>
@@ -223,10 +216,10 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
             <div class="flex items-center justify-center gap-3 mb-3">
               <img src="/angular-icon.svg" alt="Angular" class="h-6 w-6" aria-hidden="true" />
             </div>
-            <div class="text-sm font-mono text-foreground-40">
+            <modus-typography hierarchy="p" size="sm" className="font-mono text-foreground-40">
               2026 Modus Angular App v1.0.0 + Angular 20 + Tailwind CSS - Created by Julian
               Oczkowski
-            </div>
+            </modus-typography>
           </div>
         </div>
       </div>

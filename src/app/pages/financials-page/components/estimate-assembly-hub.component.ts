@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import { ModusBadgeComponent } from '../../../components/modus-badge.component';
 import { ModusButtonComponent } from '../../../components/modus-button.component';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type {
   AssemblyDeliverableStatus,
   AssemblyKpi,
@@ -16,21 +17,21 @@ import type {
 @Component({
   selector: 'app-estimate-assembly-hub',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModusBadgeComponent, ModusButtonComponent],
+  imports: [ModusBadgeComponent, ModusButtonComponent, ModusTypographyComponent],
   template: `
     <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
       <!-- Header -->
       <div class="px-5 pt-5 pb-4 flex flex-col gap-4">
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="flex flex-col gap-1">
-            <div class="text-lg font-semibold text-foreground">{{ hub().title }}</div>
-            <div class="text-sm text-foreground-60">{{ hub().subtitle }}</div>
+            <modus-typography  hierarchy="p" size="lg" weight="semibold" className="text-foreground">{{ hub().title }}</modus-typography>
+            <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ hub().subtitle }}</modus-typography>
           </div>
           <div class="flex flex-wrap items-center gap-3">
             @for (kpi of hub().kpis; track kpi.label) {
               <div class="flex items-center gap-2 bg-muted rounded-md px-3 py-2">
-                <div class="text-xl font-bold" [class]="kpiValueClass(kpi)">{{ kpi.value }}</div>
-                <div class="text-xs text-foreground-60">{{ kpi.label }}</div>
+                <modus-typography hierarchy="p" size="xl" weight="bold" [className]="kpiValueClass(kpi)">{{ kpi.value }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ kpi.label }}</modus-typography>
               </div>
             }
           </div>
@@ -51,20 +52,20 @@ import type {
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">
               {{ isSectionExpanded(idx) ? 'expand_more' : 'chevron_right' }}
             </i>
-            <div class="font-semibold text-foreground">{{ section.name }}</div>
+            <modus-typography  hierarchy="p" weight="semibold" className="text-foreground">{{ section.name }}</modus-typography>
             <modus-badge [color]="sectionBadgeColor(section.status)" size="sm">
               {{ section.status }}
             </modus-badge>
             @if (section.owner) {
               <div class="ml-auto flex items-center gap-2">
-                <div class="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-2xs font-bold">
-                  {{ section.ownerInitials }}
+                <div class="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground">
+                  <modus-typography size="xs" weight="bold" className="text-2xs">{{ section.ownerInitials }}</modus-typography>
                 </div>
-                <div class="text-sm text-foreground-60">{{ section.owner }}</div>
+                <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ section.owner }}</modus-typography>
               </div>
             }
             <div class="flex items-center gap-2" [class.ml-auto]="!section.owner">
-              <div class="text-sm font-semibold text-foreground">{{ section.completePct }}%</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ section.completePct }}%</modus-typography>
               <div class="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div class="h-full rounded-full transition-all"
                      [class]="progressBarClass(section.completePct)"
@@ -75,7 +76,7 @@ import type {
 
           <!-- Section description (if present and expanded) -->
           @if (isSectionExpanded(idx) && section.description) {
-            <div class="px-5 pb-3 pl-12 text-sm text-foreground-60">{{ section.description }}</div>
+            <modus-typography  hierarchy="p" size="sm" className="px-5 pb-3 pl-12 text-foreground-60">{{ section.description }}</modus-typography>
           }
 
           <!-- Deliverables table -->
@@ -83,29 +84,29 @@ import type {
             <div class="overflow-x-auto">
               <div class="min-w-[900px]">
                 <!-- Table header -->
-                <div class="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_auto] gap-2 px-5 py-2 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-                  <div>Deliverable</div>
-                  <div>Owner</div>
-                  <div>Handoff Status</div>
-                  <div>Context / Notes</div>
-                  <div class="text-right">Actions</div>
+                <div class="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_auto] gap-2 px-5 py-2 bg-muted text-foreground-60 uppercase tracking-wide">
+                  <modus-typography size="xs" weight="semibold">Deliverable</modus-typography>
+                  <modus-typography size="xs" weight="semibold">Owner</modus-typography>
+                  <modus-typography size="xs" weight="semibold">Handoff Status</modus-typography>
+                  <modus-typography size="xs" weight="semibold">Context / Notes</modus-typography>
+                  <modus-typography size="xs" weight="semibold" className="text-right">Actions</modus-typography>
                 </div>
                 <!-- Rows -->
                 @for (d of section.deliverables; track d.name) {
                   <div class="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_auto] gap-2 px-5 py-3 border-top-default items-start">
                     <!-- Deliverable -->
                     <div>
-                      <div class="text-sm font-medium text-foreground">{{ d.name }}</div>
-                      <div class="text-xs text-foreground-40">{{ d.editedAgo }}</div>
+                      <modus-typography  hierarchy="p" size="sm" className="font-medium text-foreground">{{ d.name }}</modus-typography>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ d.editedAgo }}</modus-typography>
                     </div>
                     <!-- Owner -->
                     <div class="flex items-center gap-2">
-                      <div class="flex items-center justify-center w-6 h-6 rounded-full bg-secondary text-foreground text-2xs font-bold flex-shrink-0">
-                        {{ d.ownerInitials }}
+                      <div class="flex items-center justify-center w-6 h-6 rounded-full bg-secondary text-foreground flex-shrink-0">
+                        <modus-typography size="xs" weight="bold" className="text-2xs">{{ d.ownerInitials }}</modus-typography>
                       </div>
                       <div>
-                        <div class="text-sm text-foreground">{{ d.owner }}</div>
-                        <div class="text-xs text-foreground-40">{{ d.ownerRole }}</div>
+                        <modus-typography  hierarchy="p" size="sm" className="text-foreground">{{ d.owner }}</modus-typography>
+                        <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ d.ownerRole }}</modus-typography>
                       </div>
                     </div>
                     <!-- Handoff Status -->
@@ -116,11 +117,11 @@ import type {
                     </div>
                     <!-- Context / Notes -->
                     <div>
-                      <div class="text-sm text-foreground-60">{{ d.context }}</div>
+                      <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ d.context }}</modus-typography>
                       @if (d.warning) {
-                        <div class="flex items-center gap-1 mt-1 text-xs text-destructive">
+                        <div class="flex items-center gap-1 mt-1 text-destructive">
                           <i class="modus-icons text-xs" aria-hidden="true">warning</i>
-                          {{ d.warning }}
+                          <modus-typography size="xs">{{ d.warning }}</modus-typography>
                         </div>
                       }
                     </div>

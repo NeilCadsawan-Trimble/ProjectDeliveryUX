@@ -52,6 +52,7 @@ import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { rewriteDynamicNeeds, injectScheduleOverdue, sortProjectsByUrgency, rewriteBudgetRisk } from './projects-page-utils';
 import { RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, type NavItem } from '../project-dashboard/project-dashboard.config';
 import { CreateMenuDropdownComponent } from '../../shared/create-menu-dropdown.component';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
 type ContentBlock = 'owner' | 'schedule' | 'budget' | 'weather'
   | 'urgentNeeds' | 'sparkline' | 'costBreakdown' | 'insight' | 'moreNeeds'
@@ -99,7 +100,7 @@ const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline
 
 @Component({
   selector: 'app-projects-page',
-  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent, ChartComponent, CreateMenuDropdownComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent, ChartComponent, CreateMenuDropdownComponent, ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',

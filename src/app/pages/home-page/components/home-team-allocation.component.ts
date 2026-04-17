@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { TeamMember } from '../../../data/project-data';
 
 export interface ProjectTeamInput {
@@ -20,20 +21,21 @@ interface PersonRow {
 @Component({
   selector: 'app-home-team-allocation',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col gap-2 h-full min-h-0 p-4">
       <div class="flex items-center gap-2 shrink-0">
         <div class="flex items-center bg-secondary rounded">
-          <div class="px-3 py-1 text-xs font-medium rounded cursor-pointer transition-colors"
+          <div class="px-3 py-1 rounded cursor-pointer transition-colors"
             [class]="viewMode() === 'person' ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground'"
-            (click)="viewMode.set('person')">By Person</div>
-          <div class="px-3 py-1 text-xs font-medium rounded cursor-pointer transition-colors"
+            (click)="viewMode.set('person')"><modus-typography size="xs" weight="semibold">By Person</modus-typography></div>
+          <div class="px-3 py-1 rounded cursor-pointer transition-colors"
             [class]="viewMode() === 'project' ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground'"
-            (click)="viewMode.set('project')">By Project</div>
+            (click)="viewMode.set('project')"><modus-typography size="xs" weight="semibold">By Project</modus-typography></div>
         </div>
         @if (overallocatedCount() > 0) {
-          <div class="text-2xs font-medium text-destructive">{{ overallocatedCount() }} overallocated</div>
+          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ overallocatedCount() }} overallocated</modus-typography>
         }
       </div>
       <div class="flex-1 min-h-0 overflow-y-auto">
@@ -42,26 +44,26 @@ interface PersonRow {
             <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0 flex-1">
-                  <div class="text-sm font-medium text-foreground truncate">{{ person.name }}</div>
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ person.name }}</modus-typography>
                   @if (person.overallocated) {
-                    <div class="rounded px-1.5 py-0.5 bg-destructive-20 text-2xs font-medium text-destructive shrink-0">{{ person.projects.length }} projects</div>
+                    <div class="rounded px-1.5 py-0.5 bg-destructive-20 text-destructive shrink-0"><modus-typography size="xs" weight="semibold" className="text-2xs">{{ person.projects.length }} projects</modus-typography></div>
                   }
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   <div class="h-1.5 w-12 rounded-full bg-muted overflow-hidden">
                     <div class="h-full rounded-full" [class]="person.avgAvailability < 30 ? 'bg-destructive' : person.avgAvailability < 60 ? 'bg-warning' : 'bg-success'" [style.width.%]="person.avgAvailability"></div>
                   </div>
-                  <div class="text-2xs tabular-nums text-foreground-60 w-8 text-right">{{ person.avgAvailability }}%</div>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60 tabular-nums w-8 text-right">{{ person.avgAvailability }}%</modus-typography>
                 </div>
               </div>
-              <div class="flex items-center gap-2 text-2xs text-foreground-60">
-                <div>{{ person.role }}</div>
+              <div class="flex items-center gap-2">
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ person.role }}</modus-typography>
                 <div class="w-1 h-1 rounded-full bg-foreground-20"></div>
-                <div>{{ person.totalTasksCompleted }}/{{ person.totalTasksTotal }} tasks</div>
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ person.totalTasksCompleted }}/{{ person.totalTasksTotal }} tasks</modus-typography>
               </div>
               <div class="flex flex-wrap gap-1 mt-0.5">
                 @for (proj of person.projects; track proj) {
-                  <div class="rounded px-1.5 py-0.5 bg-primary-20 text-2xs text-primary">{{ proj }}</div>
+                  <div class="rounded px-1.5 py-0.5 bg-primary-20 text-primary"><modus-typography size="xs" className="text-2xs">{{ proj }}</modus-typography></div>
                 }
               </div>
             </div>
@@ -73,14 +75,14 @@ interface PersonRow {
               (click)="projectClick.emit(pt.projectId)"
               (keydown.enter)="projectClick.emit(pt.projectId)">
               <div class="flex items-center justify-between gap-2">
-                <div class="text-sm font-medium text-foreground truncate min-w-0 flex-1">{{ pt.projectName }}</div>
-                <div class="text-2xs text-foreground-60 shrink-0">{{ pt.team.length }} members</div>
+                <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate min-w-0 flex-1">{{ pt.projectName }}</modus-typography>
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-60 shrink-0">{{ pt.team.length }} members</modus-typography>
               </div>
               <div class="flex flex-wrap gap-1">
                 @for (m of pt.team; track m.id) {
-                  <div class="rounded px-1.5 py-0.5 text-2xs"
+                  <div class="rounded px-1.5 py-0.5"
                     [class]="m.availability < 30 ? 'bg-destructive-20 text-destructive' : m.availability < 60 ? 'bg-warning-20 text-warning' : 'bg-muted text-foreground-60'">
-                    {{ m.name }} ({{ m.availability }}%)
+                    <modus-typography size="xs" className="text-2xs">{{ m.name }} ({{ m.availability }}%)</modus-typography>
                   </div>
                 }
               </div>

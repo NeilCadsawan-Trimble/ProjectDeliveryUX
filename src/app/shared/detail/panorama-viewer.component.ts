@@ -11,10 +11,12 @@ import {
   viewChild,
 } from '@angular/core';
 import type { Viewer } from '@photo-sphere-viewer/core';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
 @Component({
   selector: 'app-panorama-viewer',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent],
   template: `
     <div class="relative w-full h-full">
       <div #viewerContainer class="w-full h-full"></div>
@@ -23,7 +25,7 @@ import type { Viewer } from '@photo-sphere-viewer/core';
         <div class="absolute inset-0 flex items-center justify-center bg-secondary">
           <div class="flex items-center gap-2 text-foreground-60">
             <i class="modus-icons text-lg animate-spin" aria-hidden="true">refresh</i>
-            <div class="text-sm">Loading panorama...</div>
+            <modus-typography hierarchy="p" size="sm">Loading panorama...</modus-typography>
           </div>
         </div>
       }
@@ -32,7 +34,7 @@ import type { Viewer } from '@photo-sphere-viewer/core';
         <div class="absolute inset-0 flex items-center justify-center bg-secondary">
           <div class="flex flex-col items-center gap-2 text-foreground-60">
             <i class="modus-icons text-2xl" aria-hidden="true">warning</i>
-            <div class="text-sm">{{ error() }}</div>
+            <modus-typography hierarchy="p" size="sm">{{ error() }}</modus-typography>
           </div>
         </div>
       }
@@ -61,7 +63,7 @@ import type { Viewer } from '@photo-sphere-viewer/core';
         </div>
 
         <div class="absolute top-3 right-3 bg-card border-default rounded-lg px-2.5 py-1 shadow-toolbar">
-          <div class="text-2xs text-foreground-60 font-medium tracking-wide uppercase">360</div>
+          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 tracking-wide uppercase">360</modus-typography>
         </div>
       }
     </div>

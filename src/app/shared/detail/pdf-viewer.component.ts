@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
 const PDFJS_CDN = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38';
 
@@ -25,6 +26,7 @@ async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: 
 @Component({
   selector: 'app-pdf-viewer',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModusTypographyComponent],
   template: `
     <div class="relative w-full h-full">
       <div
@@ -54,7 +56,7 @@ async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: 
         <div class="absolute inset-0 flex items-center justify-center bg-secondary">
           <div class="flex items-center gap-2 text-foreground-60">
             <i class="modus-icons text-lg animate-spin" aria-hidden="true">refresh</i>
-            <div class="text-sm">Loading PDF...</div>
+            <modus-typography hierarchy="p" size="sm">Loading PDF...</modus-typography>
           </div>
         </div>
       }
@@ -63,14 +65,14 @@ async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: 
         <div class="absolute inset-0 flex items-center justify-center bg-secondary">
           <div class="flex flex-col items-center gap-2 text-foreground-60">
             <i class="modus-icons text-2xl" aria-hidden="true">warning</i>
-            <div class="text-sm">{{ error() }}</div>
+            <modus-typography hierarchy="p" size="sm">{{ error() }}</modus-typography>
           </div>
         </div>
       }
 
       @if (nativePercent() !== null && zoom() !== 1) {
         <div class="absolute bottom-3 right-3 flex items-center gap-2 bg-card border-default rounded-lg px-3 py-1.5 shadow-toolbar">
-          <div class="text-xs text-foreground-60 font-medium">{{ nativePercent() }}%</div>
+          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">{{ nativePercent() }}%</modus-typography>
           <div class="w-7 h-7 rounded flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
             role="button" tabindex="0" aria-label="Reset zoom" (click)="resetZoom()">
             <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">refresh</i>

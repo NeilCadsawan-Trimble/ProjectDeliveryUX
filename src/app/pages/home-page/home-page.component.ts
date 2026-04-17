@@ -94,6 +94,8 @@ import type { ProjectTeamInput } from './components/home-team-allocation.compone
 import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
 import { CreateMenuDropdownComponent } from '../../shared/create-menu-dropdown.component';
 import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.component';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { ModusTextInputComponent } from '../../components/modus-text-input.component';
 
 @Component({
   selector: 'app-home-page',
@@ -124,6 +126,8 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
     WidgetFrameComponent,
     CreateMenuDropdownComponent,
     StatusFilterPillsComponent,
+    ModusTypographyComponent,
+    ModusTextInputComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -139,8 +143,8 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
       <div #pageHeader class="pointer-events-auto">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, {{ personaFirstName() }}</div>
-          <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+          <modus-typography hierarchy="h1" size="xl" weight="bold">Welcome back, {{ personaFirstName() }}</modus-typography>
+          <modus-typography hierarchy="p" size="sm" className="text-foreground-60 mt-1">{{ today }}</modus-typography>
         </div>
         <app-create-menu-dropdown #createDropdownDesktop
           [allItems]="allCreateItems" [frequentItems]="frequentlyUsedItems"
@@ -189,7 +193,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                     [class]="detail.type === 'rfi' ? rfiStatusColor(detail.item.status) : submittalStatusColor(detail.item.status)">
                     <i class="modus-icons text-base text-primary-foreground" aria-hidden="true">{{ detail.type === 'rfi' ? 'clipboard' : 'document' }}</i>
                   </div>
-                  <div class="text-sm font-semibold text-foreground truncate">{{ detail.item.number }}</div>
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ detail.item.number }}</modus-typography>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <div class="relative">
@@ -198,7 +202,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       (mousedown)="$event.stopPropagation()">
                       <div class="w-2 h-2 rounded-full"
                         [class]="detail.type === 'rfi' ? rfiStatusColor(detail.item.status) : submittalStatusColor(detail.item.status)"></div>
-                      <div class="text-xs font-medium text-foreground">{{ detail.type === 'rfi' ? rfiStatusLabel(detail.item.status) : submittalStatusLabel(detail.item.status) }}</div>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold">{{ detail.type === 'rfi' ? rfiStatusLabel(detail.item.status) : submittalStatusLabel(detail.item.status) }}</modus-typography>
                       <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
                     </div>
                     @if (canvasHeaderStatusOpen() === widgetId) {
@@ -209,7 +213,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                             role="option" [attr.aria-selected]="opt.value === detail.item.status"
                             (click)="onCanvasHeaderStatusSelect(widgetId, opt.value, $event)">
                             <div class="w-2 h-2 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
-                            <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
+                            <modus-typography hierarchy="p" size="sm" weight="semibold">{{ opt.label }}</modus-typography>
                             @if (opt.value === detail.item.status) {
                               <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
                             }
@@ -232,11 +236,14 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                 <div class="bg-card border-bottom-default flex-shrink-0">
                   <div class="flex items-center justify-between px-4 py-2 gap-4">
                     <div class="flex items-center gap-2 flex-1 max-w-xs">
-                      <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
-                        <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
-                        <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
-                          [placeholder]="snConfig.searchPlaceholder" [value]="detailSubnavSearch()" (input)="detailSubnavSearch.set($any($event.target).value)" />
-                      </div>
+                      <modus-text-input
+                        [includeSearch]="true"
+                        [bordered]="false"
+                        size="sm"
+                        [placeholder]="snConfig.searchPlaceholder"
+                        [value]="detailSubnavSearch()"
+                        (inputChange)="detailSubnavSearch.set($any($event).detail?.target?.value ?? '')"
+                      />
                       <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
                         role="button" tabindex="0" aria-label="Filter">
                         <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
@@ -331,20 +338,20 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                 <div class="flex items-center gap-3 min-w-0">
                   <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">image</i>
                   <div class="min-w-0">
-                    <div class="text-sm font-semibold text-foreground truncate">{{ detail.item.title }}</div>
-                    <div class="text-xs text-foreground-40">{{ detail.item.revision }} &middot; {{ detail.item.date }}</div>
+                    <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ detail.item.title }}</modus-typography>
+                    <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ detail.item.revision }} &middot; {{ detail.item.date }}</modus-typography>
                   </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <div class="flex items-center gap-1.5 cursor-pointer" (click)="toggleDrawingEditMode()" (mousedown)="$event.stopPropagation()"
                     [attr.aria-label]="drawingEditMode() ? 'Switch to View mode' : 'Switch to Edit mode'" role="switch" [attr.aria-checked]="drawingEditMode()">
-                    <div class="text-2xs font-medium" [class.text-foreground-40]="drawingEditMode()" [class.text-foreground-60]="!drawingEditMode()">View</div>
+                    <modus-typography hierarchy="p" size="xs" weight="semibold" [className]="drawingEditMode() ? 'text-foreground-40' : 'text-foreground-60'">View</modus-typography>
                     <div class="relative w-8 h-[18px] rounded-full transition-colors duration-200"
                       [class.bg-primary]="drawingEditMode()" [class.bg-secondary]="!drawingEditMode()">
                       <div class="absolute top-[2px] w-[14px] h-[14px] rounded-full bg-card shadow-sm transition-all duration-200"
                         [style.left.px]="drawingEditMode() ? 16 : 2"></div>
                     </div>
-                    <div class="text-2xs font-medium" [class.text-primary]="drawingEditMode()" [class.text-foreground-40]="!drawingEditMode()">Edit</div>
+                    <modus-typography hierarchy="p" size="xs" weight="semibold" [className]="drawingEditMode() ? 'text-primary' : 'text-foreground-40'">Edit</modus-typography>
                   </div>
                   <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                     (click)="openCanvasDetailInNewTab(widgetId)" (mousedown)="$event.stopPropagation()" aria-label="Open in new tab">
@@ -360,11 +367,13 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                 <div class="bg-card border-bottom-default flex-shrink-0 shadow-bottom relative z-10">
                   <div class="flex items-center justify-between px-4 py-2 gap-4">
                     <div class="flex items-center gap-2 flex-1 max-w-xs">
-                      <div class="flex items-center gap-2 bg-secondary rounded px-3 py-1.5 flex-1">
-                        <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">search</i>
-                        <input type="text" class="bg-transparent border-none outline-none text-sm text-foreground placeholder:text-foreground-40 w-full"
-                          placeholder="Search in drawing..." (mousedown)="$event.stopPropagation()" />
-                      </div>
+                      <modus-text-input
+                        [includeSearch]="true"
+                        [bordered]="false"
+                        size="sm"
+                        placeholder="Search in drawing..."
+                        (mousedown)="$event.stopPropagation()"
+                      />
                       <div class="flex items-center justify-center w-8 h-8 rounded cursor-pointer hover:bg-secondary transition-colors duration-150"
                         role="button" tabindex="0" aria-label="Filter" (mousedown)="$event.stopPropagation()">
                         <i class="modus-icons text-base text-foreground-60" aria-hidden="true">filter</i>
@@ -417,8 +426,8 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                 @if (isCanvasMode()) {
                 <div class="flex items-start justify-between h-full">
                   <div>
-                    <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Welcome back, {{ personaFirstName() }}</div>
-                    <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+                    <modus-typography hierarchy="h1" size="xl" weight="bold">Welcome back, {{ personaFirstName() }}</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" className="text-foreground-60 mt-1">{{ today }}</modus-typography>
                   </div>
                   <app-create-menu-dropdown class="mt-1" #createDropdownCanvas
                     [allItems]="allCreateItems" [frequentItems]="frequentlyUsedItems"
@@ -485,15 +494,15 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       }
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Time Off</div>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold">Time Off</modus-typography>
                       @if (criticalStaffingConflicts().length) {
                         <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive-20">
                           <i class="modus-icons text-2xs text-destructive" aria-hidden="true">warning</i>
-                          <div class="text-xs font-medium text-destructive">{{ criticalStaffingConflicts().length }} conflict{{ criticalStaffingConflicts().length === 1 ? '' : 's' }}</div>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ criticalStaffingConflicts().length }} conflict{{ criticalStaffingConflicts().length === 1 ? '' : 's' }}</modus-typography>
                         </div>
                       } @else if (pendingTimeOffCount() > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
-                          <div class="text-xs font-medium text-warning">{{ pendingTimeOffCount() }} pending</div>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-warning">{{ pendingTimeOffCount() }} pending</modus-typography>
                         </div>
                       }
                     </div>
@@ -505,7 +514,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
                       >
                         <div
-                          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                          class="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-colors duration-150 select-none"
                           [class.bg-primary]="timeOffView() === 'list'"
                           [class.text-primary-foreground]="timeOffView() === 'list'"
                           [class.text-foreground-60]="timeOffView() !== 'list'"
@@ -517,11 +526,11 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                           (keydown.space)="$event.preventDefault(); timeOffView.set('list')"
                         >
                           <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
-                          <div>List</div>
+                          <modus-typography size="xs" weight="semibold">List</modus-typography>
                         </div>
                         <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
                         <div
-                          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                          class="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-colors duration-150 select-none"
                           [class.bg-primary]="timeOffView() === 'staffing'"
                           [class.text-primary-foreground]="timeOffView() === 'staffing'"
                           [class.text-foreground-60]="timeOffView() !== 'staffing'"
@@ -533,11 +542,11 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                           (keydown.space)="$event.preventDefault(); timeOffView.set('staffing')"
                         >
                           <i class="modus-icons text-sm" aria-hidden="true">people_group</i>
-                          <div>Staffing</div>
+                          <modus-typography size="xs" weight="semibold">Staffing</modus-typography>
                         </div>
                         <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
                         <div
-                          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                          class="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-colors duration-150 select-none"
                           [class.bg-primary]="timeOffView() === 'calendar'"
                           [class.text-primary-foreground]="timeOffView() === 'calendar'"
                           [class.text-foreground-60]="timeOffView() !== 'calendar'"
@@ -549,7 +558,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                           (keydown.space)="$event.preventDefault(); timeOffView.set('calendar')"
                         >
                           <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                          <div>Calendar</div>
+                          <modus-typography size="xs" weight="semibold">Calendar</modus-typography>
                         </div>
                       </div>
                     }
@@ -557,7 +566,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   @if (timeOffInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ timeOffInsight() }}</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ timeOffInsight() }}</modus-typography>
                     </div>
                   }
 
@@ -576,11 +585,10 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                             <i class="modus-icons text-base {{ item.colorText }}" aria-hidden="true">{{ item.icon }}</i>
                           </div>
                           <div class="flex-1 min-w-0">
-                            <div class="text-xs text-foreground-60">{{ item.label }}</div>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ item.label }}</modus-typography>
                           </div>
-                          <div class="text-lg font-bold"
-                            [class.text-foreground]="item.key !== 'Denied'"
-                            [class.text-destructive]="item.key === 'Denied'">{{ timeOffCounts()[item.key] }}</div>
+                          <modus-typography hierarchy="p" size="lg" weight="bold"
+                            [className]="item.key === 'Denied' ? 'text-destructive' : 'text-foreground'">{{ timeOffCounts()[item.key] }}</modus-typography>
                           <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                         </div>
                       }
@@ -601,8 +609,8 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                                 [class.text-destructive]="conflict.severity === 'critical'"
                                 [class.text-warning]="conflict.severity === 'warning'">warning</i>
                               <div class="flex-1 min-w-0">
-                                <div class="text-xs font-semibold text-foreground truncate">{{ conflict.projectName }}</div>
-                                <div class="text-2xs text-foreground-60">{{ conflict.week }} -- {{ conflict.reason }}</div>
+                                <modus-typography hierarchy="p" size="xs" weight="semibold" className="truncate">{{ conflict.projectName }}</modus-typography>
+                                <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ conflict.week }} -- {{ conflict.reason }}</modus-typography>
                               </div>
                               <i class="modus-icons text-xs text-foreground-40 flex-shrink-0" aria-hidden="true">chevron_right</i>
                             </div>
@@ -610,34 +618,34 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         </div>
                       }
                       <div class="overflow-y-auto flex-1" role="table" aria-label="Time off requests">
-                        <div class="grid grid-cols-[2fr_2fr_1fr_2fr_0.5fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-                          <div role="columnheader">Employee</div>
-                          <div role="columnheader">Project</div>
-                          <div role="columnheader">Type</div>
-                          <div role="columnheader">Dates</div>
-                          <div role="columnheader">Days</div>
-                          <div role="columnheader">Status</div>
+                        <div class="grid grid-cols-[2fr_2fr_1fr_2fr_0.5fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default" role="row">
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Employee</modus-typography>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Project</modus-typography>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Type</modus-typography>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Dates</modus-typography>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Days</modus-typography>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Status</modus-typography>
                         </div>
                         @for (req of filteredTimeOff(); track req.id) {
                           <div class="grid grid-cols-[2fr_2fr_1fr_2fr_0.5fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
                             <div class="flex items-center gap-2" role="cell">
-                              <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold flex items-center justify-center flex-shrink-0" aria-hidden="true">
-                                {{ req.initials }}
+                              <div class="w-7 h-7 rounded-full bg-primary-20 text-primary flex items-center justify-center flex-shrink-0" aria-hidden="true">
+                                <modus-typography size="xs" weight="semibold">{{ req.initials }}</modus-typography>
                               </div>
-                              <div class="text-sm font-medium text-foreground truncate">{{ req.name }}</div>
+                              <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ req.name }}</modus-typography>
                             </div>
-                            <div class="text-xs text-foreground-60 truncate" role="cell">{{ req.projectName }}</div>
-                            <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit" role="cell">{{ req.type }}</div>
-                            <div class="text-sm text-foreground-80" role="cell">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</div>
-                            <div class="text-sm text-foreground-60" role="cell">{{ req.days }}d</div>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate" role="cell">{{ req.projectName }}</modus-typography>
+                            <modus-typography hierarchy="p" size="xs" className="bg-muted text-foreground-80 rounded px-2 py-1 inline-block w-fit" role="cell">{{ req.type }}</modus-typography>
+                            <modus-typography hierarchy="p" size="sm" className="text-foreground-80" role="cell">{{ req.startDate }}@if (req.startDate !== req.endDate) { – {{ req.endDate }}}</modus-typography>
+                            <modus-typography hierarchy="p" size="sm" className="text-foreground-60" role="cell">{{ req.days }}d</modus-typography>
                             <div role="cell" data-timeoff-dropdown>
-                              <div class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full cursor-pointer select-none
+                              <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full cursor-pointer select-none
                                 {{ req.status === 'Approved' ? 'bg-success-20 text-success' :
                                    req.status === 'Pending'  ? 'bg-warning-20 text-warning' :
                                    'bg-destructive-20 text-destructive' }}"
                                 (click)="toggleTimeOffStatus(req.id, $event)"
                                 (mousedown)="$event.stopPropagation()">
-                                {{ req.status }}
+                                <modus-typography size="xs" weight="semibold">{{ req.status }}</modus-typography>
                                 <i class="modus-icons text-2xs" aria-hidden="true">caret_down</i>
                               </div>
                             </div>
@@ -650,20 +658,20 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       <div class="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-3">
                         <div class="grid grid-cols-4 gap-3">
                           <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
-                            <div class="text-2xl font-bold text-foreground">{{ timeOffRequests().length }}</div>
-                            <div class="text-2xs text-foreground-60 text-center">Total Requests</div>
+                            <modus-typography hierarchy="p" size="xl" weight="bold">{{ timeOffRequests().length }}</modus-typography>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 text-center">Total Requests</modus-typography>
                           </div>
                           <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
-                            <div class="text-2xl font-bold" [class.text-warning]="pendingTimeOffCount() > 0" [class.text-foreground]="pendingTimeOffCount() === 0">{{ pendingTimeOffCount() }}</div>
-                            <div class="text-2xs text-foreground-60 text-center">Pending</div>
+                            <modus-typography hierarchy="p" size="xl" weight="bold" [className]="pendingTimeOffCount() > 0 ? 'text-warning' : 'text-foreground'">{{ pendingTimeOffCount() }}</modus-typography>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 text-center">Pending</modus-typography>
                           </div>
                           <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
-                            <div class="text-2xl font-bold text-foreground">{{ allStaffingConflicts().length }}</div>
-                            <div class="text-2xs text-foreground-60 text-center">Conflict Weeks</div>
+                            <modus-typography hierarchy="p" size="xl" weight="bold">{{ allStaffingConflicts().length }}</modus-typography>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 text-center">Conflict Weeks</modus-typography>
                           </div>
                           <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
-                            <div class="text-2xl font-bold" [class.text-destructive]="criticalStaffingConflicts().length > 0" [class.text-foreground]="criticalStaffingConflicts().length === 0">{{ criticalStaffingConflicts().length }}</div>
-                            <div class="text-2xs text-foreground-60 text-center">At Risk</div>
+                            <modus-typography hierarchy="p" size="xl" weight="bold" [className]="criticalStaffingConflicts().length > 0 ? 'text-destructive' : 'text-foreground'">{{ criticalStaffingConflicts().length }}</modus-typography>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 text-center">At Risk</modus-typography>
                           </div>
                         </div>
 
@@ -680,22 +688,22 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                           >
                             <div class="flex items-center justify-between">
                               <div class="flex items-center gap-2 min-w-0">
-                                <div class="text-sm font-semibold text-foreground truncate">{{ proj.projectName }}</div>
+                                <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ proj.projectName }}</modus-typography>
                                 @if (proj.worstWeek?.severity === 'critical') {
                                   <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-destructive-20 flex-shrink-0">
                                     <i class="modus-icons text-2xs text-destructive" aria-hidden="true">warning</i>
-                                    <div class="text-2xs font-medium text-destructive">Critical</div>
+                                    <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">Critical</modus-typography>
                                   </div>
                                 } @else if (proj.worstWeek?.severity === 'warning') {
                                   <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning-20 flex-shrink-0">
                                     <i class="modus-icons text-2xs text-warning" aria-hidden="true">warning</i>
-                                    <div class="text-2xs font-medium text-warning">Reduced</div>
+                                    <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-warning">Reduced</modus-typography>
                                   </div>
                                 }
                               </div>
                               <div class="flex items-center gap-3 flex-shrink-0">
-                                <div class="text-xs text-foreground-60">{{ proj.requestCount }} req</div>
-                                <div class="text-xs text-foreground-60">{{ proj.totalDaysOut }}d out</div>
+                                <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ proj.requestCount }} req</modus-typography>
+                                <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ proj.totalDaysOut }}d out</modus-typography>
                                 <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">chevron_right</i>
                               </div>
                             </div>
@@ -709,18 +717,18 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                                   [style.width.%]="proj.worstWeek ? proj.worstWeek.absentPct : 0"
                                 ></div>
                               </div>
-                              <div class="text-2xs text-foreground-60 w-10 text-right flex-shrink-0">
+                              <modus-typography hierarchy="p" size="xs" className="text-foreground-60 w-10 text-right flex-shrink-0">
                                 @if (proj.worstWeek) {
                                   {{ proj.worstWeek.absentPct }}%
                                 } @else {
                                   0%
                                 }
-                              </div>
+                              </modus-typography>
                             </div>
                             @if (proj.worstWeek) {
-                              <div class="text-2xs text-foreground-60">
+                              <modus-typography hierarchy="p" size="xs" className="text-foreground-60">
                                 Peak: {{ proj.worstWeek.week }} -- {{ proj.worstWeek.absentCount }}/{{ proj.worstWeek.teamSize }} absent ({{ proj.worstWeek.absentees.join(', ') }})
-                              </div>
+                              </modus-typography>
                             }
                           </div>
                         }
@@ -741,7 +749,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                           >
                             <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
                           </div>
-                          <div class="text-sm font-semibold text-foreground" aria-live="polite">{{ calendarMonthLabel() }}</div>
+                          <modus-typography hierarchy="p" size="sm" weight="semibold" aria-live="polite">{{ calendarMonthLabel() }}</modus-typography>
                           <div
                             class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                             role="button"
@@ -756,7 +764,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         </div>
                         <div class="grid grid-cols-7 px-3 pt-2 pb-1 flex-shrink-0">
                           @for (d of ['Su','Mo','Tu','We','Th','Fr','Sa']; track d) {
-                            <div class="text-center text-2xs font-semibold text-foreground-40 uppercase py-1">{{ d }}</div>
+                            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-center text-foreground-40 uppercase py-1">{{ d }}</modus-typography>
                           }
                         </div>
                         <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1">
@@ -766,14 +774,14 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                               [class.bg-primary-20]="cell.requests.length > 0"
                             >
                               @if (cell.day !== null) {
-                                <div class="text-xs font-medium text-foreground-60 text-center leading-4">{{ cell.day }}</div>
+                                <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 text-center leading-4">{{ cell.day }}</modus-typography>
                                 @for (req of cell.requests.slice(0, 2); track req.id) {
                                   <div class="flex items-center gap-1 rounded px-1 py-0.5 {{ timeOffStatusColor(req.status) }}">
-                                    <div class="text-2xs font-semibold leading-none truncate">{{ req.initials }}</div>
+                                    <modus-typography hierarchy="p" size="xs" weight="semibold" className="leading-none truncate">{{ req.initials }}</modus-typography>
                                   </div>
                                 }
                                 @if (cell.requests.length > 2) {
-                                  <div class="text-2xs text-foreground-60 text-center">+{{ cell.requests.length - 2 }}</div>
+                                  <modus-typography hierarchy="p" size="xs" className="text-foreground-60 text-center">+{{ cell.requests.length - 2 }}</modus-typography>
                                 }
                               }
                             </div>
@@ -782,15 +790,15 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                           <div class="flex items-center gap-1.5">
                             <div class="w-2.5 h-2.5 rounded-sm bg-success"></div>
-                            <div class="text-xs text-foreground-60">Approved</div>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Approved</modus-typography>
                           </div>
                           <div class="flex items-center gap-1.5">
                             <div class="w-2.5 h-2.5 rounded-sm bg-warning"></div>
-                            <div class="text-xs text-foreground-60">Pending</div>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Pending</modus-typography>
                           </div>
                           <div class="flex items-center gap-1.5">
                             <div class="w-2.5 h-2.5 rounded-sm bg-destructive"></div>
-                            <div class="text-xs text-foreground-60">Denied</div>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Denied</modus-typography>
                           </div>
                         </div>
                       </div>
@@ -804,11 +812,11 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                     data-timeoff-dropdown
                     (mousedown)="$event.stopPropagation()">
                     @for (opt of timeOffStatusOptions; track opt) {
-                      <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors duration-150 text-xs"
+                      <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted transition-colors duration-150"
                         (click)="onTimeOffStatusSelect(timeOffStatusOpen()!, opt, $event)">
                         <div class="w-2 h-2 rounded-full flex-shrink-0
                           {{ opt === 'Approved' ? 'bg-success' : opt === 'Pending' ? 'bg-warning' : 'bg-destructive' }}"></div>
-                        {{ opt }}
+                        <modus-typography size="xs">{{ opt }}</modus-typography>
                       </div>
                     }
                   </div>
@@ -829,8 +837,8 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Calendar</div>
-                      <div class="text-xs text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</div>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold">Calendar</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</modus-typography>
                     </div>
                     <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                       <div
@@ -843,12 +851,12 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
                       </div>
                       <div
-                        class="px-2 py-1 text-xs font-medium text-primary cursor-pointer hover:bg-primary-20 rounded transition-colors duration-150 select-none"
+                        class="px-2 py-1 text-primary cursor-pointer hover:bg-primary-20 rounded transition-colors duration-150 select-none"
                         role="button" tabindex="0" aria-label="Go to today"
                         (click)="resetCalendarToToday()"
                         (keydown.enter)="resetCalendarToToday()"
                         (keydown.space)="$event.preventDefault(); resetCalendarToToday()"
-                      >Today</div>
+                      ><modus-typography size="xs" weight="semibold">Today</modus-typography></div>
                       <div
                         class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
                         role="button" tabindex="0" aria-label="Next day"
@@ -863,27 +871,27 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   @if (calendarInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ calendarInsight() }}</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ calendarInsight() }}</modus-typography>
                     </div>
                   }
 
                   <div class="flex flex-shrink-0 border-bottom-default" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                     <div class="w-12 flex-shrink-0"></div>
                     <div class="flex-1 py-2 px-3 text-center border-right-default">
-                      <div class="text-xs font-semibold uppercase tracking-wide {{ calendarDay1Meta().isToday ? 'text-primary' : 'text-foreground-60' }}">
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="uppercase tracking-wide {{ calendarDay1Meta().isToday ? 'text-primary' : 'text-foreground-60' }}">
                         {{ calendarDay1Meta().label }}
-                      </div>
-                      <div class="text-2xl font-bold leading-tight {{ calendarDay1Meta().isToday ? 'text-primary' : 'text-foreground' }}">
+                      </modus-typography>
+                      <modus-typography hierarchy="p" size="xl" weight="bold" className="leading-tight {{ calendarDay1Meta().isToday ? 'text-primary' : 'text-foreground' }}">
                         {{ calendarDay1Meta().dayNum }}
-                      </div>
+                      </modus-typography>
                     </div>
                     <div class="flex-1 py-2 px-3 text-center">
-                      <div class="text-xs font-semibold uppercase tracking-wide {{ calendarDay2Meta().isToday ? 'text-primary' : 'text-foreground-60' }}">
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="uppercase tracking-wide {{ calendarDay2Meta().isToday ? 'text-primary' : 'text-foreground-60' }}">
                         {{ calendarDay2Meta().label }}
-                      </div>
-                      <div class="text-2xl font-bold leading-tight {{ calendarDay2Meta().isToday ? 'text-primary' : 'text-foreground' }}">
+                      </modus-typography>
+                      <modus-typography hierarchy="p" size="xl" weight="bold" className="leading-tight {{ calendarDay2Meta().isToday ? 'text-primary' : 'text-foreground' }}">
                         {{ calendarDay2Meta().dayNum }}
-                      </div>
+                      </modus-typography>
                     </div>
                   </div>
 
@@ -891,7 +899,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                     <div class="w-12 flex-shrink-0">
                       @for (hour of calendarHours; track hour) {
                         <div class="h-[60px] flex items-start justify-end pr-2 -mt-0">
-                          <div class="text-2xs text-foreground-40 mt-1">{{ formatCalHour(hour) }}</div>
+                          <modus-typography hierarchy="p" size="xs" className="text-foreground-40 mt-1">{{ formatCalHour(hour) }}</modus-typography>
                         </div>
                       }
                     </div>
@@ -901,16 +909,16 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       }
                       @for (appt of calendarDay1Appts(); track appt.id) {
                         <div
-                          class="absolute inset-x-1 rounded px-1.5 py-0.5 text-xs overflow-hidden border-l-2 {{ apptColor(appt.type) }}"
+                          class="absolute inset-x-1 rounded px-1.5 py-0.5 overflow-hidden border-l-2 {{ apptColor(appt.type) }}"
                           [class.cursor-pointer]="!!appt.projectSlug"
                           [class.cursor-default]="!appt.projectSlug"
                           [style.top.px]="apptTop(appt)"
                           [style.height.px]="apptHeight(appt)"
                           (click)="appt.projectSlug ? handleCalendarApptClick(appt.projectSlug) : null"
                         >
-                          <div class="font-medium leading-tight truncate">{{ appt.title }}</div>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="leading-tight truncate">{{ appt.title }}</modus-typography>
                           @if (apptHeight(appt) >= 36) {
-                            <div class="text-2xs opacity-70 mt-0.5">{{ formatApptTime(appt.startHour, appt.startMin) }} – {{ formatApptTime(appt.endHour, appt.endMin) }}</div>
+                            <modus-typography hierarchy="p" size="xs" className="opacity-70 mt-0.5">{{ formatApptTime(appt.startHour, appt.startMin) }} – {{ formatApptTime(appt.endHour, appt.endMin) }}</modus-typography>
                           }
                         </div>
                       }
@@ -926,16 +934,16 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       }
                       @for (appt of calendarDay2Appts(); track appt.id) {
                         <div
-                          class="absolute inset-x-1 rounded px-1.5 py-0.5 text-xs overflow-hidden border-l-2 {{ apptColor(appt.type) }}"
+                          class="absolute inset-x-1 rounded px-1.5 py-0.5 overflow-hidden border-l-2 {{ apptColor(appt.type) }}"
                           [class.cursor-pointer]="!!appt.projectSlug"
                           [class.cursor-default]="!appt.projectSlug"
                           [style.top.px]="apptTop(appt)"
                           [style.height.px]="apptHeight(appt)"
                           (click)="appt.projectSlug ? handleCalendarApptClick(appt.projectSlug) : null"
                         >
-                          <div class="font-medium leading-tight truncate">{{ appt.title }}</div>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="leading-tight truncate">{{ appt.title }}</modus-typography>
                           @if (apptHeight(appt) >= 36) {
-                            <div class="text-2xs opacity-70 mt-0.5">{{ formatApptTime(appt.startHour, appt.startMin) }} – {{ formatApptTime(appt.endHour, appt.endMin) }}</div>
+                            <modus-typography hierarchy="p" size="xs" className="opacity-70 mt-0.5">{{ formatApptTime(appt.startHour, appt.startMin) }} – {{ formatApptTime(appt.endHour, appt.endMin) }}</modus-typography>
                           }
                         </div>
                       }
@@ -950,23 +958,23 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                     <div class="flex items-center gap-1.5">
                       <div class="w-2 h-2 rounded-sm bg-primary"></div>
-                      <div class="text-xs text-foreground-60">Meeting</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Meeting</modus-typography>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <div class="w-2 h-2 rounded-sm bg-warning"></div>
-                      <div class="text-xs text-foreground-60">Review</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Review</modus-typography>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <div class="w-2 h-2 rounded-sm bg-success"></div>
-                      <div class="text-xs text-foreground-60">Call</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Call</modus-typography>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <div class="w-2 h-2 rounded-sm bg-destructive"></div>
-                      <div class="text-xs text-foreground-60">Deadline</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Deadline</modus-typography>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <div class="w-2 h-2 rounded-sm bg-secondary"></div>
-                      <div class="text-xs text-foreground-60">Focus</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Focus</modus-typography>
                     </div>
                   </div>
                 </div>
@@ -1000,10 +1008,10 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       }
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">clipboard</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">RFIs</div>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold">RFIs</modus-typography>
                       @if (rfiCounts().overdue > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                          <div class="text-xs font-medium text-destructive">{{ rfiCounts().overdue }} overdue</div>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ rfiCounts().overdue }} overdue</modus-typography>
                         </div>
                       }
                     </div>
@@ -1011,7 +1019,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   @if (rfisInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ rfisInsight() }}</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ rfisInsight() }}</modus-typography>
                     </div>
                   }
 
@@ -1038,11 +1046,10 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                               [class.text-success]="item.key === 'closed'">{{ item.icon }}</i>
                           </div>
                           <div class="flex-1 min-w-0">
-                            <div class="text-xs text-foreground-60">{{ item.label }}</div>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ item.label }}</modus-typography>
                           </div>
-                          <div class="text-lg font-bold"
-                            [class.text-foreground]="item.key !== 'overdue'"
-                            [class.text-destructive]="item.destructive">{{ rfiCounts()[item.key] }}</div>
+                          <modus-typography hierarchy="p" size="lg" weight="bold"
+                            [className]="item.destructive ? 'text-destructive' : 'text-foreground'">{{ rfiCounts()[item.key] }}</modus-typography>
                           <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                         </div>
                       }
@@ -1055,13 +1062,13 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         (filterChange)="onRfiFilterChange($event)"
                       />
                     }
-                    <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
-                      <div role="columnheader">RFI #</div>
-                      <div role="columnheader">Subject</div>
-                      <div role="columnheader">Project</div>
-                      <div role="columnheader">Assignee</div>
-                      <div role="columnheader">Due</div>
-                      <div role="columnheader">Status</div>
+                    <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0" role="row">
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">RFI #</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Subject</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Project</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Assignee</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Due</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Status</modus-typography>
                     </div>
                     <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
                       @for (rfi of filteredRfis(); track rfi.id) {
@@ -1072,20 +1079,20 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                           (keydown.enter)="openRfiDetail(rfi)"
                           (mousedown)="$event.stopPropagation()"
                         >
-                          <div class="text-sm font-medium text-primary" role="cell">{{ rfi.number }}</div>
-                          <div class="text-sm text-foreground truncate" role="cell">{{ rfi.subject }}</div>
-                          <div class="text-sm text-foreground-60 truncate" role="cell">{{ rfi.project }}</div>
-                          <div class="text-sm text-foreground-60" role="cell">{{ rfi.assignee }}</div>
-                          <div class="text-sm text-foreground-60" role="cell">{{ rfi.dueDate }}</div>
+                          <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-primary" role="cell">{{ rfi.number }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="truncate" role="cell">{{ rfi.subject }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="text-foreground-60 truncate" role="cell">{{ rfi.project }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="text-foreground-60" role="cell">{{ rfi.assignee }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="text-foreground-60" role="cell">{{ rfi.dueDate }}</modus-typography>
                           <div class="flex items-center gap-1.5" role="cell">
                             <div class="w-2 h-2 rounded-full {{ rfiStatusColor(rfi.status) }}" aria-hidden="true"></div>
-                            <div class="text-xs font-medium text-foreground-60">{{ rfiStatusLabel(rfi.status) }}</div>
+                            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">{{ rfiStatusLabel(rfi.status) }}</modus-typography>
                           </div>
                         </div>
                       } @empty {
                         <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                           <i class="modus-icons text-3xl mb-2" aria-hidden="true">clipboard</i>
-                          <div class="text-sm">No RFIs match this filter</div>
+                          <modus-typography hierarchy="p" size="sm">No RFIs match this filter</modus-typography>
                         </div>
                       }
                     </div>
@@ -1121,10 +1128,10 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       }
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Submittals</div>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold">Submittals</modus-typography>
                       @if (submittalCounts().overdue > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                          <div class="text-xs font-medium text-destructive">{{ submittalCounts().overdue }} overdue</div>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ submittalCounts().overdue }} overdue</modus-typography>
                         </div>
                       }
                     </div>
@@ -1132,7 +1139,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   @if (submittalsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ submittalsInsight() }}</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ submittalsInsight() }}</modus-typography>
                     </div>
                   }
 
@@ -1159,11 +1166,10 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                               [class.text-success]="item.key === 'closed'">{{ item.icon }}</i>
                           </div>
                           <div class="flex-1 min-w-0">
-                            <div class="text-xs text-foreground-60">{{ item.label }}</div>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ item.label }}</modus-typography>
                           </div>
-                          <div class="text-lg font-bold"
-                            [class.text-foreground]="item.key !== 'overdue'"
-                            [class.text-destructive]="item.destructive">{{ submittalCounts()[item.key] }}</div>
+                          <modus-typography hierarchy="p" size="lg" weight="bold"
+                            [className]="item.destructive ? 'text-destructive' : 'text-foreground'">{{ submittalCounts()[item.key] }}</modus-typography>
                           <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                         </div>
                       }
@@ -1176,31 +1182,31 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         (filterChange)="onSubmittalFilterChange($event)"
                       />
                     }
-                    <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
-                      <div role="columnheader">Sub #</div>
-                      <div role="columnheader">Subject</div>
-                      <div role="columnheader">Project</div>
-                      <div role="columnheader">Assignee</div>
-                      <div role="columnheader">Due</div>
-                      <div role="columnheader">Status</div>
+                    <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0" role="row">
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Sub #</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Subject</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Project</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Assignee</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Due</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Status</modus-typography>
                     </div>
                     <div class="overflow-y-auto flex-1" role="table" aria-label="Submittals" aria-live="polite">
                       @for (sub of filteredSubmittals(); track sub.id) {
                         <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="openSubmittalDetail(sub)" (keydown.enter)="openSubmittalDetail(sub)" (mousedown)="$event.stopPropagation()">
-                          <div class="text-sm font-medium text-primary" role="cell">{{ sub.number }}</div>
-                          <div class="text-sm text-foreground truncate" role="cell">{{ sub.subject }}</div>
-                          <div class="text-sm text-foreground-60 truncate" role="cell">{{ sub.project }}</div>
-                          <div class="text-sm text-foreground-60" role="cell">{{ sub.assignee }}</div>
-                          <div class="text-sm text-foreground-60" role="cell">{{ sub.dueDate }}</div>
+                          <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-primary" role="cell">{{ sub.number }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="truncate" role="cell">{{ sub.subject }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="text-foreground-60 truncate" role="cell">{{ sub.project }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="text-foreground-60" role="cell">{{ sub.assignee }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="text-foreground-60" role="cell">{{ sub.dueDate }}</modus-typography>
                           <div class="flex items-center gap-1.5" role="cell">
                             <div class="w-2 h-2 rounded-full {{ submittalStatusColor(sub.status) }}" aria-hidden="true"></div>
-                            <div class="text-xs font-medium text-foreground-60">{{ submittalStatusLabel(sub.status) }}</div>
+                            <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">{{ submittalStatusLabel(sub.status) }}</modus-typography>
                           </div>
                         </div>
                       } @empty {
                         <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                           <i class="modus-icons text-3xl mb-2" aria-hidden="true">document</i>
-                          <div class="text-sm">No submittals match this filter</div>
+                          <modus-typography hierarchy="p" size="sm">No submittals match this filter</modus-typography>
                         </div>
                       }
                     </div>
@@ -1229,7 +1235,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   @if (drawingsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ drawingsInsight() }}</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ drawingsInsight() }}</modus-typography>
                     </div>
                   }
 
@@ -1246,12 +1252,12 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                           <img [src]="entry.drawing.thumbnail" [alt]="entry.drawing.title" class="w-full h-full object-cover" loading="lazy" />
                         </div>
                         <div class="flex-1 min-w-0">
-                          <div class="text-sm font-medium text-foreground truncate">{{ entry.drawing.title }}</div>
-                          <div class="text-xs text-foreground-60 truncate">{{ entry.projectName }}</div>
+                          <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ entry.drawing.title }}</modus-typography>
+                          <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ entry.projectName }}</modus-typography>
                         </div>
                         <div class="flex-shrink-0 text-right">
-                          <div class="text-xs font-medium text-foreground-80">{{ entry.drawing.revision }}</div>
-                          <div class="text-xs text-foreground-40">{{ entry.drawing.date }}</div>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-80">{{ entry.drawing.revision }}</modus-typography>
+                          <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ entry.drawing.date }}</modus-typography>
                         </div>
                       </div>
                     }
@@ -1278,18 +1284,16 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                       class="flex items-center px-2 py-0.5 rounded-full flex-shrink-0"
                       [class]="weatherImpactProjects()[0].majorDays > 0 ? 'bg-destructive-20' : 'bg-warning-20'"
                     >
-                      <div
-                        class="text-xs font-medium"
-                        [class]="weatherImpactProjects()[0].majorDays > 0 ? 'text-destructive' : 'text-warning'"
-                      >
+                      <modus-typography hierarchy="p" size="xs" weight="semibold"
+                        [className]="weatherImpactProjects()[0].majorDays > 0 ? 'text-destructive' : 'text-warning'">
                         {{ weatherImpactProjects().length }} impacted
-                      </div>
+                      </modus-typography>
                     </div>
                   }
                   @if (weatherInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ weatherInsight() }}</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ weatherInsight() }}</modus-typography>
                     </div>
                   }
 
@@ -1305,25 +1309,25 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         >
                           <div class="flex items-center gap-2 flex-shrink-0">
                             <i class="modus-icons text-xl" [class]="weatherConditionColor(pw.weather.current.condition)" aria-hidden="true">{{ weatherConditionIcon(pw.weather.current.condition) }}</i>
-                            <div class="text-lg font-semibold text-foreground">{{ pw.weather.current.tempF }}&deg;</div>
+                            <modus-typography hierarchy="p" size="lg" weight="semibold">{{ pw.weather.current.tempF }}&deg;</modus-typography>
                           </div>
                           <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-1.5">
-                              <div class="text-sm font-medium text-foreground truncate">{{ pw.project.name }}</div>
+                              <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ pw.project.name }}</modus-typography>
                             </div>
-                            <div class="text-xs text-foreground-60">{{ pw.project.city }}, {{ pw.project.state }}</div>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ pw.project.city }}, {{ pw.project.state }}</modus-typography>
                           </div>
                           <div class="flex items-center gap-1.5 flex-shrink-0">
                             @if (pw.majorDays > 0) {
-                              <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-destructive-20 text-destructive text-2xs font-medium">
+                              <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-destructive-20 text-destructive">
                                 <i class="modus-icons text-2xs" aria-hidden="true">warning</i>
-                                {{ pw.majorDays }}d stop
+                                <modus-typography size="xs" weight="semibold" className="text-2xs">{{ pw.majorDays }}d stop</modus-typography>
                               </div>
                             }
                             @if (pw.minorDays > 0) {
-                              <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-warning-20 text-warning text-2xs font-medium">
+                              <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-warning-20 text-warning">
                                 <i class="modus-icons text-2xs" aria-hidden="true">warning</i>
-                                {{ pw.minorDays }}d caution
+                                <modus-typography size="xs" weight="semibold" className="text-2xs">{{ pw.minorDays }}d caution</modus-typography>
                               </div>
                             }
                             <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
@@ -1342,15 +1346,15 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         >
                           <div class="flex items-center gap-2 flex-shrink-0">
                             <i class="modus-icons text-lg" [class]="weatherConditionColor(pw.weather.current.condition)" aria-hidden="true">{{ weatherConditionIcon(pw.weather.current.condition) }}</i>
-                            <div class="text-sm font-medium text-foreground">{{ pw.weather.current.tempF }}&deg;</div>
+                            <modus-typography hierarchy="p" size="sm" weight="semibold">{{ pw.weather.current.tempF }}&deg;</modus-typography>
                           </div>
                           <div class="flex-1 min-w-0">
-                            <div class="text-xs text-foreground truncate">{{ pw.project.name }}</div>
-                            <div class="text-2xs text-foreground-40">{{ pw.project.city }}, {{ pw.project.state }}</div>
+                            <modus-typography hierarchy="p" size="xs" className="truncate">{{ pw.project.name }}</modus-typography>
+                            <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ pw.project.city }}, {{ pw.project.state }}</modus-typography>
                           </div>
                           <div class="flex items-center gap-1 flex-shrink-0">
-                            <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-success-20 text-success text-2xs font-medium">
-                              Clear
+                            <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-success-20 text-success">
+                              <modus-typography size="xs" weight="semibold" className="text-2xs">Clear</modus-typography>
                             </div>
                             <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                           </div>
@@ -1371,10 +1375,10 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-destructive" aria-hidden="true">warning</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Urgent Needs</div>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold">Urgent Needs</modus-typography>
                       @if (urgentCriticalCount() > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                          <div class="text-xs font-medium text-destructive">{{ urgentCriticalCount() }} critical</div>
+                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ urgentCriticalCount() }} critical</modus-typography>
                         </div>
                       }
                     </div>
@@ -1382,7 +1386,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   @if (urgentNeedsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ urgentNeedsInsight() }}</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ urgentNeedsInsight() }}</modus-typography>
                     </div>
                   }
 
@@ -1390,44 +1394,44 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                     <div class="flex items-center gap-1.5">
                       @for (sev of urgentSeverityOptions; track sev.key) {
                         <div
-                          class="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                          class="flex items-center gap-1 px-2.5 py-1 rounded-full cursor-pointer transition-colors duration-150 select-none"
                           [class]="urgentSeverityFilter().has(sev.key) ? sev.activeCls : 'bg-muted text-foreground-60 hover:bg-secondary'"
                           (click)="toggleUrgentSeverity(sev.key)"
                         >
                           <div class="w-1.5 h-1.5 rounded-full" [class]="sev.dotCls"></div>
-                          {{ sev.label }} ({{ urgentSeverityCounts()[sev.key] }})
+                          <modus-typography size="xs" weight="semibold">{{ sev.label }} ({{ urgentSeverityCounts()[sev.key] }})</modus-typography>
                         </div>
                       }
                     </div>
                     <div class="w-px h-5 bg-secondary flex-shrink-0 hidden md:block"></div>
                     <div class="relative flex-shrink-0" data-urgent-category-dropdown>
                       <div
-                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-colors duration-150 select-none"
                         [class]="urgentCategoryFilter() !== null ? 'bg-primary-20 text-primary' : 'bg-muted text-foreground-60 hover:bg-secondary'"
                         (click)="urgentCategoryDropdownOpen.set(!urgentCategoryDropdownOpen())"
                       >
                         <i class="modus-icons text-xs" aria-hidden="true">filter_list</i>
-                        {{ urgentCategoryFilterLabel() }}
+                        <modus-typography size="xs" weight="semibold">{{ urgentCategoryFilterLabel() }}</modus-typography>
                         <i class="modus-icons text-xs" aria-hidden="true">{{ urgentCategoryDropdownOpen() ? 'expand_less' : 'expand_more' }}</i>
                       </div>
                       @if (urgentCategoryDropdownOpen()) {
                         <div class="absolute top-full left-0 mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[180px] max-h-[280px] overflow-y-auto py-1">
                           <div
-                            class="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer transition-colors duration-150"
-                            [class]="urgentCategoryFilter() === null ? 'bg-primary-20 text-primary font-semibold' : 'text-foreground hover:bg-muted'"
+                            class="flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors duration-150"
+                            [class]="urgentCategoryFilter() === null ? 'bg-primary-20 text-primary' : 'text-foreground hover:bg-muted'"
                             (click)="clearUrgentCategoryFilter()"
                           >
                             <i class="modus-icons text-sm" aria-hidden="true">apps</i>
-                            All Types
+                            <modus-typography size="xs" [weight]="urgentCategoryFilter() === null ? 'semibold' : 'normal'">All Types</modus-typography>
                           </div>
                           @for (cat of urgentCategoryOptions; track cat.key) {
                             <div
-                              class="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer transition-colors duration-150"
-                              [class]="urgentCategoryFilter()?.has(cat.key) ? 'bg-primary-20 text-primary font-semibold' : 'text-foreground hover:bg-muted'"
+                              class="flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors duration-150"
+                              [class]="urgentCategoryFilter()?.has(cat.key) ? 'bg-primary-20 text-primary' : 'text-foreground hover:bg-muted'"
                               (click)="selectUrgentCategory(cat.key)"
                             >
                               <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">{{ cat.icon }}</i>
-                              {{ cat.label }}
+                              <modus-typography size="xs" [weight]="urgentCategoryFilter()?.has(cat.key) ? 'semibold' : 'normal'">{{ cat.label }}</modus-typography>
                             </div>
                           }
                         </div>
@@ -1436,33 +1440,33 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                     <div class="w-px h-5 bg-secondary flex-shrink-0 hidden md:block"></div>
                     <div class="relative flex-shrink-0" data-urgent-project-dropdown>
                       <div
-                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                        class="flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-colors duration-150 select-none"
                         [class]="urgentProjectFilter() !== null ? 'bg-primary-20 text-primary' : 'bg-muted text-foreground-60 hover:bg-secondary'"
                         (click)="urgentProjectDropdownOpen.set(!urgentProjectDropdownOpen())"
                       >
                         <i class="modus-icons text-xs" aria-hidden="true">folder_closed</i>
-                        {{ urgentProjectFilterLabel() }}
+                        <modus-typography size="xs" weight="semibold">{{ urgentProjectFilterLabel() }}</modus-typography>
                         <i class="modus-icons text-xs" aria-hidden="true">{{ urgentProjectDropdownOpen() ? 'expand_less' : 'expand_more' }}</i>
                       </div>
                       @if (urgentProjectDropdownOpen()) {
                         <div class="absolute top-full left-0 mt-1 bg-card border-default rounded-lg shadow-lg z-50 min-w-[200px] max-h-[240px] overflow-y-auto py-1">
                           <div
-                            class="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer transition-colors duration-150"
-                            [class]="urgentProjectFilter() === null ? 'bg-primary-20 text-primary font-semibold' : 'text-foreground hover:bg-muted'"
+                            class="flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors duration-150"
+                            [class]="urgentProjectFilter() === null ? 'bg-primary-20 text-primary' : 'text-foreground hover:bg-muted'"
                             (click)="urgentProjectFilter.set(null); urgentProjectDropdownOpen.set(false)"
                           >
                             <i class="modus-icons text-sm" aria-hidden="true">apps</i>
-                            All Projects
+                            <modus-typography size="xs" [weight]="urgentProjectFilter() === null ? 'semibold' : 'normal'">All Projects</modus-typography>
                           </div>
                           @for (proj of urgentProjectOptions(); track proj.id) {
                             <div
-                              class="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer transition-colors duration-150 truncate"
-                              [class]="urgentProjectFilter() === proj.id ? 'bg-primary-20 text-primary font-semibold' : 'text-foreground hover:bg-muted'"
+                              class="flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors duration-150 truncate"
+                              [class]="urgentProjectFilter() === proj.id ? 'bg-primary-20 text-primary' : 'text-foreground hover:bg-muted'"
                               (click)="urgentProjectFilter.set(proj.id); urgentProjectDropdownOpen.set(false)"
                               [attr.title]="proj.name"
                             >
                               <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">folder_closed</i>
-                              {{ proj.name }}
+                              <modus-typography size="xs" [weight]="urgentProjectFilter() === proj.id ? 'semibold' : 'normal'">{{ proj.name }}</modus-typography>
                             </div>
                           }
                         </div>
@@ -1487,35 +1491,35 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                           <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">{{ urgentNeedCategoryIcon(item.category) }}</i>
                         </div>
                         <div class="flex-1 min-w-0">
-                          <div class="text-sm font-medium text-foreground truncate">{{ item.title }}</div>
-                          <div class="text-xs text-foreground-60 truncate mt-0.5">{{ item.subtitle }}</div>
+                          <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ item.title }}</modus-typography>
+                          <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate mt-0.5">{{ item.subtitle }}</modus-typography>
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
                           @if (item.financialsRoute) {
-                            <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary text-2xs font-medium">
+                            <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary-20 text-primary">
                               <i class="modus-icons text-2xs" aria-hidden="true">building_corporate</i>
-                              Job Costs
+                              <modus-typography size="xs" weight="semibold" className="text-2xs">Job Costs</modus-typography>
                             </div>
                           }
-                          <div class="text-xs text-foreground-40 truncate max-w-[100px]" [attr.title]="item.projectName">{{ item.projectName }}</div>
+                          <modus-typography hierarchy="p" size="xs" className="text-foreground-40 truncate max-w-[100px]" [attr.title]="item.projectName">{{ item.projectName }}</modus-typography>
                           <i class="modus-icons text-sm text-foreground-40" aria-hidden="true">chevron_right</i>
                         </div>
                       </div>
                     } @empty {
                       <div class="flex flex-col items-center justify-center h-full py-8 text-foreground-40">
                         <i class="modus-icons text-3xl mb-2" aria-hidden="true">check_circle</i>
-                        <div class="text-sm">No items match your filters</div>
+                        <modus-typography hierarchy="p" size="sm">No items match your filters</modus-typography>
                       </div>
                     }
                   </div>
 
                   <div class="flex items-center justify-between px-5 py-2.5 border-top-default bg-card flex-shrink-0">
-                    <div class="text-xs text-foreground-40">
+                    <modus-typography hierarchy="p" size="xs" className="text-foreground-40">
                       {{ filteredUrgentNeeds().length }} of {{ allUrgentNeeds().length }} items
-                    </div>
-                    <div class="text-xs text-foreground-40">
+                    </modus-typography>
+                    <modus-typography hierarchy="p" size="xs" className="text-foreground-40">
                       {{ urgentProjectSummary() }}
-                    </div>
+                    </modus-typography>
                   </div>
                 </div>
                 <widget-resize-handle
@@ -1532,7 +1536,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1541,7 +1545,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   @if (recentActivityInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ recentActivityInsight() }}</div>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ recentActivityInsight() }}</modus-typography>
                     </div>
                   }
                   <div class="overflow-y-auto flex-1">
@@ -1558,14 +1562,14 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                           <i class="modus-icons text-sm {{ activity.iconColor }}" aria-hidden="true">{{ activity.icon }}</i>
                         </div>
                         <div class="flex-1 min-w-0">
-                          <div class="text-sm text-foreground">
-                            <div class="w-7 h-7 rounded-full bg-primary-20 text-primary text-xs font-semibold inline-flex items-center justify-center mr-1 flex-shrink-0">
-                              {{ activity.actorInitials }}
+                          <modus-typography hierarchy="p" size="sm">
+                            <div class="w-7 h-7 rounded-full bg-primary-20 text-primary inline-flex items-center justify-center mr-1 flex-shrink-0">
+                              <modus-typography size="xs" weight="semibold">{{ activity.actorInitials }}</modus-typography>
                             </div>
                             {{ activity.text }}
-                          </div>
+                          </modus-typography>
                         </div>
-                        <div class="text-xs text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</div>
+                        <modus-typography hierarchy="p" size="xs" className="text-foreground-40 flex-shrink-0 mt-0.5">{{ activity.timeAgo }}</modus-typography>
                       </div>
                     }
                   </div>
@@ -1580,7 +1584,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1600,7 +1604,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1618,7 +1622,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1636,7 +1640,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1654,7 +1658,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1697,7 +1701,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1715,7 +1719,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1733,7 +1737,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1751,7 +1755,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1769,7 +1773,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1787,7 +1791,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1802,14 +1806,14 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                         <div class="w-2 h-2 rounded-full shrink-0"
                           [class]="ms.status === 'completed' ? 'bg-success' : ms.status === 'overdue' ? 'bg-destructive' : ms.status === 'in-progress' ? 'bg-primary' : 'bg-muted'"></div>
                         <div class="flex flex-col gap-0.5 min-w-0 flex-1">
-                          <div class="text-sm font-medium text-foreground truncate">{{ ms.name }}</div>
-                          <div class="text-2xs text-foreground-60">{{ ms.projectName }}</div>
+                          <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ ms.name }}</modus-typography>
+                          <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ ms.projectName }}</modus-typography>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                           <div class="h-1.5 w-12 rounded-full bg-muted overflow-hidden">
                             <div class="h-full rounded-full bg-primary" [style.width.%]="ms.progress"></div>
                           </div>
-                          <div class="text-2xs tabular-nums text-foreground-60 w-16 text-right">{{ ms.dueDate.split(',')[0] }}</div>
+                          <modus-typography hierarchy="p" size="xs" className="tabular-nums text-foreground-60 w-16 text-right">{{ ms.dueDate.split(',')[0] }}</modus-typography>
                         </div>
                       </div>
                     }
@@ -1825,7 +1829,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1843,7 +1847,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1861,7 +1865,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1879,7 +1883,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1897,7 +1901,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1915,7 +1919,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
@@ -1933,7 +1937,7 @@ import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.com
                   [selected]="selectedWidgetId() === widgetId"
                   [isMobile]="isMobile()"
                   [headerPadding]="'px-6 py-4'"
-                  [titleClass]="'text-lg font-semibold text-foreground'"
+                  [titleSize]="'lg'"
                   (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
                   (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"

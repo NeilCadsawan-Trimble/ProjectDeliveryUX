@@ -61,7 +61,6 @@ import type {
  */
 @Component({
   selector: 'app-theme-demo',
-  standalone: true,
   imports: [
     CommonModule,
     ModusAccordionComponent,
@@ -112,13 +111,13 @@ import type {
   template: `
     <div class="theme-demo-container">
       <div class="theme-demo-header">
-        <h1>Modus Theme Demo</h1>
-        <p>Test different themes and modes</p>
+        <modus-typography hierarchy="h1" size="xl" weight="bold">Modus Theme Demo</modus-typography>
+        <modus-typography hierarchy="p" size="md">Test different themes and modes</modus-typography>
       </div>
 
       <div class="theme-controls">
         <div class="control-group">
-          <h2>Theme Switcher</h2>
+          <modus-typography hierarchy="h2" size="lg" weight="semibold">Theme Switcher</modus-typography>
           <modus-theme-switcher
             ariaLabel="Toggle light/dark mode"
             (themeChange)="onThemeChange($event)"
@@ -126,7 +125,7 @@ import type {
         </div>
 
         <div class="control-group">
-          <h2>Select Theme</h2>
+          <modus-typography hierarchy="h2" size="lg" weight="semibold">Select Theme</modus-typography>
           <div class="theme-buttons">
             <modus-button
               [color]="currentTheme() === 'modus-classic' ? 'primary' : 'secondary'"
@@ -150,7 +149,7 @@ import type {
         </div>
 
         <div class="control-group">
-          <h2>Mode</h2>
+          <modus-typography hierarchy="h2" size="lg" weight="semibold">Mode</modus-typography>
           <div class="mode-buttons">
             <modus-button
               [color]="currentMode() === 'light' ? 'primary' : 'secondary'"
@@ -169,18 +168,18 @@ import type {
       </div>
 
       <div class="current-theme-info">
-        <p><strong>Current Theme:</strong> {{ currentTheme() }}</p>
-        <p><strong>Current Mode:</strong> {{ currentMode() }}</p>
-        <p><strong>Full Theme:</strong> {{ fullThemeName() }}</p>
+        <modus-typography hierarchy="p" size="md"><div class="font-semibold inline">Current Theme:</div> {{ currentTheme() }}</modus-typography>
+        <modus-typography hierarchy="p" size="md"><div class="font-semibold inline">Current Mode:</div> {{ currentMode() }}</modus-typography>
+        <modus-typography hierarchy="p" size="md"><div class="font-semibold inline">Full Theme:</div> {{ fullThemeName() }}</modus-typography>
       </div>
 
       <div class="demo-components">
-        <h2>Component Examples</h2>
+        <modus-typography hierarchy="h2" size="lg" weight="semibold">Component Examples</modus-typography>
 
         <div class="component-row">
           <modus-card padding="normal">
-            <h3 slot="header">Card Example</h3>
-            <p>This card demonstrates the current theme colors and styling.</p>
+            <div slot="header"><modus-typography hierarchy="h3" size="md" weight="semibold">Card Example</modus-typography></div>
+            <modus-typography hierarchy="p" size="md">This card demonstrates the current theme colors and styling.</modus-typography>
             <div slot="footer">
               <modus-button color="primary">Action</modus-button>
             </div>
@@ -188,7 +187,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Buttons</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Buttons</modus-typography>
           <div class="button-group">
             <modus-button color="primary">Primary</modus-button>
             <modus-button color="secondary">Secondary</modus-button>
@@ -199,7 +198,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Buttons with Icons</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Buttons with Icons</modus-typography>
           <div class="button-group">
             <modus-button color="primary" icon="add" iconPosition="left">Add Item</modus-button>
             <modus-button color="secondary" icon="search" iconPosition="left">Search</modus-button>
@@ -214,7 +213,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Buttons with Different Sizes and Icons</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Buttons with Different Sizes and Icons</modus-typography>
           <div class="button-group">
             <modus-button color="primary" icon="add" iconPosition="left" size="xs"
               >Extra Small</modus-button
@@ -232,7 +231,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Full Width Button</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Full Width Button</modus-typography>
           <div class="button-group">
             <modus-button color="primary" [fullWidth]="true">Full Width Button</modus-button>
             <modus-button color="secondary" [fullWidth]="true" icon="add" iconPosition="left"
@@ -245,7 +244,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Icon-Only Buttons</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Icon-Only Buttons</modus-typography>
           <div class="button-group">
             <modus-button
               color="primary"
@@ -309,7 +308,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Badges</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Badges</modus-typography>
           <div class="badge-group">
             <modus-badge color="primary">Primary Badge</modus-badge>
             <modus-badge color="secondary">Secondary Badge</modus-badge>
@@ -320,7 +319,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Alerts</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Alerts</modus-typography>
           <div class="alert-group">
             <modus-alert
               alertTitle="Information"
@@ -348,59 +347,59 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Icons</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Icons</modus-typography>
           <div class="icon-group">
             <div class="icon-example">
               <modus-icon name="alert" variant="outlined" size="lg" />
-              <span>alert (outlined)</span>
+              <modus-typography hierarchy="p" size="sm">alert (outlined)</modus-typography>
             </div>
             <div class="icon-example">
               <modus-icon name="alert" variant="solid" size="lg" />
-              <span>alert (solid)</span>
+              <modus-typography hierarchy="p" size="sm">alert (solid)</modus-typography>
             </div>
             <div class="icon-example">
               <modus-icon name="accessibility_circle" variant="solid" size="lg" />
-              <span>accessibility_circle (solid)</span>
+              <modus-typography hierarchy="p" size="sm">accessibility_circle (solid)</modus-typography>
             </div>
             <div class="icon-example">
               <modus-icon name="check_circle" variant="outlined" size="lg" />
-              <span>check_circle (outlined)</span>
+              <modus-typography hierarchy="p" size="sm">check_circle (outlined)</modus-typography>
             </div>
             <div class="icon-example">
               <modus-icon name="check_circle" variant="solid" size="lg" />
-              <span>check_circle (solid)</span>
+              <modus-typography hierarchy="p" size="sm">check_circle (solid)</modus-typography>
             </div>
             <div class="icon-example">
               <modus-icon name="info" variant="outlined" size="lg" />
-              <span>info (outlined)</span>
+              <modus-typography hierarchy="p" size="sm">info (outlined)</modus-typography>
             </div>
           </div>
         </div>
 
         <div class="component-row">
-          <h3>Icons with Custom Styling</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Icons with Custom Styling</modus-typography>
           <div class="icon-group">
             <div class="icon-example">
               <modus-icon name="alert" variant="solid" size="lg" className="text-primary" />
-              <span>Info color</span>
+              <modus-typography hierarchy="p" size="sm">Info color</modus-typography>
             </div>
             <div class="icon-example">
               <modus-icon name="check_circle" variant="solid" size="lg" className="text-success" />
-              <span>Success color</span>
+              <modus-typography hierarchy="p" size="sm">Success color</modus-typography>
             </div>
             <div class="icon-example">
               <modus-icon name="warning" variant="solid" size="lg" className="text-warning" />
-              <span>Warning color</span>
+              <modus-typography hierarchy="p" size="sm">Warning color</modus-typography>
             </div>
             <div class="icon-example">
               <modus-icon name="alert" variant="solid" size="lg" className="text-error" />
-              <span>Error color</span>
+              <modus-typography hierarchy="p" size="sm">Error color</modus-typography>
             </div>
           </div>
         </div>
 
         <div class="component-row">
-          <h3>Accessible Icons</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Accessible Icons</modus-typography>
           <div class="icon-group">
             <div class="icon-example">
               <modus-icon
@@ -410,17 +409,17 @@ import type {
                 [decorative]="false"
                 ariaLabel="Accessibility features"
               />
-              <span>With aria-label</span>
+              <modus-typography hierarchy="p" size="sm">With aria-label</modus-typography>
             </div>
             <div class="icon-example">
               <modus-icon name="info" variant="outlined" size="md" [decorative]="true" />
-              <span>Decorative (hidden from screen readers)</span>
+              <modus-typography hierarchy="p" size="sm">Decorative (hidden from screen readers)</modus-typography>
             </div>
           </div>
         </div>
 
         <div class="component-row">
-          <h3>Avatars</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Avatars</modus-typography>
           <div class="avatar-group">
             <modus-avatar alt="Ada Lovelace" initials="AL" size="lg" />
             <modus-avatar alt="Grace Hopper" imgSrc="https://via.placeholder.com/64" size="md" />
@@ -429,7 +428,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Breadcrumbs</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Breadcrumbs</modus-typography>
           <modus-breadcrumbs
             [items]="breadcrumbItems"
             (breadcrumbClick)="onBreadcrumbClick($event)"
@@ -437,7 +436,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Chips</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Chips</modus-typography>
           <div class="chip-group">
             <modus-chip label="Default" />
             <modus-chip label="Active" [active]="true" />
@@ -447,7 +446,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Form Controls</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Form Controls</modus-typography>
           <div class="form-grid">
             <div class="form-control">
               <modus-input-label forId="demo-checkbox" labelText="Checkbox" [required]="true" />
@@ -482,9 +481,9 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Dropdown Menu</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Dropdown Menu</modus-typography>
           <modus-dropdown-menu buttonAriaLabel="Actions menu">
-            <span slot="button">Open Menu</span>
+            <div slot="button">Open Menu</div>
             <div slot="menu">
               <modus-menu>
                 <modus-menu-item label="Profile" value="profile" />
@@ -496,7 +495,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Menu</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Menu</modus-typography>
           <div class="menu-grid">
             <modus-menu [bordered]="true">
               <modus-menu-item label="Dashboard" value="dashboard" [selected]="true" />
@@ -512,18 +511,18 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>File Dropzone</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">File Dropzone</modus-typography>
           <modus-file-dropzone
             acceptFileTypes=".pdf,.docx"
             instructions="Drag files here or click to upload"
             successMessage="Upload complete"
           >
-            <p>Supports PDF and DOCX files up to 10MB.</p>
+            <div>Supports PDF and DOCX files up to 10MB.</div>
           </modus-file-dropzone>
         </div>
 
         <div class="component-row">
-          <h3>Loader</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Loader</modus-typography>
           <div class="loader-group">
             <modus-loader />
             <modus-loader color="success" variant="dots" />
@@ -532,7 +531,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Pagination &amp; Progress</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Pagination &amp; Progress</modus-typography>
           <div class="pagination-grid">
             <div>
               <modus-pagination
@@ -540,21 +539,21 @@ import type {
                 [page]="paginationState.page"
                 (pageChange)="onPageChange($event)"
               />
-              <p class="pagination-info">
+              <modus-typography hierarchy="p" size="md" class="pagination-info">
                 Current page: {{ paginationState.page }} / {{ paginationState.count }}
-              </p>
+              </modus-typography>
             </div>
             <div class="progress-stack">
               <modus-progress [value]="45" [label]="'45% complete'" />
               <modus-progress variant="radial" [value]="72" [label]="'72%'">
-                <strong>72%</strong>
+                <div class="font-semibold inline">72%</div>
               </modus-progress>
             </div>
           </div>
         </div>
 
         <div class="component-row">
-          <h3>Rating</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Rating</modus-typography>
           <div class="rating-group">
             <modus-rating
               [value]="ratingValue"
@@ -562,18 +561,18 @@ import type {
               [allowHalf]="true"
               (ratingChange)="onRatingChange($event)"
             />
-            <span>Selected rating: {{ ratingValue }}</span>
+            <modus-typography hierarchy="p" size="sm">Selected rating: {{ ratingValue }}</modus-typography>
           </div>
         </div>
 
         <div class="component-row">
-          <h3>Modal</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Modal</modus-typography>
           <modus-button color="primary" (buttonClick)="openDemoModal()">Open Modal</modus-button>
           <modus-modal modalId="theme-demo-modal" [showFullscreenToggle]="true" backdrop="default">
-            <h3 slot="header">Theme Demo Modal</h3>
+            <div slot="header"><modus-typography hierarchy="h3" size="md" weight="semibold">Theme Demo Modal</modus-typography></div>
             <div slot="content">
-              <p>This modal showcases the Modus modal wrapper.</p>
-              <p>Use the buttons in the header to close or toggle fullscreen.</p>
+              <modus-typography hierarchy="p" size="md">This modal showcases the Modus modal wrapper.</modus-typography>
+              <modus-typography hierarchy="p" size="md">Use the buttons in the header to close or toggle fullscreen.</modus-typography>
             </div>
             <div slot="footer">
               <modus-button color="secondary">Dismiss</modus-button>
@@ -583,28 +582,28 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Accordion</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Accordion</modus-typography>
           <div class="accordion-example">
             <modus-accordion (expandedChange)="onAccordionChange($event)">
               <modus-collapse [options]="collapseOptions[0]">
                 <div slot="content">
-                  <p>This is the content for the first accordion item.</p>
-                  <p>You can add any HTML content here, including other components.</p>
+                  <modus-typography hierarchy="p" size="md">This is the content for the first accordion item.</modus-typography>
+                  <modus-typography hierarchy="p" size="md">You can add any HTML content here, including other components.</modus-typography>
                 </div>
               </modus-collapse>
               <modus-collapse [options]="collapseOptions[1]">
                 <div slot="content">
-                  <p>This is the content for the second accordion item.</p>
-                  <ul>
-                    <li>List item one</li>
-                    <li>List item two</li>
-                    <li>List item three</li>
-                  </ul>
+                  <modus-typography hierarchy="p" size="md">This is the content for the second accordion item.</modus-typography>
+                  <div class="flex flex-col gap-1">
+                    <modus-typography hierarchy="p" size="md">List item one</modus-typography>
+                    <modus-typography hierarchy="p" size="md">List item two</modus-typography>
+                    <modus-typography hierarchy="p" size="md">List item three</modus-typography>
+                  </div>
                 </div>
               </modus-collapse>
               <modus-collapse [options]="collapseOptions[2]">
                 <div slot="content">
-                  <p>This is the content for the third accordion item.</p>
+                  <modus-typography hierarchy="p" size="md">This is the content for the third accordion item.</modus-typography>
                   <modus-button color="primary">Action Button</modus-button>
                 </div>
               </modus-collapse>
@@ -613,7 +612,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Autocomplete</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Autocomplete</modus-typography>
           <div class="form-grid">
             <div class="form-control">
               <modus-autocomplete
@@ -636,7 +635,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Select</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Select</modus-typography>
           <div class="form-grid">
             <div class="form-control">
               <modus-select label="Choose a country" [options]="selectOptions" />
@@ -653,7 +652,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Text Input</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Text Input</modus-typography>
           <div class="form-grid">
             <div class="form-control">
               <modus-text-input
@@ -675,7 +674,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Textarea</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Textarea</modus-typography>
           <div class="form-grid">
             <div class="form-control">
               <modus-textarea
@@ -696,7 +695,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Switch</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Switch</modus-typography>
           <div class="form-grid">
             <div class="form-control">
               <modus-switch label="Enable notifications" [value]="true" />
@@ -708,7 +707,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Slider</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Slider</modus-typography>
           <div class="form-grid">
             <div class="form-control">
               <modus-slider label="Volume" [min]="0" [max]="100" [value]="50" [step]="5" />
@@ -720,7 +719,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Time Input</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Time Input</modus-typography>
           <div class="form-grid">
             <div class="form-control">
               <modus-time-input label="Start time" value="09:00" />
@@ -732,18 +731,18 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Tabs</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Tabs</modus-typography>
           <div class="menu-grid">
             <div>
               <modus-tabs [tabs]="tabItems" [activeTabIndex]="0">
                 <div slot="tab-0">
-                  <p>Content for the first tab</p>
+                  <modus-typography hierarchy="p" size="md">Content for the first tab</modus-typography>
                 </div>
                 <div slot="tab-1">
-                  <p>Content for the second tab</p>
+                  <modus-typography hierarchy="p" size="md">Content for the second tab</modus-typography>
                 </div>
                 <div slot="tab-2">
-                  <p>Content for the third tab</p>
+                  <modus-typography hierarchy="p" size="md">Content for the third tab</modus-typography>
                 </div>
               </modus-tabs>
             </div>
@@ -757,7 +756,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Stepper</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Stepper</modus-typography>
           <div class="menu-grid">
             <div>
               <modus-stepper [steps]="stepperItems" orientation="horizontal" />
@@ -769,7 +768,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Tooltip</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Tooltip</modus-typography>
           <div class="button-group">
             <modus-tooltip content="This is a tooltip on the top" position="top">
               <modus-button color="primary">Hover me (Top)</modus-button>
@@ -781,7 +780,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Toast</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Toast</modus-typography>
           <div class="button-group">
             <modus-toast position="top-end" [delay]="5000">
               <div>Success message displayed as toast</div>
@@ -793,7 +792,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Skeleton</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Skeleton</modus-typography>
           <div class="menu-grid">
             <div>
               <modus-skeleton />
@@ -805,7 +804,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Typography</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Typography</modus-typography>
           <div class="menu-grid">
             <div>
               <modus-typography hierarchy="h1" size="xl" weight="bold">Heading 1</modus-typography>
@@ -820,7 +819,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Toolbar</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Toolbar</modus-typography>
           <div class="menu-grid">
             <div>
               <modus-toolbar>
@@ -840,7 +839,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Table</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Table</modus-typography>
           <div class="menu-grid">
             <div>
               <modus-table
@@ -864,23 +863,23 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Side Navigation</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Side Navigation</modus-typography>
           <div class="menu-grid">
             <div>
               <modus-side-navigation [expanded]="true" mode="push">
-                <p>Side navigation content in push mode</p>
+                <modus-typography hierarchy="p" size="md">Side navigation content in push mode</modus-typography>
               </modus-side-navigation>
             </div>
             <div>
               <modus-side-navigation [expanded]="false" mode="overlay">
-                <p>Side navigation in overlay mode (collapsed)</p>
+                <modus-typography hierarchy="p" size="md">Side navigation in overlay mode (collapsed)</modus-typography>
               </modus-side-navigation>
             </div>
           </div>
         </div>
 
         <div class="component-row">
-          <h3>Navbar</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Navbar</modus-typography>
           <div class="menu-grid">
             <div>
               <modus-navbar
@@ -899,7 +898,7 @@ import type {
         </div>
 
         <div class="component-row">
-          <h3>Utility Panel</h3>
+          <modus-typography hierarchy="h3" size="md" weight="semibold">Utility Panel</modus-typography>
           <div class="menu-grid">
             <div>
               <modus-utility-panel [expanded]="false" [pushContent]="false">
@@ -933,10 +932,6 @@ import type {
         margin-bottom: 2rem;
       }
 
-      .theme-demo-header h1 {
-        margin-bottom: 0.5rem;
-      }
-
       .theme-controls {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -946,11 +941,6 @@ import type {
         background: var(--card);
         border-radius: 0.5rem;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .control-group h2 {
-        margin-bottom: 1rem;
-        font-size: 1.1rem;
       }
 
       .theme-buttons,
@@ -967,24 +957,12 @@ import type {
         margin-bottom: 2rem;
       }
 
-      .current-theme-info p {
-        margin: 0.5rem 0;
-      }
-
       .demo-components {
         margin-top: 2rem;
       }
 
-      .demo-components h2 {
-        margin-bottom: 1.5rem;
-      }
-
       .component-row {
         margin-bottom: 2rem;
-      }
-
-      .component-row h3 {
-        margin-bottom: 1rem;
       }
 
       .button-group,
@@ -1070,11 +1048,6 @@ import type {
         padding: 1rem;
         background: var(--muted);
         border-radius: 0.5rem;
-      }
-
-      .icon-example span {
-        font-size: 0.875rem;
-        text-align: center;
       }
 
       .accordion-example {

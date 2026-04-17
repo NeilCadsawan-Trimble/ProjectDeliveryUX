@@ -41,6 +41,7 @@ import { WeatherService } from '../../services/weather.service';
 import { AuthService } from '../../services/auth.service';
 import { getAgent, getSuggestions, type AgentDataState } from '../../data/widget-agents';
 import { environment } from '../../../environments/environment';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
 export interface ShellNavItem {
   value: string;
@@ -62,6 +63,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     AiAssistantPanelComponent,
     UserMenuComponent,
     TrimbleLogoComponent,
+    ModusTypographyComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -114,7 +116,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   (keydown.enter)="navHistory.shellBackButton()?.action()"
                 >
                   <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-                  <div class="text-sm">{{ navHistory.shellBackButton()?.label || 'Back' }}</div>
+                  <modus-typography hierarchy="p" size="sm">{{ navHistory.shellBackButton()?.label || 'Back' }}</modus-typography>
                 </div>
                 <div class="w-px h-5 bg-foreground-20"></div>
               }
@@ -128,7 +130,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     (keydown.enter)="shellSelectorOpen.set(!shellSelectorOpen()); $event.stopPropagation()"
                     tabindex="0"
                   >
-                    <div class="text-2xl font-semibold text-foreground tracking-wide truncate" [title]="titleOv.text">{{ titleOv.text }}</div>
+                    <modus-typography hierarchy="h1" size="xl" weight="semibold" className="tracking-wide truncate" [title]="titleOv.text">{{ titleOv.text }}</modus-typography>
                     <i class="modus-icons text-base text-foreground-60 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="shellSelectorOpen()" aria-hidden="true">expand_more</i>
                   </div>
                   @if (shellSelectorOpen()) {
@@ -140,9 +142,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                           (click)="selectShellTitleItem(item.id); $event.stopPropagation()"
                         >
                           <div class="flex flex-col min-w-0">
-                            <div class="text-sm font-medium text-foreground truncate">{{ item.label }}</div>
+                            <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ item.label }}</modus-typography>
                             @if (item.sublabel) {
-                              <div class="text-xs text-foreground-60 truncate">{{ item.sublabel }}</div>
+                              <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ item.sublabel }}</modus-typography>
                             }
                           </div>
                         </div>
@@ -151,7 +153,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   }
                 </div>
               } @else {
-                <div class="text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
+                <modus-typography hierarchy="h1" size="xl" weight="semibold" className="tracking-wide whitespace-nowrap">{{ appTitle() }}</modus-typography>
               }
             </div>
             <div class="app-navbar-end">
@@ -270,7 +272,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     (click)="panning.toggleLock(); $event.stopPropagation()"
                   >
                     <i class="modus-icons text-base" [class]="panning.locked() ? 'text-primary' : 'text-foreground'" aria-hidden="true">{{ panning.locked() ? 'lock' : 'lock_open' }}</i>
-                    <div class="text-sm" [class]="panning.locked() ? 'text-primary font-medium' : 'text-foreground'">{{ panning.locked() ? 'Canvas Locked' : 'Canvas Unlocked' }}</div>
+                    <modus-typography hierarchy="p" size="sm" [weight]="panning.locked() ? 'semibold' : 'normal'" [className]="panning.locked() ? 'text-primary' : 'text-foreground'">{{ panning.locked() ? 'Canvas Locked' : 'Canvas Unlocked' }}</modus-typography>
                   </div>
                   <div class="border-bottom-default my-1"></div>
                   @if (isProjectsPage()) {
@@ -280,7 +282,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="resetMenuAction('sort-by-priority'); $event.stopPropagation()"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">unsorted_arrows</i>
-                      <div class="text-sm">Sort by Priority</div>
+                      <modus-typography hierarchy="p" size="sm">Sort by Priority</modus-typography>
                     </div>
                   }
                   <div
@@ -289,7 +291,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     (click)="resetMenuAction('view'); $event.stopPropagation()"
                   >
                     <i class="modus-icons text-base" aria-hidden="true">window_fit</i>
-                    <div class="text-sm">Reset View</div>
+                    <modus-typography hierarchy="p" size="sm">Reset View</modus-typography>
                   </div>
                   <div
                     class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
@@ -297,7 +299,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     (click)="resetMenuAction('widgets'); $event.stopPropagation()"
                   >
                     <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
-                    <div class="text-sm">Reset Layout</div>
+                    <modus-typography hierarchy="p" size="sm">Reset Layout</modus-typography>
                   </div>
                   <div
                     class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
@@ -305,7 +307,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     (click)="resetMenuAction('load-defaults'); $event.stopPropagation()"
                   >
                     <i class="modus-icons text-base" aria-hidden="true">refresh</i>
-                    <div class="text-sm">Load Default Layout</div>
+                    <modus-typography hierarchy="p" size="sm">Load Default Layout</modus-typography>
                   </div>
                   <div
                     class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
@@ -313,7 +315,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     (click)="resetMenuAction('save-defaults'); $event.stopPropagation()"
                   >
                     <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
-                    <div class="text-sm">Save as Default Layout</div>
+                    <modus-typography hierarchy="p" size="sm">Save as Default Layout</modus-typography>
                   </div>
                   @if (isDevMode) {
                     <div class="border-top-default my-1"></div>
@@ -323,7 +325,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="resetMenuAction('export-layout'); $event.stopPropagation()"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">clipboard</i>
-                      <div class="text-sm">{{ exportLayoutLabel() }}</div>
+                      <modus-typography hierarchy="p" size="sm">{{ exportLayoutLabel() }}</modus-typography>
                     </div>
                   }
                 </div>
@@ -381,7 +383,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   (keydown.enter)="navHistory.shellBackButton()?.action()"
                 >
                   <i class="modus-icons text-base" aria-hidden="true">arrow_left</i>
-                  <div class="text-sm hidden md:block">{{ navHistory.shellBackButton()?.label || 'Back' }}</div>
+                  <modus-typography hierarchy="p" size="sm" className="hidden md:block">{{ navHistory.shellBackButton()?.label || 'Back' }}</modus-typography>
                 </div>
                 <div class="w-px h-5 bg-foreground-20"></div>
               }
@@ -395,7 +397,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                     (keydown.enter)="shellSelectorOpen.set(!shellSelectorOpen()); $event.stopPropagation()"
                     tabindex="0"
                   >
-                    <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide truncate" [title]="titleOv.text">{{ titleOv.text }}</div>
+                    <modus-typography hierarchy="h1" size="xl" weight="semibold" className="text-sm md:text-2xl tracking-wide truncate" [title]="titleOv.text">{{ titleOv.text }}</modus-typography>
                     <i class="modus-icons text-base text-foreground-60 flex-shrink-0 transition-transform duration-150" [class.rotate-180]="shellSelectorOpen()" aria-hidden="true">expand_more</i>
                   </div>
                   @if (shellSelectorOpen()) {
@@ -407,9 +409,9 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                           (click)="selectShellTitleItem(item.id); $event.stopPropagation()"
                         >
                           <div class="flex flex-col min-w-0">
-                            <div class="text-sm font-medium text-foreground truncate">{{ item.label }}</div>
+                            <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ item.label }}</modus-typography>
                             @if (item.sublabel) {
-                              <div class="text-xs text-foreground-60 truncate">{{ item.sublabel }}</div>
+                              <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ item.sublabel }}</modus-typography>
                             }
                           </div>
                         </div>
@@ -418,7 +420,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                   }
                 </div>
               } @else {
-                <div class="text-sm md:text-2xl font-semibold text-foreground tracking-wide whitespace-nowrap">{{ appTitle() }}</div>
+                <modus-typography hierarchy="h1" size="xl" weight="semibold" className="text-sm md:text-2xl tracking-wide whitespace-nowrap">{{ appTitle() }}</modus-typography>
               }
             </div>
             <div class="app-navbar-end">
@@ -508,7 +510,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="moreMenuAction('search')"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">search</i>
-                      <div class="text-sm">Search</div>
+                      <modus-typography hierarchy="p" size="sm">Search</modus-typography>
                     </div>
                     <div
                       class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
@@ -516,7 +518,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="moreMenuAction('notifications')"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">notifications</i>
-                      <div class="text-sm">Notifications</div>
+                      <modus-typography hierarchy="p" size="sm">Notifications</modus-typography>
                     </div>
                     <div
                       class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
@@ -524,7 +526,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="moreMenuAction('help')"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">help</i>
-                      <div class="text-sm">Help</div>
+                      <modus-typography hierarchy="p" size="sm">Help</modus-typography>
                     </div>
                     <div class="border-bottom-default mx-3 my-1"></div>
                     <div
@@ -533,7 +535,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="moreMenuAction('darkMode')"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-                      <div class="text-sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</div>
+                      <modus-typography hierarchy="p" size="sm">{{ isDark() ? 'Light Mode' : 'Dark Mode' }}</modus-typography>
                     </div>
                     @if (isDevMode) {
                       <div class="border-bottom-default mx-3 my-1"></div>
@@ -543,7 +545,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                         (click)="moreMenuAction('export-layout')"
                       >
                         <i class="modus-icons text-base" aria-hidden="true">clipboard</i>
-                        <div class="text-sm">{{ exportLayoutLabel() }}</div>
+                        <modus-typography hierarchy="p" size="sm">{{ exportLayoutLabel() }}</modus-typography>
                       </div>
                     }
                   </div>
@@ -616,7 +618,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                         (click)="resetMenuAction('sort-by-priority'); $event.stopPropagation()"
                       >
                       <i class="modus-icons text-base" aria-hidden="true">unsorted_arrows</i>
-                      <div class="text-sm">Sort by Priority</div>
+                      <modus-typography hierarchy="p" size="sm">Sort by Priority</modus-typography>
                     </div>
                     }
                     <div
@@ -625,7 +627,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="resetMenuAction('widgets'); $event.stopPropagation()"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">dashboard_tiles</i>
-                      <div class="text-sm">Reset Layout</div>
+                      <modus-typography hierarchy="p" size="sm">Reset Layout</modus-typography>
                     </div>
                     <div
                       class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
@@ -633,7 +635,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="resetMenuAction('load-defaults'); $event.stopPropagation()"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">refresh</i>
-                      <div class="text-sm">Load Default Layout</div>
+                      <modus-typography hierarchy="p" size="sm">Load Default Layout</modus-typography>
                     </div>
                     <div
                       class="flex items-center gap-3 px-4 py-2.5 cursor-pointer text-foreground hover:bg-muted transition-colors duration-150"
@@ -641,7 +643,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                       (click)="resetMenuAction('save-defaults'); $event.stopPropagation()"
                     >
                       <i class="modus-icons text-base" aria-hidden="true">save_disk</i>
-                      <div class="text-sm">Save as Default Layout</div>
+                      <modus-typography hierarchy="p" size="sm">Save as Default Layout</modus-typography>
                     </div>
                     @if (isDevMode) {
                       <div class="border-top-default my-1"></div>
@@ -651,7 +653,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
                         (click)="resetMenuAction('export-layout'); $event.stopPropagation()"
                       >
                         <i class="modus-icons text-base" aria-hidden="true">clipboard</i>
-                        <div class="text-sm">{{ exportLayoutLabel() }}</div>
+                        <modus-typography hierarchy="p" size="sm">{{ exportLayoutLabel() }}</modus-typography>
                       </div>
                     }
                   </div>

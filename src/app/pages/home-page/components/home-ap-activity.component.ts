@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApActivityItem, ApActivityType } from '../../../data/dashboard-data.types';
 
 @Component({
   selector: 'app-home-ap-activity',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
@@ -13,15 +15,15 @@ import type { ApActivityItem, ApActivityType } from '../../../data/dashboard-dat
             <i class="modus-icons text-base text-primary" aria-hidden="true">{{ iconFor(a.activityType) }}</i>
           </div>
           <div class="min-w-0 flex-1 flex flex-col gap-1">
-            <div class="text-sm text-foreground">{{ a.description }}</div>
-            <div class="text-2xs text-foreground-60">{{ a.vendor }} · {{ a.project }}</div>
+            <modus-typography hierarchy="p" size="sm" className="text-foreground">{{ a.description }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">{{ a.vendor }} · {{ a.project }}</modus-typography>
             <div class="flex flex-wrap items-center justify-between gap-2">
               @if (a.amount > 0) {
-                <div class="text-xs font-semibold text-foreground tabular-nums">{{ formatCurrency(a.amount) }}</div>
+                <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground tabular-nums">{{ formatCurrency(a.amount) }}</modus-typography>
               } @else {
                 <div></div>
               }
-              <div class="text-2xs text-foreground-60 tabular-nums">{{ a.timestamp }}</div>
+              <modus-typography hierarchy="p" size="xs" className="text-foreground-60 tabular-nums">{{ a.timestamp }}</modus-typography>
             </div>
           </div>
         </div>

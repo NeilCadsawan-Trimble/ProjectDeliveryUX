@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../../components/modus-badge.component';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import { ItemDetailViewComponent } from '../../../shared/detail/item-detail-view.component';
 import {
   PUNCH_STATUS_OPTIONS,
@@ -33,7 +34,7 @@ import type {
 @Component({
   selector: 'app-record-detail-views',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModusBadgeComponent, ItemDetailViewComponent, TitleCasePipe],
+  imports: [ModusBadgeComponent, ModusTypographyComponent, ItemDetailViewComponent, TitleCasePipe],
   template: `
     @if (dailyReport(); as report) {
       <div class="flex flex-col gap-6">
@@ -42,8 +43,8 @@ import type {
             <i class="modus-icons text-xl text-primary" aria-hidden="true">clipboard</i>
           </div>
           <div class="flex-1">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide">Daily Report</div>
-            <div class="text-xl font-bold text-foreground">{{ report.date }}</div>
+            <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide">Daily Report</modus-typography>
+            <modus-typography size="xl" weight="bold" className="text-foreground">{{ report.date }}</modus-typography>
           </div>
           <div
             class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
@@ -55,24 +56,24 @@ import type {
         </div>
         <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-4">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div><div class="text-xs text-foreground-60">Author</div><div class="text-sm font-medium text-foreground">{{ report.author }}</div></div>
-            <div><div class="text-xs text-foreground-60">Weather</div><div class="text-sm text-foreground flex items-center gap-1"><i class="modus-icons text-sm" aria-hidden="true">{{ weatherIcon(report.weather.split(',')[0].toLowerCase().trim()) }}</i>{{ report.weather }}</div></div>
-            <div><div class="text-xs text-foreground-60">Crew Count</div><div class="text-sm font-medium text-foreground">{{ report.crewCount }}</div></div>
-            <div><div class="text-xs text-foreground-60">Hours Worked</div><div class="text-sm font-medium text-foreground">{{ report.hoursWorked }}</div></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Author</modus-typography><modus-typography size="sm" weight="semibold" className="text-foreground">{{ report.author }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Weather</modus-typography><div class="flex items-center gap-1"><i class="modus-icons text-sm" aria-hidden="true">{{ weatherIcon(report.weather.split(',')[0].toLowerCase().trim()) }}</i><modus-typography size="sm" className="text-foreground">{{ report.weather }}</modus-typography></div></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Crew Count</modus-typography><modus-typography size="sm" weight="semibold" className="text-foreground">{{ report.crewCount }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Hours Worked</modus-typography><modus-typography size="sm" weight="semibold" className="text-foreground">{{ report.hoursWorked }}</modus-typography></div>
           </div>
           <div class="border-top-default pt-4">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-2">Work Performed</div>
-            <div class="text-sm text-foreground">{{ report.workPerformed }}</div>
+            <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide mb-2">Work Performed</modus-typography>
+            <modus-typography size="sm" className="text-foreground">{{ report.workPerformed }}</modus-typography>
           </div>
           @if (report.issues && report.issues !== 'None') {
             <div class="border-top-default pt-4">
-              <div class="text-xs text-warning uppercase tracking-wide mb-2">Issues</div>
-              <div class="text-sm text-foreground">{{ report.issues }}</div>
+              <modus-typography size="xs" className="text-warning uppercase tracking-wide mb-2">Issues</modus-typography>
+              <modus-typography size="sm" className="text-foreground">{{ report.issues }}</modus-typography>
             </div>
           }
           <div class="border-top-default pt-4">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-2">Safety Incidents</div>
-            <div class="text-sm font-medium" [class]="report.safetyIncidents > 0 ? 'text-destructive' : 'text-success'">{{ report.safetyIncidents > 0 ? report.safetyIncidents + ' incident(s)' : 'None' }}</div>
+            <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide mb-2">Safety Incidents</modus-typography>
+            <modus-typography size="sm" weight="semibold" [className]="report.safetyIncidents > 0 ? 'text-destructive' : 'text-success'">{{ report.safetyIncidents > 0 ? report.safetyIncidents + ' incident(s)' : 'None' }}</modus-typography>
           </div>
         </div>
       </div>
@@ -84,8 +85,8 @@ import type {
             <i class="modus-icons text-xl text-primary" aria-hidden="true">check_circle</i>
           </div>
           <div class="flex-1">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide">Inspection {{ insp.id }}</div>
-            <div class="text-xl font-bold text-foreground">{{ insp.type }}</div>
+            <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide">Inspection {{ insp.id }}</modus-typography>
+            <modus-typography size="xl" weight="bold" className="text-foreground">{{ insp.type }}</modus-typography>
           </div>
           <div
             class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
@@ -98,18 +99,18 @@ import type {
         </div>
         <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-4">
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div><div class="text-xs text-foreground-60">Inspector</div><div class="text-sm font-medium text-foreground">{{ insp.inspector }}</div></div>
-            <div><div class="text-xs text-foreground-60">Date</div><div class="text-sm text-foreground">{{ insp.date }}</div></div>
-            <div><div class="text-xs text-foreground-60">Project</div><div class="text-sm text-foreground">{{ insp.project }}</div></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Inspector</modus-typography><modus-typography size="sm" weight="semibold" className="text-foreground">{{ insp.inspector }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Date</modus-typography><modus-typography size="sm" className="text-foreground">{{ insp.date }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Project</modus-typography><modus-typography size="sm" className="text-foreground">{{ insp.project }}</modus-typography></div>
           </div>
           <div class="border-top-default pt-4">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-2">Notes</div>
-            <div class="text-sm text-foreground">{{ insp.notes }}</div>
+            <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide mb-2">Notes</modus-typography>
+            <modus-typography size="sm" className="text-foreground">{{ insp.notes }}</modus-typography>
           </div>
           @if (insp.followUp) {
             <div class="border-top-default pt-4">
-              <div class="text-xs text-warning uppercase tracking-wide mb-2">Follow-up Required</div>
-              <div class="text-sm text-foreground">{{ insp.followUp }}</div>
+              <modus-typography size="xs" className="text-warning uppercase tracking-wide mb-2">Follow-up Required</modus-typography>
+              <modus-typography size="sm" className="text-foreground">{{ insp.followUp }}</modus-typography>
             </div>
           }
         </div>
@@ -143,8 +144,8 @@ import type {
             <i class="modus-icons text-xl text-primary" aria-hidden="true">document</i>
           </div>
           <div class="flex-1">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide">Change Order {{ co.id }}</div>
-            <div class="text-xl font-bold text-foreground">{{ co.description }}</div>
+            <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide">Change Order {{ co.id }}</modus-typography>
+            <modus-typography size="xl" weight="bold" className="text-foreground">{{ co.description }}</modus-typography>
           </div>
           <div
             class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
@@ -157,14 +158,14 @@ import type {
         </div>
         <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-4">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div><div class="text-xs text-foreground-60">Amount</div><div class="text-lg font-bold text-foreground">{{ formatCurrency(co.amount) }}</div></div>
-            <div><div class="text-xs text-foreground-60">Requested By</div><div class="text-sm font-medium text-foreground">{{ co.requestedBy }}</div></div>
-            <div><div class="text-xs text-foreground-60">Date</div><div class="text-sm text-foreground">{{ co.requestDate }}</div></div>
-            <div><div class="text-xs text-foreground-60">Project</div><div class="text-sm text-foreground">{{ co.project }}</div></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Amount</modus-typography><modus-typography size="lg" weight="bold" className="text-foreground">{{ formatCurrency(co.amount) }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Requested By</modus-typography><modus-typography size="sm" weight="semibold" className="text-foreground">{{ co.requestedBy }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Date</modus-typography><modus-typography size="sm" className="text-foreground">{{ co.requestDate }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Project</modus-typography><modus-typography size="sm" className="text-foreground">{{ co.project }}</modus-typography></div>
           </div>
           <div class="border-top-default pt-4">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-2">Reason</div>
-            <div class="text-sm text-foreground">{{ co.reason }}</div>
+            <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide mb-2">Reason</modus-typography>
+            <modus-typography size="sm" className="text-foreground">{{ co.reason }}</modus-typography>
           </div>
         </div>
       </div>
@@ -176,8 +177,8 @@ import type {
             <i class="modus-icons text-xl text-primary" aria-hidden="true">{{ contractIcon(ct.contractType) }}</i>
           </div>
           <div class="flex-1">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide">{{ contractTypeLabel(ct.contractType) }} {{ ct.id }}</div>
-            <div class="text-xl font-bold text-foreground">{{ ct.title }}</div>
+            <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide">{{ contractTypeLabel(ct.contractType) }} {{ ct.id }}</modus-typography>
+            <modus-typography size="xl" weight="bold" className="text-foreground">{{ ct.title }}</modus-typography>
           </div>
           <div
             class="w-9 h-9 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
@@ -190,28 +191,28 @@ import type {
         </div>
         <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-4">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div><div class="text-xs text-foreground-60">Original Value</div><div class="text-lg font-bold text-foreground">{{ formatCurrency(ct.originalValue) }}</div></div>
-            <div><div class="text-xs text-foreground-60">Revised Value</div><div class="text-lg font-bold" [class]="ct.revisedValue > ct.originalValue ? 'text-warning' : 'text-foreground'">{{ formatCurrency(ct.revisedValue) }}</div></div>
-            <div><div class="text-xs text-foreground-60">Retainage</div><div class="text-sm font-medium text-foreground">{{ ct.retainage }}% ({{ formatCurrency(ct.revisedValue * ct.retainage / 100) }})</div></div>
-            <div><div class="text-xs text-foreground-60">Vendor</div><div class="text-sm font-medium text-foreground">{{ ct.vendor }}</div></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Original Value</modus-typography><modus-typography size="lg" weight="bold" className="text-foreground">{{ formatCurrency(ct.originalValue) }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Revised Value</modus-typography><modus-typography size="lg" weight="bold" [className]="ct.revisedValue > ct.originalValue ? 'text-warning' : 'text-foreground'">{{ formatCurrency(ct.revisedValue) }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Retainage</modus-typography><modus-typography size="sm" weight="semibold" className="text-foreground">{{ ct.retainage }}% ({{ formatCurrency(ct.revisedValue * ct.retainage / 100) }})</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Vendor</modus-typography><modus-typography size="sm" weight="semibold" className="text-foreground">{{ ct.vendor }}</modus-typography></div>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 border-top-default pt-4">
-            <div><div class="text-xs text-foreground-60">Start Date</div><div class="text-sm text-foreground">{{ ct.startDate }}</div></div>
-            <div><div class="text-xs text-foreground-60">End Date</div><div class="text-sm text-foreground">{{ ct.endDate }}</div></div>
-            <div><div class="text-xs text-foreground-60">Project</div><div class="text-sm text-foreground">{{ ct.project }}</div></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Start Date</modus-typography><modus-typography size="sm" className="text-foreground">{{ ct.startDate }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">End Date</modus-typography><modus-typography size="sm" className="text-foreground">{{ ct.endDate }}</modus-typography></div>
+            <div><modus-typography size="xs" className="text-foreground-60">Project</modus-typography><modus-typography size="sm" className="text-foreground">{{ ct.project }}</modus-typography></div>
           </div>
           <div class="border-top-default pt-4">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-2">Scope</div>
-            <div class="text-sm text-foreground">{{ ct.scope }}</div>
+            <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide mb-2">Scope</modus-typography>
+            <modus-typography size="sm" className="text-foreground">{{ ct.scope }}</modus-typography>
           </div>
           @if (ct.linkedChangeOrderIds.length > 0) {
             <div class="border-top-default pt-4">
-              <div class="text-xs text-foreground-60 uppercase tracking-wide mb-2">Linked Change Orders ({{ ct.linkedChangeOrderIds.length }})</div>
+              <modus-typography size="xs" className="text-foreground-60 uppercase tracking-wide mb-2">Linked Change Orders ({{ ct.linkedChangeOrderIds.length }})</modus-typography>
               <div class="flex flex-wrap gap-2">
                 @for (coId of ct.linkedChangeOrderIds; track coId) {
-                  <div class="bg-primary-20 text-primary text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer hover:bg-primary-40 transition-colors duration-150"
+                  <div class="bg-primary-20 px-2.5 py-1 rounded-lg cursor-pointer hover:bg-primary-40 transition-colors duration-150 flex items-center"
                     tabindex="0" (click)="linkedCoClick.emit(coId)" (keydown.enter)="linkedCoClick.emit(coId)">
-                    <i class="modus-icons text-xs mr-1" aria-hidden="true">link</i>{{ coId }}
+                    <i class="modus-icons text-xs text-primary mr-1" aria-hidden="true">link</i><modus-typography size="xs" weight="semibold" className="text-primary">{{ coId }}</modus-typography>
                   </div>
                 }
               </div>

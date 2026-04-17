@@ -1,19 +1,21 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApVendor, ApVendorType } from '../../../data/dashboard-data.types';
 
 @Component({
   selector: 'app-home-vendor-aging',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
     <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto p-4">
-      <div class="text-sm font-semibold text-foreground">Aging summary</div>
-      <div class="grid grid-cols-5 gap-1 text-center text-2xs text-foreground-60 mb-1">
-        <div>Current</div>
-        <div>1-30</div>
-        <div>31-60</div>
-        <div>61-90</div>
-        <div>90+</div>
+      <modus-typography hierarchy="h4" size="sm" weight="semibold" className="text-foreground">Aging summary</modus-typography>
+      <div class="grid grid-cols-5 gap-1 text-center mb-1">
+        <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Current</modus-typography>
+        <modus-typography hierarchy="p" size="xs" className="text-foreground-60">1-30</modus-typography>
+        <modus-typography hierarchy="p" size="xs" className="text-foreground-60">31-60</modus-typography>
+        <modus-typography hierarchy="p" size="xs" className="text-foreground-60">61-90</modus-typography>
+        <modus-typography hierarchy="p" size="xs" className="text-foreground-60">90+</modus-typography>
       </div>
       <div class="flex h-3 w-full rounded overflow-hidden border-default">
         @for (seg of summarySegments(); track seg.key) {
@@ -25,9 +27,9 @@ import type { ApVendor, ApVendorType } from '../../../data/dashboard-data.types'
           ></div>
         }
       </div>
-      <div class="grid grid-cols-5 gap-1 text-2xs tabular-nums text-foreground">
+      <div class="grid grid-cols-5 gap-1">
         @for (seg of summarySegments(); track seg.key) {
-          <div class="text-center truncate">{{ formatCurrency(seg.amount) }}</div>
+          <modus-typography hierarchy="p" size="xs" className="tabular-nums text-foreground text-center truncate">{{ formatCurrency(seg.amount) }}</modus-typography>
         }
       </div>
 
@@ -36,17 +38,17 @@ import type { ApVendor, ApVendorType } from '../../../data/dashboard-data.types'
       @for (v of vendors(); track v.id) {
         <div class="flex flex-col gap-2 py-2 border-bottom-default last:border-b-0">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="text-sm font-medium text-foreground truncate min-w-0">{{ v.name }}</div>
-            <div class="rounded px-2 py-0.5 text-2xs font-medium bg-primary-20 text-primary shrink-0">
-              {{ vendorTypeLabel(v.vendorType) }}
+            <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate min-w-0">{{ v.name }}</modus-typography>
+            <div class="rounded px-2 py-0.5 bg-primary-20 text-primary shrink-0">
+              <modus-typography size="xs" weight="semibold" className="text-2xs">{{ vendorTypeLabel(v.vendorType) }}</modus-typography>
             </div>
           </div>
-          <div class="grid grid-cols-5 gap-1 text-2xs">
-            <div class="text-center rounded py-1 bg-success-20 text-foreground tabular-nums">{{ formatCurrency(v.current) }}</div>
-            <div class="text-center rounded py-1 bg-primary-20 text-foreground tabular-nums">{{ formatCurrency(v.aging30) }}</div>
-            <div class="text-center rounded py-1 bg-warning-20 text-foreground tabular-nums">{{ formatCurrency(v.aging60) }}</div>
-            <div class="text-center rounded py-1 bg-warning-20 text-foreground tabular-nums">{{ formatCurrency(v.aging90) }}</div>
-            <div class="text-center rounded py-1 bg-destructive-20 text-foreground tabular-nums">{{ formatCurrency(v.aging90plus) }}</div>
+          <div class="grid grid-cols-5 gap-1">
+            <modus-typography hierarchy="p" size="xs" className="text-center rounded py-1 bg-success-20 text-foreground tabular-nums">{{ formatCurrency(v.current) }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-center rounded py-1 bg-primary-20 text-foreground tabular-nums">{{ formatCurrency(v.aging30) }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-center rounded py-1 bg-warning-20 text-foreground tabular-nums">{{ formatCurrency(v.aging60) }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-center rounded py-1 bg-warning-20 text-foreground tabular-nums">{{ formatCurrency(v.aging90) }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-center rounded py-1 bg-destructive-20 text-foreground tabular-nums">{{ formatCurrency(v.aging90plus) }}</modus-typography>
           </div>
         </div>
       }

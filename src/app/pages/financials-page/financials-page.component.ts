@@ -47,6 +47,7 @@ import { HomeApKpiCardsComponent, type ApKpiCard } from '../home-page/components
 import { HomeCashOutflowComponent } from '../home-page/components/home-cash-outflow.component';
 import { EstimateAssemblyHubComponent } from './components/estimate-assembly-hub.component';
 import { ESTIMATE_ASSEMBLY_HUBS } from '../../data/dashboard-data.seed';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
 type FinDetailType =
   | 'estimate' | 'changeOrder' | 'invoice' | 'payable' | 'purchaseOrder'
@@ -80,7 +81,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
 @Component({
   selector: 'app-financials-page',
-  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent, ChartComponent, HomeInvoiceQueueComponent, HomeVendorAgingComponent, HomePayAppsComponent, HomeLienWaiversComponent, HomeRetentionComponent, HomePaymentScheduleComponent, HomeApActivityComponent, HomeApKpiCardsComponent, HomeCashOutflowComponent, EstimateAssemblyHubComponent],
+  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent, ChartComponent, HomeInvoiceQueueComponent, HomeVendorAgingComponent, HomePayAppsComponent, HomeLienWaiversComponent, HomeRetentionComponent, HomePaymentScheduleComponent, HomeApActivityComponent, HomeApKpiCardsComponent, HomeCashOutflowComponent, EstimateAssemblyHubComponent, ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     'class': 'block h-full',
@@ -154,8 +155,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
       <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
         <div class="flex items-center gap-3 mb-6">
           <div class="flex flex-col">
-            <div class="text-2xl font-bold text-foreground">{{ project.projectName }}</div>
-            <div class="text-sm text-foreground-60">{{ project.client }}</div>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ project.projectName }}</modus-typography>
+            <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ project.client }}</modus-typography>
           </div>
         </div>
 
@@ -166,47 +167,47 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="w-8 h-8 rounded-lg bg-primary-20 flex items-center justify-center">
                 <i class="modus-icons text-base text-primary" aria-hidden="true">payment_instant</i>
               </div>
-              <div class="text-sm font-medium text-foreground-60">Total Budget</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Total Budget</modus-typography>
             </div>
-            <div class="text-3xl font-bold text-foreground">{{ project.budgetTotal }}</div>
+            <modus-typography  hierarchy="p" size="3xl" weight="bold" className="text-foreground">{{ project.budgetTotal }}</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
             <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-lg bg-warning-20 flex items-center justify-center">
                 <i class="modus-icons text-base text-warning" aria-hidden="true">bar_graph_line</i>
               </div>
-              <div class="text-sm font-medium text-foreground-60">Total Spent</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Total Spent</modus-typography>
             </div>
-            <div class="text-3xl font-bold text-foreground">{{ project.budgetUsed }}</div>
-            <div class="text-xs {{ project.budgetPct >= 90 ? 'text-destructive' : project.budgetPct >= 75 ? 'text-warning' : 'text-success' }} font-medium">{{ project.budgetPct }}% of budget</div>
+            <modus-typography  hierarchy="p" size="3xl" weight="bold" className="text-foreground">{{ project.budgetUsed }}</modus-typography>
+            <modus-typography  hierarchy="p" size="xs" weight="semibold" className="{{ project.budgetPct >= 90 ? 'text-destructive' : project.budgetPct >= 75 ? 'text-warning' : 'text-success' }}">{{ project.budgetPct }}% of budget</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
             <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-lg bg-success-20 flex items-center justify-center">
                 <i class="modus-icons text-base text-success" aria-hidden="true">bar_graph</i>
               </div>
-              <div class="text-sm font-medium text-foreground-60">Remaining</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Remaining</modus-typography>
             </div>
-            <div class="text-3xl font-bold text-success">{{ formatJobCost(detailBudgetInfo().remaining) }}</div>
-            <div class="text-xs text-success font-medium">{{ 100 - project.budgetPct }}% remaining</div>
+            <modus-typography  hierarchy="p" size="3xl" weight="bold" className="text-success">{{ formatJobCost(detailBudgetInfo().remaining) }}</modus-typography>
+            <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-success">{{ 100 - project.budgetPct }}% remaining</modus-typography>
           </div>
           <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-3">
             <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                 <i class="modus-icons text-base text-foreground-60" aria-hidden="true">dashboard</i>
               </div>
-              <div class="text-sm font-medium text-foreground-60">Budget Health</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Budget Health</modus-typography>
             </div>
             <div class="w-full mt-1">
               <modus-progress [value]="project.budgetPct" [max]="100" [className]="budgetProgressClass(project.budgetPct)" />
             </div>
-            <div class="text-xs text-foreground-60">{{ project.budgetUsed }} of {{ project.budgetTotal }} used</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ project.budgetUsed }} of {{ project.budgetTotal }} used</modus-typography>
           </div>
         </div>
         @if (jobCostKpiInsight()) {
           <div class="flex items-center gap-1.5 px-5 py-2 mb-6 bg-card border-default rounded-lg">
             <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-            <div class="text-xs text-foreground-60 truncate leading-none">{{ jobCostKpiInsight() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ jobCostKpiInsight() }}</modus-typography>
           </div>
         } @else {
           <div class="mb-2"></div>
@@ -216,7 +217,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
           <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph</i>
-            <div class="text-base font-semibold text-foreground">Cost Breakdown</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Cost Breakdown</modus-typography>
           </div>
 
           <div class="px-5 py-5 flex flex-col gap-5">
@@ -227,10 +228,10 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   <div class="{{ cat.colorClass }}" [style.width.%]="cat.pctOfSpend"></div>
                 }
               </div>
-              <div class="flex items-center justify-between text-2xs text-foreground-40">
-                <div>0%</div>
-                <div>{{ formatJobCost(detailBudgetInfo().spent) }} total spend</div>
-                <div>100%</div>
+              <div class="flex items-center justify-between text-foreground-40">
+                <modus-typography size="xs" className="text-2xs">0%</modus-typography>
+                <modus-typography size="xs" className="text-2xs">{{ formatJobCost(detailBudgetInfo().spent) }} total spend</modus-typography>
+                <modus-typography size="xs" className="text-2xs">100%</modus-typography>
               </div>
             </div>
 
@@ -240,31 +241,31 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 <div class="flex flex-col gap-3 p-4 bg-background border-default rounded-lg">
                   <div class="flex items-center gap-2">
                     <div class="w-3 h-3 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                    <div class="text-xs text-foreground-60 uppercase tracking-wide font-semibold">{{ cat.label }}</div>
+                    <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">{{ cat.label }}</modus-typography>
                   </div>
-                  <div class="text-2xl font-bold text-foreground">{{ formatJobCost(cat.amount) }}</div>
+                  <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatJobCost(cat.amount) }}</modus-typography>
                   <div class="flex flex-col gap-1.5">
-                    <div class="flex items-center justify-between text-xs">
-                      <div class="text-foreground-60">% of spend</div>
-                      <div class="font-semibold text-foreground">{{ cat.pctOfSpend }}%</div>
+                    <div class="flex items-center justify-between">
+                      <modus-typography size="xs" className="text-foreground-60">% of spend</modus-typography>
+                      <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground">{{ cat.pctOfSpend }}%</modus-typography>
                     </div>
                     <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
                       <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfSpend"></div>
                     </div>
                   </div>
                   <div class="flex flex-col gap-1.5">
-                    <div class="flex items-center justify-between text-xs">
-                      <div class="text-foreground-60">% of budget</div>
-                      <div class="font-semibold text-foreground">{{ cat.pctOfBudget }}%</div>
+                    <div class="flex items-center justify-between">
+                      <modus-typography size="xs" className="text-foreground-60">% of budget</modus-typography>
+                      <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground">{{ cat.pctOfBudget }}%</modus-typography>
                     </div>
                     <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden">
                       <div class="{{ cat.colorClass }} h-full rounded-full transition-all duration-300" [style.width.%]="cat.pctOfBudget"></div>
                     </div>
                   </div>
                   <div class="border-top-default pt-2 mt-1">
-                    <div class="flex items-center justify-between text-xs">
-                      <div class="text-foreground-40">Portfolio avg</div>
-                      <div class="text-foreground-60">{{ cat.portfolioAvgPct }}%</div>
+                    <div class="flex items-center justify-between">
+                      <modus-typography size="xs" className="text-foreground-40">Portfolio avg</modus-typography>
+                      <modus-typography size="xs" className="text-foreground-60">{{ cat.portfolioAvgPct }}%</modus-typography>
                     </div>
                   </div>
                 </div>
@@ -279,12 +280,12 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="flex items-center justify-between px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">arrow_up</i>
-              <div class="text-base font-semibold text-foreground">Profit Fade / Gain</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Profit Fade / Gain</modus-typography>
             </div>
             <div class="flex items-center gap-2">
-              <div class="px-2.5 py-1 rounded-full text-xs font-semibold {{ pf.isFade ? 'bg-destructive-20 text-destructive' : 'bg-success-20 text-success' }}">
+              <modus-typography  hierarchy="p" size="xs" weight="semibold" className="px-2.5 py-1 rounded-full {{ pf.isFade ? 'bg-destructive-20 text-destructive' : 'bg-success-20 text-success' }}">
                 {{ pf.isFade ? 'Fade' : 'Gain' }} {{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%
-              </div>
+              </modus-typography>
             </div>
           </div>
 
@@ -292,22 +293,22 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <!-- KPI row -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
-                <div class="text-xs text-foreground-40 uppercase tracking-wide">Original Estimate</div>
-                <div class="text-2xl font-bold text-foreground">{{ pf.originalMargin }}%</div>
-                <div class="text-xs text-foreground-60">Bid margin</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 uppercase tracking-wide">Original Estimate</modus-typography>
+                <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ pf.originalMargin }}%</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Bid margin</modus-typography>
               </div>
               <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
-                <div class="text-xs text-foreground-40 uppercase tracking-wide">Current Projected</div>
-                <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.currentMargin }}%</div>
-                <div class="text-xs text-foreground-60">Based on costs to date</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 uppercase tracking-wide">Current Projected</modus-typography>
+                <modus-typography  hierarchy="p" size="2xl" weight="bold" className="{{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.currentMargin }}%</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Based on costs to date</modus-typography>
               </div>
               <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
-                <div class="text-xs text-foreground-40 uppercase tracking-wide">{{ pf.isFade ? 'Profit Fade' : 'Profit Gain' }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 uppercase tracking-wide">{{ pf.isFade ? 'Profit Fade' : 'Profit Gain' }}</modus-typography>
                 <div class="flex items-center gap-2">
                   <i class="modus-icons text-lg {{ pf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ pf.isFade ? 'arrow_down' : 'arrow_up' }}</i>
-                  <div class="text-2xl font-bold {{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%</div>
+                  <modus-typography  hierarchy="p" size="2xl" weight="bold" className="{{ pf.isFade ? 'text-destructive' : 'text-success' }}">{{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%</modus-typography>
                 </div>
-                <div class="text-xs text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ pf.isFade ? 'Below original estimate' : 'Above original estimate' }}</modus-typography>
               </div>
             </div>
 
@@ -340,36 +341,36 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 }
               </svg>
 
-              <div class="absolute bottom-0 left-9 right-0 text-2xs text-foreground-40" style="position:relative">
+              <div class="absolute bottom-0 left-9 right-0 text-foreground-40" style="position:relative">
                 @for (lbl of pfMonthLabels(); track lbl.pct) {
-                  <div class="absolute" [style.left.%]="lbl.pct" style="transform:translateX(-50%)">{{ lbl.text }}</div>
+                  <modus-typography size="xs" className="text-2xs absolute" [style.left.%]="lbl.pct" style="transform:translateX(-50%)">{{ lbl.text }}</modus-typography>
                 }
               </div>
 
-              <div class="absolute top-0 left-0 bottom-5 flex flex-col justify-between text-2xs text-foreground-40">
+              <div class="absolute top-0 left-0 bottom-5 flex flex-col justify-between text-foreground-40">
                 @for (line of pfGridLines(); track line.y) {
-                  <div>{{ line.label }}</div>
+                  <modus-typography size="xs" className="text-2xs">{{ line.label }}</modus-typography>
                 }
               </div>
 
-              <div class="absolute text-2xs font-medium text-foreground-60" style="right:4px" [style.top.px]="pfBaselineY() - 14">
+              <modus-typography size="xs" weight="semibold" className="text-2xs absolute text-foreground-60" style="right:4px" [style.top.px]="pfBaselineY() - 14">
                 Est. {{ pf.originalMargin }}%
-              </div>
+              </modus-typography>
             </div>
 
             <!-- Category-level fade attribution -->
             <div class="flex flex-col gap-3">
-              <div class="text-sm font-semibold text-foreground">Fade / Gain by Category</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">Fade / Gain by Category</modus-typography>
               <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
                 @for (cf of pfCategoryFade(); track cf.label) {
                   <div class="flex flex-col gap-2 p-3 bg-background border-default rounded-lg">
                     <div class="flex items-center gap-1.5">
                       <div class="w-2.5 h-2.5 rounded-full {{ cf.colorClass }} flex-shrink-0"></div>
-                      <div class="text-xs text-foreground-60 font-medium">{{ cf.label }}</div>
+                      <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">{{ cf.label }}</modus-typography>
                     </div>
                     <div class="flex items-center gap-1">
                       <i class="modus-icons text-sm {{ cf.isFade ? 'text-destructive' : 'text-success' }}" aria-hidden="true">{{ cf.isFade ? 'arrow_down' : 'arrow_up' }}</i>
-                      <div class="text-sm font-bold {{ cf.isFade ? 'text-destructive' : 'text-success' }}">{{ cf.isFade ? '' : '+' }}{{ cf.fadeAmount }}%</div>
+                      <modus-typography  hierarchy="p" size="sm" weight="bold" className="{{ cf.isFade ? 'text-destructive' : 'text-success' }}">{{ cf.isFade ? '' : '+' }}{{ cf.fadeAmount }}%</modus-typography>
                     </div>
                   </div>
                 }
@@ -383,14 +384,14 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <div class="bg-card border-default rounded-lg overflow-hidden">
           <div class="flex items-center gap-2 px-5 py-4 border-bottom-default">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
-            <div class="text-base font-semibold text-foreground">Cost Summary</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Cost Summary</modus-typography>
           </div>
 
-          <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-            <div role="columnheader">Category</div>
-            <div class="text-right" role="columnheader">Amount</div>
-            <div class="text-right" role="columnheader">% of Spend</div>
-            <div class="text-right" role="columnheader">% of Budget</div>
+          <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide" role="row">
+            <modus-typography size="xs" weight="semibold" role="columnheader">Category</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right" role="columnheader">Amount</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right" role="columnheader">% of Spend</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right" role="columnheader">% of Budget</modus-typography>
           </div>
 
           <div role="table" aria-label="Cost summary">
@@ -398,18 +399,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
                 <div class="flex items-center gap-2" role="cell">
                   <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                  <div class="text-sm font-medium text-foreground">{{ cat.label }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ cat.label }}</modus-typography>
                 </div>
-                <div class="text-sm font-semibold text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</div>
-                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</div>
-                <div class="text-sm text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</div>
+                <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right" role="cell">{{ formatJobCost(cat.amount) }}</modus-typography>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-right" role="cell">{{ cat.pctOfSpend }}%</modus-typography>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-right" role="cell">{{ cat.pctOfBudget }}%</modus-typography>
               </div>
             }
             <div class="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 px-5 py-3 bg-muted items-center" role="row">
-              <div class="text-sm font-bold text-foreground" role="cell">Total</div>
-              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ formatJobCost(detailBudgetInfo().spent) }}</div>
-              <div class="text-sm font-bold text-foreground text-right" role="cell">100%</div>
-              <div class="text-sm font-bold text-foreground text-right" role="cell">{{ project.budgetPct }}%</div>
+              <modus-typography hierarchy="p" size="sm" weight="bold" className="text-foreground" role="cell">Total</modus-typography>
+              <modus-typography hierarchy="p" size="sm" weight="bold" className="text-foreground text-right" role="cell">{{ formatJobCost(detailBudgetInfo().spent) }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" weight="bold" className="text-foreground text-right" role="cell">100%</modus-typography>
+              <modus-typography hierarchy="p" size="sm" weight="bold" className="text-foreground text-right" role="cell">{{ project.budgetPct }}%</modus-typography>
             </div>
           </div>
         </div>
@@ -422,12 +423,12 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           </div>
           <div class="flex flex-col min-w-0">
             <div class="flex items-center gap-3">
-              <div class="text-2xl font-bold text-foreground truncate">{{ meta.title }}</div>
+              <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground truncate">{{ meta.title }}</modus-typography>
               @if (meta.status) {
                 <modus-badge [color]="meta.statusColor ?? 'secondary'" size="sm">{{ meta.status }}</modus-badge>
               }
             </div>
-            <div class="text-sm text-foreground-60">{{ meta.subtitle }}</div>
+            <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ meta.subtitle }}</modus-typography>
           </div>
         </div>
 
@@ -435,22 +436,22 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
             <!-- Project Estimate -->
             <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-1">
-              <div class="text-base font-semibold text-foreground mb-2">Project Estimate</div>
-              <div class="flex gap-6 flex-wrap text-2xs text-foreground-60 uppercase tracking-wide font-semibold">
-                <div>Actual</div>
-                <div>Proposal Cost</div>
-                <div>Estimated Profit Margin</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground mb-2">Project Estimate</modus-typography>
+              <div class="flex gap-6 flex-wrap text-foreground-60 uppercase tracking-wide">
+                <modus-typography size="xs" weight="semibold" className="text-2xs">Actual</modus-typography>
+                <modus-typography size="xs" weight="semibold" className="text-2xs">Proposal Cost</modus-typography>
+                <modus-typography size="xs" weight="semibold" className="text-2xs">Estimated Profit Margin</modus-typography>
               </div>
               <div class="flex items-baseline gap-6 flex-wrap">
-                <div class="text-2xl font-bold text-foreground">$6,000,000</div>
-                <div class="text-2xl font-bold text-foreground">$8,200,000</div>
-                <div class="text-2xl font-bold text-foreground">26.83%</div>
+                <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">$6,000,000</modus-typography>
+                <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">$8,200,000</modus-typography>
+                <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">26.83%</modus-typography>
               </div>
               <div class="mt-auto flex flex-col gap-3 pt-3">
-                <div class="flex items-center gap-4 text-xs text-foreground-60 flex-wrap">
-                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">calendar</i> Updated July 3, 2026</div>
-                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">dashboard</i> Confidence: 91%</div>
-                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">bar_graph_line</i> Complexity: 87%</div>
+                <div class="flex items-center gap-4 text-foreground-60 flex-wrap">
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">calendar</i> <modus-typography size="xs">Updated July 3, 2026</modus-typography></div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">dashboard</i> <modus-typography size="xs">Confidence: 91%</modus-typography></div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">bar_graph_line</i> <modus-typography size="xs">Complexity: 87%</modus-typography></div>
                 </div>
                 <div>
                   <modus-button variant="outlined" size="sm" color="primary">Check Estimation</modus-button>
@@ -461,40 +462,40 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <!-- Bid Intelligence -->
             <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-1">
               <div class="flex items-center justify-between mb-2">
-                <div class="text-base font-semibold text-foreground">Bid Intelligence</div>
+                <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Bid Intelligence</modus-typography>
                 <modus-badge color="warning" size="sm">Medium</modus-badge>
               </div>
-              <div class="text-2xs invisible">&#8203;</div>
+              <modus-typography className="text-2xs invisible">&#8203;</modus-typography>
               <div class="flex items-baseline gap-2">
-                <div class="text-2xl font-bold text-foreground">78%</div>
-                <div class="text-base text-foreground-60">win probability</div>
+                <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">78%</modus-typography>
+                <modus-typography  hierarchy="p" size="md" className="text-foreground-60">win probability</modus-typography>
               </div>
               <div class="mt-auto flex flex-col gap-3 pt-3">
-                <div class="flex items-center gap-4 text-xs text-foreground-60 flex-wrap">
-                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">people_group</i> 4-6 expected bidders</div>
-                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">auto_target</i> Target: 8-12% margin</div>
+                <div class="flex items-center gap-4 text-foreground-60 flex-wrap">
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">people_group</i> <modus-typography size="xs">4-6 expected bidders</modus-typography></div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">auto_target</i> <modus-typography size="xs">Target: 8-12% margin</modus-typography></div>
                 </div>
                 <div class="flex items-center gap-3 flex-wrap">
                   <modus-button variant="outlined" size="sm" color="primary">View Risks</modus-button>
-                  <div class="bg-warning-20 text-warning text-xs font-medium px-3 py-1 rounded-full">Copper pricing, Seismic survey</div>
+                  <modus-typography  hierarchy="p" size="xs" weight="semibold" className="bg-warning-20 text-warning px-3 py-1 rounded-full">Copper pricing, Seismic survey</modus-typography>
                 </div>
               </div>
             </div>
 
             <!-- Field Intelligence -->
             <div class="bg-card border-default rounded-lg p-5 flex flex-col gap-1">
-              <div class="text-base font-semibold text-foreground mb-2">Field Intelligence</div>
-              <div class="text-2xs invisible">&#8203;</div>
-              <div class="text-2xl font-bold text-foreground">Geotechnical ready</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground mb-2">Field Intelligence</modus-typography>
+              <modus-typography className="text-2xs invisible">&#8203;</modus-typography>
+              <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">Geotechnical ready</modus-typography>
               <div class="mt-auto flex flex-col gap-3 pt-3">
-                <div class="flex items-center gap-4 text-xs text-foreground-60 flex-wrap">
-                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">location</i> 4230 Riverside Blvd</div>
-                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">ruler</i> 32,000 ft&#178; &middot; 2 Stories</div>
-                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">map</i> 4.2 mi&#178; Lot</div>
+                <div class="flex items-center gap-4 text-foreground-60 flex-wrap">
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">location</i> <modus-typography size="xs">4230 Riverside Blvd</modus-typography></div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">ruler</i> <modus-typography size="xs">32,000 ft&#178; &middot; 2 Stories</modus-typography></div>
+                  <div class="flex items-center gap-1"><i class="modus-icons text-xs" aria-hidden="true">map</i> <modus-typography size="xs">4.2 mi&#178; Lot</modus-typography></div>
                 </div>
                 <div class="flex items-center gap-3 flex-wrap">
                   <modus-button variant="outlined" size="sm" color="secondary">View Safety Risks</modus-button>
-                  <div class="bg-warning-20 text-warning text-xs font-medium px-3 py-1 rounded-full">Wetland detected - NE corner</div>
+                  <modus-typography  hierarchy="p" size="xs" weight="semibold" className="bg-warning-20 text-warning px-3 py-1 rounded-full">Wetland detected - NE corner</modus-typography>
                 </div>
               </div>
             </div>
@@ -504,8 +505,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-muted">
               @for (field of meta.fields; track field.label) {
                 <div class="bg-card px-5 py-4 flex flex-col gap-1">
-                  <div class="text-xs text-foreground-60 uppercase tracking-wide font-semibold">{{ field.label }}</div>
-                  <div class="text-base text-foreground" [class.font-bold]="field.highlight" [class.text-primary]="field.highlight">{{ field.value }}</div>
+                  <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">{{ field.label }}</modus-typography>
+                  <modus-typography size="md" [weight]="field.highlight ? 'bold' : 'normal'" className="text-foreground" [class.text-primary]="field.highlight">{{ field.value }}</modus-typography>
                 </div>
               }
             </div>
@@ -523,9 +524,9 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
                   <i class="modus-icons text-lg text-primary" aria-hidden="true">refresh</i>
-                  <div class="text-lg font-semibold text-foreground">Live Supplier Exchange Integration</div>
+                  <modus-typography  hierarchy="p" size="lg" weight="semibold" className="text-foreground">Live Supplier Exchange Integration</modus-typography>
                 </div>
-                <div class="text-sm text-foreground-60">Real-time quote updates from integrated supplier APIs and bid exchanges</div>
+                <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">Real-time quote updates from integrated supplier APIs and bid exchanges</modus-typography>
               </div>
               <modus-badge color="success" size="sm">3 Active Feeds</modus-badge>
             </div>
@@ -536,18 +537,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="border-default rounded-lg p-4 flex flex-col gap-2">
                 <div class="flex items-center justify-between">
                   <div>
-                    <div class="text-sm font-semibold text-foreground">ABC Concrete Supply</div>
-                    <div class="text-xs text-foreground-60">Div 03 - Cast-in-Place Concrete</div>
+                    <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">ABC Concrete Supply</modus-typography>
+                    <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Div 03 - Cast-in-Place Concrete</modus-typography>
                   </div>
                   <modus-badge color="success" size="sm">API</modus-badge>
                 </div>
-                <div class="text-2xl font-bold text-foreground">$798,000</div>
-                <div class="flex items-center justify-between text-xs text-foreground-60">
-                  <div>Reliability: 95%</div>
-                  <div>2024-02-20</div>
+                <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">$798,000</modus-typography>
+                <div class="flex items-center justify-between text-foreground-60">
+                  <modus-typography size="xs">Reliability: 95%</modus-typography>
+                  <modus-typography size="xs">2024-02-20</modus-typography>
                 </div>
-                <div class="flex items-center gap-1 text-xs text-foreground-60">
-                  <i class="modus-icons text-xs" aria-hidden="true">refresh</i> Updated: 1 hour ago
+                <div class="flex items-center gap-1 text-foreground-60">
+                  <i class="modus-icons text-xs" aria-hidden="true">refresh</i> <modus-typography size="xs">Updated: 1 hour ago</modus-typography>
                 </div>
               </div>
 
@@ -555,18 +556,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="border-default rounded-lg p-4 flex flex-col gap-2">
                 <div class="flex items-center justify-between">
                   <div>
-                    <div class="text-sm font-semibold text-foreground">Steel Reinforcing Co.</div>
-                    <div class="text-xs text-foreground-60">Div 03 - Rebar</div>
+                    <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">Steel Reinforcing Co.</modus-typography>
+                    <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Div 03 - Rebar</modus-typography>
                   </div>
                   <modus-badge color="success" size="sm">API</modus-badge>
                 </div>
-                <div class="text-2xl font-bold text-foreground">$268,250</div>
-                <div class="flex items-center justify-between text-xs text-foreground-60">
-                  <div>Reliability: 92%</div>
-                  <div>2024-02-19</div>
+                <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">$268,250</modus-typography>
+                <div class="flex items-center justify-between text-foreground-60">
+                  <modus-typography size="xs">Reliability: 92%</modus-typography>
+                  <modus-typography size="xs">2024-02-19</modus-typography>
                 </div>
-                <div class="flex items-center gap-1 text-xs text-foreground-60">
-                  <i class="modus-icons text-xs" aria-hidden="true">refresh</i> Updated: 2 hours ago
+                <div class="flex items-center gap-1 text-foreground-60">
+                  <i class="modus-icons text-xs" aria-hidden="true">refresh</i> <modus-typography size="xs">Updated: 2 hours ago</modus-typography>
                 </div>
               </div>
 
@@ -574,18 +575,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="border-default rounded-lg p-4 flex flex-col gap-2">
                 <div class="flex items-center justify-between">
                   <div>
-                    <div class="text-sm font-semibold text-foreground">Premier Drywall Systems</div>
-                    <div class="text-xs text-foreground-60">Div 09 - Gypsum Board</div>
+                    <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">Premier Drywall Systems</modus-typography>
+                    <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Div 09 - Gypsum Board</modus-typography>
                   </div>
                   <modus-badge color="secondary" size="sm">Email</modus-badge>
                 </div>
-                <div class="text-2xl font-bold text-foreground">$208,250</div>
-                <div class="flex items-center justify-between text-xs text-foreground-60">
-                  <div>Reliability: 88%</div>
-                  <div>2024-02-21</div>
+                <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">$208,250</modus-typography>
+                <div class="flex items-center justify-between text-foreground-60">
+                  <modus-typography size="xs">Reliability: 88%</modus-typography>
+                  <modus-typography size="xs">2024-02-21</modus-typography>
                 </div>
-                <div class="flex items-center gap-1 text-xs text-foreground-60">
-                  <i class="modus-icons text-xs" aria-hidden="true">refresh</i> Updated: 3 hours ago
+                <div class="flex items-center gap-1 text-foreground-60">
+                  <i class="modus-icons text-xs" aria-hidden="true">refresh</i> <modus-typography size="xs">Updated: 3 hours ago</modus-typography>
                 </div>
               </div>
             </div>
@@ -594,8 +595,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div class="mx-5 mb-5 bg-muted rounded-lg px-4 py-3 flex items-start gap-2">
               <i class="modus-icons text-base text-foreground-60 mt-0.5" aria-hidden="true">info</i>
               <div>
-                <div class="text-sm font-semibold text-foreground">Auto-Refresh Integration</div>
-                <div class="text-xs text-foreground-60">Supplier quotes are automatically refreshed every 2 hours through API integrations with major suppliers and bid exchanges. Email quotes are parsed and integrated automatically. This ensures PMs always see the most current pricing without manual data entry.</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">Auto-Refresh Integration</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Supplier quotes are automatically refreshed every 2 hours through API integrations with major suppliers and bid exchanges. Email quotes are parsed and integrated automatically. This ensures PMs always see the most current pricing without manual data entry.</modus-typography>
               </div>
             </div>
           </div>
@@ -629,8 +630,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         >
           <div class="flex items-start justify-between">
             <div>
-              <div class="text-3xl font-bold text-foreground" role="heading" aria-level="1">Financials Dashboard</div>
-              <div class="text-sm text-foreground-60 mt-1">{{ today }}</div>
+              <modus-typography hierarchy="h1" size="3xl" weight="bold" className="text-foreground" role="heading" aria-level="1">Financials Dashboard</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 mt-1">{{ today }}</modus-typography>
             </div>
             <div class="flex-shrink-0">
               <modus-button color="primary" size="sm" icon="download" iconPosition="left">Export</modus-button>
@@ -659,24 +660,23 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div class="bg-card border-default rounded-lg flex-shrink-0 overflow-hidden flex flex-col min-w-48">
               <div class="flex items-center gap-2 px-4 py-3 border-bottom-default flex-shrink-0">
                 <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">payment_instant</i>
-                <div class="text-sm font-semibold text-primary">Financials</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">Financials</modus-typography>
                 @if (navLinkTotalAlerts() > 0) {
-                  <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-2xs font-bold px-1"
+                  <modus-typography size="xs" weight="bold" className="text-2xs flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1"
                     [class.bg-destructive]="navLinkHasCriticalAlerts()"
                     [class.text-destructive-foreground]="navLinkHasCriticalAlerts()"
                     [class.bg-warning]="!navLinkHasCriticalAlerts()"
                     [class.text-warning-foreground]="!navLinkHasCriticalAlerts()">
                     {{ navLinkTotalAlerts() }}
-                  </div>
+                  </modus-typography>
                 }
               </div>
               <div class="py-1 flex-1 overflow-y-auto">
                 @for (item of finNavLinkItems(); track item.value) {
                   <div
-                    class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150 whitespace-nowrap"
+                    class="flex items-center justify-between py-2.5 cursor-pointer transition-colors duration-150 whitespace-nowrap"
                     [class.bg-primary]="activeSubPage() === item.value"
                     [class.text-primary-foreground]="activeSubPage() === item.value"
-                    [class.font-medium]="activeSubPage() === item.value"
                     [class.rounded-md]="activeSubPage() === item.value"
                     [class.mx-2]="activeSubPage() === item.value"
                     [class.px-2]="activeSubPage() === item.value"
@@ -694,10 +694,10 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                           [class.text-foreground-60]="activeSubPage() !== item.value"
                         >{{ item.icon }}</i>
                       }
-                      <div class="truncate">{{ item.label }}</div>
+                      <modus-typography size="sm" [weight]="activeSubPage() === item.value ? 'semibold' : 'normal'" className="truncate">{{ item.label }}</modus-typography>
                     </div>
                     @if (finSubnavAlerts()[item.value]; as alert) {
-                      <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1 mr-1"
+                      <modus-typography size="xs" weight="bold" className="text-2xs flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-1 mr-1"
                         [class.bg-destructive]="alert.level === 'critical'"
                         [class.text-destructive-foreground]="alert.level === 'critical'"
                         [class.bg-warning]="alert.level === 'warning'"
@@ -708,7 +708,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                         [class.text-primary]="alert.level === 'info' && activeSubPage() === item.value"
                         [attr.title]="alert.count + ' ' + alert.label">
                         {{ alert.count }}
-                      </div>
+                      </modus-typography>
                     }
                   </div>
                 }
@@ -728,13 +728,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     [class.text-destructive]="pipelineColor() === 'destructive'">bar_graph</i>
                 </div>
                 <div class="min-w-0">
-                  <div class="text-xs text-foreground-60">Pipeline Value</div>
-                  <div class="text-lg font-bold leading-tight"
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Pipeline Value</modus-typography>
+                  <modus-typography hierarchy="p" size="lg" weight="bold" className="leading-tight"
                     [class.text-success]="pipelineColor() === 'success'"
                     [class.text-warning]="pipelineColor() === 'warning'"
-                    [class.text-destructive]="pipelineColor() === 'destructive'">{{ fmtCurrency(pamelaEstPipeline()) }}</div>
+                    [class.text-destructive]="pipelineColor() === 'destructive'">{{ fmtCurrency(pamelaEstPipeline()) }}</modus-typography>
                 </div>
-                <div class="text-xs text-foreground-60 ml-auto flex-shrink-0">{{ pamelaOpenCount() }} open / {{ pamelaProjectCount() }} projects</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 ml-auto flex-shrink-0">{{ pamelaOpenCount() }} open / {{ pamelaProjectCount() }} projects</modus-typography>
               </div>
               <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
@@ -747,13 +747,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     [class.text-destructive]="winRateColor() === 'destructive'">check_circle</i>
                 </div>
                 <div class="min-w-0">
-                  <div class="text-xs text-foreground-60">Win Rate</div>
-                  <div class="text-lg font-bold leading-tight"
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Win Rate</modus-typography>
+                  <modus-typography hierarchy="p" size="lg" weight="bold" className="leading-tight"
                     [class.text-success]="winRateColor() === 'success'"
                     [class.text-warning]="winRateColor() === 'warning'"
-                    [class.text-destructive]="winRateColor() === 'destructive'">{{ pamelaWinRate() }}%</div>
+                    [class.text-destructive]="winRateColor() === 'destructive'">{{ pamelaWinRate() }}%</modus-typography>
                 </div>
-                <div class="text-xs text-foreground-60 ml-auto flex-shrink-0">{{ estimatesApprovedCount() }} approved of {{ estimates().length }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 ml-auto flex-shrink-0">{{ estimatesApprovedCount() }} approved of {{ estimates().length }}</modus-typography>
               </div>
               <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
@@ -766,18 +766,18 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     [class.text-destructive]="overdueColor() === 'destructive'">{{ estimatesOverdueCount() > 0 ? 'warning' : 'check_circle' }}</i>
                 </div>
                 <div class="min-w-0">
-                  <div class="text-xs text-foreground-60">Overdue Estimates</div>
-                  <div class="text-lg font-bold leading-tight"
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Overdue Estimates</modus-typography>
+                  <modus-typography hierarchy="p" size="lg" weight="bold" className="leading-tight"
                     [class.text-success]="overdueColor() === 'success'"
                     [class.text-warning]="overdueColor() === 'warning'"
-                    [class.text-destructive]="overdueColor() === 'destructive'">{{ estimatesOverdueCount() }}</div>
+                    [class.text-destructive]="overdueColor() === 'destructive'">{{ estimatesOverdueCount() }}</modus-typography>
                 </div>
-                <div class="text-xs text-foreground-60 ml-auto flex-shrink-0">{{ estimatesUnderReviewCount() }} review, {{ pamelaAwaitingCount() }} awaiting</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 ml-auto flex-shrink-0">{{ estimatesUnderReviewCount() }} review, {{ pamelaAwaitingCount() }} awaiting</modus-typography>
               </div>
               @if (finKpiInsight()) {
                 <div class="flex items-center gap-1.5 px-4 py-2 bg-card border-default rounded-lg flex-shrink-0">
                   <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                  <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</modus-typography>
                 </div>
               }
             </div>
@@ -785,7 +785,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div class="flex-1 min-w-0 flex flex-col gap-3">
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Gross Margin</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Gross Margin</modus-typography>
                   <div class="w-9 h-9 rounded-lg flex items-center justify-center"
                     [class.bg-success-20]="grossMarginColor() === 'success'"
                     [class.bg-warning-20]="grossMarginColor() === 'warning'"
@@ -797,10 +797,10 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <div class="text-3xl font-bold flex-shrink-0"
+                  <modus-typography hierarchy="p" size="3xl" weight="bold" className="flex-shrink-0"
                     [class.text-success]="grossMarginColor() === 'success'"
                     [class.text-warning]="grossMarginColor() === 'warning'"
-                    [class.text-destructive]="grossMarginColor() === 'destructive'">{{ grossMarginPct() }}%</div>
+                    [class.text-destructive]="grossMarginColor() === 'destructive'">{{ grossMarginPct() }}%</modus-typography>
                   @if (showKpiSparklines() && marginSparkline().length > 1) {
                     <div class="flex-1 min-w-0">
                       <apx-chart
@@ -814,11 +814,11 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     </div>
                   }
                 </div>
-                <div class="text-xs text-foreground-60">{{ fmtCurrency(grossProfit()) }} gross profit across {{ totalProjects() }} projects</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ fmtCurrency(grossProfit()) }} gross profit across {{ totalProjects() }} projects</modus-typography>
               </div>
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Cash Runway</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Cash Runway</modus-typography>
                   <div class="w-9 h-9 rounded-lg flex items-center justify-center"
                     [class.bg-success-20]="cashRunwayColor() === 'success'"
                     [class.bg-warning-20]="cashRunwayColor() === 'warning'"
@@ -830,10 +830,10 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <div class="text-3xl font-bold flex-shrink-0"
+                  <modus-typography hierarchy="p" size="3xl" weight="bold" className="flex-shrink-0"
                     [class.text-success]="cashRunwayColor() === 'success'"
                     [class.text-warning]="cashRunwayColor() === 'warning'"
-                    [class.text-destructive]="cashRunwayColor() === 'destructive'">{{ cashRunwayMonths() }} mo</div>
+                    [class.text-destructive]="cashRunwayColor() === 'destructive'">{{ cashRunwayMonths() }} mo</modus-typography>
                   @if (showKpiSparklines() && runwaySparkline().length > 1) {
                     <div class="flex-1 min-w-0">
                       <apx-chart
@@ -847,11 +847,11 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     </div>
                   }
                 </div>
-                <div class="text-xs text-foreground-60">{{ fmtCurrency(cashBalance()) }} balance / {{ fmtCurrency(monthlyBurn()) }} monthly burn</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ fmtCurrency(cashBalance()) }} balance / {{ fmtCurrency(monthlyBurn()) }} monthly burn</modus-typography>
               </div>
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-medium text-foreground-60">Accounts Receivable</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Accounts Receivable</modus-typography>
                   <div class="w-9 h-9 rounded-lg flex items-center justify-center"
                     [class.bg-success-20]="arColor() === 'success'"
                     [class.bg-warning-20]="arColor() === 'warning'"
@@ -863,10 +863,10 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <div class="text-3xl font-bold flex-shrink-0"
+                  <modus-typography hierarchy="p" size="3xl" weight="bold" className="flex-shrink-0"
                     [class.text-success]="arColor() === 'success'"
                     [class.text-warning]="arColor() === 'warning'"
-                    [class.text-destructive]="arColor() === 'destructive'">{{ fmtCurrency(totalOutstandingAR()) }}</div>
+                    [class.text-destructive]="arColor() === 'destructive'">{{ fmtCurrency(totalOutstandingAR()) }}</modus-typography>
                   @if (showKpiSparklines() && arSparkline().length > 1) {
                     <div class="flex-1 min-w-0">
                       <apx-chart
@@ -880,12 +880,12 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     </div>
                   }
                 </div>
-                <div class="text-xs text-foreground-60">DSO {{ dso() }} days @if (overdueInvoiceCount() > 0) { -- {{ overdueInvoiceCount() }} overdue }</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">DSO {{ dso() }} days @if (overdueInvoiceCount() > 0) { -- {{ overdueInvoiceCount() }} overdue }</modus-typography>
               </div>
               @if (finKpiInsight()) {
                 <div class="flex items-center gap-1.5 px-5 py-2 bg-card border-default rounded-lg flex-shrink-0">
                   <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                  <div class="text-xs text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</modus-typography>
                 </div>
               }
             </div>
@@ -895,7 +895,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               @if (kellyApKpisInsight()) {
                 <div class="flex items-center gap-1.5 px-3 py-2 bg-muted rounded-lg flex-shrink-0">
                   <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                  <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyApKpisInsight() }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyApKpisInsight() }}</modus-typography>
                 </div>
               }
             </div>
@@ -934,12 +934,12 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph_line</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Revenue Over Time</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Revenue Over Time</modus-typography>
                     </div>
                     <div class="flex items-center gap-2" (mousedown)="$event.stopPropagation()">
                       @for (range of timeRanges; track range) {
                         <div
-                          class="px-2.5 py-1 rounded text-xs font-medium cursor-pointer transition-colors duration-150 select-none"
+                          class="px-2.5 py-1 rounded cursor-pointer transition-colors duration-150 select-none"
                           [class.bg-primary]="selectedRange() === range"
                           [class.text-primary-foreground]="selectedRange() === range"
                           [class.text-foreground-60]="selectedRange() !== range"
@@ -948,25 +948,25 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                           role="button" tabindex="0"
                           [attr.aria-label]="range + ' time range'"
                           [attr.aria-pressed]="selectedRange() === range"
-                        >{{ range }}</div>
+                        ><modus-typography size="xs" weight="semibold">{{ range }}</modus-typography></div>
                       }
                     </div>
                   </div>
                   @if (revenueInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ revenueInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ revenueInsight() }}</modus-typography>
                     </div>
                   }
 
                   <div class="flex-1 flex flex-col px-5 py-4 gap-3 min-h-0">
                     <div class="flex items-baseline gap-3">
-                      <div class="text-3xl font-bold text-foreground">{{ formatCurrency(revenueSummary().current) }}</div>
-                      <div class="flex items-center gap-1 text-sm font-medium text-success">
+                      <modus-typography  hierarchy="p" size="3xl" weight="bold" className="text-foreground">{{ formatCurrency(revenueSummary().current) }}</modus-typography>
+                      <div class="flex items-center gap-1 text-success">
                         <i class="modus-icons text-sm" aria-hidden="true">arrow_up</i>
-                        +{{ revenueSummary().growthPct }}%
+                        <modus-typography size="sm" weight="semibold">+{{ revenueSummary().growthPct }}%</modus-typography>
                       </div>
-                      <div class="text-xs text-foreground-40">{{ revenueSummary().label }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ revenueSummary().label }}</modus-typography>
                     </div>
 
                     <div class="flex-1 min-h-0 px-2 pb-2">
@@ -1004,36 +1004,36 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">description</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Open Estimates</div>
-                      <div class="text-xs text-foreground-40">{{ estimates().length }} estimates</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Open Estimates</modus-typography>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ estimates().length }} estimates</modus-typography>
                     </div>
                   </div>
                   @if (estimatesInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ estimatesInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ estimatesInsight() }}</modus-typography>
                     </div>
                   }
                   <div
                     role="row"
-                    class="grid gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0"
+                    class="grid gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0"
                     [class]="estimatesUltraNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXXNarrow() ? 'grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesXNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : estimatesNarrow() ? 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)]'"
                   >
                     @if (!estimatesXXNarrow()) {
-                      <div role="columnheader">ID</div>
+                      <modus-typography size="xs" weight="semibold" role="columnheader">ID</modus-typography>
                     }
-                    <div role="columnheader">Project / Client</div>
+                    <modus-typography size="xs" weight="semibold" role="columnheader">Project / Client</modus-typography>
                     @if (!estimatesXNarrow()) {
-                      <div role="columnheader">Type</div>
+                      <modus-typography size="xs" weight="semibold" role="columnheader">Type</modus-typography>
                     }
                     @if (!estimatesUltraNarrow()) {
-                      <div role="columnheader">Value</div>
+                      <modus-typography size="xs" weight="semibold" role="columnheader">Value</modus-typography>
                     }
-                    <div role="columnheader">Status</div>
+                    <modus-typography size="xs" weight="semibold" role="columnheader">Status</modus-typography>
                     @if (!estimatesNarrow()) {
-                      <div role="columnheader">Requested By</div>
+                      <modus-typography size="xs" weight="semibold" role="columnheader">Requested By</modus-typography>
                     }
-                    <div role="columnheader">Due Date</div>
+                    <modus-typography size="xs" weight="semibold" role="columnheader">Due Date</modus-typography>
                   </div>
                   <div class="overflow-y-auto flex-1" role="table" aria-label="Open estimates">
                     @for (estimate of estimates(); track estimate.id) {
@@ -1044,19 +1044,19 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                         (click)="navigateToEstimate(estimate.id)"
                       >
                         @if (!estimatesXXNarrow()) {
-                          <div role="cell" class="text-sm font-mono text-primary font-medium">{{ estimate.id }}</div>
+                          <modus-typography role="cell" size="sm" weight="semibold" className="font-mono text-primary">{{ estimate.id }}</modus-typography>
                         }
                         <div role="cell">
-                          <div class="text-sm font-medium text-foreground truncate">{{ estimate.project }}</div>
-                          <div class="text-xs text-foreground-60 mt-0.5 truncate">{{ estimate.client }}</div>
+                          <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ estimate.project }}</modus-typography>
+                          <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mt-0.5 truncate">{{ estimate.client }}</modus-typography>
                         </div>
                         @if (!estimatesXNarrow()) {
                           <div role="cell">
-                            <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</div>
+                            <modus-typography  hierarchy="p" size="xs" className="bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ estimate.type }}</modus-typography>
                           </div>
                         }
                         @if (!estimatesUltraNarrow()) {
-                          <div role="cell" class="text-sm font-semibold text-foreground">{{ estimate.value }}</div>
+                          <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground" role="cell">{{ estimate.value }}</modus-typography>
                         }
                         <div role="cell">
                           <modus-badge [color]="estimateBadgeColor(estimate.status)" size="sm">
@@ -1065,15 +1065,15 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                         </div>
                         @if (!estimatesNarrow()) {
                           <div role="cell" class="flex items-center gap-2 min-w-0">
-                            <div class="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-xs font-semibold flex-shrink-0">
+                            <modus-typography size="xs" weight="semibold" className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground flex-shrink-0">
                               {{ estimate.requestedByInitials }}
-                            </div>
-                            <div class="text-xs text-foreground-80 truncate">{{ estimate.requestedBy }}</div>
+                            </modus-typography>
+                            <modus-typography  hierarchy="p" size="xs" className="text-foreground-80 truncate">{{ estimate.requestedBy }}</modus-typography>
                           </div>
                         }
                         <div role="cell">
-                          <div class="text-sm text-foreground-80">{{ estimate.dueDate }}</div>
-                          <div class="text-xs mt-0.5" [class]="dueDateClass(estimate.daysLeft)">
+                          <modus-typography  hierarchy="p" size="sm" className="text-foreground-80">{{ estimate.dueDate }}</modus-typography>
+                          <modus-typography size="xs" className="mt-0.5" [class]="dueDateClass(estimate.daysLeft)">
                             @if (estimate.daysLeft < 0) {
                               {{ -estimate.daysLeft }}d overdue
                             } @else if (estimate.daysLeft === 0) {
@@ -1081,7 +1081,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                             } @else {
                               {{ estimate.daysLeft }}d left
                             }
-                          </div>
+                          </modus-typography>
                         </div>
                       </div>
                     }
@@ -1104,38 +1104,38 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payment_instant</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Budget by Project</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Budget by Project</modus-typography>
                     </div>
                   </div>
                   @if (budgetByProjectInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ budgetByProjectInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ budgetByProjectInsight() }}</modus-typography>
                     </div>
                   }
 
-                  <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
-                    <div role="columnheader">Project</div>
-                    <div role="columnheader">Client</div>
-                    <div class="text-right" role="columnheader">Budget</div>
-                    <div role="columnheader">Progress</div>
-                    <div class="text-right" role="columnheader">Used</div>
+                  <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
+                    <modus-typography size="xs" weight="semibold" role="columnheader">Project</modus-typography>
+                    <modus-typography size="xs" weight="semibold" role="columnheader">Client</modus-typography>
+                    <modus-typography size="xs" weight="semibold" className="text-right" role="columnheader">Budget</modus-typography>
+                    <modus-typography size="xs" weight="semibold" role="columnheader">Progress</modus-typography>
+                    <modus-typography size="xs" weight="semibold" className="text-right" role="columnheader">Used</modus-typography>
                   </div>
 
                   <!-- Table body -->
                   <div class="overflow-y-auto flex-1" role="table" aria-label="Budget by project">
                     @for (p of projects(); track p.id) {
                       <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
-                        <div class="text-sm font-medium text-foreground truncate" role="cell">{{ p.name }}</div>
-                        <div class="text-sm text-foreground-60 truncate" role="cell">{{ p.client }}</div>
-                        <div class="text-sm text-foreground-60 text-right" role="cell">{{ p.budgetUsed }} / {{ p.budgetTotal }}</div>
+                        <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate" role="cell">{{ p.name }}</modus-typography>
+                        <modus-typography hierarchy="p" size="sm" className="text-foreground-60 truncate" role="cell">{{ p.client }}</modus-typography>
+                        <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-right" role="cell">{{ p.budgetUsed }} / {{ p.budgetTotal }}</modus-typography>
                         <div class="w-full" role="cell">
                           <modus-progress [value]="p.budgetPct" [max]="100" [className]="budgetProgressClass(p.budgetPct)" />
                         </div>
-                        <div class="text-xs font-medium text-right
+                        <modus-typography size="xs" weight="semibold" className="text-right
                           {{ p.budgetPct >= 90 ? 'text-destructive' : p.budgetPct >= 75 ? 'text-warning' : 'text-success' }}" role="cell">
                           {{ p.budgetPct }}%
-                        </div>
+                        </modus-typography>
                       </div>
                     }
                   </div>
@@ -1156,14 +1156,14 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Job Costs</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Job Costs</modus-typography>
                     </div>
-                    <div class="text-sm text-foreground-60">{{ formatJobCost(jobCostSummary().grandTotal) }} total</div>
+                    <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ formatJobCost(jobCostSummary().grandTotal) }} total</modus-typography>
                   </div>
                   @if (jobCostsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ jobCostsInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ jobCostsInsight() }}</modus-typography>
                     </div>
                   }
 
@@ -1180,30 +1180,30 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                           <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
                             <div class="flex items-center gap-1.5">
                               <div class="w-2 h-2 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                              <div class="text-2xs text-foreground-40 uppercase tracking-wide">{{ cat.label }}</div>
+                              <modus-typography className="text-2xs text-foreground-40 uppercase tracking-wide">{{ cat.label }}</modus-typography>
                             </div>
-                            <div class="text-sm font-semibold text-foreground">{{ formatJobCost(cat.total) }}</div>
-                            <div class="text-2xs text-foreground-60">{{ cat.pct }}%</div>
+                            <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatJobCost(cat.total) }}</modus-typography>
+                            <modus-typography className="text-2xs text-foreground-60">{{ cat.pct }}%</modus-typography>
                           </div>
                         }
                       </div>
                     </div>
 
-                    <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-5 py-3 bg-muted border-bottom-default border-top-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
-                      <div role="columnheader">Project</div>
-                      <div class="text-right" role="columnheader">Budget</div>
+                    <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-5 py-3 bg-muted border-bottom-default border-top-default text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
+                      <modus-typography size="xs" weight="semibold" role="columnheader">Project</modus-typography>
+                      <modus-typography size="xs" weight="semibold" className="text-right" role="columnheader">Budget</modus-typography>
                       @for (cat of jobCostCategories; track cat) {
-                        <div class="text-right" role="columnheader">{{ cat }}</div>
+                        <modus-typography size="xs" weight="semibold" className="text-right" role="columnheader">{{ cat }}</modus-typography>
                       }
                     </div>
 
                     <div role="table" aria-label="Job costs by project">
                       @for (p of projectJobCosts(); track p.projectId) {
                         <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-5 py-3 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" (click)="openJobCostDetail(p)">
-                          <div class="text-sm font-medium text-foreground truncate" role="cell">{{ p.projectName }}</div>
-                          <div class="text-sm text-foreground-60 text-right" role="cell">{{ p.budgetUsed }}</div>
+                          <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate" role="cell">{{ p.projectName }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-right" role="cell">{{ p.budgetUsed }}</modus-typography>
                           @for (cat of jobCostCategories; track cat) {
-                            <div class="text-sm text-foreground-60 text-right" role="cell">{{ formatJobCost(getCost(p.costs, cat)) }}</div>
+                            <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-right" role="cell">{{ formatJobCost(getCost(p.costs, cat)) }}</modus-typography>
                           }
                         </div>
                       }
@@ -1226,35 +1226,35 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">swap</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Change Orders</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Change Orders</modus-typography>
                       <modus-badge color="secondary" size="sm">{{ filteredChangeOrders().length }}</modus-badge>
                     </div>
                   </div>
                   @if (changeOrdersInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ changeOrdersInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ changeOrdersInsight() }}</modus-typography>
                     </div>
                   }
 
                   <div class="flex items-center gap-1 px-5 py-3 border-bottom-default flex-shrink-0">
                     @for (tab of coTabs; track tab.value) {
                       <div
-                        class="px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors duration-150"
+                        class="px-3 py-1.5 rounded-md cursor-pointer transition-colors duration-150"
                         [class]="activeCoTab() === tab.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:bg-muted'"
                         (click)="activeCoTab.set(tab.value)"
-                      >{{ tab.label }} ({{ coTabCount(tab.value) }})</div>
+                      ><modus-typography size="xs" weight="semibold">{{ tab.label }} ({{ coTabCount(tab.value) }})</modus-typography></div>
                     }
                   </div>
 
                   <div class="overflow-y-auto flex-1">
-                    <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide" role="row">
-                      <div role="columnheader">ID</div>
-                      <div role="columnheader">Project</div>
-                      <div role="columnheader">Description</div>
-                      <div class="text-right" role="columnheader">Amount</div>
-                      <div role="columnheader">Status</div>
-                      <div role="columnheader">Date</div>
+                    <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide" role="row">
+                      <modus-typography size="xs" weight="semibold" role="columnheader">ID</modus-typography>
+                      <modus-typography size="xs" weight="semibold" role="columnheader">Project</modus-typography>
+                      <modus-typography size="xs" weight="semibold" role="columnheader">Description</modus-typography>
+                      <modus-typography size="xs" weight="semibold" className="text-right" role="columnheader">Amount</modus-typography>
+                      <modus-typography size="xs" weight="semibold" role="columnheader">Status</modus-typography>
+                      <modus-typography size="xs" weight="semibold" role="columnheader">Date</modus-typography>
                     </div>
                     @for (co of filteredChangeOrders(); track co.id) {
                       <div
@@ -1262,17 +1262,17 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                         role="row"
                         (click)="navigateToChangeOrder(co.id)"
                       >
-                        <div class="text-sm font-medium text-primary" role="cell">{{ co.id }}</div>
-                        <div class="text-sm text-foreground truncate" role="cell">{{ co.project }}</div>
-                        <div class="text-sm text-foreground truncate" role="cell">{{ co.description }}</div>
-                        <div class="text-sm font-medium text-foreground text-right" role="cell">{{ formatCurrency(co.amount) }}</div>
+                        <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-primary" role="cell">{{ co.id }}</modus-typography>
+                        <modus-typography hierarchy="p" size="sm" className="text-foreground truncate" role="cell">{{ co.project }}</modus-typography>
+                        <modus-typography hierarchy="p" size="sm" className="text-foreground truncate" role="cell">{{ co.description }}</modus-typography>
+                        <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right" role="cell">{{ formatCurrency(co.amount) }}</modus-typography>
                         <div role="cell"><modus-badge [color]="coBadgeColor(co.status)" size="sm">{{ capitalizeFirst(co.status) }}</modus-badge></div>
-                        <div class="text-sm text-foreground-60" role="cell">{{ co.requestDate }}</div>
+                        <modus-typography hierarchy="p" size="sm" className="text-foreground-60" role="cell">{{ co.requestDate }}</modus-typography>
                       </div>
                     } @empty {
                       <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                         <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap</i>
-                        <div class="text-sm">No change orders in this category</div>
+                        <modus-typography  hierarchy="p" size="sm">No change orders in this category</modus-typography>
                       </div>
                     }
                   </div>
@@ -1293,13 +1293,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-warning" aria-hidden="true">invoice</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Invoice Queue</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Invoice Queue</modus-typography>
                     </div>
                   </div>
                   @if (kellyInvoiceQueueInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyInvoiceQueueInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyInvoiceQueueInsight() }}</modus-typography>
                     </div>
                   }
                   <div class="flex-1 min-h-0 overflow-hidden">
@@ -1318,13 +1318,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-destructive" aria-hidden="true">calendar</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Payment Schedule</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Payment Schedule</modus-typography>
                     </div>
                   </div>
                   @if (kellyPaymentScheduleInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyPaymentScheduleInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyPaymentScheduleInsight() }}</modus-typography>
                     </div>
                   }
                   <div class="flex-1 min-h-0 overflow-hidden">
@@ -1343,13 +1343,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-warning" aria-hidden="true">timer</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Vendor Aging</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Vendor Aging</modus-typography>
                     </div>
                   </div>
                   @if (kellyVendorAgingInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyVendorAgingInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyVendorAgingInsight() }}</modus-typography>
                     </div>
                   }
                   <div class="flex-1 min-h-0 overflow-hidden">
@@ -1368,7 +1368,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-primary" aria-hidden="true">clipboard</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Pay Applications</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Pay Applications</modus-typography>
                     </div>
                     <div class="flex items-center gap-1 bg-muted rounded p-0.5" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                       <div
@@ -1392,7 +1392,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   @if (kellyPayAppsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyPayAppsInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyPayAppsInsight() }}</modus-typography>
                     </div>
                   }
                   <div class="flex-1 min-h-0 overflow-hidden">
@@ -1418,13 +1418,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-destructive" aria-hidden="true">file</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Lien Waivers</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Lien Waivers</modus-typography>
                     </div>
                   </div>
                   @if (kellyLienWaiversInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyLienWaiversInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyLienWaiversInsight() }}</modus-typography>
                     </div>
                   }
                   <div class="flex-1 min-h-0 overflow-hidden">
@@ -1443,13 +1443,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">lock</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Retention Summary</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Retention Summary</modus-typography>
                     </div>
                   </div>
                   @if (kellyRetentionInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyRetentionInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyRetentionInsight() }}</modus-typography>
                     </div>
                   }
                   <div class="flex-1 min-h-0 overflow-hidden">
@@ -1468,13 +1468,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">AP Activity</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">AP Activity</modus-typography>
                     </div>
                   </div>
                   @if (kellyApActivityInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyApActivityInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyApActivityInsight() }}</modus-typography>
                     </div>
                   }
                   <div class="flex-1 min-h-0 overflow-hidden">
@@ -1493,13 +1493,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-destructive" aria-hidden="true">arrow_down</i>
-                      <div class="text-base font-semibold text-foreground" role="heading" aria-level="2">Cash Outflow</div>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Cash Outflow</modus-typography>
                     </div>
                   </div>
                   @if (kellyCashOutflowInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <div class="text-xs text-foreground-60 truncate leading-none">{{ kellyCashOutflowInsight() }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyCashOutflowInsight() }}</modus-typography>
                     </div>
                   }
                   <div class="flex-1 min-h-0 overflow-hidden">
@@ -1517,8 +1517,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
     } @else {
     <div class="flex flex-col h-full">
       <div class="px-4 pt-4 md:pt-6 flex-shrink-0">
-        <div class="text-2xl font-bold text-foreground mb-1">{{ activeSubPageTitle() }}</div>
-        <div class="text-sm text-foreground-60 mb-4">{{ activeSubPageDescription() }}</div>
+        <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground mb-1">{{ activeSubPageTitle() }}</modus-typography>
+        <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 mb-4">{{ activeSubPageDescription() }}</modus-typography>
       </div>
       <div class="flex flex-1 min-h-0">
         <app-collapsible-subnav
@@ -1544,53 +1544,53 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isPamela()) {
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Pipeline Value</div>
-            <div class="text-2xl font-bold"
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Pipeline Value</modus-typography>
+            <modus-typography hierarchy="p" size="2xl" weight="bold"
               [class.text-success]="pipelineColor() === 'success'"
               [class.text-warning]="pipelineColor() === 'warning'"
-              [class.text-destructive]="pipelineColor() === 'destructive'">{{ fmtCurrency(pamelaEstPipeline()) }}</div>
+              [class.text-destructive]="pipelineColor() === 'destructive'">{{ fmtCurrency(pamelaEstPipeline()) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Open Estimates</div>
-            <div class="text-2xl font-bold text-foreground">{{ pamelaOpenCount() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Open Estimates</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ pamelaOpenCount() }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Win Rate</div>
-            <div class="text-2xl font-bold"
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Win Rate</modus-typography>
+            <modus-typography hierarchy="p" size="2xl" weight="bold"
               [class.text-success]="winRateColor() === 'success'"
               [class.text-warning]="winRateColor() === 'warning'"
-              [class.text-destructive]="winRateColor() === 'destructive'">{{ pamelaWinRate() }}%</div>
+              [class.text-destructive]="winRateColor() === 'destructive'">{{ pamelaWinRate() }}%</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Awaiting Approval</div>
-            <div class="text-2xl font-bold text-warning">{{ pamelaAwaitingCount() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Awaiting Approval</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-warning">{{ pamelaAwaitingCount() }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Overdue</div>
-            <div class="text-2xl font-bold text-destructive">{{ estimatesOverdueCount() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Overdue</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-destructive">{{ estimatesOverdueCount() }}</modus-typography>
           </div>
         </div>
         } @else {
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Estimates</div>
-            <div class="text-2xl font-bold text-foreground">{{ estimates().length }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Total Estimates</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ estimates().length }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Value</div>
-            <div class="text-2xl font-bold text-primary">{{ formatCurrency(estimatesTotalValue()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Total Value</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-primary">{{ formatCurrency(estimatesTotalValue()) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Approved</div>
-            <div class="text-2xl font-bold text-success">{{ estimatesApprovedCount() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Approved</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ estimatesApprovedCount() }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Under Review</div>
-            <div class="text-2xl font-bold text-warning">{{ estimatesUnderReviewCount() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Under Review</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-warning">{{ estimatesUnderReviewCount() }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Overdue</div>
-            <div class="text-2xl font-bold text-destructive">{{ estimatesOverdueCount() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Overdue</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-destructive">{{ estimatesOverdueCount() }}</modus-typography>
           </div>
         </div>
         }
@@ -1600,27 +1600,27 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             @for (est of (isPamela() ? pamelaOpenEstimates() : estimates()); track est.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToEstimate(est.id)">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-mono text-primary font-medium">{{ est.id }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="font-mono text-primary">{{ est.id }}</modus-typography>
                   <modus-badge [color]="estimateBadgeColor(est.status)" size="sm">{{ est.status }}</modus-badge>
                 </div>
-                <div class="text-sm font-medium text-foreground mb-1">{{ est.project }}</div>
-                <div class="text-xs text-foreground-40 mb-3">{{ est.client }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground mb-1">{{ est.project }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mb-3">{{ est.client }}</modus-typography>
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1">{{ est.type }}</div>
-                  <div class="text-sm font-semibold text-foreground">{{ est.value }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="bg-muted text-foreground-80 rounded px-2 py-1">{{ est.type }}</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ est.value }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2 min-w-0">
-                    <div class="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-2xs font-semibold flex-shrink-0">{{ est.requestedByInitials }}</div>
-                    <div class="text-xs text-foreground-80 truncate">{{ est.requestedBy }}</div>
+                    <modus-typography size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground flex-shrink-0">{{ est.requestedByInitials }}</modus-typography>
+                    <modus-typography  hierarchy="p" size="xs" className="text-foreground-80 truncate">{{ est.requestedBy }}</modus-typography>
                   </div>
                   <div class="text-right">
-                    <div class="text-xs text-foreground-80">{{ est.dueDate }}</div>
-                    <div class="text-xs" [class]="dueDateClass(est.daysLeft)">
+                    <modus-typography  hierarchy="p" size="xs" className="text-foreground-80">{{ est.dueDate }}</modus-typography>
+                    <modus-typography size="xs" [class]="dueDateClass(est.daysLeft)">
                       @if (est.daysLeft < 0) { {{ -est.daysLeft }}d overdue }
                       @else if (est.daysLeft === 0) { Due today }
                       @else { {{ est.daysLeft }}d left }
-                    </div>
+                    </modus-typography>
                   </div>
                 </div>
               </div>
@@ -1628,35 +1628,35 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <div>ID</div>
-            <div>Project / Client</div>
-            <div>Type</div>
-            <div class="text-right">Value</div>
-            <div>Status</div>
-            <div>Requested By</div>
-            <div>Due Date</div>
+          <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
+            <modus-typography size="xs" weight="semibold">ID</modus-typography>
+            <modus-typography size="xs" weight="semibold">Project / Client</modus-typography>
+            <modus-typography size="xs" weight="semibold">Type</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right">Value</modus-typography>
+            <modus-typography size="xs" weight="semibold">Status</modus-typography>
+            <modus-typography size="xs" weight="semibold">Requested By</modus-typography>
+            <modus-typography size="xs" weight="semibold">Due Date</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (est of (isPamela() ? pamelaOpenEstimates() : estimates()); track est.id) {
             <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToEstimate(est.id)">
-              <div class="text-sm font-mono text-primary font-medium">{{ est.id }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="font-mono text-primary">{{ est.id }}</modus-typography>
               <div>
-                <div class="text-sm font-medium text-foreground truncate">{{ est.project }}</div>
-                <div class="text-xs text-foreground-40">{{ est.client }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ est.project }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ est.client }}</modus-typography>
               </div>
-              <div class="text-xs bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ est.type }}</div>
-              <div class="text-sm font-semibold text-foreground text-right">{{ est.value }}</div>
+              <modus-typography  hierarchy="p" size="xs" className="bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ est.type }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ est.value }}</modus-typography>
               <div><modus-badge [color]="estimateBadgeColor(est.status)" size="sm">{{ est.status }}</modus-badge></div>
               <div class="flex items-center gap-2 min-w-0">
-                <div class="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-2xs font-semibold flex-shrink-0">
+                <modus-typography size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground flex-shrink-0">
                   {{ est.requestedByInitials }}
-                </div>
-                <div class="text-xs text-foreground-80 truncate">{{ est.requestedBy }}</div>
+                </modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-80 truncate">{{ est.requestedBy }}</modus-typography>
               </div>
               <div>
-                <div class="text-sm text-foreground-80">{{ est.dueDate }}</div>
-                <div class="text-xs mt-0.5" [class]="dueDateClass(est.daysLeft)">
+                <modus-typography  hierarchy="p" size="sm" className="text-foreground-80">{{ est.dueDate }}</modus-typography>
+                <modus-typography size="xs" className="mt-0.5" [class]="dueDateClass(est.daysLeft)">
                   @if (est.daysLeft < 0) {
                     {{ -est.daysLeft }}d overdue
                   } @else if (est.daysLeft === 0) {
@@ -1664,7 +1664,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   } @else {
                     {{ est.daysLeft }}d left
                   }
-                </div>
+                </modus-typography>
               </div>
             </div>
           }
@@ -1682,34 +1682,34 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total COs</div>
-            <div class="text-2xl font-bold text-foreground">{{ coSubpageAll().length }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Total COs</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ coSubpageAll().length }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Value</div>
-            <div class="text-2xl font-bold text-primary">{{ formatCurrency(coSubpageTotalValue()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Total Value</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-primary">{{ formatCurrency(coSubpageTotalValue()) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Approved</div>
-            <div class="text-2xl font-bold text-success">{{ coSubpageApproved() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Approved</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ coSubpageApproved() }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Pending</div>
-            <div class="text-2xl font-bold text-warning">{{ coSubpagePending() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Pending</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-warning">{{ coSubpagePending() }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Rejected</div>
-            <div class="text-2xl font-bold text-destructive">{{ coSubpageRejected() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Rejected</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-destructive">{{ coSubpageRejected() }}</modus-typography>
           </div>
         </div>
 
         <div class="flex items-center gap-1 mb-4">
           @for (tab of coTabs; track tab.value) {
             <div
-              class="px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors duration-150"
+              class="px-3 py-1.5 rounded-md cursor-pointer transition-colors duration-150"
               [class]="activeCoTab() === tab.value ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:bg-muted'"
               (click)="activeCoTab.set(tab.value)"
-            >{{ tab.label }} ({{ coTabCount(tab.value) }})</div>
+            ><modus-typography size="xs" weight="semibold">{{ tab.label }} ({{ coTabCount(tab.value) }})</modus-typography></div>
           }
         </div>
 
@@ -1718,47 +1718,47 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             @for (co of filteredChangeOrders(); track co.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToChangeOrder(co.id)">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-medium text-primary">{{ co.id }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ co.id }}</modus-typography>
                   <modus-badge [color]="coBadgeColor(co.status)" size="sm">{{ capitalizeFirst(co.status) }}</modus-badge>
                 </div>
-                <div class="text-sm font-medium text-foreground mb-1">{{ co.description }}</div>
-                <div class="text-xs text-foreground-60 mb-3">{{ co.project }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground mb-1">{{ co.description }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-3">{{ co.project }}</modus-typography>
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(co.amount) }}</div>
-                  <div class="text-xs text-foreground-60">{{ co.requestDate }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(co.amount) }}</modus-typography>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ co.requestDate }}</modus-typography>
                 </div>
               </div>
             } @empty {
               <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
                 <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap</i>
-                <div class="text-sm">No change orders in this category</div>
+                <modus-typography  hierarchy="p" size="sm">No change orders in this category</modus-typography>
               </div>
             }
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <div>ID</div>
-            <div>Project</div>
-            <div>Description</div>
-            <div class="text-right">Amount</div>
-            <div>Status</div>
-            <div>Date</div>
+          <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
+            <modus-typography size="xs" weight="semibold">ID</modus-typography>
+            <modus-typography size="xs" weight="semibold">Project</modus-typography>
+            <modus-typography size="xs" weight="semibold">Description</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography>
+            <modus-typography size="xs" weight="semibold">Status</modus-typography>
+            <modus-typography size="xs" weight="semibold">Date</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (co of filteredChangeOrders(); track co.id) {
             <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToChangeOrder(co.id)">
-              <div class="text-sm font-medium text-primary">{{ co.id }}</div>
-              <div class="text-sm text-foreground truncate">{{ co.project }}</div>
-              <div class="text-sm text-foreground truncate">{{ co.description }}</div>
-              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(co.amount) }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ co.id }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ co.project }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ co.description }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ formatCurrency(co.amount) }}</modus-typography>
               <div><modus-badge [color]="coBadgeColor(co.status)" size="sm">{{ capitalizeFirst(co.status) }}</modus-badge></div>
-              <div class="text-sm text-foreground-60">{{ co.requestDate }}</div>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ co.requestDate }}</modus-typography>
             </div>
           } @empty {
             <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
               <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap</i>
-              <div class="text-sm">No change orders in this category</div>
+              <modus-typography  hierarchy="p" size="sm">No change orders in this category</modus-typography>
             </div>
           }
           </div>
@@ -1775,14 +1775,14 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Grand Total</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(jobCostSummary().grandTotal) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Grand Total</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(jobCostSummary().grandTotal) }}</modus-typography>
           </div>
           @for (cat of jobCostSummary().categories; track cat.label) {
             <div class="bg-card rounded-lg border-default p-4 text-center">
-              <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">{{ cat.label }}</div>
-              <div class="text-2xl font-bold text-foreground">{{ formatJobCost(cat.total) }}</div>
-              <div class="text-xs text-foreground-40">{{ cat.pct }}%</div>
+              <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">{{ cat.label }}</modus-typography>
+              <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatJobCost(cat.total) }}</modus-typography>
+              <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ cat.pct }}%</modus-typography>
             </div>
           }
         </div>
@@ -1797,7 +1797,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             @for (cat of jobCostSummary().categories; track cat.label) {
               <div class="flex items-center gap-1.5">
                 <div class="w-2.5 h-2.5 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                <div class="text-xs text-foreground-60">{{ cat.label }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ cat.label }}</modus-typography>
               </div>
             }
           </div>
@@ -1807,16 +1807,16 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="flex flex-col gap-3">
             @for (p of projectJobCosts(); track p.projectId) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="openJobCostDetail(p)">
-                <div class="text-sm font-medium text-foreground mb-2">{{ p.projectName }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground mb-2">{{ p.projectName }}</modus-typography>
                 <div class="flex items-center justify-between mb-3">
-                  <div class="text-xs text-foreground-60">Budget Used</div>
-                  <div class="text-sm font-semibold text-foreground">{{ p.budgetUsed }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Budget Used</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ p.budgetUsed }}</modus-typography>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                   @for (cat of jobCostCategories; track cat) {
                     <div class="flex items-center justify-between">
-                      <div class="text-xs text-foreground-60">{{ cat }}</div>
-                      <div class="text-xs text-foreground-80">{{ formatJobCost(getCost(p.costs, cat)) }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ cat }}</modus-typography>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-80">{{ formatJobCost(getCost(p.costs, cat)) }}</modus-typography>
                     </div>
                   }
                 </div>
@@ -1825,20 +1825,20 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <div>Project</div>
-            <div class="text-right">Budget</div>
+          <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
+            <modus-typography size="xs" weight="semibold">Project</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right">Budget</modus-typography>
             @for (cat of jobCostCategories; track cat) {
-              <div class="text-right">{{ cat }}</div>
+              <modus-typography size="xs" weight="semibold" className="text-right">{{ cat }}</modus-typography>
             }
           </div>
           <div class="overflow-y-auto flex-1">
           @for (p of projectJobCosts(); track p.projectId) {
             <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="openJobCostDetail(p)">
-              <div class="text-sm font-medium text-foreground truncate">{{ p.projectName }}</div>
-              <div class="text-sm text-foreground-60 text-right">{{ p.budgetUsed }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ p.projectName }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 text-right">{{ p.budgetUsed }}</modus-typography>
               @for (cat of jobCostCategories; track cat) {
-                <div class="text-sm text-foreground-60 text-right">{{ formatJobCost(getCost(p.costs, cat)) }}</div>
+                <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 text-right">{{ formatJobCost(getCost(p.costs, cat)) }}</modus-typography>
               }
             </div>
           }
@@ -1857,20 +1857,20 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <!-- KPI strip -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Active Schedules</div>
-            <div class="text-2xl font-bold text-foreground">{{ billingSchedules().length }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Active Schedules</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ billingSchedules().length }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Billed (6 mo)</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(billedTotal()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Billed (6 mo)</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(billedTotal()) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Upcoming (30d)</div>
-            <div class="text-2xl font-bold text-primary">{{ upcomingBillings().length }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Upcoming (30d)</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-primary">{{ upcomingBillings().length }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Collected</div>
-            <div class="text-2xl font-bold text-success">{{ formatCurrency(collectedTotal()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Collected</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ formatCurrency(collectedTotal()) }}</modus-typography>
           </div>
         </div>
 
@@ -1878,20 +1878,20 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">invoice</i>
-            <div class="text-base font-semibold text-foreground">Billing Events</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Billing Events</modus-typography>
             <modus-badge color="secondary" size="sm">{{ billingEvents().length }}</modus-badge>
           </div>
           <div class="flex flex-col gap-3">
             @for (ev of billingEvents(); track ev.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToBillingEvent(ev.id)">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-medium text-foreground">{{ ev.description }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ ev.description }}</modus-typography>
                   <modus-badge [color]="ev.status === 'completed' ? 'success' : ev.status === 'skipped' ? 'warning' : 'secondary'" size="sm">{{ capitalizeFirst(ev.status) }}</modus-badge>
                 </div>
-                <div class="text-xs text-foreground-60 mb-2">{{ ev.period }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-2">{{ ev.period }}</modus-typography>
                 <div class="flex items-center justify-between">
-                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(ev.amount) }}</div>
-                  <div class="text-xs text-foreground-60">{{ ev.billingDate }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(ev.amount) }}</modus-typography>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ ev.billingDate }}</modus-typography>
                 </div>
               </div>
             }
@@ -1901,21 +1901,21 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">invoice</i>
-              <div class="text-base font-semibold text-foreground">Billing Events</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Billing Events</modus-typography>
               <modus-badge color="secondary" size="sm">{{ billingEvents().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-            <div>Description</div><div>Period</div><div class="text-right">Amount</div><div>Status</div><div>Date</div>
+          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
+            <modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold">Period</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Date</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (ev of billingEvents(); track ev.id) {
             <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToBillingEvent(ev.id)">
-              <div class="text-sm text-foreground truncate">{{ ev.description }}</div>
-              <div class="text-sm text-foreground-60">{{ ev.period }}</div>
-              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(ev.amount) }}</div>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ ev.description }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ ev.period }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ formatCurrency(ev.amount) }}</modus-typography>
               <div><modus-badge [color]="ev.status === 'completed' ? 'success' : ev.status === 'skipped' ? 'warning' : 'secondary'" size="sm">{{ capitalizeFirst(ev.status) }}</modus-badge></div>
-              <div class="text-sm text-foreground-60">{{ ev.billingDate }}</div>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ ev.billingDate }}</modus-typography>
             </div>
           }
           </div>
@@ -1933,20 +1933,20 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <!-- KPI strip -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Total Outstanding</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(arOutstanding()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Total Outstanding</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(arOutstanding()) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">DSO</div>
-            <div class="text-2xl font-bold text-foreground">{{ dso() }} days</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">DSO</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ dso() }} days</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Overdue</div>
-            <div class="text-2xl font-bold text-destructive">{{ formatCurrency(arOverdue()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Overdue</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-destructive">{{ formatCurrency(arOverdue()) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Open Invoices</div>
-            <div class="text-2xl font-bold text-primary">{{ openInvoiceCount() }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Open Invoices</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-primary">{{ openInvoiceCount() }}</modus-typography>
           </div>
         </div>
 
@@ -1954,9 +1954,9 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           @for (bucket of agingBuckets(); track bucket.label) {
             <div class="bg-card rounded-lg p-4 border-default">
-              <div class="text-xs text-foreground-60 mb-1">{{ bucket.label }}</div>
-              <div class="text-xl font-bold text-foreground">{{ formatCurrency(bucket.total) }}</div>
-              <div class="text-xs text-foreground-40">{{ bucket.count }} invoices</div>
+              <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">{{ bucket.label }}</modus-typography>
+              <modus-typography  hierarchy="p" size="xl" weight="bold" className="text-foreground">{{ formatCurrency(bucket.total) }}</modus-typography>
+              <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ bucket.count }} invoices</modus-typography>
             </div>
           }
         </div>
@@ -1965,27 +1965,27 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
-            <div class="text-base font-semibold text-foreground">Invoices</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Invoices</modus-typography>
             <modus-badge color="secondary" size="sm">{{ invoices().length }}</modus-badge>
           </div>
           <div class="flex flex-col gap-3">
             @for (inv of invoices(); track inv.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToInvoice(inv.id)">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-medium text-primary">{{ inv.invoiceNumber }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ inv.invoiceNumber }}</modus-typography>
                   <modus-badge [color]="invoiceStatusBadge(inv.status)" size="sm">{{ capitalizeFirst(inv.status) }}</modus-badge>
                 </div>
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-xs text-foreground-60">Amount</div>
-                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(inv.amount) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Amount</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(inv.amount) }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-xs text-foreground-60">Paid</div>
-                  <div class="text-sm text-success">{{ formatCurrency(inv.amountPaid) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Paid</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" className="text-success">{{ formatCurrency(inv.amountPaid) }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between">
-                  <div class="text-xs text-foreground-60">{{ inv.terms }}</div>
-                  <div class="text-xs text-foreground-60">Due {{ inv.dueDate }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ inv.terms }}</modus-typography>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Due {{ inv.dueDate }}</modus-typography>
                 </div>
               </div>
             }
@@ -1995,22 +1995,22 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
-              <div class="text-base font-semibold text-foreground">Invoices</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Invoices</modus-typography>
               <modus-badge color="secondary" size="sm">{{ invoices().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-            <div>Invoice #</div><div class="text-right">Amount</div><div class="text-right">Paid</div><div>Status</div><div>Terms</div><div>Due</div>
+          <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
+            <modus-typography size="xs" weight="semibold">Invoice #</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Paid</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Terms</modus-typography><modus-typography size="xs" weight="semibold">Due</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (inv of invoices(); track inv.id) {
             <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToInvoice(inv.id)">
-              <div class="text-sm font-medium text-primary">{{ inv.invoiceNumber }}</div>
-              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(inv.amount) }}</div>
-              <div class="text-sm text-success text-right">{{ formatCurrency(inv.amountPaid) }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ inv.invoiceNumber }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ formatCurrency(inv.amount) }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-success text-right">{{ formatCurrency(inv.amountPaid) }}</modus-typography>
               <div><modus-badge [color]="invoiceStatusBadge(inv.status)" size="sm">{{ capitalizeFirst(inv.status) }}</modus-badge></div>
-              <div class="text-sm text-foreground-60">{{ inv.terms }}</div>
-              <div class="text-sm text-foreground-60">{{ inv.dueDate }}</div>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ inv.terms }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ inv.dueDate }}</modus-typography>
             </div>
           }
           </div>
@@ -2028,44 +2028,44 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <!-- KPI strip -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Pending</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(payablesSummary()['pending'].total) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Pending</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(payablesSummary()['pending'].total) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Approved</div>
-            <div class="text-2xl font-bold text-warning">{{ formatCurrency(payablesSummary()['approved'].total) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Approved</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-warning">{{ formatCurrency(payablesSummary()['approved'].total) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Overdue</div>
-            <div class="text-2xl font-bold text-destructive">{{ formatCurrency(payablesSummary()['overdue'].total) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Overdue</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-destructive">{{ formatCurrency(payablesSummary()['overdue'].total) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Paid</div>
-            <div class="text-2xl font-bold text-success">{{ formatCurrency(payablesSummary()['paid'].total) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Paid</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ formatCurrency(payablesSummary()['paid'].total) }}</modus-typography>
           </div>
         </div>
 
         <!-- AP detail KPI strip -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Invoice Queue</div>
-            <div class="text-2xl font-bold text-foreground">{{ pendingApInvoices().length }}</div>
-            <div class="text-xs text-foreground-40 mt-1">{{ onHoldApInvoices().length }} on hold</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Invoice Queue</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ pendingApInvoices().length }}</modus-typography>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mt-1">{{ onHoldApInvoices().length }} on hold</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Retention Held</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(apTotalRetentionHeld()) }}</div>
-            <div class="text-xs text-foreground-40 mt-1">{{ formatCurrency(apTotalRetentionPending()) }} pending release</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Retention Held</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(apTotalRetentionHeld()) }}</modus-typography>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mt-1">{{ formatCurrency(apTotalRetentionPending()) }} pending release</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Lien Waivers</div>
-            <div class="text-2xl font-bold" [class]="apMissingWaivers() > 0 ? 'text-destructive' : 'text-foreground'">{{ apMissingWaivers() }} missing</div>
-            <div class="text-xs text-foreground-40 mt-1">{{ apLienWaivers().length }} total tracked</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Lien Waivers</modus-typography>
+            <modus-typography hierarchy="p" size="2xl" weight="bold" [className]="apMissingWaivers() > 0 ? 'text-destructive' : 'text-foreground'">{{ apMissingWaivers() }} missing</modus-typography>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mt-1">{{ apLienWaivers().length }} total tracked</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Discounts Available</div>
-            <div class="text-2xl font-bold text-success">{{ formatCurrency(apDiscountsAvailable()) }}</div>
-            <div class="text-xs text-foreground-40 mt-1">{{ apPaymentSchedule().length }} scheduled payments</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Discounts Available</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ formatCurrency(apDiscountsAvailable()) }}</modus-typography>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mt-1">{{ apPaymentSchedule().length }} scheduled payments</modus-typography>
           </div>
         </div>
 
@@ -2073,22 +2073,22 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">credit_card</i>
-            <div class="text-base font-semibold text-foreground">Payables</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Payables</modus-typography>
             <modus-badge color="secondary" size="sm">{{ payables().length }}</modus-badge>
           </div>
           <div class="flex flex-col gap-3">
             @for (p of payables(); track p.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToPayable(p.id)">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-medium text-foreground">{{ p.vendor }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ p.vendor }}</modus-typography>
                   <modus-badge [color]="payableStatusBadge(p.status)" size="sm">{{ capitalizeFirst(p.status) }}</modus-badge>
                 </div>
-                <div class="text-xs text-foreground-60 mb-2">{{ p.description }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-2">{{ p.description }}</modus-typography>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(p.amount) }}</div>
-                  <div class="text-xs text-foreground-60">Due {{ p.dueDate }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(p.amount) }}</modus-typography>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Due {{ p.dueDate }}</modus-typography>
                 </div>
-                <div class="text-xs text-foreground-40">{{ p.costCode }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ p.costCode }}</modus-typography>
               </div>
             }
           </div>
@@ -2097,22 +2097,22 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">credit_card</i>
-              <div class="text-base font-semibold text-foreground">Payables</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Payables</modus-typography>
               <modus-badge color="secondary" size="sm">{{ payables().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-            <div>Vendor</div><div>Description</div><div class="text-right">Amount</div><div>Status</div><div>Due</div><div>Cost Code</div>
+          <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
+            <modus-typography size="xs" weight="semibold">Vendor</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Due</modus-typography><modus-typography size="xs" weight="semibold">Cost Code</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (p of payables(); track p.id) {
             <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayable(p.id)">
-              <div class="text-sm text-foreground truncate">{{ p.vendor }}</div>
-              <div class="text-sm text-foreground truncate">{{ p.description }}</div>
-              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(p.amount) }}</div>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ p.vendor }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ p.description }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ formatCurrency(p.amount) }}</modus-typography>
               <div><modus-badge [color]="payableStatusBadge(p.status)" size="sm">{{ capitalizeFirst(p.status) }}</modus-badge></div>
-              <div class="text-sm text-foreground-60">{{ p.dueDate }}</div>
-              <div class="text-sm text-foreground-60">{{ p.costCode }}</div>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ p.dueDate }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ p.costCode }}</modus-typography>
             </div>
           }
           </div>
@@ -2124,7 +2124,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
-              <div class="text-base font-semibold text-foreground">Invoice Queue</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Invoice Queue</modus-typography>
               <modus-badge color="secondary" size="sm">{{ pendingApInvoices().length }}</modus-badge>
             </div>
           </div>
@@ -2136,7 +2136,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">timer</i>
-              <div class="text-base font-semibold text-foreground">Vendor Aging</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Vendor Aging</modus-typography>
               <modus-badge color="secondary" size="sm">{{ apVendors().length }}</modus-badge>
             </div>
           </div>
@@ -2149,7 +2149,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">clipboard</i>
-                <div class="text-base font-semibold text-foreground">Pay Applications</div>
+                <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Pay Applications</modus-typography>
                 <modus-badge color="secondary" size="sm">{{ apPayApplications().length }}</modus-badge>
               </div>
               <div class="flex items-center gap-1 bg-muted rounded p-0.5">
@@ -2180,7 +2180,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
-              <div class="text-base font-semibold text-foreground">Lien Waivers</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Lien Waivers</modus-typography>
               <modus-badge color="secondary" size="sm">{{ apLienWaivers().length }}</modus-badge>
             </div>
           </div>
@@ -2192,7 +2192,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">lock</i>
-              <div class="text-base font-semibold text-foreground">Retention</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Retention</modus-typography>
               <modus-badge color="secondary" size="sm">{{ apRetention().length }}</modus-badge>
             </div>
           </div>
@@ -2204,7 +2204,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-              <div class="text-base font-semibold text-foreground">Payment Schedule</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Payment Schedule</modus-typography>
               <modus-badge color="secondary" size="sm">{{ apPaymentSchedule().length }}</modus-badge>
             </div>
           </div>
@@ -2216,7 +2216,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
-              <div class="text-base font-semibold text-foreground">AP Activity</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">AP Activity</modus-typography>
               <modus-badge color="secondary" size="sm">{{ apActivities().length }}</modus-badge>
             </div>
           </div>
@@ -2234,20 +2234,20 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <!-- KPI strip -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Cash on Hand</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(cashPosition().currentBalance) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Cash on Hand</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(cashPosition().currentBalance) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">30-Day Forecast</div>
-            <div class="text-2xl font-bold text-primary">{{ formatCurrency(cashPosition().thirtyDayForecast) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">30-Day Forecast</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-primary">{{ formatCurrency(cashPosition().thirtyDayForecast) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Runway</div>
-            <div class="text-2xl font-bold" [class]="cashRunway() > 6 ? 'text-success' : cashRunway() > 3 ? 'text-warning' : 'text-destructive'">{{ cashRunway() }} mo</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Runway</modus-typography>
+            <modus-typography hierarchy="p" size="2xl" weight="bold" [className]="cashRunway() > 6 ? 'text-success' : cashRunway() > 3 ? 'text-warning' : 'text-destructive'">{{ cashRunway() }} mo</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Net Cash Flow (6 mo)</div>
-            <div class="text-2xl font-bold" [class]="netCashFlow() >= 0 ? 'text-success' : 'text-destructive'">{{ formatCurrency(netCashFlow()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Net Cash Flow (6 mo)</modus-typography>
+            <modus-typography hierarchy="p" size="2xl" weight="bold" [className]="netCashFlow() >= 0 ? 'text-success' : 'text-destructive'">{{ formatCurrency(netCashFlow()) }}</modus-typography>
           </div>
         </div>
 
@@ -2255,23 +2255,23 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
-            <div class="text-base font-semibold text-foreground">Cash Flow History</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Cash Flow History</modus-typography>
           </div>
           <div class="flex flex-col gap-3">
             @for (cf of cashFlowHistory(); track cf.month) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToCashFlow(cf.month)">
-                <div class="text-sm font-medium text-foreground mb-3">{{ cf.month }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground mb-3">{{ cf.month }}</modus-typography>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-xs text-foreground-60">Inflow</div>
-                  <div class="text-sm text-success">{{ formatCurrency(cf.inflows) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Inflow</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" className="text-success">{{ formatCurrency(cf.inflows) }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-xs text-foreground-60">Outflow</div>
-                  <div class="text-sm text-destructive">{{ formatCurrency(cf.outflows) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Outflow</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" className="text-destructive">{{ formatCurrency(cf.outflows) }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between border-top-default pt-2 mt-1">
-                  <div class="text-xs font-medium text-foreground-60">Net</div>
-                  <div class="text-sm font-semibold" [class]="cf.netCash >= 0 ? 'text-success' : 'text-destructive'">{{ formatCurrency(cf.netCash) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Net</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" [className]="cf.netCash >= 0 ? 'text-success' : 'text-destructive'">{{ formatCurrency(cf.netCash) }}</modus-typography>
                 </div>
               </div>
             }
@@ -2281,19 +2281,19 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
-              <div class="text-base font-semibold text-foreground">Cash Flow History</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Cash Flow History</modus-typography>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-            <div>Month</div><div class="text-right">Inflow</div><div class="text-right">Outflow</div><div class="text-right">Net</div>
+          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
+            <modus-typography size="xs" weight="semibold">Month</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Inflow</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Outflow</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Net</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (cf of cashFlowHistory(); track cf.month) {
             <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToCashFlow(cf.month)">
-              <div class="text-sm font-medium text-foreground">{{ cf.month }}</div>
-              <div class="text-sm text-success text-right">{{ formatCurrency(cf.inflows) }}</div>
-              <div class="text-sm text-destructive text-right">{{ formatCurrency(cf.outflows) }}</div>
-              <div class="text-sm font-medium text-right" [class]="cf.netCash >= 0 ? 'text-success' : 'text-destructive'">{{ formatCurrency(cf.netCash) }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ cf.month }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-success text-right">{{ formatCurrency(cf.inflows) }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-destructive text-right">{{ formatCurrency(cf.outflows) }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" weight="semibold" [className]="'text-right ' + (cf.netCash >= 0 ? 'text-success' : 'text-destructive')">{{ formatCurrency(cf.netCash) }}</modus-typography>
             </div>
           }
           </div>
@@ -2311,20 +2311,20 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <!-- Balance sheet summary -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Total Assets</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(glTotalAssets()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Total Assets</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(glTotalAssets()) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Total Liabilities</div>
-            <div class="text-2xl font-bold text-warning">{{ formatCurrency(glTotalLiabilities()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Total Liabilities</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-warning">{{ formatCurrency(glTotalLiabilities()) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Revenue</div>
-            <div class="text-2xl font-bold text-success">{{ formatCurrency(glTotalRevenue()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Revenue</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ formatCurrency(glTotalRevenue()) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Expenses</div>
-            <div class="text-2xl font-bold text-destructive">{{ formatCurrency(glTotalExpenses()) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Expenses</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-destructive">{{ formatCurrency(glTotalExpenses()) }}</modus-typography>
           </div>
         </div>
 
@@ -2332,20 +2332,20 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
-            <div class="text-base font-semibold text-foreground">Chart of Accounts</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Chart of Accounts</modus-typography>
             <modus-badge color="secondary" size="sm">{{ glAccounts().length }}</modus-badge>
           </div>
           <div class="flex flex-col gap-3 mb-6">
             @for (acct of glAccounts(); track acct.code) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToGlAccount(acct.code)">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-medium text-primary">{{ acct.code }}</div>
-                  <div class="text-xs text-foreground-60">{{ capitalizeFirst(acct.type) }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ acct.code }}</modus-typography>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ capitalizeFirst(acct.type) }}</modus-typography>
                 </div>
-                <div class="text-sm text-foreground mb-2">{{ acct.name }}</div>
+                <modus-typography  hierarchy="p" size="sm" className="text-foreground mb-2">{{ acct.name }}</modus-typography>
                 <div class="flex items-center justify-between">
-                  <div class="text-xs text-foreground-60">Balance</div>
-                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(acct.balance) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Balance</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(acct.balance) }}</modus-typography>
                 </div>
               </div>
             }
@@ -2355,20 +2355,20 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
-              <div class="text-base font-semibold text-foreground">Chart of Accounts</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Chart of Accounts</modus-typography>
               <modus-badge color="secondary" size="sm">{{ glAccounts().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-            <div>Acct #</div><div>Name</div><div>Type</div><div class="text-right">Balance</div>
+          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
+            <modus-typography size="xs" weight="semibold">Acct #</modus-typography><modus-typography size="xs" weight="semibold">Name</modus-typography><modus-typography size="xs" weight="semibold">Type</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Balance</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (acct of glAccounts(); track acct.code) {
             <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToGlAccount(acct.code)">
-              <div class="text-sm font-medium text-primary">{{ acct.code }}</div>
-              <div class="text-sm text-foreground">{{ acct.name }}</div>
-              <div class="text-sm text-foreground-60">{{ capitalizeFirst(acct.type) }}</div>
-              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(acct.balance) }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ acct.code }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground">{{ acct.name }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ capitalizeFirst(acct.type) }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ formatCurrency(acct.balance) }}</modus-typography>
             </div>
           }
           </div>
@@ -2379,29 +2379,29 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">file_edit</i>
-            <div class="text-base font-semibold text-foreground">Recent Journal Entries</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Recent Journal Entries</modus-typography>
             <modus-badge color="secondary" size="sm">{{ glEntries().length }}</modus-badge>
           </div>
           <div class="flex flex-col gap-3">
             @for (entry of glEntries(); track entry.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToGlEntry(entry.id)">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-medium text-primary">{{ entry.id }}</div>
-                  <div class="text-xs text-foreground-60">{{ entry.date }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ entry.id }}</modus-typography>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ entry.date }}</modus-typography>
                 </div>
-                <div class="text-xs text-foreground-60 mb-1">Acct {{ entry.accountCode }}</div>
-                <div class="text-sm text-foreground mb-3">{{ entry.description }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Acct {{ entry.accountCode }}</modus-typography>
+                <modus-typography  hierarchy="p" size="sm" className="text-foreground mb-3">{{ entry.description }}</modus-typography>
                 <div class="flex items-center gap-4">
                   @if (entry.debit > 0) {
                     <div class="flex items-center gap-1">
-                      <div class="text-xs text-foreground-60">DR</div>
-                      <div class="text-sm font-medium text-foreground">{{ formatCurrency(entry.debit) }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">DR</modus-typography>
+                      <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(entry.debit) }}</modus-typography>
                     </div>
                   }
                   @if (entry.credit > 0) {
                     <div class="flex items-center gap-1">
-                      <div class="text-xs text-foreground-60">CR</div>
-                      <div class="text-sm font-medium text-foreground">{{ formatCurrency(entry.credit) }}</div>
+                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">CR</modus-typography>
+                      <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(entry.credit) }}</modus-typography>
                     </div>
                   }
                 </div>
@@ -2413,22 +2413,22 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">file_edit</i>
-              <div class="text-base font-semibold text-foreground">Recent Journal Entries</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Recent Journal Entries</modus-typography>
               <modus-badge color="secondary" size="sm">{{ glEntries().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-            <div>Entry #</div><div>Account</div><div>Description</div><div class="text-right">Debit</div><div class="text-right">Credit</div><div>Date</div>
+          <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
+            <modus-typography size="xs" weight="semibold">Entry #</modus-typography><modus-typography size="xs" weight="semibold">Account</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Debit</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Credit</modus-typography><modus-typography size="xs" weight="semibold">Date</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (entry of glEntries(); track entry.id) {
             <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToGlEntry(entry.id)">
-              <div class="text-sm font-medium text-primary">{{ entry.id }}</div>
-              <div class="text-sm text-foreground-60">{{ entry.accountCode }}</div>
-              <div class="text-sm text-foreground truncate">{{ entry.description }}</div>
-              <div class="text-sm text-foreground text-right">{{ entry.debit > 0 ? formatCurrency(entry.debit) : '-' }}</div>
-              <div class="text-sm text-foreground text-right">{{ entry.credit > 0 ? formatCurrency(entry.credit) : '-' }}</div>
-              <div class="text-sm text-foreground-60">{{ entry.date }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ entry.id }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ entry.accountCode }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ entry.description }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground text-right">{{ entry.debit > 0 ? formatCurrency(entry.debit) : '-' }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground text-right">{{ entry.credit > 0 ? formatCurrency(entry.credit) : '-' }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ entry.date }}</modus-typography>
             </div>
           }
           </div>
@@ -2446,24 +2446,24 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <!-- KPI strip -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Total PO Value</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(poSummary().totalValue) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Total PO Value</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(poSummary().totalValue) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Received/Closed</div>
-            <div class="text-2xl font-bold text-success">{{ formatCurrency(poSummary().totalReceived) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Received/Closed</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ formatCurrency(poSummary().totalReceived) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Open POs</div>
-            <div class="text-2xl font-bold text-primary">{{ poSummary().openPOs }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Open POs</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-primary">{{ poSummary().openPOs }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Overdue Deliveries</div>
-            <div class="text-2xl font-bold" [class]="poSummary().overdueDeliveries > 0 ? 'text-destructive' : 'text-success'">{{ poSummary().overdueDeliveries }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Overdue Deliveries</modus-typography>
+            <modus-typography hierarchy="p" size="2xl" weight="bold" [className]="poSummary().overdueDeliveries > 0 ? 'text-destructive' : 'text-success'">{{ poSummary().overdueDeliveries }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Draft POs</div>
-            <div class="text-2xl font-bold text-foreground-60">{{ poSummary().draftCount }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Draft POs</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground-60">{{ poSummary().draftCount }}</modus-typography>
           </div>
         </div>
 
@@ -2471,23 +2471,23 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">shopping_cart</i>
-            <div class="text-base font-semibold text-foreground">Purchase Orders</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Purchase Orders</modus-typography>
             <modus-badge color="secondary" size="sm">{{ purchaseOrders().length }}</modus-badge>
           </div>
           <div class="flex flex-col gap-3">
             @for (po of purchaseOrders(); track po.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToPurchaseOrder(po.id)">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-medium text-primary">{{ po.poNumber }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ po.poNumber }}</modus-typography>
                   <modus-badge [color]="poStatusBadge(po.status)" size="sm">{{ capitalizeFirst(po.status) }}</modus-badge>
                 </div>
-                <div class="text-sm font-medium text-foreground mb-1">{{ po.vendor }}</div>
-                <div class="text-xs text-foreground-60 mb-3">{{ po.description }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground mb-1">{{ po.vendor }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-3">{{ po.description }}</modus-typography>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(po.amount) }}</div>
-                  <div class="text-xs text-foreground-60">Delivery {{ po.expectedDelivery }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(po.amount) }}</modus-typography>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Delivery {{ po.expectedDelivery }}</modus-typography>
                 </div>
-                <div class="text-xs text-foreground-40">{{ po.project }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ po.project }}</modus-typography>
               </div>
             }
           </div>
@@ -2496,23 +2496,23 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">shopping_cart</i>
-              <div class="text-base font-semibold text-foreground">Purchase Orders</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Purchase Orders</modus-typography>
               <modus-badge color="secondary" size="sm">{{ purchaseOrders().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-            <div>PO #</div><div>Vendor</div><div>Description</div><div class="text-right">Amount</div><div>Status</div><div>Delivery</div><div>Project</div>
+          <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
+            <modus-typography size="xs" weight="semibold">PO #</modus-typography><modus-typography size="xs" weight="semibold">Vendor</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Delivery</modus-typography><modus-typography size="xs" weight="semibold">Project</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (po of purchaseOrders(); track po.id) {
             <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPurchaseOrder(po.id)">
-              <div class="text-sm font-medium text-primary">{{ po.poNumber }}</div>
-              <div class="text-sm text-foreground truncate">{{ po.vendor }}</div>
-              <div class="text-sm text-foreground truncate">{{ po.description }}</div>
-              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(po.amount) }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ po.poNumber }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ po.vendor }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ po.description }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ formatCurrency(po.amount) }}</modus-typography>
               <div><modus-badge [color]="poStatusBadge(po.status)" size="sm">{{ capitalizeFirst(po.status) }}</modus-badge></div>
-              <div class="text-sm text-foreground-60">{{ po.expectedDelivery }}</div>
-              <div class="text-sm text-foreground-60 truncate">{{ po.project }}</div>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ po.expectedDelivery }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 truncate">{{ po.project }}</modus-typography>
             </div>
           }
           </div>
@@ -2530,36 +2530,36 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         <!-- KPI strip -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Gross Pay (YTD)</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(payrollSummary().totalGross) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Gross Pay (YTD)</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(payrollSummary().totalGross) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Net Pay (YTD)</div>
-            <div class="text-2xl font-bold text-success">{{ formatCurrency(payrollSummary().totalNet) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Net Pay (YTD)</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ formatCurrency(payrollSummary().totalNet) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Avg Headcount</div>
-            <div class="text-2xl font-bold text-primary">{{ payrollSummary().avgEmployees }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Avg Headcount</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-primary">{{ payrollSummary().avgEmployees }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Labor Burden</div>
-            <div class="text-2xl font-bold text-foreground">{{ payrollSummary().laborBurdenPct }}%</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Labor Burden</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ payrollSummary().laborBurdenPct }}%</modus-typography>
           </div>
         </div>
 
         <!-- Additional KPIs -->
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Total Taxes</div>
-            <div class="text-xl font-bold text-warning">{{ formatCurrency(payrollSummary().totalTaxes) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Total Taxes</modus-typography>
+            <modus-typography  hierarchy="p" size="xl" weight="bold" className="text-warning">{{ formatCurrency(payrollSummary().totalTaxes) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Total Benefits</div>
-            <div class="text-xl font-bold text-primary">{{ formatCurrency(payrollSummary().totalBenefits) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Total Benefits</modus-typography>
+            <modus-typography  hierarchy="p" size="xl" weight="bold" className="text-primary">{{ formatCurrency(payrollSummary().totalBenefits) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg p-4 border-default">
-            <div class="text-xs text-foreground-60 mb-1">Total Overtime</div>
-            <div class="text-xl font-bold" [class]="payrollSummary().totalOT > 1200 ? 'text-warning' : 'text-foreground'">{{ payrollSummary().totalOT.toLocaleString() }} hrs</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Total Overtime</modus-typography>
+            <modus-typography hierarchy="p" size="xl" weight="bold" [className]="payrollSummary().totalOT > 1200 ? 'text-warning' : 'text-foreground'">{{ payrollSummary().totalOT.toLocaleString() }} hrs</modus-typography>
           </div>
         </div>
 
@@ -2567,23 +2567,23 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
-            <div class="text-base font-semibold text-foreground">Monthly Summary</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Monthly Summary</modus-typography>
           </div>
           <div class="flex flex-col gap-3 mb-6">
             @for (mp of monthlyPayroll(); track mp.month) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToPayrollMonthly(mp.month)">
-                <div class="text-sm font-medium text-foreground mb-3">{{ mp.month }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground mb-3">{{ mp.month }}</modus-typography>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-xs text-foreground-60">Gross</div>
-                  <div class="text-sm text-foreground">{{ formatCurrency(mp.gross) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Gross</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" className="text-foreground">{{ formatCurrency(mp.gross) }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-xs text-foreground-60">Net</div>
-                  <div class="text-sm text-success">{{ formatCurrency(mp.net) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Net</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" className="text-success">{{ formatCurrency(mp.net) }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between">
-                  <div class="text-xs text-foreground-60">Headcount</div>
-                  <div class="text-sm text-foreground-60">{{ mp.headcount }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Headcount</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ mp.headcount }}</modus-typography>
                 </div>
               </div>
             }
@@ -2593,19 +2593,19 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">gantt_chart</i>
-              <div class="text-base font-semibold text-foreground">Monthly Summary</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Monthly Summary</modus-typography>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-            <div>Month</div><div class="text-right">Gross</div><div class="text-right">Net</div><div class="text-right">Headcount</div>
+          <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
+            <modus-typography size="xs" weight="semibold">Month</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Gross</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Net</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Headcount</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (mp of monthlyPayroll(); track mp.month) {
             <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayrollMonthly(mp.month)">
-              <div class="text-sm font-medium text-foreground">{{ mp.month }}</div>
-              <div class="text-sm text-foreground text-right">{{ formatCurrency(mp.gross) }}</div>
-              <div class="text-sm text-success text-right">{{ formatCurrency(mp.net) }}</div>
-              <div class="text-sm text-foreground-60 text-right">{{ mp.headcount }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ mp.month }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground text-right">{{ formatCurrency(mp.gross) }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-success text-right">{{ formatCurrency(mp.net) }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 text-right">{{ mp.headcount }}</modus-typography>
             </div>
           }
           </div>
@@ -2616,28 +2616,28 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         @if (isMobile()) {
           <div class="flex items-center gap-2 mb-3">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">people_group</i>
-            <div class="text-base font-semibold text-foreground">Weekly Payroll Detail</div>
+            <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Weekly Payroll Detail</modus-typography>
             <modus-badge color="secondary" size="sm">{{ payrollRecords().length }}</modus-badge>
           </div>
           <div class="flex flex-col gap-3">
             @for (pr of payrollRecords(); track pr.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToPayrollRecord(pr.id)">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-medium text-foreground">{{ pr.period }}</div>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ pr.period }}</modus-typography>
                   <modus-badge [color]="payrollStatusBadge(pr.status)" size="sm">{{ capitalizeFirst(pr.status) }}</modus-badge>
                 </div>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-xs text-foreground-60">Gross</div>
-                  <div class="text-sm text-foreground">{{ formatCurrency(pr.grossPay) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Gross</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" className="text-foreground">{{ formatCurrency(pr.grossPay) }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-xs text-foreground-60">Net</div>
-                  <div class="text-sm text-success">{{ formatCurrency(pr.netPay) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Net</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" className="text-success">{{ formatCurrency(pr.netPay) }}</modus-typography>
                 </div>
                 <div class="flex items-center gap-4 mt-2">
-                  <div class="text-xs text-foreground-60">{{ pr.employeeCount }} emp</div>
-                  <div class="text-xs text-foreground-60">{{ pr.totalHours.toLocaleString() }} hrs</div>
-                  <div class="text-xs" [class]="pr.overtimeHours > 70 ? 'text-warning font-medium' : 'text-foreground-60'">{{ pr.overtimeHours }} OT</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ pr.employeeCount }} emp</modus-typography>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ pr.totalHours.toLocaleString() }} hrs</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" [weight]="pr.overtimeHours > 70 ? 'semibold' : 'normal'" [className]="pr.overtimeHours > 70 ? 'text-warning' : 'text-foreground-60'">{{ pr.overtimeHours }} OT</modus-typography>
                 </div>
               </div>
             }
@@ -2647,23 +2647,23 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">people_group</i>
-              <div class="text-base font-semibold text-foreground">Weekly Payroll Detail</div>
+              <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Weekly Payroll Detail</modus-typography>
               <modus-badge color="secondary" size="sm">{{ payrollRecords().length }}</modus-badge>
             </div>
           </div>
-          <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0">
-            <div>Period</div><div class="text-right">Gross</div><div class="text-right">Net</div><div>Status</div><div class="text-right">Emp</div><div class="text-right">Hours</div><div class="text-right">OT</div>
+          <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
+            <modus-typography size="xs" weight="semibold">Period</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Gross</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Net</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Emp</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Hours</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">OT</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (pr of payrollRecords(); track pr.id) {
             <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayrollRecord(pr.id)">
-              <div class="text-sm font-medium text-foreground">{{ pr.period }}</div>
-              <div class="text-sm text-foreground text-right">{{ formatCurrency(pr.grossPay) }}</div>
-              <div class="text-sm text-success text-right">{{ formatCurrency(pr.netPay) }}</div>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ pr.period }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground text-right">{{ formatCurrency(pr.grossPay) }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-success text-right">{{ formatCurrency(pr.netPay) }}</modus-typography>
               <div><modus-badge [color]="payrollStatusBadge(pr.status)" size="sm">{{ capitalizeFirst(pr.status) }}</modus-badge></div>
-              <div class="text-sm text-foreground-60 text-right">{{ pr.employeeCount }}</div>
-              <div class="text-sm text-foreground-60 text-right">{{ pr.totalHours.toLocaleString() }}</div>
-              <div class="text-sm text-right" [class]="pr.overtimeHours > 70 ? 'text-warning font-medium' : 'text-foreground-60'">{{ pr.overtimeHours }}</div>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 text-right">{{ pr.employeeCount }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 text-right">{{ pr.totalHours.toLocaleString() }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" [weight]="pr.overtimeHours > 70 ? 'semibold' : 'normal'" [className]="'text-right ' + (pr.overtimeHours > 70 ? 'text-warning' : 'text-foreground-60')">{{ pr.overtimeHours }}</modus-typography>
             </div>
           }
           </div>
@@ -2680,28 +2680,28 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Contracts</div>
-            <div class="text-2xl font-bold text-foreground">{{ contracts().length }}</div>
-            <div class="text-xs text-foreground-40">{{ contractSummary().primeCount }} prime / {{ contractSummary().subCount }} sub</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Total Contracts</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ contracts().length }}</modus-typography>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ contractSummary().primeCount }} prime / {{ contractSummary().subCount }} sub</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Original Value</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(contractSummary().totalOriginal) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Original Value</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(contractSummary().totalOriginal) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Revised Value</div>
-            <div class="text-2xl font-bold text-primary">{{ formatCurrency(contractSummary().totalRevised) }}</div>
-            <div class="text-xs" [class]="contractSummary().totalRevised > contractSummary().totalOriginal ? 'text-warning' : 'text-success'">
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Revised Value</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-primary">{{ formatCurrency(contractSummary().totalRevised) }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" [className]="contractSummary().totalRevised > contractSummary().totalOriginal ? 'text-warning' : 'text-success'">
               {{ contractSummary().totalRevised > contractSummary().totalOriginal ? '+' : '' }}{{ formatCurrency(contractSummary().totalRevised - contractSummary().totalOriginal) }}
-            </div>
+            </modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Active</div>
-            <div class="text-2xl font-bold text-success">{{ contractSummary().activeCount }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Active</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ contractSummary().activeCount }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Est. Retainage</div>
-            <div class="text-2xl font-bold text-warning">{{ formatCurrency(contractSummary().totalRetainage) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Est. Retainage</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-warning">{{ formatCurrency(contractSummary().totalRetainage) }}</modus-typography>
           </div>
         </div>
 
@@ -2713,52 +2713,52 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   <modus-badge [color]="c.contractType === 'prime' ? 'primary' : 'tertiary'" size="sm">{{ contractTypeLabelShort(c.contractType) }}</modus-badge>
                   <modus-badge [color]="contractStatusBadge(c.status)" size="sm">{{ capitalizeFirst(c.status) }}</modus-badge>
                 </div>
-                <div class="text-sm font-medium text-foreground mb-1">{{ c.title }}</div>
-                <div class="text-xs text-foreground-40 mb-3">{{ c.vendor }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground mb-1">{{ c.title }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mb-3">{{ c.vendor }}</modus-typography>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-xs text-foreground-60">Original</div>
-                  <div class="text-sm text-foreground-60">{{ formatCurrency(c.originalValue) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Original</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ formatCurrency(c.originalValue) }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-xs text-foreground-60">Revised</div>
-                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(c.revisedValue) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Revised</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(c.revisedValue) }}</modus-typography>
                 </div>
                 <div class="flex items-center justify-between">
-                  <div class="text-xs text-foreground-60">Delta</div>
-                  <div class="text-sm" [class]="c.revisedValue > c.originalValue ? 'text-warning' : 'text-foreground-40'">
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Delta</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" [className]="c.revisedValue > c.originalValue ? 'text-warning' : 'text-foreground-40'">
                     {{ c.revisedValue > c.originalValue ? '+' : '' }}{{ formatCurrency(c.revisedValue - c.originalValue) }}
-                  </div>
+                  </modus-typography>
                 </div>
-                <div class="text-xs text-foreground-40 mt-2">{{ c.project }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mt-2">{{ c.project }}</modus-typography>
               </div>
             }
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <div>Contract</div>
-            <div>Type</div>
-            <div class="text-right">Original</div>
-            <div class="text-right">Revised</div>
-            <div class="text-right">Delta</div>
-            <div>Status</div>
-            <div>Project</div>
+          <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
+            <modus-typography size="xs" weight="semibold">Contract</modus-typography>
+            <modus-typography size="xs" weight="semibold">Type</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right">Original</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right">Revised</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right">Delta</modus-typography>
+            <modus-typography size="xs" weight="semibold">Status</modus-typography>
+            <modus-typography size="xs" weight="semibold">Project</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (c of contracts(); track c.id) {
             <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToContract(c.id)">
               <div>
-                <div class="text-sm font-medium text-foreground truncate">{{ c.title }}</div>
-                <div class="text-xs text-foreground-40">{{ c.vendor }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ c.title }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ c.vendor }}</modus-typography>
               </div>
               <div><modus-badge [color]="c.contractType === 'prime' ? 'primary' : 'tertiary'" size="sm">{{ contractTypeLabelShort(c.contractType) }}</modus-badge></div>
-              <div class="text-sm text-foreground-60 text-right">{{ formatCurrency(c.originalValue) }}</div>
-              <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(c.revisedValue) }}</div>
-              <div class="text-sm text-right" [class]="c.revisedValue > c.originalValue ? 'text-warning' : 'text-foreground-40'">
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 text-right">{{ formatCurrency(c.originalValue) }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ formatCurrency(c.revisedValue) }}</modus-typography>
+              <modus-typography hierarchy="p" size="sm" [className]="'text-right ' + (c.revisedValue > c.originalValue ? 'text-warning' : 'text-foreground-40')">
                 {{ c.revisedValue > c.originalValue ? '+' : '' }}{{ formatCurrency(c.revisedValue - c.originalValue) }}
-              </div>
+              </modus-typography>
               <div><modus-badge [color]="contractStatusBadge(c.status)" size="sm">{{ capitalizeFirst(c.status) }}</modus-badge></div>
-              <div class="text-xs text-foreground-40 truncate">{{ c.project }}</div>
+              <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 truncate">{{ c.project }}</modus-typography>
             </div>
           }
           </div>
@@ -2775,24 +2775,24 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
 
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 flex-shrink-0">
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Total Paid</div>
-            <div class="text-2xl font-bold text-success">{{ formatCurrency(subLedgerSummary().totalPaid) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Total Paid</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ formatCurrency(subLedgerSummary().totalPaid) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Retainage Held</div>
-            <div class="text-2xl font-bold text-warning">{{ formatCurrency(subLedgerSummary().totalRetainageHeld) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Retainage Held</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-warning">{{ formatCurrency(subLedgerSummary().totalRetainageHeld) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Retainage Released</div>
-            <div class="text-2xl font-bold text-primary">{{ formatCurrency(subLedgerSummary().totalRetainageReleased) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Retainage Released</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-primary">{{ formatCurrency(subLedgerSummary().totalRetainageReleased) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">Backcharges</div>
-            <div class="text-2xl font-bold text-destructive">{{ formatCurrency(subLedgerSummary().totalBackcharges) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">Backcharges</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-destructive">{{ formatCurrency(subLedgerSummary().totalBackcharges) }}</modus-typography>
           </div>
           <div class="bg-card rounded-lg border-default p-4 text-center">
-            <div class="text-xs text-foreground-60 uppercase tracking-wide mb-1">CO Adjustments</div>
-            <div class="text-2xl font-bold text-foreground">{{ formatCurrency(subLedgerSummary().totalChangeOrders) }}</div>
+            <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 uppercase tracking-wide mb-1">CO Adjustments</modus-typography>
+            <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ formatCurrency(subLedgerSummary().totalChangeOrders) }}</modus-typography>
           </div>
         </div>
 
@@ -2802,51 +2802,51 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToSubcontractLedgerEntry(entry.id)">
                 <div class="flex items-center justify-between mb-2">
                   <modus-badge [color]="ledgerTypeBadge(entry.type)" size="sm">{{ ledgerTypeLabel(entry.type) }}</modus-badge>
-                  <div class="text-xs text-foreground-60">{{ entry.date }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ entry.date }}</modus-typography>
                 </div>
-                <div class="text-sm font-medium text-foreground mb-1">{{ entry.description }}</div>
-                <div class="text-xs text-foreground-40 mb-1">{{ entry.project }}</div>
-                <div class="text-xs text-foreground-60 mb-3">{{ entry.vendor }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground mb-1">{{ entry.description }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mb-1">{{ entry.project }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-3">{{ entry.vendor }}</modus-typography>
                 <div class="flex items-center justify-between mb-1">
-                  <div class="text-xs text-foreground-60">Amount</div>
-                  <div class="text-sm font-medium" [class]="entry.amount < 0 ? 'text-destructive' : 'text-success'">
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Amount</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" [className]="entry.amount < 0 ? 'text-destructive' : 'text-success'">
                     {{ entry.amount < 0 ? '-' : '' }}{{ formatCurrency(entry.amount < 0 ? -entry.amount : entry.amount) }}
-                  </div>
+                  </modus-typography>
                 </div>
                 <div class="flex items-center justify-between">
-                  <div class="text-xs text-foreground-60">Balance</div>
-                  <div class="text-sm font-semibold text-foreground">{{ formatCurrency(entry.runningBalance) }}</div>
+                  <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">Balance</modus-typography>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatCurrency(entry.runningBalance) }}</modus-typography>
                 </div>
-                <div class="text-xs text-foreground-40 mt-2">{{ entry.payApp }}</div>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mt-2">{{ entry.payApp }}</modus-typography>
               </div>
             }
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 bg-muted text-xs font-semibold text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <div>Description</div>
-            <div>Vendor</div>
-            <div>Type</div>
-            <div class="text-right">Amount</div>
-            <div>Pay App</div>
-            <div>Date</div>
-            <div class="text-right">Balance</div>
+          <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
+            <modus-typography size="xs" weight="semibold">Description</modus-typography>
+            <modus-typography size="xs" weight="semibold">Vendor</modus-typography>
+            <modus-typography size="xs" weight="semibold">Type</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography>
+            <modus-typography size="xs" weight="semibold">Pay App</modus-typography>
+            <modus-typography size="xs" weight="semibold">Date</modus-typography>
+            <modus-typography size="xs" weight="semibold" className="text-right">Balance</modus-typography>
           </div>
           <div class="overflow-y-auto flex-1">
           @for (entry of subcontractLedger(); track entry.id) {
             <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToSubcontractLedgerEntry(entry.id)">
               <div>
-                <div class="text-sm font-medium text-foreground truncate">{{ entry.description }}</div>
-                <div class="text-xs text-foreground-40">{{ entry.project }}</div>
+                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ entry.description }}</modus-typography>
+                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ entry.project }}</modus-typography>
               </div>
-              <div class="text-sm text-foreground-60 truncate">{{ entry.vendor }}</div>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 truncate">{{ entry.vendor }}</modus-typography>
               <div><modus-badge [color]="ledgerTypeBadge(entry.type)" size="sm">{{ ledgerTypeLabel(entry.type) }}</modus-badge></div>
-              <div class="text-sm font-medium text-right" [class]="entry.amount < 0 ? 'text-destructive' : 'text-success'">
+              <modus-typography hierarchy="p" size="sm" weight="semibold" [className]="'text-right ' + (entry.amount < 0 ? 'text-destructive' : 'text-success')">
                 {{ entry.amount < 0 ? '-' : '' }}{{ formatCurrency(entry.amount < 0 ? -entry.amount : entry.amount) }}
-              </div>
-              <div class="text-xs text-foreground-60">{{ entry.payApp }}</div>
-              <div class="text-xs text-foreground-60">{{ entry.date }}</div>
-              <div class="text-sm text-foreground text-right">{{ formatCurrency(entry.runningBalance) }}</div>
+              </modus-typography>
+              <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ entry.payApp }}</modus-typography>
+              <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ entry.date }}</modus-typography>
+              <modus-typography  hierarchy="p" size="sm" className="text-foreground text-right">{{ formatCurrency(entry.runningBalance) }}</modus-typography>
             </div>
           }
           </div>

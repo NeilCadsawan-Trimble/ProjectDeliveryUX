@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ModusBadgeComponent } from '../../components/modus-badge.component';
+import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { ModusCardComponent } from '../../components/modus-card.component';
 import type { ChangeOrder, ChangeOrderStatus, ChangeOrderType } from '../../data/dashboard-data.types';
 import { coBadgeColor, coTypeLabel, coTypeIcon, formatCurrency as sharedFormatCurrency, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data.formatters';
 import { DataStoreService } from '../../data/data-store.service';
@@ -77,7 +79,7 @@ function typeBgClass(coType: ChangeOrderType): string {
 
 @Component({
   selector: 'app-change-order-detail-page',
-  imports: [ModusBadgeComponent, DetailPageLayoutComponent],
+  imports: [ModusBadgeComponent, DetailPageLayoutComponent, ModusTypographyComponent, ModusCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-detail-page-layout
@@ -90,145 +92,151 @@ function typeBgClass(coType: ChangeOrderType): string {
     >
       @if (changeOrder(); as co) {
         <!-- Header card -->
-        <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
-          <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
-            <div class="flex items-center gap-4">
-              <div class="w-11 h-11 rounded-lg flex items-center justify-center" [class]="statusBg()">
-                <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">swap</i>
+        <modus-card [padding]="'compact'" className="overflow-hidden mb-6">
+          <div>
+            <div class="flex items-center justify-between px-6 py-5 border-bottom-default">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-lg flex items-center justify-center" [class]="statusBg()">
+                  <i class="modus-icons text-xl text-primary-foreground" aria-hidden="true">swap</i>
+                </div>
+                <div>
+                  <modus-typography hierarchy="h2" size="lg" weight="semibold">{{ co.id }}</modus-typography>
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60">{{ co.project }}</modus-typography>
+                </div>
               </div>
-              <div>
-                <div class="text-xl font-semibold text-foreground">{{ co.id }}</div>
-                <div class="text-sm text-foreground-60">{{ co.project }}</div>
+              <div class="flex items-center gap-3">
+                <modus-badge [color]="typeBadgeColor()" variant="outlined" size="md">
+                  {{ coTypeLabel(co.coType) }}
+                </modus-badge>
+                <div class="relative">
+                  <div class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-muted transition-colors duration-150"
+                    role="button" tabindex="0"
+                    (click)="statusOpen.set(!statusOpen())"
+                    (keydown.enter)="statusOpen.set(!statusOpen())">
+                    <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
+                    <modus-typography hierarchy="p" size="sm" className="font-medium text-foreground">{{ capitalizeFirst(co.status) }}</modus-typography>
+                    <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
+                  </div>
+                  @if (statusOpen()) {
+                    <div class="fixed inset-0 z-[9998]" (click)="statusOpen.set(false)"></div>
+                    <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-[9999] min-w-[160px] py-1 overflow-hidden">
+                      @for (opt of coStatusOptions; track opt.value) {
+                        <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
+                          role="option" [attr.aria-selected]="opt.value === co.status"
+                          (click)="changeStatus(opt.value)">
+                          <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
+                          <modus-typography hierarchy="p" size="sm" className="font-medium text-foreground">{{ opt.label }}</modus-typography>
+                          @if (opt.value === co.status) {
+                            <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <modus-badge [color]="typeBadgeColor()" variant="outlined" size="md">
-                {{ coTypeLabel(co.coType) }}
-              </modus-badge>
-              <div class="relative">
-                <div class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-muted transition-colors duration-150"
-                  role="button" tabindex="0"
-                  (click)="statusOpen.set(!statusOpen())"
-                  (keydown.enter)="statusOpen.set(!statusOpen())">
-                  <div class="w-2.5 h-2.5 rounded-full" [class]="statusDotClass()"></div>
-                  <div class="text-sm font-medium text-foreground">{{ capitalizeFirst(co.status) }}</div>
-                  <i class="modus-icons text-xs text-foreground-60" aria-hidden="true">expand_more</i>
+
+            <div class="px-6 py-6 flex flex-col gap-6">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <div class="detail-field-label">Amount</div>
+                  <modus-typography hierarchy="h2" size="lg" weight="bold">{{ formatCurrency(co.amount) }}</modus-typography>
                 </div>
-                @if (statusOpen()) {
-                  <div class="fixed inset-0 z-[9998]" (click)="statusOpen.set(false)"></div>
-                  <div class="absolute right-0 top-full mt-1 bg-card border-default rounded-lg shadow-lg z-[9999] min-w-[160px] py-1 overflow-hidden">
-                    @for (opt of coStatusOptions; track opt.value) {
-                      <div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
-                        role="option" [attr.aria-selected]="opt.value === co.status"
-                        (click)="changeStatus(opt.value)">
-                        <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" [class]="opt.dotClass"></div>
-                        <div class="text-sm font-medium text-foreground">{{ opt.label }}</div>
-                        @if (opt.value === co.status) {
-                          <i class="modus-icons text-sm text-primary ml-auto" aria-hidden="true">check</i>
-                        }
-                      </div>
-                    }
+                <div>
+                  <div class="detail-field-label">Request Date</div>
+                  <modus-typography hierarchy="p" size="md">{{ co.requestDate }}</modus-typography>
+                </div>
+                <div>
+                  <div class="detail-field-label">Requested By</div>
+                  <modus-typography hierarchy="p" size="md">{{ co.requestedBy }}</modus-typography>
+                </div>
+                @if (co.costCode) {
+                  <div>
+                    <div class="detail-field-label">Cost Code</div>
+                    <modus-typography hierarchy="p" size="md">{{ co.costCode }}</modus-typography>
                   </div>
                 }
               </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                @if (co.contractNumber) {
+                  <div>
+                    <div class="detail-field-label">Contract Number</div>
+                    <modus-typography hierarchy="p" size="md">{{ co.contractNumber }}</modus-typography>
+                  </div>
+                }
+                @if (co.subcontractor) {
+                  <div>
+                    <div class="detail-field-label">Subcontractor</div>
+                    <modus-typography hierarchy="p" size="md">{{ co.subcontractor }}</modus-typography>
+                  </div>
+                }
+              </div>
+
+              <div>
+                <div class="detail-field-label">Description</div>
+                <modus-typography hierarchy="p" size="md">{{ co.description }}</modus-typography>
+              </div>
+
+              <div>
+                <div class="detail-field-label">Reason / Justification</div>
+                <modus-typography hierarchy="p" size="md">{{ co.reason }}</modus-typography>
+              </div>
             </div>
           </div>
-
-          <div class="px-6 py-6 flex flex-col gap-6">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div>
-                <div class="detail-field-label">Amount</div>
-                <div class="text-xl font-bold text-foreground">{{ formatCurrency(co.amount) }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Request Date</div>
-                <div class="text-base text-foreground">{{ co.requestDate }}</div>
-              </div>
-              <div>
-                <div class="detail-field-label">Requested By</div>
-                <div class="text-base text-foreground">{{ co.requestedBy }}</div>
-              </div>
-              @if (co.costCode) {
-                <div>
-                  <div class="detail-field-label">Cost Code</div>
-                  <div class="text-base text-foreground">{{ co.costCode }}</div>
-                </div>
-              }
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              @if (co.contractNumber) {
-                <div>
-                  <div class="detail-field-label">Contract Number</div>
-                  <div class="text-base text-foreground">{{ co.contractNumber }}</div>
-                </div>
-              }
-              @if (co.subcontractor) {
-                <div>
-                  <div class="detail-field-label">Subcontractor</div>
-                  <div class="text-base text-foreground">{{ co.subcontractor }}</div>
-                </div>
-              }
-            </div>
-
-            <div>
-              <div class="detail-field-label">Description</div>
-              <div class="text-base text-foreground">{{ co.description }}</div>
-            </div>
-
-            <div>
-              <div class="detail-field-label">Reason / Justification</div>
-              <div class="text-base text-foreground">{{ co.reason }}</div>
-            </div>
-          </div>
-        </div>
+        </modus-card>
 
         <!-- Cost Breakdown -->
-        <div class="bg-card border-default rounded-lg overflow-hidden mb-6">
-          <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
-            <div class="text-base font-semibold text-foreground">Cost Breakdown</div>
-          </div>
-          <div class="overflow-x-auto">
-            <div class="min-w-[400px]">
-              <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] gap-3 px-6 py-3 bg-muted border-bottom-default text-xs font-semibold text-foreground-60 uppercase tracking-wide">
-                <div>Item</div>
-                <div class="text-right">Amount</div>
-              </div>
-              @for (item of costBreakdown(); track item.description) {
-                <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] gap-3 px-6 py-3.5 border-bottom-default items-center last:border-b-0">
-                  <div class="text-sm text-foreground">{{ item.description }}</div>
-                  <div class="text-sm font-medium text-foreground text-right">{{ formatCurrency(item.amount) }}</div>
+        <modus-card [padding]="'compact'" className="overflow-hidden mb-6">
+          <div>
+            <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
+              <modus-typography hierarchy="h3" size="md" weight="semibold">Cost Breakdown</modus-typography>
+            </div>
+            <div class="overflow-x-auto">
+              <div class="min-w-[400px]">
+                <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] gap-3 px-6 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide">
+                  <modus-typography size="xs" weight="semibold">Item</modus-typography>
+                  <modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography>
                 </div>
-              }
-              <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] gap-3 px-6 py-4 bg-muted border-top-default">
-                <div class="text-sm font-semibold text-foreground">Total</div>
-                <div class="text-base font-bold text-foreground text-right">{{ formatCurrency(co.amount) }}</div>
+                @for (item of costBreakdown(); track item.description) {
+                  <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] gap-3 px-6 py-3.5 border-bottom-default items-center last:border-b-0">
+                    <modus-typography hierarchy="p" size="sm">{{ item.description }}</modus-typography>
+                    <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-right">{{ formatCurrency(item.amount) }}</modus-typography>
+                  </div>
+                }
+                <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)] gap-3 px-6 py-4 bg-muted border-top-default">
+                  <modus-typography hierarchy="p" size="sm" weight="semibold">Total</modus-typography>
+                  <modus-typography hierarchy="p" size="md" weight="bold" className="text-right">{{ formatCurrency(co.amount) }}</modus-typography>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </modus-card>
 
         <!-- Activity History -->
-        <div class="bg-card border-default rounded-lg overflow-hidden">
-          <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
-            <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
-            <div class="text-base font-semibold text-foreground">Activity History</div>
-          </div>
+        <modus-card [padding]="'compact'" className="overflow-hidden">
           <div>
-            @for (entry of history(); track entry.action; let last = $last) {
-              <div class="flex items-start gap-4 px-6 py-4" [class.border-bottom-default]="!last">
-                <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <div class="text-xs font-semibold text-foreground-60">{{ entry.actorInitials }}</div>
+            <div class="flex items-center gap-2 px-6 py-4 border-bottom-default">
+              <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
+              <modus-typography hierarchy="h3" size="md" weight="semibold">Activity History</modus-typography>
+            </div>
+            <div>
+              @for (entry of history(); track entry.action; let last = $last) {
+                <div class="flex items-start gap-4 px-6 py-4" [class.border-bottom-default]="!last">
+                  <div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">{{ entry.actorInitials }}</modus-typography>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <modus-typography hierarchy="p" size="sm">{{ entry.action }}</modus-typography>
+                    <modus-typography hierarchy="p" size="xs" className="text-foreground-40 mt-0.5">{{ entry.actor }} -- {{ entry.date }}</modus-typography>
+                  </div>
                 </div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm text-foreground">{{ entry.action }}</div>
-                  <div class="text-xs text-foreground-40 mt-0.5">{{ entry.actor }} -- {{ entry.date }}</div>
-                </div>
-              </div>
-            }
+              }
+            </div>
           </div>
-        </div>
+        </modus-card>
       }
     </app-detail-page-layout>
   `,

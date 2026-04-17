@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { NavItem } from '../project-dashboard.config';
 import type { AgentAlert } from '../../../data/widget-agents';
 
 @Component({
   selector: 'app-collapsible-subnav',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex-shrink-0 transition-all duration-200 relative"
@@ -22,9 +24,9 @@ import type { AgentAlert } from '../../../data/widget-agents';
           <div class="flex items-center gap-2 min-w-0">
             <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">{{ icon() }}</i>
             @if (!collapsed()) {
-              <div class="text-sm font-semibold truncate text-primary">
+              <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate text-primary">
                 {{ title() }}
-              </div>
+              </modus-typography>
             }
           </div>
           <div class="flex items-center justify-center w-6 h-6 rounded flex-shrink-0">
@@ -40,15 +42,12 @@ import type { AgentAlert } from '../../../data/widget-agents';
           <div class="overflow-y-auto min-h-0 flex-1 pb-2">
             @for (item of items(); track item.value) {
               <div
-                class="flex items-center justify-between py-2.5 text-sm cursor-pointer transition-colors duration-150 whitespace-nowrap"
+                class="flex items-center justify-between py-2.5 cursor-pointer transition-colors duration-150 whitespace-nowrap"
                 [class.bg-primary]="activeItem() === item.value"
-                [class.text-primary-foreground]="activeItem() === item.value"
-                [class.font-medium]="activeItem() === item.value"
                 [class.rounded-md]="activeItem() === item.value"
                 [class.mx-2]="activeItem() === item.value"
                 [class.px-2]="activeItem() === item.value"
                 [class.px-4]="activeItem() !== item.value"
-                [class.text-foreground]="activeItem() !== item.value"
                 [class.hover:bg-muted]="activeItem() !== item.value"
                 role="button" tabindex="0"
                 (click)="onItemSelect(item.value)"
@@ -60,18 +59,15 @@ import type { AgentAlert } from '../../../data/widget-agents';
                       [class.text-foreground-60]="activeItem() !== item.value"
                     >{{ item.icon }}</i>
                   }
-                  <div>{{ item.label }}</div>
+                  <modus-typography size="sm" [weight]="activeItem() === item.value ? 'semibold' : 'normal'" [className]="activeItem() === item.value ? 'text-primary-foreground' : 'text-foreground'">{{ item.label }}</modus-typography>
                 </div>
                 @if (getItemAlert(item.value); as alert) {
-                  <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center text-2xs font-bold px-1 mr-1"
+                  <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-1 mr-1"
                     [class.bg-destructive]="alert.level === 'critical'"
-                    [class.text-destructive-foreground]="alert.level === 'critical'"
                     [class.bg-warning]="alert.level === 'warning'"
-                    [class.text-warning-foreground]="alert.level === 'warning'"
                     [class.bg-primary]="alert.level === 'info'"
-                    [class.text-primary-foreground]="alert.level === 'info'"
                     [attr.title]="alert.count + ' ' + alert.label">
-                    {{ alert.count }}
+                    <modus-typography size="xs" weight="bold" [className]="'text-2xs ' + (alert.level === 'critical' ? 'text-destructive-foreground' : alert.level === 'warning' ? 'text-warning-foreground' : 'text-primary-foreground')">{{ alert.count }}</modus-typography>
                   </div>
                 }
               </div>

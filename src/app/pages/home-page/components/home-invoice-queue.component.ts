@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 
 import type { ApInvoice } from '../../../data/dashboard-data.types';
 
 @Component({
   selector: 'app-home-invoice-queue',
+  imports: [ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
@@ -27,28 +29,28 @@ import type { ApInvoice } from '../../../data/dashboard-data.types';
             <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">invoice</i>
           </div>
           <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-            <div class="text-foreground font-medium text-sm">{{ invoice.invoiceNumber }}</div>
-            <div class="text-foreground-60 text-sm truncate">{{ invoice.vendor }}</div>
-            <div class="text-foreground-40 text-xs truncate">{{ invoice.project }}</div>
+            <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ invoice.invoiceNumber }}</modus-typography>
+            <modus-typography hierarchy="p" size="sm" className="text-foreground-60 truncate">{{ invoice.vendor }}</modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-40 truncate">{{ invoice.project }}</modus-typography>
           </div>
           <div class="flex flex-col items-end gap-1 flex-shrink-0">
-            <div class="text-foreground font-medium text-sm text-right tabular-nums">
+            <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right tabular-nums">
               {{ formatCurrency(invoice.amount) }}
-            </div>
-            <div class="text-foreground-60 text-xs whitespace-nowrap">{{ invoice.dueDate }}</div>
+            </modus-typography>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60 whitespace-nowrap">{{ invoice.dueDate }}</modus-typography>
           </div>
           <div class="flex-shrink-0">
             <div
-              class="rounded px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+              class="rounded px-2 py-0.5 whitespace-nowrap"
               [class]="statusBadgeClass(invoice.status)">
-              {{ statusLabel(invoice.status) }}
+              <modus-typography size="xs" weight="semibold">{{ statusLabel(invoice.status) }}</modus-typography>
             </div>
           </div>
         </div>
       } @empty {
-        <div class="px-3 py-6 text-center text-foreground-60 text-sm flex flex-col items-center gap-2">
+        <div class="px-3 py-6 text-center flex flex-col items-center gap-2">
           <i class="modus-icons text-lg text-foreground-40" aria-hidden="true">invoice</i>
-          <div>No pending invoices</div>
+          <modus-typography hierarchy="p" size="sm" className="text-foreground-60">No pending invoices</modus-typography>
         </div>
       }
     </div>
