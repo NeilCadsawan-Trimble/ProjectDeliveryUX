@@ -534,7 +534,7 @@
                     @if (wd.topRisk; as risk) {
                       <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'riskSummary')" (click)="navigateToBlock(project, 'riskSummary', $event)">
                         <i class="modus-icons text-xs flex-shrink-0" [class.text-destructive]="risk.severity === 'high'" [class.text-warning]="risk.severity === 'medium'" [class.text-foreground-40]="risk.severity === 'low'" aria-hidden="true">warning</i>
-                        <modus-typography weight="semibold" className="text-2xs text-foreground truncate">{{ risk.title }}</modus-typography>
+                        <modus-typography class="flex-1 min-w-0" weight="semibold" className="text-2xs text-foreground break-words">{{ risk.title }}</modus-typography>
                         <modus-typography class="flex-shrink-0" weight="semibold" className="text-2xs px-1.5 py-0.5 rounded-full"
                           [class.bg-destructive-20]="risk.severity === 'high'" [class.text-destructive]="risk.severity === 'high'"
                           [class.bg-warning-20]="risk.severity === 'medium'" [class.text-warning]="risk.severity === 'medium'"
@@ -935,7 +935,7 @@
                 @if (wd.topRisk; as risk) {
                   <div class="flex items-center gap-1.5 border-top-default pt-2 mt-0.5 tile-block-link" [style.order]="blockOrder(widgetId, 'riskSummary')" (click)="navigateToBlock(project, 'riskSummary', $event)">
                     <i class="modus-icons text-xs flex-shrink-0" [class.text-destructive]="risk.severity === 'high'" [class.text-warning]="risk.severity === 'medium'" [class.text-foreground-40]="risk.severity === 'low'" aria-hidden="true">warning</i>
-                    <modus-typography weight="semibold" className="text-2xs text-foreground truncate">{{ risk.title }}</modus-typography>
+                    <modus-typography class="flex-1 min-w-0" weight="semibold" className="text-2xs text-foreground break-words">{{ risk.title }}</modus-typography>
                     <modus-typography class="flex-shrink-0" weight="semibold" className="text-2xs px-1.5 py-0.5 rounded-full"
                       [class.bg-destructive-20]="risk.severity === 'high'" [class.text-destructive]="risk.severity === 'high'"
                       [class.bg-warning-20]="risk.severity === 'medium'" [class.text-warning]="risk.severity === 'medium'"

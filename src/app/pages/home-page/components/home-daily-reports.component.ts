@@ -22,8 +22,8 @@ export interface DailyReportRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-2 h-full min-h-0 p-4">
-      <div class="grid grid-cols-3 gap-2 shrink-0">
+    <div class="flex flex-col gap-2 h-full min-h-0 py-4">
+      <div class="grid grid-cols-3 gap-2 shrink-0 px-4">
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-primary-20 py-2">
           <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-primary tabular-nums">{{ totalCrew() }}</modus-typography>
           <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Total Crew</modus-typography>
@@ -38,7 +38,7 @@ export interface DailyReportRow {
           <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Safety Incidents</modus-typography>
         </div>
       </div>
-      <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="flex-1 min-h-0 overflow-y-auto px-4">
         @for (row of latestReports(); track row.id) {
           <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
             role="button" tabindex="0"
