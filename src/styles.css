@@ -2151,7 +2151,7 @@ modus-wc-utility-panel .modus-wc-utility-panel-footer {
 .widget-text-md .text-2xs { font-size: var(--modus-wc-font-size-xs) !important; }
 .widget-text-md .text-xs { font-size: var(--modus-wc-font-size-sm) !important; }
 .widget-text-md .text-sm { font-size: var(--modus-wc-font-size-md) !important; }
-.widget-text-md .widget-title { font-size: var(--modus-wc-font-size-md) !important; }
+.widget-text-md .widget-title { font-size: var(--modus-wc-font-size-sm) !important; }
 
 /* Widget text scaling — large: 6+ cols AND 500px+ height */
 .widget-text-lg .text-2xs { font-size: var(--modus-wc-font-size-sm) !important; }

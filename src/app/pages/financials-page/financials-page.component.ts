@@ -657,24 +657,24 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
         >
           <div class="flex items-stretch gap-4 h-full">
             <!-- NavLinks -->
-            <div class="bg-card border-default rounded-lg flex-shrink-0 overflow-hidden flex flex-col min-w-48">
-              <div class="flex items-center gap-2 px-4 py-3 border-bottom-default flex-shrink-0">
-                <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">payment_instant</i>
-                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">Financials</modus-typography>
+            <div class="bg-card border-default rounded-lg flex-shrink-0 overflow-hidden flex flex-col w-[227px]">
+              <div class="flex items-center justify-between px-4 py-3 border-bottom-default flex-shrink-0">
+                <div class="flex items-center gap-2 min-w-0">
+                  <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">payment_instant</i>
+                  <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">Financials</modus-typography>
+                </div>
                 @if (navLinkTotalAlerts() > 0) {
-                  <modus-typography class="flex-shrink-0" size="xs" weight="bold" className="text-2xs min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1"
+                  <div class="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 mr-1"
                     [class.bg-destructive]="navLinkHasCriticalAlerts()"
-                    [class.text-destructive-foreground]="navLinkHasCriticalAlerts()"
-                    [class.bg-warning]="!navLinkHasCriticalAlerts()"
-                    [class.text-warning-foreground]="!navLinkHasCriticalAlerts()">
-                    {{ navLinkTotalAlerts() }}
-                  </modus-typography>
+                    [class.bg-warning]="!navLinkHasCriticalAlerts()">
+                    <modus-typography size="xs" weight="bold" [className]="'text-2xs ' + (navLinkHasCriticalAlerts() ? 'text-destructive-foreground' : 'text-warning-foreground')">{{ navLinkTotalAlerts() }}</modus-typography>
+                  </div>
                 }
               </div>
               <div class="py-1 flex-1 overflow-y-auto">
                 @for (item of finNavLinkItems(); track item.value) {
                   <div
-                    class="flex items-center justify-between py-2.5 cursor-pointer transition-colors duration-150 whitespace-nowrap"
+                    class="flex items-center justify-between py-1.5 cursor-pointer transition-colors duration-150 whitespace-nowrap"
                     [class.bg-primary]="activeSubPage() === item.value"
                     [class.text-primary-foreground]="activeSubPage() === item.value"
                     [class.rounded-md]="activeSubPage() === item.value"
@@ -697,18 +697,13 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography size="sm" [weight]="activeSubPage() === item.value ? 'semibold' : 'normal'" className="truncate">{{ item.label }}</modus-typography>
                     </div>
                     @if (finSubnavAlerts()[item.value]; as alert) {
-                      <modus-typography class="flex-shrink-0 mr-1" size="xs" weight="bold" className="text-2xs min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-1"
+                      <div class="flex-shrink-0 min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-1 mr-1"
                         [class.bg-destructive]="alert.level === 'critical'"
-                        [class.text-destructive-foreground]="alert.level === 'critical'"
                         [class.bg-warning]="alert.level === 'warning'"
-                        [class.text-warning-foreground]="alert.level === 'warning'"
-                        [class.bg-primary]="alert.level === 'info' && activeSubPage() !== item.value"
-                        [class.text-primary-foreground]="alert.level === 'info' && activeSubPage() !== item.value"
-                        [class.bg-primary-foreground]="alert.level === 'info' && activeSubPage() === item.value"
-                        [class.text-primary]="alert.level === 'info' && activeSubPage() === item.value"
+                        [class.bg-primary]="alert.level === 'info'"
                         [attr.title]="alert.count + ' ' + alert.label">
-                        {{ alert.count }}
-                      </modus-typography>
+                        <modus-typography size="xs" weight="bold" [className]="'text-2xs ' + (alert.level === 'critical' ? 'text-destructive-foreground' : alert.level === 'warning' ? 'text-warning-foreground' : 'text-primary-foreground')">{{ alert.count }}</modus-typography>
+                      </div>
                     }
                   </div>
                 }
@@ -1515,7 +1510,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
       </div>
     </div>
     } @else {
-    <div class="flex flex-col h-full">
+    <div class="flex flex-col h-full max-w-screen-xl mx-auto w-full">
       <div class="px-4 pt-4 md:pt-6 flex-shrink-0">
         <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground mb-1">{{ activeSubPageTitle() }}</modus-typography>
         <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 mb-4">{{ activeSubPageDescription() }}</modus-typography>

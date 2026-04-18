@@ -8,8 +8,8 @@ import type { Inspection, PunchListItem } from '../../../data/dashboard-data.typ
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto p-4">
-      <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto py-4">
+      <div class="flex flex-col gap-2 px-4">
         <div class="flex items-center gap-2">
           <i class="modus-icons text-base text-primary" aria-hidden="true">clipboard</i>
           <modus-typography hierarchy="h3" size="sm" weight="semibold" className="text-foreground">Inspections</modus-typography>
@@ -34,9 +34,9 @@ import type { Inspection, PunchListItem } from '../../../data/dashboard-data.typ
         </div>
       </div>
 
-      <div class="border-bottom-default"></div>
+      <div class="border-bottom-default mx-4"></div>
 
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-2 px-4">
         <div class="flex items-center gap-2">
           <i class="modus-icons text-base text-warning" aria-hidden="true">list_bulleted</i>
           <modus-typography hierarchy="h3" size="sm" weight="semibold" className="text-foreground">Punch List</modus-typography>
@@ -61,9 +61,9 @@ import type { Inspection, PunchListItem } from '../../../data/dashboard-data.typ
         </div>
       </div>
 
-      <div class="border-bottom-default"></div>
+      <div class="border-bottom-default mx-4"></div>
 
-      <div class="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto">
+      <div class="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto px-4">
         <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 mb-1">Recent failed inspections</modus-typography>
         @for (insp of failedInspections(); track insp.id) {
           <div class="flex items-center justify-between gap-2 py-1.5 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"

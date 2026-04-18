@@ -24,8 +24,8 @@ interface PersonRow {
   imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-2 h-full min-h-0 p-4">
-      <div class="flex items-center gap-2 shrink-0">
+    <div class="flex flex-col gap-2 h-full min-h-0 py-4">
+      <div class="flex items-center gap-2 shrink-0 px-4">
         <div class="flex items-center bg-secondary rounded">
           <div class="px-3 py-1 rounded cursor-pointer transition-colors"
             [class]="viewMode() === 'person' ? 'bg-primary text-primary-foreground' : 'text-foreground-60 hover:text-foreground'"
@@ -38,7 +38,7 @@ interface PersonRow {
           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ overallocatedCount() }} overallocated</modus-typography>
         }
       </div>
-      <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="flex-1 min-h-0 overflow-y-auto px-4">
         @if (viewMode() === 'person') {
           @for (person of people(); track person.name) {
             <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">

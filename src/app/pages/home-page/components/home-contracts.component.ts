@@ -8,8 +8,8 @@ import type { Contract, ContractStatus } from '../../../data/dashboard-data.type
   imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-2 h-full min-h-0 p-4">
-      <div class="grid grid-cols-4 gap-2 shrink-0">
+    <div class="flex flex-col gap-2 h-full min-h-0 py-4">
+      <div class="grid grid-cols-4 gap-2 shrink-0 px-4">
         <div class="flex flex-col items-center gap-0.5 rounded-lg bg-success-20 py-2">
           <modus-typography hierarchy="h2" size="lg" weight="bold" className="text-success tabular-nums">{{ activeCount() }}</modus-typography>
           <modus-typography size="xs" className="text-foreground-60">Active</modus-typography>
@@ -27,7 +27,7 @@ import type { Contract, ContractStatus } from '../../../data/dashboard-data.type
           <modus-typography size="xs" className="text-foreground-60">Total Value</modus-typography>
         </div>
       </div>
-      <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="flex-1 min-h-0 overflow-y-auto px-4">
         @for (c of activeContracts(); track c.id) {
           <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
             role="button" tabindex="0"

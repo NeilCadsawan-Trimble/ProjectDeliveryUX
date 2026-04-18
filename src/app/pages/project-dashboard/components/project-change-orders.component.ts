@@ -9,8 +9,8 @@ import type { ChangeOrder } from '../../../data/dashboard-data.types';
   imports: [TitleCasePipe, ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-2 h-full min-h-0 p-4">
-      <div class="grid grid-cols-3 gap-2 shrink-0">
+    <div class="flex flex-col gap-2 h-full min-h-0 py-4">
+      <div class="grid grid-cols-3 gap-2 shrink-0 px-4">
         <div class="flex flex-col items-center gap-1 rounded-lg bg-warning-20 py-2">
           <modus-typography size="lg" weight="bold" className="text-warning tabular-nums">{{ pendingCount() }}</modus-typography>
           <modus-typography size="xs" className="text-foreground-60">Pending</modus-typography>
@@ -27,7 +27,7 @@ import type { ChangeOrder } from '../../../data/dashboard-data.types';
           <modus-typography size="xs" weight="semibold" className="text-foreground tabular-nums">{{ fmtCurrency(rejectedAmount()) }}</modus-typography>
         </div>
       </div>
-      <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="flex-1 min-h-0 overflow-y-auto px-4">
         @for (co of sortedOrders(); track co.id) {
           <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
             <div class="flex items-center justify-between gap-2">

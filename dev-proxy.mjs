@@ -1,11 +1,12 @@
 import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, normalize } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const PORT = 3001;
 
 function loadEnv() {
-  const envPath = new URL('.env', import.meta.url).pathname;
+  const envPath = fileURLToPath(new URL('.env', import.meta.url));
   if (!existsSync(envPath)) {
     console.error('No .env file found. Create one with ANTHROPIC_API_KEY=sk-...');
     process.exit(1);
