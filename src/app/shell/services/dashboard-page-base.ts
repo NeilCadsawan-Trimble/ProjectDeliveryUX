@@ -56,6 +56,8 @@ export abstract class DashboardPageBase {
       untracked(() => {
         const newSeed = this.getLayoutSeedForCurrentPersona();
         if (newSeed) this.engine.updateConfigForNewSeed(newSeed);
+        this.engine.clearCurrentCache();
+        this.personaService.consumeLayoutReset();
         this.engine.reinitLayout(prevLK ?? undefined, prevCK ?? undefined);
         this.applyInitialHeaderLock();
       });
@@ -150,6 +152,9 @@ export abstract class DashboardPageBase {
   ngAfterViewInit(): void {
     this.engine.gridElAccessor = () => this.resolveGridElement();
     this.engine.headerElAccessor = () => this.resolveHeaderElement();
+    if (this.personaService.consumeLayoutReset()) {
+      this.engine.clearCurrentCache();
+    }
     this.engine.init();
   }
 

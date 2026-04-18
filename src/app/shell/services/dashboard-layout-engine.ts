@@ -664,6 +664,14 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.onDocumentMouseUp();
   }
 
+  /** Removes all cached layout data (session + local storage) for the current persona/page keys. */
+  clearCurrentCache(): void {
+    this.layoutService.remove(this.currentLayoutKey, false);
+    this.layoutService.remove(this.currentLayoutKey, true);
+    try { sessionStorage.removeItem(`${this.currentLayoutKey}__locked`); } catch { /* ignore */ }
+    try { localStorage.removeItem(this.currentCanvasKey); } catch { /* ignore */ }
+  }
+
   resetToDefaults(): void {
     try { localStorage.removeItem(this.canvasDefaultsKey); } catch { /* ignore */ }
     try { localStorage.removeItem(this.desktopDefaultsKey); } catch { /* ignore */ }
