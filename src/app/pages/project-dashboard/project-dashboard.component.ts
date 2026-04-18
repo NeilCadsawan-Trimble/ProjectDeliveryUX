@@ -126,6 +126,11 @@ const FINANCIALS_PAGE_DESCRIPTIONS: Record<string, string> = {
   'prime-contract-change-orders': 'Track change orders on the prime contract with the owner.',
 };
 
+// ── Area-adaptive block system ──────────────────────────────────
+const PROJ_HEADER_PX = 56;
+const PROJ_INSIGHT_PX = 32;
+const PROJ_MIN_CONTENT_PX = 80;
+
 @Component({
   selector: 'app-project-dashboard',
   imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent],
@@ -2484,6 +2489,29 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const agent = getAgent(widgetId, 'project-dashboard');
     const state = this.buildAgentDataState();
     return agent.insight?.(state) ?? null;
+  }
+
+  // ── Area-adaptive visible blocks ───────────────────────────────
+  // Hide the "insight" strip when a widget is too short to host meaningful
+  // content plus the insight line underneath.
+  readonly projectVisibleBlocks = computed<Record<string, Set<string>>>(() => {
+    const heights = this.widgetHeights();
+    const result: Record<string, Set<string>> = {};
+
+    for (const wId of this.widgets) {
+      const h = heights[wId] ?? 384;
+      const blocks = new Set<string>();
+      const avail = h - PROJ_HEADER_PX;
+      if (PROJ_MIN_CONTENT_PX + PROJ_INSIGHT_PX <= avail) {
+        blocks.add('insight');
+      }
+      result[wId] = blocks;
+    }
+    return result;
+  });
+
+  showProjectBlock(widgetId: string, block: string): boolean {
+    return this.projectVisibleBlocks()[widgetId]?.has(block) ?? false;
   }
 
   readonly recordsAlerts = computed<Record<string, AgentAlert | null>>(() => {

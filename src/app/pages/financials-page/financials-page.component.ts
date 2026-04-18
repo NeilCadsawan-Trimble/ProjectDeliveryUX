@@ -79,6 +79,24 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
   'cash-flow': { subPage: 'cash-management', paramKey: 'month', type: 'cashFlow' },
 };
 
+// ── Area-adaptive block system ──────────────────────────────────
+// Pixel costs for optional content blocks within financials widgets.
+// Priority-based packing: blocks are added in order until the height
+// budget is exhausted; remaining blocks are simply not rendered.
+const FIN_HEADER_PX = 56;
+const FIN_INSIGHT_PX = 32;
+const FIN_COL_HEADERS_PX = 36;
+const FIN_TAB_STRIP_PX = 42;
+const FIN_KPI_LINE_PX = 52;
+const FIN_BAR_CHART_PX = 36;
+const FIN_CATEGORY_CARDS_PX = 108;
+const FIN_KELLY_KPI_PX = 48;
+const FIN_PAMELA_KPI_PX = 50;
+const FIN_DEFAULT_KPI_PX = 90;
+const FIN_MIN_TABLE_PX = 100;
+const FIN_MIN_CHART_PX = 200;
+const FIN_MIN_CHILD_PX = 80;
+
 @Component({
   selector: 'app-financials-page',
   imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent, ChartComponent, HomeInvoiceQueueComponent, HomeVendorAgingComponent, HomePayAppsComponent, HomeLienWaiversComponent, HomeRetentionComponent, HomePaymentScheduleComponent, HomeApActivityComponent, HomeApKpiCardsComponent, HomeCashOutflowComponent, EstimateAssemblyHubComponent, ModusTypographyComponent],
@@ -711,7 +729,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             </div>
 
             @if (isPamela()) {
-            <div class="flex-1 min-w-0 flex flex-col gap-2">
+            <div class="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
+              @if (showFinBlock('finNavKpi', 'kpi1')) {
               <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
                   [class.bg-success-20]="pipelineColor() === 'success'"
@@ -731,6 +750,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 </div>
                 <modus-typography class="ml-auto flex-shrink-0" hierarchy="p" size="xs" className="text-foreground-60">{{ pamelaOpenCount() }} open / {{ pamelaProjectCount() }} projects</modus-typography>
               </div>
+              }
+              @if (showFinBlock('finNavKpi', 'kpi2')) {
               <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
                   [class.bg-success-20]="winRateColor() === 'success'"
@@ -750,6 +771,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 </div>
                 <modus-typography class="ml-auto flex-shrink-0" hierarchy="p" size="xs" className="text-foreground-60">{{ estimatesApprovedCount() }} approved of {{ estimates().length }}</modus-typography>
               </div>
+              }
+              @if (showFinBlock('finNavKpi', 'kpi3')) {
               <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
                   [class.bg-success-20]="overdueColor() === 'success'"
@@ -769,7 +792,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 </div>
                 <modus-typography class="ml-auto flex-shrink-0" hierarchy="p" size="xs" className="text-foreground-60">{{ estimatesUnderReviewCount() }} review, {{ pamelaAwaitingCount() }} awaiting</modus-typography>
               </div>
-              @if (finKpiInsight()) {
+              }
+              @if (showFinBlock('finNavKpi', 'insight') && finKpiInsight()) {
                 <div class="flex items-center gap-1.5 px-4 py-2 bg-card border-default rounded-lg flex-shrink-0">
                   <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                   <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</modus-typography>
@@ -777,7 +801,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
               }
             </div>
             } @else if (!isKelly()) {
-            <div class="flex-1 min-w-0 flex flex-col gap-3">
+            <div class="flex-1 min-w-0 flex flex-col gap-3 overflow-hidden">
+              @if (showFinBlock('finNavKpi', 'kpi1')) {
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
                   <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Gross Margin</modus-typography>
@@ -811,6 +836,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 </div>
                 <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ fmtCurrency(grossProfit()) }} gross profit across {{ totalProjects() }} projects</modus-typography>
               </div>
+              }
+              @if (showFinBlock('finNavKpi', 'kpi2')) {
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
                   <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Cash Runway</modus-typography>
@@ -844,6 +871,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 </div>
                 <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ fmtCurrency(cashBalance()) }} balance / {{ fmtCurrency(monthlyBurn()) }} monthly burn</modus-typography>
               </div>
+              }
+              @if (showFinBlock('finNavKpi', 'kpi3')) {
               <div class="bg-card border-default rounded-lg p-5 flex-1 flex flex-col justify-center gap-2">
                 <div class="flex items-center justify-between">
                   <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground-60">Accounts Receivable</modus-typography>
@@ -877,7 +906,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                 </div>
                 <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">DSO {{ dso() }} days @if (overdueInvoiceCount() > 0) { -- {{ overdueInvoiceCount() }} overdue }</modus-typography>
               </div>
-              @if (finKpiInsight()) {
+              }
+              @if (showFinBlock('finNavKpi', 'insight') && finKpiInsight()) {
                 <div class="flex items-center gap-1.5 px-5 py-2 bg-card border-default rounded-lg flex-shrink-0">
                   <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                   <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ finKpiInsight() }}</modus-typography>
@@ -886,8 +916,8 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
             </div>
             } @else {
             <div class="flex-1 min-w-0 flex flex-col gap-2 px-3 pb-3 overflow-y-auto">
-              <app-home-ap-kpi-cards [cards]="kellyApKpiCards()" />
-              @if (kellyApKpisInsight()) {
+              <app-home-ap-kpi-cards [cards]="kellyVisibleKpiCards()" />
+              @if (showFinBlock('finNavKpi', 'insight') && kellyApKpisInsight()) {
                 <div class="flex items-center gap-1.5 px-3 py-2 bg-muted rounded-lg flex-shrink-0">
                   <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                   <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyApKpisInsight() }}</modus-typography>
@@ -947,7 +977,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       }
                     </div>
                   </div>
-                  @if (revenueInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && revenueInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ revenueInsight() }}</modus-typography>
@@ -955,6 +985,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   }
 
                   <div class="flex-1 flex flex-col px-5 py-4 gap-3 min-h-0">
+                    @if (showFinBlock(widgetId, 'kpiLine')) {
                     <div class="flex items-baseline gap-3">
                       <modus-typography  hierarchy="p" size="3xl" weight="bold" className="text-foreground">{{ formatCurrency(revenueSummary().current) }}</modus-typography>
                       <div class="flex items-center gap-1 text-success">
@@ -963,6 +994,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       </div>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ revenueSummary().label }}</modus-typography>
                     </div>
+                    }
 
                     <div class="flex-1 min-h-0 px-2 pb-2">
                       <apx-chart
@@ -1003,7 +1035,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ estimates().length }} estimates</modus-typography>
                     </div>
                   </div>
-                  @if (estimatesInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && estimatesInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ estimatesInsight() }}</modus-typography>
@@ -1102,7 +1134,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Budget by Project</modus-typography>
                     </div>
                   </div>
-                  @if (budgetByProjectInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && budgetByProjectInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ budgetByProjectInsight() }}</modus-typography>
@@ -1155,7 +1187,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                     </div>
                     <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ formatJobCost(jobCostSummary().grandTotal) }} total</modus-typography>
                   </div>
-                  @if (jobCostsInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && jobCostsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ jobCostsInsight() }}</modus-typography>
@@ -1163,26 +1195,32 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                   }
 
                   <div class="overflow-y-auto flex-1">
-                    <div class="px-5 py-4 flex flex-col gap-4">
-                      <div class="flex w-full h-4 rounded-full overflow-hidden">
-                        @for (cat of jobCostSummary().categories; track cat.label) {
-                          <div class="{{ cat.colorClass }}" [style.width.%]="cat.pct"></div>
-                        }
+                    @if (showFinBlock(widgetId, 'barChart')) {
+                      <div class="px-5 py-4 flex flex-col gap-4 flex-shrink-0">
+                        <div class="flex w-full h-4 rounded-full overflow-hidden">
+                          @for (cat of jobCostSummary().categories; track cat.label) {
+                            <div class="{{ cat.colorClass }}" [style.width.%]="cat.pct"></div>
+                          }
+                        </div>
                       </div>
+                    }
 
-                      <div class="grid grid-cols-5 gap-3">
-                        @for (cat of jobCostSummary().categories; track cat.label) {
-                          <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
-                            <div class="flex items-center gap-1.5">
-                              <div class="w-2 h-2 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
-                              <modus-typography className="text-2xs text-foreground-40 uppercase tracking-wide">{{ cat.label }}</modus-typography>
+                    @if (showFinBlock(widgetId, 'categoryCards')) {
+                      <div class="px-5 pb-4 flex-shrink-0">
+                        <div class="grid grid-cols-5 gap-3">
+                          @for (cat of jobCostSummary().categories; track cat.label) {
+                            <div class="flex flex-col gap-1 p-3 bg-background border-default rounded-lg">
+                              <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-full {{ cat.colorClass }} flex-shrink-0"></div>
+                                <modus-typography className="text-2xs text-foreground-40 uppercase tracking-wide">{{ cat.label }}</modus-typography>
+                              </div>
+                              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatJobCost(cat.total) }}</modus-typography>
+                              <modus-typography className="text-2xs text-foreground-60">{{ cat.pct }}%</modus-typography>
                             </div>
-                            <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ formatJobCost(cat.total) }}</modus-typography>
-                            <modus-typography className="text-2xs text-foreground-60">{{ cat.pct }}%</modus-typography>
-                          </div>
-                        }
+                          }
+                        </div>
                       </div>
-                    </div>
+                    }
 
                     <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-5 py-3 bg-muted border-bottom-default border-top-default text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
                       <modus-typography size="xs" weight="semibold" role="columnheader">Project</modus-typography>
@@ -1225,7 +1263,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-badge color="secondary" size="sm">{{ filteredChangeOrders().length }}</modus-badge>
                     </div>
                   </div>
-                  @if (changeOrdersInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && changeOrdersInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ changeOrdersInsight() }}</modus-typography>
@@ -1291,7 +1329,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Invoice Queue</modus-typography>
                     </div>
                   </div>
-                  @if (kellyInvoiceQueueInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && kellyInvoiceQueueInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyInvoiceQueueInsight() }}</modus-typography>
@@ -1316,7 +1354,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Payment Schedule</modus-typography>
                     </div>
                   </div>
-                  @if (kellyPaymentScheduleInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && kellyPaymentScheduleInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyPaymentScheduleInsight() }}</modus-typography>
@@ -1341,7 +1379,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Vendor Aging</modus-typography>
                     </div>
                   </div>
-                  @if (kellyVendorAgingInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && kellyVendorAgingInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyVendorAgingInsight() }}</modus-typography>
@@ -1384,7 +1422,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       </div>
                     </div>
                   </div>
-                  @if (kellyPayAppsInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && kellyPayAppsInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyPayAppsInsight() }}</modus-typography>
@@ -1416,7 +1454,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Lien Waivers</modus-typography>
                     </div>
                   </div>
-                  @if (kellyLienWaiversInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && kellyLienWaiversInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyLienWaiversInsight() }}</modus-typography>
@@ -1441,7 +1479,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Retention Summary</modus-typography>
                     </div>
                   </div>
-                  @if (kellyRetentionInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && kellyRetentionInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyRetentionInsight() }}</modus-typography>
@@ -1466,7 +1504,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">AP Activity</modus-typography>
                     </div>
                   </div>
-                  @if (kellyApActivityInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && kellyApActivityInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyApActivityInsight() }}</modus-typography>
@@ -1491,7 +1529,7 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
                       <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Cash Outflow</modus-typography>
                     </div>
                   </div>
-                  @if (kellyCashOutflowInsight()) {
+                  @if (showFinBlock(widgetId, 'insight') && kellyCashOutflowInsight()) {
                     <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
                       <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyCashOutflowInsight() }}</modus-typography>
@@ -3336,10 +3374,95 @@ export class FinancialsPageComponent extends DashboardPageBase {
     return 'success';
   });
 
-  // --- KPI Sparklines (ApexCharts) ---
-  readonly showKpiSparklines = computed(() => {
-    const span = this.engine.widgetColSpans()['finNavKpi'] ?? 8;
-    return !this.isMobile() && span >= 6;
+  // ── Area-adaptive visible blocks ───────────────────────────────
+  // For each financials widget, decide which optional blocks fit in the
+  // available height. Priority-based: pack higher-priority blocks first,
+  // skip lower-priority ones when budget runs out.
+  readonly finVisibleBlocks = computed<Record<string, Set<string>>>(() => {
+    const heights = this.widgetHeights();
+    const colSpans = this.widgetColSpans();
+    const result: Record<string, Set<string>> = {};
+
+    // finNavKpi: right-column KPI stack; block set depends on persona.
+    const navH = heights['finNavKpi'] ?? 294;
+    const navBlocks = new Set<string>();
+    if (this.isPamela()) {
+      let used = 0;
+      for (const b of ['kpi1', 'kpi2', 'kpi3', 'insight'] as const) {
+        const cost = (b === 'insight' ? FIN_INSIGHT_PX : FIN_PAMELA_KPI_PX) + (used > 0 ? 8 : 0);
+        if (used + cost <= navH) { navBlocks.add(b); used += cost; }
+      }
+    } else if (this.isKelly()) {
+      let used = 0;
+      for (const b of ['kpi1', 'kpi2', 'kpi3', 'kpi4', 'insight'] as const) {
+        const cost = (b === 'insight' ? FIN_INSIGHT_PX : FIN_KELLY_KPI_PX) + (used > 0 ? 8 : 0);
+        if (used + cost <= navH) { navBlocks.add(b); used += cost; }
+      }
+    } else {
+      let used = 0;
+      for (const b of ['kpi1', 'kpi2', 'kpi3', 'insight'] as const) {
+        const cost = (b === 'insight' ? FIN_INSIGHT_PX : FIN_DEFAULT_KPI_PX) + (used > 0 ? 12 : 0);
+        if (used + cost <= navH) { navBlocks.add(b); used += cost; }
+      }
+      if (!this.isMobile() && (colSpans['finNavKpi'] ?? 8) >= 6) {
+        navBlocks.add('sparklines');
+      }
+    }
+    result['finNavKpi'] = navBlocks;
+
+    for (const widgetId of this.financialsWidgets()) {
+      const h = heights[widgetId] ?? 384;
+      const blocks = new Set<string>();
+
+      if (widgetId === 'finRevenueChart') {
+        const avail = h - FIN_HEADER_PX;
+        let used = FIN_MIN_CHART_PX;
+        blocks.add('chart');
+        if (used + FIN_KPI_LINE_PX <= avail) { blocks.add('kpiLine'); used += FIN_KPI_LINE_PX; }
+        if (used + FIN_INSIGHT_PX <= avail) { blocks.add('insight'); }
+      } else if (widgetId === 'finJobCosts') {
+        const avail = h - FIN_HEADER_PX - FIN_COL_HEADERS_PX;
+        let used = FIN_MIN_TABLE_PX;
+        if (used + FIN_BAR_CHART_PX + FIN_CATEGORY_CARDS_PX <= avail) {
+          blocks.add('barChart'); blocks.add('categoryCards');
+          used += FIN_BAR_CHART_PX + FIN_CATEGORY_CARDS_PX;
+        }
+        if (used + FIN_INSIGHT_PX <= avail) { blocks.add('insight'); }
+      } else if (widgetId === 'finChangeOrders') {
+        const avail = h - FIN_HEADER_PX - FIN_TAB_STRIP_PX - FIN_COL_HEADERS_PX;
+        if (FIN_MIN_TABLE_PX + FIN_INSIGHT_PX <= avail) { blocks.add('insight'); }
+      } else if (widgetId === 'finOpenEstimates' || widgetId === 'finBudgetByProject') {
+        const avail = h - FIN_HEADER_PX - FIN_COL_HEADERS_PX;
+        if (FIN_MIN_TABLE_PX + FIN_INSIGHT_PX <= avail) { blocks.add('insight'); }
+      } else {
+        const avail = h - FIN_HEADER_PX;
+        if (FIN_MIN_CHILD_PX + FIN_INSIGHT_PX <= avail) { blocks.add('insight'); }
+      }
+      result[widgetId] = blocks;
+    }
+    return result;
+  });
+
+  showFinBlock(widgetId: string, block: string): boolean {
+    return this.finVisibleBlocks()[widgetId]?.has(block) ?? false;
+  }
+
+  // --- KPI Sparklines (derived from finVisibleBlocks) ---
+  readonly showKpiSparklines = computed(() =>
+    this.finVisibleBlocks()['finNavKpi']?.has('sparklines') ?? false,
+  );
+
+  // Kelly's AP KPI cards, filtered to only those that fit in the current height.
+  readonly kellyVisibleKpiCards = computed<ApKpiCard[]>(() => {
+    const all = this.kellyApKpiCards();
+    const blocks = this.finVisibleBlocks()['finNavKpi'];
+    if (!blocks) return all;
+    const visible: ApKpiCard[] = [];
+    const keys = ['kpi1', 'kpi2', 'kpi3', 'kpi4'] as const;
+    for (let i = 0; i < all.length; i++) {
+      if (blocks.has(keys[i])) visible.push(all[i]);
+    }
+    return visible;
   });
 
   readonly revenueChartHeight = computed(() => {

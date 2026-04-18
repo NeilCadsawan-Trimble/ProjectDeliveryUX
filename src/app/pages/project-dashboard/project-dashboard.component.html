@@ -3074,7 +3074,7 @@
 
               @switch (wId) {
                 @case ('milestones') {
-              <app-widget-frame icon="flag" title="Milestones" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('milestones')"
+              <app-widget-frame icon="flag" title="Milestones" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('milestones') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <modus-typography headerTrailing size="xs" className="text-foreground-60">{{ completedMilestones() }}/{{ milestones().length }} Complete</modus-typography>
@@ -3117,7 +3117,7 @@
 
                 @case ('tasks') {
               <app-widget-frame icon="clipboard" title="Key Tasks" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
-                [insight]="getWidgetInsight('tasks')"
+                [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('tasks') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <modus-typography headerTrailing size="xs" className="text-foreground-60">{{ openTaskCount() }} Open</modus-typography>
@@ -3141,7 +3141,7 @@
                 }
 
                 @case ('risks') {
-              <app-widget-frame icon="warning" title="Risks &amp; Urgent Needs" iconClass="text-warning" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('risks')"
+              <app-widget-frame icon="warning" title="Risks &amp; Urgent Needs" iconClass="text-warning" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('risks') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <modus-typography headerTrailing size="xs" className="text-foreground-60">{{ filteredRisks().length + filteredProjectUrgentNeeds().length }} of {{ risks().length + projectUrgentNeeds().length }}</modus-typography>
@@ -3228,7 +3228,7 @@
                 }
 
                 @case ('rfis') {
-              <app-widget-frame icon="clipboard" title="RFIs" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsRfis')"
+              <app-widget-frame icon="clipboard" title="RFIs" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('recordsRfis') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 @if (rfiOverdueCount() > 0) {
@@ -3299,7 +3299,7 @@
                 }
 
                 @case ('submittals') {
-              <app-widget-frame icon="document" title="Submittals" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('recordsSubmittals')"
+              <app-widget-frame icon="document" title="Submittals" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('recordsSubmittals') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 @if (submittalOverdueCount() > 0) {
@@ -3370,11 +3370,11 @@
                 }
 
                 @case ('drawing') {
-              <app-widget-frame icon="floorplan" title="Latest Drawing" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('drawing')"
+              <app-widget-frame icon="floorplan" title="Latest Drawing" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('drawing') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <modus-typography headerTrailing size="xs" className="text-foreground-60">{{ latestDrawing().version }}</modus-typography>
-                <div class="overflow-y-auto flex-1 cursor-pointer hover:opacity-90 transition-opacity duration-150" role="button" tabindex="0"
+                <div class="overflow-y-auto overflow-x-hidden flex-1 cursor-pointer hover:opacity-90 transition-opacity duration-150" role="button" tabindex="0"
                   [attr.aria-label]="'Open drawing: ' + newestDrawingTile().title"
                   (click)="openLatestDrawing()"
                   (keydown.enter)="openLatestDrawing()">
@@ -3384,19 +3384,17 @@
                       <modus-typography size="xs" weight="semibold" className="text-2xs">{{ newestDrawingTile().revision }}</modus-typography>
                     </div>
                   </div>
-                  <div class="px-4 py-3 flex flex-col gap-1">
-                    <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ newestDrawingTile().title }}</modus-typography>
-                    <div class="flex items-center justify-between">
-                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ newestDrawingTile().subtitle }}</modus-typography>
-                      <modus-typography class="flex-shrink-0 ml-2" size="xs" className="text-foreground-40">{{ newestDrawingTile().date }}</modus-typography>
-                    </div>
+                  <div class="px-4 py-3 flex flex-col gap-1 min-w-0">
+                    <modus-typography hierarchy="p" size="sm" weight="semibold" className="break-words">{{ newestDrawingTile().title }}</modus-typography>
+                    <modus-typography hierarchy="p" size="xs" className="text-foreground-60 break-words">{{ newestDrawingTile().subtitle }}</modus-typography>
+                    <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ newestDrawingTile().date }}</modus-typography>
                   </div>
                 </div>
               </app-widget-frame>
                 }
 
                 @case ('budget') {
-              <app-widget-frame icon="bar_graph" title="Budget" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('budget')"
+              <app-widget-frame icon="bar_graph" title="Budget" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('budget') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1 cursor-pointer"
@@ -3404,11 +3402,13 @@
                   (keydown.enter)="navigateToBudgetPage()"
                   (mousedown)="$event.stopPropagation()"
                   role="button" tabindex="0">
-                  <div class="flex items-baseline justify-between">
-                    <modus-typography hierarchy="h1" size="3xl" weight="bold">{{ budgetUsed() }}</modus-typography>
-                    <modus-typography hierarchy="p" size="sm" className="text-foreground-60">of {{ budgetTotal() }}</modus-typography>
+                  <div class="flex flex-col gap-1.5">
+                    <div class="flex items-baseline justify-between">
+                      <modus-typography hierarchy="h1" size="3xl" weight="bold">{{ budgetUsed() }}</modus-typography>
+                      <modus-typography hierarchy="p" size="sm" className="text-foreground-60">of {{ budgetTotal() }}</modus-typography>
+                    </div>
+                    <modus-progress [value]="budgetPct()" [max]="100" [className]="budgetHealthy() ? 'progress-primary' : 'progress-danger'" />
                   </div>
-                  <modus-progress [value]="budgetPct()" [max]="100" [className]="budgetHealthy() ? 'progress-primary' : 'progress-danger'" />
                   <div class="flex w-full h-3 rounded-full overflow-hidden">
                     @for (item of budgetBreakdown(); track item.label) {
                       <div class="{{ item.colorClass }}" [style.width.%]="item.pct"></div>
@@ -3435,7 +3435,7 @@
                 }
 
                 @case ('team') {
-              <app-widget-frame icon="people_group" title="Team" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('team')"
+              <app-widget-frame icon="people_group" title="Team" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('team') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div headerTrailing class="flex items-center gap-3">
@@ -3749,7 +3749,7 @@
 
                 @case ('weather') {
               @if (projectWeather(); as pw) {
-              <app-widget-frame icon="sun" [title]="projectCity()" iconClass="text-warning" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('weather')"
+              <app-widget-frame icon="sun" [title]="projectCity()" iconClass="text-warning" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('weather') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div headerTrailing class="flex items-center gap-1.5">
@@ -3803,7 +3803,7 @@
                 }
 
                 @case ('activity') {
-              <app-widget-frame icon="history" title="Recent Activity" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('activity')"
+              <app-widget-frame icon="history" title="Recent Activity" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('activity') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
@@ -3824,7 +3824,7 @@
                 }
 
                 @case ('changeOrders') {
-              <app-widget-frame icon="swap" title="Change Orders" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('changeOrders')"
+              <app-widget-frame icon="swap" title="Change Orders" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('changeOrders') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <app-project-change-orders [changeOrders]="projectChangeOrders()" />
@@ -3832,7 +3832,7 @@
                 }
 
                 @case ('fieldOps') {
-              <app-widget-frame icon="clipboard" title="Field Operations" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('fieldOps')"
+              <app-widget-frame icon="clipboard" title="Field Operations" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('fieldOps') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <app-project-field-ops [inspections]="projectInspections()" [punchListItems]="projectPunchItems()" />
@@ -3840,7 +3840,7 @@
                 }
 
                 @case ('dailyReports') {
-              <app-widget-frame icon="file" title="Daily Reports" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('dailyReports')"
+              <app-widget-frame icon="file" title="Daily Reports" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('dailyReports') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <app-project-daily-reports [dailyReports]="projectDailyReports()" />
@@ -3848,7 +3848,7 @@
                 }
 
                 @case ('contracts') {
-              <app-widget-frame icon="document" title="Contracts" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="getWidgetInsight('contracts')"
+              <app-widget-frame icon="document" title="Contracts" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('contracts') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <app-project-contracts [contracts]="projectContracts()" />
