@@ -50,6 +50,7 @@ import { PersonaService } from '../../services/persona.service';
 import { getPersonaNav } from '../../data/persona-nav.config';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
+import { getProjectDashboardLayoutKeys } from '../../shell/services/layout-keys';
 import { PROJECT_DETAIL_FRANK_LAYOUT } from '../../data/layout-seeds/project-detail-frank.layout';
 import { PROJECT_DETAIL_BERT_LAYOUT } from '../../data/layout-seeds/project-detail-bert.layout';
 import { PROJECT_DETAIL_KELLY_LAYOUT } from '../../data/layout-seeds/project-detail-kelly.layout';
@@ -180,8 +181,10 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   protected override getEngineConfig(): DashboardLayoutConfig {
     return {
       ...this.getLayoutSeedForCurrentPersona(),
-      layoutStorageKey: () => `${this.personaService.activePersonaSlug()}:project-${this.projectId()}-v6`,
-      canvasStorageKey: () => `${this.personaService.activePersonaSlug()}:canvas-layout:project-${this.projectId()}:v8`,
+      layoutStorageKey: () =>
+        getProjectDashboardLayoutKeys(this.personaService.activePersonaSlug(), this.projectId()).desktop,
+      canvasStorageKey: () =>
+        getProjectDashboardLayoutKeys(this.personaService.activePersonaSlug(), this.projectId()).canvas,
       minColSpan: 4,
       canvasGridMinHeightOffset: 200,
       savesDesktopOnMobile: true,

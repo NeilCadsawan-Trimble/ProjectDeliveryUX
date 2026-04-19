@@ -103,8 +103,19 @@ describe('DashboardLayoutEngine', () => {
   });
 
   describe('resetToDefaults', () => {
-    it('restores all signals to config defaults', () => {
-      const engine = createEngine();
+    // resetToDefaults does TWO things in desktop mode: apply config defaults,
+    // then run compactAll to eliminate vertical gaps. The two tests below
+    // pin each half of that contract independently. Conflating them (the
+    // original single test did) meant a config with a floating widget --
+    // w3 at col 9-16 top=400 with nothing above it -- asserted a value
+    // (top=400) that compactAll immediately and correctly collapses to 0.
+    it('applies config defaults to colStarts, colSpans, heights, and tops on a layout that is already compact', () => {
+      // Tops { w1: 0, w2: 0, w3: 0 } with non-overlapping columns is a
+      // valid compact layout, so compactAll is a no-op and we can assert
+      // that the post-reset state equals the config defaults byte-for-byte.
+      const engine = createEngine({
+        defaultTops: { w1: 0, w2: 0, w3: 0 },
+      });
 
       engine.widgetTops.set({ w1: 100, w2: 200, w3: 300 });
       engine.widgetHeights.set({ w1: 500, w2: 500, w3: 500 });
@@ -113,8 +124,25 @@ describe('DashboardLayoutEngine', () => {
 
       engine.resetToDefaults();
 
-      expect(engine.widgetTops()).toEqual({ w1: 0, w2: 0, w3: 400 });
+      expect(engine.widgetTops()).toEqual({ w1: 0, w2: 0, w3: 0 });
       expect(engine.widgetHeights()).toEqual({ w1: 380, w2: 380, w3: 380 });
+      expect(engine.widgetColStarts()).toEqual({ w1: 1, w2: 5, w3: 9 });
+      expect(engine.widgetColSpans()).toEqual({ w1: 4, w2: 4, w3: 8 });
+    });
+
+    it('compacts away vertical gaps in the config defaults (no floating widgets after reset)', () => {
+      // Config places w3 at top=400 with nothing above it in cols 9-16.
+      // compactAll must pull it up to top=0 so Reset Layout never leaves
+      // the dashboard with a 400px hole. This is the regression guard for
+      // the compactAll() call added to resetToDefaults (Phase 23).
+      const engine = createEngine();
+
+      engine.widgetTops.set({ w1: 100, w2: 200, w3: 300 });
+      engine.widgetColStarts.set({ w1: 3, w2: 7, w3: 11 });
+
+      engine.resetToDefaults();
+
+      expect(engine.widgetTops()['w3']).toBe(0);
       expect(engine.widgetColStarts()).toEqual({ w1: 1, w2: 5, w3: 9 });
       expect(engine.widgetColSpans()).toEqual({ w1: 4, w2: 4, w3: 8 });
     });
@@ -1111,6 +1139,468 @@ describe('DashboardLayoutEngine', () => {
       }
 
       engine.onDocumentMouseUp();
+    });
+  });
+
+  describe('canvas save/load round-trip', () => {
+    // loadSavedDefaults schedules cleanupCanvasOverlaps via rAF; in the Node
+    // test env we shim rAF to run the callback synchronously so the full flow
+    // can be exercised without a browser.
+    const origRAF = (globalThis as { requestAnimationFrame?: typeof requestAnimationFrame }).requestAnimationFrame;
+    beforeAll(() => {
+      (globalThis as { requestAnimationFrame: (cb: FrameRequestCallback) => number }).requestAnimationFrame =
+        (cb: FrameRequestCallback) => { cb(0); return 0; };
+    });
+    afterAll(() => {
+      if (origRAF) {
+        (globalThis as { requestAnimationFrame: typeof requestAnimationFrame }).requestAnimationFrame = origRAF;
+      } else {
+        delete (globalThis as { requestAnimationFrame?: typeof requestAnimationFrame }).requestAnimationFrame;
+      }
+    });
+
+    it('loadSavedDefaults preserves touching canvas widget positions (no cleanup drift)', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+
+      // Two widgets placed flush against each other (0 px gap). This used to be
+      // silently rewritten by cleanupCanvasOverlaps because `hO + gap > 0`
+      // treated touching as overlap.
+      const savedLefts = { w1: 0, w2: 300, w3: 700 };
+      const savedWidths = { w1: 300, w2: 300, w3: 400 };
+      const savedTops = { w1: 100, w2: 100, w3: 500 };
+      const savedHeights = { w1: 200, w2: 200, w3: 200 };
+
+      engine.widgetLefts.set(savedLefts);
+      engine.widgetPixelWidths.set(savedWidths);
+      engine.widgetTops.set(savedTops);
+      engine.widgetHeights.set(savedHeights);
+
+      engine.saveAsDefaultLayout();
+
+      // Nudge current state so load has something to revert from.
+      engine.widgetLefts.set({ w1: 50, w2: 500, w3: 900 });
+      engine.widgetTops.set({ w1: 50, w2: 50, w3: 50 });
+
+      engine.loadSavedDefaults();
+
+      expect(engine.widgetLefts()).toEqual(savedLefts);
+      expect(engine.widgetPixelWidths()).toEqual(savedWidths);
+      expect(engine.widgetTops()).toEqual(savedTops);
+      expect(engine.widgetHeights()).toEqual(savedHeights);
+    });
+
+    it('cleanupCanvasOverlaps treats touching widgets as non-overlapping', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+
+      engine.widgetLefts.set({ w1: 0, w2: 300, w3: 0 });
+      engine.widgetPixelWidths.set({ w1: 300, w2: 300, w3: 600 });
+      engine.widgetTops.set({ w1: 100, w2: 100, w3: 316 });
+      engine.widgetHeights.set({ w1: 200, w2: 200, w3: 200 });
+
+      (engine as unknown as { cleanupCanvasOverlaps: () => void }).cleanupCanvasOverlaps();
+
+      expect(engine.widgetLefts()['w1']).toBe(0);
+      expect(engine.widgetLefts()['w2']).toBe(300);
+      expect(engine.widgetTops()['w1']).toBe(100);
+      expect(engine.widgetTops()['w2']).toBe(100);
+      expect(engine.widgetTops()['w3']).toBe(316);
+    });
+
+    it('cleanupCanvasOverlaps still resolves true geometric overlap', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+
+      // w1 and w2 actually overlap by 20 px horizontally AND vertically.
+      engine.widgetLefts.set({ w1: 0, w2: 280, w3: 0 });
+      engine.widgetPixelWidths.set({ w1: 300, w2: 300, w3: 300 });
+      engine.widgetTops.set({ w1: 100, w2: 180, w3: 500 });
+      engine.widgetHeights.set({ w1: 200, w2: 200, w3: 200 });
+
+      (engine as unknown as { cleanupCanvasOverlaps: () => void }).cleanupCanvasOverlaps();
+
+      // One of the two colliding widgets must have moved so they no longer overlap.
+      const left1 = engine.widgetLefts()['w1'];
+      const left2 = engine.widgetLefts()['w2'];
+      const top1 = engine.widgetTops()['w1'];
+      const top2 = engine.widgetTops()['w2'];
+      const width1 = engine.widgetPixelWidths()['w1'];
+      const width2 = engine.widgetPixelWidths()['w2'];
+      const height1 = engine.widgetHeights()['w1'];
+      const height2 = engine.widgetHeights()['w2'];
+
+      const hOverlap = Math.min(left1 + width1, left2 + width2) - Math.max(left1, left2);
+      const vOverlap = Math.min(top1 + height1, top2 + height2) - Math.max(top1, top2);
+      const stillOverlapping = hOverlap > 0 && vOverlap > 0;
+      expect(stillOverlapping).toBe(false);
+    });
+
+    it('applyCanvasHeaderClearance pushes non-locked widgets below the locked header', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+      engine.widgetLocked.set({ w1: true });
+
+      // Locked "header" at top 0 with height 80. Non-locked widget above the
+      // clearance line should be pushed to header bottom + GAP_PX (16).
+      engine.widgetTops.set({ w1: 0, w2: 40, w3: 500 });
+      engine.widgetHeights.set({ w1: 80, w2: 200, w3: 200 });
+
+      const applied = (
+        engine as unknown as { applyCanvasHeaderClearance: () => boolean }
+      ).applyCanvasHeaderClearance();
+
+      expect(applied).toBe(true);
+      expect(engine.widgetTops()['w1']).toBe(0);
+      expect(engine.widgetTops()['w2']).toBe(96);
+      expect(engine.widgetTops()['w3']).toBe(500);
+    });
+
+    it('applyCanvasHeaderClearance is a no-op when no widgets are locked', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+      engine.widgetTops.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetHeights.set({ w1: 200, w2: 200, w3: 200 });
+
+      const applied = (
+        engine as unknown as { applyCanvasHeaderClearance: () => boolean }
+      ).applyCanvasHeaderClearance();
+
+      expect(applied).toBe(false);
+      expect(engine.widgetTops()).toEqual({ w1: 0, w2: 0, w3: 0 });
+    });
+
+    // Regression: Frank's financials seed locks BOTH a full-width title bar
+    // (top=0, height=80, width=1280) AND a left-half KPI panel (top=96,
+    // height=512, width=640). A non-locked chart placed flush to the right
+    // of the KPI panel (top=96, left=648, width=632) was being shoved down
+    // to top=608 because clearance used a global max(locked bottom) ceiling.
+    // Per-range clearance: only the full-width title contributes to the
+    // chart's ceiling, so it stays at top=96.
+    it('applyCanvasHeaderClearance only considers horizontally overlapping locked widgets', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+      engine.widgetLocked.set({ w1: true, w2: true });
+
+      engine.widgetLefts.set({ w1: 0, w2: 0, w3: 648 });
+      engine.widgetPixelWidths.set({ w1: 1280, w2: 640, w3: 632 });
+      engine.widgetTops.set({ w1: 0, w2: 96, w3: 96 });
+      engine.widgetHeights.set({ w1: 80, w2: 512, w3: 512 });
+
+      const applied = (
+        engine as unknown as { applyCanvasHeaderClearance: () => boolean }
+      ).applyCanvasHeaderClearance();
+
+      expect(applied).toBe(false);
+      expect(engine.widgetTops()).toEqual({ w1: 0, w2: 96, w3: 96 });
+    });
+
+    it('cleanupCanvasOverlaps does not push a side-by-side chart below a locked KPI panel', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+      engine.widgetLocked.set({ w1: true, w2: true });
+
+      engine.widgetLefts.set({ w1: 0, w2: 0, w3: 648 });
+      engine.widgetPixelWidths.set({ w1: 1280, w2: 640, w3: 632 });
+      engine.widgetTops.set({ w1: 0, w2: 96, w3: 96 });
+      engine.widgetHeights.set({ w1: 80, w2: 512, w3: 512 });
+
+      (engine as unknown as { cleanupCanvasOverlaps: () => void }).cleanupCanvasOverlaps();
+
+      expect(engine.widgetTops()['w3']).toBe(96);
+      expect(engine.widgetLefts()['w3']).toBe(648);
+    });
+
+    // Counter-test: a non-locked widget sitting *directly under* the locked
+    // KPI panel (same x-range) must still be pushed below it. We mustn't
+    // make the clearance too permissive.
+    it('applyCanvasHeaderClearance still pushes widgets that overlap a locked panel horizontally', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+      engine.widgetLocked.set({ w1: true, w2: true });
+
+      engine.widgetLefts.set({ w1: 0, w2: 0, w3: 100 });
+      engine.widgetPixelWidths.set({ w1: 1280, w2: 640, w3: 400 });
+      engine.widgetTops.set({ w1: 0, w2: 96, w3: 200 });
+      engine.widgetHeights.set({ w1: 80, w2: 512, w3: 300 });
+
+      const applied = (
+        engine as unknown as { applyCanvasHeaderClearance: () => boolean }
+      ).applyCanvasHeaderClearance();
+
+      expect(applied).toBe(true);
+      // finNavKpi clone: top 96 + height 512 = 608; + GAP_PX (16) = 624.
+      expect(engine.widgetTops()['w3']).toBe(624);
+    });
+  });
+
+  describe('view-mode switching persistence', () => {
+    // Provide the same rAF shim these flows need. The engine doesn't trigger
+    // rAF in these tests directly, but keeping it mirrors the browser env.
+    const origRAF = (globalThis as { requestAnimationFrame?: typeof requestAnimationFrame }).requestAnimationFrame;
+    beforeAll(() => {
+      (globalThis as { requestAnimationFrame: (cb: FrameRequestCallback) => number }).requestAnimationFrame =
+        (cb: FrameRequestCallback) => { cb(0); return 0; };
+    });
+    afterAll(() => {
+      if (origRAF) {
+        (globalThis as { requestAnimationFrame: typeof requestAnimationFrame }).requestAnimationFrame = origRAF;
+      } else {
+        delete (globalThis as { requestAnimationFrame?: typeof requestAnimationFrame }).requestAnimationFrame;
+      }
+    });
+
+    // Scenario B: canvas -> desktop -> canvas. Positions in canvas mode must
+    // survive a round-trip through a desktop mode excursion. The breakpoint
+    // handler persists canvas state on leaving and restores it on re-entry.
+    it('canvas positions survive a canvas -> desktop -> canvas round-trip', () => {
+      const layoutService = createMockLayoutService();
+      const engine = createEngine({}, layoutService);
+
+      engine.isCanvasMode.set(true);
+      const canvasLefts = { w1: 40, w2: 500, w3: 960 };
+      const canvasWidths = { w1: 400, w2: 400, w3: 400 };
+      const canvasTops = { w1: 120, w2: 120, w3: 600 };
+      const canvasHeights = { w1: 220, w2: 220, w3: 220 };
+      engine.widgetLefts.set(canvasLefts);
+      engine.widgetPixelWidths.set(canvasWidths);
+      engine.widgetTops.set(canvasTops);
+      engine.widgetHeights.set(canvasHeights);
+
+      engine.persistCanvasLayout();
+
+      engine.isCanvasMode.set(false);
+      engine.widgetLefts.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetPixelWidths.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetTops.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetHeights.set({ w1: 0, w2: 0, w3: 0 });
+
+      engine.isCanvasMode.set(true);
+      const restored = engine.restoreCanvasLayout();
+
+      expect(restored).toBe(true);
+      expect(engine.widgetLefts()).toEqual(canvasLefts);
+      expect(engine.widgetPixelWidths()).toEqual(canvasWidths);
+      expect(engine.widgetTops()).toEqual(canvasTops);
+      expect(engine.widgetHeights()).toEqual(canvasHeights);
+    });
+
+    // Scenario A: desktop -> canvas -> desktop. Desktop column placements must
+    // survive a canvas excursion. Real code uses an in-memory snapshot but the
+    // sessionStorage copy (via persistLayout) is what protects against refresh.
+    it('desktop layout is persisted to storage (not just memory) so it survives a refresh', () => {
+      const saveFn = vi.fn();
+      const loadFn = vi.fn().mockReturnValue(null);
+      const layoutService = { save: saveFn, load: loadFn } as unknown as WidgetLayoutService;
+      const engine = createEngine({}, layoutService);
+
+      engine.isCanvasMode.set(false);
+      engine.isMobile.set(false);
+      engine.widgetColStarts.set({ w1: 1, w2: 5, w3: 9 });
+      engine.widgetColSpans.set({ w1: 4, w2: 4, w3: 8 });
+      engine.widgetTops.set({ w1: 0, w2: 0, w3: 400 });
+      engine.widgetHeights.set({ w1: 380, w2: 380, w3: 380 });
+
+      engine.persistLayout();
+
+      expect(saveFn).toHaveBeenCalled();
+      const lastCall = saveFn.mock.calls[saveFn.mock.calls.length - 1];
+      const [, mobileFlag, payload] = lastCall;
+      expect(mobileFlag).toBe(false);
+      expect(payload.colStarts).toEqual({ w1: 1, w2: 5, w3: 9 });
+      expect(payload.colSpans).toEqual({ w1: 4, w2: 4, w3: 8 });
+    });
+
+    // Scenario D: save as default in canvas, load default, then simulate a
+    // mode switch via persist+restore. The loaded default layout should be
+    // what's restored on re-entry (because loadSavedDefaults pushes the
+    // defaults into currentCanvasKey as well as canvasDefaultsKey).
+    it('canvas loadSavedDefaults writes through to currentCanvasKey so it survives a mode switch', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+
+      const savedLefts = { w1: 100, w2: 420, w3: 740 };
+      const savedWidths = { w1: 300, w2: 300, w3: 300 };
+      const savedTops = { w1: 150, w2: 150, w3: 450 };
+      const savedHeights = { w1: 260, w2: 260, w3: 260 };
+      engine.widgetLefts.set(savedLefts);
+      engine.widgetPixelWidths.set(savedWidths);
+      engine.widgetTops.set(savedTops);
+      engine.widgetHeights.set(savedHeights);
+
+      engine.saveAsDefaultLayout();
+
+      engine.widgetLefts.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetPixelWidths.set({ w1: 10, w2: 10, w3: 10 });
+      engine.widgetTops.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetHeights.set({ w1: 10, w2: 10, w3: 10 });
+
+      engine.loadSavedDefaults();
+
+      // Nudge state again to simulate entering desktop mode.
+      engine.widgetLefts.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetPixelWidths.set({ w1: 10, w2: 10, w3: 10 });
+      engine.widgetTops.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetHeights.set({ w1: 10, w2: 10, w3: 10 });
+
+      const restored = engine.restoreCanvasLayout();
+
+      expect(restored).toBe(true);
+      expect(engine.widgetLefts()).toEqual(savedLefts);
+      expect(engine.widgetPixelWidths()).toEqual(savedWidths);
+      expect(engine.widgetTops()).toEqual(savedTops);
+      expect(engine.widgetHeights()).toEqual(savedHeights);
+    });
+
+    // Scenario C: user changes layout, switches modes, refreshes. Equivalent
+    // to persist-then-restore with an interleaved mode change. The mouseup
+    // persist path in canvas writes to localStorage and restore reads the
+    // same key -- verify the round-trip directly.
+    it('canvas persist->clear->restore round-trip returns identical geometry', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+
+      const lefts = { w1: 12, w2: 320, w3: 640 };
+      const widths = { w1: 300, w2: 300, w3: 300 };
+      const tops = { w1: 80, w2: 80, w3: 320 };
+      const heights = { w1: 220, w2: 220, w3: 220 };
+      engine.widgetLefts.set(lefts);
+      engine.widgetPixelWidths.set(widths);
+      engine.widgetTops.set(tops);
+      engine.widgetHeights.set(heights);
+
+      engine.persistCanvasLayout();
+
+      // Simulate fresh engine state (as if the page just reloaded).
+      engine.widgetLefts.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetPixelWidths.set({ w1: 1, w2: 1, w3: 1 });
+      engine.widgetTops.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetHeights.set({ w1: 1, w2: 1, w3: 1 });
+
+      const restored = engine.restoreCanvasLayout();
+
+      expect(restored).toBe(true);
+      expect(engine.widgetLefts()).toEqual(lefts);
+      expect(engine.widgetPixelWidths()).toEqual(widths);
+      expect(engine.widgetTops()).toEqual(tops);
+      expect(engine.widgetHeights()).toEqual(heights);
+    });
+
+    // Regression for the localStorage-dump bug: when the user's home canvas
+    // layout reverted to the seed after canvas -> desktop -> canvas, the
+    // culprit was `cleanupCanvasOverlaps` measuring `headerBottom` against
+    // a pre-reflow gridEl (still desktop-sized) and pushing every widget
+    // below a bogus clearance line, then persisting.
+    //
+    // With the DOM-less headerBottom derivation the cleanup MUST leave a
+    // valid saved canvas layout untouched regardless of any stubbed DOM
+    // rects the transitional grid might expose.
+    it('cleanupCanvasOverlaps ignores desktop-sized DOM rects on mode re-entry', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+      // Locked header at top 0 height 80 -> valid headerBottom is 80.
+      engine.widgetLocked.set({ w1: true });
+      engine.widgetLefts.set({ w1: 0, w2: 100, w3: 500 });
+      engine.widgetPixelWidths.set({ w1: 1280, w2: 300, w3: 300 });
+      engine.widgetTops.set({ w1: 0, w2: 120, w3: 500 });
+      engine.widgetHeights.set({ w1: 80, w2: 200, w3: 200 });
+
+      // Attach gridEl/headerEl accessors that report DESKTOP dimensions -- a
+      // faithful simulation of the rAF firing before CSS reflow completes.
+      // If the cleanup listens to DOM rects here it will read headerBottom
+      // as roughly (headerRect.bottom - gridRect.top) = desktop header
+      // offset, push w2 further down, and clobber the saved layout.
+      const desktopGridRect = { top: 0, bottom: 800, left: 0, right: 1280, width: 1280, height: 800 } as DOMRect;
+      const desktopHeaderRect = { top: 0, bottom: 400, left: 0, right: 1280, width: 1280, height: 400 } as DOMRect;
+      const gridEl = { getBoundingClientRect: () => desktopGridRect } as unknown as HTMLElement;
+      const headerEl = { getBoundingClientRect: () => desktopHeaderRect } as unknown as HTMLElement;
+      (engine as unknown as {
+        gridElAccessor: () => HTMLElement;
+        headerElAccessor: () => HTMLElement;
+      }).gridElAccessor = () => gridEl;
+      (engine as unknown as {
+        headerElAccessor: () => HTMLElement;
+      }).headerElAccessor = () => headerEl;
+
+      const beforeTops = { ...engine.widgetTops() };
+      const beforeLefts = { ...engine.widgetLefts() };
+
+      (engine as unknown as { cleanupCanvasOverlaps: () => void }).cleanupCanvasOverlaps();
+
+      expect(engine.widgetTops()).toEqual(beforeTops);
+      expect(engine.widgetLefts()).toEqual(beforeLefts);
+    });
+
+    // Direct reproduction of the user-reported scenario: drag in canvas ->
+    // switch to desktop -> switch back -> assert byte-equal saved layout.
+    //
+    // Simulated via the same primitives the browser uses at mode-transition
+    // time: persistCanvasLayout on leaving, restoreCanvasLayout on re-entering,
+    // then the cleanupAndPersistCanvas scheduler the engine calls.
+    it('canvas -> desktop -> canvas leaves currentCanvasKey byte-identical', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+
+      const lefts = { w1: 72, w2: 488, w3: 904 };
+      const widths = { w1: 380, w2: 380, w3: 380 };
+      const tops = { w1: 144, w2: 144, w3: 480 };
+      const heights = { w1: 240, w2: 240, w3: 240 };
+      engine.widgetLefts.set(lefts);
+      engine.widgetPixelWidths.set(widths);
+      engine.widgetTops.set(tops);
+      engine.widgetHeights.set(heights);
+      engine.persistCanvasLayout();
+
+      const beforeBlob = localStorage.getItem('test-canvas');
+      expect(beforeBlob).not.toBeNull();
+
+      // Excursion through desktop mode: scramble in-memory state, then return
+      // to canvas and ask the engine to restore + run its cleanup scheduler.
+      engine.isCanvasMode.set(false);
+      engine.widgetLefts.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetPixelWidths.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetTops.set({ w1: 0, w2: 0, w3: 0 });
+      engine.widgetHeights.set({ w1: 0, w2: 0, w3: 0 });
+
+      engine.isCanvasMode.set(true);
+      const restored = engine.restoreCanvasLayout();
+      expect(restored).toBe(true);
+      (engine as unknown as { cleanupAndPersistCanvas: () => void }).cleanupAndPersistCanvas();
+
+      const afterBlob = localStorage.getItem('test-canvas');
+      expect(afterBlob).toBe(beforeBlob);
+    });
+
+    // loadSavedDefaults schedules cleanupCanvasOverlaps via rAF. Before the
+    // cleanup-then-persist fix the cleanup adjustments lived only in memory,
+    // so a subsequent reload / mode switch read the pre-cleanup geometry and
+    // the layout drifted. Verify the persisted blob matches what's on screen.
+    it('loadSavedDefaults leaves currentCanvasKey matching the post-cleanup geometry', () => {
+      const engine = createEngine();
+      engine.isCanvasMode.set(true);
+      // Lock a header widget so applyCanvasHeaderClearance must run.
+      engine.widgetLocked.set({ w1: true });
+
+      // Saved defaults put w2 inside the header clearance zone -- cleanup
+      // will push it below the header. We want that push reflected in
+      // localStorage afterwards.
+      engine.widgetLefts.set({ w1: 0, w2: 0, w3: 400 });
+      engine.widgetPixelWidths.set({ w1: 1280, w2: 300, w3: 300 });
+      engine.widgetTops.set({ w1: 0, w2: 40, w3: 500 });
+      engine.widgetHeights.set({ w1: 80, w2: 200, w3: 200 });
+      engine.saveAsDefaultLayout();
+
+      // Nudge live state.
+      engine.widgetTops.set({ w1: 0, w2: 0, w3: 0 });
+
+      engine.loadSavedDefaults();
+
+      // The engine should have rewritten currentCanvasKey to match what's on
+      // screen, not the pre-cleanup saved blob.
+      const restoredForVerification = engine.restoreCanvasLayout();
+      expect(restoredForVerification).toBe(true);
+      expect(engine.widgetTops()['w2']).toBeGreaterThanOrEqual(96);
+      expect(engine.widgetTops()['w1']).toBe(0);
     });
   });
 

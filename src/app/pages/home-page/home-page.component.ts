@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 import { DataStoreService } from '../../data/data-store.service';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
+import { getHomeLayoutKeys } from '../../shell/services/layout-keys';
 import { HOME_FRANK_LAYOUT } from '../../data/layout-seeds/home-frank.layout';
 import { HOME_BERT_LAYOUT } from '../../data/layout-seeds/home-bert.layout';
 import { HOME_KELLY_LAYOUT } from '../../data/layout-seeds/home-kelly.layout';
@@ -1992,16 +1993,8 @@ export class HomePageComponent extends DashboardPageBase {
 
     return {
       ...seed,
-      layoutStorageKey: () => {
-        const s = this.personaService.activePersonaSlug();
-        const ver = s === 'kelly' ? 'v14' : s === 'pamela' ? 'v16' : 'v12';
-        return `${s}:dashboard-home-${ver}`;
-      },
-      canvasStorageKey: () => {
-        const s = this.personaService.activePersonaSlug();
-        const ver = s === 'kelly' ? 'v21' : s === 'pamela' ? 'v23' : 'v19';
-        return `${s}:canvas-layout:dashboard-home:${ver}`;
-      },
+      layoutStorageKey: () => getHomeLayoutKeys(this.personaService.activePersonaSlug()).desktop,
+      canvasStorageKey: () => getHomeLayoutKeys(this.personaService.activePersonaSlug()).canvas,
       minColSpan: 4,
       canvasGridMinHeightOffset: 100,
       savesDesktopOnMobile: true,

@@ -222,7 +222,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.persistLockedState({});
   }
 
-  /** Re-reads lock state from sessionStorage for the current persona's layout key. */
+  /** Re-reads lock state from localStorage for the current persona's layout key. */
   reloadLockedState(): void {
     this.widgetLocked.set(this.loadLockedState());
   }
@@ -231,21 +231,38 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     return `${this.currentLayoutKey}__locked`;
   }
 
+  /**
+   * Loads lock state from localStorage (so locks survive tab close). For
+   * backward compat, one-time migrates a pre-existing sessionStorage copy.
+   */
   private loadLockedState(): Record<string, boolean> {
-    if (typeof sessionStorage === 'undefined') return {};
-    try {
-      const raw = sessionStorage.getItem(`${typeof this.config.layoutStorageKey === 'function' ? this.config.layoutStorageKey() : this.config.layoutStorageKey}__locked`);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
+    const key = this.lockedKey;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) return JSON.parse(raw);
+      } catch { /* corrupted data */ }
     }
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem(key);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw) as Record<string, boolean>;
+        try { localStorage?.setItem(key, raw); } catch { /* quota */ }
+        try { sessionStorage.removeItem(key); } catch { /* ignore */ }
+        return parsed;
+      } catch { /* corrupted data */ }
+    }
+    return {};
   }
 
   private persistLockedState(state: Record<string, boolean>, explicitKey?: string): void {
-    if (typeof sessionStorage === 'undefined') return;
+    if (typeof localStorage === 'undefined') return;
     try {
       const key = explicitKey ? `${explicitKey}__locked` : this.lockedKey;
-      sessionStorage.setItem(key, JSON.stringify(state));
+      localStorage.setItem(key, JSON.stringify(state));
+      // Drop any legacy session copy so subsequent reads are homogeneous.
+      try { sessionStorage.removeItem(key); } catch { /* ignore */ }
     } catch { /* quota exceeded */ }
   }
 
@@ -389,6 +406,10 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       if (nowMobile !== wasMobile) this.isMobile.set(nowMobile);
       if (nowCanvas !== wasCanvas) this.isCanvasMode.set(nowCanvas);
 
+      // Force-persist the leaving mode at every transition so any un-persisted
+      // drags (e.g. resize fires before a mouseup) reach storage. Without this
+      // the in-memory snapshot is the only record of the outgoing mode, and
+      // gets lost on tab close / persona switch.
       if (wasCanvas && !nowCanvas) {
         this.persistCanvasLayout();
         if (this._savedDesktopForCanvas) {
@@ -399,14 +420,22 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         }
         this.applyResponsiveReflow(w);
       } else if (!wasCanvas && nowCanvas) {
-        if (!wasMobile) {
+        if (wasMobile) {
+          this.persistMobileLayout();
+        } else {
+          this.persistLayout();
           this._savedDesktopForCanvas = this.snapshotLayout();
         }
         if (!this.restoreCanvasLayout()) {
           this.applyCanvasDefaults();
         }
-        requestAnimationFrame(() => this.cleanupCanvasOverlaps());
+        // Seed localStorage with the canonical canvas state on entry
+        // so the canvas key is never absent mid-session (see the same
+        // call in applyModeLayout for rationale).
+        this.persistCanvasLayout();
+        this.cleanupAndPersistCanvas();
       } else if (nowMobile && !wasMobile) {
+        this.persistLayout();
         if (this.config.savesDesktopOnMobile) {
           this._savedDesktopForMobile = this.snapshotLayout();
         }
@@ -668,6 +697,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   clearCurrentCache(): void {
     this.layoutService.remove(this.currentLayoutKey, false);
     this.layoutService.remove(this.currentLayoutKey, true);
+    try { localStorage.removeItem(`${this.currentLayoutKey}__locked`); } catch { /* ignore */ }
     try { sessionStorage.removeItem(`${this.currentLayoutKey}__locked`); } catch { /* ignore */ }
     try { localStorage.removeItem(this.currentCanvasKey); } catch { /* ignore */ }
   }
@@ -681,7 +711,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       this.widgetZIndices.set({});
       localStorage.removeItem(this.currentCanvasKey);
       this.persistCanvasLayout();
-      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
+      this.cleanupAndPersistCanvas();
     } else {
       this.widgetTops.set({ ...this.config.defaultTops });
       this.widgetHeights.set({ ...this.config.defaultHeights });
@@ -726,9 +756,14 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         this.applyCanvasDefaults();
       }
       this.widgetZIndices.set({});
+      // Fold any legitimate header-clearance adjustment into the persisted
+      // snapshot so the saved state matches what the user sees after load.
+      // The rAF `cleanupCanvasOverlaps` pass below remains as a DOM-aware
+      // safety net for overlaps, but should now be a no-op for a clean save.
+      this.applyCanvasHeaderClearance();
       localStorage.removeItem(this.currentCanvasKey);
       this.persistCanvasLayout();
-      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
+      this.cleanupAndPersistCanvas();
     } else {
       const saved = this._loadCustomDesktopDefaults();
       if (saved) {
@@ -1091,7 +1126,15 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       if (!this.restoreCanvasLayout()) {
         this.applyCanvasDefaults();
       }
-      requestAnimationFrame(() => this.cleanupCanvasOverlaps());
+      // Always seed localStorage with the canonical canvas state on entry.
+      // The noop guard inside `cleanupAndPersistCanvas` means cleanup won't
+      // write anything when the defaults/restored state are already clean,
+      // and without this call the canvas key stays absent from storage
+      // until the first drag or mode transition. Downstream code (and
+      // tests) that read `currentCanvasKey` on initial load silently
+      // missed the value.
+      this.persistCanvasLayout();
+      this.cleanupAndPersistCanvas();
     } else if (this.isMobile()) {
       this.restoreDesktopLayout();
       if (this.config.savesDesktopOnMobile) {
@@ -2218,6 +2261,110 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.syncColSpansFromPixelWidths();
   }
 
+  /**
+   * Pure-state version of the canvas header-clearance guard that runs without
+   * DOM measurements, so it can be invoked synchronously from `loadSavedDefaults`
+   * before the state is persisted. Returns `true` if any widget was pushed down
+   * below the locked header(s). Kept deliberately narrow -- only adjusts widget
+   * tops; overlap resolution remains the responsibility of `cleanupCanvasOverlaps`.
+   */
+  private applyCanvasHeaderClearance(): boolean {
+    const gap = DashboardLayoutEngine.GAP_PX;
+    const widgets = this.config.widgets;
+    const locked = this.widgetLocked();
+    const origTops = this.widgetTops();
+    const heights = this.widgetHeights();
+    const lefts = this.widgetLefts();
+    const widths = this.widgetPixelWidths();
+
+    const tops = { ...origTops };
+    let changed = false;
+    for (const id of widgets) {
+      if (locked[id]) continue;
+      const hb = this.headerBottomForRange(
+        lefts[id] ?? 0,
+        widths[id] ?? 0,
+        widgets,
+        locked,
+        origTops,
+        heights,
+        lefts,
+        widths,
+      );
+      if (hb === 0) continue;
+      if ((tops[id] ?? 0) < hb + gap) {
+        tops[id] = hb + gap;
+        changed = true;
+      }
+    }
+    if (changed) this.widgetTops.set(tops);
+    return changed;
+  }
+
+  /**
+   * Effective header-clearance ceiling for a single non-locked widget.
+   * Only locked widgets whose x-range horizontally overlaps with the target
+   * widget's x-range contribute to its ceiling -- a locked KPI panel sitting
+   * in the left half of the canvas should not push down a chart sitting
+   * flush against it on the right.
+   *
+   * Locked widgets without known pixel geometry (`widths <= 0` or the
+   * caller passes `aWidth <= 0`) fall back to treating the locked widget as
+   * a full-width header so pages that only populate tops/heights -- and
+   * unit tests that don't set widgetLefts/widgetPixelWidths -- keep their
+   * historic behaviour.
+   */
+  private headerBottomForRange(
+    aLeft: number,
+    aWidth: number,
+    widgets: readonly string[],
+    locked: Readonly<Record<string, boolean>>,
+    tops: Readonly<Record<string, number>>,
+    heights: Readonly<Record<string, number>>,
+    lefts: Readonly<Record<string, number>>,
+    widths: Readonly<Record<string, number>>,
+  ): number {
+    let hb = 0;
+    for (const id of widgets) {
+      if (!locked[id]) continue;
+      const lW = widths[id] ?? 0;
+      const lL = lefts[id] ?? 0;
+      const horizontallyOverlaps =
+        lW <= 0 || aWidth <= 0
+          ? true
+          : Math.min(aLeft + aWidth, lL + lW) - Math.max(aLeft, lL) > 0;
+      if (!horizontallyOverlaps) continue;
+      hb = Math.max(hb, (tops[id] ?? 0) + (heights[id] ?? 0));
+    }
+    return hb;
+  }
+
+  /**
+   * Schedules a canvas overlap cleanup on the next frame. When cleanup moves
+   * any widget it persists internally; this wrapper is a pure scheduler.
+   *
+   * Callers that want to persist the caller-chosen geometry (e.g. after
+   * `applyCanvasDefaults` or `loadSavedDefaults`) should call
+   * `persistCanvasLayout()` themselves before invoking this method -- that way
+   * cleanup-noop runs do not rewrite storage with stale values. Historically
+   * the trailing persist used to live here and silently overwrote a just-
+   * restored canvas layout on mode re-entry, because `cleanupCanvasOverlaps`
+   * had already returned early and `persistCanvasLayout` fired anyway with
+   * state captured before any subsequent drag.
+   *
+   * Uses a double rAF so the second frame sees the canvas grid at its final
+   * width -- cleanup needs layout-stable coordinates and a single rAF can
+   * still fire before the mode-switch CSS reflow completes.
+   */
+  private cleanupAndPersistCanvas(): void {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!this.isCanvasMode()) return;
+        this.cleanupCanvasOverlaps();
+      });
+    });
+  }
+
   private cleanupCanvasOverlaps(): void {
     if (!this.isCanvasMode()) return;
     const gap = DashboardLayoutEngine.GAP_PX;
@@ -2229,23 +2376,34 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     const lefts = { ...origLefts };
     const widths = this.widgetPixelWidths();
 
-    const gridEl = this.activeGridEl;
-    const headerEl = this.headerElAccessor();
-    let headerBottom = 0;
-    if (gridEl && headerEl) {
-      const gridRect = gridEl.getBoundingClientRect();
-      const headerRect = headerEl.getBoundingClientRect();
-      headerBottom = headerRect.bottom - gridRect.top;
-    } else {
-      const locked = this.widgetLocked();
-      for (const id of widgets) {
-        if (locked[id]) {
-          headerBottom = Math.max(headerBottom, (tops[id] ?? 0) + (heights[id] ?? 0));
-        }
-      }
-    }
-
+    // Always derive header clearance from state. The previous version
+    // preferred `gridEl.getBoundingClientRect() - headerEl.getBoundingClientRect()`,
+    // which on mode re-entry (desktop -> canvas) fired before the grid reflowed
+    // to canvas dimensions and yielded a bogus `headerBottom` measured against
+    // a desktop-sized container. Result: every non-locked widget was pushed
+    // then persisted, silently overwriting the user's saved canvas positions.
+    // Locked widgets are the header in every page's config, so summing
+    // `top + height` across them reproduces the intended clearance without
+    // any DOM dependency.
+    //
+    // Clearance is computed per-widget via `headerBottomForRange` so that a
+    // locked widget (e.g. a left-half KPI panel) only forms a ceiling for
+    // non-locked widgets whose x-range overlaps it. A widget placed beside
+    // the KPI panel (e.g. a revenue chart flush to the right) is not pushed
+    // below the taller locked panel.
     const locked = this.widgetLocked();
+    const headerBottomFor = (id: string): number =>
+      this.headerBottomForRange(
+        lefts[id] ?? 0,
+        widths[id] ?? 0,
+        widgets,
+        locked,
+        tops,
+        heights,
+        lefts,
+        widths,
+      );
+
     const zIndices = this.widgetZIndices();
     const sorted = [...widgets].sort((x, y) => {
       const xL = locked[x] ? 0 : 1;
@@ -2256,18 +2414,24 @@ export class DashboardLayoutEngine implements CanvasItemHost {
 
     for (const id of sorted) {
       if (locked[id]) continue;
-      if (tops[id] < headerBottom + gap) {
-        tops[id] = headerBottom + gap;
+      const hb = headerBottomFor(id);
+      if (tops[id] < hb + gap) {
+        tops[id] = hb + gap;
       }
     }
 
+    // True geometric overlap only. Earlier versions used `hO + gap > 0`,
+    // which treated touching widgets (0px gap) as overlapping and caused
+    // `loadSavedDefaults` -> cleanup to silently rewrite saved positions
+    // the user had deliberately placed flush against each other. Header
+    // clearance is still enforced separately via `headerBottom + gap` below.
     const overlaps = (
       aTop: number, aLeft: number, aW: number, aH: number,
       bTop: number, bLeft: number, bW: number, bH: number,
     ): boolean => {
       const hO = Math.min(aLeft + aW, bLeft + bW) - Math.max(aLeft, bLeft);
       const vO = Math.min(aTop + aH, bTop + bH) - Math.max(aTop, bTop);
-      return hO + gap > 0 && vO + gap > 0;
+      return hO > 0 && vO > 0;
     };
 
     const placed: string[] = [sorted[0]];
@@ -2298,7 +2462,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
           escapeRight = Math.max(escapeRight, lefts[pid] + widths[pid] + gap);
         }
 
-        escapeUp = Math.max(escapeUp, headerBottom + gap);
+        escapeUp = Math.max(escapeUp, headerBottomFor(mover) + gap);
 
         const candidates = [
           { t: escapeUp, l: lefts[mover], d: Math.abs(tops[mover] - escapeUp) },
@@ -2332,8 +2496,9 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         }
       }
 
-      if (tops[mover] < headerBottom + gap) {
-        tops[mover] = headerBottom + gap;
+      const hb = headerBottomFor(mover);
+      if (tops[mover] < hb + gap) {
+        tops[mover] = hb + gap;
       }
       placed.push(mover);
     }
