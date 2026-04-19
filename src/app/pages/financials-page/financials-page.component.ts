@@ -20,6 +20,7 @@ import { WidgetResizeHandleComponent } from '../../shell/components/widget-resiz
 import { CollapsibleSubnavComponent } from '../project-dashboard/components/collapsible-subnav.component';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
+import { getFinancialsLayoutKeys } from '../../shell/services/layout-keys';
 import { FINANCIALS_FRANK_LAYOUT } from '../../data/layout-seeds/financials-frank.layout';
 import { FINANCIALS_BERT_LAYOUT } from '../../data/layout-seeds/financials-bert.layout';
 import { FINANCIALS_KELLY_LAYOUT } from '../../data/layout-seeds/financials-kelly.layout';
@@ -3279,16 +3280,8 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
     return {
       ...seed,
-      layoutStorageKey: () => {
-        const s = this.personaService.activePersonaSlug();
-        const ver = s === 'kelly' ? 'v30' : s === 'pamela' ? 'v33' : 'v19';
-        return `${s}:dashboard-financials:${ver}`;
-      },
-      canvasStorageKey: () => {
-        const s = this.personaService.activePersonaSlug();
-        const ver = s === 'kelly' ? 'v32' : s === 'pamela' ? 'v35' : 'v21';
-        return `${s}:canvas-layout:dashboard-financials:${ver}`;
-      },
+      layoutStorageKey: () => getFinancialsLayoutKeys(this.personaService.activePersonaSlug()).desktop,
+      canvasStorageKey: () => getFinancialsLayoutKeys(this.personaService.activePersonaSlug()).canvas,
       minColSpan: 1,
       widgetMaxColSpans: {},
       canvasGridMinHeightOffset: 200,

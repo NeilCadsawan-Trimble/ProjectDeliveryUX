@@ -1,6 +1,7 @@
 import type { DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import type { DashboardWidgetId } from '../../data/dashboard-data.types';
 import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
+import { getProjectsLayoutKeys, PROJECTS_VERSIONS } from '../../shell/services/layout-keys';
 
 export const TILE_IDS: DashboardWidgetId[] = ['proj1', 'proj2', 'proj3', 'proj4', 'proj5', 'proj6', 'proj7', 'proj8'];
 
@@ -13,8 +14,12 @@ export function buildProjectsLayoutConfig(
 ): DashboardLayoutConfig {
   return {
     ...seed,
-    layoutStorageKey: personaSlug ? () => `${personaSlug()}:dashboard-projects:v18` : 'dashboard-projects:v18',
-    canvasStorageKey: personaSlug ? () => `${personaSlug()}:canvas-layout:dashboard-projects:v21` : 'canvas-layout:dashboard-projects:v21',
+    layoutStorageKey: personaSlug
+      ? () => getProjectsLayoutKeys(personaSlug()).desktop
+      : `dashboard-projects:${PROJECTS_VERSIONS.desktop}`,
+    canvasStorageKey: personaSlug
+      ? () => getProjectsLayoutKeys(personaSlug()).canvas
+      : `canvas-layout:dashboard-projects:${PROJECTS_VERSIONS.canvas}`,
     responsiveBreakpoints: [
       { minWidth: 1280, columns: 4 },
       { minWidth: 1020, columns: 3 },

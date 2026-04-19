@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { resolve, normalize } from 'node:path';
+import { resolve, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const PORT = 3001;
@@ -263,7 +263,10 @@ async function handleSaveLayoutSeed(req, res) {
     return;
   }
 
-  const normalized = normalize(filePath);
+  // Normalize to a single POSIX form for the allowlist check so behavior is
+  // identical on Windows and macOS/Linux. `path.normalize` would use the host
+  // OS separator and break `startsWith('src/app/...')` on Windows.
+  const normalized = posix.normalize(String(filePath).replace(/\\/g, '/'));
   if (!normalized.startsWith(ALLOWED_SEED_DIR) || normalized.includes('..')) {
     res.writeHead(403, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'filePath must be inside src/app/data/layout-seeds/' }));

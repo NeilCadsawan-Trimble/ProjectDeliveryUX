@@ -1,10 +1,8 @@
 import type { LayoutSeed } from './layout-seed.types';
 
+// Exported from live canvas layout
 export const HOME_PAMELA_LAYOUT: LayoutSeed = {
-  widgets: [
-    'homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates',
-    'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity',
-  ],
+  widgets: ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity'],
   defaultColStarts: {
     homeHeader: 1,
     homeEstimatorKpis: 1,
@@ -30,9 +28,9 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeEstimatorKpis: 0,
     homeOpenEstimates: 0,
     homeCalendar: 384,
-    homeRfis: 384,
+    homeRfis: 480,
     homeChangeOrders: 848,
-    homeBudgetVariance: 848,
+    homeBudgetVariance: 944,
     homeRecentActivity: 1200,
   },
   defaultHeights: {
@@ -70,9 +68,9 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeEstimatorKpis: 112,
     homeOpenEstimates: 112,
     homeCalendar: 560,
-    homeRfis: 560,
+    homeRfis: 720,
     homeChangeOrders: 1024,
-    homeBudgetVariance: 1024,
+    homeBudgetVariance: 1184,
     homeRecentActivity: 1472,
   },
   canvasDefaultHeights: {
