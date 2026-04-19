@@ -3,8 +3,8 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 13, 2026
-**Total Commits**: 200+
+**Last Updated**: April 19, 2026
+**Total Commits**: 210+
 
 ---
 
@@ -38,10 +38,11 @@
 | 23    | Subnav Layout Gap and Layout Seed Reset Fixes         | Done        | 6/6   |
 | 24    | Pamela Chen Persona (Senior Estimator)                | Done        | 3/3   |
 | 25    | Independent Per-Persona Layout Seeds                  | Done        | 5/5   |
-| 26    | Remaining Work                                        | Not Started | 0/8   |
+| 26    | Layout Persistence and Pamela Seed Round-Trip         | Done        | 7/7   |
+| 27    | Remaining Work                                        | Not Started | 0/8   |
 
 
-**Completed**: 194/202 items (96%)
+**Completed**: 201/209 items (96%)
 
 ---
 
@@ -734,7 +735,64 @@ Eliminated ALL shared "default" layout seed files. Every persona now has its own
 
 ---
 
-## Phase 26: Remaining Work
+## Phase 26: Layout Persistence and Pamela Seed Round-Trip (Apr 19)
+
+Canvas/desktop layout persistence bugs, storage-key drift, canvas cleanup DOM-race, Pamela home seed overlap, and resetToDefaults test split. Merged as PR #96.
+
+### Desktop Persistence Moved to localStorage
+
+- `WidgetLayoutService.save()` now writes to `localStorage` (was `sessionStorage`), so desktop drags survive tab close.
+- `load()` falls back to `sessionStorage` once and migrates forward so in-flight user state is preserved exactly once on upgrade.
+- `remove()` clears both storages.
+
+### Storage-Key Registry (Single Source of Truth)
+
+- New `src/app/shell/services/layout-keys.ts` exposes `getHomeLayoutKeys`, `getFinancialsLayoutKeys`, `getProjectsLayoutKeys`, `getProjectDetailLayoutKeys`, `getAllDashboardKeys`.
+- All 4 page components (`home-page`, `financials-page`, `projects-page`, `project-dashboard`) consume the registry instead of computing storage keys inline.
+- `LayoutDefaultsService` iterates `getAllDashboardKeys()` across every persona -- previously hardcoded `STATIC_BASES` drifted to stale versions and `Save/Clear all visited defaults` silently skipped financials.
+
+### Canvas Cleanup DOM-Less on Mode Re-Entry
+
+- `cleanupCanvasOverlaps` derives `headerBottom` from signal state (`tops + heights + locked`) instead of `gridEl.getBoundingClientRect()` -- the rAF used to fire before CSS reflow on canvas -> desktop -> canvas excursions and shove every widget below a desktop-sized bogus ceiling, then persist.
+- Overlap check changed from `aBottom + gap > bTop` to strict `aBottom > bTop && aTop < bBottom` so flush (0-gap) widgets stay put.
+- `loadSavedDefaults` now folds `applyCanvasHeaderClearance` output into the persisted blob so saved state matches on-screen state immediately.
+
+### Pamela Home Seed Fix
+
+- Right-column widgets `homeOpenEstimates` (top=112..704) and `homeRfis` (top=560..1008) shared a 144x632px rectangle in both desktop and canvas seeds; cleanup shoved them on every load and the shipped defaults didn't round-trip.
+- Shifted `homeRfis` down (canvas 560 to 720, desktop 384 to 480) and `homeBudgetVariance` down (canvas 1024 to 1184, desktop 848 to 944). Kept `homeOpenEstimates` tall (h=592) to preserve its feature-widget intent.
+
+### `resetToDefaults` Test Split
+
+- Original single test asserted "all signals equal config defaults" with a config placing `w3` at top=400 in cols 9-16 with nothing above it; `compactAll` (added in Phase 23) correctly pulls it to top=0.
+- Split into two tests in `dashboard-layout-engine.spec.ts`: one pins default-application using an already-compact config (compactAll no-op), the other pins compactAll's gap elimination using the floating-widget config.
+
+### New Regression Coverage
+
+- `src/app/shell/services/layout-seed-clearance.spec.ts` (41 tests): every shipped seed x page combo must round-trip through `applyCanvasHeaderClearance` and `cleanupCanvasOverlaps` with zero movement; cleanup must never push a widget below a locked widget it does not horizontally overlap.
+- `src/app/shell/services/layout-defaults.service.spec.ts`: registry coverage per persona x page, `saveAllVisitedDefaults` / `clearAllDefaults` behavior.
+- `src/app/shell/services/widget-layout.service.spec.ts`: save -> localStorage, load preferred + sessionStorage fallback migration.
+- `src/app/shell/services/dashboard-layout-engine.spec.ts > canvas save/load round-trip`: 11 new tests covering touching-is-not-overlap, DOM-less clearance, canvas -> desktop -> canvas byte-identical blob, loadSavedDefaults persistence, etc.
+- `e2e/layout-persistence.spec.ts`: canvas F5, canvas -> mobile -> canvas, Save & Load Default with a second-widget change, Reset Layout reverts, financials canvas drags survive round-trip, desktop F5 persistence.
+
+### Skills Updated
+
+- Added sections 38-42 to `dashboard-layout-lessons` SKILL.md: Shipped seeds must round-trip through their own cleanup, desktop = localStorage, storage-key registry, canvas cleanup DOM-less on mode re-entry, `resetToDefaults` split-test pattern.
+- Added 7 rows to the quick-reference table.
+
+### Tests
+
+- `npm run lint:all` -- 7/7 pass
+- Static tests -- 1296 pass (16 files)
+- `npm run type-check` -- pass
+- `npx ng build` -- clean
+- `npx ng test --no-watch` -- 237 pass (incl. 41 seed-clearance cases + 11 canvas save/load round-trip)
+
+**PR**: #96 (merged to main)
+
+---
+
+## Phase 27: Remaining Work
 
 Features and improvements not yet started.
 
