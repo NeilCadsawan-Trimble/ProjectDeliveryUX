@@ -1,63 +1,62 @@
 import type { LayoutSeed } from './layout-seed.types';
 
-const G = 16;
-const STEP = (1280 + G) / 16;  // 81px -- one grid column step
-const colWidth = (cols: number) => cols * STEP - G;
-
-const TITLE_HEIGHT = 64;
-const NAVKPI_HEIGHT = 224;
-const NAVKPI_TOP = TITLE_HEIGHT + G;
-const ESTIMATES_HEIGHT = 512;
-const ESTIMATES_TOP = NAVKPI_TOP + NAVKPI_HEIGHT + G;
-const JOB_COSTS_HEIGHT = 576;
-const JOB_COSTS_TOP = ESTIMATES_TOP + ESTIMATES_HEIGHT + G;
-const CO_HEIGHT = 560;
-const CO_TOP = JOB_COSTS_TOP + JOB_COSTS_HEIGHT + G;
-
+// Exported from live desktop layout
 export const FINANCIALS_PAMELA_LAYOUT: LayoutSeed = {
   widgets: ['finTitle', 'finNavKpi', 'finOpenEstimates', 'finJobCosts', 'finChangeOrders'],
   defaultColStarts: {
-    finTitle: 1, finNavKpi: 1, finOpenEstimates: 1,
-    finJobCosts: 1, finChangeOrders: 1,
+    finTitle: 1,
+    finNavKpi: 1,
+    finOpenEstimates: 9,
+    finJobCosts: 1,
+    finChangeOrders: 1,
   },
   defaultColSpans: {
-    finTitle: 16, finNavKpi: 8, finOpenEstimates: 16,
-    finJobCosts: 16, finChangeOrders: 16,
+    finTitle: 16,
+    finNavKpi: 8,
+    finOpenEstimates: 8,
+    finJobCosts: 8,
+    finChangeOrders: 16,
   },
   defaultTops: {
     finTitle: 0,
-    finNavKpi: NAVKPI_TOP,
-    finOpenEstimates: ESTIMATES_TOP,
-    finJobCosts: JOB_COSTS_TOP,
-    finChangeOrders: CO_TOP,
+    finNavKpi: 80,
+    finOpenEstimates: 80,
+    finJobCosts: 352,
+    finChangeOrders: 928,
   },
   defaultHeights: {
-    finTitle: TITLE_HEIGHT,
-    finNavKpi: NAVKPI_HEIGHT,
-    finOpenEstimates: ESTIMATES_HEIGHT,
-    finJobCosts: JOB_COSTS_HEIGHT,
-    finChangeOrders: CO_HEIGHT,
+    finTitle: 64,
+    finNavKpi: 256,
+    finOpenEstimates: 832,
+    finJobCosts: 560,
+    finChangeOrders: 560,
   },
   canvasDefaultLefts: {
-    finTitle: 0, finNavKpi: 0, finOpenEstimates: 0,
-    finJobCosts: 0, finChangeOrders: 0,
+    finTitle: 0,
+    finNavKpi: 0,
+    finOpenEstimates: 0,
+    finJobCosts: 0,
+    finChangeOrders: 0,
   },
   canvasDefaultPixelWidths: {
-    finTitle: colWidth(16), finNavKpi: colWidth(8), finOpenEstimates: colWidth(16),
-    finJobCosts: colWidth(16), finChangeOrders: colWidth(16),
+    finTitle: 1280,
+    finNavKpi: 632,
+    finOpenEstimates: 1280,
+    finJobCosts: 1280,
+    finChangeOrders: 1280,
   },
   canvasDefaultTops: {
-    finTitle: G,
-    finNavKpi: G + TITLE_HEIGHT + G,
-    finOpenEstimates: G + TITLE_HEIGHT + G + NAVKPI_HEIGHT + G,
-    finJobCosts: G + TITLE_HEIGHT + G + NAVKPI_HEIGHT + G + ESTIMATES_HEIGHT + G,
-    finChangeOrders: G + TITLE_HEIGHT + G + NAVKPI_HEIGHT + G + ESTIMATES_HEIGHT + G + JOB_COSTS_HEIGHT + G,
+    finTitle: 16,
+    finNavKpi: 96,
+    finOpenEstimates: 368,
+    finJobCosts: 896,
+    finChangeOrders: 1488,
   },
   canvasDefaultHeights: {
-    finTitle: TITLE_HEIGHT,
-    finNavKpi: NAVKPI_HEIGHT,
-    finOpenEstimates: ESTIMATES_HEIGHT,
-    finJobCosts: JOB_COSTS_HEIGHT,
-    finChangeOrders: CO_HEIGHT,
+    finTitle: 64,
+    finNavKpi: 256,
+    finOpenEstimates: 512,
+    finJobCosts: 576,
+    finChangeOrders: 560,
   },
 };
