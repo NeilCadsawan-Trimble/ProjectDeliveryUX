@@ -70,7 +70,7 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
     homeLearning: 389,
   },
   canvasDefaultTops: {
-    homeHeader: 32,
+    homeHeader: 0,
     homeApKpis: 128,
     homeInvoiceQueue: 128,
     homePaymentSchedule: 480,

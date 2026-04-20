@@ -1,7 +1,7 @@
 import type { LayoutSeed } from './layout-seed.types';
 
 const G = 16;
-const TITLE_HEIGHT = 80;
+const TITLE_HEIGHT = 64;
 const NAVKPI_HEIGHT = 512;
 const NAVKPI_TOP = TITLE_HEIGHT + G;
 const REVENUE_HEIGHT = 512;
@@ -53,12 +53,12 @@ export const FINANCIALS_DOMINIQUE_LAYOUT: LayoutSeed = {
   },
   canvasDefaultTops: {
     finTitle: 16,
-    finNavKpi: 112,
-    finRevenueChart: 112,
-    finOpenEstimates: 640,
-    finBudgetByProject: 1168,
-    finJobCosts: 1696,
-    finChangeOrders: 2288,
+    finNavKpi: 96,
+    finRevenueChart: 96,
+    finOpenEstimates: 624,
+    finBudgetByProject: 1152,
+    finJobCosts: 1680,
+    finChangeOrders: 2272,
   },
   canvasDefaultHeights: {
     finTitle: TITLE_HEIGHT,

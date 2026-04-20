@@ -4,7 +4,7 @@ const G = 16;
 const STEP = (1280 + G) / 16;  // 81px -- one grid column step
 const colWidth = (cols: number) => cols * STEP - G;
 
-const TITLE_HEIGHT = 80;
+const TITLE_HEIGHT = 64;
 const NAVKPI_HEIGHT = 224;
 const NAVKPI_TOP = TITLE_HEIGHT + G;
 const ESTIMATES_HEIGHT = 512;

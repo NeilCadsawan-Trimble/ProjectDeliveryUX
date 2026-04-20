@@ -131,6 +131,32 @@ describe('styles.css regression', () => {
     });
   });
 
+  describe('Connect theme typography override fix', () => {
+    it('re-asserts .modus-wc-text-xl for modus-wc-typography-override in connect-light', () => {
+      expect(CSS).toMatch(
+        /\[data-theme='connect-light'\]\s+modus-wc-typography\s+\.modus-wc-typography-override\.modus-wc-text-xl[^{]*\{\s*font-size:\s*var\(--modus-wc-font-size-xl\)/,
+      );
+    });
+
+    it('re-asserts .modus-wc-text-xl for modus-wc-typography-override in connect-dark', () => {
+      expect(CSS).toMatch(
+        /\[data-theme='connect-dark'\][^{]*modus-wc-typography\s+\.modus-wc-typography-override\.modus-wc-text-xl[^{]*\{\s*font-size:\s*var\(--modus-wc-font-size-xl\)/,
+      );
+    });
+
+    it('covers all 7 text sizes (xs, sm, md, lg, xl, 2xl, 3xl) in connect themes', () => {
+      for (const size of ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl']) {
+        expect(CSS).toContain(`.modus-wc-typography-override.modus-wc-text-${size}`);
+      }
+    });
+
+    it('covers all 4 font weights (light, normal, semibold, bold) in connect themes', () => {
+      for (const weight of ['light', 'normal', 'semibold', 'bold']) {
+        expect(CSS).toContain(`.modus-wc-typography-override.modus-wc-typography-weight-${weight}`);
+      }
+    });
+  });
+
   describe('.desktop-reset-flyout', () => {
     it('has position: absolute', () => {
       const flyoutMatch = CSS.match(

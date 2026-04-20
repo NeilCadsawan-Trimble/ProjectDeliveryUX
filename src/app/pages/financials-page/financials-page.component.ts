@@ -649,7 +649,7 @@ const FIN_MIN_CHILD_PX = 80;
         >
           <div class="flex items-start justify-between">
             <div>
-              <modus-typography hierarchy="h1" size="3xl" weight="bold" className="text-foreground" role="heading" aria-level="1">Financials Dashboard</modus-typography>
+              <modus-typography hierarchy="h1" className="text-foreground" role="heading" aria-level="1">Financials Dashboard</modus-typography>
               <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 mt-1">{{ today }}</modus-typography>
             </div>
             <div class="flex-shrink-0">

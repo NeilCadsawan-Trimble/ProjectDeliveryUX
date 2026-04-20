@@ -12,7 +12,7 @@ const LANDING_SLUGS = ['frank', 'bert', 'kelly', 'pamela'] as const;
   imports: [ModusCardComponent, ModusTypographyComponent],
   template: `
     <div class="h-dvh bg-background flex flex-col items-center justify-center gap-10 px-6">
-      <modus-typography hierarchy="h1" size="xl" weight="semibold" className="text-center">
+      <modus-typography hierarchy="h1" className="text-center">
         Select a persona
       </modus-typography>
       <div class="flex flex-col md:flex-row items-stretch gap-6">

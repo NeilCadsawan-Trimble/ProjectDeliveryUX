@@ -22,7 +22,7 @@ import { ModusBadgeComponent } from '../../components/modus-badge.component';
 
         <div class="flex items-center justify-between">
           <div class="flex-1"></div>
-          <modus-typography hierarchy="h1" size="sm" weight="semibold" className="tracking-wide uppercase">
+          <modus-typography hierarchy="h1">
             My Profile
           </modus-typography>
           <div class="flex-1 flex items-center justify-end gap-3">
