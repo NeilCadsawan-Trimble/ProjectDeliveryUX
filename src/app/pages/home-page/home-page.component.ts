@@ -1597,7 +1597,7 @@ const HOME_MIN_CONTENT_PX = 80;
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
                   <div class="flex flex-col gap-2 p-4">
-                    <app-home-ap-kpi-cards [cards]="apKpiCards()" />
+                    <app-home-ap-kpi-cards [cards]="apKpiCards()" (cardClick)="handleApKpiClick($event)" />
                   </div>
                 </app-widget-frame>
 
@@ -2191,10 +2191,10 @@ export class HomePageComponent extends DashboardPageBase {
   readonly discountsAvailable = computed(() => this.apPaymentSchedule().reduce((s, p) => s + p.discountAvailable, 0));
 
   readonly apKpiCards = computed<ApKpiCard[]>(() => [
-    { value: '' + this.pendingApInvoices().length, label: 'Invoices to Process', icon: 'invoice', iconBg: 'bg-warning-20', iconColor: 'text-warning' },
-    { value: formatCurrency(this.totalOutstandingAp()), label: 'Total Outstanding AP', icon: 'payment_instant', iconBg: 'bg-primary-20', iconColor: 'text-primary' },
-    { value: formatCurrency(this.paymentsDueThisWeek()), label: 'Payments Due This Week', icon: 'calendar', iconBg: 'bg-destructive-20', iconColor: 'text-destructive' },
-    { value: formatCurrency(this.discountsAvailable()), label: 'Discounts Available', icon: 'offers', iconBg: 'bg-success-20', iconColor: 'text-success' },
+    { value: '' + this.pendingApInvoices().length, label: 'Invoices to Process', icon: 'invoice', iconBg: 'bg-warning-20', iconColor: 'text-warning', action: 'ap-invoices', ariaPrefix: 'Invoices to process' },
+    { value: formatCurrency(this.totalOutstandingAp()), label: 'Total Outstanding AP', icon: 'payment_instant', iconBg: 'bg-primary-20', iconColor: 'text-primary', action: 'ap-outstanding', ariaPrefix: 'Total outstanding accounts payable' },
+    { value: formatCurrency(this.paymentsDueThisWeek()), label: 'Payments Due This Week', icon: 'calendar', iconBg: 'bg-destructive-20', iconColor: 'text-destructive', action: 'ap-payments-due', ariaPrefix: 'Payments due this week' },
+    { value: formatCurrency(this.discountsAvailable()), label: 'Discounts Available', icon: 'offers', iconBg: 'bg-success-20', iconColor: 'text-success', action: 'ap-discounts', ariaPrefix: 'Discounts available' },
   ]);
 
   private readonly overdueEstimatesCount = computed(() =>
@@ -3235,6 +3235,31 @@ export class HomePageComponent extends DashboardPageBase {
 
   navigateToApSubpage(): void {
     this.router.navigate([`${this.personaPrefix()}/financials`], { queryParams: { subpage: 'accounts-payable' } });
+  }
+
+  private navigateToApSubpageWithFocus(focus: string): void {
+    this.router.navigate([`${this.personaPrefix()}/financials`], {
+      queryParams: { subpage: 'accounts-payable', focus },
+    });
+  }
+
+  handleApKpiClick(action: string): void {
+    switch (action) {
+      case 'ap-invoices':
+        this.navigateToApSubpageWithFocus('invoice-queue');
+        break;
+      case 'ap-outstanding':
+        this.navigateToApSubpageWithFocus('payables');
+        break;
+      case 'ap-payments-due':
+        this.navigateToApSubpageWithFocus('payment-schedule');
+        break;
+      case 'ap-discounts':
+        this.navigateToApSubpageWithFocus('discounts');
+        break;
+      default:
+        this.navigateToApSubpage();
+    }
   }
 
   handleKpiCardClick(action: string): void {
