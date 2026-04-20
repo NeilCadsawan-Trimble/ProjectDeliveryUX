@@ -732,7 +732,11 @@ const FIN_MIN_CHILD_PX = 80;
             @if (isPamela()) {
             <div class="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
               @if (showFinBlock('finNavKpi', 'kpi1')) {
-              <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
+              <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-muted transition-colors duration-150"
+                role="button" tabindex="0" aria-label="Open estimates"
+                (click)="openEstimatesWithFilter('all')"
+                (keydown.enter)="openEstimatesWithFilter('all')"
+                (keydown.space)="openEstimatesWithFilter('all'); $event.preventDefault()">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
                   [class.bg-success-20]="pipelineColor() === 'success'"
                   [class.bg-warning-20]="pipelineColor() === 'warning'"
@@ -753,7 +757,11 @@ const FIN_MIN_CHILD_PX = 80;
               </div>
               }
               @if (showFinBlock('finNavKpi', 'kpi2')) {
-              <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
+              <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-muted transition-colors duration-150"
+                role="button" tabindex="0" aria-label="Open approved estimates"
+                (click)="openEstimatesWithFilter('approved')"
+                (keydown.enter)="openEstimatesWithFilter('approved')"
+                (keydown.space)="openEstimatesWithFilter('approved'); $event.preventDefault()">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
                   [class.bg-success-20]="winRateColor() === 'success'"
                   [class.bg-warning-20]="winRateColor() === 'warning'"
@@ -774,7 +782,11 @@ const FIN_MIN_CHILD_PX = 80;
               </div>
               }
               @if (showFinBlock('finNavKpi', 'kpi3')) {
-              <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3">
+              <div class="bg-card border-default rounded-lg px-4 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-muted transition-colors duration-150"
+                role="button" tabindex="0" aria-label="Open overdue estimates"
+                (click)="openEstimatesWithFilter('overdue')"
+                (keydown.enter)="openEstimatesWithFilter('overdue')"
+                (keydown.space)="openEstimatesWithFilter('overdue'); $event.preventDefault()">
                 <div class="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
                   [class.bg-success-20]="overdueColor() === 'success'"
                   [class.bg-warning-20]="overdueColor() === 'warning'"
@@ -1549,12 +1561,12 @@ const FIN_MIN_CHILD_PX = 80;
       </div>
     </div>
     } @else {
-    <div class="flex flex-col h-full max-w-screen-xl mx-auto w-full">
-      <div class="px-4 pt-4 md:pt-6 flex-shrink-0">
-        <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground mb-1">{{ activeSubPageTitle() }}</modus-typography>
-        <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 mb-4">{{ activeSubPageDescription() }}</modus-typography>
+    <div class="flex flex-col h-full max-w-screen-xl mx-auto w-full px-4 py-4 md:py-6">
+      <div class="flex-shrink-0 mb-4">
+        <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ activeSubPageTitle() }}</modus-typography>
+        <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 mt-1">{{ activeSubPageDescription() }}</modus-typography>
       </div>
-      <div class="flex flex-1 min-h-0">
+      <div class="flex flex-1 min-h-0 gap-4">
         <app-collapsible-subnav
           icon="payment_instant"
           title="Financials"
@@ -1570,7 +1582,7 @@ const FIN_MIN_CHILD_PX = 80;
         <div class="flex-1 min-w-0 flex flex-col overflow-hidden">
 
     @if (activeSubPage() === 'estimates') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search estimates...' }" />
         </div>
@@ -1629,9 +1641,26 @@ const FIN_MIN_CHILD_PX = 80;
         </div>
         }
 
+        @if (estimateStatusFilter() !== 'all') {
+          <div class="flex items-center gap-2 mb-4 flex-shrink-0">
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Filtered by:</modus-typography>
+            <div class="flex items-center gap-1.5 px-2.5 py-1 bg-primary-20 rounded-full text-primary">
+              <modus-typography hierarchy="p" size="xs" weight="semibold">{{ estimateFilterLabel() }}</modus-typography>
+              <div class="flex items-center justify-center w-4 h-4 rounded-full cursor-pointer hover:bg-primary-40 transition-colors duration-150"
+                role="button" tabindex="0" aria-label="Clear filter"
+                (click)="clearEstimateFilter()"
+                (keydown.enter)="clearEstimateFilter()"
+                (keydown.space)="clearEstimateFilter(); $event.preventDefault()">
+                <i class="modus-icons text-xs" aria-hidden="true">close</i>
+              </div>
+            </div>
+            <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ filteredEstimates().length }} shown</modus-typography>
+          </div>
+        }
+
         @if (isMobile()) {
           <div class="flex flex-col gap-3">
-            @for (est of (isPamela() ? pamelaOpenEstimates() : estimates()); track est.id) {
+            @for (est of filteredEstimates(); track est.id) {
               <div class="bg-card rounded-lg border-default p-4 cursor-pointer" (click)="navigateToEstimate(est.id)">
                 <div class="flex items-center justify-between mb-2">
                   <modus-typography  hierarchy="p" size="sm" weight="semibold" className="font-mono text-primary">{{ est.id }}</modus-typography>
@@ -1662,46 +1691,50 @@ const FIN_MIN_CHILD_PX = 80;
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <modus-typography size="xs" weight="semibold">ID</modus-typography>
-            <modus-typography size="xs" weight="semibold">Project / Client</modus-typography>
-            <modus-typography size="xs" weight="semibold">Type</modus-typography>
-            <modus-typography size="xs" weight="semibold" className="text-right">Value</modus-typography>
-            <modus-typography size="xs" weight="semibold">Status</modus-typography>
-            <modus-typography size="xs" weight="semibold">Requested By</modus-typography>
-            <modus-typography size="xs" weight="semibold">Due Date</modus-typography>
-          </div>
-          <div class="overflow-y-auto flex-1">
-          @for (est of (isPamela() ? pamelaOpenEstimates() : estimates()); track est.id) {
-            <div class="grid grid-cols-[80px_1fr_100px_120px_120px_130px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToEstimate(est.id)">
-              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="font-mono text-primary">{{ est.id }}</modus-typography>
-              <div>
-                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ est.project }}</modus-typography>
-                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ est.client }}</modus-typography>
-              </div>
-              <modus-typography  hierarchy="p" size="xs" className="bg-muted text-foreground-80 rounded px-2 py-1 inline-block">{{ est.type }}</modus-typography>
-              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ est.value }}</modus-typography>
-              <div><modus-badge [color]="estimateBadgeColor(est.status)" size="sm">{{ est.status }}</modus-badge></div>
-              <div class="flex items-center gap-2 min-w-0">
-                <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground">
-                  {{ est.requestedByInitials }}
-                </modus-typography>
-                <modus-typography  hierarchy="p" size="xs" className="text-foreground-80 truncate">{{ est.requestedBy }}</modus-typography>
-              </div>
-              <div>
-                <modus-typography  hierarchy="p" size="sm" className="text-foreground-80">{{ est.dueDate }}</modus-typography>
-                <modus-typography size="xs" className="mt-0.5" [class]="dueDateClass(est.daysLeft)">
-                  @if (est.daysLeft < 0) {
-                    {{ -est.daysLeft }}d overdue
-                  } @else if (est.daysLeft === 0) {
-                    Due today
-                  } @else {
-                    {{ est.daysLeft }}d left
-                  }
-                </modus-typography>
-              </div>
+          <div class="overflow-x-auto flex-1 flex flex-col min-h-0">
+            <div class="grid grid-cols-[90px_minmax(0,2fr)_70px_minmax(90px,1fr)_minmax(130px,1.1fr)_minmax(0,1.4fr)_110px] gap-3 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default min-w-[820px]">
+              <modus-typography size="xs" weight="semibold">ID</modus-typography>
+              <modus-typography size="xs" weight="semibold">Project / Client</modus-typography>
+              <modus-typography size="xs" weight="semibold">Type</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Value</modus-typography>
+              <modus-typography size="xs" weight="semibold">Status</modus-typography>
+              <modus-typography size="xs" weight="semibold">Requested By</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Due Date</modus-typography>
             </div>
-          }
+            <div class="overflow-y-auto flex-1">
+            @for (est of filteredEstimates(); track est.id) {
+              <div class="grid grid-cols-[90px_minmax(0,2fr)_70px_minmax(90px,1fr)_minmax(130px,1.1fr)_minmax(0,1.4fr)_110px] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[820px]" (click)="navigateToEstimate(est.id)">
+                <modus-typography hierarchy="p" size="sm" weight="semibold" className="font-mono text-primary truncate">{{ est.id }}</modus-typography>
+                <div class="min-w-0">
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ est.project }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-40 truncate">{{ est.client }}</modus-typography>
+                </div>
+                <div class="min-w-0">
+                  <modus-typography hierarchy="p" size="xs" className="bg-muted text-foreground-80 rounded px-2 py-1 inline-block truncate max-w-full">{{ est.type }}</modus-typography>
+                </div>
+                <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right truncate">{{ est.value }}</modus-typography>
+                <div class="min-w-0"><modus-badge [color]="estimateBadgeColor(est.status)" size="sm">{{ est.status }}</modus-badge></div>
+                <div class="flex items-center gap-2 min-w-0">
+                  <modus-typography class="flex-shrink-0" size="xs" weight="semibold" className="text-2xs w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground">
+                    {{ est.requestedByInitials }}
+                  </modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-80 truncate">{{ est.requestedBy }}</modus-typography>
+                </div>
+                <div class="min-w-0 text-right">
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-80 text-right truncate">{{ est.dueDate }}</modus-typography>
+                  <modus-typography size="xs" className="mt-0.5 text-right" [class]="dueDateClass(est.daysLeft)">
+                    @if (est.daysLeft < 0) {
+                      {{ -est.daysLeft }}d overdue
+                    } @else if (est.daysLeft === 0) {
+                      Due today
+                    } @else {
+                      {{ est.daysLeft }}d left
+                    }
+                  </modus-typography>
+                </div>
+              </div>
+            }
+            </div>
           </div>
         </div>
         }
@@ -1709,7 +1742,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'change-orders') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search change orders...' }" />
         </div>
@@ -1771,30 +1804,32 @@ const FIN_MIN_CHILD_PX = 80;
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <modus-typography size="xs" weight="semibold">ID</modus-typography>
-            <modus-typography size="xs" weight="semibold">Project</modus-typography>
-            <modus-typography size="xs" weight="semibold">Description</modus-typography>
-            <modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography>
-            <modus-typography size="xs" weight="semibold">Status</modus-typography>
-            <modus-typography size="xs" weight="semibold">Date</modus-typography>
-          </div>
-          <div class="overflow-y-auto flex-1">
-          @for (co of filteredChangeOrders(); track co.id) {
-            <div class="grid grid-cols-[80px_1fr_2fr_120px_90px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToChangeOrder(co.id)">
-              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ co.id }}</modus-typography>
-              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ co.project }}</modus-typography>
-              <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ co.description }}</modus-typography>
-              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ formatCurrency(co.amount) }}</modus-typography>
-              <div><modus-badge [color]="coBadgeColor(co.status)" size="sm">{{ capitalizeFirst(co.status) }}</modus-badge></div>
-              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ co.requestDate }}</modus-typography>
+          <div class="overflow-x-auto flex-1 flex flex-col min-h-0">
+            <div class="grid grid-cols-[90px_minmax(0,1.2fr)_minmax(0,2fr)_110px_minmax(115px,1fr)_100px] gap-3 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default min-w-[780px]">
+              <modus-typography size="xs" weight="semibold">ID</modus-typography>
+              <modus-typography size="xs" weight="semibold">Project</modus-typography>
+              <modus-typography size="xs" weight="semibold">Description</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography>
+              <modus-typography size="xs" weight="semibold">Status</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Date</modus-typography>
             </div>
-          } @empty {
-            <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
-              <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap</i>
-              <modus-typography  hierarchy="p" size="sm">No change orders in this category</modus-typography>
+            <div class="overflow-y-auto flex-1">
+            @for (co of filteredChangeOrders(); track co.id) {
+              <div class="grid grid-cols-[90px_minmax(0,1.2fr)_minmax(0,2fr)_110px_minmax(115px,1fr)_100px] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[780px]" (click)="navigateToChangeOrder(co.id)">
+                <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-primary truncate">{{ co.id }}</modus-typography>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground truncate">{{ co.project }}</modus-typography>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground truncate">{{ co.description }}</modus-typography>
+                <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right truncate">{{ formatCurrency(co.amount) }}</modus-typography>
+                <div class="min-w-0"><modus-badge [color]="coBadgeColor(co.status)" size="sm">{{ capitalizeFirst(co.status) }}</modus-badge></div>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-right truncate">{{ co.requestDate }}</modus-typography>
+              </div>
+            } @empty {
+              <div class="flex flex-col items-center justify-center py-10 text-foreground-40">
+                <i class="modus-icons text-3xl mb-2" aria-hidden="true">swap</i>
+                <modus-typography hierarchy="p" size="sm">No change orders in this category</modus-typography>
+              </div>
+            }
             </div>
-          }
           </div>
         </div>
         }
@@ -1802,7 +1837,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'job-costs') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search job costs...' }" />
         </div>
@@ -1859,23 +1894,25 @@ const FIN_MIN_CHILD_PX = 80;
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <modus-typography size="xs" weight="semibold">Project</modus-typography>
-            <modus-typography size="xs" weight="semibold" className="text-right">Budget</modus-typography>
-            @for (cat of jobCostCategories; track cat) {
-              <modus-typography size="xs" weight="semibold" className="text-right">{{ cat }}</modus-typography>
-            }
-          </div>
-          <div class="overflow-y-auto flex-1">
-          @for (p of projectJobCosts(); track p.projectId) {
-            <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="openJobCostDetail(p)">
-              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ p.projectName }}</modus-typography>
-              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 text-right">{{ p.budgetUsed }}</modus-typography>
+          <div class="overflow-x-auto flex-1 flex flex-col min-h-0">
+            <div class="grid grid-cols-[minmax(0,2fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)] gap-3 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default min-w-[780px]">
+              <modus-typography size="xs" weight="semibold">Project</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Budget</modus-typography>
               @for (cat of jobCostCategories; track cat) {
-                <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 text-right">{{ formatJobCost(getCost(p.costs, cat)) }}</modus-typography>
+                <modus-typography size="xs" weight="semibold" className="text-right truncate">{{ cat }}</modus-typography>
               }
             </div>
-          }
+            <div class="overflow-y-auto flex-1">
+            @for (p of projectJobCosts(); track p.projectId) {
+              <div class="grid grid-cols-[minmax(0,2fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[780px]" (click)="openJobCostDetail(p)">
+                <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ p.projectName }}</modus-typography>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-right truncate">{{ p.budgetUsed }}</modus-typography>
+                @for (cat of jobCostCategories; track cat) {
+                  <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-right truncate">{{ formatJobCost(getCost(p.costs, cat)) }}</modus-typography>
+                }
+              </div>
+            }
+            </div>
           </div>
         </div>
         }
@@ -1883,7 +1920,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'job-billing') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search billing...' }" />
         </div>
@@ -1959,7 +1996,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'accounts-receivable') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search invoices...' }" />
         </div>
@@ -2054,7 +2091,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'accounts-payable') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search payables...' }" />
         </div>
@@ -2260,7 +2297,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'cash-management') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search transactions...' }" />
         </div>
@@ -2337,7 +2374,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'general-ledger') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search accounts...' }" />
         </div>
@@ -2472,7 +2509,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'purchase-orders') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search purchase orders...' }" />
         </div>
@@ -2556,7 +2593,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'payroll') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search payroll...' }" />
         </div>
@@ -2707,7 +2744,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'contracts') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search contracts...' }" />
         </div>
@@ -2769,32 +2806,34 @@ const FIN_MIN_CHILD_PX = 80;
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <modus-typography size="xs" weight="semibold">Contract</modus-typography>
-            <modus-typography size="xs" weight="semibold">Type</modus-typography>
-            <modus-typography size="xs" weight="semibold" className="text-right">Original</modus-typography>
-            <modus-typography size="xs" weight="semibold" className="text-right">Revised</modus-typography>
-            <modus-typography size="xs" weight="semibold" className="text-right">Delta</modus-typography>
-            <modus-typography size="xs" weight="semibold">Status</modus-typography>
-            <modus-typography size="xs" weight="semibold">Project</modus-typography>
-          </div>
-          <div class="overflow-y-auto flex-1">
-          @for (c of contracts(); track c.id) {
-            <div class="grid grid-cols-[1fr_100px_120px_120px_120px_90px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToContract(c.id)">
-              <div>
-                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ c.title }}</modus-typography>
-                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ c.vendor }}</modus-typography>
-              </div>
-              <div><modus-badge [color]="c.contractType === 'prime' ? 'primary' : 'tertiary'" size="sm">{{ contractTypeLabelShort(c.contractType) }}</modus-badge></div>
-              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 text-right">{{ formatCurrency(c.originalValue) }}</modus-typography>
-              <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right">{{ formatCurrency(c.revisedValue) }}</modus-typography>
-              <modus-typography hierarchy="p" size="sm" [className]="'text-right ' + (c.revisedValue > c.originalValue ? 'text-warning' : 'text-foreground-40')">
-                {{ c.revisedValue > c.originalValue ? '+' : '' }}{{ formatCurrency(c.revisedValue - c.originalValue) }}
-              </modus-typography>
-              <div><modus-badge [color]="contractStatusBadge(c.status)" size="sm">{{ capitalizeFirst(c.status) }}</modus-badge></div>
-              <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 truncate">{{ c.project }}</modus-typography>
+          <div class="overflow-x-auto flex-1 flex flex-col min-h-0">
+            <div class="grid grid-cols-[minmax(0,1.8fr)_minmax(100px,0.8fr)_105px_105px_105px_minmax(110px,1fr)_minmax(0,1fr)] gap-3 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default min-w-[880px]">
+              <modus-typography size="xs" weight="semibold">Contract</modus-typography>
+              <modus-typography size="xs" weight="semibold">Type</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Original</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Revised</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Delta</modus-typography>
+              <modus-typography size="xs" weight="semibold">Status</modus-typography>
+              <modus-typography size="xs" weight="semibold">Project</modus-typography>
             </div>
-          }
+            <div class="overflow-y-auto flex-1">
+            @for (c of contracts(); track c.id) {
+              <div class="grid grid-cols-[minmax(0,1.8fr)_minmax(100px,0.8fr)_105px_105px_105px_minmax(110px,1fr)_minmax(0,1fr)] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[880px]" (click)="navigateToContract(c.id)">
+                <div class="min-w-0">
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ c.title }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-40 truncate">{{ c.vendor }}</modus-typography>
+                </div>
+                <div class="min-w-0"><modus-badge [color]="c.contractType === 'prime' ? 'primary' : 'tertiary'" size="sm">{{ contractTypeLabelShort(c.contractType) }}</modus-badge></div>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-right truncate">{{ formatCurrency(c.originalValue) }}</modus-typography>
+                <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground text-right truncate">{{ formatCurrency(c.revisedValue) }}</modus-typography>
+                <modus-typography hierarchy="p" size="sm" [className]="'text-right truncate ' + (c.revisedValue > c.originalValue ? 'text-warning' : 'text-foreground-40')">
+                  {{ c.revisedValue > c.originalValue ? '+' : '' }}{{ formatCurrency(c.revisedValue - c.originalValue) }}
+                </modus-typography>
+                <div class="min-w-0"><modus-badge [color]="contractStatusBadge(c.status)" size="sm">{{ capitalizeFirst(c.status) }}</modus-badge></div>
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-40 truncate">{{ c.project }}</modus-typography>
+              </div>
+            }
+            </div>
           </div>
         </div>
         }
@@ -2802,7 +2841,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'subcontract-ledger') {
-      <div class="px-4 pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search ledger entries...' }" />
         </div>
@@ -2857,32 +2896,34 @@ const FIN_MIN_CHILD_PX = 80;
           </div>
         } @else {
         <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
-          <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default">
-            <modus-typography size="xs" weight="semibold">Description</modus-typography>
-            <modus-typography size="xs" weight="semibold">Vendor</modus-typography>
-            <modus-typography size="xs" weight="semibold">Type</modus-typography>
-            <modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography>
-            <modus-typography size="xs" weight="semibold">Pay App</modus-typography>
-            <modus-typography size="xs" weight="semibold">Date</modus-typography>
-            <modus-typography size="xs" weight="semibold" className="text-right">Balance</modus-typography>
-          </div>
-          <div class="overflow-y-auto flex-1">
-          @for (entry of subcontractLedger(); track entry.id) {
-            <div class="grid grid-cols-[1fr_120px_100px_120px_100px_100px_100px] gap-2 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer" (click)="navigateToSubcontractLedgerEntry(entry.id)">
-              <div>
-                <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ entry.description }}</modus-typography>
-                <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ entry.project }}</modus-typography>
-              </div>
-              <modus-typography  hierarchy="p" size="sm" className="text-foreground-60 truncate">{{ entry.vendor }}</modus-typography>
-              <div><modus-badge [color]="ledgerTypeBadge(entry.type)" size="sm">{{ ledgerTypeLabel(entry.type) }}</modus-badge></div>
-              <modus-typography hierarchy="p" size="sm" weight="semibold" [className]="'text-right ' + (entry.amount < 0 ? 'text-destructive' : 'text-success')">
-                {{ entry.amount < 0 ? '-' : '' }}{{ formatCurrency(entry.amount < 0 ? -entry.amount : entry.amount) }}
-              </modus-typography>
-              <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ entry.payApp }}</modus-typography>
-              <modus-typography  hierarchy="p" size="xs" className="text-foreground-60">{{ entry.date }}</modus-typography>
-              <modus-typography  hierarchy="p" size="sm" className="text-foreground text-right">{{ formatCurrency(entry.runningBalance) }}</modus-typography>
+          <div class="overflow-x-auto flex-1 flex flex-col min-h-0">
+            <div class="grid grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(140px,1fr)_110px_90px_100px_110px] gap-3 px-4 py-3 bg-muted text-foreground-60 uppercase tracking-wide flex-shrink-0 border-bottom-default min-w-[900px]">
+              <modus-typography size="xs" weight="semibold">Description</modus-typography>
+              <modus-typography size="xs" weight="semibold">Vendor</modus-typography>
+              <modus-typography size="xs" weight="semibold">Type</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography>
+              <modus-typography size="xs" weight="semibold">Pay App</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Date</modus-typography>
+              <modus-typography size="xs" weight="semibold" className="text-right">Balance</modus-typography>
             </div>
-          }
+            <div class="overflow-y-auto flex-1">
+            @for (entry of subcontractLedger(); track entry.id) {
+              <div class="grid grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(140px,1fr)_110px_90px_100px_110px] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[900px]" (click)="navigateToSubcontractLedgerEntry(entry.id)">
+                <div class="min-w-0">
+                  <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ entry.description }}</modus-typography>
+                  <modus-typography hierarchy="p" size="xs" className="text-foreground-40 truncate">{{ entry.project }}</modus-typography>
+                </div>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground-60 truncate">{{ entry.vendor }}</modus-typography>
+                <div class="min-w-0"><modus-badge [color]="ledgerTypeBadge(entry.type)" size="sm">{{ ledgerTypeLabel(entry.type) }}</modus-badge></div>
+                <modus-typography hierarchy="p" size="sm" weight="semibold" [className]="'text-right truncate ' + (entry.amount < 0 ? 'text-destructive' : 'text-success')">
+                  {{ entry.amount < 0 ? '-' : '' }}{{ formatCurrency(entry.amount < 0 ? -entry.amount : entry.amount) }}
+                </modus-typography>
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">{{ entry.payApp }}</modus-typography>
+                <modus-typography hierarchy="p" size="xs" className="text-foreground-60 text-right truncate">{{ entry.date }}</modus-typography>
+                <modus-typography hierarchy="p" size="sm" className="text-foreground text-right truncate">{{ formatCurrency(entry.runningBalance) }}</modus-typography>
+              </div>
+            }
+            </div>
           </div>
         </div>
         }
@@ -3621,6 +3662,27 @@ export class FinancialsPageComponent extends DashboardPageBase {
       .filter(e => e.status !== 'Approved')
       .sort((a, b) => a.daysLeft - b.daysLeft)
   );
+
+  readonly estimateStatusFilter = signal<'all' | 'overdue' | 'awaiting' | 'approved'>('all');
+
+  readonly filteredEstimates = computed(() => {
+    const filter = this.estimateStatusFilter();
+    const base = this.isPamela() ? this.pamelaOpenEstimates() : this.estimates();
+    if (filter === 'overdue') return base.filter(e => e.daysLeft < 0);
+    if (filter === 'awaiting') return base.filter(e => e.status === 'Awaiting Approval');
+    if (filter === 'approved') return this.estimates().filter(e => e.status === 'Approved');
+    return base;
+  });
+
+  readonly estimateFilterLabel = computed(() => {
+    switch (this.estimateStatusFilter()) {
+      case 'overdue': return 'Overdue';
+      case 'awaiting': return 'Awaiting Approval';
+      case 'approved': return 'Approved';
+      default: return '';
+    }
+  });
+
   readonly estimateBadgeColor = estimateBadgeColor;
   readonly dueDateClass = dueDateClass;
 
@@ -3693,11 +3755,34 @@ export class FinancialsPageComponent extends DashboardPageBase {
     this.selectSubPage(value);
   }
 
+  openEstimatesWithFilter(filter: 'all' | 'overdue' | 'awaiting' | 'approved'): void {
+    this.estimateStatusFilter.set(filter);
+    this.selectSubPage('estimates');
+    const url = new URL(window.location.href);
+    if (filter === 'all') {
+      url.searchParams.delete('estimateFilter');
+    } else {
+      url.searchParams.set('estimateFilter', filter);
+    }
+    window.history.replaceState({}, '', url.toString());
+  }
+
+  clearEstimateFilter(): void {
+    this.estimateStatusFilter.set('all');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('estimateFilter');
+    window.history.replaceState({}, '', url.toString());
+  }
+
   private readonly _restoreSubPage = effect(() => {
     const params = this.route.snapshot.queryParamMap;
     const sp = params.get('subpage');
     if (sp && this.finSubNavItems().some(i => i.value === sp)) {
       this.activeSubPage.set(sp);
+    }
+    const ef = params.get('estimateFilter');
+    if (ef === 'overdue' || ef === 'awaiting' || ef === 'approved') {
+      this.estimateStatusFilter.set(ef);
     }
   });
 
@@ -3748,7 +3833,8 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly jobCostsInsight = computed<string | null>(() => this.getFinWidgetInsight('finJobCosts'));
   readonly changeOrdersInsight = computed<string | null>(() => this.getFinWidgetInsight('finChangeOrders'));
   readonly finKpiInsight = computed<string | null>(() => {
-    const agent = getAgent('financialsDefault', 'financials');
+    const agentId = this.isPamela() ? 'openEstimates' : 'financialsDefault';
+    const agent = getAgent(agentId, 'financials');
     return agent.insight?.(this.buildFinAgentState()) ?? null;
   });
   readonly jobCostKpiInsight = computed<string | null>(() => {

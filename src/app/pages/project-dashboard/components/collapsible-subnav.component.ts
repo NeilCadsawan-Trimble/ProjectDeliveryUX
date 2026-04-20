@@ -23,11 +23,9 @@ import type { AgentAlert } from '../../../data/widget-agents';
           (keydown.enter)="toggleCollapsed()">
           <div class="flex items-center gap-2 min-w-0">
             <i class="modus-icons text-base text-primary flex-shrink-0" aria-hidden="true">{{ icon() }}</i>
-            @if (!collapsed()) {
-              <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate text-primary">
-                {{ title() }}
-              </modus-typography>
-            }
+            <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate text-primary">
+              {{ title() }}
+            </modus-typography>
           </div>
           <div class="flex items-center justify-center w-6 h-6 rounded flex-shrink-0">
             <i class="modus-icons text-sm text-foreground-60 transition-transform duration-200" aria-hidden="true"
@@ -96,7 +94,7 @@ export class CollapsibleSubnavComponent {
     return this.collapsed() ? 0 : 227;
   });
 
-  readonly innerWidth = computed(() => this.collapsed() ? 90 : 227);
+  readonly innerWidth = computed(() => 227);
 
   readonly innerZIndex = computed(() => this.collapsed() ? 10 : 1);
 
