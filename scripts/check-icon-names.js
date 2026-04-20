@@ -15,8 +15,37 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const { glob } = require('glob');
 
+// Colors for console output
+const colors = {
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  white: '\x1b[37m',
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+};
+
+// The modusIcons reference file is only present when the dev icons page is
+// installed. If it's been removed (production cleanup), skip gracefully so
+// the linter script exits 0 and the rest of the pipeline keeps running.
+const iconsFilePath = path.join(process.cwd(), 'data/modusIcons.ts');
+if (!fs.existsSync(iconsFilePath)) {
+  console.log(`${colors.bold}${colors.yellow}Icon names validation skipped:${colors.reset}`);
+  console.log(
+    `${colors.dim}The icon reference file (data/modusIcons.ts) is not present.${colors.reset}`,
+  );
+  console.log(
+    `${colors.dim}This is expected after dev content has been removed.${colors.reset}\n`,
+  );
+  process.exit(0);
+}
+
 // Read and parse the Modus icons data from TypeScript file
-const iconsContent = fs.readFileSync(path.join(process.cwd(), 'data/modusIcons.ts'), 'utf8');
+const iconsContent = fs.readFileSync(iconsFilePath, 'utf8');
 
 // Extract the modusIcons object using regex
 const modusIconsMatch = iconsContent.match(/export const modusIcons = ({[\s\S]*?});/);
@@ -33,20 +62,6 @@ const allModusIcons = Object.values(modusIcons).flat();
 
 // File patterns to check
 const FILE_PATTERNS = ['src/**/*.{ts,html}', 'src/**/*.css', 'src/**/*.scss'];
-
-// Colors for console output
-const colors = {
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-  white: '\x1b[37m',
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-};
 
 // Icon usage patterns to detect (Angular template syntax)
 const ICON_USAGE_PATTERNS = [

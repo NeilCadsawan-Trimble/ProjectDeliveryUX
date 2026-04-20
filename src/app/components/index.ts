@@ -50,4 +50,3 @@ export * from './modus-toolbar.component';
 export * from './modus-tooltip.component';
 export * from './modus-typography.component';
 export * from './modus-utility-panel.component';
-export * from './theme-demo.component';
