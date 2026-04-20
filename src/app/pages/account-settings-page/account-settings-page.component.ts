@@ -16,7 +16,7 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
     <div class="flex flex-col min-h-full bg-background">
       <div class="w-full max-w-[960px] mx-auto px-6 py-8 flex flex-col gap-8 flex-1">
 
-        <modus-typography hierarchy="h1" size="xl" weight="bold">Account Settings</modus-typography>
+        <modus-typography hierarchy="h1">Account Settings</modus-typography>
 
         <modus-card [padding]="'compact'" className="border-dashed">
           <div class="p-8 flex flex-col gap-8">

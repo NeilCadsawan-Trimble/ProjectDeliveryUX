@@ -124,7 +124,7 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeOpenEstimates: 389,
   },
   canvasDefaultTops: {
-    homeHeader: 16,
+    homeHeader: 0,
     homeKpis: 112,
     homeUrgentNeeds: 112,
     homeWeather: 416,

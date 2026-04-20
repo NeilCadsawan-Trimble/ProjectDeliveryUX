@@ -64,7 +64,7 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeRecentActivity: 632,
   },
   canvasDefaultTops: {
-    homeHeader: 16,
+    homeHeader: 0,
     homeEstimatorKpis: 112,
     homeOpenEstimates: 112,
     homeCalendar: 560,

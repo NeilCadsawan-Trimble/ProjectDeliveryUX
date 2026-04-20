@@ -14,7 +14,7 @@ import { ModusButtonComponent } from '../../components/modus-button.component';
         @if (authService.error()) {
           <div class="flex flex-col items-center gap-4 max-w-sm px-6">
             <i class="modus-icons text-4xl text-error" aria-hidden="true">warning</i>
-            <modus-typography hierarchy="h1" size="lg" weight="semibold" className="text-center">
+            <modus-typography hierarchy="h1" className="text-center">
               Authentication Failed
             </modus-typography>
             <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-center">

@@ -2895,7 +2895,7 @@
       @default {
         @if (!isCanvas()) {
         <div class="flex items-center justify-between mb-6">
-          <modus-typography hierarchy="h1" size="2xl" weight="bold">{{ projectName() }}</modus-typography>
+          <modus-typography hierarchy="h1">{{ projectName() }}</modus-typography>
         </div>
         <div #pageHeader class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           @for (stat of summaryStats(); track stat.label) {
@@ -2929,7 +2929,7 @@
               [style.z-index]="wZIndices()['projHeader']"
             >
               <div class="flex items-center justify-between mb-4">
-                <modus-typography hierarchy="h1" size="2xl" weight="bold">{{ projectName() }}</modus-typography>
+                <modus-typography hierarchy="h1">{{ projectName() }}</modus-typography>
               </div>
               <div class="grid grid-cols-4 gap-3">
                 @for (stat of summaryStats(); track stat.label) {

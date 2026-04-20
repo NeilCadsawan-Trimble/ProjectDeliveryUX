@@ -1122,6 +1122,46 @@ modus-wc-typography {
   display: block;
 }
 
+/*
+ * Connect theme typography override fix.
+ *
+ * Modus ships these rules in modus-wc-typography.css:
+ *   [data-theme=connect-light] modus-wc-typography h1.modus-wc-typography { font-size: 4xl; ... }
+ *   [data-theme=connect-dark]  modus-wc-typography h1.modus-wc-typography { font-size: 4xl; ... }
+ *   (same pattern for h2-h6)
+ *
+ * Unlike the default heading rules, these forget `:not(.modus-wc-typography-override)`,
+ * so they override per-instance `size` / `weight` inputs on <modus-typography>.
+ * Specifically, `<modus-typography hierarchy="h1" size="xl">` renders at 30px instead of 18px.
+ *
+ * We re-assert the `.modus-wc-text-*` and `.modus-wc-typography-weight-*` utility classes
+ * at a higher specificity (0,3,1) than the Modus Connect h1-h6 rules (0,2,2) so the
+ * documented size/weight props win, matching non-Connect theme behavior.
+ */
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-text-xs,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-text-xs { font-size: var(--modus-wc-font-size-xs); }
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-text-sm,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-text-sm { font-size: var(--modus-wc-font-size-sm); }
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-text-md,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-text-md { font-size: var(--modus-wc-font-size-md); }
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-text-lg,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-text-lg { font-size: var(--modus-wc-font-size-lg); }
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-text-xl,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-text-xl { font-size: var(--modus-wc-font-size-xl); }
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-text-2xl,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-text-2xl { font-size: var(--modus-wc-font-size-2xl); }
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-text-3xl,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-text-3xl { font-size: var(--modus-wc-font-size-3xl); }
+
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-light,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-light { font-weight: var(--modus-wc-font-weight-light); }
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-normal,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-normal { font-weight: var(--modus-wc-font-weight-normal); }
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-semibold,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-semibold { font-weight: var(--modus-wc-font-weight-semibold); }
+[data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-bold,
+[data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-bold { font-weight: var(--modus-wc-font-weight-bold); }
+
 /* We also target the internal div using ::part() or deep selectors as fallback */
 modus-wc-divider {
   display: block;

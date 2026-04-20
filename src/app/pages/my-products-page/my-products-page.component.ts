@@ -108,7 +108,7 @@ const PRODUCTS: ProductEntry[] = [
       <div class="w-full max-w-[960px] mx-auto px-6 py-8 flex flex-col gap-6 flex-1">
 
         <div class="text-center flex flex-col gap-2">
-          <modus-typography hierarchy="h1" size="xl" weight="bold">My Products</modus-typography>
+          <modus-typography hierarchy="h1">My Products</modus-typography>
           <modus-typography hierarchy="p" size="sm" className="text-foreground-60">
             Once an admin assigns you a license, you'll see it here. If you were assigned
             a license but don't see it here, please try refreshing the page.

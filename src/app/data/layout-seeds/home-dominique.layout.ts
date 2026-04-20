@@ -123,7 +123,7 @@ export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
     homeOpenEstimates: 632,
   },
   canvasDefaultTops: {
-    homeHeader: 16,
+    homeHeader: 0,
     homeKpis: 112,
     homeUrgentNeeds: 112,
     homeWeather: 752,

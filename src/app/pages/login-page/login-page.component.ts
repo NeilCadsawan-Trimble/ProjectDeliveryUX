@@ -25,7 +25,7 @@ import { ModusLogoComponent } from '../../components/modus-logo.component';
           <div class="flex flex-col items-center gap-8 p-6">
             <div class="flex flex-col items-center gap-4">
               <modus-logo name="trimble" [emblem]="true" customClass="w-16 h-16" />
-              <modus-typography hierarchy="h1" size="xl" weight="semibold" className="text-center">
+              <modus-typography hierarchy="h1" className="text-center">
                 Construction One
               </modus-typography>
               <modus-typography hierarchy="p" size="sm" className="text-foreground-60 text-center">

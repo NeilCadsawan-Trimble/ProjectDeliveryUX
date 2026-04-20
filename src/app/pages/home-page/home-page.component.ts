@@ -149,7 +149,7 @@ const HOME_MIN_CONTENT_PX = 80;
       <div #pageHeader class="pointer-events-auto">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <modus-typography hierarchy="h1" size="xl" weight="bold">Welcome back, {{ personaFirstName() }}</modus-typography>
+          <modus-typography hierarchy="h1">Welcome back, {{ personaFirstName() }}</modus-typography>
           <modus-typography hierarchy="p" size="sm" className="text-foreground-60 mt-1">{{ today }}</modus-typography>
         </div>
         <app-create-menu-dropdown #createDropdownDesktop
@@ -432,7 +432,7 @@ const HOME_MIN_CONTENT_PX = 80;
                 @if (isCanvasMode()) {
                 <div class="flex items-start justify-between h-full">
                   <div>
-                    <modus-typography hierarchy="h1" size="xl" weight="bold">Welcome back, {{ personaFirstName() }}</modus-typography>
+                    <modus-typography hierarchy="h1">Welcome back, {{ personaFirstName() }}</modus-typography>
                     <modus-typography hierarchy="p" size="sm" className="text-foreground-60 mt-1">{{ today }}</modus-typography>
                   </div>
                   <app-create-menu-dropdown class="mt-1" #createDropdownCanvas
