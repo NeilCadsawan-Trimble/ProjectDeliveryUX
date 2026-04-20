@@ -1706,6 +1706,140 @@ The storage key closures also captured a stale `isKelly` const, so the version s
 
 ---
 
+## 38. Shipped Seeds MUST Round-Trip Through Their Own Cleanup Pass
+
+**Problem**: A shipped canvas seed can declare two widgets whose rectangles overlap (same horizontal band, overlapping vertical range). On every page load the engine runs `applyCanvasHeaderClearance` and `cleanupCanvasOverlaps`, which silently shove the overlapping widget elsewhere. The default the user sees is different from the seed file. Worse, the shoved layout gets persisted to `currentCanvasKey`, so a reload diverges further from the seed.
+
+**Real bugs this caught**:
+- `financials-frank`: `finRevenueChart` (top=96, beside the locked `finNavKpi`) was shoved to top=608 the first time the default loaded, because the old header-clearance logic used `max(locked bottom)` as a full-width ceiling instead of per-widget horizontal overlap.
+- `home-pamela`: `homeOpenEstimates` (top=112..704) and `homeRfis` (top=560..1008) shared a 144 × 632px rectangle in the right column. Cleanup pushed `homeRfis` down 160px, cascading `homeBudgetVariance`.
+
+**Framing trap to avoid**: Thinking about seeds in terms of "rows" and "columns" is misleading -- widgets can be any height and any width. The only thing that matters is whether two widget rectangles share pixels. Validate `left..left+width` × `top..top+height` pairs for disjointness, not a mental grid.
+
+**Regression test**: `src/app/shell/services/layout-seed-clearance.spec.ts` (41 tests across all 20 persona × page combos). For each shipped seed:
+1. `applyCanvasHeaderClearance` is a no-op on the shipped canvas defaults.
+2. `cleanupCanvasOverlaps` never pushes a widget below a locked widget it does not horizontally overlap (guards against the Frank-financials union-ceiling bug).
+
+**Rules**:
+1. After editing any canvas seed, run `npx ng test --no-watch -- -t "seed clearance"` or the full `ng test`. If the seed fails the no-op assertion, the bug is in the seed, not the engine -- fix the overlap.
+2. When adding a new persona seed, this suite picks it up automatically via the `SEEDS` array at the top of the spec.
+3. Header clearance must be per-widget (horizontal-overlap-gated), never union-of-locked ceilings.
+
+**Files**: `src/app/shell/services/layout-seed-clearance.spec.ts`, `dashboard-layout-engine.ts` (`applyCanvasHeaderClearance`, `cleanupCanvasOverlaps`)
+
+---
+
+## 39. Desktop Layouts Must Persist to localStorage (Not sessionStorage)
+
+**Problem**: `WidgetLayoutService` originally wrote to `sessionStorage`, which dies on tab close. Users' carefully-crafted desktop drags vanished between browser sessions while canvas drags (already on `localStorage`) survived. Inconsistent + frustrating.
+
+**Fix**: `save()` writes to `localStorage`. `load()` tries `localStorage` first, falls back to `sessionStorage` once and migrates forward by writing it back to `localStorage`. `remove()` clears both storages.
+
+```typescript
+load(dashboardId: string, mobile: boolean): WidgetLayout | null {
+  const key = this.keyFor(dashboardId, mobile);
+  try {
+    const ls = localStorage.getItem(key);
+    if (ls) return JSON.parse(ls) as WidgetLayout;
+  } catch { /* disabled / private mode */ }
+  try {
+    const ss = sessionStorage.getItem(key);
+    if (ss) {
+      const parsed = JSON.parse(ss) as WidgetLayout;
+      try { localStorage.setItem(key, ss); } catch { /* quota */ }
+      return parsed;
+    }
+  } catch { /* disabled */ }
+  return null;
+}
+```
+
+**Why not just `localStorage`?** Existing users mid-session would lose work on the upgrade. The fallback read preserves their in-progress state exactly once.
+
+**Regression**: `widget-layout.service.spec.ts` pins `save -> localStorage`, `load -> localStorage preferred`, and the sessionStorage fallback-then-migrate.
+
+---
+
+## 40. Storage-Key Registry: Single Source of Truth
+
+**Problem**: Each page component computed its own storage key inline:
+
+```typescript
+layoutStorageKey: () => {
+  const s = persona.activePersonaSlug();
+  const ver = s === 'kelly' ? 'v30' : s === 'pamela' ? 'v33' : 'v19';
+  return `${s}:dashboard-financials:${ver}`;
+},
+```
+
+And `LayoutDefaultsService` maintained a parallel list of versions in its `STATIC_BASES` constant. The two drifted: financials moved to `v19/v21`, `v30/v32`, `v33/v35`, while `LayoutDefaultsService` was still quoting `v17/v29/v31`. `Save all visited defaults` / `Clear all defaults` **silently skipped every financials dashboard** for weeks.
+
+**Fix**: `src/app/shell/services/layout-keys.ts` is the single source of truth.
+
+```typescript
+export function getHomeLayoutKeys(slug: string): DashboardKeyPair { ... }
+export function getFinancialsLayoutKeys(slug: string): DashboardKeyPair { ... }
+export function getProjectsLayoutKeys(slug: string): DashboardKeyPair { ... }
+export function getProjectDetailLayoutKeys(slug: string, projectId: string | number): DashboardKeyPair { ... }
+export function getAllDashboardKeys(): DashboardKeyPair[] { ... }
+```
+
+Page components consume `getHomeLayoutKeys(slug).desktop|canvas` directly. `LayoutDefaultsService` iterates `getAllDashboardKeys()` over every persona, so adding a new persona or bumping a version automatically flows everywhere.
+
+**Coverage test** (`layout-defaults.service.spec.ts`): for every persona and every page, the registry-reported key must match the string each page component builds. A version bump in the registry that drifts from a page component's inline computation fails the test.
+
+**Rules**:
+1. NEVER build a layout storage key inline in a component. Always call the registry helpers.
+2. When bumping a version, bump it in `layout-keys.ts` only. Page components and `LayoutDefaultsService` will follow.
+3. Adding a new persona = extend the switch in each `get*LayoutKeys` helper. Nothing else needs editing in pages or defaults.
+
+---
+
+## 41. Canvas Cleanup Must Be DOM-Less on Mode Re-Entry
+
+**Problem**: `cleanupCanvasOverlaps` originally measured `headerBottom` from `gridEl.getBoundingClientRect()` - `headerEl.getBoundingClientRect()`. When the cleanup scheduler fires on mode re-entry (canvas -> desktop -> canvas), the rAF can land **before** CSS reflow has turned the grid back into its canvas dimensions. The measured rects are still desktop-sized, `headerBottom` lands around `400px` instead of `80px`, every non-locked widget gets shoved below that bogus ceiling, and the result is persisted -- clobbering the user's saved canvas layout every time they resized out and back in.
+
+**Fix**: Derive `headerBottom` from the engine's own signals (`widgetTops()`, `widgetHeights()`, `widgetLocked()`):
+
+```typescript
+let headerBottom = 0;
+for (const id of this.config.widgets) {
+  if (!lockedState[id]) continue;
+  headerBottom = Math.max(headerBottom, (tops[id] ?? 0) + (heights[id] ?? 0));
+}
+```
+
+Also: `loadSavedDefaults` now folds `applyCanvasHeaderClearance` output into the persisted blob *before* scheduling the rAF cleanup, so the saved state matches what's on screen immediately.
+
+**Touching-vs-overlapping**: Cleanup must treat widgets whose edges touch (0px gap) as non-overlapping. The old check was `aBottom + gap > bTop` which counts touching as overlap. Correct check is `aBottom > bTop && aTop < bBottom` (strict inequality on both axes).
+
+**Regression** (`dashboard-layout-engine.spec.ts > canvas save/load round-trip`):
+1. `cleanupCanvasOverlaps ignores desktop-sized DOM rects on mode re-entry` -- stubs `gridElAccessor`/`headerElAccessor` with fake desktop-sized rects and asserts widget positions are unchanged.
+2. `canvas -> desktop -> canvas leaves currentCanvasKey byte-identical` -- full mode-excursion round-trip.
+3. `cleanupCanvasOverlaps treats touching widgets as non-overlapping` -- flush widgets stay flush.
+4. `loadSavedDefaults preserves touching canvas widget positions (no cleanup drift)`.
+
+**E2E** (`e2e/layout-persistence.spec.ts`):
+- Canvas F5 preserves drags
+- Canvas -> mobile -> canvas preserves drags (byte-identical localStorage blob)
+- Financials: drag survives intermediate resize events across the 1920 breakpoint
+
+---
+
+## 42. `resetToDefaults` = Apply Defaults + Compact
+
+**Context**: Phase 23 added `this.compactAll()` before `persistLayout()` in the desktop branch of `resetToDefaults` and `loadSavedDefaults` to fix a real bug where Reset Layout left overlaps.
+
+**Test trap**: The original single test for `resetToDefaults` asserted "all signals equal config defaults" with a config that had w3 at top=400 in cols 9-16 and nothing above it. After compaction w3 correctly falls to top=0, so the assertion failed for the right reason (the test was wrong, not the code).
+
+**Rule**: Whenever a method does more than one thing, write **one test per contract clause**. For `resetToDefaults`:
+1. One test uses a config that's **already compact** (all non-header widgets at top=0 with disjoint columns). `compactAll` is a no-op so the post-reset state equals the config defaults byte-for-byte. This pins "defaults are copied onto every signal."
+2. A separate test uses a config with a **floating widget** (top>0 with nothing above in that column range) and asserts the widget ends up compacted. This pins "compactAll eliminates vertical gaps."
+
+**Why this matters**: If we just updated the original assertion to match post-compaction reality, we'd lose coverage of the default-application half. Splitting preserves both guarantees independently.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1753,3 +1887,9 @@ The storage key closures also captured a stale `isKelly` const, so the version s
 | Stale LayoutDefaultsService version keys | `layout-defaults.service.ts` | (Save All Defaults, verify keys match actual storage keys) |
 | Missing header lock after project change | `project-dashboard.component.ts` (`_projectChangeEffect`) | (visual: switch project, verify header stays locked) |
 | Layout seed independence (20 files, no shared defaults) | `src/app/data/layout-seeds/{page}-{persona}.layout.ts` | `tests/static/layout-seeds.spec.ts` (288 tests: file existence, widget lists, cross-contamination, geometry, routing, export map) |
+| Seed round-trips through its own cleanup pass | `src/app/data/layout-seeds/*.layout.ts`, `dashboard-layout-engine.ts` (`applyCanvasHeaderClearance`, `cleanupCanvasOverlaps`) | `src/app/shell/services/layout-seed-clearance.spec.ts` (41 tests, every persona x page) |
+| Desktop layouts persist to localStorage | `widget-layout.service.ts` | `widget-layout.service.spec.ts` (save -> localStorage, load preferred + sessionStorage fallback migration) |
+| Storage-key registry (single source of truth) | `src/app/shell/services/layout-keys.ts`, consumed by all page components and `LayoutDefaultsService` | `layout-defaults.service.spec.ts` (registry coverage per persona x page) |
+| Canvas cleanup DOM-less on mode re-entry | `dashboard-layout-engine.ts` (`cleanupCanvasOverlaps` derives headerBottom from state) | `dashboard-layout-engine.spec.ts > canvas save/load round-trip`, `e2e/layout-persistence.spec.ts` |
+| Touching != overlapping in canvas cleanup | `dashboard-layout-engine.ts` (`cleanupCanvasOverlaps`) | `dashboard-layout-engine.spec.ts > cleanupCanvasOverlaps treats touching widgets as non-overlapping` |
+| `resetToDefaults` split-test pattern | `dashboard-layout-engine.ts` | `dashboard-layout-engine.spec.ts > resetToDefaults` (one for default-application, one for compactAll) |
