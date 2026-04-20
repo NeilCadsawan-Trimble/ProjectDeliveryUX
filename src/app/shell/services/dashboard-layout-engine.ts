@@ -234,9 +234,23 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   /**
    * Loads lock state from localStorage (so locks survive tab close). For
    * backward compat, one-time migrates a pre-existing sessionStorage copy.
+   *
+   * NOTE: the key is derived from `config.layoutStorageKey`, which can be a
+   * callback that reads component fields (e.g. `ProjectDashboardComponent`'s
+   * `projectId` `input()`). Those fields aren't initialised until after the
+   * base-class constructor — and this engine — has already run, so the
+   * callback can throw on the initial call from the engine constructor.
+   * We swallow that throw and return an empty lock state; `engine.init()`
+   * re-invokes `reloadLockedState()` after the component has booted, at
+   * which point the key is resolvable.
    */
   private loadLockedState(): Record<string, boolean> {
-    const key = this.lockedKey;
+    let key: string;
+    try {
+      key = this.lockedKey;
+    } catch {
+      return {};
+    }
     if (typeof localStorage !== 'undefined') {
       try {
         const raw = localStorage.getItem(key);
@@ -390,6 +404,13 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     this.isMobile.set(startMobile);
     this.isCanvasMode.set(startCanvas);
     this.applyModeLayout();
+    // Re-read locks now that the host component is fully initialised.
+    // During the engine's constructor `layoutStorageKey()` may have thrown
+    // because the host's `input()` fields (e.g. ProjectDashboardComponent's
+    // `projectId`) hadn't been assigned yet, so the engine fell back to an
+    // empty lock state. Subclasses re-apply any pinned-header lock in
+    // `ngAfterViewInit` right after calling `init()`.
+    this.reloadLockedState();
 
     if (typeof window === 'undefined') return;
 

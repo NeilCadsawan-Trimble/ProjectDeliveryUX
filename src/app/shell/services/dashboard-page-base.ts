@@ -156,6 +156,11 @@ export abstract class DashboardPageBase {
       this.engine.clearCurrentCache();
     }
     this.engine.init();
+    // `engine.init()` re-reads persisted locks now that component inputs
+    // (e.g. `projectId`) are assigned, which can overwrite the pinned-header
+    // lock applied in the class-field initialiser. Re-apply it here so the
+    // pinned header stays locked regardless of storage contents.
+    this.applyInitialHeaderLock();
   }
 
   protected abstract resolveGridElement(): HTMLElement | undefined;
