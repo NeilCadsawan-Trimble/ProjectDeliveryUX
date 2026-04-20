@@ -2443,3 +2443,16 @@ modus-wc-badge[data-variant="text"][data-color="high-contrast"] { color: var(--m
   cursor: not-allowed !important;
   pointer-events: none !important;
 }
+
+/* Focus-section highlight -- used when deep-linking from a KPI card to a
+   specific section on the financials AP subpage. Pulses a soft primary ring
+   so the user's eye lands on the right area after the smooth scroll. */
+@keyframes focus-section-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 99, 163, 0); }
+  15%  { box-shadow: 0 0 0 4px rgba(0, 99, 163, 0.35); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 99, 163, 0); }
+}
+.focus-section-highlight {
+  animation: focus-section-pulse 1.5s ease-out;
+  border-radius: 0.5rem;
+}

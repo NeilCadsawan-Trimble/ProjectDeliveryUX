@@ -929,7 +929,7 @@ const FIN_MIN_CHILD_PX = 80;
             </div>
             } @else {
             <div class="flex-1 min-w-0 flex flex-col gap-2 px-3 pb-3 overflow-y-auto">
-              <app-home-ap-kpi-cards [cards]="kellyVisibleKpiCards()" />
+              <app-home-ap-kpi-cards [cards]="kellyVisibleKpiCards()" (cardClick)="handleApKpiClick($event)" />
               @if (showFinBlock('finNavKpi', 'insight') && kellyApKpisInsight()) {
                 <div class="flex items-center gap-1.5 px-3 py-2 bg-muted rounded-lg flex-shrink-0">
                   <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
@@ -2133,7 +2133,7 @@ const FIN_MIN_CHILD_PX = 80;
             <modus-typography hierarchy="p" size="2xl" weight="bold" [className]="apMissingWaivers() > 0 ? 'text-destructive' : 'text-foreground'">{{ apMissingWaivers() }} missing</modus-typography>
             <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mt-1">{{ apLienWaivers().length }} total tracked</modus-typography>
           </div>
-          <div class="bg-card rounded-lg p-4 border-default">
+          <div class="bg-card rounded-lg p-4 border-default" data-focus-section="discounts">
             <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 mb-1">Discounts Available</modus-typography>
             <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-success">{{ formatCurrency(apDiscountsAvailable()) }}</modus-typography>
             <modus-typography  hierarchy="p" size="xs" className="text-foreground-40 mt-1">{{ apPaymentSchedule().length }} scheduled payments</modus-typography>
@@ -2142,7 +2142,7 @@ const FIN_MIN_CHILD_PX = 80;
 
         <!-- Payables table -->
         @if (isMobile()) {
-          <div class="flex items-center gap-2 mb-3">
+          <div class="flex items-center gap-2 mb-3" data-focus-section="payables">
             <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">credit_card</i>
             <modus-typography  hierarchy="p" size="md" weight="semibold" className="text-foreground">Payables</modus-typography>
             <modus-badge color="secondary" size="sm">{{ payables().length }}</modus-badge>
@@ -2164,7 +2164,7 @@ const FIN_MIN_CHILD_PX = 80;
             }
           </div>
         } @else {
-        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0">
+        <div class="bg-card rounded-lg border-default overflow-hidden flex flex-col flex-1 min-h-0" data-focus-section="payables">
           <div class="px-5 py-4 border-bottom-default flex-shrink-0">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">credit_card</i>
@@ -2191,7 +2191,7 @@ const FIN_MIN_CHILD_PX = 80;
         }
 
         <!-- Invoice Queue -->
-        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0">
+        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0" data-focus-section="invoice-queue">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">list_bulleted</i>
@@ -2271,7 +2271,7 @@ const FIN_MIN_CHILD_PX = 80;
         </div>
 
         <!-- Payment Schedule -->
-        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0">
+        <div class="bg-card rounded-lg border-default overflow-hidden mt-6 flex-shrink-0" data-focus-section="payment-schedule">
           <div class="px-5 py-4 border-bottom-default">
             <div class="flex items-center gap-2">
               <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
@@ -3217,10 +3217,10 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly apPaymentsDueThisWeek = computed(() => this.apPaymentSchedule().slice(0, 4).reduce((s, p) => s + p.amount, 0));
 
   readonly kellyApKpiCards = computed<ApKpiCard[]>(() => [
-    { value: '' + this.pendingApInvoices().length, label: 'Invoices to Process', icon: 'invoice', iconBg: 'bg-warning-20', iconColor: 'text-warning' },
-    { value: sharedFormatCurrency(this.apTotalOutstanding()), label: 'Total Outstanding AP', icon: 'payment_instant', iconBg: 'bg-primary-20', iconColor: 'text-primary' },
-    { value: sharedFormatCurrency(this.apPaymentsDueThisWeek()), label: 'Payments Due This Week', icon: 'calendar', iconBg: 'bg-destructive-20', iconColor: 'text-destructive' },
-    { value: sharedFormatCurrency(this.apDiscountsAvailable()), label: 'Discounts Available', icon: 'offers', iconBg: 'bg-success-20', iconColor: 'text-success' },
+    { value: '' + this.pendingApInvoices().length, label: 'Invoices to Process', icon: 'invoice', iconBg: 'bg-warning-20', iconColor: 'text-warning', action: 'ap-invoices', ariaPrefix: 'Invoices to process' },
+    { value: sharedFormatCurrency(this.apTotalOutstanding()), label: 'Total Outstanding AP', icon: 'payment_instant', iconBg: 'bg-primary-20', iconColor: 'text-primary', action: 'ap-outstanding', ariaPrefix: 'Total outstanding accounts payable' },
+    { value: sharedFormatCurrency(this.apPaymentsDueThisWeek()), label: 'Payments Due This Week', icon: 'calendar', iconBg: 'bg-destructive-20', iconColor: 'text-destructive', action: 'ap-payments-due', ariaPrefix: 'Payments due this week' },
+    { value: sharedFormatCurrency(this.apDiscountsAvailable()), label: 'Discounts Available', icon: 'offers', iconBg: 'bg-success-20', iconColor: 'text-success', action: 'ap-discounts', ariaPrefix: 'Discounts available' },
   ]);
 
   // Computed KPIs (reactive to store signal changes)
@@ -3748,7 +3748,42 @@ export class FinancialsPageComponent extends DashboardPageBase {
     } else {
       url.searchParams.set('subpage', value);
     }
+    url.searchParams.delete('focus');
     window.history.replaceState({}, '', url.toString());
+  }
+
+  handleApKpiClick(action: string): void {
+    const focus = action === 'ap-invoices' ? 'invoice-queue'
+      : action === 'ap-outstanding' ? 'payables'
+      : action === 'ap-payments-due' ? 'payment-schedule'
+      : action === 'ap-discounts' ? 'discounts'
+      : null;
+    this.activeSubPage.set('accounts-payable');
+    const url = new URL(window.location.href);
+    url.searchParams.set('subpage', 'accounts-payable');
+    if (focus) {
+      url.searchParams.set('focus', focus);
+    } else {
+      url.searchParams.delete('focus');
+    }
+    window.history.replaceState({}, '', url.toString());
+    if (focus) {
+      this.scrollToFocusSection(focus);
+    }
+  }
+
+  private scrollToFocusSection(focus: string): void {
+    // Wait two frames so @if blocks render before scrolling.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(`[data-focus-section="${focus}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.classList.add('focus-section-highlight');
+          window.setTimeout(() => el.classList.remove('focus-section-highlight'), 1600);
+        }
+      });
+    });
   }
 
   selectSubPageFromNavLinks(value: string): void {
@@ -3783,6 +3818,10 @@ export class FinancialsPageComponent extends DashboardPageBase {
     const ef = params.get('estimateFilter');
     if (ef === 'overdue' || ef === 'awaiting' || ef === 'approved') {
       this.estimateStatusFilter.set(ef);
+    }
+    const focus = params.get('focus');
+    if (focus && sp === 'accounts-payable') {
+      this.scrollToFocusSection(focus);
     }
   });
 
