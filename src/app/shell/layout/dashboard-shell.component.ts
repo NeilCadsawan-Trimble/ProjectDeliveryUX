@@ -1076,6 +1076,7 @@ export class DashboardShellComponent implements AfterViewInit {
       allWeatherData: this.store.weatherData(),
       allJobCosts: this.store.projectJobCosts(),
       currentPage: page,
+      personaSlug: this.personaService.activePersonaSlug(),
     };
     if (page === 'financials-job-cost-detail') {
       const suffix = this.routeSuffix();

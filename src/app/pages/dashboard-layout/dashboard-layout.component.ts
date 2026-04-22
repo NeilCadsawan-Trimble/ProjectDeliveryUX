@@ -21,7 +21,7 @@ import { getPersonaNav } from '../../data/persona-nav.config';
       [activePersonaSlug]="personaService.activePersonaSlug()"
       [aiResponseFn]="aiResponseFn"
       [defaultAiSuggestions]="defaultAiSuggestions"
-      [aiWelcomeText]="'Ask me about projects, estimates, budgets, or team status.'"
+      [aiWelcomeText]="aiWelcomeText()"
       [aiPlaceholder]="'Ask about your projects...'"
     />
   `,
@@ -42,6 +42,14 @@ export class DashboardLayoutComponent {
       ...item,
       route: item.route ? `/${slug}${item.route}` : undefined,
     }));
+  });
+
+  readonly aiWelcomeText = computed(() => {
+    const slug = this.personaService.activePersonaSlug();
+    if (slug === 'kelly') return 'Ask me about invoices, payments, or vendor aging.';
+    if (slug === 'bert') return 'Ask me about your projects, RFIs, or schedule.';
+    if (slug === 'pamela') return 'Ask me about estimates, change orders, or job costs.';
+    return 'Ask me about projects, estimates, budgets, or team status.';
   });
 
   readonly defaultAiSuggestions: string[] = [

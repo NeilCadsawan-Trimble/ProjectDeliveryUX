@@ -40,7 +40,7 @@ export class AiPanelController {
   readonly messages = signal<AiMessage[]>([]);
   readonly inputText = signal('');
   readonly thinking = signal(false);
-  readonly actions = signal<AgentAction[]>([]);
+  readonly actions: Signal<AgentAction[]>;
   private messageCounter = 0;
   private streamSub: Subscription | null = null;
   private conversationMemory = new Map<string, { messages: AiMessage[]; counter: number }>();
@@ -92,6 +92,8 @@ export class AiPanelController {
       (isSignal ? (defaults as Signal<string[]>)() : defaults as string[])
     );
 
+    this.actions = computed(() => this.actionsProviderFn?.() ?? []);
+
     effect(() => {
       const agentKey = this.resolveAgentKey();
       if (agentKey === this.lastAgentKey) return;
@@ -115,10 +117,6 @@ export class AiPanelController {
       } else {
         this.messages.set([]);
         this.messageCounter = 0;
-      }
-
-      if (this.actionsProviderFn) {
-        this.actions.set(this.actionsProviderFn());
       }
     }, { injector: config.injector });
   }
