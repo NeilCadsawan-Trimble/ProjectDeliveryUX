@@ -242,6 +242,15 @@ export const homeDefault: WidgetAgent = {
   name: 'Dashboard Overview',
   systemPrompt: 'You are a project delivery assistant for a construction company. You provide portfolio-level insights across all projects, schedules, budgets, RFIs, submittals, change orders, weather impacts, and revenue.',
   suggestions(s) {
+    if (s.personaSlug === 'kelly') {
+      return ['Which invoices need approval today?', 'What payments are due this week?', 'Show vendors past due', 'What is our current cash position?'];
+    }
+    if (s.personaSlug === 'bert') {
+      return ['Which projects need attention?', 'Summarize my project portfolio', 'Will weather impact work this week?', 'What RFIs are open?'];
+    }
+    if (s.personaSlug === 'pamela') {
+      return ['What is the estimate pipeline?', 'Which estimates need attention?', 'Show recent change orders', 'How are job costs tracking?'];
+    }
     const atRisk = (s.projects ?? []).filter(p => p.status === 'At Risk').length;
     const attn = (s.attentionItems ?? []).length;
     if (attn) return ['Which projects need attention?', 'Give me a portfolio overview', 'Will weather impact work this week?', 'How are budgets tracking?'];
@@ -264,11 +273,34 @@ export const homeDefault: WidgetAgent = {
     return null;
   },
   alerts: () => null,
-  actions: () => [
-    { id: 'open-projects', label: 'Open Projects', execute: () => 'Opening Projects dashboard.', route: '/projects' },
-    { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
-    { id: 'refresh-attention', label: 'Refresh attention feed', execute: () => 'Refreshed items needing attention.' },
-  ],
+  actions: (s) => {
+    if (s.personaSlug === 'kelly') {
+      return [
+        { id: 'open-ap', label: 'Open AP invoices', execute: () => 'Opening Accounts Payable.', route: '/financials/accounts-payable' },
+        { id: 'open-cash', label: 'Open cash management', execute: () => 'Opening Cash Management.', route: '/financials/cash-management' },
+        { id: 'open-ar', label: 'Open accounts receivable', execute: () => 'Opening Accounts Receivable.', route: '/financials/accounts-receivable' },
+      ];
+    }
+    if (s.personaSlug === 'bert') {
+      return [
+        { id: 'open-projects', label: 'Open Projects', execute: () => 'Opening Projects dashboard.', route: '/projects' },
+        { id: 'review-rfis', label: 'Review pending RFIs', execute: () => 'Opening pending RFIs.' },
+        { id: 'refresh-attention', label: 'Refresh attention feed', execute: () => 'Refreshed items needing attention.' },
+      ];
+    }
+    if (s.personaSlug === 'pamela') {
+      return [
+        { id: 'open-estimates', label: 'Open Estimates', execute: () => 'Opening Estimates.', route: '/financials/estimates' },
+        { id: 'open-projects', label: 'Open Projects', execute: () => 'Opening Projects dashboard.', route: '/projects' },
+        { id: 'refresh-attention', label: 'Refresh attention feed', execute: () => 'Refreshed items needing attention.' },
+      ];
+    }
+    return [
+      { id: 'open-projects', label: 'Open Projects', execute: () => 'Opening Projects dashboard.', route: '/projects' },
+      { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
+      { id: 'refresh-attention', label: 'Refresh attention feed', execute: () => 'Refreshed items needing attention.' },
+    ];
+  },
   buildContext(s) {
     const parts: string[] = [];
     const projects = s.projects ?? [];
@@ -357,13 +389,18 @@ export const urgentNeedsAgent: WidgetAgent = {
       execute: () => `Opening job costs for ${i.projectName}.`,
       route: i.financialsRoute!,
     }));
-    return [
+    const actions: AgentAction[] = [
       { id: 'escalate-critical', label: 'Escalate all critical items', execute: () => { const n = items.filter(i => i.severity === 'critical').length; return n ? `Escalated ${n} critical item(s) to leadership.` : 'No critical items.'; } },
       { id: 'export-needs', label: 'Export urgent needs report', execute: () => 'Exported urgent needs report.' },
-      { id: 'open-projects', label: 'Open Projects', execute: () => 'Opening Projects dashboard.', route: '/projects' },
-      { id: 'open-financials', label: 'Open Financials overview', execute: () => 'Opening Financials.', route: '/financials' },
-      ...finActions,
     ];
+    if (s.personaSlug !== 'kelly') {
+      actions.push({ id: 'open-projects', label: 'Open Projects', execute: () => 'Opening Projects dashboard.', route: '/projects' });
+    }
+    if (s.personaSlug !== 'bert') {
+      actions.push({ id: 'open-financials', label: 'Open Financials overview', execute: () => 'Opening Financials.', route: '/financials' });
+      actions.push(...finActions);
+    }
+    return actions;
   },
   buildContext(s) {
     const items = buildUrgentNeeds(s.rfis ?? [], s.submittals ?? [], s.changeOrders ?? []);
@@ -539,7 +576,7 @@ export const homeApKpis: WidgetAgent = {
     const actions: AgentAction[] = [];
     if (pending.length > 0) actions.push({ id: 'batch-approve', label: 'Batch approve pending invoices', execute: () => `Approved ${pending.length} pending invoice(s) totaling ${fmtCurrency(pending.reduce((sum, i) => sum + i.amount, 0))}.` });
     actions.push({ id: 'export-ap-summary', label: 'Export AP summary', execute: () => 'Exported AP metrics summary to PDF.' });
-    actions.push({ id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' });
+    actions.push({ id: 'open-ap', label: 'Open AP invoices', execute: () => 'Opening Accounts Payable.', route: '/financials/accounts-payable' });
     return actions;
   },
   buildContext(s) {
@@ -1180,10 +1217,14 @@ export const homeBudgetVarianceAgent: WidgetAgent = {
     if (over85) return { level: 'warning' as const, count: over85, label: 'over 85% budget' };
     return null;
   },
-  actions: () => [
-    { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
-    { id: 'export-budget', label: 'Export budget report', execute: () => 'Exported portfolio budget variance report.' },
-  ],
+  actions: (s) => {
+    const actions: AgentAction[] = [];
+    if (s.personaSlug !== 'bert') {
+      actions.push({ id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' });
+    }
+    actions.push({ id: 'export-budget', label: 'Export budget report', execute: () => 'Exported portfolio budget variance report.' });
+    return actions;
+  },
   buildContext(s) {
     const projects = s.projects ?? [];
     if (!projects.length) return 'No projects.';
@@ -1223,10 +1264,14 @@ export const homeChangeOrdersAgent: WidgetAgent = {
     const pending = (s.changeOrders ?? []).filter(c => c.status === 'pending').length;
     return pending >= 3 ? { level: 'warning' as const, count: pending, label: 'pending COs' } : null;
   },
-  actions: () => [
-    { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
-    { id: 'export-cos', label: 'Export CO report', execute: () => 'Exported change order report.' },
-  ],
+  actions: (s) => {
+    const actions: AgentAction[] = [];
+    if (s.personaSlug !== 'bert') {
+      actions.push({ id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' });
+    }
+    actions.push({ id: 'export-cos', label: 'Export CO report', execute: () => 'Exported change order report.' });
+    return actions;
+  },
   buildContext(s) {
     const cos = s.changeOrders ?? [];
     if (!cos.length) return 'No change orders.';
@@ -1422,10 +1467,14 @@ export const homeContractsAgent: WidgetAgent = {
     const pending = (s.contracts ?? []).filter(c => c.status === 'pending').length;
     return pending ? { level: 'warning' as const, count: pending, label: 'pending approval' } : null;
   },
-  actions: () => [
-    { id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' },
-    { id: 'export-contracts', label: 'Export contract report', execute: () => 'Exported contract status report.' },
-  ],
+  actions: (s) => {
+    const actions: AgentAction[] = [];
+    if (s.personaSlug !== 'bert') {
+      actions.push({ id: 'open-financials', label: 'Open Financials', execute: () => 'Opening Financials.', route: '/financials' });
+    }
+    actions.push({ id: 'export-contracts', label: 'Export contract report', execute: () => 'Exported contract status report.' });
+    return actions;
+  },
   buildContext(s) {
     const contracts = s.contracts ?? [];
     if (!contracts.length) return 'No contracts.';

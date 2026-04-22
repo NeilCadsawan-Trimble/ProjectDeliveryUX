@@ -2803,6 +2803,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       staffingConflicts: buildStaffingConflicts(projId, this.store.timeOffRequests()),
       currentPage: 'project-dashboard',
       currentSubPage: this.activeNavItem(),
+      personaSlug: this.personaService.activePersonaSlug(),
     };
   }
 

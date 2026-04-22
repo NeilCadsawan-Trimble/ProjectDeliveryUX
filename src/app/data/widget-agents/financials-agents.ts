@@ -335,6 +335,12 @@ export const financialsDefault: WidgetAgent = {
   name: 'Financials Dashboard',
   systemPrompt: 'You are a financial analyst for construction project delivery. You have access to portfolio budgets, revenue data, job cost summaries, change orders, and accounts receivable.',
   suggestions(s) {
+    if (s.personaSlug === 'kelly') {
+      return ['Which invoices are awaiting approval?', 'What payments are due this week?', 'Show vendor aging', "What's our cash runway?"];
+    }
+    if (s.personaSlug === 'pamela') {
+      return ['What is the estimate pipeline?', 'Show pending change orders', 'How are job costs tracking?', 'Show active contracts'];
+    }
     const pendingCo = (s.changeOrders ?? []).filter(c => c.status === 'pending').length;
     return pendingCo
       ? ['Show pending change orders', 'How is the overall budget tracking?', 'What is the total outstanding revenue?', 'Which projects are over budget?']
@@ -361,8 +367,30 @@ export const financialsDefault: WidgetAgent = {
   },
   alerts: () => null,
   actions(s) {
+    if (s.personaSlug === 'kelly') {
+      return [
+        { id: 'open-ap', label: 'Open AP invoices', execute: () => 'Opening Accounts Payable.', route: '/financials/accounts-payable' },
+        { id: 'open-cash', label: 'Open cash management', execute: () => 'Opening Cash Management.', route: '/financials/cash-management' },
+        { id: 'open-ar', label: 'Open accounts receivable', execute: () => 'Opening Accounts Receivable.', route: '/financials/accounts-receivable' },
+      ];
+    }
     const overBudget = (s.projects ?? []).filter(p => p.budgetPct >= 80);
     const topProject = overBudget.length ? overBudget[0] : (s.projects ?? [])[0];
+    if (s.personaSlug === 'pamela') {
+      const pamelaActions: AgentAction[] = [
+        { id: 'open-estimates', label: 'Open Estimates', execute: () => 'Opening Estimates.', route: '/financials/estimates' },
+        { id: 'open-change-orders', label: 'Open Change Orders', execute: () => 'Opening change orders.', route: '/financials/change-orders' },
+      ];
+      if (topProject) {
+        pamelaActions.push({
+          id: 'open-jc-top',
+          label: `Open ${topProject.name} job costs`,
+          execute: () => `Opening job costs for ${topProject.name}.`,
+          route: `/financials/job-costs/${topProject.slug}`,
+        });
+      }
+      return pamelaActions;
+    }
     const base: AgentAction[] = [
       { id: 'open-revenue', label: 'Open revenue view', execute: () => 'Opening revenue breakdown.', route: '/financials' },
       { id: 'open-change-orders', label: 'Open change orders', execute: () => 'Opening change orders.', route: '/financials' },

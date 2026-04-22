@@ -118,6 +118,8 @@ export interface AgentDataState {
 
   currentPage?: string;
   currentSubPage?: string;
+
+  personaSlug?: string;
 }
 
 export interface AgentAlert {
