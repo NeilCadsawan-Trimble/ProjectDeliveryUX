@@ -29,7 +29,7 @@ import { getPersonaNav } from '../../data/persona-nav.config';
 export class DashboardLayoutComponent {
   private readonly store = inject(DataStoreService);
   readonly personaService = inject(PersonaService);
-  readonly appTitle = 'Construction One';
+  readonly appTitle = 'Trimble One';
 
   readonly userCard = computed<INavbarUserCard>(() => this.personaService.userCard());
 
