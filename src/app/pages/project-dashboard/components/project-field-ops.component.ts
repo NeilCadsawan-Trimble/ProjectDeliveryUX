@@ -8,7 +8,7 @@ import type { Inspection, PunchListItem } from '../../../data/dashboard-data.typ
   imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto py-4">
+    <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto py-4 mb-5">
       <div class="flex flex-col gap-2 px-4">
         <modus-typography size="sm" weight="semibold" className="text-foreground flex items-center gap-2">
           <i class="modus-icons text-base text-primary" aria-hidden="true">clipboard</i>
@@ -63,7 +63,7 @@ import type { Inspection, PunchListItem } from '../../../data/dashboard-data.typ
 
       <div class="border-bottom-default mx-4"></div>
 
-      <div class="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto px-4">
+      <div class="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto px-4 mb-5">
         <modus-typography size="xs" weight="semibold" className="text-foreground-60 mb-1">Recent failed inspections</modus-typography>
         @for (insp of failedInspections(); track insp.id) {
           <div class="flex items-center justify-between gap-2 py-1.5 border-bottom-default last:border-b-0">

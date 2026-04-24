@@ -8,7 +8,7 @@ import type { ApRetentionRecord } from '../../../data/dashboard-data.types';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto p-4">
+    <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto p-4 mb-5">
       <div class="grid grid-cols-3 gap-2 text-center">
         <div class="rounded-lg bg-muted px-2 py-2">
           <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Total held</modus-typography>

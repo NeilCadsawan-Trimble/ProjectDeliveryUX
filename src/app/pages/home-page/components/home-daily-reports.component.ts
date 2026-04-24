@@ -38,7 +38,7 @@ export interface DailyReportRow {
           <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Safety Incidents</modus-typography>
         </div>
       </div>
-      <div class="flex-1 min-h-0 overflow-y-auto px-4">
+      <div class="flex-1 min-h-0 overflow-y-auto px-4 mb-5">
         @for (row of latestReports(); track row.id) {
           <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
             role="button" tabindex="0"

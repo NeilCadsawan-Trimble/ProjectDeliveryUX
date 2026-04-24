@@ -87,7 +87,7 @@ type ViewMode = 'grid' | 'list';
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Requested By</modus-typography>
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (co of changeOrders(); track co.id) {
               <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="changeOrderClick.emit(co)" (keydown.enter)="changeOrderClick.emit(co)">
@@ -167,7 +167,7 @@ type ViewMode = 'grid' | 'list';
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Outstanding</modus-typography>
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Retainage</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (rev of revenueData(); track rev.projectId) {
               <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center">
                 <modus-typography size="sm" weight="semibold" className="text-foreground">{{ rev.projectName }}</modus-typography>
@@ -276,7 +276,7 @@ type ViewMode = 'grid' | 'list';
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">COs</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (ct of contracts(); track ct.id) {
               <div class="grid grid-cols-[80px_1fr_120px_100px_100px_80px_60px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="contractClick.emit(ct)" (keydown.enter)="contractClick.emit(ct)">
@@ -360,7 +360,7 @@ type ViewMode = 'grid' | 'list';
                 <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Forecast</modus-typography>
                 <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Variance</modus-typography>
               </div>
-              <div class="overflow-y-auto flex-1">
+              <div class="overflow-y-auto flex-1 mb-5">
               @for (point of budgetHistory(); track point.month) {
                 <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center">
                   <modus-typography size="sm" weight="semibold" className="text-foreground">{{ point.month }}</modus-typography>
@@ -451,7 +451,7 @@ type ViewMode = 'grid' | 'list';
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (po of purchaseOrders(); track po.id) {
               <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
                 (click)="purchaseOrderClick.emit(po)" (keydown.enter)="purchaseOrderClick.emit(po)">
@@ -552,7 +552,7 @@ type ViewMode = 'grid' | 'list';
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Due</modus-typography>
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Terms</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (inv of invoices(); track inv.id) {
               <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
                 (click)="invoiceClick.emit(inv)" (keydown.enter)="invoiceClick.emit(inv)">
@@ -646,7 +646,7 @@ type ViewMode = 'grid' | 'list';
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
               <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Due</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (p of payables(); track p.id) {
               <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
                 (click)="payableClick.emit(p)" (keydown.enter)="payableClick.emit(p)">

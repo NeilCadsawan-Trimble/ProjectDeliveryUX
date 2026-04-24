@@ -276,7 +276,7 @@ const HOME_MIN_CONTENT_PX = 80;
                   </div>
                 </div>
               }
-              <div class="flex-1 overflow-y-auto p-5">
+              <div class="flex-1 overflow-y-auto p-5 mb-5">
                 @if (detail.type === 'rfi') {
                   <app-item-detail-view
                     [hideHeader]="true"
@@ -453,7 +453,7 @@ const HOME_MIN_CONTENT_PX = 80;
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <div class="p-3 flex flex-col gap-2 overflow-y-auto flex-1">
+                  <div class="p-3 flex flex-col gap-2 overflow-y-auto flex-1 mb-5">
                     <app-home-kpi-cards [cards]="kpiCards()" [compact]="true" (cardClick)="handleKpiCardClick($event)" />
                   </div>
                 </app-widget-frame>
@@ -471,7 +471,7 @@ const HOME_MIN_CONTENT_PX = 80;
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <div class="p-3 flex flex-col gap-2 overflow-y-auto flex-1">
+                  <div class="p-3 flex flex-col gap-2 overflow-y-auto flex-1 mb-5">
                     <app-home-kpi-cards [cards]="estimatorKpiCards()" [compact]="true" (cardClick)="handleEstimatorKpiClick($event)" />
                   </div>
                 </app-widget-frame>
@@ -577,7 +577,7 @@ const HOME_MIN_CONTENT_PX = 80;
                   }
 
                   @if (isTimeOffCompact() && !timeOffMobileExpanded()) {
-                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto mb-5">
                       @for (item of timeOffCompactItems; track item.key) {
                         <div
                           class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
@@ -623,7 +623,7 @@ const HOME_MIN_CONTENT_PX = 80;
                           }
                         </div>
                       }
-                      <div class="overflow-y-auto flex-1" role="table" aria-label="Time off requests">
+                      <div class="overflow-y-auto flex-1 mb-5" role="table" aria-label="Time off requests">
                         <div class="grid grid-cols-[2fr_2fr_1fr_2fr_0.5fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default" role="row">
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Employee</modus-typography>
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Project</modus-typography>
@@ -661,7 +661,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     }
 
                     @if (timeOffView() === 'staffing' && !isTimeOffCompact()) {
-                      <div class="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-3">
+                      <div class="overflow-y-auto flex-1 px-4 py-3 mb-5 flex flex-col gap-3">
                         <div class="grid grid-cols-4 gap-3">
                           <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
                             <modus-typography hierarchy="p" size="xl" weight="bold">{{ timeOffRequests().length }}</modus-typography>
@@ -773,7 +773,7 @@ const HOME_MIN_CONTENT_PX = 80;
                             <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-center text-foreground-40 uppercase py-1">{{ d }}</modus-typography>
                           }
                         </div>
-                        <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1">
+                        <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1 mb-5">
                           @for (cell of calendarDays(); track cell.day ?? $index) {
                             <div class="min-h-[52px] rounded-lg p-1 flex flex-col gap-0.5"
                               [class.bg-muted]="cell.day !== null && cell.requests.length === 0"
@@ -901,7 +901,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     </div>
                   </div>
 
-                  <div class="flex overflow-y-auto flex-1" #calendarScrollArea>
+                  <div class="flex overflow-y-auto flex-1 mb-5" #calendarScrollArea>
                     <div class="w-12 flex-shrink-0">
                       @for (hour of calendarHours; track hour) {
                         <div class="h-[60px] flex items-start justify-end pr-2 -mt-0">
@@ -1030,7 +1030,7 @@ const HOME_MIN_CONTENT_PX = 80;
                   }
 
                   @if (isRfiCompact() && !rfiMobileExpanded()) {
-                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto mb-5">
                       @for (item of rfiCompactItems; track item.key) {
                         <div
                           class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
@@ -1076,7 +1076,7 @@ const HOME_MIN_CONTENT_PX = 80;
                       <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Due</modus-typography>
                       <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Status</modus-typography>
                     </div>
-                    <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
+                    <div class="overflow-y-auto flex-1 mb-5" role="table" aria-label="RFIs" aria-live="polite">
                       @for (rfi of filteredRfis(); track rfi.id) {
                         <div
                           class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
@@ -1150,7 +1150,7 @@ const HOME_MIN_CONTENT_PX = 80;
                   }
 
                   @if (isSubmittalCompact() && !submittalMobileExpanded()) {
-                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                    <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto mb-5">
                       @for (item of submittalCompactItems; track item.key) {
                         <div
                           class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
@@ -1196,7 +1196,7 @@ const HOME_MIN_CONTENT_PX = 80;
                       <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Due</modus-typography>
                       <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide" role="columnheader">Status</modus-typography>
                     </div>
-                    <div class="overflow-y-auto flex-1" role="table" aria-label="Submittals" aria-live="polite">
+                    <div class="overflow-y-auto flex-1 mb-5" role="table" aria-label="Submittals" aria-live="polite">
                       @for (sub of filteredSubmittals(); track sub.id) {
                         <div class="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="openSubmittalDetail(sub)" (keydown.enter)="openSubmittalDetail(sub)" (mousedown)="$event.stopPropagation()">
                           <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-primary" role="cell">{{ sub.number }}</modus-typography>
@@ -1245,7 +1245,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     </div>
                   }
 
-                  <div class="flex-1 overflow-y-auto" role="list" aria-label="Recent drawings by project">
+                  <div class="flex-1 overflow-y-auto mb-5" role="list" aria-label="Recent drawings by project">
                     @for (entry of recentDrawings(); track entry.projectId) {
                       <div
                         class="flex items-center gap-3 px-5 py-3 border-bottom-default last:border-b-0 hover:bg-muted transition-colors duration-150 cursor-pointer"
@@ -1303,7 +1303,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     </div>
                   }
 
-                  <div class="flex-1 overflow-y-auto min-h-0">
+                  <div class="flex-1 overflow-y-auto min-h-0 mb-5">
                     @if (weatherImpactProjects().length > 0) {
                       @for (pw of weatherImpactProjects(); track pw.project.id) {
                         <div
@@ -1480,7 +1480,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     </div>
                   </div>
 
-                  <div class="flex-1 overflow-y-auto min-h-0">
+                  <div class="flex-1 overflow-y-auto min-h-0 mb-5">
                     @for (item of filteredUrgentNeeds(); track item.id) {
                       <div
                         class="flex items-start gap-3 px-5 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
@@ -1554,7 +1554,7 @@ const HOME_MIN_CONTENT_PX = 80;
                       <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ recentActivityInsight() }}</modus-typography>
                     </div>
                   }
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (activity of activities(); track activity.id) {
                       <div class="flex items-start gap-4 px-6 py-4 border-bottom-default last:border-b-0"
                         [class.cursor-pointer]="!!activity.projectId"
@@ -1803,7 +1803,7 @@ const HOME_MIN_CONTENT_PX = 80;
                   (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
                   (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
                 >
-                  <div class="flex flex-col gap-1 h-full min-h-0 overflow-y-auto p-4">
+                  <div class="flex flex-col gap-1 h-full min-h-0 overflow-y-auto p-4 mb-5">
                     @for (ms of crossProjectMilestones().slice(0, 15); track ms.name) {
                       <div class="flex items-center gap-3 py-2 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
                         role="button" tabindex="0"
@@ -2284,9 +2284,11 @@ export class HomePageComponent extends DashboardPageBase {
     this._calendarScrolled = true;
     requestAnimationFrame(() => {
       const now = new Date();
-      const nowPx = (now.getHours() * 60 + now.getMinutes());
+      const nowPx = now.getHours() * 60 + now.getMinutes();
       const viewHeight = el.clientHeight;
-      el.scrollTop = Math.max(0, nowPx - viewHeight / 2);
+      const maxScroll = Math.max(0, el.scrollHeight - viewHeight);
+      const target = nowPx - viewHeight * 0.25;
+      el.scrollTop = Math.max(0, Math.min(maxScroll, target));
     });
   });
 
@@ -3080,6 +3082,20 @@ export class HomePageComponent extends DashboardPageBase {
 
   resetCalendarToToday(): void {
     this.calendarBaseDate.set(new Date());
+    this.scrollCalendarToNow(0.25);
+  }
+
+  private scrollCalendarToNow(fromTopRatio = 0.25): void {
+    const el = this.calendarScrollRef()?.nativeElement as HTMLElement | undefined;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      const now = new Date();
+      const nowPx = now.getHours() * 60 + now.getMinutes();
+      const viewHeight = el.clientHeight;
+      const maxScroll = Math.max(0, el.scrollHeight - viewHeight);
+      const target = nowPx - viewHeight * fromTopRatio;
+      el.scrollTo({ top: Math.max(0, Math.min(maxScroll, target)), behavior: 'smooth' });
+    });
   }
 
   readonly rfiFilterOptions: readonly (RfiStatus | 'all')[] = ['all', 'open', 'overdue', 'upcoming', 'closed'] as const;

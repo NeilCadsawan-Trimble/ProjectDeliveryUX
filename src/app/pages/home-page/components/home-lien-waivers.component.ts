@@ -10,7 +10,7 @@ const STATUS_ORDER: ApLienWaiverStatus[] = ['missing', 'pending', 'received'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-4 h-full min-h-0 overflow-y-auto p-4">
+    <div class="flex flex-col gap-4 h-full min-h-0 overflow-y-auto p-4 mb-5">
       @for (block of groupedWaivers(); track block.status) {
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-2">

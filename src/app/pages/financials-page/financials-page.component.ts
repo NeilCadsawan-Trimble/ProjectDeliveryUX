@@ -690,7 +690,7 @@ const FIN_MIN_CHILD_PX = 80;
                   </div>
                 }
               </div>
-              <div class="py-1 flex-1 overflow-y-auto">
+              <div class="py-1 flex-1 overflow-y-auto mb-5">
                 @for (item of finNavLinkItems(); track item.value) {
                   <div
                     class="flex items-center justify-between py-1.5 cursor-pointer transition-colors duration-150 whitespace-nowrap"
@@ -928,7 +928,7 @@ const FIN_MIN_CHILD_PX = 80;
               }
             </div>
             } @else {
-            <div class="flex-1 min-w-0 flex flex-col gap-2 px-3 pb-3 overflow-y-auto">
+            <div class="flex-1 min-w-0 flex flex-col gap-2 px-3 pb-3 overflow-y-auto mb-5">
               <app-home-ap-kpi-cards [cards]="kellyVisibleKpiCards()" (cardClick)="handleApKpiClick($event)" />
               @if (showFinBlock('finNavKpi', 'insight') && kellyApKpisInsight()) {
                 <div class="flex items-center gap-1.5 px-3 py-2 bg-muted rounded-lg flex-shrink-0">
@@ -1075,7 +1075,7 @@ const FIN_MIN_CHILD_PX = 80;
                     }
                     <modus-typography size="xs" weight="semibold" role="columnheader">Due Date</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1" role="table" aria-label="Open estimates">
+                  <div class="overflow-y-auto flex-1 mb-5" role="table" aria-label="Open estimates">
                     @for (estimate of estimates(); track estimate.id) {
                       <div
                         role="row"
@@ -1163,7 +1163,7 @@ const FIN_MIN_CHILD_PX = 80;
                   </div>
 
                   <!-- Table body -->
-                  <div class="overflow-y-auto flex-1" role="table" aria-label="Budget by project">
+                  <div class="overflow-y-auto flex-1 mb-5" role="table" aria-label="Budget by project">
                     @for (p of projects(); track p.id) {
                       <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-4 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150" role="row">
                         <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate" role="cell">{{ p.name }}</modus-typography>
@@ -1207,7 +1207,7 @@ const FIN_MIN_CHILD_PX = 80;
                     </div>
                   }
 
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @if (showFinBlock(widgetId, 'barChart')) {
                       <div class="px-5 py-4 flex flex-col gap-4 flex-shrink-0">
                         <div class="flex w-full h-4 rounded-full overflow-hidden">
@@ -1293,7 +1293,7 @@ const FIN_MIN_CHILD_PX = 80;
                     }
                   </div>
 
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide" role="row">
                       <modus-typography size="xs" weight="semibold" role="columnheader">ID</modus-typography>
                       <modus-typography size="xs" weight="semibold" role="columnheader">Project</modus-typography>
@@ -1582,7 +1582,7 @@ const FIN_MIN_CHILD_PX = 80;
         <div class="flex-1 min-w-0 flex flex-col overflow-hidden">
 
     @if (activeSubPage() === 'estimates') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search estimates...' }" />
         </div>
@@ -1701,7 +1701,7 @@ const FIN_MIN_CHILD_PX = 80;
               <modus-typography size="xs" weight="semibold">Requested By</modus-typography>
               <modus-typography size="xs" weight="semibold" className="text-right">Due Date</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (est of filteredEstimates(); track est.id) {
               <div class="grid grid-cols-[90px_minmax(0,2fr)_70px_minmax(90px,1fr)_minmax(130px,1.1fr)_minmax(0,1.4fr)_110px] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[820px]" (click)="navigateToEstimate(est.id)">
                 <modus-typography hierarchy="p" size="sm" weight="semibold" className="font-mono text-primary truncate">{{ est.id }}</modus-typography>
@@ -1742,7 +1742,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'change-orders') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search change orders...' }" />
         </div>
@@ -1813,7 +1813,7 @@ const FIN_MIN_CHILD_PX = 80;
               <modus-typography size="xs" weight="semibold">Status</modus-typography>
               <modus-typography size="xs" weight="semibold" className="text-right">Date</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (co of filteredChangeOrders(); track co.id) {
               <div class="grid grid-cols-[90px_minmax(0,1.2fr)_minmax(0,2fr)_110px_minmax(115px,1fr)_100px] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[780px]" (click)="navigateToChangeOrder(co.id)">
                 <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-primary truncate">{{ co.id }}</modus-typography>
@@ -1837,7 +1837,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'job-costs') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search job costs...' }" />
         </div>
@@ -1902,7 +1902,7 @@ const FIN_MIN_CHILD_PX = 80;
                 <modus-typography size="xs" weight="semibold" className="text-right truncate">{{ cat }}</modus-typography>
               }
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (p of projectJobCosts(); track p.projectId) {
               <div class="grid grid-cols-[minmax(0,2fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)_minmax(90px,1fr)] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[780px]" (click)="openJobCostDetail(p)">
                 <modus-typography hierarchy="p" size="sm" weight="semibold" className="text-foreground truncate">{{ p.projectName }}</modus-typography>
@@ -1920,7 +1920,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'job-billing') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search billing...' }" />
         </div>
@@ -1979,7 +1979,7 @@ const FIN_MIN_CHILD_PX = 80;
           <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold">Period</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Date</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
           @for (ev of billingEvents(); track ev.id) {
             <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToBillingEvent(ev.id)">
               <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ ev.description }}</modus-typography>
@@ -1996,7 +1996,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'accounts-receivable') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search invoices...' }" />
         </div>
@@ -2073,7 +2073,7 @@ const FIN_MIN_CHILD_PX = 80;
           <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <modus-typography size="xs" weight="semibold">Invoice #</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Paid</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Terms</modus-typography><modus-typography size="xs" weight="semibold">Due</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
           @for (inv of invoices(); track inv.id) {
             <div class="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToInvoice(inv.id)">
               <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ inv.invoiceNumber }}</modus-typography>
@@ -2091,7 +2091,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'accounts-payable') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search payables...' }" />
         </div>
@@ -2175,7 +2175,7 @@ const FIN_MIN_CHILD_PX = 80;
           <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <modus-typography size="xs" weight="semibold">Vendor</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Due</modus-typography><modus-typography size="xs" weight="semibold">Cost Code</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
           @for (p of payables(); track p.id) {
             <div class="grid grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayable(p.id)">
               <modus-typography  hierarchy="p" size="sm" className="text-foreground truncate">{{ p.vendor }}</modus-typography>
@@ -2297,7 +2297,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'cash-management') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search transactions...' }" />
         </div>
@@ -2358,7 +2358,7 @@ const FIN_MIN_CHILD_PX = 80;
           <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <modus-typography size="xs" weight="semibold">Month</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Inflow</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Outflow</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Net</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
           @for (cf of cashFlowHistory(); track cf.month) {
             <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToCashFlow(cf.month)">
               <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ cf.month }}</modus-typography>
@@ -2374,7 +2374,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'general-ledger') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search accounts...' }" />
         </div>
@@ -2433,7 +2433,7 @@ const FIN_MIN_CHILD_PX = 80;
           <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <modus-typography size="xs" weight="semibold">Acct #</modus-typography><modus-typography size="xs" weight="semibold">Name</modus-typography><modus-typography size="xs" weight="semibold">Type</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Balance</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
           @for (acct of glAccounts(); track acct.code) {
             <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToGlAccount(acct.code)">
               <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ acct.code }}</modus-typography>
@@ -2491,7 +2491,7 @@ const FIN_MIN_CHILD_PX = 80;
           <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <modus-typography size="xs" weight="semibold">Entry #</modus-typography><modus-typography size="xs" weight="semibold">Account</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Debit</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Credit</modus-typography><modus-typography size="xs" weight="semibold">Date</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
           @for (entry of glEntries(); track entry.id) {
             <div class="grid grid-cols-[minmax(0,0.6fr)_minmax(0,0.5fr)_minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToGlEntry(entry.id)">
               <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ entry.id }}</modus-typography>
@@ -2509,7 +2509,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'purchase-orders') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search purchase orders...' }" />
         </div>
@@ -2574,7 +2574,7 @@ const FIN_MIN_CHILD_PX = 80;
           <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <modus-typography size="xs" weight="semibold">PO #</modus-typography><modus-typography size="xs" weight="semibold">Vendor</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Amount</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Delivery</modus-typography><modus-typography size="xs" weight="semibold">Project</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
           @for (po of purchaseOrders(); track po.id) {
             <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPurchaseOrder(po.id)">
               <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-primary">{{ po.poNumber }}</modus-typography>
@@ -2593,7 +2593,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'payroll') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search payroll...' }" />
         </div>
@@ -2670,7 +2670,7 @@ const FIN_MIN_CHILD_PX = 80;
           <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <modus-typography size="xs" weight="semibold">Month</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Gross</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Net</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Headcount</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
           @for (mp of monthlyPayroll(); track mp.month) {
             <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.6fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayrollMonthly(mp.month)">
               <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ mp.month }}</modus-typography>
@@ -2725,7 +2725,7 @@ const FIN_MIN_CHILD_PX = 80;
           <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
             <modus-typography size="xs" weight="semibold">Period</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Gross</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Net</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Emp</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">Hours</modus-typography><modus-typography size="xs" weight="semibold" className="text-right">OT</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
           @for (pr of payrollRecords(); track pr.id) {
             <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.5fr)_minmax(0,0.5fr)_minmax(0,0.5fr)] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" (click)="navigateToPayrollRecord(pr.id)">
               <modus-typography  hierarchy="p" size="sm" weight="semibold" className="text-foreground">{{ pr.period }}</modus-typography>
@@ -2744,7 +2744,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'contracts') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search contracts...' }" />
         </div>
@@ -2816,7 +2816,7 @@ const FIN_MIN_CHILD_PX = 80;
               <modus-typography size="xs" weight="semibold">Status</modus-typography>
               <modus-typography size="xs" weight="semibold">Project</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (c of contracts(); track c.id) {
               <div class="grid grid-cols-[minmax(0,1.8fr)_minmax(100px,0.8fr)_105px_105px_105px_minmax(110px,1fr)_minmax(0,1fr)] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[880px]" (click)="navigateToContract(c.id)">
                 <div class="min-w-0">
@@ -2841,7 +2841,7 @@ const FIN_MIN_CHILD_PX = 80;
     }
 
     @if (activeSubPage() === 'subcontract-ledger') {
-      <div class="pb-6 flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-h-0 overflow-y-auto mb-5">
         <div class="transition-all duration-200 flex-shrink-0" [style.margin-left.px]="isMobile() || finSubnavCollapsed() ? 227 : 0">
           <ng-container [ngTemplateOutlet]="finSubpageToolbar" [ngTemplateOutletContext]="{ $implicit: 'Search ledger entries...' }" />
         </div>
@@ -2906,7 +2906,7 @@ const FIN_MIN_CHILD_PX = 80;
               <modus-typography size="xs" weight="semibold" className="text-right">Date</modus-typography>
               <modus-typography size="xs" weight="semibold" className="text-right">Balance</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (entry of subcontractLedger(); track entry.id) {
               <div class="grid grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(140px,1fr)_110px_90px_100px_110px] gap-3 px-4 py-3 border-bottom-default last:border-b-0 hover:bg-muted items-center cursor-pointer min-w-[900px]" (click)="navigateToSubcontractLedgerEntry(entry.id)">
                 <div class="min-w-0">

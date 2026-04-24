@@ -27,7 +27,7 @@ import type { Contract, ContractStatus } from '../../../data/dashboard-data.type
           <modus-typography size="xs" className="text-foreground-60">Total Value</modus-typography>
         </div>
       </div>
-      <div class="flex-1 min-h-0 overflow-y-auto px-4">
+      <div class="flex-1 min-h-0 overflow-y-auto px-4 mb-5">
         @for (c of sortedContracts(); track c.id) {
           <div class="flex flex-col gap-1 py-2 border-bottom-default last:border-b-0">
             <div class="flex items-center justify-between gap-2">

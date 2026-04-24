@@ -9,7 +9,7 @@ import type { ApInvoice } from '../../../data/dashboard-data.types';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col h-full min-h-0 overflow-y-auto">
+    <div class="flex flex-col h-full min-h-0 overflow-y-auto mb-5">
       @for (invoice of invoices(); track invoice.id) {
         <div
           class="flex items-center gap-3 px-3 py-2 border-bottom-default"

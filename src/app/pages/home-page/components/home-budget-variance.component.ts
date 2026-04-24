@@ -19,7 +19,7 @@ export interface BudgetRow {
   imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-1 h-full min-h-0 overflow-y-auto p-4">
+    <div class="flex flex-col gap-1 h-full min-h-0 overflow-y-auto p-4 mb-5">
       <div class="flex items-center justify-between px-1 mb-1">
         <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Project</modus-typography>
         <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Budget Used</modus-typography>
