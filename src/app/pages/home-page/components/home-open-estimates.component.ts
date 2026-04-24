@@ -27,7 +27,7 @@ import type { Estimate, EstimateStatus } from '../../../data/dashboard-data.type
           <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Pipeline</modus-typography>
         </div>
       </div>
-      <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="flex-1 min-h-0 overflow-y-auto mb-5">
         @for (est of openEstimates(); track est.id) {
           <div class="flex items-center gap-3 px-4 py-3 border-bottom-default last:border-b-0 cursor-pointer hover:bg-muted transition-colors duration-150"
             role="button" tabindex="0"

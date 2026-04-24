@@ -31,7 +31,7 @@ export type PayAppsView = 'tile' | 'table';
       }
 
       @if (view() === 'tile') {
-        <div class="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto p-4 pt-2">
+        <div class="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto p-4 pt-2 mb-5">
           @for (app of payApps(); track app.id) {
             <div
               class="bg-background border-default rounded-lg overflow-hidden transition-shadow duration-200"
@@ -86,7 +86,7 @@ export type PayAppsView = 'tile' | 'table';
           }
         </div>
       } @else {
-        <div class="flex-1 min-h-0 overflow-y-auto">
+        <div class="flex-1 min-h-0 overflow-y-auto mb-5">
           <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.6fr)] gap-3 px-5 py-3 bg-muted border-bottom-default uppercase tracking-wide">
             <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Vendor</modus-typography>
             <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60">Project</modus-typography>

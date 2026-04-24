@@ -33,7 +33,7 @@ import type { LearningPlan } from '../../../data/dashboard-data.types';
         </div>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+      <div class="flex-1 min-h-0 overflow-y-auto px-4 pb-4 mb-5">
         <div class="flex flex-col gap-1.5">
           @for (course of plan().courses; track course.id) {
           <div class="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted transition-colors duration-150">

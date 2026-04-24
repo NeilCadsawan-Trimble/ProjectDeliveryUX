@@ -388,7 +388,7 @@
 
           <div class="bg-card border-default rounded-lg overflow-hidden flex-1 flex flex-col min-h-[200px] md:min-h-[300px]"
             (click)="dismissScheduleTap()">
-            <div class="schedule-scroll-container overflow-x-auto overflow-y-auto flex-1"
+            <div class="schedule-scroll-container overflow-x-auto overflow-y-auto flex-1 mb-5"
               (touchstart)="onSchedulePinchStart($event)"
               (touchmove)="onSchedulePinchMove($event)"
               (touchend)="onSchedulePinchEnd()"
@@ -518,7 +518,7 @@
                   <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography>
                   <div class="w-6"></div>
                 </div>
-                <div class="overflow-y-auto flex-1">
+                <div class="overflow-y-auto flex-1 mb-5">
                   @for (drawing of drawingTiles(); track drawing.id) {
                     <div class="grid grid-cols-[auto_2fr_3fr_5rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
                       tabindex="0" (click)="navigateToDrawingDetail(drawing)" (keydown.enter)="navigateToDrawingDetail(drawing)">
@@ -760,7 +760,7 @@
                     <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Due Date</modus-typography>
                     <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (rfi of projectRfis(); track rfi.id) {
                       <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                         [class.bg-primary-20]="!!tileDetailViews()['tile-rfi-' + rfi.id]"
@@ -784,7 +784,7 @@
                     <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Due Date</modus-typography>
                     <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (sub of projectSubmittals(); track sub.id) {
                       <div class="grid grid-cols-[100px_1fr_140px_100px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                         [class.bg-primary-20]="!!tileDetailViews()['tile-sub-' + sub.id]"
@@ -804,7 +804,7 @@
                   <div class="grid grid-cols-[100px_1fr_120px_80px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
                     <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Author</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Weather</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Crew</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Hours</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Safety</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (dr of projectDailyReports(); track dr.id) {
                       <div class="grid grid-cols-[100px_1fr_120px_80px_80px_60px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                         [class.bg-primary-20]="!!tileDetailViews()['tile-dr-' + dr.id]"
@@ -822,7 +822,7 @@
                   <div class="grid grid-cols-[80px_1fr_120px_80px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
                     <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">ID</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Description</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Location</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Priority</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Status</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Assignee</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (pl of projectPunchItems(); track pl.id) {
                       <div class="grid grid-cols-[80px_1fr_120px_80px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                         [class.bg-primary-20]="!!tileDetailViews()['tile-pl-' + pl.id]"
@@ -846,7 +846,7 @@
                   <div class="grid grid-cols-[80px_1fr_120px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
                     <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">ID</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Type</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Inspector</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Result</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Follow-up</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (ins of projectInspections(); track ins.id) {
                       <div class="grid grid-cols-[80px_1fr_120px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                         [class.bg-primary-20]="!!tileDetailViews()['tile-ins-' + ins.id]"
@@ -867,7 +867,7 @@
                   <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3 bg-muted border-bottom-default flex-shrink-0">
                     <modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Severity</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Title</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Description</modus-typography><modus-typography size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Category</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (ai of projectAttentionItems(); track ai.id) {
                       <div class="grid grid-cols-[80px_1fr_2fr_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                         [class.bg-primary-20]="!!tileDetailViews()['tile-ai-' + ai.id]"
@@ -950,7 +950,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-5">
+                    <div class="flex-1 overflow-y-auto p-5 mb-5">
                       <app-item-detail-view
                         [hideHeader]="true"
                         icon="clipboard" typeLabel="Request for Information"
@@ -1065,7 +1065,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-5">
+                    <div class="flex-1 overflow-y-auto p-5 mb-5">
                       <app-item-detail-view
                         [hideHeader]="true"
                         icon="document" typeLabel="Submittal"
@@ -1157,7 +1157,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-5">
+                    <div class="flex-1 overflow-y-auto p-5 mb-5">
                       <div class="flex flex-col gap-6">
                         <div>
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Work Performed</modus-typography>
@@ -1275,7 +1275,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-5">
+                    <div class="flex-1 overflow-y-auto p-5 mb-5">
                       <div class="flex flex-col gap-6">
                         <div>
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Description</modus-typography>
@@ -1384,7 +1384,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-5">
+                    <div class="flex-1 overflow-y-auto p-5 mb-5">
                       <div class="flex flex-col gap-6">
                         <div>
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Notes</modus-typography>
@@ -1489,7 +1489,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-5">
+                    <div class="flex-1 overflow-y-auto p-5 mb-5">
                       <div class="flex flex-col gap-6">
                         <div>
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Description</modus-typography>
@@ -1744,7 +1744,7 @@
                     <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide">Date</modus-typography>
                     <div class="w-6"></div>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (capture of siteCaptures(); track capture.id) {
                       <div class="grid grid-cols-[auto_2fr_3fr_6rem_6rem_auto] gap-x-4 items-center px-4 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
                         tabindex="0" (click)="navigateToPanorama(capture)" (keydown.enter)="navigateToPanorama(capture)">
@@ -1913,7 +1913,7 @@
                     <modus-typography hierarchy="p" size="md" weight="semibold">Transaction Ledger</modus-typography>
                     <modus-typography class="ml-auto" hierarchy="p" size="xs" className="text-foreground-40">{{ subledgerTransactions().length }} entries</modus-typography>
                   </div>
-                  <div class="absolute left-0 right-0 bottom-0 overflow-y-auto" style="top: 53px">
+                  <div class="absolute left-0 right-0 bottom-5 overflow-y-auto" style="top: 53px">
                     <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />
                   </div>
                   <widget-resize-handle position="right" (resizeStart)="onSubledgerLedgerResizeStart($event)" />
@@ -1962,7 +1962,7 @@
                   <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
                     <modus-typography size="xs" weight="semibold">CO #</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold">Amount</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Requested By</modus-typography><modus-typography size="xs" weight="semibold">Date</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (co of projectChangeOrders(); track co.id) {
                       <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                         [class.bg-primary-20]="!!tileDetailViews()['tile-co-' + co.id]"
@@ -2019,7 +2019,7 @@
                           </div>
                         </div>
                       </div>
-                      <div class="flex-1 overflow-y-auto p-5">
+                      <div class="flex-1 overflow-y-auto p-5 mb-5">
                         <div class="flex flex-col gap-6">
                           <div>
                             <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Description</modus-typography>
@@ -2096,7 +2096,7 @@
                   <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
                     <modus-typography size="xs" weight="semibold">ID</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold">Amount</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Requested By</modus-typography><modus-typography size="xs" weight="semibold">Date</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (co of activeCoTypeList(); track co.id) {
                       <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                         [class.bg-primary-20]="!!tileDetailViews()['tile-' + activeCoTilePrefix() + co.id]"
@@ -2160,7 +2160,7 @@
                           </div>
                         </div>
                       </div>
-                      <div class="flex-1 overflow-y-auto p-5">
+                      <div class="flex-1 overflow-y-auto p-5 mb-5">
                         <div class="flex flex-col gap-6">
                           <div>
                             <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Description</modus-typography>
@@ -2265,7 +2265,7 @@
                   <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
                     <modus-typography size="xs" weight="semibold">Project</modus-typography><modus-typography size="xs" weight="semibold">Contract</modus-typography><modus-typography size="xs" weight="semibold">Invoiced</modus-typography><modus-typography size="xs" weight="semibold">Collected</modus-typography><modus-typography size="xs" weight="semibold">Outstanding</modus-typography><modus-typography size="xs" weight="semibold">Retainage</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (rev of projectRevenueData(); track rev.projectId) {
                       <div class="grid grid-cols-[1fr_100px_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
                         <modus-typography hierarchy="p" size="sm" className="truncate">{{ rev.projectName }}</modus-typography>
@@ -2359,7 +2359,7 @@
                   <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
                     <modus-typography size="xs" weight="semibold">Month</modus-typography><modus-typography size="xs" weight="semibold">Planned</modus-typography><modus-typography size="xs" weight="semibold">Actual</modus-typography><modus-typography size="xs" weight="semibold">Forecast</modus-typography><modus-typography size="xs" weight="semibold">Variance</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (bp of projectBudgetHistory(); track $index) {
                       <div class="grid grid-cols-[1fr_100px_100px_100px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0">
                         <modus-typography hierarchy="p" size="sm" weight="semibold">{{ bp.month }}</modus-typography>
@@ -2464,7 +2464,7 @@
                   <div class="grid grid-cols-[80px_1fr_80px_100px_100px_80px_60px] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
                     <modus-typography size="xs" weight="semibold">ID</modus-typography><modus-typography size="xs" weight="semibold">Title / Vendor</modus-typography><modus-typography size="xs" weight="semibold">Type</modus-typography><modus-typography size="xs" weight="semibold">Original</modus-typography><modus-typography size="xs" weight="semibold">Revised</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">COs</modus-typography>
                   </div>
-                  <div class="overflow-y-auto flex-1">
+                  <div class="overflow-y-auto flex-1 mb-5">
                     @for (ct of projectContracts(); track ct.id) {
                       <div class="grid grid-cols-[80px_1fr_80px_100px_100px_80px_60px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                         [class.bg-primary-20]="!!tileDetailViews()['tile-ct-' + ct.id]"
@@ -2530,7 +2530,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-5">
+                    <div class="flex-1 overflow-y-auto p-5 mb-5">
                       <div class="flex flex-col gap-6">
                         <div>
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-40 uppercase tracking-wide mb-1.5">Title</modus-typography>
@@ -2659,7 +2659,7 @@
                 <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
                   <modus-typography size="xs" weight="semibold">PO #</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold">Vendor</modus-typography><modus-typography size="xs" weight="semibold">Amount</modus-typography><modus-typography size="xs" weight="semibold">Received</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Date</modus-typography>
                 </div>
-                <div class="overflow-y-auto flex-1">
+                <div class="overflow-y-auto flex-1 mb-5">
                   @for (po of projectPurchaseOrders(); track po.id) {
                     <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
                       (click)="navigateToPurchaseOrder(po)" (keydown.enter)="navigateToPurchaseOrder(po)">
@@ -2719,7 +2719,7 @@
                 <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
                   <modus-typography size="xs" weight="semibold">Invoice #</modus-typography><modus-typography size="xs" weight="semibold">Amount</modus-typography><modus-typography size="xs" weight="semibold">Paid</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Issued</modus-typography><modus-typography size="xs" weight="semibold">Due</modus-typography><modus-typography size="xs" weight="semibold">Terms</modus-typography>
                 </div>
-                <div class="overflow-y-auto flex-1">
+                <div class="overflow-y-auto flex-1 mb-5">
                   @for (inv of projectInvoices(); track inv.id) {
                     <div class="grid grid-cols-[90px_90px_90px_80px_90px_90px_80px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
                       (click)="navigateToInvoice(inv)" (keydown.enter)="navigateToInvoice(inv)">
@@ -2779,7 +2779,7 @@
                 <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
                   <modus-typography size="xs" weight="semibold">Invoice #</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold">Vendor</modus-typography><modus-typography size="xs" weight="semibold">Amount</modus-typography><modus-typography size="xs" weight="semibold">Paid</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Due</modus-typography>
                 </div>
-                <div class="overflow-y-auto flex-1">
+                <div class="overflow-y-auto flex-1 mb-5">
                   @for (p of projectPayables(); track p.id) {
                     <div class="grid grid-cols-[90px_1fr_120px_90px_90px_80px_90px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" tabindex="0"
                       (click)="navigateToPayable(p)" (keydown.enter)="navigateToPayable(p)">
@@ -2995,7 +2995,7 @@
                   </div>
                 </div>
                 <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()[detail.type === 'rfi' ? 'rfi-detail' : detail.type === 'drawing' ? 'drawing-detail' : 'submittal-detail'] }" />
-                <div class="flex-1 overflow-y-auto p-5">
+                <div class="flex-1 overflow-y-auto p-5 mb-5">
                   @if (detail.type === 'rfi') {
                     <app-item-detail-view
                       icon="clipboard"
@@ -3078,7 +3078,7 @@
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <modus-typography headerTrailing size="xs" className="text-foreground-60">{{ completedMilestones() }}/{{ milestones().length }} Complete</modus-typography>
-                <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
+                <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1 mb-5">
                   @for (ms of milestones(); track ms.id) {
                     <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
                       <div class="flex-shrink-0">
@@ -3121,7 +3121,7 @@
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <modus-typography headerTrailing size="xs" className="text-foreground-60">{{ openTaskCount() }} Open</modus-typography>
-                <div class="p-4 flex flex-col gap-2 overflow-y-auto flex-1">
+                <div class="p-4 flex flex-col gap-2 overflow-y-auto flex-1 mb-5">
                   @for (task of tasks(); track task.id) {
                     <div class="flex items-center gap-3 p-3 bg-background border-default rounded-lg">
                       <div class="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
@@ -3162,7 +3162,7 @@
                     </div>
                   }
                 </div>
-                <div class="overflow-y-auto flex-1">
+                <div class="overflow-y-auto flex-1 mb-5">
                   @if (filteredProjectUrgentNeeds().length > 0) {
                     <div class="px-4 pt-3 pb-1">
                       <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-foreground-60 uppercase tracking-wide mb-2">Urgent Needs</modus-typography>
@@ -3238,7 +3238,7 @@
                 }
                 <modus-typography headerTrailing size="xs" className="text-foreground-60">{{ projectRfis().length }} Total</modus-typography>
                 @if (isRfiCompact()) {
-                  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto mb-5">
                     @for (item of rfiCompactItems; track item.key) {
                       <div
                         class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
@@ -3276,7 +3276,7 @@
                   <modus-typography size="xs" weight="semibold" role="columnheader">Due</modus-typography>
                   <modus-typography size="xs" weight="semibold" role="columnheader">Status</modus-typography>
                 </div>
-                <div class="overflow-y-auto flex-1" role="table" aria-label="RFIs" aria-live="polite">
+                <div class="overflow-y-auto flex-1 mb-5" role="table" aria-label="RFIs" aria-live="polite">
                   @for (rfi of projectRfis(); track rfi.id) {
                     <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToRfi(rfi, wId)" (keydown.enter)="navigateToRfi(rfi, wId)" (mousedown)="$event.stopPropagation()">
                       <modus-typography size="sm" weight="semibold" className="text-primary" role="cell">{{ rfi.number }}</modus-typography>
@@ -3309,7 +3309,7 @@
                 }
                 <modus-typography headerTrailing size="xs" className="text-foreground-60">{{ projectSubmittals().length }} Total</modus-typography>
                 @if (isSubmittalCompact()) {
-                  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto mb-5">
                     @for (item of submittalCompactItems; track item.key) {
                       <div
                         class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
@@ -3347,7 +3347,7 @@
                   <modus-typography size="xs" weight="semibold" role="columnheader">Due</modus-typography>
                   <modus-typography size="xs" weight="semibold" role="columnheader">Status</modus-typography>
                 </div>
-                <div class="overflow-y-auto flex-1" role="table" aria-label="Submittals" aria-live="polite">
+                <div class="overflow-y-auto flex-1 mb-5" role="table" aria-label="Submittals" aria-live="polite">
                   @for (sub of projectSubmittals(); track sub.id) {
                     <div class="grid grid-cols-[1fr_2fr_1fr_1fr] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer" role="row" tabindex="0" (click)="navigateToSubmittal(sub, wId)" (keydown.enter)="navigateToSubmittal(sub, wId)" (mousedown)="$event.stopPropagation()">
                       <modus-typography size="sm" weight="semibold" className="text-primary" role="cell">{{ sub.number }}</modus-typography>
@@ -3374,7 +3374,7 @@
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <modus-typography headerTrailing size="xs" className="text-foreground-60">{{ latestDrawing().version }}</modus-typography>
-                <div class="overflow-y-auto overflow-x-hidden flex-1 cursor-pointer hover:opacity-90 transition-opacity duration-150" role="button" tabindex="0"
+                <div class="overflow-y-auto overflow-x-hidden flex-1 mb-5 cursor-pointer hover:opacity-90 transition-opacity duration-150" role="button" tabindex="0"
                   [attr.aria-label]="'Open drawing: ' + newestDrawingTile().title"
                   (click)="openLatestDrawing()"
                   (keydown.enter)="openLatestDrawing()">
@@ -3397,7 +3397,7 @@
               <app-widget-frame icon="bar_graph" title="Budget" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('budget') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1 cursor-pointer"
+                <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1 mb-5 cursor-pointer"
                   (click)="navigateToBudgetPage(); $event.stopPropagation()"
                   (keydown.enter)="navigateToBudgetPage()"
                   (mousedown)="$event.stopPropagation()"
@@ -3511,7 +3511,7 @@
                 </div>
 
                 @if (isTeamCompact()) {
-                  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto">
+                  <div class="flex flex-col gap-2 p-3 flex-1 overflow-y-auto mb-5">
                     @for (item of teamCompactItems; track item.key) {
                       <div
                         class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
@@ -3530,7 +3530,7 @@
                   </div>
                 } @else {
                   @if (teamView() === 'list') {
-                    <div class="flex flex-col overflow-y-auto flex-1">
+                    <div class="flex flex-col overflow-y-auto flex-1 mb-5">
                       @if (projectStaffingConflicts().length) {
                         <div class="px-4 py-2 border-bottom-default flex flex-col gap-1.5">
                           @for (conflict of projectStaffingConflicts(); track conflict.week) {
@@ -3623,7 +3623,7 @@
                   }
 
                   @if (teamView() === 'staffing') {
-                    <div class="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-3">
+                    <div class="overflow-y-auto flex-1 px-4 py-3 mb-5 flex flex-col gap-3">
                       <div class="grid grid-cols-4 gap-3">
                         <div class="bg-muted rounded-lg p-3 flex flex-col items-center gap-1">
                           <modus-typography hierarchy="h1" size="2xl" weight="bold">{{ team().length }}</modus-typography>
@@ -3721,7 +3721,7 @@
                           <modus-typography size="xs" weight="semibold" className="text-center text-2xs text-foreground-40 uppercase py-1">{{ d }}</modus-typography>
                         }
                       </div>
-                      <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1">
+                      <div class="grid grid-cols-7 gap-px px-3 pb-3 overflow-y-auto flex-1 mb-5">
                         @for (cell of calendarDays(); track cell.day ?? $index) {
                           <div class="min-h-[52px] rounded-lg p-1 flex flex-col gap-0.5"
                             [class.bg-muted]="cell.day !== null && cell.requests.length === 0"
@@ -3780,7 +3780,7 @@
                       </div>
                     </div>
                   </div>
-                  <div class="flex-1 overflow-y-auto">
+                  <div class="flex-1 overflow-y-auto mb-5">
                     <div class="flex px-2 py-2 gap-1">
                       @for (day of pw.forecast; track day.date) {
                         <div class="flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-lg" [class]="day.workImpact === 'major' ? 'bg-destructive-20' : day.workImpact === 'minor' ? 'bg-warning-20' : 'hover:bg-muted'" [attr.title]="day.note || day.condition">
@@ -3806,7 +3806,7 @@
               <app-widget-frame icon="history" title="Recent Activity" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()" [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('activity') : null"
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
-                <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
+                <div class="p-4 flex flex-col gap-3 overflow-y-auto flex-1 mb-5">
                   @for (entry of activity(); track entry.id) {
                     <div class="flex items-start gap-3">
                       <div class="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-foreground-60 flex-shrink-0 mt-0.5">
@@ -4416,7 +4416,7 @@
                   </div>
                 }
               </div>
-              <div class="flex-1 overflow-y-auto min-h-0">
+              <div class="flex-1 overflow-y-auto min-h-0 mb-5">
                 @for (item of recordsSubNavItems(); track item.value) {
                   <div
                     class="flex items-center justify-between py-2.5 cursor-pointer transition-colors duration-150"
@@ -4472,7 +4472,7 @@
                   </div>
                 }
               </div>
-              <div class="flex-1 overflow-y-auto min-h-0">
+              <div class="flex-1 overflow-y-auto min-h-0 mb-5">
                 @for (item of financialsSubNavItems(); track item.value) {
                   <div
                     class="flex items-center justify-between py-2.5 cursor-pointer transition-colors duration-150"
@@ -4612,7 +4612,7 @@
             <modus-typography hierarchy="p" size="md" weight="semibold">Transaction Ledger</modus-typography>
             <modus-typography class="ml-auto" hierarchy="p" size="xs" className="text-foreground-40">{{ subledgerTransactions().length }} entries</modus-typography>
           </div>
-          <div class="overflow-y-auto flex-1">
+          <div class="overflow-y-auto flex-1 mb-5">
             <ng-container [ngTemplateOutlet]="subledgerLedgerTableRows" />
           </div>
         </div>
@@ -4926,7 +4926,7 @@
         [selected]="selectedWidgetId() === 'tile-budget-breakdown'" [isMobile]="isMobile()"
         (headerMouseDown)="onBudgetTileMouseDown('tile-budget-breakdown', $event)"
         (resizeStart)="onBudgetTileResizeStart('tile-budget-breakdown', $event)">
-        <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1">
+        <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1 mb-5">
           <div class="flex flex-col gap-2">
             <div class="flex w-full h-5 rounded-full overflow-hidden">
               @for (cat of jcDetailCategories(); track cat.label) {
@@ -4991,7 +4991,7 @@
         <div class="px-2.5 py-1 rounded-full {{ pf.isFade ? 'bg-destructive-20 text-destructive' : 'bg-success-20 text-success' }}" headerTrailing>
           <modus-typography size="xs" weight="semibold">{{ pf.isFade ? 'Fade' : 'Gain' }} {{ pf.isFade ? '' : '+' }}{{ pf.fadeGain }}%</modus-typography>
         </div>
-        <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1">
+        <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1 mb-5">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="flex flex-col gap-1 p-4 bg-background border-default rounded-lg">
               <modus-typography hierarchy="p" size="xs" className="text-foreground-40 uppercase tracking-wide">Original Estimate</modus-typography>
@@ -5057,7 +5057,7 @@
         [selected]="selectedWidgetId() === 'tile-budget-costsummary'" [isMobile]="isMobile()"
         (headerMouseDown)="onBudgetTileMouseDown('tile-budget-costsummary', $event)"
         (resizeStart)="onBudgetTileResizeStart('tile-budget-costsummary', $event)">
-        <div class="overflow-y-auto flex-1">
+        <div class="overflow-y-auto flex-1 mb-5">
           @if (isMobile()) {
             <div class="flex flex-col gap-2 p-3" role="table" aria-label="Cost summary">
               @for (cat of jcDetailCategories(); track cat.label) {
@@ -5160,7 +5160,7 @@
             <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0">
               <modus-typography size="xs" weight="semibold">ID</modus-typography><modus-typography size="xs" weight="semibold">Description</modus-typography><modus-typography size="xs" weight="semibold">Amount</modus-typography><modus-typography size="xs" weight="semibold">Status</modus-typography><modus-typography size="xs" weight="semibold">Requested By</modus-typography><modus-typography size="xs" weight="semibold">Date</modus-typography>
             </div>
-            <div class="overflow-y-auto flex-1">
+            <div class="overflow-y-auto flex-1 mb-5">
             @for (co of activeCoTypeList(); track co.id) {
               <div class="grid grid-cols-[80px_1fr_100px_80px_120px_100px] gap-3 px-5 py-3.5 border-bottom-default last:border-b-0 items-center hover:bg-muted transition-colors duration-150 cursor-pointer"
                 tabindex="0" (click)="navigateToChangeOrder(co)" (keydown.enter)="navigateToChangeOrder(co)">

@@ -8,7 +8,7 @@ import type { ApVendor, ApVendorType } from '../../../data/dashboard-data.types'
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto p-4">
+    <div class="flex flex-col gap-3 h-full min-h-0 overflow-y-auto p-4 mb-5">
       <modus-typography hierarchy="h4" size="sm" weight="semibold" className="text-foreground">Aging summary</modus-typography>
       <div class="grid grid-cols-5 gap-1 text-center mb-1">
         <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Current</modus-typography>

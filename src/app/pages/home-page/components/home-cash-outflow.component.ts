@@ -16,7 +16,7 @@ interface OutflowGroup {
   imports: [ModusTypographyComponent],
   styles: [':host { display: contents; }'],
   template: `
-    <div class="flex flex-col gap-4 h-full min-h-0 overflow-y-auto p-4">
+    <div class="flex flex-col gap-4 h-full min-h-0 overflow-y-auto p-4 mb-5">
       @for (g of groups(); track g.key) {
         <div class="bg-background border-default rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200 px-4 pt-3 pb-4 flex flex-col gap-2 shrink-0">
           <div class="flex items-center justify-between">
