@@ -417,6 +417,27 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
       expect(PROMPT_SRC).toContain('<ai-composer-pill');
       expect(PROMPT_SRC).toContain('anchorPrefix="card"');
     });
+
+    it('drawer-open short-circuits phase to default so chips + standalone pill render while the panel is open', () => {
+      // While the side drawer owns the conversation, the floating prompt
+      // must drop back to its default state -- no response card, no working
+      // pill -- so the user can re-engage the prompt or the page underneath.
+      expect(PROMPT_SRC).toMatch(
+        /phase\s*=\s*computed[\s\S]*?if\s*\(\s*c\.drawerOpen\(\)\s*\)\s*return\s*'default'/,
+      );
+    });
+
+    it('floating prompt host listens for mousedown + focusin to close the drawer when open', () => {
+      // Touching the composer or chip row (click or keyboard tab-in) hands
+      // the conversation back to the floating prompt by closing the drawer.
+      // The outer .ai-floating-prompt wrapper is pointer-events: none, so
+      // these only fire on the interactive children, not the empty area.
+      expect(PROMPT_SRC).toMatch(/@HostListener\(['"]mousedown['"]\)/);
+      expect(PROMPT_SRC).toMatch(/@HostListener\(['"]focusin['"]\)/);
+      expect(PROMPT_SRC).toMatch(
+        /onFloatingPromptInteract\(\)\s*:\s*void\s*\{[\s\S]*?drawerOpen\(\)[\s\S]*?closeDrawer\(\)/,
+      );
+    });
   });
 
   describe('Sources dropdown (state + actions)', () => {
@@ -482,8 +503,16 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
     it('panel component reads controller.drawerOpen and renders the drawer markup', () => {
       expect(PANEL_SRC).toMatch(/@if\s*\(\s*controller\.drawerOpen\(\)\s*\)/);
       expect(PANEL_SRC).toContain('ai-floating-prompt-drawer-portal');
-      expect(PANEL_SRC).toContain('ai-floating-prompt-drawer-dismiss');
       expect(PANEL_SRC).toContain('ai-floating-prompt-drawer');
+    });
+
+    it('panel is non-modal: no full-viewport dismiss scrim, aria-modal="false"', () => {
+      // The drawer must coexist with widgets and the floating prompt; a
+      // click-capturing scrim would block interaction with the rest of the
+      // app. Dismissal is handled by the X button, Escape, or the floating
+      // prompt's host listener (see drawer-open + floating-prompt tests).
+      expect(PANEL_SRC).not.toContain('ai-floating-prompt-drawer-dismiss');
+      expect(PANEL_SRC).toContain('aria-modal="false"');
     });
 
     it('panel renders the same controller messages (shared conversation, not a sub-context)', () => {
@@ -496,6 +525,16 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
       expect(PANEL_SRC).toContain('ai-floating-prompt-drawer-composer');
       expect(PANEL_SRC).toContain('<ai-composer-pill');
       expect(PANEL_SRC).toContain('anchorPrefix="drawer"');
+    });
+
+    it('panel header binds to controller.title() so widget/page context changes update the H3', () => {
+      // Same dynamic title source the floating prompt textarea uses
+      // (widgetFocusService.aiAssistantTitle via AiPanelController.title).
+      // When a widget is selected or the route changes, the visible heading
+      // tracks the agent context instead of the static "Trimble Assistant".
+      expect(PANEL_SRC).toMatch(
+        /<modus-typography\s+hierarchy="h3"[\s\S]*?>\s*\{\{\s*controller\.title\(\)\s*\}\}/,
+      );
     });
 
     it('panel Escape handler closes the drawer through the controller', () => {
@@ -525,7 +564,15 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
 
     it('drawer surface uses the page-tracking surface variable + primary edge', () => {
       expect(STYLES_SRC).toMatch(/\.ai-floating-prompt-drawer\s*\{[\s\S]*?background:\s*var\(--ai-floating-prompt-surface\)/);
-      expect(STYLES_SRC).toMatch(/\.ai-floating-prompt-drawer-dismiss[\s\S]*?color-mix\(in srgb,\s*var\(--foreground\)/);
+    });
+
+    it('drawer portal does not capture clicks: pointer-events: none on portal, auto on drawer', () => {
+      // Non-modal contract: portal lets clicks fall through to widgets and
+      // the floating prompt; only the drawer panel itself catches events.
+      // The dismiss-scrim rule must not exist anymore.
+      expect(STYLES_SRC).toMatch(/\.ai-floating-prompt-drawer-portal\s*\{[\s\S]*?pointer-events:\s*none/);
+      expect(STYLES_SRC).toMatch(/\.ai-floating-prompt-drawer\s*\{[\s\S]*?pointer-events:\s*auto/);
+      expect(STYLES_SRC).not.toContain('.ai-floating-prompt-drawer-dismiss');
     });
 
     it('reduced-motion users get no progress-ring rotation or dot wave', () => {

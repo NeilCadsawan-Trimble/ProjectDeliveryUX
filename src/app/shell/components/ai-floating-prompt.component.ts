@@ -455,6 +455,7 @@ export class AiFloatingPromptComponent {
    */
   readonly phase = computed<'default' | 'working' | 'review'>(() => {
     const c = this.controller();
+    if (c.drawerOpen()) return 'default';
     if (c.thinking() && c.messages().length === 0) return 'working';
     if (this.showResponseCard()) return 'review';
     return 'default';
@@ -480,6 +481,23 @@ export class AiFloatingPromptComponent {
   /** Composer pill emits `sent` whenever the user submits; restore the card. */
   onComposerSent(): void {
     this.dismissedAtCount.set(null);
+  }
+
+  /**
+   * Touching the floating prompt's composer or chip row while the side drawer
+   * is open should hand the conversation back to the floating prompt by
+   * closing the drawer. `mousedown` covers pointer interaction (fires before
+   * focus, so the close happens immediately on click), `focusin` covers
+   * keyboard tab-in. The outer `.ai-floating-prompt` wrapper is
+   * `pointer-events: none`, so these only fire on the interactive children
+   * (pill, chips) -- empty space around the pill stays inert.
+   */
+  @HostListener('mousedown')
+  @HostListener('focusin')
+  onFloatingPromptInteract(): void {
+    if (this.controller().drawerOpen()) {
+      this.controller().closeDrawer();
+    }
   }
 
   onStopClick(): void {

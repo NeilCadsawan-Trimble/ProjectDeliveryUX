@@ -2072,16 +2072,6 @@ modus-wc-chip
   pointer-events: none;
 }
 
-.ai-floating-prompt-drawer-dismiss {
-  position: absolute;
-  inset: 0;
-  border: none;
-  padding: 0;
-  cursor: default;
-  background: color-mix(in srgb, var(--foreground) 35%, transparent);
-  pointer-events: auto;
-}
-
 .ai-floating-prompt-drawer {
   position: relative;
   display: flex;
