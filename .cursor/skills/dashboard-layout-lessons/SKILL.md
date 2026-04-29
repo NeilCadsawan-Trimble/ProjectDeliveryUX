@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, the toolbar search/filter layout, the layout seed/reset/persona-switch system, or the AI floating prompt pill (send/stop buttons, pill chrome, edge-glow shadow stack, Modus pattern alignment). Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, the toolbar search/filter layout, the layout seed/reset/persona-switch system, the AI floating prompt pill (send/stop buttons, pill chrome, edge-glow shadow stack, Modus pattern alignment), or the non-modal coexistence contract between the floating prompt and the Trimble Assistant slide-out drawer (phase short-circuit, host-listener close, scrim removal, pointer-events split, context-aware drawer header). Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -1930,6 +1930,84 @@ The `--ai-floating-prompt-pill-shadow` and `-shadow-focus` token values defined 
 
 ---
 
+## 44. Non-Modal AI Panel + Floating Prompt Coexistence
+
+The floating prompt (`<ai-floating-prompt>`) and the Trimble Assistant slide-out drawer (`<ai-assistant-panel>`) are **peers** bound to the same `AiPanelController` singleton, not stacked surfaces. When the drawer is open the user must still be able to operate widgets, the navbar, and the floating prompt itself. Five contract pieces have to hold together; missing any one of them silently regresses the experience.
+
+### Contract (all five must hold)
+
+1. **Floating prompt yields to the drawer.** When `controller.drawerOpen()` is true, the prompt's `phase` computed short-circuits to `'default'` -- chips + standalone composer pill only. No response card, no working pill, even mid-stream.
+
+   ```ts
+   readonly phase = computed<'default' | 'working' | 'review'>(() => {
+     const c = this.controller();
+     if (c.drawerOpen()) return 'default';
+     if (c.thinking() && c.messages().length === 0) return 'working';
+     if (this.showResponseCard()) return 'review';
+     return 'default';
+   });
+   ```
+
+2. **Touching the floating prompt closes the drawer.** Two `@HostListener`s on `ai-floating-prompt.component.ts` (`mousedown` for click-before-focus, `focusin` for keyboard tab-in) call `controller.closeDrawer()` when the drawer is open. The outer `.ai-floating-prompt` wrapper is `pointer-events: none`, so empty space around the pill stays inert -- only interactive children (composer, chips) fire these handlers. **Do not** wire individual `(click)` listeners on the pill or each chip; that fragments the contract and misses keyboard tab-in.
+
+   ```ts
+   @HostListener('mousedown')
+   @HostListener('focusin')
+   onFloatingPromptInteract(): void {
+     if (this.controller().drawerOpen()) {
+       this.controller().closeDrawer();
+     }
+   }
+   ```
+
+3. **No full-viewport dismiss scrim.** `.ai-floating-prompt-drawer-dismiss` was removed entirely (markup + CSS). A click-capturing scrim defeats the whole point: widgets and the floating prompt have to receive clicks while the drawer is open. Dismissal is via the X button, `Escape` (existing handler), or rule (2).
+
+4. **Pointer-events split.** The portal keeps `pointer-events: none` (clicks fall through to whatever is underneath). The drawer panel keeps `pointer-events: auto` (so the right-side surface still catches its own events). Both halves are required:
+
+   ```css
+   .ai-floating-prompt-drawer-portal {
+     position: fixed; inset: 0; z-index: 1700;
+     display: flex; justify-content: flex-end;
+     pointer-events: none;          /* clicks fall through to widgets */
+   }
+
+   .ai-floating-prompt-drawer {
+     /* ... layout, surface, animation ... */
+     pointer-events: auto;          /* the panel itself is interactive */
+   }
+   ```
+
+5. **Drawer header binds to `controller.title()`.** The H3 reflects context the same way the floating prompt's textarea aria-label, welcome text, and suggestions do (all sourced from `widgetFocusService.aiAssistantTitle` via `AiPanelController.title`). Hardcoding "Trimble Assistant" leaves the panel out of sync the moment a widget is focused or the route changes.
+
+   ```html
+   <modus-typography hierarchy="h3" size="md" weight="semibold" className="truncate">{{ controller.title() }}</modus-typography>
+   ```
+
+### Conversation continuity (free, but easy to break)
+
+Both surfaces read and write the same controller signals: `messages()`, `thinking()`, `inputText()`, `send()`. A reply that streams in the drawer updates `messages()` in real time, and the floating prompt's response card surfaces the same conversation the instant the drawer closes (because `showResponseCard` returns true when `messages().length > 0` and `dismissedAtCount` is null or strictly less than count). **Do not** introduce a separate per-surface message store -- the singleton is the design.
+
+### Accessibility
+
+- `aria-modal="false"` on the drawer dialog. The drawer is no longer a modal; setting `aria-modal="true"` lies to AT and conflicts with the user's ability to operate the page underneath.
+- Keep the existing `Escape` handler in `ai-assistant-panel.component.ts` (`document:keydown.escape`); it remains the keyboard escape hatch even though the surface is non-modal.
+
+### Regression tests (5 in `tests/static/ai-floating-prompt.spec.ts`)
+
+| Assertion | Guards against |
+|---|---|
+| `aria-modal="false"` + no `ai-floating-prompt-drawer-dismiss` in panel template | Re-introducing a click-capturing scrim |
+| Portal `pointer-events: none`, drawer `pointer-events: auto`, no `.ai-floating-prompt-drawer-dismiss` rule in `styles.css` | CSS regressions that re-block the rest of the page |
+| `phase` computed contains `if (c.drawerOpen()) return 'default'` | Response card or working pill leaking through while the drawer owns the conversation |
+| `@HostListener('mousedown')` + `@HostListener('focusin')` + `onFloatingPromptInteract()` calls `closeDrawer()` | Losing the touch-to-close trigger or fragmenting it onto individual elements |
+| Drawer H3 uses `{{ controller.title() }}` | Static "Trimble Assistant" header drifting out of sync with the agent context |
+
+### Why this matters
+
+The drawer used to be modal and the floating prompt was effectively dead while it was open -- the user could not pivot back to a quick prompt without first dismissing the drawer, and they could not interact with widgets at all. Recovering that dual-track flow without losing conversation continuity required all five contract pieces above. If any one regresses (scrim re-added, `phase` rule removed, host listeners deleted, pointer-events flipped, or H3 hardcoded again), the experience reverts to the modal-blocking pattern even if the visuals look right.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1974,6 +2052,7 @@ The `--ai-floating-prompt-pill-shadow` and `-shadow-focus` token values defined 
 | Cross-row neighbor leak in push-squeeze | `dashboard-layout-engine.ts` (`applyResizePushSqueeze`) | (visual: resize widget in row 2, row 1 widgets must not move) |
 | Frozen engine config on persona switch | `dashboard-page-base.ts`, `dashboard-layout-engine.ts`, page components | (visual: switch persona, verify correct seed layout) |
 | AI floating prompt -- send/stop buttons + pill chrome | `ai-floating-prompt.component.ts`, `src/styles.css` | `tests/static/ai-floating-prompt.spec.ts` (height var, padding strategy) |
+| Non-modal AI panel + floating prompt coexistence (5-piece contract) | `ai-floating-prompt.component.ts` (`phase` short-circuit, `onFloatingPromptInteract` host listeners), `ai-assistant-panel.component.ts` (no scrim, `aria-modal="false"`, dynamic H3), `src/styles.css` (portal/drawer pointer-events split, no dismiss rule) | `tests/static/ai-floating-prompt.spec.ts` (5 regression tests: non-modal markup, no dismiss rule, phase short-circuit, host listeners, dynamic title) |
 | Missing compactAll on desktop reset/load | `dashboard-layout-engine.ts` (`resetToDefaults`, `loadSavedDefaults`) | (visual: Reset Layout, verify no overlaps) |
 | Stale LayoutDefaultsService version keys | `layout-defaults.service.ts` | (Save All Defaults, verify keys match actual storage keys) |
 | Missing header lock after project change | `project-dashboard.component.ts` (`_projectChangeEffect`) | (visual: switch project, verify header stays locked) |

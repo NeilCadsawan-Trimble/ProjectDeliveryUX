@@ -4,7 +4,7 @@
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
 **Last Updated**: April 29, 2026
-**Total Commits**: 211+
+**Total Commits**: 212+
 
 ---
 
@@ -40,10 +40,11 @@
 | 25    | Independent Per-Persona Layout Seeds                  | Done        | 5/5   |
 | 26    | Layout Persistence and Pamela Seed Round-Trip         | Done        | 7/7   |
 | 27    | AI Floating Prompt -- Modus Pattern Alignment         | Done        | 5/5   |
-| 28    | Remaining Work                                        | Not Started | 0/8   |
+| 28    | Non-Modal AI Panel + Floating Prompt Coexistence      | Done        | 6/6   |
+| 29    | Remaining Work                                        | Not Started | 0/8   |
 
 
-**Completed**: 206/214 items (96%)
+**Completed**: 212/220 items (96%)
 
 ---
 
@@ -820,7 +821,31 @@ Aligned the AI floating prompt pill (`ai-floating-prompt.component.ts` + `.ai-fl
 
 ---
 
-## Phase 28: Remaining Work
+## Phase 28: Non-Modal AI Panel + Floating Prompt Coexistence (Apr 29)
+
+Made the Trimble Assistant slide-out drawer non-modal so the floating prompt and the rest of the app stay reachable while the panel is open. The two surfaces are now true peers, both bound to the same `AiPanelController` singleton, with the floating prompt yielding to the drawer when it is open and reclaiming the conversation the moment the user touches the pill.
+
+### Items
+
+- **Drawer-open forces floating prompt back to default** -- `phase` computed in `ai-floating-prompt.component.ts` short-circuits to `'default'` when `controller.drawerOpen()` is true. No response card, no working pill, even mid-stream; the drawer owns the conversation surface while the prompt collapses to chips + the standalone composer pill.
+- **Mousedown + focusin host listeners close the drawer** -- new `onFloatingPromptInteract()` `@HostListener` on the floating prompt component calls `controller.closeDrawer()` whenever the drawer is open and the user touches the composer or a chip (click before focus, or keyboard tab-in). The outer `.ai-floating-prompt` wrapper is `pointer-events: none`, so empty space around the pill stays inert -- only interactive children fire the close.
+- **Removed the full-viewport dismiss scrim** -- deleted `.ai-floating-prompt-drawer-dismiss` from both `ai-assistant-panel.component.ts` and `src/styles.css`. The drawer portal keeps `pointer-events: none` and the panel itself keeps `pointer-events: auto`, so clicks anywhere outside the right-side panel pass straight through to widgets, navbar, and the floating prompt.
+- **Drawer is non-modal: `aria-modal="false"`** -- relaxed the modal contract in the panel template since users can now operate the rest of the page while the drawer is open. Dismissal is via the X button, `Escape` (already wired), or the floating-prompt host listener above.
+- **Conversation continuity** -- panel and floating prompt are bound to the same `controller.messages()`, `controller.thinking()`, `controller.inputText()`, and `controller.send()` signals. A reply that streams while the drawer is open updates `messages()` in real time, and the floating prompt's response card surfaces the same conversation the moment the drawer closes (no replay, no fetch).
+- **Drawer header is now context-aware** -- the H3 in the drawer binds to `controller.title()` (`widgetFocusService.aiAssistantTitle`), the same source that drives the floating prompt's textarea label and the welcome text. When a widget is selected or the route changes, the drawer heading swaps from "Trimble Assistant" to the agent-specific title, matching the welcome-text behavior.
+
+### Skill updates
+
+- `.cursor/skills/dashboard-layout-lessons/SKILL.md` -- added section 44 covering the non-modal coexistence contract (phase short-circuit, host listeners, scrim removal, pointer-events split, context-aware header) and appended a Quick Reference row.
+
+### Test results
+
+- `npm run test:static` -- pass (1362 tests, 17 files; +5 regression tests in `tests/static/ai-floating-prompt.spec.ts` for non-modal markup, dismiss-rule absence, portal/drawer pointer-events split, drawer-open phase short-circuit, host listeners, and dynamic H3 binding)
+- `npx ng build` -- clean (only pre-existing budget/CJS warnings)
+
+---
+
+## Phase 29: Remaining Work
 
 Features and improvements not yet started.
 

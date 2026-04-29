@@ -28,16 +28,9 @@ import { AiComposerPillComponent } from './ai-composer-pill.component';
     @if (controller.drawerOpen()) {
       <div class="ai-floating-prompt-drawer-portal" aria-hidden="false">
         <div
-          class="ai-floating-prompt-drawer-dismiss"
-          role="button"
-          aria-label="Dismiss Trimble Assistant"
-          tabindex="-1"
-          (click)="closeDrawer()"
-        ></div>
-        <div
           class="ai-floating-prompt-drawer"
           role="dialog"
-          aria-modal="true"
+          aria-modal="false"
           aria-label="Trimble Assistant"
           tabindex="-1"
         >
@@ -46,7 +39,7 @@ import { AiComposerPillComponent } from './ai-composer-pill.component';
               <div class="w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0">
                 <i class="modus-icons text-base text-primary" aria-hidden="true">ai_stars</i>
               </div>
-              <modus-typography hierarchy="h3" size="md" weight="semibold" className="truncate">Trimble Assistant</modus-typography>
+              <modus-typography hierarchy="h3" size="md" weight="semibold" className="truncate">{{ controller.title() }}</modus-typography>
             </div>
             <div
               class="ai-floating-prompt-toolbar-button"
