@@ -73,6 +73,13 @@ export class AiPanelController {
   readonly messages = signal<AiMessage[]>([]);
   readonly inputText = signal('');
   readonly thinking = signal(false);
+  /**
+   * Whether the right-side Trimble Assistant slide-out panel (mounted at the
+   * dashboard shell level) is currently open. Lifted onto the controller so
+   * the floating prompt's "Open Trimble Assistant" toolbar button and the
+   * panel itself stay in sync without prop drilling.
+   */
+  readonly drawerOpen = signal(false);
 
   readonly title: Signal<string>;
   readonly subtitle: Signal<string>;
@@ -217,6 +224,18 @@ export class AiPanelController {
 
   close(): void {
     this.panelOpen.set(false);
+  }
+
+  toggleDrawer(): void {
+    this.drawerOpen.update(v => !v);
+  }
+
+  openDrawer(): void {
+    this.drawerOpen.set(true);
+  }
+
+  closeDrawer(): void {
+    this.drawerOpen.set(false);
   }
 
   /**

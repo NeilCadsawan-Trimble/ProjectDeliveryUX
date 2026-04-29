@@ -38,6 +38,7 @@ import { AuthService } from '../../services/auth.service';
 import { type AgentDataState } from '../../data/widget-agents';
 import { environment } from '../../../environments/environment';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { AiAssistantPanelComponent } from '../components/ai-assistant-panel.component';
 
 export interface ShellNavItem {
   value: string;
@@ -58,6 +59,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     UserMenuComponent,
     TrimbleLogoComponent,
     ModusTypographyComponent,
+    AiAssistantPanelComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -90,6 +92,8 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       </defs>
     </svg>
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
+
+    <ai-assistant-panel />
 
     @if (isCanvas()) {
       <div class="canvas-host bg-background text-foreground canvas-mode select-none" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
