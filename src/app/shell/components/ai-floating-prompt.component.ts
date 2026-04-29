@@ -13,7 +13,6 @@ import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { ModusWcChip, ModusWcIcon } from '@trimble-oss/moduswebcomponents-angular';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
 import { ModusLogoComponent } from '../../components/modus-logo.component';
-import { AiIconComponent } from './ai-icon.component';
 import { AiPanelController } from '../services/ai-panel-controller';
 import { WidgetFocusService } from '../services/widget-focus.service';
 import type { AgentAction } from '../../data/widget-agents';
@@ -73,7 +72,6 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
     ModusWcIcon,
     ModusTypographyComponent,
     ModusLogoComponent,
-    AiIconComponent,
   ],
   template: `
     <div
@@ -91,7 +89,7 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
           <div class="flex items-center justify-between gap-2 px-4 py-3 border-bottom-default">
             <div class="flex items-center gap-2 min-w-0">
               <div class="w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0">
-                <ai-icon variant="solid-colored" size="sm" />
+                <i class="modus-icons text-base text-primary" aria-hidden="true">ai_stars</i>
               </div>
               <div class="min-w-0">
                 <modus-typography hierarchy="h3" size="md" weight="semibold" className="truncate">{{ controller().title() }}</modus-typography>
@@ -170,16 +168,15 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
               } @else {
                 <div class="flex items-start gap-2">
                   <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <ai-icon variant="solid-colored" size="xs" />
+                    <i class="modus-icons text-sm text-primary" aria-hidden="true">ai_stars</i>
                   </div>
                   <div class="flex flex-col gap-2 max-w-[85%]">
                     @if (msg.text) {
-                      <modus-typography
-                        size="sm"
-                        className="px-4 py-2.5 rounded-2xl rounded-tl-sm bg-background border-default text-foreground leading-relaxed whitespace-pre-wrap ai-msg-body"
+                      <div
+                        class="modus-wc-typography modus-wc-text-sm modus-wc-typography-weight-normal px-4 py-2.5 rounded-2xl rounded-tl-sm bg-background border-default text-foreground leading-relaxed whitespace-pre-wrap ai-msg-body"
                         [innerHTML]="renderMessage(msg.text)"
                         (click)="onMessageClick($event)"
-                      ></modus-typography>
+                      ></div>
                     }
                     @if (msg.pendingAction) {
                       @if (msg.pendingAction.choice) {
@@ -240,7 +237,7 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
             @if (controller().thinking()) {
               <div class="flex items-start gap-2">
                 <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <ai-icon variant="solid-colored" size="xs" />
+                  <i class="modus-icons text-sm text-primary" aria-hidden="true">ai_stars</i>
                 </div>
                 <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-background border-default">
                   <div class="flex items-center gap-1">
@@ -360,7 +357,7 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
         >
           <div class="ai-floating-prompt-progress-host" aria-hidden="true">
             <div class="ai-floating-prompt-progress-ring"></div>
-            <ai-icon variant="solid-colored" size="sm" />
+            <i class="modus-icons text-base text-primary" aria-hidden="true">ai_stars</i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-baseline gap-1">
@@ -378,15 +375,16 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
             <modus-typography hierarchy="p" size="xs" className="text-foreground-60">This might take a minute</modus-typography>
           </div>
           <div
-            class="ai-floating-prompt-send-button ai-floating-prompt-stop-button"
+            class="ai-floating-prompt-send-btn ai-floating-prompt-send-btn--stop"
             role="button"
             tabindex="0"
             aria-label="Stop generating response"
             title="Stop"
             (click)="onStopClick()"
             (keydown.enter)="onStopClick()"
+            (keydown.space)="onStopClick()"
           >
-            <i class="modus-icons text-base" aria-hidden="true">cancel_circle</i>
+            <i class="modus-icons" aria-hidden="true">stop_circle</i>
           </div>
         </div>
       } @else if (phase() === 'default') {
@@ -412,7 +410,7 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
             <div class="ai-floating-prompt-drawer-header">
               <div class="flex items-center gap-2 min-w-0">
                 <div class="w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0">
-                  <ai-icon variant="solid-colored" size="sm" />
+                  <i class="modus-icons text-base text-primary" aria-hidden="true">ai_stars</i>
                 </div>
                 <modus-typography hierarchy="h3" size="md" weight="semibold" className="truncate">Trimble Assistant</modus-typography>
               </div>
@@ -437,7 +435,7 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
               @if (controller().messages().length === 0 && !controller().thinking()) {
                 <div class="flex items-start gap-2">
                   <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <ai-icon variant="solid-colored" size="xs" />
+                    <i class="modus-icons text-sm text-primary" aria-hidden="true">ai_stars</i>
                   </div>
                   <modus-typography hierarchy="p" size="sm" className="text-foreground-60">{{ controller().welcomeText() }}</modus-typography>
                 </div>
@@ -452,21 +450,20 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
                 } @else {
                   <div class="flex items-start gap-2">
                     <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <ai-icon variant="solid-colored" size="xs" />
+                      <i class="modus-icons text-sm text-primary" aria-hidden="true">ai_stars</i>
                     </div>
-                    <modus-typography
-                      size="sm"
-                      className="px-4 py-2.5 rounded-2xl rounded-tl-sm bg-background border-default text-foreground leading-relaxed whitespace-pre-wrap max-w-[85%] ai-msg-body"
+                    <div
+                      class="modus-wc-typography modus-wc-text-sm modus-wc-typography-weight-normal px-4 py-2.5 rounded-2xl rounded-tl-sm bg-background border-default text-foreground leading-relaxed whitespace-pre-wrap max-w-[85%] ai-msg-body"
                       [innerHTML]="renderMessage(msg.text)"
                       (click)="onMessageClick($event)"
-                    ></modus-typography>
+                    ></div>
                   </div>
                 }
               }
               @if (controller().thinking()) {
                 <div class="flex items-start gap-2">
                   <div class="w-6 h-6 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <ai-icon variant="solid-colored" size="xs" />
+                    <i class="modus-icons text-sm text-primary" aria-hidden="true">ai_stars</i>
                   </div>
                   <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-background border-default">
                     <div class="flex items-center gap-1">
@@ -489,10 +486,6 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
 
     <ng-template #pillTpl let-embedded="embedded" let-anchorPrefix="anchorPrefix">
       <div class="ai-floating-prompt-bar" [class.ai-floating-prompt-bar--embedded]="embedded">
-        <div class="flex-shrink-0 w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center" aria-hidden="true">
-          <ai-icon variant="solid-colored" size="xs" />
-        </div>
-
         <div class="ai-floating-prompt-menu-anchor" [attr.data-anchor]="anchorPrefix + '-sources'">
           <div
             class="ai-floating-prompt-icon-button"
@@ -629,28 +622,31 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
 
         @if (controller().thinking()) {
           <div
-            class="ai-floating-prompt-send-button ai-floating-prompt-stop-button"
+            class="ai-floating-prompt-send-btn ai-floating-prompt-send-btn--stop"
             role="button"
             tabindex="0"
             aria-label="Stop generating response"
             title="Stop"
             (click)="onStopClick()"
             (keydown.enter)="onStopClick()"
+            (keydown.space)="onStopClick()"
           >
-            <i class="modus-icons text-base" aria-hidden="true">cancel_circle</i>
+            <i class="modus-icons" aria-hidden="true">stop_circle</i>
           </div>
         } @else {
           <div
-            class="ai-floating-prompt-send-button"
+            class="ai-floating-prompt-send-btn"
             role="button"
-            tabindex="0"
+            [attr.tabindex]="canSend() ? 0 : -1"
+            [class.is-disabled]="!canSend()"
+            [attr.aria-disabled]="!canSend()"
             aria-label="Send message"
             title="Send"
-            [class.is-disabled]="!canSend()"
-            (click)="onSendClick()"
-            (keydown.enter)="onSendClick()"
+            (click)="canSend() && onSendClick()"
+            (keydown.enter)="canSend() && onSendClick()"
+            (keydown.space)="canSend() && onSendClick()"
           >
-            <i class="modus-icons text-base" aria-hidden="true">arrow_up</i>
+            <i class="modus-icons" aria-hidden="true">arrow_up</i>
           </div>
         }
       </div>
