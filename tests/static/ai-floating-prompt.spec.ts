@@ -13,6 +13,14 @@ const PROMPT_SRC = readFileSync(
   resolve(__dir, '../../src/app/shell/components/ai-floating-prompt.component.ts'),
   'utf-8',
 );
+const PILL_SRC = readFileSync(
+  resolve(__dir, '../../src/app/shell/components/ai-composer-pill.component.ts'),
+  'utf-8',
+);
+const PANEL_SRC = readFileSync(
+  resolve(__dir, '../../src/app/shell/components/ai-assistant-panel.component.ts'),
+  'utf-8',
+);
 const HOST_SRC = readFileSync(
   resolve(__dir, '../../src/app/shell/components/ai-floating-prompt-host.component.ts'),
   'utf-8',
@@ -81,8 +89,10 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
       expect(SHELL_SRC).not.toContain('<ai-assistant-modal');
     });
 
-    it('shell template no longer mounts <ai-assistant-panel>', () => {
-      expect(SHELL_SRC).not.toContain('<ai-assistant-panel');
+    it('shell template mounts <ai-assistant-panel> (drawer lives at the dashboard shell level, not nested in the floating prompt)', () => {
+      expect(SHELL_SRC).toContain('<ai-assistant-panel');
+      // Imported as a standalone component, not eagerly imported elsewhere.
+      expect(SHELL_SRC).toContain('AiAssistantPanelComponent');
     });
 
     it('shell template no longer wires the old slide-in trigger (ai.toggle())', () => {
@@ -107,6 +117,17 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
 
     it('the deleted utility panel component is gone', () => {
       expect(existsSync(resolve(__dir, '../../src/app/components/modus-utility-panel.component.ts'))).toBe(false);
+    });
+
+    it('floating prompt no longer renders the drawer markup (lives in <ai-assistant-panel> now)', () => {
+      expect(PROMPT_SRC).not.toContain('ai-floating-prompt-drawer-portal');
+      expect(PROMPT_SRC).not.toContain('ai-floating-prompt-drawer-dismiss');
+      expect(PROMPT_SRC).not.toContain('aria-label="Trimble Assistant messages"');
+      expect(PROMPT_SRC).not.toContain('ngTemplateOutlet');
+    });
+
+    it('floating prompt no longer owns drawerOpen state (lives on AiPanelController)', () => {
+      expect(PROMPT_SRC).not.toMatch(/drawerOpen\s*=\s*signal\(false\)/);
     });
   });
 
@@ -200,42 +221,49 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
       expect(PROMPT_SRC).toMatch(/(controller\(\)|\bc)\.panelOpen\(\)/);
     });
 
-    it('component renders a textarea composer two-way bound to controller.inputText', () => {
-      expect(PROMPT_SRC).toContain('<textarea');
-      expect(PROMPT_SRC).toContain('controller().inputText()');
-      expect(PROMPT_SRC).toContain('controller().inputText.set');
+    it('composer pill renders a textarea two-way bound to controller.inputText', () => {
+      expect(PILL_SRC).toContain('<textarea');
+      expect(PILL_SRC).toContain('controller().inputText()');
+      expect(PILL_SRC).toContain('controller().inputText.set');
     });
 
-    it('composer sends on Enter and inserts a newline on Shift+Enter', () => {
-      expect(PROMPT_SRC).toContain('onComposerKeydown');
-      expect(PROMPT_SRC).toMatch(/event\.key\s*===\s*'Enter'/);
-      expect(PROMPT_SRC).toMatch(/!event\.shiftKey/);
+    it('composer pill sends on Enter and inserts a newline on Shift+Enter', () => {
+      expect(PILL_SRC).toContain('onComposerKeydown');
+      expect(PILL_SRC).toMatch(/event\.key\s*===\s*'Enter'/);
+      expect(PILL_SRC).toMatch(/!event\.shiftKey/);
     });
 
-    it('component preserves the conversation surface (messages, thinking dots)', () => {
+    it('floating prompt preserves the conversation surface (messages, thinking dots)', () => {
       expect(PROMPT_SRC).toContain('controller().messages()');
       expect(PROMPT_SRC).toContain('controller().thinking()');
       expect(PROMPT_SRC).toContain('animate-bounce');
     });
 
-    it('component preserves pendingAction confirm/cancel and choice gates', () => {
+    it('floating prompt preserves pendingAction confirm/cancel and choice gates', () => {
       expect(PROMPT_SRC).toContain('controller().confirmAction(msg.id)');
       expect(PROMPT_SRC).toContain('controller().cancelAction(msg.id)');
       expect(PROMPT_SRC).toContain('controller().chooseNavigation(msg.id)');
       expect(PROMPT_SRC).toContain('controller().chooseCanvasOverlay(msg.id)');
     });
 
-    it('Send button calls send() (not openAndSend) and is disabled without text', () => {
-      expect(PROMPT_SRC).toContain('onSendClick');
-      expect(PROMPT_SRC).toMatch(/canSend\s*=\s*computed/);
+    it('composer pill Send button calls send() (not openAndSend) and is disabled without text', () => {
+      expect(PILL_SRC).toContain('onSendClick');
+      expect(PILL_SRC).toMatch(/canSend\s*=\s*computed/);
+    });
+
+    it('floating prompt mounts <ai-composer-pill> for default phase + review-card composer', () => {
+      const pillCount = PROMPT_SRC.match(/<ai-composer-pill\b/g)?.length ?? 0;
+      expect(pillCount).toBe(2);
+      expect(PROMPT_SRC).toContain('anchorPrefix="main"');
+      expect(PROMPT_SRC).toContain('anchorPrefix="card"');
     });
   });
 
   describe('Stop affordance during streaming', () => {
-    it('component renders a Stop button while controller is thinking', () => {
-      expect(PROMPT_SRC).toMatch(/aria-label="Stop generating response"/);
-      expect(PROMPT_SRC).toContain('onStopClick');
-      expect(PROMPT_SRC).toContain('controller().stop()');
+    it('composer pill renders a Stop button while controller is thinking', () => {
+      expect(PILL_SRC).toMatch(/aria-label="Stop generating response"/);
+      expect(PILL_SRC).toContain('onStopClick');
+      expect(PILL_SRC).toContain('controller().stop()');
     });
 
     it('AiPanelController exposes stop() to cancel the streaming subscription', () => {
@@ -246,33 +274,33 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
   });
 
   describe('Sources menu (Modus pattern affordance)', () => {
-    it('component exposes a Sources trigger that opens a menu', () => {
-      expect(PROMPT_SRC).toMatch(/aria-label="Add source"/);
-      expect(PROMPT_SRC).toContain('toggleSources');
-      expect(PROMPT_SRC).toContain('aria-label="Sources"');
+    it('composer pill exposes a Sources trigger that opens a menu', () => {
+      expect(PILL_SRC).toMatch(/aria-label="Add source"/);
+      expect(PILL_SRC).toContain('toggleSources');
+      expect(PILL_SRC).toContain('aria-label="Sources"');
     });
 
     it('Sources menu lists the documented placeholder items', () => {
-      expect(PROMPT_SRC).toContain('Attach URL');
-      expect(PROMPT_SRC).toContain('Upload file from computer');
-      expect(PROMPT_SRC).toContain('Add project document');
-      expect(PROMPT_SRC).toContain('Browse Trimble Connect');
+      expect(PILL_SRC).toContain('Attach URL');
+      expect(PILL_SRC).toContain('Upload file from computer');
+      expect(PILL_SRC).toContain('Add project document');
+      expect(PILL_SRC).toContain('Browse Trimble Connect');
     });
   });
 
   describe('Tools menu (Modus pattern affordance)', () => {
-    it('component exposes a Tools trigger that opens a menu', () => {
-      expect(PROMPT_SRC).toMatch(/aria-label="Tools"/);
-      expect(PROMPT_SRC).toContain('toggleTools');
+    it('composer pill exposes a Tools trigger that opens a menu', () => {
+      expect(PILL_SRC).toMatch(/aria-label="Tools"/);
+      expect(PILL_SRC).toContain('toggleTools');
     });
 
     it('Tools menu lists the documented placeholder items', () => {
-      expect(PROMPT_SRC).toContain('Trimble Connect');
-      expect(PROMPT_SRC).toContain('Field & machine data');
-      expect(PROMPT_SRC).toContain('Model coordination');
-      expect(PROMPT_SRC).toContain('Geospatial & mapping');
-      expect(PROMPT_SRC).toContain('Quantities & takeoff');
-      expect(PROMPT_SRC).toContain('Clash & issues');
+      expect(PILL_SRC).toContain('Trimble Connect');
+      expect(PILL_SRC).toContain('Field & machine data');
+      expect(PILL_SRC).toContain('Model coordination');
+      expect(PILL_SRC).toContain('Geospatial & mapping');
+      expect(PILL_SRC).toContain('Quantities & takeoff');
+      expect(PILL_SRC).toContain('Clash & issues');
     });
   });
 
@@ -373,101 +401,106 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
       expect(PROMPT_SRC).toContain('Thinking');
     });
 
-    it('review phase header exposes feedback + drawer-toggle toolbar buttons', () => {
+    it('review phase header exposes feedback + drawer-toggle toolbar buttons that flip the controller drawer', () => {
       expect(PROMPT_SRC).toMatch(/aria-label="Helpful"/);
       expect(PROMPT_SRC).toMatch(/aria-label="Not helpful"/);
       expect(PROMPT_SRC).toMatch(/aria-label="Open Trimble Assistant"/);
       expect(PROMPT_SRC).toContain('toggleDrawer');
+      // toggleDrawer() delegates to the shared controller signal so the
+      // shell-mounted panel and the toolbar button stay in sync.
+      expect(PROMPT_SRC).toContain('controller().toggleDrawer()');
+      expect(PROMPT_SRC).toContain('controller().drawerOpen()');
     });
 
-    it('review phase reuses the same pill template for the embedded follow-up composer', () => {
+    it('review phase mounts <ai-composer-pill> for the embedded follow-up composer', () => {
       expect(PROMPT_SRC).toContain('ai-floating-prompt-card-composer');
-      expect(PROMPT_SRC).toContain('ai-floating-prompt-bar--embedded');
-      expect(PROMPT_SRC).toMatch(/ngTemplateOutlet/);
+      expect(PROMPT_SRC).toContain('<ai-composer-pill');
+      expect(PROMPT_SRC).toContain('anchorPrefix="card"');
     });
   });
 
   describe('Sources dropdown (state + actions)', () => {
-    it('component owns an attachedSources signal seeded empty', () => {
-      expect(PROMPT_SRC).toMatch(/attachedSources\s*=\s*signal<readonly FloatingPromptSource\[\]>\(\[\]\)/);
+    it('composer pill owns an attachedSources signal seeded empty', () => {
+      expect(PILL_SRC).toMatch(/attachedSources\s*=\s*signal<readonly FloatingPromptSource\[\]>\(\[\]\)/);
     });
 
     it('Sources actions cover the four React reference kinds', () => {
-      expect(PROMPT_SRC).toMatch(/kind:\s*'link'/);
-      expect(PROMPT_SRC).toMatch(/kind:\s*'file'/);
-      expect(PROMPT_SRC).toMatch(/kind:\s*'doc'/);
-      expect(PROMPT_SRC).toMatch(/kind:\s*'connect'/);
+      expect(PILL_SRC).toMatch(/kind:\s*'link'/);
+      expect(PILL_SRC).toMatch(/kind:\s*'file'/);
+      expect(PILL_SRC).toMatch(/kind:\s*'doc'/);
+      expect(PILL_SRC).toMatch(/kind:\s*'connect'/);
     });
 
     it('addSource appends a placeholder row per kind', () => {
-      expect(PROMPT_SRC).toMatch(/addSource\(\s*kind:\s*SourceKind\s*\)/);
-      expect(PROMPT_SRC).toContain('Upload_sketch_001.jpg');
-      expect(PROMPT_SRC).toContain('RFP_Section_04_revB.docx');
-      expect(PROMPT_SRC).toContain('Issue #1284');
-      expect(PROMPT_SRC).toContain('Trimble Connect · Shared folder');
+      expect(PILL_SRC).toMatch(/addSource\(\s*kind:\s*SourceKind\s*\)/);
+      expect(PILL_SRC).toContain('Upload_sketch_001.jpg');
+      expect(PILL_SRC).toContain('RFP_Section_04_revB.docx');
+      expect(PILL_SRC).toContain('Issue #1284');
+      expect(PILL_SRC).toContain('Trimble Connect · Shared folder');
     });
 
     it('removeSource filters by id', () => {
-      expect(PROMPT_SRC).toMatch(/removeSource\(\s*id:\s*string\s*\)/);
-      expect(PROMPT_SRC).toContain('aria-label="Remove source"');
+      expect(PILL_SRC).toMatch(/removeSource\(\s*id:\s*string\s*\)/);
+      expect(PILL_SRC).toContain('aria-label="Remove source"');
     });
 
     it('Sources trigger swaps between paperclip+count and add icon', () => {
-      expect(PROMPT_SRC).toContain('attachedSources().length > 0');
-      expect(PROMPT_SRC).toContain('paperclip');
-      expect(PROMPT_SRC).toContain('expand_more');
-      expect(PROMPT_SRC).toContain('ai-floating-prompt-source-count');
+      expect(PILL_SRC).toContain('attachedSources().length > 0');
+      expect(PILL_SRC).toContain('paperclip');
+      expect(PILL_SRC).toContain('expand_more');
+      expect(PILL_SRC).toContain('ai-floating-prompt-source-count');
     });
   });
 
   describe('Tools dropdown (TRIMBLE_CONTEXT_TOOLS verbatim)', () => {
     it('Tools menu uses the tune trigger icon (matches Modus pattern)', () => {
-      expect(PROMPT_SRC).toMatch(/aria-hidden="true">tune</);
+      expect(PILL_SRC).toMatch(/aria-hidden="true">tune</);
     });
 
     it('Tools catalog sublabels match the Modus reference verbatim', () => {
-      expect(PROMPT_SRC).toContain('Projects, files, and updates');
-      expect(PROMPT_SRC).toContain('Layout files, control points, or GNSS');
-      expect(PROMPT_SRC).toContain('Tekla, BIM, and clash context');
-      expect(PROMPT_SRC).toContain('Surfaces, imagery, and boundaries');
-      expect(PROMPT_SRC).toContain('Length, area, and counts');
-      expect(PROMPT_SRC).toContain('Multi-trade review helpers');
+      expect(PILL_SRC).toContain('Projects, files, and updates');
+      expect(PILL_SRC).toContain('Layout files, control points, or GNSS');
+      expect(PILL_SRC).toContain('Tekla, BIM, and clash context');
+      expect(PILL_SRC).toContain('Surfaces, imagery, and boundaries');
+      expect(PILL_SRC).toContain('Length, area, and counts');
+      expect(PILL_SRC).toContain('Multi-trade review helpers');
     });
 
     it('Tools menu uses <modus-logo emblem> for the Connect entry', () => {
-      expect(PROMPT_SRC).toMatch(/<modus-logo\s+name="connect"\s+\[emblem\]="true"/);
+      expect(PILL_SRC).toMatch(/<modus-logo\s+name="connect"\s+\[emblem\]="true"/);
     });
   });
 
-  describe('Trimble Assistant drawer', () => {
-    it('component owns a drawerOpen signal and toggle/close methods', () => {
-      expect(PROMPT_SRC).toMatch(/drawerOpen\s*=\s*signal\(false\)/);
-      expect(PROMPT_SRC).toContain('toggleDrawer');
-      expect(PROMPT_SRC).toContain('closeDrawer');
+  describe('Trimble Assistant drawer (lives at the dashboard shell level)', () => {
+    it('AiPanelController owns the shared drawerOpen signal + toggle/open/close methods', () => {
+      expect(CONTROLLER_SRC).toMatch(/drawerOpen\s*=\s*signal\(false\)/);
+      expect(CONTROLLER_SRC).toMatch(/toggleDrawer\(\)\s*:\s*void\s*\{/);
+      expect(CONTROLLER_SRC).toMatch(/openDrawer\(\)\s*:\s*void\s*\{/);
+      expect(CONTROLLER_SRC).toMatch(/closeDrawer\(\)\s*:\s*void\s*\{/);
     });
 
-    it('drawer markup is gated by `@if (drawerOpen())`', () => {
-      expect(PROMPT_SRC).toMatch(/@if\s*\(\s*drawerOpen\(\)\s*\)/);
-      expect(PROMPT_SRC).toContain('ai-floating-prompt-drawer-portal');
-      expect(PROMPT_SRC).toContain('ai-floating-prompt-drawer-dismiss');
-      expect(PROMPT_SRC).toContain('ai-floating-prompt-drawer');
+    it('panel component reads controller.drawerOpen and renders the drawer markup', () => {
+      expect(PANEL_SRC).toMatch(/@if\s*\(\s*controller\.drawerOpen\(\)\s*\)/);
+      expect(PANEL_SRC).toContain('ai-floating-prompt-drawer-portal');
+      expect(PANEL_SRC).toContain('ai-floating-prompt-drawer-dismiss');
+      expect(PANEL_SRC).toContain('ai-floating-prompt-drawer');
     });
 
-    it('drawer renders the same controller messages (shared conversation, not a sub-context)', () => {
-      // messages binding appears at least three times: review card, drawer messages list, plus iteration tracks
-      expect(PROMPT_SRC.match(/controller\(\)\.messages\(\)/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
-      expect(PROMPT_SRC).toContain('aria-label="Trimble Assistant messages"');
+    it('panel renders the same controller messages (shared conversation, not a sub-context)', () => {
+      expect(PANEL_SRC).toContain('controller.messages()');
+      expect(PANEL_SRC).toContain('controller.thinking()');
+      expect(PANEL_SRC).toContain('aria-label="Trimble Assistant messages"');
     });
 
-    it('drawer composer reuses the same pill template (embedded variant)', () => {
-      expect(PROMPT_SRC).toContain('ai-floating-prompt-drawer-composer');
-      // pillTpl is invoked at least three times: default, card composer, drawer composer
-      expect(PROMPT_SRC.match(/ngTemplateOutlet/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+    it('panel composer mounts <ai-composer-pill> with the drawer anchor prefix', () => {
+      expect(PANEL_SRC).toContain('ai-floating-prompt-drawer-composer');
+      expect(PANEL_SRC).toContain('<ai-composer-pill');
+      expect(PANEL_SRC).toContain('anchorPrefix="drawer"');
     });
 
-    it('Escape closes the drawer first, then the menus', () => {
-      expect(PROMPT_SRC).toMatch(/onEscape\(\)/);
-      expect(PROMPT_SRC).toMatch(/this\.drawerOpen\.set\(false\)/);
+    it('panel Escape handler closes the drawer through the controller', () => {
+      expect(PANEL_SRC).toMatch(/document:keydown\.escape/);
+      expect(PANEL_SRC).toContain('controller.closeDrawer()');
     });
   });
 
