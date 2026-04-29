@@ -3,6 +3,7 @@ import type { WidgetLayoutService } from './widget-layout.service';
 import { runCanvasPushBfs, type WidgetRect } from './canvas-push';
 import type { CanvasItemHost } from './canvas-item-host';
 import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
+import { readJson, removeJson, writeJson } from '../../shared/storage/json-local-storage';
 
 export interface DashboardLayoutConfig {
   widgets: string[];
@@ -718,19 +719,19 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   clearCurrentCache(): void {
     this.layoutService.remove(this.currentLayoutKey, false);
     this.layoutService.remove(this.currentLayoutKey, true);
-    try { localStorage.removeItem(`${this.currentLayoutKey}__locked`); } catch { /* ignore */ }
+    removeJson(`${this.currentLayoutKey}__locked`);
     try { sessionStorage.removeItem(`${this.currentLayoutKey}__locked`); } catch { /* ignore */ }
-    try { localStorage.removeItem(this.currentCanvasKey); } catch { /* ignore */ }
+    removeJson(this.currentCanvasKey);
   }
 
   resetToDefaults(): void {
-    try { localStorage.removeItem(this.canvasDefaultsKey); } catch { /* ignore */ }
-    try { localStorage.removeItem(this.desktopDefaultsKey); } catch { /* ignore */ }
+    removeJson(this.canvasDefaultsKey);
+    removeJson(this.desktopDefaultsKey);
 
     if (this.isCanvasMode()) {
       this.applyCanvasDefaults();
       this.widgetZIndices.set({});
-      localStorage.removeItem(this.currentCanvasKey);
+      removeJson(this.currentCanvasKey);
       this.persistCanvasLayout();
       this.cleanupAndPersistCanvas();
     } else {
@@ -782,7 +783,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       // The rAF `cleanupCanvasOverlaps` pass below remains as a DOM-aware
       // safety net for overlaps, but should now be a no-op for a clean save.
       this.applyCanvasHeaderClearance();
-      localStorage.removeItem(this.currentCanvasKey);
+      removeJson(this.currentCanvasKey);
       this.persistCanvasLayout();
       this.cleanupAndPersistCanvas();
     } else {
@@ -828,18 +829,14 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         layout['lefts'][id] = this.widgetLefts()[id];
         layout['widths'][id] = this.widgetPixelWidths()[id];
       }
-      try {
-        localStorage.setItem(this.canvasDefaultsKey, JSON.stringify(layout));
-      } catch { /* quota exceeded */ }
+      writeJson(this.canvasDefaultsKey, layout);
     } else if (this.config.desktopSaveDefaultLayoutSizingOnly) {
       const payload: DesktopSizingDefaultsV2 = { v: DESKTOP_SIZING_DEFAULTS_VERSION, colSpans: {}, heights: {} };
       for (const id of this.config.widgets) {
         payload.colSpans[id] = this.widgetColSpans()[id];
         payload.heights[id] = this.widgetHeights()[id];
       }
-      try {
-        localStorage.setItem(this.desktopDefaultsKey, JSON.stringify(payload));
-      } catch { /* quota exceeded */ }
+      writeJson(this.desktopDefaultsKey, payload);
     } else {
       const snapshot: LayoutSnapshot = {
         tops: {}, heights: {}, colStarts: {}, colSpans: {}, lefts: {}, widths: {},
@@ -852,9 +849,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
         snapshot.lefts[id] = this.widgetLefts()[id];
         snapshot.widths[id] = this.widgetPixelWidths()[id];
       }
-      try {
-        localStorage.setItem(this.desktopDefaultsKey, JSON.stringify(snapshot));
-      } catch { /* quota exceeded */ }
+      writeJson(this.desktopDefaultsKey, snapshot);
     }
   }
 
@@ -920,42 +915,24 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   private _loadCustomCanvasDefaults(): Record<string, Record<string, number>> | null {
-    try {
-      const raw = localStorage.getItem(this.canvasDefaultsKey);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
+    return readJson<Record<string, Record<string, number>>>(this.canvasDefaultsKey);
   }
 
   private _loadCustomDesktopDefaults(): LayoutSnapshot | null {
-    try {
-      const raw = localStorage.getItem(this.desktopDefaultsKey);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
+    return readJson<LayoutSnapshot>(this.desktopDefaultsKey);
   }
 
   private _loadDesktopSizingDefaultsV2(): DesktopSizingDefaultsV2 | null {
     if (!this.config.desktopSaveDefaultLayoutSizingOnly) return null;
-    try {
-      const raw = localStorage.getItem(this.desktopDefaultsKey);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as unknown;
-      if (typeof parsed !== 'object' || parsed === null) return null;
-      const o = parsed as Record<string, unknown>;
-      if (o['v'] !== DESKTOP_SIZING_DEFAULTS_VERSION) return null;
-      return {
-        v: DESKTOP_SIZING_DEFAULTS_VERSION,
-        colSpans: (o['colSpans'] as Record<string, number>) ?? {},
-        heights: (o['heights'] as Record<string, number>) ?? {},
-      };
-    } catch {
-      return null;
-    }
+    const parsed = readJson<unknown>(this.desktopDefaultsKey);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const o = parsed as Record<string, unknown>;
+    if (o['v'] !== DESKTOP_SIZING_DEFAULTS_VERSION) return null;
+    return {
+      v: DESKTOP_SIZING_DEFAULTS_VERSION,
+      colSpans: (o['colSpans'] as Record<string, number>) ?? {},
+      heights: (o['heights'] as Record<string, number>) ?? {},
+    };
   }
 
   private widestDesktopColumns(): number {
@@ -1113,14 +1090,12 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       });
     }
     if (prevCanvasKey && this.isCanvasMode()) {
-      try {
-        localStorage.setItem(prevCanvasKey, JSON.stringify({
-          tops: this.widgetTops(),
-          heights: this.widgetHeights(),
-          lefts: this.widgetLefts(),
-          widths: this.widgetPixelWidths(),
-        }));
-      } catch { /* quota */ }
+      writeJson(prevCanvasKey, {
+        tops: this.widgetTops(),
+        heights: this.widgetHeights(),
+        lefts: this.widgetLefts(),
+        widths: this.widgetPixelWidths(),
+      });
     }
 
     this.widgetTops.set({ ...this.config.defaultTops });
@@ -1892,6 +1867,43 @@ export class DashboardLayoutEngine implements CanvasItemHost {
     }
   }
 
+  /**
+   * Registers a transient (runtime-only) widget id with the engine so it
+   * participates in canvas push/collision. The caller is responsible for
+   * setting widgetTops/Lefts/PixelWidths/Heights for `id` before/after calling.
+   * Returns true if the id was newly added.
+   */
+  addTransientWidget(id: string): boolean {
+    if (this.config.widgets.includes(id)) return false;
+    this.config.widgets.push(id);
+    return true;
+  }
+
+  /**
+   * Removes a transient widget id and clears its entries from the engine signal
+   * maps. Use when a freestanding canvas detail closes.
+   */
+  removeTransientWidget(id: string): void {
+    const idx = this.config.widgets.indexOf(id);
+    if (idx >= 0) this.config.widgets.splice(idx, 1);
+
+    const stripFromRecord = <T>(rec: Record<string, T>): Record<string, T> => {
+      if (!(id in rec)) return rec;
+      const next = { ...rec };
+      delete next[id];
+      return next;
+    };
+
+    this.widgetTops.update(stripFromRecord);
+    this.widgetLefts.update(stripFromRecord);
+    this.widgetPixelWidths.update(stripFromRecord);
+    this.widgetHeights.update(stripFromRecord);
+    this.widgetZIndices.update(stripFromRecord);
+    this.widgetLocked.update(stripFromRecord);
+    this.widgetColStarts.update(stripFromRecord);
+    this.widgetColSpans.update(stripFromRecord);
+  }
+
   compactAll(anchorId?: string): void {
     const gap = DashboardLayoutEngine.GAP_PX;
     const tops = { ...this.widgetTops() };
@@ -2175,9 +2187,7 @@ export class DashboardLayoutEngine implements CanvasItemHost {
       layout['lefts'][id] = this.widgetLefts()[id];
       layout['widths'][id] = this.widgetPixelWidths()[id];
     }
-    try {
-      localStorage.setItem(this.currentCanvasKey, JSON.stringify(layout));
-    } catch { /* quota exceeded */ }
+    writeJson(this.currentCanvasKey, layout);
   }
 
   restoreDesktopLayout(): boolean {
@@ -2222,41 +2232,42 @@ export class DashboardLayoutEngine implements CanvasItemHost {
   }
 
   restoreCanvasLayout(): boolean {
-    try {
-      const raw = localStorage.getItem(this.currentCanvasKey);
-      if (!raw) return false;
-      const layout = JSON.parse(raw);
-      const tops = { ...this.widgetTops() };
-      const heights = { ...this.widgetHeights() };
-      const lefts = { ...this.widgetLefts() };
-      const widths = { ...this.widgetPixelWidths() };
-      const colSpans = { ...this.widgetColSpans() };
-      for (const id of this.config.widgets) {
-        if (layout.tops?.[id] != null) tops[id] = layout.tops[id];
-        if (layout.heights?.[id] != null) heights[id] = layout.heights[id];
-        if (layout.lefts?.[id] != null) lefts[id] = layout.lefts[id];
-        if (layout.widths?.[id] != null) widths[id] = layout.widths[id];
-      }
-      const cdT = this.config.canvasDefaultTops ?? {};
-      const cdH = this.config.canvasDefaultHeights ?? {};
-      const cdL = this.config.canvasDefaultLefts ?? {};
-      const cdW = this.config.canvasDefaultPixelWidths ?? {};
-      for (const id of this.config.widgets) {
-        if (tops[id] == null) tops[id] = cdT[id] ?? 0;
-        if (heights[id] == null || heights[id] <= 0) heights[id] = cdH[id] ?? heights[id] ?? 0;
-        if (lefts[id] == null) lefts[id] = cdL[id] ?? 0;
-        if (widths[id] == null || widths[id] <= 0) widths[id] = cdW[id] ?? widths[id] ?? 0;
-      }
-      this.enforceMaxColSpans(colSpans, widths);
-      this.widgetTops.set(tops);
-      this.widgetHeights.set(heights);
-      this.widgetLefts.set(lefts);
-      this.widgetPixelWidths.set(widths);
-      this.syncColSpansFromPixelWidths();
-      return true;
-    } catch {
-      return false;
+    interface PersistedCanvasLayout {
+      tops?: Record<string, number>;
+      heights?: Record<string, number>;
+      lefts?: Record<string, number>;
+      widths?: Record<string, number>;
     }
+    const layout = readJson<PersistedCanvasLayout>(this.currentCanvasKey);
+    if (!layout) return false;
+    const tops = { ...this.widgetTops() };
+    const heights = { ...this.widgetHeights() };
+    const lefts = { ...this.widgetLefts() };
+    const widths = { ...this.widgetPixelWidths() };
+    const colSpans = { ...this.widgetColSpans() };
+    for (const id of this.config.widgets) {
+      if (layout.tops?.[id] != null) tops[id] = layout.tops[id];
+      if (layout.heights?.[id] != null) heights[id] = layout.heights[id];
+      if (layout.lefts?.[id] != null) lefts[id] = layout.lefts[id];
+      if (layout.widths?.[id] != null) widths[id] = layout.widths[id];
+    }
+    const cdT = this.config.canvasDefaultTops ?? {};
+    const cdH = this.config.canvasDefaultHeights ?? {};
+    const cdL = this.config.canvasDefaultLefts ?? {};
+    const cdW = this.config.canvasDefaultPixelWidths ?? {};
+    for (const id of this.config.widgets) {
+      if (tops[id] == null) tops[id] = cdT[id] ?? 0;
+      if (heights[id] == null || heights[id] <= 0) heights[id] = cdH[id] ?? heights[id] ?? 0;
+      if (lefts[id] == null) lefts[id] = cdL[id] ?? 0;
+      if (widths[id] == null || widths[id] <= 0) widths[id] = cdW[id] ?? widths[id] ?? 0;
+    }
+    this.enforceMaxColSpans(colSpans, widths);
+    this.widgetTops.set(tops);
+    this.widgetHeights.set(heights);
+    this.widgetLefts.set(lefts);
+    this.widgetPixelWidths.set(widths);
+    this.syncColSpansFromPixelWidths();
+    return true;
   }
 
   applyCanvasDefaults(): void {

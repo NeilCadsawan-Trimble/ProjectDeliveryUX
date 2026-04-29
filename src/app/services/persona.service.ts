@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ThemeService, type ThemeName, type ThemeMode } from './theme.service';
+import { readJson, writeJson } from '../shared/storage/json-local-storage';
 
 export type ViewMode = 'mobile' | 'desktop' | 'canvas';
 
@@ -141,13 +142,8 @@ export class PersonaService {
   }
 
   private _loadThemePrefs(): void {
-    try {
-      const raw = localStorage.getItem(PERSONA_THEME_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        this._personaThemePrefs = this._migratePrefs(parsed);
-      }
-    } catch { /* corrupted data -- use defaults */ }
+    const parsed = readJson<Record<string, unknown>>(PERSONA_THEME_STORAGE_KEY);
+    if (parsed) this._personaThemePrefs = this._migratePrefs(parsed);
   }
 
   /** Migrate old flat format { slug: { theme, mode } } to per-view-mode format { slug: { desktop: { theme, mode }, ... } }. */
@@ -167,9 +163,7 @@ export class PersonaService {
   }
 
   private _persistThemePrefs(): void {
-    try {
-      localStorage.setItem(PERSONA_THEME_STORAGE_KEY, JSON.stringify(this._personaThemePrefs));
-    } catch { /* quota exceeded */ }
+    writeJson(PERSONA_THEME_STORAGE_KEY, this._personaThemePrefs);
   }
 
   static isValidPersona(slug: string): boolean {

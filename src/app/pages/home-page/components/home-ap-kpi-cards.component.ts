@@ -1,19 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
+import type { DashboardKpiCard } from '../../../shared/models/kpi-card';
 
-export interface ApKpiCard {
-  value: string;
-  label: string;
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  /** Optional secondary line shown below the value/label row. */
-  subtitle?: string;
-  /** Optional action identifier. When provided, the card becomes an interactive link. */
-  action?: string;
-  /** Optional aria label prefix (falls back to label). */
-  ariaPrefix?: string;
-}
+export type ApKpiCard = DashboardKpiCard;
 
 @Component({
   selector: 'app-home-ap-kpi-cards',

@@ -1,6 +1,6 @@
 export type { AgentAction, AgentAlert, AgentDataState, WidgetAgent } from './shared';
 export { getSuggestions } from './shared';
-export { HOME_AGENTS, KELLY_HOME_AGENTS } from './home-agents';
+export { HOME_AGENTS } from './home-agents';
 export { PROJECT_AGENTS } from './project-agents';
 export { FINANCIALS_AGENTS } from './financials-agents';
 export { PORTFOLIO_AGENTS } from './portfolio-agents';
@@ -181,8 +181,4 @@ export function getAgent(widgetId: string | null, page: string, subContext?: str
   if (subContext && ALL_AGENTS[subContext]) return ALL_AGENTS[subContext];
   if (widgetId && ALL_AGENTS[widgetId]) return ALL_AGENTS[widgetId];
   return ALL_AGENTS[PAGE_DEFAULT_AGENTS[page] ?? 'homeDefault'] ?? homeDefault;
-}
-
-export function getAllAgents(): Record<string, WidgetAgent> {
-  return ALL_AGENTS;
 }

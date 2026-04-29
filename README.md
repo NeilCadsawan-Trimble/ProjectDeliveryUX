@@ -335,39 +335,6 @@ Use the Dev Panel (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>) to test your U
 
 ---
 
-## Deployment
-
-### AWS Amplify
-
-Pre-configured `amplify.yml` included:
-
-```yaml
-version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - npm ci
-    build:
-      commands:
-        - npm run build
-  artifacts:
-    baseDirectory: dist/modus-angular-app/browser
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
-```
-
-**Important:** Configure rewrite rules in Amplify Console for Angular routing:
-
-| Source | Target        | Type          |
-| ------ | ------------- | ------------- |
-| `/<*>` | `/index.html` | 200 (Rewrite) |
-
----
-
 ## AI-Powered Development
 
 ### Cursor/Copilot Rules

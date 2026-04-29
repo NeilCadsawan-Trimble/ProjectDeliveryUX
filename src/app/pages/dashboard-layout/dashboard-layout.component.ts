@@ -22,7 +22,6 @@ import { getPersonaNav } from '../../data/persona-nav.config';
       [aiResponseFn]="aiResponseFn"
       [defaultAiSuggestions]="defaultAiSuggestions"
       [aiWelcomeText]="aiWelcomeText()"
-      [aiPlaceholder]="'Ask about your projects...'"
     />
   `,
 })

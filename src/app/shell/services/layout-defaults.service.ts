@@ -1,6 +1,16 @@
 import { Injectable } from '@angular/core';
 import { PERSONAS } from '../../services/persona.service';
+import { readJson, removeJson, writeJson } from '../../shared/storage/json-local-storage';
 import { getAllDashboardKeys, type DashboardKeyPair } from './layout-keys';
+
+interface DesktopLayoutSnapshot {
+  tops?: Record<string, number>;
+  heights?: Record<string, number>;
+  colStarts?: Record<string, number>;
+  colSpans?: Record<string, number>;
+  lefts?: Record<string, number>;
+  widths?: Record<string, number>;
+}
 
 @Injectable({ providedIn: 'root' })
 export class LayoutDefaultsService {
@@ -29,8 +39,8 @@ export class LayoutDefaultsService {
    */
   clearAllDefaults(): void {
     for (const pair of this._allKeysAcrossAllPersonas()) {
-      try { localStorage.removeItem(`${pair.desktop}__customDefaults`); } catch { /* ignore */ }
-      try { localStorage.removeItem(`${pair.canvas}__customDefaults`); } catch { /* ignore */ }
+      removeJson(`${pair.desktop}__customDefaults`);
+      removeJson(`${pair.canvas}__customDefaults`);
     }
   }
 
@@ -46,38 +56,30 @@ export class LayoutDefaultsService {
     // Desktop layouts moved to localStorage; fall back to sessionStorage for
     // users mid-migration so "Save All Visited Defaults" still picks them up.
     const storageKey = `${this.DESKTOP_SESSION_PREFIX}${layoutKey}:desktop`;
-    try {
-      const raw =
-        (typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey) : null) ??
-        (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(storageKey) : null);
-      if (!raw) return false;
-      const layout = JSON.parse(raw);
-      if (!layout || typeof layout !== 'object') return false;
-      const snapshot = {
-        tops: layout.tops ?? {},
-        heights: layout.heights ?? {},
-        colStarts: layout.colStarts ?? {},
-        colSpans: layout.colSpans ?? {},
-        lefts: layout.lefts ?? {},
-        widths: layout.widths ?? {},
-      };
-      localStorage.setItem(`${layoutKey}__customDefaults`, JSON.stringify(snapshot));
-      return true;
-    } catch {
-      return false;
+    let layout = readJson<DesktopLayoutSnapshot>(storageKey);
+    if (!layout) {
+      try {
+        const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(storageKey) : null;
+        layout = raw ? (JSON.parse(raw) as DesktopLayoutSnapshot) : null;
+      } catch {
+        return false;
+      }
     }
+    if (!layout || typeof layout !== 'object') return false;
+    const snapshot: Required<DesktopLayoutSnapshot> = {
+      tops: layout.tops ?? {},
+      heights: layout.heights ?? {},
+      colStarts: layout.colStarts ?? {},
+      colSpans: layout.colSpans ?? {},
+      lefts: layout.lefts ?? {},
+      widths: layout.widths ?? {},
+    };
+    return writeJson(`${layoutKey}__customDefaults`, snapshot);
   }
 
   private saveCanvasDefaults(canvasKey: string): boolean {
-    try {
-      const raw = localStorage.getItem(canvasKey);
-      if (!raw) return false;
-      const layout = JSON.parse(raw);
-      if (!layout || typeof layout !== 'object') return false;
-      localStorage.setItem(`${canvasKey}__customDefaults`, JSON.stringify(layout));
-      return true;
-    } catch {
-      return false;
-    }
+    const layout = readJson<unknown>(canvasKey);
+    if (!layout || typeof layout !== 'object') return false;
+    return writeJson(`${canvasKey}__customDefaults`, layout);
   }
 }

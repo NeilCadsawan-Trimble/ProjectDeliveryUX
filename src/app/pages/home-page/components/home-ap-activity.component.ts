@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApActivityItem, ApActivityType } from '../../../data/dashboard-data.types';
+import { formatUsd } from '../../../shared/utils/format';
 
 @Component({
   selector: 'app-home-ap-activity',
@@ -35,7 +36,7 @@ export class HomeApActivityComponent {
   readonly activities = input.required<ApActivityItem[]>();
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return formatUsd(amount);
   }
 
   iconFor(t: ApActivityType): string {

@@ -116,51 +116,12 @@
         </div>
         <div class="transition-[padding] duration-200" [class.md:pl-4]="!sideSubNavCollapsed()">
         @if (detailRfi(); as rfi) {
-          <app-item-detail-view
-            icon="clipboard"
-            typeLabel="Request for Information"
-            [number]="rfi.number"
-            [subject]="rfi.subject"
-            [question]="rfi.question"
-            [assignee]="rfi.assignee"
-            [assigneeOptions]="ASSIGNEE_OPTIONS"
-            (assigneeChange)="onDetailAssigneeChange($event)"
-            field1Label="Created By"
-            [field1Value]="rfi.askedBy"
-            field3Label="Created On"
-            [field3Value]="rfi.askedOn"
-            field4Label="Due Date"
-            [field4Value]="rfi.dueDate"
-            [field4ShowStatus]="false"
-            [currentStatus]="rfi.status"
-            [statusOptions]="STATUS_OPTIONS"
-            [statusDotClass]="itemStatusDot(rfi.status)"
-            [statusText]="capitalizeStatus(rfi.status)"
-            (statusChange)="onDetailStatusChange($event)"
-            (dueDateChange)="onDetailDueDateChange($event)"
-            (openInNewTab)="onOpenDetailInNewTab()"
-          />
+          <ng-container [ngTemplateOutlet]="rfiDetailPanel"
+            [ngTemplateOutletContext]="{ item: rfi, mode: 'desktop', id: '' }" />
         }
         @if (detailSubmittal(); as sub) {
-          <app-item-detail-view
-            icon="document"
-            typeLabel="Submittal"
-            [number]="sub.number"
-            [subject]="sub.subject"
-            [assignee]="sub.assignee"
-            [assigneeOptions]="ASSIGNEE_OPTIONS"
-            (assigneeChange)="onDetailAssigneeChange($event)"
-            [field1Value]="sub.project"
-            [field3Value]="sub.dueDate"
-            [field3DateEditable]="true"
-            [currentStatus]="sub.status"
-            [statusOptions]="STATUS_OPTIONS"
-            [statusDotClass]="itemStatusDot(sub.status)"
-            [statusText]="capitalizeStatus(sub.status)"
-            (statusChange)="onDetailStatusChange($event)"
-            (dueDateChange)="onDetailDueDateChange($event)"
-            (openInNewTab)="onOpenDetailInNewTab()"
-          />
+          <ng-container [ngTemplateOutlet]="submittalDetailPanel"
+            [ngTemplateOutletContext]="{ item: sub, mode: 'desktop', id: '' }" />
         }
         <app-record-detail-views
           [dailyReport]="detailDailyReport()"
@@ -951,22 +912,8 @@
                       </div>
                     </div>
                     <div class="flex-1 overflow-y-auto p-5 mb-5">
-                      <app-item-detail-view
-                        [hideHeader]="true"
-                        icon="clipboard" typeLabel="Request for Information"
-                        [number]="$any(detail).item.number" [subject]="$any(detail).item.subject"
-                        [question]="$any(detail).item.question" [assignee]="$any(detail).item.assignee"
-                        [assigneeOptions]="ASSIGNEE_OPTIONS"
-                        (assigneeChange)="onTileDetailAssigneeChange('tile-rfi-' + rfi.id, $event)"
-                        field1Label="Created By" [field1Value]="$any(detail).item.askedBy"
-                        field3Label="Created On" [field3Value]="$any(detail).item.askedOn"
-                        field4Label="Due Date" [field4Value]="$any(detail).item.dueDate" [field4ShowStatus]="false"
-                        [currentStatus]="$any(detail).item.status" [statusOptions]="STATUS_OPTIONS"
-                        [statusDotClass]="itemStatusDot($any(detail).item.status)"
-                        [statusText]="capitalizeStatus($any(detail).item.status)"
-                        (statusChange)="onTileDetailStatusChange('tile-rfi-' + rfi.id, $event)"
-                        (dueDateChange)="onTileDetailDueDateChange('tile-rfi-' + rfi.id, $event)"
-                      />
+                      <ng-container [ngTemplateOutlet]="rfiDetailPanel"
+                        [ngTemplateOutletContext]="{ item: $any(detail).item, mode: 'tile', id: 'tile-rfi-' + rfi.id }" />
                     </div>
                   </div>
                 } @else {
@@ -1066,21 +1013,8 @@
                       </div>
                     </div>
                     <div class="flex-1 overflow-y-auto p-5 mb-5">
-                      <app-item-detail-view
-                        [hideHeader]="true"
-                        icon="document" typeLabel="Submittal"
-                        [number]="$any(detail).item.number" [subject]="$any(detail).item.subject"
-                        [assignee]="$any(detail).item.assignee"
-                        [assigneeOptions]="ASSIGNEE_OPTIONS"
-                        (assigneeChange)="onTileDetailAssigneeChange('tile-sub-' + sub.id, $event)"
-                        [field1Value]="$any(detail).item.project"
-                        [field3Value]="$any(detail).item.dueDate" [field3DateEditable]="true"
-                        [currentStatus]="$any(detail).item.status" [statusOptions]="STATUS_OPTIONS"
-                        [statusDotClass]="itemStatusDot($any(detail).item.status)"
-                        [statusText]="capitalizeStatus($any(detail).item.status)"
-                        (statusChange)="onTileDetailStatusChange('tile-sub-' + sub.id, $event)"
-                        (dueDateChange)="onTileDetailDueDateChange('tile-sub-' + sub.id, $event)"
-                      />
+                      <ng-container [ngTemplateOutlet]="submittalDetailPanel"
+                        [ngTemplateOutletContext]="{ item: $any(detail).item, mode: 'tile', id: 'tile-sub-' + sub.id }" />
                     </div>
                   </div>
                 } @else {
@@ -2997,51 +2931,12 @@
                 <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()[detail.type === 'rfi' ? 'rfi-detail' : detail.type === 'drawing' ? 'drawing-detail' : 'submittal-detail'] }" />
                 <div class="flex-1 overflow-y-auto p-5 mb-5">
                   @if (detail.type === 'rfi') {
-                    <app-item-detail-view
-                      icon="clipboard"
-                      typeLabel="Request for Information"
-                      [number]="detail.item.number"
-                      [subject]="detail.item.subject"
-                      [question]="$any(detail.item).question"
-                      [assignee]="detail.item.assignee"
-                      [assigneeOptions]="ASSIGNEE_OPTIONS"
-                      (assigneeChange)="onCanvasDetailAssigneeChange(wId, $event)"
-                      field1Label="Created By"
-                      [field1Value]="$any(detail.item).askedBy"
-                      field3Label="Created On"
-                      [field3Value]="$any(detail.item).askedOn"
-                      field4Label="Due Date"
-                      [field4Value]="detail.item.dueDate"
-                      [field4ShowStatus]="false"
-                      [currentStatus]="detail.item.status"
-                      [statusOptions]="STATUS_OPTIONS"
-                      [statusDotClass]="itemStatusDot(detail.item.status)"
-                      [statusText]="capitalizeStatus(detail.item.status)"
-                      (statusChange)="onCanvasDetailStatusChange(wId, $event)"
-                      (dueDateChange)="onCanvasDetailDueDateChange(wId, $event)"
-                      (openInNewTab)="openCanvasDetailInNewTab(detail)"
-                    />
+                    <ng-container [ngTemplateOutlet]="rfiDetailPanel"
+                      [ngTemplateOutletContext]="{ item: detail.item, mode: 'canvas', id: wId }" />
                   }
                   @if (detail.type === 'submittal') {
-                    <app-item-detail-view
-                      icon="document"
-                      typeLabel="Submittal"
-                      [number]="detail.item.number"
-                      [subject]="detail.item.subject"
-                      [assignee]="detail.item.assignee"
-                      [assigneeOptions]="ASSIGNEE_OPTIONS"
-                      (assigneeChange)="onCanvasDetailAssigneeChange(wId, $event)"
-                      [field1Value]="$any(detail.item).project"
-                      [field3Value]="detail.item.dueDate"
-                      [field3DateEditable]="true"
-                      [currentStatus]="detail.item.status"
-                      [statusOptions]="STATUS_OPTIONS"
-                      [statusDotClass]="itemStatusDot(detail.item.status)"
-                      [statusText]="capitalizeStatus(detail.item.status)"
-                      (statusChange)="onCanvasDetailStatusChange(wId, $event)"
-                      (dueDateChange)="onCanvasDetailDueDateChange(wId, $event)"
-                      (openInNewTab)="openCanvasDetailInNewTab(detail)"
-                    />
+                    <ng-container [ngTemplateOutlet]="submittalDetailPanel"
+                      [ngTemplateOutletContext]="{ item: detail.item, mode: 'canvas', id: wId }" />
                   }
                   @if (detail.type === 'drawing') {
                     <div class="flex flex-col gap-4">
@@ -3924,16 +3819,6 @@
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
-                aria-label="AI assistant"
-                (click)="ai.toggle()"
-                (keydown.enter)="ai.toggle()"
-                tabindex="0"
-              >
-                <ai-icon variant="nav" [isDark]="isDark()" />
-              </div>
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
                 [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
                 (click)="toggleDarkMode()"
                 (keydown.enter)="toggleDarkMode()"
@@ -4084,7 +3969,7 @@
           <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
         }
 
-        <div class="canvas-content" [class.canvas-drawing-detail]="isCanvasDrawingDetail()" role="main" id="main-content" tabindex="-1"
+        <div class="canvas-content pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)]" [class.canvas-drawing-detail]="isCanvasDrawingDetail()" role="main" id="main-content" tabindex="-1"
           [style.transform]="'translateX(-50%) translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
           <div [class]="isCanvasDrawingDetail() ? 'py-6 flex flex-col' : 'py-6'"
             [style.height]="isCanvasDrawingDetail() ? 'calc(100vh - 80px)' : null">
@@ -4155,16 +4040,6 @@
           </div>
         </div>
         <div class="app-navbar-end">
-          <div
-            class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-            role="button"
-            aria-label="AI assistant"
-            (click)="ai.toggle()"
-            (keydown.enter)="ai.toggle()"
-            tabindex="0"
-          >
-            <ai-icon variant="nav" [isDark]="isDark()" />
-          </div>
           <div
             class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
             role="button"
@@ -4287,7 +4162,7 @@
       <div class="flex flex-1 overflow-hidden">
         <!-- Main content -->
         <div
-          class="flex-1 overflow-auto bg-background"
+          class="flex-1 overflow-auto bg-background pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)]"
           [class.pl-14]="!isMobile()"
           role="main"
           id="main-content"
@@ -4524,13 +4399,6 @@
 
     </div>
     }
-
-    <ai-assistant-panel
-      [controller]="ai"
-      [welcomeText]="aiWelcomeMessage()"
-      [placeholder]="'Ask about ' + projectName() + '...'"
-      [showDisclaimer]="false"
-    />
 
     <ng-template #budgetDetailContent>
       @if (projectJobCost(); as jcP) {
@@ -5178,4 +5046,60 @@
       } @else {
         <app-empty-state icon="swap" [title]="activeFinancialsPageLabel()" description="No change orders of this type for this project." />
       }
+    </ng-template>
+
+    <!--
+      Shared detail panels used by the desktop, tile, and canvas detail views.
+      Bindings are defined once here and dispatched via mode/id so we don't
+      duplicate the long `<app-item-detail-view>` binding block at every site.
+    -->
+    <ng-template #rfiDetailPanel let-item="item" let-mode="mode" let-id="id">
+      <app-item-detail-view
+        [hideHeader]="mode === 'tile'"
+        icon="clipboard"
+        typeLabel="Request for Information"
+        [number]="item.number"
+        [subject]="item.subject"
+        [question]="item.question"
+        [assignee]="item.assignee"
+        [assigneeOptions]="ASSIGNEE_OPTIONS"
+        (assigneeChange)="dispatchDetailAssignee(mode, id, $event)"
+        field1Label="Created By"
+        [field1Value]="item.askedBy"
+        field3Label="Created On"
+        [field3Value]="item.askedOn"
+        field4Label="Due Date"
+        [field4Value]="item.dueDate"
+        [field4ShowStatus]="false"
+        [currentStatus]="item.status"
+        [statusOptions]="STATUS_OPTIONS"
+        [statusDotClass]="itemStatusDot(item.status)"
+        [statusText]="capitalizeStatus(item.status)"
+        (statusChange)="dispatchDetailStatus(mode, id, $event)"
+        (dueDateChange)="dispatchDetailDueDate(mode, id, $event)"
+        (openInNewTab)="dispatchDetailOpenInNewTab(mode, id)"
+      />
+    </ng-template>
+
+    <ng-template #submittalDetailPanel let-item="item" let-mode="mode" let-id="id">
+      <app-item-detail-view
+        [hideHeader]="mode === 'tile'"
+        icon="document"
+        typeLabel="Submittal"
+        [number]="item.number"
+        [subject]="item.subject"
+        [assignee]="item.assignee"
+        [assigneeOptions]="ASSIGNEE_OPTIONS"
+        (assigneeChange)="dispatchDetailAssignee(mode, id, $event)"
+        [field1Value]="item.project"
+        [field3Value]="item.dueDate"
+        [field3DateEditable]="true"
+        [currentStatus]="item.status"
+        [statusOptions]="STATUS_OPTIONS"
+        [statusDotClass]="itemStatusDot(item.status)"
+        [statusText]="capitalizeStatus(item.status)"
+        (statusChange)="dispatchDetailStatus(mode, id, $event)"
+        (dueDateChange)="dispatchDetailDueDate(mode, id, $event)"
+        (openInNewTab)="dispatchDetailOpenInNewTab(mode, id)"
+      />
     </ng-template>

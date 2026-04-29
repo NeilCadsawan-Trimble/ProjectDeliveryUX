@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { readJson, removeJson, writeJson } from '../../shared/storage/json-local-storage';
 
 export interface WidgetLayout {
   tops: Record<string, number>;
@@ -28,17 +29,12 @@ export class WidgetLayoutService {
   }
 
   save(dashboardId: string, mobile: boolean, layout: WidgetLayout): void {
-    const key = this.keyFor(dashboardId, mobile);
-    try {
-      localStorage.setItem(key, JSON.stringify(layout));
-    } catch { /* quota exceeded or private browsing */ }
+    writeJson(this.keyFor(dashboardId, mobile), layout);
   }
 
   remove(dashboardId: string, mobile: boolean): void {
     const key = this.keyFor(dashboardId, mobile);
-    try {
-      localStorage.removeItem(key);
-    } catch { /* private browsing */ }
+    removeJson(key);
     try {
       sessionStorage.removeItem(key);
     } catch { /* private browsing */ }
@@ -46,12 +42,8 @@ export class WidgetLayoutService {
 
   load(dashboardId: string, mobile: boolean): WidgetLayout | null {
     const key = this.keyFor(dashboardId, mobile);
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) return JSON.parse(raw);
-    } catch {
-      return null;
-    }
+    const stored = readJson<WidgetLayout>(key);
+    if (stored) return stored;
     return this.migrateFromSession(key);
   }
 
@@ -65,7 +57,7 @@ export class WidgetLayoutService {
       const raw = sessionStorage.getItem(key);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as WidgetLayout;
-      try { localStorage.setItem(key, raw); } catch { /* quota */ }
+      writeJson(key, parsed);
       try { sessionStorage.removeItem(key); } catch { /* private browsing */ }
       return parsed;
     } catch {

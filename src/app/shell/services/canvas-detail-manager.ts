@@ -27,6 +27,17 @@ export interface CanvasDetailEngine {
   widgetHeights: WritableSignal<Record<string, number>>;
   widgetLocked: () => Record<string, boolean>;
   pushFromWidget: (widgetId: string) => void;
+  /** Optional: register a runtime-only widget id (for freestanding details). */
+  addTransientWidget?: (id: string) => boolean;
+  /** Optional: unregister a transient widget id and clear its signal entries. */
+  removeTransientWidget?: (id: string) => void;
+}
+
+export interface FreestandingViewport {
+  width: number;
+  height: number;
+  scrollLeft?: number;
+  scrollTop?: number;
 }
 
 const DETAIL_WIDTH = 800;
@@ -34,6 +45,7 @@ const DETAIL_HEIGHT = 1000;
 const TRANSITION_MS = 350;
 const SNAP_GAP = 16;
 const SNAP_H_STEP = 81;
+export const FREESTANDING_DETAIL_PREFIX = '__ai_detail_';
 
 /**
  * Manages canvas detail overlays -- opening RFI/Submittal details on top of
@@ -57,6 +69,11 @@ export class CanvasDetailManager {
 
   private _originalRects: Record<string, { top: number; left: number; width: number; height: number }> = {};
   private _baselineSnapshot: LayoutSnapshot | null = null;
+  private _freestandingIds = new Set<string>();
+  private _freestandingCounter = 0;
+
+  /** Snake of freestanding ids for templates / iteration order. */
+  readonly freestandingIds = signal<string[]>([]);
 
   openDetail(
     sourceWidgetId: string,
@@ -91,6 +108,53 @@ export class CanvasDetailManager {
         engine.pushFromWidget(sourceWidgetId);
       });
     });
+  }
+
+  /**
+   * Opens a detail with no anchoring widget — spawns a synthetic tile near
+   * viewport center, registers it with the engine so it participates in canvas
+   * push, and on close removes it entirely (no rect restore). Returns the
+   * synthetic id (e.g. `__ai_detail_3`).
+   */
+  openFreestandingDetail(
+    detail: DetailView,
+    engine: CanvasDetailEngine,
+    viewport: FreestandingViewport,
+    size?: { width: number; height: number },
+  ): string {
+    const id = `${FREESTANDING_DETAIL_PREFIX}${++this._freestandingCounter}`;
+    const targetW = size?.width ?? (detail.type === 'drawing' ? 1024 : DETAIL_WIDTH);
+    const targetH = size?.height ?? (detail.type === 'drawing' ? 768 : DETAIL_HEIGHT);
+
+    const scrollLeft = viewport.scrollLeft ?? 0;
+    const scrollTop = viewport.scrollTop ?? 0;
+    // Cascade subsequent tiles by a full grid cell so snapping doesn't collapse
+    // them onto the previous tile.
+    const stagger = this._freestandingIds.size % 6;
+    const rawLeft = scrollLeft + Math.max(0, (viewport.width - targetW) / 2) + stagger * SNAP_H_STEP;
+    const rawTop = scrollTop + Math.max(0, (viewport.height - targetH) / 2) + stagger * SNAP_GAP * 3;
+    const left = Math.max(0, Math.round(rawLeft / SNAP_H_STEP) * SNAP_H_STEP);
+    const top = Math.max(0, Math.round(rawTop / SNAP_GAP) * SNAP_GAP);
+
+    engine.addTransientWidget?.(id);
+    engine.widgetTops.update(t => ({ ...t, [id]: top }));
+    engine.widgetLefts.update(l => ({ ...l, [id]: left }));
+    engine.widgetPixelWidths.update(w => ({ ...w, [id]: targetW }));
+    engine.widgetHeights.update(h => ({ ...h, [id]: targetH }));
+
+    this._freestandingIds.add(id);
+    this.freestandingIds.set([...this._freestandingIds]);
+    this.canvasDetailViews.update(v => ({ ...v, [id]: detail }));
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => engine.pushFromWidget(id));
+    });
+
+    return id;
+  }
+
+  isFreestanding(id: string): boolean {
+    return this._freestandingIds.has(id);
   }
 
   headerMouseDown(event: MouseEvent, widgetId: string, engine: CanvasDetailEngine): void {
@@ -156,6 +220,18 @@ export class CanvasDetailManager {
   }
 
   closeDetail(widgetId: string, engine: CanvasDetailEngine, allWidgetIds: string[]): void {
+    if (this._freestandingIds.has(widgetId)) {
+      this.canvasDetailViews.update(v => {
+        const next = { ...v };
+        delete next[widgetId];
+        return next;
+      });
+      this._freestandingIds.delete(widgetId);
+      this.freestandingIds.set([...this._freestandingIds]);
+      engine.removeTransientWidget?.(widgetId);
+      return;
+    }
+
     const orig = this._originalRects[widgetId];
     if (!orig) return;
 
@@ -222,5 +298,7 @@ export class CanvasDetailManager {
     this.canvasInteractingId.set(null);
     this._originalRects = {};
     this._baselineSnapshot = null;
+    this._freestandingIds.clear();
+    this.freestandingIds.set([]);
   }
 }

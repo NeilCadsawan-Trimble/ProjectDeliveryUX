@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApPaymentScheduleItem } from '../../../data/dashboard-data.types';
+import { formatUsd } from '../../../shared/utils/format';
 
 export interface PaymentScheduleGroup {
   dueDate: string;
@@ -66,6 +67,6 @@ export class HomePaymentScheduleComponent {
   });
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return formatUsd(amount);
   }
 }

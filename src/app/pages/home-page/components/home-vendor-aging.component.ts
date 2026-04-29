@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApVendor, ApVendorType } from '../../../data/dashboard-data.types';
+import { formatUsd } from '../../../shared/utils/format';
 
 @Component({
   selector: 'app-home-vendor-aging',
@@ -83,7 +84,7 @@ export class HomeVendorAgingComponent {
   });
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+    return formatUsd(amount, 0);
   }
 
   vendorTypeLabel(t: ApVendorType): string {

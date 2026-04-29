@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { Router } from '@angular/router';
+import { PersonaService, type ViewMode } from './persona.service';
 import { WidgetFocusService } from '../shell/services/widget-focus.service';
 
 export interface AiContext {
@@ -10,6 +12,12 @@ export interface AiContext {
   projectName?: string;
   projectData?: string;
   agentPrompt?: string;
+  /** Active persona slug (e.g. "frank"). Used by navigation tools and the canvas-Home prompt rule. */
+  personaSlug?: string;
+  /** Resolved view mode (`desktop` / `canvas` / `mobile`). */
+  viewMode?: ViewMode;
+  /** Current router URL (e.g. "/frank" or "/frank/projects/tower-5?page=schedule"). */
+  currentRoute?: string;
 }
 
 export interface AiChatMessage {
@@ -32,6 +40,8 @@ const TOOL_CALL_REGEX = /<!--TOOL_CALL:(.*?)-->/;
 })
 export class AiService {
   private readonly widgetFocusService = inject(WidgetFocusService);
+  private readonly personaService = inject(PersonaService);
+  private readonly router = inject(Router);
 
   sendMessage(
     userText: string,
@@ -105,6 +115,9 @@ export class AiService {
       page,
       selectedWidget: widgetId ?? undefined,
       widgetName: widgetName ?? undefined,
+      personaSlug: this.personaService.activePersonaSlug(),
+      viewMode: this.personaService.currentViewMode(),
+      currentRoute: this.router.url,
       ...extra,
     };
   }
@@ -113,6 +126,9 @@ export class AiService {
     if (!context) return '';
     const parts: string[] = [];
     parts.push(`Page: ${context.page}`);
+    if (context.personaSlug) parts.push(`Persona: ${context.personaSlug}`);
+    if (context.viewMode) parts.push(`View mode: ${context.viewMode}`);
+    if (context.currentRoute) parts.push(`Current route: ${context.currentRoute}`);
     if (context.projectId != null) parts.push(`Project ID: ${context.projectId}`);
     if (context.projectName) parts.push(`Project: ${context.projectName}`);
     if (context.widgetName) parts.push(`Focused widget: ${context.widgetName}`);

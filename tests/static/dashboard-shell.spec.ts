@@ -68,7 +68,7 @@ describe('DashboardShellComponent (regression)', () => {
     });
 
     it('canvas branch has canvas-content wrapping router-outlet', () => {
-      expect(SRC).toContain('class="canvas-content"');
+      expect(SRC).toMatch(/class="canvas-content(\s+[^"]+)?"/);
     });
 
     it('imports RouterOutlet', () => {

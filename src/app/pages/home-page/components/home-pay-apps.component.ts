@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { DecimalPipe } from '@angular/common';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApPayApplication, ApPayAppStatus } from '../../../data/dashboard-data.types';
+import { formatUsd } from '../../../shared/utils/format';
 
 export type PayAppsView = 'tile' | 'table';
 
@@ -161,7 +162,7 @@ export class HomePayAppsComponent {
   });
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+    return formatUsd(amount, 0);
   }
 
   billedPct(app: ApPayApplication): number {

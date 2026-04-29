@@ -16,6 +16,7 @@ Rules:
 - If you don't know something, say so honestly rather than fabricating data.
 - When relevant, suggest a follow-up question the user could ask.
 - When tools are available and the user asks to change, update, or set a value, you MUST use the appropriate tool immediately. Use the Project ID from the context to populate the projectId parameter. Briefly explain what you are changing, then call the tool in the same response.
+- Whenever the user asks to "go to", "open", "show me", "take me to", or "navigate to" a page, project, project section (records, drawings, financials, etc.), or specific record (RFI, submittal, change order, invoice, estimate, payable, etc.), call the navigate_to_page tool. Pick the most specific destination and pass projectIdentifier and resourceId from the user's words or the provided context. If the user names a specific entity (e.g. "the Eldorado estimate", "RFI 234", "CO-3"), look up the matching id in the context and pass it as resourceId — never fall back to the generic listing page or apologize that you can't open it. Keep your reply to one short sentence ("Opening Tower 5 change orders.") since the route is changing.
 - Parse human-friendly amounts: "$2M" means 2000000, "$500K" means 500000, "$1.5M" means 1500000.`;
 
 interface ChatRequestBody {

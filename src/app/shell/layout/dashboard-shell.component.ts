@@ -4,7 +4,6 @@ import {
   Component,
   DestroyRef,
   ElementRef,
-  Injector,
   computed,
   effect,
   signal,
@@ -17,18 +16,15 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
 import type { INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusTextInputComponent } from '../../components/modus-text-input.component';
-import { AiIconComponent } from '../components/ai-icon.component';
-import { AiAssistantPanelComponent } from '../components/ai-assistant-panel.component';
 import { UserMenuComponent } from '../components/user-menu.component';
 import { TrimbleLogoComponent } from '../components/trimble-logo.component';
 import { ThemeService } from '../../services/theme.service';
 import { CanvasResetService } from '../services/canvas-reset.service';
 import { WidgetFocusService } from '../services/widget-focus.service';
-import { AiService } from '../../services/ai.service';
-import { AiToolsService } from '../../services/ai-tools.service';
 import { PersonaService } from '../../services/persona.service';
 import { getPersonaNav } from '../../data/persona-nav.config';
 import { AiPanelController } from '../services/ai-panel-controller';
+import { AiPageContextService } from '../services/ai-page-context.service';
 import { CanvasPanning } from '../services/canvas-panning';
 import { NavigationHistoryService } from '../services/navigation-history.service';
 import {
@@ -39,7 +35,7 @@ import { LayoutDefaultsService } from '../services/layout-defaults.service';
 import { DataStoreService } from '../../data/data-store.service';
 import { WeatherService } from '../../services/weather.service';
 import { AuthService } from '../../services/auth.service';
-import { getAgent, getSuggestions, type AgentDataState } from '../../data/widget-agents';
+import { type AgentDataState } from '../../data/widget-agents';
 import { environment } from '../../../environments/environment';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
@@ -59,8 +55,6 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
   imports: [
     RouterOutlet,
     ModusTextInputComponent,
-    AiIconComponent,
-    AiAssistantPanelComponent,
     UserMenuComponent,
     TrimbleLogoComponent,
     ModusTypographyComponent,
@@ -160,41 +154,12 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
-                aria-label="AI assistant"
-                (click)="ai.toggle()"
-                (keydown.enter)="ai.toggle()"
-                tabindex="0"
-              >
-                <ai-icon variant="nav" [isDark]="isDark()" />
-              </div>
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
                 [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
                 (click)="toggleDarkMode()"
                 (keydown.enter)="toggleDarkMode()"
                 tabindex="0"
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
-              </div>
-              @if (searchInputOpen()) {
-                <modus-text-input
-                  class="w-44 min-w-[10rem] max-w-xs shrink"
-                  inputId="shell-navbar-search-canvas"
-                  placeholder="Search"
-                  size="sm"
-                  [includeSearch]="true"
-                  [includeClear]="true"
-                  [value]="navbarSearchQuery()"
-                  (inputChange)="handleNavbarSearchInput($event)"
-                />
-              }
-              <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button" aria-label="Search" tabindex="0"
-                (click)="searchInputOpen.set(!searchInputOpen())"
-              >
-                <i class="modus-icons text-lg" aria-hidden="true">search</i>
               </div>
               <div
                 class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
@@ -352,7 +317,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
           <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
         }
 
-        <div class="canvas-content" role="main" id="main-content" tabindex="-1"
+        <div class="canvas-content pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)]" role="main" id="main-content" tabindex="-1"
           [style.transform]="'translateX(-50%) translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
           <router-outlet />
         </div>
@@ -425,16 +390,6 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
             </div>
             <div class="app-navbar-end">
               <div
-                class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                role="button"
-                aria-label="AI assistant"
-                (click)="ai.toggle()"
-                (keydown.enter)="ai.toggle()"
-                tabindex="0"
-              >
-                <ai-icon variant="nav" [isDark]="isDark()" />
-              </div>
-              <div
                 class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                 role="button"
                 [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
@@ -444,26 +399,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
               >
                 <i class="modus-icons text-lg" aria-hidden="true">{{ isDark() ? 'sun' : 'moon' }}</i>
               </div>
-              @if (searchInputOpen() && !isMobile()) {
-                <modus-text-input
-                  class="w-44 min-w-[10rem] max-w-xs shrink hidden md:block"
-                  inputId="shell-navbar-search-desktop"
-                  placeholder="Search"
-                  size="sm"
-                  [includeSearch]="true"
-                  [includeClear]="true"
-                  [value]="navbarSearchQuery()"
-                  (inputChange)="handleNavbarSearchInput($event)"
-                />
-              }
               @if (!isMobile()) {
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
-                  role="button" aria-label="Search" tabindex="0"
-                  (click)="searchInputOpen.set(!searchInputOpen())"
-                >
-                  <i class="modus-icons text-lg" aria-hidden="true">search</i>
-                </div>
                 <div
                   class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-card text-foreground hover:bg-muted transition-colors duration-150"
                   role="button" aria-label="Notifications" tabindex="0"
@@ -682,7 +618,7 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         }
 
         <div class="flex flex-1 overflow-hidden">
-          <div class="flex-1 overflow-auto bg-background md:pl-14" role="main" id="main-content" tabindex="-1">
+          <div class="flex-1 overflow-auto bg-background md:pl-14 pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)]" role="main" id="main-content" tabindex="-1">
             <router-outlet />
           </div>
         </div>
@@ -690,11 +626,6 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
       </div>
     }
 
-    <ai-assistant-panel
-      [controller]="ai"
-      [welcomeText]="aiWelcomeText()"
-      [placeholder]="aiPlaceholder()"
-    />
   `,
 })
 export class DashboardShellComponent implements AfterViewInit {
@@ -703,11 +634,9 @@ export class DashboardShellComponent implements AfterViewInit {
   private readonly store = inject(DataStoreService);
   private readonly elementRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly injector = inject(Injector);
   private readonly _abortCtrl = new AbortController();
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
     this._abortCtrl.abort();
-    this.ai.destroy();
   });
 
   readonly appTitle = input('Dashboard');
@@ -723,7 +652,6 @@ export class DashboardShellComponent implements AfterViewInit {
     'Show me an overview',
   ]);
   readonly aiWelcomeText = input('Ask me anything about your dashboard.');
-  readonly aiPlaceholder = input('Ask a question...');
 
   private readonly currentUrl = signal('/');
 
@@ -812,14 +740,19 @@ export class DashboardShellComponent implements AfterViewInit {
   readonly widgetFocusService = inject(WidgetFocusService);
   readonly navHistory = inject(NavigationHistoryService);
   private readonly layoutDefaults = inject(LayoutDefaultsService);
-  private readonly aiService = inject(AiService);
-  private readonly aiToolsService = inject(AiToolsService);
   private readonly weatherService = inject(WeatherService);
+  private readonly aiPageContext = inject(AiPageContextService);
 
   readonly isDevMode = !environment.production;
   readonly exportLayoutLabel = signal('Export Layout Seed');
 
   private readonly _aiShellContextEffect = effect(() => {
+    const pageTitle = this.aiPageContext.titleProvider()?.();
+    const pageSubtitle = this.aiPageContext.subtitleProvider()?.();
+    if (pageTitle || pageSubtitle) {
+      this.widgetFocusService.setDefaults(pageTitle ?? 'Trimble AI', pageSubtitle ?? 'Assistant');
+      return;
+    }
     const nav = this.activeNav();
     const items = this.sideNavItems();
     const item = items.find(i => i.value === nav);
@@ -827,47 +760,8 @@ export class DashboardShellComponent implements AfterViewInit {
     this.widgetFocusService.setDefaults('Trimble AI', label);
   });
 
-  private readonly shellContextKey = computed(() => `shell:${this.getPageName()}`);
-
-  readonly ai = new AiPanelController({
-    widgetFocusService: this.widgetFocusService,
-    aiService: this.aiService,
-    aiToolsService: this.aiToolsService,
-    router: this.router,
-    defaultSuggestions: computed(() => {
-      const page = this.getPageName();
-      const widgetId = this.widgetFocusService.selectedWidgetId();
-      const agent = getAgent(widgetId, page);
-      const state = this.buildAgentDataState();
-      return getSuggestions(agent, state);
-    }),
-    contextBuilder: () => {
-      const page = this.getPageName();
-      const widgetId = this.widgetFocusService.selectedWidgetId();
-      const agent = getAgent(widgetId, page);
-      const state = this.buildAgentDataState();
-      return this.aiService.buildContext(page, {
-        projectData: agent.buildContext(state),
-        agentPrompt: agent.systemPrompt,
-      });
-    },
-    localResponder: () => {
-      const page = this.getPageName();
-      const widgetId = this.widgetFocusService.selectedWidgetId();
-      const agent = getAgent(widgetId, page);
-      const state = this.buildAgentDataState();
-      return (query: string) => agent.localRespond(query, state);
-    },
-    actionsProvider: () => {
-      const page = this.getPageName();
-      const widgetId = this.widgetFocusService.selectedWidgetId();
-      const agent = getAgent(widgetId, page);
-      const state = this.buildAgentDataState();
-      return agent.actions?.(state) ?? [];
-    },
-    contextKey: this.shellContextKey,
-    injector: this.injector,
-  });
+  /** Shared singleton AI panel controller (root-provided). */
+  readonly ai = inject(AiPanelController);
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
@@ -1139,7 +1033,7 @@ export class DashboardShellComponent implements AfterViewInit {
       this.navExpanded.set(false);
     }
     const target = event.target as HTMLElement;
-    const insideAiPanel = !!target.closest('ai-assistant-panel') || !!target.closest('modus-utility-panel') || !!target.closest('modus-wc-utility-panel') || !!target.closest('[aria-label="AI assistant"]');
+    const insideAiPanel = !!target.closest('ai-floating-prompt') || !!target.closest('.ai-floating-prompt');
     if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !insideAiPanel) {
       this.widgetFocusService.clearSelection();
     }

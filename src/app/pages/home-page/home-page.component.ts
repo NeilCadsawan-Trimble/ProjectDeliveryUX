@@ -20,7 +20,8 @@ import { HOME_KELLY_LAYOUT } from '../../data/layout-seeds/home-kelly.layout';
 import { HOME_DOMINIQUE_LAYOUT } from '../../data/layout-seeds/home-dominique.layout';
 import { HOME_PAMELA_LAYOUT } from '../../data/layout-seeds/home-pamela.layout';
 import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
-import { CanvasDetailManager, type DetailView } from '../../shell/services/canvas-detail-manager';
+import { CanvasDetailManager, FREESTANDING_DETAIL_PREFIX, type DetailView } from '../../shell/services/canvas-detail-manager';
+import { AiPageContextService } from '../../shell/services/ai-page-context.service';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { ItemDetailViewComponent } from '../../shared/detail/item-detail-view.component';
@@ -97,6 +98,7 @@ import { CreateMenuDropdownComponent } from '../../shared/create-menu-dropdown.c
 import { StatusFilterPillsComponent } from '../../shared/status-filter-pills.component';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
 import { ModusTextInputComponent } from '../../components/modus-text-input.component';
+import { formatLongToday } from '../../shared/utils/format';
 
 // ── Area-adaptive block system ──────────────────────────────────
 const HOME_HEADER_PX = 56;
@@ -165,7 +167,7 @@ const HOME_MIN_CONTENT_PX = 80;
         [style.min-height.px]="isCanvasMode() ? canvasGridMinHeight() : (!isMobile() ? desktopGridMinHeight() : null)"
         #homeWidgetGrid
       >
-        @for (widgetId of homeWidgets(); track widgetId) {
+        @for (widgetId of displayWidgetIds(); track widgetId) {
           <div
             [class]="(canvasDetailViews()[widgetId] ? 'absolute pointer-events-auto'
                    : isMobile() ? 'absolute left-0 right-0 pointer-events-auto' + (widgetId === 'homeUrgentNeeds' || widgetId === 'homeTimeOff' || widgetId === 'homeHeader' ? '' : ' overflow-hidden')
@@ -2019,12 +2021,7 @@ export class HomePageComponent extends DashboardPageBase {
     this.engine.widgetLocked.update(l => ({ ...l, homeHeader: true }));
   }
 
-  readonly today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  readonly today = formatLongToday();
 
   readonly timeOffRequests = this.store.timeOffRequests;
   readonly activities = this.store.activities;
@@ -3345,6 +3342,54 @@ export class HomePageComponent extends DashboardPageBase {
   readonly canvasDetailViews = this._detailMgr.canvasDetailViews;
   readonly hasCanvasDetails = this._detailMgr.hasCanvasDetails;
   readonly canvasInteractingId = this._detailMgr.canvasInteractingId;
+  readonly freestandingDetailIds = this._detailMgr.freestandingIds;
+
+  /**
+   * Iteration order for the home grid. Includes the persona's static widgets plus
+   * any AI-spawned freestanding canvas details that still have an active detail
+   * view. The detail-view filter avoids a one-frame flash of the empty @else
+   * branch when a freestanding tile closes.
+   */
+  readonly displayWidgetIds = computed<string[]>(() => {
+    const views = this.canvasDetailViews();
+    const live = this.freestandingDetailIds().filter(id => views[id] != null);
+    return [...this.homeWidgets(), ...live];
+  });
+
+  private readonly aiPageContext = inject(AiPageContextService);
+
+  /** Detail types the home-page template can render as a freestanding tile. */
+  private static readonly RENDERABLE_DETAIL_TYPES: ReadonlySet<DetailView['type']> =
+    new Set<DetailView['type']>(['rfi', 'submittal', 'drawing']);
+
+  private readonly _registerAiCanvasHandler = (() => {
+    this.aiPageContext.canvasDetailHandler.set({
+      canHandle: (detail: DetailView) => {
+        return this.engine.isCanvasMode() && HomePageComponent.RENDERABLE_DETAIL_TYPES.has(detail.type);
+      },
+      openFreestandingDetail: (detail: DetailView, _label: string) => {
+        if (!this.engine.isCanvasMode()) return false;
+        if (!HomePageComponent.RENDERABLE_DETAIL_TYPES.has(detail.type)) return false;
+        const grid = this.homeGridContainerRef()?.nativeElement as HTMLElement | undefined;
+        const viewport = {
+          width: grid?.clientWidth ?? window.innerWidth,
+          height: grid?.clientHeight ?? window.innerHeight,
+          scrollLeft: grid?.scrollLeft ?? 0,
+          scrollTop: grid?.scrollTop ?? 0,
+        };
+        this._detailMgr.openFreestandingDetail(detail, this.engine, viewport);
+        return true;
+      },
+    });
+    this.destroyRef.onDestroy(() => {
+      this.aiPageContext.canvasDetailHandler.set(null);
+    });
+  })();
+
+  /** Used by the template to skip non-detail rendering branches for synthetic ids. */
+  isFreestandingDetail(id: string): boolean {
+    return id.startsWith(FREESTANDING_DETAIL_PREFIX);
+  }
 
   shouldTransition(widgetId: string): boolean {
     return this._detailMgr.shouldTransition(widgetId, this.moveTargetId());
