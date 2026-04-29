@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, the toolbar search/filter layout, or the layout seed/reset/persona-switch system. Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, the toolbar search/filter layout, the layout seed/reset/persona-switch system, or the AI floating prompt pill (send/stop buttons, pill chrome, edge-glow shadow stack, Modus pattern alignment). Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -1840,6 +1840,96 @@ Also: `loadSavedDefaults` now folds `applyCanvasHeaderClearance` output into the
 
 ---
 
+## 43. AI Floating Prompt -- Modus Pattern Alignment
+
+### Authoritative reference
+
+Always use the [Modus AI Floating Prompt pattern](https://modus.trimble.com/patterns/ai-ux-floating-prompt/overview) as the source of truth for the pill geometry, send/stop buttons, and edge-glow shadow stack. The Code tab on that page exposes the full React TSX (`AiUxFloatingPromptCore.tsx`) and CSS (`AiUxFloatingPromptPreview.css`) -- pull from there before iterating on screenshots. A previous session burned multiple turns guessing at button shape, fill, and disabled state because the source code was never opened.
+
+### The wrapper trap: `<modus-button color="secondary">`
+
+Our `<modus-button>` Angular wrapper maps `color="secondary"` to the Modus class `modus-wc-btn-secondary`, which uses `--modus-wc-color-secondary`. In Trimble Modus 2 that token is **brand yellow**, not the muted blue-gray that the Modus pattern site renders for `color="secondary"`. The pattern site appears to override the secondary token in its theme; our app does not.
+
+**Rule**: For any control that needs to look "muted primary" or "disabled primary" do **not** rely on `color="secondary"`. Use one of:
+
+1. `color="primary"` with the Modus button's built-in disabled state (`modus-wc-btn-disabled` class -> reduced opacity).
+2. A custom div+role="button" with `background: color-mix(in srgb, var(--primary) 30%, var(--background))` for the muted state. The send button on the AI floating prompt uses approach 2 because the lint rules forbid `<button>`.
+
+### Custom send button (`.ai-floating-prompt-send-btn`)
+
+```css
+.ai-floating-prompt-send-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem; height: 2rem;
+  border-radius: 50%;          /* true circle, not rounded square */
+  background: var(--primary);
+  color: var(--primary-foreground);
+  ...
+}
+.ai-floating-prompt-send-btn.is-disabled {
+  background: color-mix(in srgb, var(--primary) 30%, var(--background));
+  color: var(--foreground);    /* keep arrow at full contrast */
+}
+.ai-floating-prompt-send-btn--stop {
+  background: var(--error);
+  color: var(--error-foreground);
+}
+```
+
+Why each piece:
+
+- `width: 2rem; height: 2rem; border-radius: 50%` -- the geometry the Modus pattern site renders for `<ModusWcButton size="sm" shape="circle">`.
+- Project tokens (`--primary`, `--primary-foreground`, `--error`, etc.) instead of raw Modus tokens -- so the button follows the project's theme switcher across the 6 Modus theme variants.
+- Disabled state mutes only the **background**; the arrow keeps full `--foreground` contrast. Naively setting `opacity: 0.4` on the host fades the arrow too, which reads as a washed-out icon (the Modus reference shows a clearly visible dark glyph on a soft-blue chip).
+
+### Lint rule: no native `<button>` -- div+role with manual keyboard handling
+
+`scripts/check-semantic-html.js` forbids `<button>`. The send/stop affordances must be `<div role="button" tabindex="0" (keydown.enter) (keydown.space)>`. Important consequences:
+
+- `:disabled` pseudo-class does not apply to a `<div>`. Toggle a class (e.g. `[class.is-disabled]`) and `[attr.aria-disabled]` instead.
+- `tabindex` should be `-1` when disabled so keyboard users skip it: `[attr.tabindex]="canSend() ? 0 : -1"`.
+- Click + key handlers must early-return when the button is disabled: `(click)="canSend() && onSendClick()"`.
+
+### Icon color override scoping (the silent killer)
+
+The pill chrome forces every `<i class="modus-icons">` to `var(--ai-floating-prompt-surface-text)`. This is correct for the leading source/tools icons, but it also catches the icon **inside** the send button and forces the arrow to black on the colored circle. The fix is to repeat the `:not()` exclusion on **every** selector in the rule group, not just one:
+
+```css
+.ai-floating-prompt-bar,
+.ai-floating-prompt-bar *:not(.ai-floating-prompt-send-btn, .ai-floating-prompt-send-btn *),
+.ai-floating-prompt-bar i.modus-icons:not(.ai-floating-prompt-send-btn i),
+.ai-floating-prompt-bar .ai-floating-prompt-icon-button {
+  color: var(--ai-floating-prompt-surface-text) !important;
+}
+```
+
+Missing the exclusion on the third selector (`i.modus-icons`) was the actual root cause of the "white-arrow-renders-as-dark-arrow" bug observed before this section was written.
+
+### Pill geometry to spec
+
+Match the Modus reference exactly:
+
+```css
+.ai-floating-prompt-bar {
+  display: flex; align-items: center; gap: 0.25rem;
+  width: 100%;
+  padding: 0.375rem 0.5rem;     /* py-1.5 px-2, NO min-height */
+  border-radius: 9999px;
+  background: var(--ai-floating-prompt-surface) !important;
+  box-shadow: var(--ai-floating-prompt-pill-shadow);
+  overflow: visible;            /* dropdowns + glow shadow must not clip */
+}
+```
+
+The `--ai-floating-prompt-pill-shadow` and `-shadow-focus` token values defined in `:root` already mirror the Modus reference's two-layer resting and four-layer focus glow byte-for-byte (`0 0 0 1px ...primary 30%...` + `0 8px 32px ...primary 12%...`). Do **not** edit those tokens to add custom rings; if the visual is wrong, fix the surface or the override scoping first.
+
+### Static test alignment
+
+`tests/static/ai-floating-prompt.spec.ts` asserts the value of `--ai-floating-prompt-height` on `:root`. When you change the pill height (currently `56px`), update that assertion in the same commit.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -1883,6 +1973,7 @@ Also: `loadSavedDefaults` now folds `applyCanvasHeaderClearance` output into the
 | Push-down only collision (no jumping) | `dashboard-layout-engine.ts` (`resolveCollisions`, `compactAll`) | (visual: resize shorter, distant widgets must not jump up) |
 | Cross-row neighbor leak in push-squeeze | `dashboard-layout-engine.ts` (`applyResizePushSqueeze`) | (visual: resize widget in row 2, row 1 widgets must not move) |
 | Frozen engine config on persona switch | `dashboard-page-base.ts`, `dashboard-layout-engine.ts`, page components | (visual: switch persona, verify correct seed layout) |
+| AI floating prompt -- send/stop buttons + pill chrome | `ai-floating-prompt.component.ts`, `src/styles.css` | `tests/static/ai-floating-prompt.spec.ts` (height var, padding strategy) |
 | Missing compactAll on desktop reset/load | `dashboard-layout-engine.ts` (`resetToDefaults`, `loadSavedDefaults`) | (visual: Reset Layout, verify no overlaps) |
 | Stale LayoutDefaultsService version keys | `layout-defaults.service.ts` | (Save All Defaults, verify keys match actual storage keys) |
 | Missing header lock after project change | `project-dashboard.component.ts` (`_projectChangeEffect`) | (visual: switch project, verify header stays locked) |

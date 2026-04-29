@@ -3,8 +3,8 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 19, 2026
-**Total Commits**: 210+
+**Last Updated**: April 29, 2026
+**Total Commits**: 211+
 
 ---
 
@@ -39,10 +39,11 @@
 | 24    | Pamela Chen Persona (Senior Estimator)                | Done        | 3/3   |
 | 25    | Independent Per-Persona Layout Seeds                  | Done        | 5/5   |
 | 26    | Layout Persistence and Pamela Seed Round-Trip         | Done        | 7/7   |
-| 27    | Remaining Work                                        | Not Started | 0/8   |
+| 27    | AI Floating Prompt -- Modus Pattern Alignment         | Done        | 5/5   |
+| 28    | Remaining Work                                        | Not Started | 0/8   |
 
 
-**Completed**: 201/209 items (96%)
+**Completed**: 206/214 items (96%)
 
 ---
 
@@ -792,7 +793,34 @@ Canvas/desktop layout persistence bugs, storage-key drift, canvas cleanup DOM-ra
 
 ---
 
-## Phase 27: Remaining Work
+## Phase 27: AI Floating Prompt -- Modus Pattern Alignment (Apr 29)
+
+Aligned the AI floating prompt pill (`ai-floating-prompt.component.ts` + `.ai-floating-prompt-bar` styles) with the official [Modus AI Floating Prompt pattern](https://modus.trimble.com/patterns/ai-ux-floating-prompt/overview). Pulled the reference TSX and CSS directly from the pattern site's Code tab and matched the geometry, surface tokens, and edge-glow shadow stack 1:1.
+
+### Items
+
+- **Custom 32px circular send button** (`.ai-floating-prompt-send-btn`) -- replaced legacy text-input-shaped affordance and a brief detour through `<modus-button shape="circle">` (the wrapper's `color="secondary"` resolved to Trimble brand yellow, not the muted blue shown on the pattern site). New button is `div[role="button"]` with manual keyboard handling so the project's `<button>`-forbidden lint rule still passes.
+- **Theme-aware fill** -- `var(--primary)` background with `var(--primary-foreground)` glyph; disabled state uses `color-mix(in srgb, var(--primary) 30%, var(--background))` and keeps the arrow at `var(--foreground)` for the dark-glyph-on-soft-blue look from the reference.
+- **Stop variant** -- `.ai-floating-prompt-send-btn--stop` switches to `var(--error)` / `var(--error-foreground)` for unambiguous "interrupt streaming" semantics during the working phase.
+- **Pill geometry to spec** -- removed `min-height: 56px`, switched padding to `0.375rem 0.5rem` (Modus `py-1.5 px-2`), and confirmed `--ai-floating-prompt-pill-shadow` / `-shadow-focus` tokens already matched the Modus reference's primary-tinted edge + 4-layer focus glow byte-for-byte.
+- **Surface-text override scoping** -- updated `.ai-floating-prompt-bar i.modus-icons` rule to skip `.ai-floating-prompt-send-btn` descendants so the button's own `--primary-foreground` glyph wins over the pill chrome's `--ai-floating-prompt-surface-text` override (this rule had previously been catching icons inside the prior `<modus-button>` instance and forcing the arrow to black).
+
+### Skill updates
+
+- `.cursor/skills/dashboard-layout-lessons/SKILL.md` -- added section on the AI floating prompt pattern alignment and the wrapper `color="secondary"` pitfall.
+
+### Test results
+
+- `npm run lint:all` -- pass (8/8 checks)
+- `npm run test:static` -- pass (1352 tests, 17 files; updated `--ai-floating-prompt-height` assertion from 72px to 56px)
+- `npm run type-check` -- pass
+- `npx ng build --configuration=production` -- clean (only pre-existing budget/CJS warnings)
+
+**PR**: #108 (merged to main, commit `c03b921`)
+
+---
+
+## Phase 28: Remaining Work
 
 Features and improvements not yet started.
 
