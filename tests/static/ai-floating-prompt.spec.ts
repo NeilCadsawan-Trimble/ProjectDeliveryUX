@@ -278,7 +278,7 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
 
   describe('Bottom padding strategy', () => {
     it('--ai-floating-prompt-height is defined on :root', () => {
-      expect(STYLES_SRC).toMatch(/--ai-floating-prompt-height\s*:\s*72px/);
+      expect(STYLES_SRC).toMatch(/--ai-floating-prompt-height\s*:\s*56px/);
     });
 
     it('shell canvas main applies the floating-prompt bottom padding utility', () => {
