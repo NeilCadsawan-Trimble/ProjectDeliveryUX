@@ -1474,9 +1474,9 @@ modus-wc-divider.modus-wc-divider-error div.modus-wc-divider {
  * ======================================== */
 
 :root {
-  --ai-floating-prompt-surface: #000;
-  --ai-floating-prompt-surface-text: #fff;
-  --ai-floating-prompt-surface-elevated: #1a1a1a;
+  --ai-floating-prompt-surface: #fff;
+  --ai-floating-prompt-surface-text: #000;
+  --ai-floating-prompt-surface-elevated: #f1f1f6;
 
   --ai-floating-prompt-pill-shadow:
     0 0 0 1px color-mix(in srgb, var(--modus-wc-color-primary) 30%, transparent),
@@ -1495,6 +1495,12 @@ modus-wc-divider.modus-wc-divider-error div.modus-wc-divider {
     0 0 0 3px color-mix(in srgb, var(--modus-wc-color-primary) 15%, transparent),
     0 0 24px 2px color-mix(in srgb, var(--modus-wc-color-primary) 20%, transparent),
     0 10px 40px color-mix(in srgb, var(--modus-wc-color-primary) 14%, transparent);
+}
+
+[data-theme$="-dark"]:root {
+  --ai-floating-prompt-surface: #000;
+  --ai-floating-prompt-surface-text: #fff;
+  --ai-floating-prompt-surface-elevated: #1a1a1a;
 }
 
 .ai-floating-prompt {
@@ -1595,9 +1601,11 @@ modus-wc-divider.modus-wc-divider-error div.modus-wc-divider {
 }
 modus-wc-chip .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host,
 [data-theme] modus-wc-chip .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host {
-  background-color: var(--modus-wc-color-black);
-  border-color: var(--modus-wc-color-black);
-  color: var(--modus-wc-color-white);
+  background-color: var(--ai-floating-prompt-surface);
+  border-color: var(--ai-floating-prompt-surface);
+  color: var(--ai-floating-prompt-surface-text);
+  box-shadow: var(--ai-floating-prompt-pill-shadow);
+  transition: box-shadow 0.2s ease;
 }
 modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host
@@ -1606,7 +1614,7 @@ modus-wc-chip
   modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host
   .modus-wc-chip-label {
-  color: var(--modus-wc-color-white);
+  color: var(--ai-floating-prompt-surface-text);
 }
 modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host:hover:not(
@@ -1617,9 +1625,9 @@ modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host:hover:not(
     .modus-wc-chip--active
   ):not(.modus-wc-chip--error) {
-  background-color: var(--modus-wc-color-gray-10);
-  border-color: var(--modus-wc-color-gray-10);
-  color: var(--modus-wc-color-white);
+  background-color: var(--ai-floating-prompt-surface-elevated);
+  border-color: var(--ai-floating-prompt-surface-elevated);
+  color: var(--ai-floating-prompt-surface-text);
 }
 modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host:active:not(
@@ -1630,9 +1638,9 @@ modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host:active:not(
     .modus-wc-chip--error
   ):not(.modus-wc-chip--active) {
-  background-color: var(--modus-wc-color-gray-9);
-  border-color: var(--modus-wc-color-gray-9);
-  color: var(--modus-wc-color-white);
+  background-color: var(--ai-floating-prompt-surface-elevated);
+  border-color: var(--ai-floating-prompt-surface-elevated);
+  color: var(--ai-floating-prompt-surface-text);
 }
 
 .ai-floating-prompt-bar {
@@ -1643,8 +1651,8 @@ modus-wc-chip
   min-height: var(--ai-floating-prompt-height);
   padding: 0.5rem 0.75rem;
   border-radius: 9999px;
-  background: #000 !important;
-  color: #fff !important;
+  background: var(--ai-floating-prompt-surface) !important;
+  color: var(--ai-floating-prompt-surface-text) !important;
   border: none;
   box-shadow: var(--ai-floating-prompt-pill-shadow);
   transition: box-shadow 0.2s ease;
@@ -1656,12 +1664,12 @@ modus-wc-chip
 .ai-floating-prompt-bar .ai-floating-prompt-textarea,
 .ai-floating-prompt-bar .ai-floating-prompt-icon-button,
 .ai-floating-prompt-bar .ai-floating-prompt-send-button {
-  color: #fff !important;
+  color: var(--ai-floating-prompt-surface-text) !important;
 }
 
 .ai-floating-prompt-bar .ai-floating-prompt-textarea::placeholder {
-  color: #fff !important;
-  opacity: 1 !important;
+  color: var(--ai-floating-prompt-surface-text) !important;
+  opacity: 0.6 !important;
 }
 
 /* Match the Modus floating prompt pattern: layered primary-tinted glow on
