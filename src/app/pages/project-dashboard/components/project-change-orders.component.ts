@@ -2,6 +2,7 @@ import { TitleCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ChangeOrder } from '../../../data/dashboard-data.types';
+import { formatUsd } from '../../../shared/utils/format';
 
 @Component({
   selector: 'app-project-change-orders',
@@ -68,7 +69,7 @@ export class ProjectChangeOrdersComponent {
   readonly rejectedAmount = computed(() => this.changeOrders().filter((co) => co.status === 'rejected').reduce((s, co) => s + co.amount, 0));
 
   fmtCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+    return formatUsd(amount, 0);
   }
 
   statusClass(status: string): string {

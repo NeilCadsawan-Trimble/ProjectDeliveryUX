@@ -69,6 +69,7 @@ Consult this file before asking the user a question. If the answer is here, act 
 - **Custom opacity utilities**: `-80`, `-60`, `-40`, `-20` suffix, not Tailwind `/80` syntax.
 - **Custom border utilities**: `border-default`, `border-primary`, etc.
 - **Modus icons with underscores**: `save_disk`, `arrow_left`, `check_circle`.
+- **Modus Typography enforced**: All text sizing/weight on div/span must use `<modus-typography>`. `text-2xs` mapped to `size="xs" className="text-2xs"`; `font-medium` mapped to `weight="semibold"`. Static test `tests/static/typography-enforcement.spec.ts` enforces. Exceptions: `innerHTML` rendered HTML (e.g., AI assistant).
 
 ### Layout Engine Behavior
 - **Push-squeeze on resize**: Push all neighbors first (maintaining widths), then squeeze from far end inward to 4-column minimum, then relocate outermost if still overflowing.
@@ -239,3 +240,4 @@ These areas have broken multiple times. Extra care required:
 | 20 (Apr 9-10) | `b1397210-081e-4c0b-a8b0-fb54c1a16492` | Subnav layout gap fix, layout seed system 4-bug fix, skill section 36 |
 | 21 (Apr 12) | *(session)* | Pamela Chen persona (Senior Estimator), Open Estimates widget, home/financials layout seeds |
 | 22 (Apr 13) | `fe9bcb72-dbe7-42b8-9b30-0983a749b0b3` | Fix canvas for Frank/Bert (default seed overwrote), then fully independent per-persona layout seeds (20 files, 288 tests), canvas-grid-alignment rewrite, SKILL section 37 rewrite |
+| 23 (Apr 17) | *(session)* | Canvas project tile navigation fix (removed blocking pointer-events rule), projHeader canvas height increase to 176px, full Modus Typography migration with regression test |

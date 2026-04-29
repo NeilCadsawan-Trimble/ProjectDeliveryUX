@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApLienWaiver, ApLienWaiverStatus } from '../../../data/dashboard-data.types';
+import { formatUsd } from '../../../shared/utils/format';
 
 const STATUS_ORDER: ApLienWaiverStatus[] = ['missing', 'pending', 'received'];
 
@@ -79,7 +80,7 @@ export class HomeLienWaiversComponent {
   });
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return formatUsd(amount);
   }
 
   statusTitle(s: ApLienWaiverStatus): string {

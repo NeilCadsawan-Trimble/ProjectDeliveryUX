@@ -1,5 +1,9 @@
 import { Injectable, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { DataStoreService } from '../data/data-store.service';
+import { PersonaService } from './persona.service';
+import { ALL_DRAWINGS_BY_PROJECT, SITE_CAPTURES_BY_PROJECT, type DrawingTile, type SiteCapture } from '../data/drawings-data';
+import type { DetailView } from '../shell/services/canvas-detail-manager';
 import type {
   ProjectStatus,
   Rfi, RfiStatus,
@@ -12,6 +16,7 @@ import type {
   Contract, ContractStatus,
   Inspection, InspectionResult,
   PunchListItem,
+  DailyReport,
   BillingEventStatus,
 } from '../data/dashboard-data.types';
 
@@ -20,9 +25,135 @@ export interface AiToolDefinition {
   description: string;
   inputSchema: object;
   execute: (args: Record<string, unknown>) => { success: boolean; message: string };
+  /**
+   * If true, the panel controller runs the tool immediately when the model emits
+   * a tool_call instead of attaching a Confirm/Cancel pendingAction. Defaults to
+   * false (mutation tools keep the Confirm gate).
+   */
+  autoExecute?: boolean;
 }
 
 type ToolResult = { success: boolean; message: string };
+
+/**
+ * Result of resolving a `navigate_to_page` call without executing it. The panel
+ * controller uses this when on Home + canvas to offer the user a choice between
+ * full navigation and a freestanding canvas overlay.
+ */
+export type NavigationResolution =
+  | { kind: 'route'; url: string; label: string }
+  | { kind: 'detail'; url: string; label: string; detailView: DetailView }
+  | { kind: 'error'; message: string };
+
+/** Destinations whose entity loads as a `DetailView` for canvas overlay use. */
+export const SUPPORTED_RECORD_DETAIL_DESTINATIONS = [
+  'record-rfi',
+  'record-submittal',
+  'record-daily-report',
+  'record-inspection',
+  'record-punch-item',
+  'record-drawing',
+  'record-panorama',
+  'financials-change-orders',
+  'financials-contracts',
+] as const;
+
+export type SupportedRecordDetailDestination = (typeof SUPPORTED_RECORD_DETAIL_DESTINATIONS)[number];
+
+export function isSupportedRecordDetail(destination: string): destination is SupportedRecordDetailDestination {
+  return (SUPPORTED_RECORD_DETAIL_DESTINATIONS as readonly string[]).includes(destination);
+}
+
+const RECORDS_SUBPAGE_VALUES = [
+  'rfis', 'submittals', 'inspections', 'daily-reports', 'punch-items', 'issues',
+  'action-items', 'field-work-directives', 'meeting-minutes', 'notices-to-comply',
+  'safety-notices', 'transmittals', 'check-list', 'drawing-sets',
+  'specification-sets', 'submittal-packages',
+] as const;
+
+const FINANCIALS_SUBPAGE_VALUES = [
+  'budget', 'purchase-orders', 'contracts', 'billings', 'cost-forecasts',
+  'change-order-requests', 'prime-contract-change-orders', 'subcontract-change-orders',
+  'potential-change-orders', 'contract-invoices', 'general-invoices',
+] as const;
+
+const PROJECT_SECTION_DESTINATIONS = [
+  'project-dashboard', 'project-schedule', 'project-records', 'project-drawings',
+  'project-field-captures', 'project-models', 'project-financials', 'project-files',
+] as const;
+
+const FINANCIALS_DETAIL_DESTINATIONS = [
+  'financials-job-costs', 'financials-change-orders', 'financials-estimates',
+  'financials-invoices', 'financials-payables', 'financials-purchase-orders',
+  'financials-contracts', 'financials-billing', 'financials-payroll',
+  'financials-payroll-monthly', 'financials-subcontract-ledger',
+  'financials-gl-entries', 'financials-gl-accounts', 'financials-cash-flow',
+] as const;
+
+const RECORD_DETAIL_DESTINATIONS = [
+  'record-rfi', 'record-submittal', 'record-daily-report', 'record-inspection',
+  'record-punch-item', 'record-drawing', 'record-panorama',
+] as const;
+
+export const NAVIGATION_DESTINATIONS = [
+  'home', 'projects', 'financials',
+  ...FINANCIALS_DETAIL_DESTINATIONS,
+  ...PROJECT_SECTION_DESTINATIONS,
+  ...RECORD_DETAIL_DESTINATIONS,
+] as const;
+
+export type NavigationDestination = (typeof NAVIGATION_DESTINATIONS)[number];
+
+/** Maps a financials-detail destination to its child path under `/financials`. */
+const FINANCIALS_DETAIL_PATH: Record<string, string> = {
+  'financials-job-costs': 'job-costs',
+  'financials-change-orders': 'change-orders',
+  'financials-estimates': 'estimates',
+  'financials-invoices': 'invoices',
+  'financials-payables': 'payables',
+  'financials-purchase-orders': 'purchase-orders',
+  'financials-contracts': 'contracts',
+  'financials-billing': 'billing',
+  'financials-payroll': 'payroll',
+  'financials-payroll-monthly': 'payroll-monthly',
+  'financials-subcontract-ledger': 'subcontract-ledger',
+  'financials-gl-entries': 'gl-entries',
+  'financials-gl-accounts': 'gl-accounts',
+  'financials-cash-flow': 'cash-flow',
+};
+
+/** Maps a project-section destination to its `?page=...` query value (or '' for the default tab). */
+const PROJECT_SECTION_PAGE: Record<string, string> = {
+  'project-dashboard': '',
+  'project-schedule': 'schedule',
+  'project-records': 'records',
+  'project-drawings': 'drawings',
+  'project-field-captures': 'field-captures',
+  'project-models': 'models',
+  'project-financials': 'financials',
+  'project-files': 'files',
+};
+
+/** Maps a record-* destination to the `?view=...` query value the project dashboard expects. */
+const RECORD_VIEW_TYPE: Record<string, string> = {
+  'record-rfi': 'rfi',
+  'record-submittal': 'submittal',
+  'record-daily-report': 'dailyReport',
+  'record-inspection': 'inspection',
+  'record-punch-item': 'punchItem',
+  'record-drawing': 'drawing',
+  'record-panorama': 'panorama',
+};
+
+const RECORD_DESTINATION_LABEL: Record<string, string> = {
+  'record-rfi': 'RFI',
+  'record-submittal': 'Submittal',
+  'record-daily-report': 'Daily Report',
+  'record-inspection': 'Inspection',
+  'record-punch-item': 'Punch Item',
+  'record-drawing': 'Drawing',
+  'record-panorama': 'Panorama',
+};
 
 function fmtCurrency(v: number): string {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
@@ -118,6 +249,8 @@ function createEntityAmountTool<E extends { id: string }>(cfg: EntityAmountToolC
 @Injectable({ providedIn: 'root' })
 export class AiToolsService {
   private readonly store = inject(DataStoreService);
+  private readonly router = inject(Router);
+  private readonly personaService = inject(PersonaService);
   private readonly tools: AiToolDefinition[];
 
   constructor() {
@@ -142,12 +275,27 @@ export class AiToolsService {
     }
   }
 
+  /** Returns the registered tool definition (or undefined). */
+  getTool(name: string): AiToolDefinition | undefined {
+    return this.tools.find(t => t.name === name);
+  }
+
   getToolNames(): string[] {
     return this.tools.map(t => t.name);
   }
 
+  /**
+   * Resolves a `navigate_to_page` call into either a route URL or a record DetailView,
+   * without triggering the navigation. Used by the panel controller to offer a
+   * navigate-vs-overlay choice on Home + canvas.
+   */
+  resolveNavigation(args: Record<string, unknown>): NavigationResolution {
+    return this.resolveNavigationInternal(args);
+  }
+
   private buildTools(): AiToolDefinition[] {
     return [
+      this.navigateToPage(),
       this.updateProjectBudget(),
       this.updateProjectStatus(),
       this.updateProjectDueDate(),
@@ -161,6 +309,309 @@ export class AiToolsService {
       this.updateBillingEvent(),
       this.updatePayrollRecord(),
     ];
+  }
+
+  // ── Navigation tool ──────────────────────────────────────────────
+
+  private navigateToPage(): AiToolDefinition {
+    return {
+      name: 'navigate_to_page',
+      description: [
+        'Open any page or detail in the app. Use whenever the user asks to "go to", "open", "show me",',
+        'or "take me to" something — top-level page (home, projects, financials), a specific project dashboard,',
+        'a project section (schedule, records, drawings, financials, etc.), a global financials detail page',
+        '(estimate, invoice, change order, contract, payable, PO, payroll record, GL entry, cash flow month,',
+        'job-costs project, billing event, payroll-monthly, subcontract ledger, GL account), or a specific',
+        'record inside a project (RFI, submittal, daily report, inspection, punch item, drawing, panorama).',
+        'When the user names a specific entity (e.g. "the Eldorado estimate", "RFI 234", "CO-3", "invoice INV-001"),',
+        'pass that entity id as resourceId — do NOT fall back to the generic listing page. Resolves the persona-scoped URL automatically.',
+      ].join(' '),
+      autoExecute: true,
+      inputSchema: {
+        type: 'object',
+        properties: {
+          destination: {
+            type: 'string',
+            enum: [...NAVIGATION_DESTINATIONS],
+            description: 'Page or detail key to open. Pick the most specific destination — if the user names a specific estimate, use "financials-estimates" with resourceId, NOT the generic project listing.',
+          },
+          projectIdentifier: {
+            type: 'string',
+            description: 'Project slug (e.g. "tower-5") or numeric id ("3"). Required for any project-* destination. Optional disambiguator for record-* destinations.',
+          },
+          recordsSubpage: {
+            type: 'string',
+            enum: [...RECORDS_SUBPAGE_VALUES],
+            description: 'Sub-page under project-records (e.g. rfis, submittals).',
+          },
+          financialsSubpage: {
+            type: 'string',
+            enum: [...FINANCIALS_SUBPAGE_VALUES],
+            description: 'Sub-page under project-financials (e.g. budget, purchase-orders).',
+          },
+          subledger: {
+            type: 'string',
+            description: 'Optional budget category (labor, materials, equipment, subcontractors, overhead). Only honored for project-financials + budget.',
+          },
+          resourceId: {
+            type: 'string',
+            description: [
+              'Resource id. REQUIRED for every financials-* detail destination and every record-* destination.',
+              'Pass the entity id exactly as it appears in context — examples: "EST-2026-065" (estimate),',
+              '"CO-3" (change order), "INV-001" (invoice), "PAY-001" (payable), "PO-2026-001" (purchase order),',
+              '"CT-001" (contract), "BILL-001" (billing event), "PR-001" (payroll), "2026-04" (cash flow / payroll month),',
+              '"GL-001" (GL entry), "1100" (GL account code), project slug or id (job costs),',
+              '"RFI-001"/"rfi-1" (RFI), "SUB-001" (submittal), "dr-1" (daily report), etc.',
+              'If the user names an entity but you only know its name (e.g. "the Eldorado estimate"),',
+              'use the id from context if available; otherwise omit and the call will surface a clear error.',
+            ].join(' '),
+          },
+        },
+        required: ['destination'],
+      },
+      execute: (args) => {
+        const resolved = this.resolveNavigationInternal(args);
+        if (resolved.kind === 'error') return { success: false, message: resolved.message };
+        void this.router.navigateByUrl(resolved.url);
+        return { success: true, message: `Opening ${resolved.label}.` };
+      },
+    };
+  }
+
+  private resolveNavigationInternal(args: Record<string, unknown>): NavigationResolution {
+    const destination = args['destination'] as string | undefined;
+    if (!destination || !(NAVIGATION_DESTINATIONS as readonly string[]).includes(destination)) {
+      return { kind: 'error', message: `Unknown destination: ${destination ?? '(missing)'}` };
+    }
+
+    const persona = this.personaService.activePersonaSlug();
+
+    if (destination === 'home') {
+      return { kind: 'route', url: `/${persona}`, label: 'Home' };
+    }
+    if (destination === 'projects') {
+      return { kind: 'route', url: `/${persona}/projects`, label: 'Projects' };
+    }
+    if (destination === 'financials') {
+      return { kind: 'route', url: `/${persona}/financials`, label: 'Financials' };
+    }
+
+    if (destination in FINANCIALS_DETAIL_PATH) {
+      const child = FINANCIALS_DETAIL_PATH[destination];
+      const resourceId = (args['resourceId'] as string | undefined)?.trim();
+      if (!resourceId) {
+        return { kind: 'error', message: `${destination} requires a resourceId.` };
+      }
+      const url = `/${persona}/financials/${child}/${encodeURIComponent(resourceId)}`;
+      const label = this.financialsDetailLabel(destination, resourceId);
+
+      if (destination === 'financials-change-orders') {
+        const co = this.store.changeOrders().find(c => c.id === resourceId);
+        if (co) return { kind: 'detail', url, label, detailView: { type: 'changeOrder', item: co } };
+      }
+      if (destination === 'financials-contracts') {
+        const ct = this.store.contracts().find(c => c.id === resourceId);
+        if (ct) return { kind: 'detail', url, label, detailView: { type: 'contract', item: ct } };
+      }
+      return { kind: 'route', url, label };
+    }
+
+    if (destination in PROJECT_SECTION_PAGE) {
+      const projectIdentifier = args['projectIdentifier'] as string | undefined;
+      const project = this.resolveProject(projectIdentifier);
+      if (!project) {
+        return {
+          kind: 'error',
+          message: projectIdentifier
+            ? `Project "${projectIdentifier}" not found. Try a project slug (e.g. tower-5) or numeric id.`
+            : `${destination} requires a projectIdentifier.`,
+        };
+      }
+      const recordsSubpage = (args['recordsSubpage'] as string | undefined) ?? '';
+      const financialsSubpage = (args['financialsSubpage'] as string | undefined) ?? '';
+      const subledger = (args['subledger'] as string | undefined)?.trim().toLowerCase() ?? '';
+      const url = this.buildProjectSectionUrl(persona, project.slug, destination, {
+        recordsSubpage,
+        financialsSubpage,
+        subledger,
+      });
+      const label = this.projectSectionLabel(project.name, destination, { recordsSubpage, financialsSubpage });
+      return { kind: 'route', url, label };
+    }
+
+    if (destination in RECORD_VIEW_TYPE) {
+      const resourceId = (args['resourceId'] as string | undefined)?.trim();
+      if (!resourceId) {
+        return { kind: 'error', message: `${destination} requires a resourceId.` };
+      }
+      return this.resolveRecordDetail(persona, destination, resourceId, args['projectIdentifier'] as string | undefined);
+    }
+
+    return { kind: 'error', message: `Unhandled destination: ${destination}` };
+  }
+
+  private resolveProject(identifier: string | undefined) {
+    if (!identifier) return undefined;
+    const trimmed = identifier.trim();
+    const bySlug = this.store.findProjectBySlug(trimmed);
+    if (bySlug) return bySlug;
+    const asNumber = Number(trimmed);
+    if (Number.isFinite(asNumber)) {
+      const byId = this.store.findProjectById(asNumber);
+      if (byId) return byId;
+    }
+    const lower = trimmed.toLowerCase();
+    return this.store.projects().find(p =>
+      p.name.toLowerCase() === lower ||
+      p.name.toLowerCase().includes(lower),
+    );
+  }
+
+  private buildProjectSectionUrl(
+    persona: string,
+    slug: string,
+    destination: string,
+    extras: { recordsSubpage: string; financialsSubpage: string; subledger: string },
+  ): string {
+    const base = `/${persona}/project/${slug}`;
+    const page = PROJECT_SECTION_PAGE[destination];
+    if (!page) return base;
+
+    const params = new URLSearchParams();
+    params.set('page', page);
+    if (page === 'records') {
+      params.set('subpage', extras.recordsSubpage || 'daily-reports');
+    } else if (page === 'financials') {
+      const sub = extras.financialsSubpage || 'budget';
+      params.set('subpage', sub);
+      if (sub === 'budget' && extras.subledger) {
+        params.set('subledger', extras.subledger);
+      }
+    }
+    return `${base}?${params.toString()}`;
+  }
+
+  private resolveRecordDetail(
+    persona: string,
+    destination: string,
+    resourceId: string,
+    identifierHint: string | undefined,
+  ): NavigationResolution {
+    const viewType = RECORD_VIEW_TYPE[destination];
+    const label = `${RECORD_DESTINATION_LABEL[destination]} ${resourceId}`;
+
+    const buildUrl = (slug: string) =>
+      `/${persona}/project/${slug}?view=${viewType}&id=${encodeURIComponent(resourceId)}`;
+
+    switch (destination) {
+      case 'record-rfi': {
+        const rfi = this.store.rfis().find(r => r.id === resourceId || r.number === resourceId);
+        if (!rfi) return { kind: 'error', message: `RFI ${resourceId} not found.` };
+        const slug = this.findProjectSlugByName(rfi.project, identifierHint);
+        if (!slug) return { kind: 'error', message: `Could not resolve project for RFI ${resourceId}.` };
+        return { kind: 'detail', url: buildUrl(slug), label: `${label} (${rfi.subject})`, detailView: { type: 'rfi', item: rfi } };
+      }
+      case 'record-submittal': {
+        const sub = this.store.submittals().find(s => s.id === resourceId || s.number === resourceId);
+        if (!sub) return { kind: 'error', message: `Submittal ${resourceId} not found.` };
+        const slug = this.findProjectSlugByName(sub.project, identifierHint);
+        if (!slug) return { kind: 'error', message: `Could not resolve project for submittal ${resourceId}.` };
+        return { kind: 'detail', url: buildUrl(slug), label: `${label} (${sub.subject})`, detailView: { type: 'submittal', item: sub } };
+      }
+      case 'record-daily-report': {
+        const report = this.store.dailyReports().find(r => r.id === resourceId);
+        if (!report) return { kind: 'error', message: `Daily report ${resourceId} not found.` };
+        const slug = this.findProjectSlugById(report.projectId);
+        if (!slug) return { kind: 'error', message: `Could not resolve project for daily report ${resourceId}.` };
+        return { kind: 'detail', url: buildUrl(slug), label, detailView: { type: 'dailyReport', item: report as DailyReport } };
+      }
+      case 'record-inspection': {
+        const insp = this.store.inspections().find(i => i.id === resourceId);
+        if (!insp) return { kind: 'error', message: `Inspection ${resourceId} not found.` };
+        const slug = this.findProjectSlugById(insp.projectId);
+        if (!slug) return { kind: 'error', message: `Could not resolve project for inspection ${resourceId}.` };
+        return { kind: 'detail', url: buildUrl(slug), label, detailView: { type: 'inspection', item: insp as Inspection } };
+      }
+      case 'record-punch-item': {
+        const item = this.store.punchListItems().find(p => p.id === resourceId);
+        if (!item) return { kind: 'error', message: `Punch item ${resourceId} not found.` };
+        const slug = this.findProjectSlugById(item.projectId);
+        if (!slug) return { kind: 'error', message: `Could not resolve project for punch item ${resourceId}.` };
+        return { kind: 'detail', url: buildUrl(slug), label, detailView: { type: 'punchItem', item: item as PunchListItem } };
+      }
+      case 'record-drawing': {
+        const found = this.findInProjectBuckets<DrawingTile>(ALL_DRAWINGS_BY_PROJECT, d => d.id === resourceId);
+        if (!found) return { kind: 'error', message: `Drawing ${resourceId} not found.` };
+        const slug = this.findProjectSlugById(found.projectId);
+        if (!slug) return { kind: 'error', message: `Could not resolve project for drawing ${resourceId}.` };
+        const url = `/${persona}/project/${slug}?page=drawings&view=drawing&id=${encodeURIComponent(resourceId)}`;
+        return { kind: 'detail', url, label, detailView: { type: 'drawing', item: found.item } };
+      }
+      case 'record-panorama': {
+        const found = this.findInProjectBuckets<SiteCapture>(SITE_CAPTURES_BY_PROJECT, c => c.id === resourceId);
+        if (!found) return { kind: 'error', message: `Panorama ${resourceId} not found.` };
+        const slug = this.findProjectSlugById(found.projectId);
+        if (!slug) return { kind: 'error', message: `Could not resolve project for panorama ${resourceId}.` };
+        const url = `/${persona}/project/${slug}?page=field-captures&view=panorama&id=${encodeURIComponent(resourceId)}`;
+        return { kind: 'detail', url, label, detailView: { type: 'panorama', item: found.item } };
+      }
+    }
+    return { kind: 'error', message: `Unhandled record destination: ${destination}` };
+  }
+
+  private findProjectSlugByName(projectName: string | undefined, hint: string | undefined): string | undefined {
+    if (hint) {
+      const direct = this.resolveProject(hint);
+      if (direct) return direct.slug;
+    }
+    if (!projectName) return undefined;
+    const lower = projectName.toLowerCase();
+    const exact = this.store.projects().find(p => p.name.toLowerCase() === lower);
+    if (exact) return exact.slug;
+    return this.store.projects().find(p => p.name.toLowerCase().includes(lower))?.slug;
+  }
+
+  private findProjectSlugById(id: number): string | undefined {
+    return this.store.findProjectById(id)?.slug;
+  }
+
+  private findInProjectBuckets<T extends { id: string }>(
+    buckets: Record<number, T[]>,
+    pred: (item: T) => boolean,
+  ): { projectId: number; item: T } | undefined {
+    for (const key of Object.keys(buckets)) {
+      const projectId = Number(key);
+      const list = buckets[projectId];
+      const match = list?.find(pred);
+      if (match) return { projectId, item: match };
+    }
+    return undefined;
+  }
+
+  private financialsDetailLabel(destination: string, resourceId: string): string {
+    const child = FINANCIALS_DETAIL_PATH[destination] ?? destination;
+    const human = child.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return `${human} ${resourceId}`;
+  }
+
+  private projectSectionLabel(
+    projectName: string,
+    destination: string,
+    extras: { recordsSubpage: string; financialsSubpage: string },
+  ): string {
+    if (destination === 'project-dashboard') return projectName;
+    if (destination === 'project-records' && extras.recordsSubpage) {
+      return `${projectName} • ${this.titleCase(extras.recordsSubpage)}`;
+    }
+    if (destination === 'project-financials' && extras.financialsSubpage) {
+      return `${projectName} • ${this.titleCase(extras.financialsSubpage)}`;
+    }
+    const section = destination.replace(/^project-/, '');
+    return `${projectName} • ${this.titleCase(section)}`;
+  }
+
+  private titleCase(value: string): string {
+    return value.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
   private entityStatusTools(): AiToolDefinition[] {

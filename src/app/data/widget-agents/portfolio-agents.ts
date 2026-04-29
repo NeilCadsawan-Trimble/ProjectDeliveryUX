@@ -1,5 +1,5 @@
 import type { AgentAction, WidgetAgent } from './shared';
-import { kw, fmtProjects } from './shared';
+import { buildFullDataContext, kw, fmtProjects } from './shared';
 import { homeDefault } from './home-agents';
 
 export const portfolioAgent: WidgetAgent = {
@@ -322,11 +322,7 @@ export const projectsDefault: WidgetAgent = {
     { id: 'export-portfolio', label: 'Export portfolio snapshot', execute: () => 'Exported portfolio snapshot.' },
   ],
   buildContext(s) {
-    const parts: string[] = [];
-    parts.push(`${(s.projects ?? []).length} projects, ${(s.estimates ?? []).length} open estimates`);
-    parts.push(`${(s.attentionItems ?? []).length} items need attention`);
-    if (s.projects?.length) parts.push('Projects:\n' + fmtProjects(s.projects));
-    return parts.join('\n');
+    return buildFullDataContext(s);
   },
   localRespond(q, s) {
     return homeDefault.localRespond(q, s);

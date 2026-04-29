@@ -1,7 +1,7 @@
 import type { ChangeOrder, Contract, SubcontractLedgerEntry } from '../dashboard-data';
 import { JOB_COST_CATEGORIES, formatCurrency } from '../dashboard-data';
 import type { AgentAction, WidgetAgent } from './shared';
-import { getSuggestions, kw } from './shared';
+import { buildFullDataContext, getSuggestions, kw } from './shared';
 
 export const budgetAgent: WidgetAgent = {
   id: 'budget',
@@ -406,24 +406,7 @@ export const financialsDefault: WidgetAgent = {
     return base;
   },
   buildContext(s) {
-    const projects = s.projects ?? [];
-    const totalUsed = projects.reduce((sum, p) => sum + parseFloat(p.budgetUsed.replace(/[$K]/g, '')) * 1000, 0);
-    const totalBudget = projects.reduce((sum, p) => sum + parseFloat(p.budgetTotal.replace(/[$K]/g, '')) * 1000, 0);
-    const parts: string[] = [];
-    parts.push(`Financial summary:\n  Total budget: $${Math.round(totalBudget / 1000)}K\n  Total spent: $${Math.round(totalUsed / 1000)}K (${Math.round(totalUsed / totalBudget * 100)}%)\n  ${projects.length} active projects`);
-    parts.push(`Budget by project:\n${projects.map(p => `  ${p.name}: ${p.budgetUsed}/${p.budgetTotal} (${p.budgetPct}%)`).join('\n')}`);
-    const rev = s.projectRevenue ?? [];
-    if (rev.length) {
-      const totalOutstanding = rev.reduce((sum, r) => sum + r.outstandingRaw, 0);
-      const totalRetainage = rev.reduce((sum, r) => sum + r.retainageRaw, 0);
-      parts.push(`\nRevenue: $${(totalOutstanding / 1000).toFixed(0)}K outstanding, $${(totalRetainage / 1000).toFixed(0)}K retainage`);
-    }
-    const cos = s.changeOrders ?? [];
-    if (cos.length) {
-      const pendingAmt = cos.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0);
-      parts.push(`Change orders: ${cos.length} total, $${pendingAmt.toLocaleString()} pending approval`);
-    }
-    return parts.join('\n');
+    return buildFullDataContext(s);
   },
   localRespond(q, s) {
     if (kw(q, 'revenue', 'outstanding', 'invoice', 'receivable', 'collect')) return revenueAgent.localRespond(q, s);

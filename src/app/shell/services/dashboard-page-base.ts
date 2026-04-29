@@ -6,6 +6,8 @@ import { DashboardLayoutEngine, type DashboardLayoutConfig } from './dashboard-l
 import { WidgetFocusService } from './widget-focus.service';
 import { WidgetLayoutService } from './widget-layout.service';
 import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
+import type { ThemeConfig } from '../../services/theme.service';
+import { readJson, writeJson } from '../../shared/storage/json-local-storage';
 
 /**
  * Shared dashboard layout wiring: engine lifecycle, canvas reset/save effects,
@@ -132,21 +134,14 @@ export abstract class DashboardPageBase {
   }
 
   private saveThemeWithDefaults(): void {
-    try {
-      const config = this.themeService.getThemeConfig();
-      localStorage.setItem(this.themeDefaultsKey, JSON.stringify(config));
-    } catch { /* quota exceeded */ }
+    writeJson(this.themeDefaultsKey, this.themeService.getThemeConfig());
   }
 
   private restoreThemeFromDefaults(): void {
-    try {
-      const raw = localStorage.getItem(this.themeDefaultsKey);
-      if (!raw) return;
-      const config = JSON.parse(raw);
-      if (config?.theme && config?.mode) {
-        this.themeService.setTheme(config.theme, config.mode);
-      }
-    } catch { /* ignore */ }
+    const config = readJson<ThemeConfig>(this.themeDefaultsKey);
+    if (config?.theme && config?.mode) {
+      this.themeService.setTheme(config.theme, config.mode);
+    }
   }
 
   ngAfterViewInit(): void {

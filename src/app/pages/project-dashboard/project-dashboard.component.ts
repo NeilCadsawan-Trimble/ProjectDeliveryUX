@@ -22,7 +22,6 @@ import type { INavbarUserCard } from '../../components/modus-navbar.component';
 import { ModusTextInputComponent } from '../../components/modus-text-input.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
-import { AiAssistantPanelComponent } from '../../shell/components/ai-assistant-panel.component';
 import { EmptyStateComponent } from './components/empty-state.component';
 import { CollapsibleSubnavComponent } from './components/collapsible-subnav.component';
 import { ItemDetailViewComponent } from '../../shared/detail/item-detail-view.component';
@@ -41,7 +40,6 @@ import { DrawingMarkupToolbarComponent, DRAWING_TOOLS } from '../../shared/detai
 import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
 import { PdfViewerComponent } from '../../shared/detail/pdf-viewer.component';
 import { PanoramaViewerComponent } from '../../shared/detail/panorama-viewer.component';
-import { AiIconComponent } from '../../shell/components/ai-icon.component';
 import { UserMenuComponent } from '../../shell/components/user-menu.component';
 import { TrimbleLogoComponent } from '../../shell/components/trimble-logo.component';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
@@ -61,7 +59,7 @@ import { CanvasDetailManager, type DetailView } from '../../shell/services/canva
 import { SubpageTileCanvas, type TileRect, type TileDetailView } from '../../shell/services/subpage-tile-canvas';
 import { AiService } from '../../services/ai.service';
 import { WeatherService } from '../../services/weather.service';
-import { AiToolsService } from '../../services/ai-tools.service';
+import { AiPageContextService } from '../../shell/services/ai-page-context.service';
 import { AiPanelController } from '../../shell/services/ai-panel-controller';
 import { CanvasPanning } from '../../shell/services/canvas-panning';
 import { NavigationHistoryService } from '../../shell/services/navigation-history.service';
@@ -134,7 +132,7 @@ const PROJ_MIN_CONTENT_PX = 80;
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, AiIconComponent, AiAssistantPanelComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -162,7 +160,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   private readonly navHistory = inject(NavigationHistoryService);
   private readonly elementRef = inject(ElementRef);
   private readonly aiService = inject(AiService);
-  private readonly aiToolsService = inject(AiToolsService);
+  private readonly aiPageContext = inject(AiPageContextService);
+  /** Universal AI Assistant controller (root singleton). Bound to navbar spotlight inputs. */
+  readonly ai = inject(AiPanelController);
   private readonly injector = inject(Injector);
   private readonly weatherService = inject(WeatherService);
 
@@ -175,7 +175,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   private readonly _abortCtrl = new AbortController();
   private readonly _registerCleanup = this.destroyRef.onDestroy(() => {
     this._abortCtrl.abort();
-    this.ai.destroy();
+    this.aiPageContext.clear();
   });
 
   protected override getEngineConfig(): DashboardLayoutConfig {
@@ -2148,6 +2148,39 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     this._detailMgr.updateField(widgetId, 'dueDate', newDate);
   }
 
+  /**
+   * Dispatchers used by the shared `rfiDetailPanel` / `submittalDetailPanel`
+   * `<ng-template>`s so the bindings can live in one place per type. Each
+   * caller passes the active detail-view mode (desktop / tile / canvas) plus
+   * the row identifier (tile id, widget id, or empty string for desktop).
+   */
+  dispatchDetailAssignee(mode: 'desktop' | 'tile' | 'canvas', id: string, value: string): void {
+    if (mode === 'desktop') this.onDetailAssigneeChange(value);
+    else if (mode === 'tile') this.onTileDetailAssigneeChange(id, value);
+    else this.onCanvasDetailAssigneeChange(id, value);
+  }
+
+  dispatchDetailStatus(mode: 'desktop' | 'tile' | 'canvas', id: string, value: string): void {
+    if (mode === 'desktop') this.onDetailStatusChange(value);
+    else if (mode === 'tile') this.onTileDetailStatusChange(id, value);
+    else this.onCanvasDetailStatusChange(id, value);
+  }
+
+  dispatchDetailDueDate(mode: 'desktop' | 'tile' | 'canvas', id: string, value: string): void {
+    if (mode === 'desktop') this.onDetailDueDateChange(value);
+    else if (mode === 'tile') this.onTileDetailDueDateChange(id, value);
+    else this.onCanvasDetailDueDateChange(id, value);
+  }
+
+  dispatchDetailOpenInNewTab(mode: 'desktop' | 'tile' | 'canvas', id: string): void {
+    if (mode === 'desktop') {
+      this.onOpenDetailInNewTab();
+    } else if (mode === 'canvas') {
+      const detail = this._detailMgr.canvasDetailViews()[id];
+      if (detail) this.openCanvasDetailInNewTab(detail);
+    }
+  }
+
   readonly currentPageLabel = computed(() => {
     const nav = this.activeNavItem();
     if (nav === 'records') return this.activeRecordsPageLabel();
@@ -2165,6 +2198,46 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   ngOnInit(): void {
     this.weatherService.initialize();
+
+    this.aiPageContext.register({
+      contextProvider: () => {
+        const widgetId = this.widgetFocusService.selectedWidgetId();
+        const subContext = this.getSubPageAgentContext();
+        const agent = getAgent(widgetId, 'project-dashboard', subContext);
+        const state = this.buildAgentDataState();
+        return this.aiService.buildContext('project-dashboard', {
+          projectId: this.projectId(),
+          projectName: this.projectName(),
+          projectData: agent.buildContext(state),
+          agentPrompt: agent.systemPrompt,
+        });
+      },
+      actionsProvider: () => {
+        const widgetId = this.widgetFocusService.selectedWidgetId();
+        const subContext = this.getSubPageAgentContext();
+        const agent = getAgent(widgetId, 'project-dashboard', subContext);
+        const state = this.buildAgentDataState();
+        return agent.actions?.(state) ?? [];
+      },
+      suggestionsProvider: () => {
+        const widgetId = this.widgetFocusService.selectedWidgetId();
+        const subContext = this.getSubPageAgentContext();
+        const agent = getAgent(widgetId, 'project-dashboard', subContext);
+        const state = this.buildAgentDataState();
+        return getSuggestions(agent, state);
+      },
+      localResponder: () => {
+        const widgetId = this.widgetFocusService.selectedWidgetId();
+        const subContext = this.getSubPageAgentContext();
+        const agent = getAgent(widgetId, 'project-dashboard', subContext);
+        const state = this.buildAgentDataState();
+        return (query: string) => agent.localRespond(query, state);
+      },
+      contextKey: () => this.aiContextKey(),
+      title: () => 'Trimble AI',
+      subtitle: () => this.aiContextLabel(),
+      welcomeText: () => this.aiWelcomeMessage(),
+    });
 
     const zFn = () => this.panning.canvasZoom();
     this.engine.zoomFn = zFn;
@@ -2366,48 +2439,6 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     return `project:${id}:${sub}`;
   });
 
-  readonly ai = new AiPanelController({
-    widgetFocusService: this.widgetFocusService,
-    aiService: this.aiService,
-    aiToolsService: this.aiToolsService,
-    router: this.router,
-    defaultSuggestions: computed(() => {
-      const widgetId = this.widgetFocusService.selectedWidgetId();
-      const subContext = this.getSubPageAgentContext();
-      const agent = getAgent(widgetId, 'project-dashboard', subContext);
-      const state = this.buildAgentDataState();
-      return getSuggestions(agent, state);
-    }),
-    contextBuilder: () => {
-      const widgetId = this.widgetFocusService.selectedWidgetId();
-      const subContext = this.getSubPageAgentContext();
-      const agent = getAgent(widgetId, 'project-dashboard', subContext);
-      const state = this.buildAgentDataState();
-      return this.aiService.buildContext('project-dashboard', {
-        projectId: this.projectId(),
-        projectName: this.projectName(),
-        projectData: agent.buildContext(state),
-        agentPrompt: agent.systemPrompt,
-      });
-    },
-    localResponder: () => {
-      const widgetId = this.widgetFocusService.selectedWidgetId();
-      const subContext = this.getSubPageAgentContext();
-      const agent = getAgent(widgetId, 'project-dashboard', subContext);
-      const state = this.buildAgentDataState();
-      return (query: string) => agent.localRespond(query, state);
-    },
-    actionsProvider: () => {
-      const widgetId = this.widgetFocusService.selectedWidgetId();
-      const subContext = this.getSubPageAgentContext();
-      const agent = getAgent(widgetId, 'project-dashboard', subContext);
-      const state = this.buildAgentDataState();
-      return agent.actions?.(state) ?? [];
-    },
-    contextKey: this.aiContextKey,
-    injector: this.injector,
-  });
-
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 
   readonly aiContextLabel = computed(() => {
@@ -2460,11 +2491,6 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     }
     if (nav === 'drawings') return `Ask me about drawings and revisions for ${name}.`;
     return `Ask me about ${name}.`;
-  });
-
-  private readonly _aiContextEffect = effect(() => {
-    const label = this.aiContextLabel();
-    this.widgetFocusService.setDefaults('Trimble AI', label);
   });
 
   readonly activeInsight = computed(() => {
@@ -2622,8 +2648,6 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       this.resetMenuOpen.set(false);
     } else if (this.moreMenuOpen()) {
       this.moreMenuOpen.set(false);
-    } else if (this.ai.panelOpen()) {
-      this.ai.close();
     } else if (this.navExpanded()) {
       this.navExpanded.set(false);
     }
@@ -2634,7 +2658,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       this.navExpanded.set(false);
     }
     const target = event.target as HTMLElement;
-    const insideAiPanel = !!target.closest('modus-utility-panel') || !!target.closest('ai-assistant-panel') || !!target.closest('modus-wc-utility-panel') || !!target.closest('[aria-label="AI assistant"]');
+    const insideAiPanel = !!target.closest('ai-floating-prompt') || !!target.closest('.ai-floating-prompt');
     if (this.widgetFocusService.selectedWidgetId() && !target.closest('[data-widget-id]') && !target.closest('[data-tile-id]') && !insideAiPanel) {
       this.widgetFocusService.clearSelection();
     }

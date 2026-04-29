@@ -1,6 +1,6 @@
 import { buildStaffingConflicts, buildUrgentNeeds } from '../dashboard-data';
 import type { AgentAction, WidgetAgent } from './shared';
-import { fmtProjects, kw, maxDaysPastDue } from './shared';
+import { buildFullDataContext, kw, maxDaysPastDue } from './shared';
 import { changeOrdersAgent, weatherAgent } from './financials-agents';
 
 export const homeTimeOff: WidgetAgent = {
@@ -302,23 +302,7 @@ export const homeDefault: WidgetAgent = {
     ];
   },
   buildContext(s) {
-    const parts: string[] = [];
-    const projects = s.projects ?? [];
-    parts.push(`Portfolio: ${projects.length} projects`);
-    const atRisk = projects.filter(p => p.status === 'At Risk').length;
-    const overdue = projects.filter(p => p.status === 'Overdue').length;
-    if (atRisk) parts.push(`${atRisk} project(s) at risk`);
-    if (overdue) parts.push(`${overdue} project(s) overdue`);
-    parts.push(`Estimates: ${(s.estimates ?? []).length} open`);
-    parts.push(`RFIs: ${(s.rfis ?? []).length} total`);
-    parts.push(`Submittals: ${(s.submittals ?? []).length} total`);
-    parts.push(`Calendar: ${(s.calendar ?? []).length} upcoming events`);
-    const cos = s.changeOrders ?? [];
-    if (cos.length) parts.push(`Change orders: ${cos.length} total, ${cos.filter(c => c.status === 'pending').length} pending`);
-    const impactDays = (s.weatherForecast ?? []).filter(f => f.workImpact !== 'none');
-    if (impactDays.length) parts.push(`Weather alert: ${impactDays.length} day(s) with work impact this week`);
-    if (projects.length) parts.push('Projects:\n' + fmtProjects(projects));
-    return parts.join('\n');
+    return buildFullDataContext(s);
   },
   localRespond(q, s) {
     const projects = s.projects ?? [];
@@ -1603,19 +1587,5 @@ export const HOME_AGENTS: WidgetAgent[] = [
   homeDailyReportsAgent,
   homeTeamAllocationAgent,
   homeContractsAgent,
-];
-
-export const KELLY_HOME_AGENTS: WidgetAgent[] = [
-  homeApKpis,
-  homeInvoiceQueue,
-  homePaymentSchedule,
-  homeCalendar,
-  homeVendorAging,
-  homePayAppsAgent,
-  homeLienWaiversAgent,
-  homeRetentionAgent,
-  homeApActivity,
-  homeCashOutflow,
-  homeLearningAgent,
 ];
 

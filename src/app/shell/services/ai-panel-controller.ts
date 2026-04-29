@@ -1,15 +1,44 @@
-import { ApplicationRef, Injector, Signal, computed, effect, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ApplicationRef, Injectable, Injector, Signal, computed, effect, inject, signal } from '@angular/core';
+import { NavigationEnd, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
+import { filter, map, startWith } from 'rxjs/operators';
 import { AiService, type AiChatMessage, type AiContext, type AiStreamEvent, type LocalResponder } from '../../services/ai.service';
 import { WidgetFocusService } from './widget-focus.service';
-import type { AgentAction } from '../../data/widget-agents';
-import type { AiToolsService } from '../../services/ai-tools.service';
+import { AiPageContextService } from './ai-page-context.service';
+import { DataStoreService } from '../../data/data-store.service';
+import { PersonaService } from '../../services/persona.service';
+import { AiToolsService, isSupportedRecordDetail, type NavigationResolution } from '../../services/ai-tools.service';
+import { getAgent, getSuggestions, type AgentAction, type AgentDataState } from '../../data/widget-agents';
+import type { DetailView } from './canvas-detail-manager';
 
 export interface PendingAction {
   toolName: string;
   args: Record<string, unknown>;
   description: string;
+  /**
+   * When set, the assistant message renders a two-option choice instead of
+   * Confirm/Cancel. Used for the canvas + Home navigation prompt.
+   */
+  choice?: NavigationChoice;
+}
+
+export interface NavigationChoice {
+  url: string;
+  label: string;
+  detailView: DetailView;
+}
+
+/**
+ * Optional bridge that lets the panel controller hand a freestanding canvas
+ * detail to the active page (Home). The page registers itself when it mounts
+ * and de-registers on destroy.
+ */
+export interface CanvasDetailHandler {
+  /** Returns true if this page can render the given detail as a freestanding tile. */
+  canHandle(detail: DetailView): boolean;
+  /** Returns true if the page successfully spawned the freestanding overlay. */
+  openFreestandingDetail(detail: DetailView, label: string): boolean;
 }
 
 export interface AiMessage {
@@ -20,79 +49,110 @@ export interface AiMessage {
   pendingAction?: PendingAction;
 }
 
-export type AiContextBuilder = () => AiContext;
-
-export interface AiPanelConfig {
-  widgetFocusService: WidgetFocusService;
-  aiService: AiService;
-  router: Router;
-  defaultSuggestions: string[] | Signal<string[]>;
-  contextBuilder: AiContextBuilder;
-  localResponder?: () => LocalResponder | undefined;
-  actionsProvider?: () => AgentAction[];
-  aiToolsService?: AiToolsService;
-  contextKey?: Signal<string>;
-  injector: Injector;
-}
-
+/**
+ * Universal AI Assistant controller.
+ *
+ * Single root-provided singleton shared across every page in the app. Pages
+ * supply their own context, suggestions, actions, etc. via
+ * {@link AiPageContextService}; this controller falls back to widget-agent
+ * defaults derived from the current route + DataStore when no page-specific
+ * registration is active.
+ */
+@Injectable({ providedIn: 'root' })
 export class AiPanelController {
+  private readonly widgetFocusService = inject(WidgetFocusService);
+  private readonly aiService = inject(AiService);
+  private readonly aiToolsService = inject(AiToolsService);
+  private readonly router = inject(Router);
+  private readonly aiPageContext = inject(AiPageContextService);
+  private readonly dataStore = inject(DataStoreService);
+  private readonly personaService = inject(PersonaService);
+  private readonly injector = inject(Injector);
+
   readonly panelOpen = signal(false);
   readonly messages = signal<AiMessage[]>([]);
   readonly inputText = signal('');
   readonly thinking = signal(false);
+
+  readonly title: Signal<string>;
+  readonly subtitle: Signal<string>;
+  readonly suggestions: Signal<string[]>;
   readonly actions: Signal<AgentAction[]>;
+  readonly welcomeText: Signal<string>;
+  readonly placeholder: Signal<string>;
+
   private messageCounter = 0;
   private streamSub: Subscription | null = null;
   private conversationMemory = new Map<string, { messages: AiMessage[]; counter: number }>();
   private lastAgentKey: string | null = null;
 
-  readonly title: Signal<string>;
-  readonly subtitle: Signal<string>;
-  readonly suggestions: Signal<string[]>;
-
-  private readonly widgetFocusService: WidgetFocusService;
-  private readonly aiService: AiService;
-  private readonly router: Router;
-  private readonly contextBuilder: AiContextBuilder;
-  private readonly localResponderFn?: () => LocalResponder | undefined;
-  private readonly actionsProviderFn?: () => AgentAction[];
-  private readonly aiToolsService?: AiToolsService;
-  private readonly contextKeyFn?: Signal<string>;
-  private readonly injector: Injector;
+  /** Live router URL signal so context-derived state reacts to navigation. */
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(e => e.urlAfterRedirects),
+      startWith(this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
 
   readonly hasPendingAction = computed(() =>
     this.messages().some(m => m.pendingAction != null)
   );
 
+  /** Page-supplied canvas-detail handler is read directly from AiPageContextService. */
+  private get canvasDetailHandler(): CanvasDetailHandler | null {
+    return this.aiPageContext.canvasDetailHandler();
+  }
+
+  /** Legacy setter kept for backwards compatibility; pages should use AiPageContextService. */
+  setCanvasDetailHandler(handler: CanvasDetailHandler | null): void {
+    this.aiPageContext.canvasDetailHandler.set(handler);
+  }
+
   private resolveAgentKey(): string {
     const widgetId = this.widgetFocusService.selectedWidgetId();
     if (widgetId) return widgetId;
-    return this.contextKeyFn?.() ?? '__default__';
+    const pageKey = this.aiPageContext.contextKey()?.();
+    if (pageKey) return pageKey;
+    return `shell:${this.getPageName()}`;
   }
 
-  constructor(config: AiPanelConfig) {
-    this.widgetFocusService = config.widgetFocusService;
-    this.aiService = config.aiService;
-    this.router = config.router;
-    this.contextBuilder = config.contextBuilder;
-    this.localResponderFn = config.localResponder;
-    this.actionsProviderFn = config.actionsProvider;
-    this.aiToolsService = config.aiToolsService;
-    this.contextKeyFn = config.contextKey;
-    this.injector = config.injector;
-
+  constructor() {
     this.title = this.widgetFocusService.aiAssistantTitle;
     this.subtitle = this.widgetFocusService.aiAssistantSubtitle;
 
-    const defaults = config.defaultSuggestions;
-    const isSignal = typeof defaults === 'function' && 'set' in defaults === false;
+    this.suggestions = computed(() => {
+      const focused = this.widgetFocusService.aiSuggestions();
+      if (focused) return focused;
+      const pageSuggestions = this.aiPageContext.suggestionsProvider()?.();
+      if (pageSuggestions) return pageSuggestions;
+      const page = this.getPageName();
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const agent = getAgent(widgetId, page);
+      const state = this.buildAgentDataState();
+      return getSuggestions(agent, state);
+    });
 
-    this.suggestions = computed(() =>
-      this.widgetFocusService.aiSuggestions() ??
-      (isSignal ? (defaults as Signal<string[]>)() : defaults as string[])
-    );
+    this.actions = computed(() => {
+      const pageActions = this.aiPageContext.actionsProvider()?.();
+      if (pageActions) return pageActions;
+      const page = this.getPageName();
+      const widgetId = this.widgetFocusService.selectedWidgetId();
+      const agent = getAgent(widgetId, page);
+      const state = this.buildAgentDataState();
+      return agent.actions?.(state) ?? [];
+    });
 
-    this.actions = computed(() => this.actionsProviderFn?.() ?? []);
+    this.welcomeText = computed(() => {
+      return this.aiPageContext.welcomeTextProvider()?.()
+        ?? 'Ask me anything about your dashboard.';
+    });
+
+    this.placeholder = computed(() => {
+      return this.aiPageContext.placeholderProvider()?.()
+        ?? 'How may I help you?';
+    });
 
     effect(() => {
       const agentKey = this.resolveAgentKey();
@@ -118,7 +178,7 @@ export class AiPanelController {
         this.messages.set([]);
         this.messageCounter = 0;
       }
-    }, { injector: config.injector });
+    });
   }
 
   private static readonly MAX_CONVERSATIONS = 50;
@@ -141,8 +201,43 @@ export class AiPanelController {
     this.panelOpen.update(v => !v);
   }
 
+  openModal(): void {
+    this.panelOpen.set(true);
+  }
+
+  /** Open the modal and send the current input text in one motion. Used by the Spotlight Enter key. */
+  openAndSend(): void {
+    if (!this.inputText().trim()) {
+      this.openModal();
+      return;
+    }
+    this.panelOpen.set(true);
+    this.send();
+  }
+
   close(): void {
     this.panelOpen.set(false);
+  }
+
+  /**
+   * Cancel an in-flight streaming response. Used by the Stop button on the
+   * floating prompt while {@link thinking} is true. Closes the active
+   * subscription, marks any streaming assistant message as no longer streaming,
+   * and persists the partial state so the user can resume from there.
+   */
+  stop(): void {
+    if (!this.streamSub && !this.thinking()) return;
+    this.streamSub?.unsubscribe();
+    this.streamSub = null;
+    this.thinking.set(false);
+    this.messages.update(msgs =>
+      msgs.map(m =>
+        m.streaming
+          ? { ...m, streaming: false, text: m.text || '(stopped)' }
+          : m,
+      ),
+    );
+    this.saveConversation();
   }
 
   selectSuggestion(suggestion: string): void {
@@ -180,69 +275,39 @@ export class AiPanelController {
       .filter(m => m.id !== assistantMsgId)
       .map(m => ({ role: m.role, content: m.text }));
 
-    const context = this.contextBuilder();
-    const localResponder = this.localResponderFn?.();
+    const context = this.buildContext();
+    const localResponder = this.resolveLocalResponder();
 
-    if (this.aiToolsService) {
-      const toolSchemas = this.aiToolsService.getToolSchemas();
-      this.streamSub = this.aiService.sendMessageWithTools(text, history, toolSchemas, context, localResponder).subscribe({
-        next: (event: AiStreamEvent) => {
-          if (event.type === 'text' && event.text) {
-            this.messages.update(msgs =>
-              msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text + event.text } : m),
-            );
-          } else if (event.type === 'tool_call' && event.toolCall) {
-            const tc = event.toolCall;
-            const description = this.describeToolCall(tc.name, tc.args);
-            this.messages.update(msgs =>
-              msgs.map(m => m.id === assistantMsgId
-                ? { ...m, streaming: false, pendingAction: { toolName: tc.name, args: tc.args, description } }
-                : m),
-            );
-          }
-        },
-        error: () => {
+    const toolSchemas = this.aiToolsService.getToolSchemas();
+    this.streamSub = this.aiService.sendMessageWithTools(text, history, toolSchemas, context, localResponder).subscribe({
+      next: (event: AiStreamEvent) => {
+        if (event.type === 'text' && event.text) {
           this.messages.update(msgs =>
-            msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text || 'Sorry, something went wrong. Please try again.', streaming: false } : m),
+            msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text + event.text } : m),
           );
-          this.thinking.set(false);
-          this.saveConversation();
-        },
-        complete: () => {
-          this.messages.update(msgs =>
-            msgs.map(m => m.id === assistantMsgId ? { ...m, streaming: false } : m),
-          );
-          this.thinking.set(false);
-          this.saveConversation();
-        },
-      });
-    } else {
-      this.streamSub = this.aiService.sendMessage(text, history, context, localResponder).subscribe({
-        next: (chunk) => {
-          this.messages.update(msgs =>
-            msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text + chunk } : m),
-          );
-        },
-        error: () => {
-          this.messages.update(msgs =>
-            msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text || 'Sorry, something went wrong. Please try again.', streaming: false } : m),
-          );
-          this.thinking.set(false);
-          this.saveConversation();
-        },
-        complete: () => {
-          this.messages.update(msgs =>
-            msgs.map(m => m.id === assistantMsgId ? { ...m, streaming: false } : m),
-          );
-          this.thinking.set(false);
-          this.saveConversation();
-        },
-      });
-    }
+        } else if (event.type === 'tool_call' && event.toolCall) {
+          const tc = event.toolCall;
+          this.handleToolCall(assistantMsgId, tc.name, tc.args);
+        }
+      },
+      error: () => {
+        this.messages.update(msgs =>
+          msgs.map(m => m.id === assistantMsgId ? { ...m, text: m.text || 'Sorry, something went wrong. Please try again.', streaming: false } : m),
+        );
+        this.thinking.set(false);
+        this.saveConversation();
+      },
+      complete: () => {
+        this.messages.update(msgs =>
+          msgs.map(m => m.id === assistantMsgId ? { ...m, streaming: false } : m),
+        );
+        this.thinking.set(false);
+        this.saveConversation();
+      },
+    });
   }
 
   confirmAction(messageId: number): void {
-    if (!this.aiToolsService) return;
     const msg = this.messages().find(m => m.id === messageId);
     if (!msg?.pendingAction) return;
 
@@ -266,6 +331,113 @@ export class AiPanelController {
         : m),
     );
     this.saveConversation();
+  }
+
+  /** Resolve a `tool_call` event into either a Confirm gate, a choice prompt, or immediate execution. */
+  private handleToolCall(assistantMsgId: number, toolName: string, args: Record<string, unknown>): void {
+    if (toolName === 'navigate_to_page') {
+      const choice = this.maybeBuildNavigationChoice(args);
+      if (choice) {
+        this.messages.update(msgs =>
+          msgs.map(m => m.id === assistantMsgId
+            ? { ...m, streaming: false, pendingAction: { toolName, args, description: choice.label, choice } }
+            : m),
+        );
+        return;
+      }
+    }
+
+    const tool = this.aiToolsService.getTool(toolName);
+    if (tool?.autoExecute) {
+      const result = this.aiToolsService.execute(toolName, args);
+      this.messages.update(msgs =>
+        msgs.map(m => m.id === assistantMsgId
+          ? { ...m, streaming: false, text: (m.text ? m.text + '\n\n' : '') + (result.success ? result.message : 'Failed: ' + result.message) }
+          : m),
+      );
+      if (toolName === 'navigate_to_page' && result.success) {
+        this.close();
+      }
+      return;
+    }
+
+    const description = this.describeToolCall(toolName, args);
+    this.messages.update(msgs =>
+      msgs.map(m => m.id === assistantMsgId
+        ? { ...m, streaming: false, pendingAction: { toolName, args, description } }
+        : m),
+    );
+  }
+
+  /**
+   * Returns a NavigationChoice if the user is on Home + canvas AND the
+   * destination is a supported record detail AND a canvas detail handler is
+   * registered. Otherwise returns null (caller falls back to auto-execute).
+   */
+  private maybeBuildNavigationChoice(args: Record<string, unknown>): NavigationChoice | null {
+    const handler = this.canvasDetailHandler;
+    if (!handler) return null;
+
+    const ctx = this.buildContext();
+    if (ctx.viewMode !== 'canvas') return null;
+    if (!this.isHomeRoute(ctx.currentRoute)) return null;
+
+    const destination = args['destination'];
+    if (typeof destination !== 'string' || !isSupportedRecordDetail(destination)) return null;
+
+    const resolved: NavigationResolution = this.aiToolsService.resolveNavigation(args);
+    if (resolved.kind !== 'detail') return null;
+    if (!handler.canHandle(resolved.detailView)) return null;
+
+    return { url: resolved.url, label: resolved.label, detailView: resolved.detailView };
+  }
+
+  private isHomeRoute(currentRoute: string | undefined): boolean {
+    if (!currentRoute) return false;
+    const path = currentRoute.split('?')[0].split('#')[0];
+    const segments = path.split('/').filter(Boolean);
+    return segments.length === 1;
+  }
+
+  /** User picked "Navigate to page" on a navigation-choice pendingAction. */
+  chooseNavigation(messageId: number): void {
+    const msg = this.messages().find(m => m.id === messageId);
+    const choice = msg?.pendingAction?.choice;
+    if (!choice) return;
+
+    this.messages.update(msgs =>
+      msgs.map(m => m.id === messageId
+        ? { ...m, pendingAction: undefined, text: m.text + `\n\nOpening ${choice.label}.` }
+        : m),
+    );
+    this.saveConversation();
+    void this.router.navigateByUrl(choice.url);
+    this.close();
+  }
+
+  /** User picked "Open in canvas window" on a navigation-choice pendingAction. */
+  chooseCanvasOverlay(messageId: number): void {
+    const msg = this.messages().find(m => m.id === messageId);
+    const choice = msg?.pendingAction?.choice;
+    if (!choice) return;
+
+    const handler = this.canvasDetailHandler;
+    const opened = handler?.openFreestandingDetail(choice.detailView, choice.label) ?? false;
+    const followUp = opened
+      ? `Opened ${choice.label} in a canvas window.`
+      : `Could not open ${choice.label} as a canvas window. Navigating instead.`;
+
+    this.messages.update(msgs =>
+      msgs.map(m => m.id === messageId
+        ? { ...m, pendingAction: undefined, text: m.text + '\n\n' + followUp }
+        : m),
+    );
+    this.saveConversation();
+
+    if (!opened) {
+      void this.router.navigateByUrl(choice.url);
+      this.close();
+    }
   }
 
   private describeToolCall(name: string, args: Record<string, unknown>): string {
@@ -320,5 +492,82 @@ export class AiPanelController {
   destroy(): void {
     this.streamSub?.unsubscribe();
     this.streamSub = null;
+  }
+
+  // ───── Default context derivation (fallback when no page registers) ─────
+
+  private buildContext(): AiContext {
+    const pageContext = this.aiPageContext.contextProvider()?.();
+    if (pageContext) return pageContext;
+    const page = this.getPageName();
+    const widgetId = this.widgetFocusService.selectedWidgetId();
+    const agent = getAgent(widgetId, page);
+    const state = this.buildAgentDataState();
+    return this.aiService.buildContext(page, {
+      projectData: agent.buildContext(state),
+      agentPrompt: agent.systemPrompt,
+    });
+  }
+
+  private resolveLocalResponder(): LocalResponder | undefined {
+    const accessor = this.aiPageContext.localResponder();
+    const pageResponder = accessor ? accessor() : undefined;
+    if (pageResponder) return pageResponder;
+    const page = this.getPageName();
+    const widgetId = this.widgetFocusService.selectedWidgetId();
+    const agent = getAgent(widgetId, page);
+    const state = this.buildAgentDataState();
+    return (query: string) => agent.localRespond(query, state);
+  }
+
+  private getRouteSuffix(): string {
+    const url = this.currentUrl();
+    const slug = this.personaService.activePersonaSlug();
+    const prefix = `/${slug}`;
+    return url.startsWith(prefix) ? url.slice(prefix.length) || '/' : url;
+  }
+
+  private getPageName(): string {
+    const suffix = this.getRouteSuffix();
+    if (suffix.startsWith('/projects')) return 'projects';
+    if (suffix.startsWith('/project/')) return 'project-dashboard';
+    if (suffix.startsWith('/financials/job-costs/')) return 'financials-job-cost-detail';
+    if (suffix.startsWith('/financials')) return 'financials';
+    return 'home';
+  }
+
+  private buildAgentDataState(): AgentDataState {
+    const page = this.getPageName();
+    const state: AgentDataState = {
+      projects: this.dataStore.projects(),
+      estimates: this.dataStore.estimates(),
+      activities: this.dataStore.activities(),
+      attentionItems: this.dataStore.attentionItems(),
+      timeOffRequests: this.dataStore.timeOffRequests(),
+      rfis: this.dataStore.rfis(),
+      submittals: this.dataStore.submittals(),
+      calendar: this.dataStore.calendarAppointments(),
+      changeOrders: this.dataStore.changeOrders(),
+      dailyReports: this.dataStore.dailyReports(),
+      weatherForecast: this.dataStore.weatherForecast(),
+      projectAttentionItems: this.dataStore.projectAttentionItems(),
+      inspections: this.dataStore.inspections(),
+      punchListItems: this.dataStore.punchListItems(),
+      projectRevenue: this.dataStore.projectRevenue(),
+      allWeatherData: this.dataStore.weatherData(),
+      allJobCosts: this.dataStore.projectJobCosts(),
+      currentPage: page,
+      personaSlug: this.personaService.activePersonaSlug(),
+    };
+    if (page === 'financials-job-cost-detail') {
+      const suffix = this.getRouteSuffix();
+      const slug = suffix.replace('/financials/job-costs/', '').split('?')[0];
+      const proj = this.dataStore.findProjectBySlug(slug);
+      if (proj) {
+        state.jobCostDetailProject = this.dataStore.projectJobCosts().find(p => p.projectId === proj.id) ?? undefined;
+        state.projectName = proj.name;
+      }
+    }
+    return state;
   }
 }

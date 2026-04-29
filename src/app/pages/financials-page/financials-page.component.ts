@@ -49,6 +49,7 @@ import { HomeCashOutflowComponent } from '../home-page/components/home-cash-outf
 import { EstimateAssemblyHubComponent } from './components/estimate-assembly-hub.component';
 import { ESTIMATE_ASSEMBLY_HUBS } from '../../data/dashboard-data.seed';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { formatLongToday } from '../../shared/utils/format';
 
 type FinDetailType =
   | 'estimate' | 'changeOrder' | 'invoice' | 'payable' | 'purchaseOrder'
@@ -3294,12 +3295,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
   readonly coSubpagePending = computed(() => this.store.changeOrders().filter(c => c.status === 'pending').length);
   readonly coSubpageRejected = computed(() => this.store.changeOrders().filter(c => c.status === 'rejected').length);
 
-  readonly today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  readonly today = formatLongToday();
 
   private static readonly G = DashboardLayoutEngine.GAP_PX;
   private static readonly TITLE_HEIGHT = 80;

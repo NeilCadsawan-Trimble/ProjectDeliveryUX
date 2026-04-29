@@ -8,7 +8,9 @@ export type { ThemeName, ThemeMode, ThemeConfig } from '../../services/theme.ser
 export { WidgetFocusService } from './widget-focus.service';
 export type { WidgetNameEntry, WidgetRegistration } from './widget-focus.service';
 export { AiPanelController } from './ai-panel-controller';
-export type { AiMessage, AiPanelConfig, AiContextBuilder } from './ai-panel-controller';
+export type { AiMessage } from './ai-panel-controller';
+export { AiPageContextService } from './ai-page-context.service';
+export type { AiPageContextRegistration } from './ai-page-context.service';
 export { CanvasPanning } from './canvas-panning';
 export type { CanvasItemHost } from './canvas-item-host';
 export { NavigationHistoryService } from './navigation-history.service';

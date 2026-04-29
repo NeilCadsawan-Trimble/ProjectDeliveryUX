@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ChangeOrder } from '../../../data/dashboard-data.types';
+import { formatUsd } from '../../../shared/utils/format';
 
 @Component({
   selector: 'app-home-change-orders',
@@ -66,6 +67,6 @@ export class HomeChangeOrdersComponent {
   readonly rejectedAmount = computed(() => this.changeOrders().filter((co) => co.status === 'rejected').reduce((s, co) => s + co.amount, 0));
 
   fmtCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+    return formatUsd(amount, 0);
   }
 }

@@ -1,11 +1,17 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ThemeService } from './services/theme.service';
+import { AiFloatingPromptHostComponent } from './shell/components/ai-floating-prompt-host.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  template: `<router-outlet />`,
+  imports: [RouterOutlet, AiFloatingPromptHostComponent],
+  template: `
+    <router-outlet />
+    @defer (on idle) {
+      <ai-floating-prompt-host />
+    }
+  `,
   host: {
     class: 'min-h-screen flex flex-col',
   },

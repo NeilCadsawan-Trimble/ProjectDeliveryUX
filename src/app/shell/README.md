@@ -91,7 +91,6 @@ export class MyLayoutComponent {
 | `aiResponseFn` | `AiResponseFn` | Default handler | Custom AI response function |
 | `defaultAiSuggestions` | `string[]` | Generic suggestions | AI suggestion chips |
 | `aiWelcomeText` | `string` | Generic welcome | AI panel welcome message |
-| `aiPlaceholder` | `string` | `'Ask a question...'` | AI input placeholder |
 
 ### DashboardLayoutEngine
 

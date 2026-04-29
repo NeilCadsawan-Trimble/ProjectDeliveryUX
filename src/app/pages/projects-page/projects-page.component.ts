@@ -53,6 +53,7 @@ import { rewriteDynamicNeeds, injectScheduleOverdue, sortProjectsByUrgency, rewr
 import { RECORDS_SUB_NAV_ITEMS, FINANCIALS_SUB_NAV_ITEMS, type NavItem } from '../project-dashboard/project-dashboard.config';
 import { CreateMenuDropdownComponent } from '../../shared/create-menu-dropdown.component';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
+import { formatLongToday } from '../../shared/utils/format';
 
 type ContentBlock = 'owner' | 'schedule' | 'budget' | 'weather'
   | 'urgentNeeds' | 'sparkline' | 'costBreakdown' | 'insight' | 'moreNeeds'
@@ -186,12 +187,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
   private readonly createDropdownDesktop = viewChild<CreateMenuDropdownComponent>('createDropdownDesktop');
   private readonly createDropdownCanvas = viewChild<CreateMenuDropdownComponent>('createDropdownCanvas');
 
-  readonly today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  readonly today = formatLongToday();
 
   readonly projects = this.store.projects;
 

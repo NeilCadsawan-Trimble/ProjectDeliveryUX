@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
 import type { ApRetentionRecord } from '../../../data/dashboard-data.types';
+import { formatUsd } from '../../../shared/utils/format';
 
 @Component({
   selector: 'app-home-retention',
@@ -79,7 +80,7 @@ export class HomeRetentionComponent {
   });
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return formatUsd(amount);
   }
 
   /** Seed uses whole-number percent (e.g. 10); values in (0,1] are treated as fractions. */

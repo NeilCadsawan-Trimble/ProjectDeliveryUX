@@ -1,16 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ModusTypographyComponent } from '../../../components/modus-typography.component';
+import type { DashboardKpiCard } from '../../../shared/models/kpi-card';
 
-export interface KpiCard {
-  value: string;
-  label: string;
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  ariaPrefix: string;
-  action: string;
-  subtitle?: string;
-}
+export type KpiCard = DashboardKpiCard;
 
 @Component({
   selector: 'app-home-kpi-cards',
@@ -22,10 +14,10 @@ export interface KpiCard {
       @for (card of cards(); track card.label) {
         <div class="bg-muted rounded-lg px-3 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-secondary transition-colors duration-150"
           role="link" tabindex="0"
-          [attr.aria-label]="card.ariaPrefix + ': ' + card.value"
-          (click)="cardClick.emit(card.action)"
-          (keydown.enter)="cardClick.emit(card.action)"
-          (keydown.space)="$event.preventDefault(); cardClick.emit(card.action)">
+          [attr.aria-label]="(card.ariaPrefix ?? card.label) + ': ' + card.value"
+          (click)="cardClick.emit(card.action!)"
+          (keydown.enter)="cardClick.emit(card.action!)"
+          (keydown.space)="$event.preventDefault(); cardClick.emit(card.action!)">
           <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" [class]="card.iconBg">
             <i class="modus-icons text-base" [class]="card.iconColor" aria-hidden="true">{{ card.icon }}</i>
           </div>
@@ -45,10 +37,10 @@ export interface KpiCard {
       @for (card of cards(); track card.label) {
         <div class="bg-card border-default rounded-lg p-5 flex items-center gap-4 cursor-pointer hover:bg-muted transition-colors duration-150"
           role="link" tabindex="0"
-          [attr.aria-label]="card.ariaPrefix + ': ' + card.value"
-          (click)="cardClick.emit(card.action)"
-          (keydown.enter)="cardClick.emit(card.action)"
-          (keydown.space)="$event.preventDefault(); cardClick.emit(card.action)">
+          [attr.aria-label]="(card.ariaPrefix ?? card.label) + ': ' + card.value"
+          (click)="cardClick.emit(card.action!)"
+          (keydown.enter)="cardClick.emit(card.action!)"
+          (keydown.space)="$event.preventDefault(); cardClick.emit(card.action!)">
           <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" [class]="card.iconBg">
             <i class="modus-icons text-2xl" [class]="card.iconColor" aria-hidden="true">{{ card.icon }}</i>
           </div>

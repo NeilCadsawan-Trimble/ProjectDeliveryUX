@@ -16,6 +16,7 @@ const checks = [
   { name: "Opacity Utilities", cmd: "npm run lint:opacity" },
   { name: "Modus Icons", cmd: "npm run lint:icons" },
   { name: "Icon Names", cmd: "npm run lint:icon-names" },
+  { name: "Semantic HTML", cmd: "npm run lint:semantic-html" },
 ];
 
 let failures = 0;

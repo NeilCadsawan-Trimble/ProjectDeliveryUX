@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: Apr 17, 2026
+**Current window**: Apr 28, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -31,34 +31,10 @@ If the date matches today, skip this section and proceed normally.
 
 ## Today's Sessions
 
-*(Apr 17, 2026)*
-
-### Session 26: Fix canvas project tile navigation
-- Project tile links in canvas mode on projects dashboard not working
-- Root cause: `pointer-events: none !important` on `.canvas-content > *` in `src/styles.css` line 1920 blocked ALL interactions (drag, resize, click) in canvas mode
-- Fix: removed that `pointer-events` rule; spacebar-pan pointer-events already handled by `.canvas-pan-ready` and `.canvas-panning` rules
-
-### Session 27: Fix canvas KPI cards cut off
-- KPI cards in projHeader widget clipped at bottom in canvas mode
-- Root cause: `canvasDefaultHeights.projHeader` was 144px but content needs ~154px (title + margin + KPI cards with subtext)
-- Fix: increased projHeader canvas height to 176px in all 5 persona seed files, shifted all other widget canvasDefaultTops +32px
-
-### Session 28: Modus Typography full migration (attempt 2)
-- User pointed out `<div class="text-2xs text-foreground-40 uppercase tracking-wide">SCHEDULE</div>` not using modus-typography
-- Prior session (7ebe8d8c) claimed migration was complete but left ~310 lines across 32 files unconverted
-- Root cause of prior failure: subagents were inconsistent, `text-2xs` patterns skipped (no direct size mapping), no post-migration audit
-- Completed full migration: all raw Tailwind text sizing on div/span elements converted to `<modus-typography>` across all pages, shared, and shell components
-- `text-2xs` mapped to `size="xs" className="text-2xs"` (custom CSS override preserved in className)
-- `font-medium` mapped to `weight="semibold"` (closest design system weight)
-- Added static regression test: `tests/static/typography-enforcement.spec.ts` — scans all component templates for raw text-size/font-weight classes on div/span, excluding icons/inputs/code/className
-- All gates pass: `ng build` (0 errors), `lint:all` (7/7), `type-check` (0 errors), static tests (1286 passed across 15 files)
-- Exceptions left as-is: `innerHTML` rendered HTML in AI assistant (can't use Angular components in dynamic HTML)
+*(Apr 28, 2026)*
 
 ## Active Context
 
 - On `dev` branch.
-- Changes not yet pushed to GitHub.
 
 ## Pending Items
-
-- Changes not yet pushed to GitHub.
