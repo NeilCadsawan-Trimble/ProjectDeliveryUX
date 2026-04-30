@@ -185,6 +185,19 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
         (keydown)="onComposerKeydown($event)"
       ></textarea>
 
+      <div
+        class="ai-floating-prompt-icon-button"
+        role="button"
+        tabindex="0"
+        aria-label="Voice input"
+        title="Voice input"
+        (click)="onMicClick()"
+        (keydown.enter)="onMicClick()"
+        (keydown.space)="onMicClick()"
+      >
+        <i class="modus-icons text-base text-foreground-60" aria-hidden="true">mic</i>
+      </div>
+
       @if (controller().thinking()) {
         <div
           class="ai-floating-prompt-send-btn ai-floating-prompt-send-btn--stop"
@@ -329,6 +342,19 @@ export class AiComposerPillComponent {
 
   onStopClick(): void {
     this.controller().stop();
+  }
+
+  /**
+   * Voice-input affordance. The Modus floating-prompt pattern reserves a mic
+   * button next to Send for speech-to-text. Real speech recognition (Web
+   * Speech API or service-side STT) is not wired yet, so this drops a
+   * "Listening…" assistant message into the conversation as a placeholder.
+   * Emits `sent` first so the floating-prompt parent clears its dismissal
+   * gate and the review card expands to surface the new message.
+   */
+  onMicClick(): void {
+    this.sent.emit();
+    this.controller().simulateListening();
   }
 
   /**
