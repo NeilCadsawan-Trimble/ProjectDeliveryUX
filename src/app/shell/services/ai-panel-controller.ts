@@ -50,6 +50,17 @@ export interface AiMessage {
 }
 
 /**
+ * Conversation-memory keys are formatted as `persona:<slug>|<rest>` so each
+ * persona has an isolated set of agent conversations. Returns the slug portion,
+ * or `null` when the key predates the persona-prefixed format.
+ */
+function personaSlugFromKey(key: string): string | null {
+  if (!key.startsWith('persona:')) return null;
+  const pipe = key.indexOf('|');
+  return pipe === -1 ? key.slice('persona:'.length) : key.slice('persona:'.length, pipe);
+}
+
+/**
  * Universal AI Assistant controller.
  *
  * Single root-provided singleton shared across every page in the app. Pages
@@ -118,11 +129,12 @@ export class AiPanelController {
   }
 
   private resolveAgentKey(): string {
+    const persona = this.personaService.activePersonaSlug();
     const widgetId = this.widgetFocusService.selectedWidgetId();
-    if (widgetId) return widgetId;
+    if (widgetId) return `persona:${persona}|${widgetId}`;
     const pageKey = this.aiPageContext.contextKey()?.();
-    if (pageKey) return pageKey;
-    return `shell:${this.getPageName()}`;
+    if (pageKey) return `persona:${persona}|${pageKey}`;
+    return `persona:${persona}|shell:${this.getPageName()}`;
   }
 
   constructor() {
@@ -165,6 +177,10 @@ export class AiPanelController {
       const agentKey = this.resolveAgentKey();
       if (agentKey === this.lastAgentKey) return;
 
+      const personaChanged =
+        this.lastAgentKey !== null &&
+        personaSlugFromKey(this.lastAgentKey) !== personaSlugFromKey(agentKey);
+
       if (this.lastAgentKey && this.messages().length > 0) {
         this.conversationMemory.set(this.lastAgentKey, {
           messages: this.messages(),
@@ -176,6 +192,10 @@ export class AiPanelController {
       this.streamSub?.unsubscribe();
       this.streamSub = null;
       this.thinking.set(false);
+
+      if (personaChanged) {
+        this.inputText.set('');
+      }
 
       const stored = this.conversationMemory.get(agentKey);
       if (stored) {
