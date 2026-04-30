@@ -518,8 +518,34 @@ export class AiPanelController {
           if (k) queryParams[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
         }
       }
-      this.router.navigate([path || '/'], { queryParams });
+      this.router.navigate([this.toPersonaPath(path)], { queryParams });
     }
+  }
+
+  /**
+   * Agent action `route` values are authored persona-relative (e.g. `/projects`,
+   * `/financials/job-costs/oak-grove`). The app's real routes live under
+   * `/:persona/...`, so navigating to `/projects` matches `:persona='projects'`,
+   * fails the persona guard, and bounces to `/select`. Prefix the active persona
+   * slug here so every action chip lands on the correct page. Routes that are
+   * already persona-prefixed or top-level (login/select/auth) pass through.
+   */
+  private toPersonaPath(path: string): string {
+    const trimmed = path?.trim() || '/';
+    if (
+      trimmed.startsWith('/login') ||
+      trimmed.startsWith('/select') ||
+      trimmed.startsWith('/auth/')
+    ) {
+      return trimmed;
+    }
+    const firstSeg = trimmed.split('/').filter(Boolean)[0];
+    if (firstSeg && PersonaService.isValidPersona(firstSeg)) {
+      return trimmed;
+    }
+    const persona = this.personaService.activePersonaSlug();
+    const suffix = trimmed === '/' ? '' : trimmed;
+    return `/${persona}${suffix}`;
   }
 
   clearConversation(): void {

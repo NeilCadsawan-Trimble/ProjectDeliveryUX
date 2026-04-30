@@ -1,8 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   HostListener,
   computed,
+  effect,
   inject,
   input,
   signal,
@@ -63,6 +65,11 @@ import type { AgentAction } from '../../data/widget-agents';
           class="ai-floating-prompt-card ai-floating-prompt-card-enter"
           role="dialog"
           [attr.aria-label]="controller().title()"
+          (mousedown)="resetIdleTimer()"
+          (mousemove)="resetIdleTimer()"
+          (keydown)="resetIdleTimer()"
+          (touchstart)="resetIdleTimer()"
+          (focusin)="resetIdleTimer()"
         >
           <div class="flex items-center justify-between gap-2 px-4 py-3 border-bottom-default">
             <div class="flex items-center gap-2 min-w-0">
@@ -388,6 +395,14 @@ export class AiFloatingPromptComponent {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
 
+  /**
+   * Auto-hide the expanded review card after this many ms of no user
+   * interaction. Streaming (controller.thinking()) pauses the timer so the
+   * user can read responses without the card vanishing mid-answer.
+   */
+  private readonly REVIEW_IDLE_HIDE_MS = 20_000;
+  private idleTimer: ReturnType<typeof setTimeout> | null = null;
+
   readonly controller = input.required<AiPanelController>();
   /** Optional placeholder override; otherwise the controller's universal placeholder is used. */
   readonly placeholder = input<string | undefined>(undefined);
@@ -461,6 +476,49 @@ export class AiFloatingPromptComponent {
     return 'default';
   });
 
+  constructor() {
+    effect(() => {
+      const inReview = this.phase() === 'review';
+      const isThinking = this.controller().thinking();
+      if (inReview && !isThinking) {
+        this.startIdleTimer();
+      } else {
+        this.clearIdleTimer();
+      }
+    });
+
+    inject(DestroyRef).onDestroy(() => this.clearIdleTimer());
+  }
+
+  /**
+   * Restart the auto-hide timer. Called from card-level interaction events
+   * (mousedown, keydown, touchstart, mousemove, focusin) so any user
+   * engagement -- typing, scrolling, hovering, focusing -- keeps the card
+   * visible. No-op when the card is not currently in review phase or while
+   * the AI is streaming a response.
+   */
+  resetIdleTimer(): void {
+    if (this.phase() !== 'review' || this.controller().thinking()) return;
+    this.startIdleTimer();
+  }
+
+  private startIdleTimer(): void {
+    this.clearIdleTimer();
+    this.idleTimer = setTimeout(() => {
+      this.idleTimer = null;
+      if (this.phase() === 'review' && !this.controller().thinking()) {
+        this.dismissCard();
+      }
+    }, this.REVIEW_IDLE_HIDE_MS);
+  }
+
+  private clearIdleTimer(): void {
+    if (this.idleTimer !== null) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+  }
+
   toggleChipsExpanded(): void {
     this.chipsExpanded.update(v => !v);
   }
@@ -510,9 +568,26 @@ export class AiFloatingPromptComponent {
     this.controller().close();
   }
 
+  /**
+   * Action chips don't expand the response card on their own. When the user
+   * clicks an action from the default (collapsed) chip row, we run the action
+   * and then immediately stamp `dismissedAtCount` to the post-action message
+   * count so `showResponseCard()` keeps the card hidden -- the conversation is
+   * still saved to memory for later review via the drawer.
+   *
+   * If the card is already open (review phase, or the drawer is open), the
+   * user is already engaged in the conversation, so we let the action's
+   * messages flow into the visible surface like a normal turn.
+   */
   handleAction(action: AgentAction): void {
-    this.dismissedAtCount.set(null);
+    const wasExpanded = this.phase() === 'review';
+    if (wasExpanded) {
+      this.dismissedAtCount.set(null);
+      this.controller().executeAction(action);
+      return;
+    }
     this.controller().executeAction(action);
+    this.dismissedAtCount.set(this.controller().messages().length);
   }
 
   onMessageClick(event: MouseEvent): void {
