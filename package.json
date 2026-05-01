@@ -47,7 +47,7 @@
     "@trimble-oss/trimble-id": "^1.0.1",
     "apexcharts": "^5.10.4",
     "ng-apexcharts": "^2.3.0",
-    "pdfjs-dist": "4.10.38",
+    "pdfjs-dist": "5.7.284",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
