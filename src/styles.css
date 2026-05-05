@@ -2685,17 +2685,26 @@ modus-wc-progress.progress-primary .modus-wc-progress {
   cursor: grab !important;
 }
 
-.canvas-pan-ready .canvas-content {
-  pointer-events: none;
-}
-
 .canvas-panning .canvas-host {
   cursor: grabbing !important;
 }
 
-.canvas-panning .canvas-content {
-  pointer-events: none;
-  user-select: none;
+/* Block ALL widget interactions while space-pan is engaged. The descendant `*`
+   selector + !important is required to defeat per-widget Tailwind
+   `pointer-events-auto` utilities (home-page, financials-page, projects-page),
+   which would otherwise re-enable clicks/hover on widgets and let the user
+   accidentally interact while panning. Side nav and navbar are siblings of
+   .canvas-content and remain interactive. */
+.canvas-pan-ready .canvas-content,
+.canvas-pan-ready .canvas-content *,
+.canvas-panning .canvas-content,
+.canvas-panning .canvas-content * {
+  pointer-events: none !important;
+}
+
+.canvas-panning .canvas-content,
+.canvas-panning .canvas-content * {
+  user-select: none !important;
 }
 
 /* ── Accessibility ── */
@@ -2730,6 +2739,17 @@ modus-wc-progress.progress-primary .modus-wc-progress {
 
 .custom-side-nav-item:focus-visible {
   border-radius: 0;
+}
+
+/* #main-content is a tabindex="-1" wrapper that exists only as a skip-link
+   target; it never represents an actionable control, so suppress the focus
+   ring that browsers draw when it programmatically receives focus or is
+   clicked. Skip-link/keyboard navigation still works via the .skip-nav rule
+   above, which provides its own visible focus state. */
+#main-content:focus,
+#main-content:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .canvas-reset-flyout,
