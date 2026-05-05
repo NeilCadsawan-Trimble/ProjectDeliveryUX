@@ -2645,12 +2645,47 @@ export class HomePageComponent extends DashboardPageBase {
     this.urgentCategoryDropdownOpen.set(false);
   }
 
+  /**
+   * Persona-aware navigation for the home dashboard's Risks & Urgent Needs widget.
+   *
+   * Access matrix (from {@link getPersonaNav}):
+   * - Bert  -- no `financials` shell nav. Never route to `/<persona>/financials/...`.
+   * - Kelly -- no `projects` / `project` shell nav. Never route to `/<persona>/project/...`.
+   * - Frank, Dominique, Pamela -- full access.
+   *
+   * Resolution order:
+   *   1. financialsRoute, if the persona has financials access.
+   *   2. in-project deep link, if the persona has projects access (queryParams
+   *      `subpage: 'change-orders'` is normalised to the project's
+   *      `change-order-requests` sub-page).
+   *   3. otherwise no-op (neither destination is reachable for this persona).
+   */
   navigateToUrgentNeed(item: UrgentNeedItem): void {
-    if (item.financialsRoute) {
-      this.router.navigate([`${this.personaPrefix()}${item.financialsRoute}`]);
-    } else {
-      this.router.navigate([`${this.personaPrefix()}${item.route}`], { queryParams: item.queryParams });
+    const slug = this.personaService.activePersonaSlug();
+    const prefix = this.personaPrefix();
+    const hasFinancials = slug !== 'bert';
+    const hasProjects = slug !== 'kelly';
+
+    if (item.financialsRoute && hasFinancials) {
+      this.router.navigate([`${prefix}${item.financialsRoute}`]);
+      return;
     }
+
+    if (hasProjects) {
+      const qp = { ...item.queryParams };
+      // Project dashboards expose `change-order-requests` (and friends) under
+      // FINANCIALS_SUB_NAV_ITEMS, not the financials-page-only `change-orders`
+      // value the seed carries for the global Financials sub-nav.
+      if (qp['page'] === 'financials' && qp['subpage'] === 'change-orders') {
+        qp['subpage'] = 'change-order-requests';
+      }
+      this.router.navigate([`${prefix}${item.route}`], { queryParams: qp });
+      return;
+    }
+
+    // Persona has neither financials nor project access for this category --
+    // stay on the home dashboard rather than send the user somewhere they
+    // cannot view.
   }
 
   private readonly _urgentDropdownAbort = new AbortController();

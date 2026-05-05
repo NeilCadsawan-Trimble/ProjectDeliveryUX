@@ -42,6 +42,24 @@ const CANVAS_TILE_SHELL_SRC = readFileSync(
   resolve(__dir, '../../src/app/pages/project-dashboard/components/canvas-tile-shell.component.ts'),
   'utf-8',
 );
+const PROJECT_NAV_SRC = readFileSync(
+  resolve(__dir, '../../src/app/pages/project-dashboard/project-dashboard-navigation.service.ts'),
+  'utf-8',
+);
+
+/**
+ * Strip block comments, line comments, and string literals so structural
+ * regex assertions don't false-positive on words that appear in
+ * documentation, JSDoc, or docstrings.
+ */
+function stripCommentsAndStrings(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/[^\n]*/g, '')
+    .replace(/`(?:\\[\s\S]|\$\{[^}]*\}|[^`\\])*`/g, '``')
+    .replace(/'(?:\\.|[^'\\])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\])*"/g, '""');
+}
 
 describe('ProjectDashboardComponent (template regression)', () => {
   it('always offsets main for the collapsed rail width when not mobile (overlay, no push)', () => {
@@ -470,6 +488,36 @@ describe('ProjectDashboardComponent (template regression)', () => {
       expect(TS_SRC).not.toMatch(/import.*SIDE_NAV_ITEMS.*from/);
       expect(TS_SRC).not.toMatch(/import.*RECORDS_SUB_NAV_ITEMS.*from/);
       expect(TS_SRC).not.toMatch(/import.*FINANCIALS_SUB_NAV_ITEMS.*from/);
+    });
+  });
+
+  // Risks / urgent-needs widget links must stay inside the project space.
+  // The seed UrgentNeedItem.financialsRoute (`/financials/job-costs/<slug>`)
+  // points at the GLOBAL financials page; the home/portfolio dashboard uses
+  // it on purpose, but a project dashboard must always reroute to the
+  // project's own financials sub-pages instead.
+  describe('Risks / urgent-needs in-project routing', () => {
+    it('navigateToUrgentNeed does not consume item.financialsRoute', () => {
+      const navMethodMatch = PROJECT_NAV_SRC.match(/navigateToUrgentNeed\([^)]*\)\s*:\s*void\s*\{[\s\S]*?\n  \}/);
+      expect(navMethodMatch, 'navigateToUrgentNeed method should be present').not.toBeNull();
+      const body = stripCommentsAndStrings(navMethodMatch![0]);
+      expect(body).not.toContain('item.financialsRoute');
+      expect(body).not.toContain('financialsRoute');
+    });
+
+    it('navigateToUrgentNeed routes budget urgent needs to the in-project budget page', () => {
+      const navMethodMatch = PROJECT_NAV_SRC.match(/navigateToUrgentNeed\([^)]*\)\s*:\s*void\s*\{[\s\S]*?\n  \}/);
+      const body = navMethodMatch![0];
+      expect(body).toMatch(/category\s*===\s*'budget'/);
+      expect(body).toContain('navigateToBudgetPage()');
+    });
+
+    it("navigateToUrgentNeed routes change-order urgent needs to the project's financials sub-page", () => {
+      const navMethodMatch = PROJECT_NAV_SRC.match(/navigateToUrgentNeed\([^)]*\)\s*:\s*void\s*\{[\s\S]*?\n  \}/);
+      const body = navMethodMatch![0];
+      expect(body).toMatch(/category\s*===\s*'change-order'/);
+      expect(body).toMatch(/activeFinancialsPage\.set\(['"][^'"]+['"]\)/);
+      expect(body).toContain('pushPageUrl()');
     });
   });
 });

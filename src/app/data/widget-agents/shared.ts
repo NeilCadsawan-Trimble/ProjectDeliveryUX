@@ -31,7 +31,7 @@ import type {
   WeatherForecast,
 } from '../dashboard-data';
 import type { Milestone, TeamMember, Task, Risk, ActivityEntry, Drawing, BudgetBreakdown } from '../project-data';
-import type { DrawingTile } from '../drawings-data';
+import type { DrawingTile, SiteCapture } from '../drawings-data';
 import type {
   ApInvoice,
   ApVendor,
@@ -99,6 +99,12 @@ export interface AgentDataState {
   detailRfi?: Rfi;
   detailSubmittal?: Submittal;
   detailDrawing?: DrawingTile;
+  detailDailyReport?: DailyReport;
+  detailInspection?: Inspection;
+  detailPunchItem?: PunchListItem;
+  detailChangeOrder?: ChangeOrder;
+  detailContract?: Contract;
+  detailPanorama?: SiteCapture;
 
   jobCostDetailProject?: ProjectJobCost;
   allJobCosts?: ProjectJobCost[];

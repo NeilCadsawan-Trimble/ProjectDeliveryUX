@@ -1,10 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   HostListener,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -15,6 +17,13 @@ import { ModusTypographyComponent } from '../../components/modus-typography.comp
 import { ModusLogoComponent } from '../../components/modus-logo.component';
 import { AiPanelController } from '../services/ai-panel-controller';
 import { WidgetFocusService } from '../services/widget-focus.service';
+import { VoiceInputService } from '../../services/voice-input.service';
+import { PersonaService } from '../../services/persona.service';
+import {
+  PERSONA_TOOL_CONTEXTS,
+  DEFAULT_PERSONA_TOOL_CONTEXTS,
+  type PersonaToolContext,
+} from '../../data/persona-tool-contexts';
 
 /**
  * Module-level one-shot guard for app-load auto-focus. The first non-embedded
@@ -31,13 +40,7 @@ interface SourcesMenuAction {
   readonly kind: SourceKind;
 }
 
-interface ToolItem {
-  readonly id: string;
-  readonly icon?: string;
-  readonly logoEmblem?: boolean;
-  readonly label: string;
-  readonly description: string;
-}
+type ToolItem = PersonaToolContext;
 
 interface FloatingPromptSource {
   readonly id: string;
@@ -161,7 +164,8 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
               <modus-typography hierarchy="p" size="xs" className="text-foreground-60 mt-1">Connect Trimble and field workflows. Availability depends on your product and entitlements (placeholder).</modus-typography>
             </div>
             <div class="border-bottom-default mx-2"></div>
-            @for (item of toolsItems; track item.id) {
+            <div class="ai-floating-prompt-menu-list">
+            @for (item of toolsItems(); track item.id) {
               <div
                 class="flex items-start gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors duration-150"
                 role="menuitem"
@@ -182,6 +186,7 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
                 </div>
               </div>
             }
+            </div>
           </div>
         }
       </div>
@@ -200,14 +205,19 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
       <div
         class="ai-floating-prompt-icon-button"
         role="button"
-        tabindex="0"
+        [attr.tabindex]="voice.supported() ? 0 : -1"
+        [class.is-listening]="voice.listening()"
+        [class.is-connecting]="voice.connecting()"
+        [class.is-disabled]="!voice.supported()"
+        [attr.aria-disabled]="!voice.supported() || null"
+        [attr.aria-pressed]="voice.listening()"
         aria-label="Voice input"
-        title="Voice input"
+        [title]="micTooltip()"
         (click)="onMicClick()"
         (keydown.enter)="onMicClick()"
         (keydown.space)="onMicClick()"
       >
-        <i class="modus-icons text-base text-foreground-60" aria-hidden="true">mic</i>
+        <i class="modus-icons text-base text-foreground-60" aria-hidden="true">{{ voice.listening() ? 'stop' : 'mic' }}</i>
       </div>
 
       @if (controller().thinking()) {
@@ -245,6 +255,14 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
 })
 export class AiComposerPillComponent {
   private readonly widgetFocus = inject(WidgetFocusService);
+  /**
+   * Singleton dictation pipeline. Public so the template can bind directly to
+   * its `listening`, `connecting`, `supported`, and `error` signals without
+   * forwarding them through component computeds.
+   */
+  readonly voice = inject(VoiceInputService);
+  private readonly persona = inject(PersonaService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly controller = input.required<AiPanelController>();
   /** Optional placeholder override; otherwise the controller's universal placeholder is used. */
@@ -260,6 +278,30 @@ export class AiComposerPillComponent {
 
   private readonly composerInputRef = viewChild<ElementRef<HTMLTextAreaElement>>('composerInput');
 
+  /**
+   * Snapshot of the textarea contents at the moment dictation started, so
+   * each Deepgram interim/final transcript appends to whatever the user
+   * already typed instead of clobbering it.
+   */
+  private dictationBaseText = '';
+
+  /**
+   * Tooltip text for the mic button. Reflects current state (idle, listening,
+   * connecting, error, unsupported) so screen-reader users and hovering users
+   * get the same guidance without an extra alert region.
+   */
+  readonly micTooltip = computed(() => {
+    if (!this.voice.supported()) return 'Voice input not supported in this browser';
+    const err = this.voice.error();
+    if (err === 'denied') return 'Microphone access denied. Allow it in your browser settings to dictate.';
+    if (err === 'token-failed') return 'Voice service unavailable. Try again in a moment.';
+    if (err === 'network') return 'Voice connection lost. Click to retry.';
+    if (err === 'connect-failed') return 'Could not connect to voice service. Click to retry.';
+    if (this.voice.connecting()) return 'Connecting to voice service…';
+    if (this.voice.listening()) return 'Stop listening';
+    return 'Dictate';
+  });
+
   constructor() {
     // Auto-focus the composer textarea on initial app load so the user can
     // start typing immediately. Guarded by a module-level flag and the
@@ -272,6 +314,33 @@ export class AiComposerPillComponent {
       el.focus();
       _initialFocusApplied = true;
     });
+
+    // When the AI controller starts thinking (the user-visible response is
+    // streaming), end any in-flight dictation. Otherwise the recorder keeps
+    // capturing while the assistant talks back, which is wasteful and can
+    // bleed audio from the response into the next prompt.
+    effect(() => {
+      if (this.controller().thinking() && this.voice.listening()) {
+        this.voice.stop();
+      }
+    });
+
+    // Stop dictation if the tab is hidden -- browsers throttle MediaRecorder
+    // and AudioContext and the user usually wants the session ended anyway.
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'hidden') {
+        this.voice.stop();
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+      this.destroyRef.onDestroy(() => document.removeEventListener('visibilitychange', onVisibility));
+    }
+
+    // Pill teardown -- always release the mic and close the socket. Other
+    // pills (review card, drawer) share the singleton service so calling
+    // stop here is a no-op when this pill wasn't the one driving dictation.
+    this.destroyRef.onDestroy(() => this.voice.stop());
   }
 
   /**
@@ -295,14 +364,16 @@ export class AiComposerPillComponent {
     { id: 'browse-connect', icon: 'cloud_upload', label: 'Browse Trimble Connect', kind: 'connect' },
   ];
 
-  readonly toolsItems: readonly ToolItem[] = [
-    { id: 'connect', logoEmblem: true, label: 'Trimble Connect', description: 'Projects, files, and updates' },
-    { id: 'layout', icon: 'location', label: 'Field & machine data', description: 'Layout files, control points, or GNSS' },
-    { id: 'bim', icon: 'buildings', label: 'Model coordination', description: 'Tekla, BIM, and clash context' },
-    { id: 'geo', icon: 'map', label: 'Geospatial & mapping', description: 'Surfaces, imagery, and boundaries' },
-    { id: 'quantities', icon: 'table', label: 'Quantities & takeoff', description: 'Length, area, and counts' },
-    { id: 'clash', icon: 'warning_outlined', label: 'Clash & issues', description: 'Multi-trade review helpers' },
-  ];
+  /**
+   * Persona-aware Tools catalog. Each persona (Owner, PM, Office Admin,
+   * Field Engineer, Estimator) sees a different working set of contexts —
+   * the data lives in {@link PERSONA_TOOL_CONTEXTS} so editing the catalog
+   * never touches the component template. Falls back to the Owner list
+   * when the active slug is not keyed.
+   */
+  readonly toolsItems = computed<readonly ToolItem[]>(
+    () => PERSONA_TOOL_CONTEXTS[this.persona.activePersonaSlug()] ?? DEFAULT_PERSONA_TOOL_CONTEXTS,
+  );
 
   toggleSources(): void {
     this.toolsOpen.set(false);
@@ -355,6 +426,7 @@ export class AiComposerPillComponent {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       if (this.canSend()) {
+        this.voice.stop();
         this.sent.emit();
         this.controller().send();
       }
@@ -363,6 +435,7 @@ export class AiComposerPillComponent {
 
   onSendClick(): void {
     if (this.canSend()) {
+      this.voice.stop();
       this.sent.emit();
       this.controller().send();
     }
@@ -373,16 +446,24 @@ export class AiComposerPillComponent {
   }
 
   /**
-   * Voice-input affordance. The Modus floating-prompt pattern reserves a mic
-   * button next to Send for speech-to-text. Real speech recognition (Web
-   * Speech API or service-side STT) is not wired yet, so this drops a
-   * "Listening…" assistant message into the conversation as a placeholder.
-   * Emits `sent` first so the floating-prompt parent clears its dismissal
-   * gate and the review card expands to surface the new message.
+   * Voice-input toggle. First click starts a Deepgram streaming session via
+   * VoiceInputService; subsequent transcripts (interim + final) are merged
+   * into whatever the user already typed and pushed into
+   * `controller.inputText` so the bound textarea updates in real time.
+   * Second click stops the session. No-op when voice is unsupported.
    */
   onMicClick(): void {
-    this.sent.emit();
-    this.controller().simulateListening();
+    if (!this.voice.supported()) return;
+    if (this.voice.listening() || this.voice.connecting()) {
+      this.voice.stop();
+      return;
+    }
+    this.dictationBaseText = this.controller().inputText();
+    void this.voice.start((text, _isFinal) => {
+      const base = this.dictationBaseText;
+      const merged = base ? (text ? `${base.replace(/\s+$/, '')} ${text}` : base) : text;
+      this.controller().inputText.set(merged);
+    });
   }
 
   /**
@@ -410,6 +491,12 @@ export class AiComposerPillComponent {
     if (this.sourcesOpen() || this.toolsOpen()) {
       this.sourcesOpen.set(false);
       this.toolsOpen.set(false);
+    }
+    // Escape always cancels an in-flight dictation, even when no menu is
+    // open. The composer keeps focus and the textarea retains whatever was
+    // already transcribed -- consistent with how Send and tab-hide behave.
+    if (this.voice.listening() || this.voice.connecting()) {
+      this.voice.stop();
     }
   }
 }

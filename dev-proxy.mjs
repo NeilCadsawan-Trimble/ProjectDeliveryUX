@@ -56,6 +56,11 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (req.url?.startsWith('/api/deepgram-token')) {
+    await handleDeepgramToken(req, res);
+    return;
+  }
+
   if (req.method === 'POST' && req.url === '/api/save-layout-seed') {
     await handleSaveLayoutSeed(req, res);
     return;
@@ -241,6 +246,55 @@ async function handleWeather(req, res) {
   }
 }
 
+const DEEPGRAM_GRANT_URL = 'https://api.deepgram.com/v1/auth/grant';
+
+async function handleDeepgramToken(req, res) {
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+  if (req.method !== 'GET') {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+  const apiKey = process.env.DEEPGRAM_API_KEY;
+  if (!apiKey) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'DEEPGRAM_API_KEY not set in .env' }));
+    return;
+  }
+  try {
+    const grantRes = await fetch(DEEPGRAM_GRANT_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Token ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
+    });
+    if (!grantRes.ok) {
+      res.writeHead(502, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: `Deepgram auth grant failed: ${grantRes.status}` }));
+      return;
+    }
+    const grant = await grantRes.json();
+    if (!grant.access_token) {
+      res.writeHead(502, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'Deepgram auth grant returned no access_token' }));
+      return;
+    }
+    const ttlSec = typeof grant.expires_in === 'number' ? grant.expires_in : 30;
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ token: grant.access_token, expiresAt: Date.now() + ttlSec * 1000 }));
+  } catch (err) {
+    console.error('Deepgram token proxy error:', err?.message ?? 'unknown');
+    res.writeHead(502, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ error: 'Failed to mint Deepgram token' }));
+  }
+}
+
 const ALLOWED_SEED_DIR = 'src/app/data/layout-seeds/';
 
 async function handleSaveLayoutSeed(req, res) {
@@ -289,5 +343,6 @@ async function handleSaveLayoutSeed(req, res) {
 server.listen(PORT, () => {
   console.log(`AI proxy running at http://localhost:${PORT}/api/chat`);
   console.log(`Weather proxy at http://localhost:${PORT}/api/weather`);
+  console.log(`Deepgram token proxy at http://localhost:${PORT}/api/deepgram-token`);
   console.log('Requests from Angular dev server will be proxied here.');
 });

@@ -37,6 +37,22 @@ const PROJ_TS = readFileSync(
   resolve(__dir, '../../src/app/pages/project-dashboard/project-dashboard.component.ts'),
   'utf-8',
 );
+const FIN_TS = readFileSync(
+  resolve(__dir, '../../src/app/pages/financials-page/financials-page.component.ts'),
+  'utf-8',
+);
+const PROJECT_AGENTS_TS = readFileSync(
+  resolve(__dir, '../../src/app/data/widget-agents/project-agents.ts'),
+  'utf-8',
+);
+const AGENTS_INDEX_TS = readFileSync(
+  resolve(__dir, '../../src/app/data/widget-agents/index.ts'),
+  'utf-8',
+);
+const SHARED_AGENT_TS = readFileSync(
+  resolve(__dir, '../../src/app/data/widget-agents/shared.ts'),
+  'utf-8',
+);
 const HOME_TS = readFileSync(
   resolve(__dir, '../../src/app/pages/home-page/home-page.component.ts'),
   'utf-8',
@@ -55,6 +71,10 @@ const CONTROLLER_SRC = readFileSync(
 );
 const STYLES_SRC = readFileSync(
   resolve(__dir, '../../src/styles.css'),
+  'utf-8',
+);
+const PERSONA_TOOL_CONTEXTS_SRC = readFileSync(
+  resolve(__dir, '../../src/app/data/persona-tool-contexts.ts'),
   'utf-8',
 );
 
@@ -157,6 +177,61 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
       expect(PROJ_TS).toContain('AiPageContextService');
       expect(PROJ_TS).toContain('aiPageContext.register(');
       expect(PROJ_TS).toContain('aiPageContext.clear()');
+    });
+  });
+
+  describe('Financials page AI context wiring', () => {
+    it('financials-page registers context with AiPageContextService', () => {
+      expect(FIN_TS).toContain('AiPageContextService');
+      expect(FIN_TS).toContain('aiPageContext.register(');
+      expect(FIN_TS).toContain('aiPageContext.clear()');
+    });
+
+    it('financials-page wires resolution maps for tile, sub-page, and detail entity', () => {
+      expect(FIN_TS).toContain('FIN_TILE_AGENT_MAP');
+      expect(FIN_TS).toContain('FIN_SUBPAGE_AGENT_MAP');
+      expect(FIN_TS).toContain('FIN_DETAIL_AGENT_MAP');
+    });
+
+    it('financials-page exposes contextProvider, localResponder, and contextKey', () => {
+      expect(FIN_TS).toContain('buildPageAiContext');
+      expect(FIN_TS).toContain('respondToFinancialsQuery');
+      expect(FIN_TS).toContain('aiContextKey');
+      expect(FIN_TS).toContain('buildFinancialsAgentState');
+    });
+  });
+
+  describe('Detail-entity agent wiring', () => {
+    it('AgentDataState declares every detail-entity field', () => {
+      expect(SHARED_AGENT_TS).toContain('detailDailyReport?: DailyReport');
+      expect(SHARED_AGENT_TS).toContain('detailInspection?: Inspection');
+      expect(SHARED_AGENT_TS).toContain('detailPunchItem?: PunchListItem');
+      expect(SHARED_AGENT_TS).toContain('detailChangeOrder?: ChangeOrder');
+      expect(SHARED_AGENT_TS).toContain('detailContract?: Contract');
+      expect(SHARED_AGENT_TS).toContain('detailPanorama?: SiteCapture');
+    });
+
+    it('detail agents reference their specific entity in state', () => {
+      expect(PROJECT_AGENTS_TS).toContain('s.detailDailyReport');
+      expect(PROJECT_AGENTS_TS).toContain('s.detailInspection');
+      expect(PROJECT_AGENTS_TS).toContain('s.detailPunchItem');
+      expect(PROJECT_AGENTS_TS).toContain('s.detailChangeOrder');
+      expect(PROJECT_AGENTS_TS).toContain('s.detailContract');
+      expect(PROJECT_AGENTS_TS).toContain('s.detailPanorama');
+    });
+
+    it('panoramaDetail agent is exported and registered in ALL_AGENTS', () => {
+      expect(PROJECT_AGENTS_TS).toContain('export const panoramaDetail');
+      expect(AGENTS_INDEX_TS).toContain('panoramaDetail');
+    });
+
+    it('project-dashboard populates detail-entity state fields', () => {
+      expect(PROJ_TS).toContain('detailDailyReport: this.detailDailyReport()');
+      expect(PROJ_TS).toContain('detailInspection: this.detailInspection()');
+      expect(PROJ_TS).toContain('detailPunchItem: this.detailPunchItem()');
+      expect(PROJ_TS).toContain('detailChangeOrder: this.detailChangeOrder()');
+      expect(PROJ_TS).toContain('detailContract: this.detailContract()');
+      expect(PROJ_TS).toContain('detailPanorama: this.detailPanorama()');
     });
   });
 
@@ -294,13 +369,22 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
       expect(PILL_SRC).toContain('toggleTools');
     });
 
-    it('Tools menu lists the documented placeholder items', () => {
-      expect(PILL_SRC).toContain('Trimble Connect');
-      expect(PILL_SRC).toContain('Field & machine data');
-      expect(PILL_SRC).toContain('Model coordination');
-      expect(PILL_SRC).toContain('Geospatial & mapping');
-      expect(PILL_SRC).toContain('Quantities & takeoff');
-      expect(PILL_SRC).toContain('Clash & issues');
+    it('Tools menu sources its items from the persona-keyed catalog', () => {
+      // Labels live in the data file, not the template, so the pill should
+      // not hard-code them. The template just iterates `toolsItems()`.
+      expect(PILL_SRC).toMatch(/PERSONA_TOOL_CONTEXTS/);
+      expect(PILL_SRC).toMatch(/toolsItems\s*=\s*computed/);
+      expect(PILL_SRC).toMatch(/@for\s*\(item of toolsItems\(\); track item\.id\)/);
+    });
+
+    it('catalog covers the canonical Trimble field labels somewhere across personas', () => {
+      // These labels are part of the Modus reference flow; they must still
+      // appear at least once in the persona catalog (Dominique/Pamela).
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Trimble Connect');
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Field & machine data');
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Model coordination');
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Geospatial & mapping');
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Quantities & takeoff');
     });
   });
 
@@ -478,17 +562,34 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
       expect(PILL_SRC).toMatch(/aria-hidden="true">tune</);
     });
 
-    it('Tools catalog sublabels match the Modus reference verbatim', () => {
-      expect(PILL_SRC).toContain('Projects, files, and updates');
-      expect(PILL_SRC).toContain('Layout files, control points, or GNSS');
-      expect(PILL_SRC).toContain('Tekla, BIM, and clash context');
-      expect(PILL_SRC).toContain('Surfaces, imagery, and boundaries');
-      expect(PILL_SRC).toContain('Length, area, and counts');
-      expect(PILL_SRC).toContain('Multi-trade review helpers');
+    it('Tools catalog sublabels still match the Modus reference for the field-facing personas', () => {
+      // These descriptions belong to specific persona entries (Connect for
+      // every persona, Field & GNSS for Dominique, BIM for Bert/Dominique,
+      // mapping for Dominique/Pamela, takeoff for Pamela). The Clash &
+      // issues / "Multi-trade review helpers" pair was dropped because no
+      // persona owns it directly.
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Projects, files, and updates');
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Layout files, control points, GNSS');
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Tekla, BIM, and clash context');
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Surfaces, imagery, and boundaries');
+      expect(PERSONA_TOOL_CONTEXTS_SRC).toContain('Length, area, and counts');
     });
 
     it('Tools menu uses <modus-logo emblem> for the Connect entry', () => {
       expect(PILL_SRC).toMatch(/<modus-logo\s+name="connect"\s+\[emblem\]="true"/);
+    });
+
+    it('Tools menu wraps its items in a scrollable list with a max-height cap', () => {
+      // The persona catalogs can run 7-10 entries; the menu must scroll
+      // without growing past the viewport (header + caption stay above
+      // the scroll region so they read as a fixed panel header).
+      expect(PILL_SRC).toContain('ai-floating-prompt-menu-list');
+      expect(STYLES_SRC).toMatch(
+        /\.ai-floating-prompt-menu-list\s*\{[\s\S]*?max-height:\s*min\([^)]*\)/,
+      );
+      expect(STYLES_SRC).toMatch(
+        /\.ai-floating-prompt-menu-list\s*\{[\s\S]*?overflow-y:\s*auto/,
+      );
     });
   });
 
@@ -578,6 +679,103 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
     it('reduced-motion users get no progress-ring rotation or dot wave', () => {
       expect(STYLES_SRC).toMatch(/prefers-reduced-motion[\s\S]*?\.ai-floating-prompt-progress-ring[\s\S]*?animation:\s*none/);
       expect(STYLES_SRC).toMatch(/prefers-reduced-motion[\s\S]*?\.ai-floating-prompt-thinking-dots-dot[\s\S]*?animation:\s*none/);
+    });
+  });
+
+  describe('Voice input wiring (Deepgram)', () => {
+    it('composer pill imports VoiceInputService and injects it as a public field', () => {
+      expect(PILL_SRC).toContain("import { VoiceInputService } from '../../services/voice-input.service';");
+      expect(PILL_SRC).toMatch(/readonly voice\s*=\s*inject\(VoiceInputService\)/);
+    });
+
+    it('composer pill no longer calls the placeholder simulateListening()', () => {
+      // The Web-Speech-era placeholder is gone; the mic now drives Deepgram.
+      expect(PILL_SRC).not.toContain('simulateListening()');
+    });
+
+    it('mic button still preserves the Voice input aria-label (regression guard)', () => {
+      expect(PILL_SRC).toMatch(/aria-label="Voice input"/);
+    });
+
+    it('mic button binds is-listening, is-connecting, and aria-pressed off the voice signals', () => {
+      expect(PILL_SRC).toContain('[class.is-listening]="voice.listening()"');
+      expect(PILL_SRC).toContain('[class.is-connecting]="voice.connecting()"');
+      expect(PILL_SRC).toContain('[attr.aria-pressed]="voice.listening()"');
+    });
+
+    it('mic button degrades gracefully when voice is unsupported (tabindex + aria-disabled + is-disabled)', () => {
+      expect(PILL_SRC).toContain('[attr.tabindex]="voice.supported() ? 0 : -1"');
+      expect(PILL_SRC).toContain('[class.is-disabled]="!voice.supported()"');
+      expect(PILL_SRC).toContain('[attr.aria-disabled]="!voice.supported() || null"');
+    });
+
+    it('mic button title binds to the dynamic micTooltip computed (state-aware hint)', () => {
+      expect(PILL_SRC).toContain('[title]="micTooltip()"');
+      expect(PILL_SRC).toMatch(/micTooltip\s*=\s*computed\(/);
+      // Must surface every documented error kind so the user always knows
+      // why the button is in an unusable state.
+      expect(PILL_SRC).toContain("'denied'");
+      expect(PILL_SRC).toContain("'token-failed'");
+      expect(PILL_SRC).toContain("'network'");
+      expect(PILL_SRC).toContain("'connect-failed'");
+    });
+
+    it('onMicClick toggles the voice service and pipes transcripts into controller.inputText', () => {
+      // No-op when unsupported.
+      expect(PILL_SRC).toMatch(/onMicClick\(\)\s*:\s*void\s*\{[\s\S]*?if\s*\(\s*!this\.voice\.supported\(\)\s*\)\s*return/);
+      // Toggle: stop if already listening or connecting, otherwise start.
+      expect(PILL_SRC).toMatch(/this\.voice\.listening\(\)\s*\|\|\s*this\.voice\.connecting\(\)/);
+      expect(PILL_SRC).toMatch(/this\.voice\.start\(/);
+      // Transcripts merge into controller.inputText.
+      expect(PILL_SRC).toContain('this.controller().inputText.set(merged)');
+      expect(PILL_SRC).toContain('this.dictationBaseText');
+    });
+
+    it('Send (button + Enter) and Escape stop dictation before/instead of submitting', () => {
+      // onSendClick + Enter handler each call voice.stop() before send().
+      expect(PILL_SRC).toMatch(/onSendClick\(\)\s*:\s*void\s*\{[\s\S]*?this\.voice\.stop\(\)/);
+      expect(PILL_SRC).toMatch(/event\.key\s*===\s*'Enter'[\s\S]*?this\.voice\.stop\(\)/);
+      // Escape always cancels an in-flight session, even when no menu is open.
+      expect(PILL_SRC).toMatch(/onEscape\(\)[\s\S]*?this\.voice\.listening\(\)\s*\|\|\s*this\.voice\.connecting\(\)[\s\S]*?this\.voice\.stop\(\)/);
+    });
+
+    it('pill destroy releases the mic + tab-hidden hides the session', () => {
+      expect(PILL_SRC).toContain('inject(DestroyRef)');
+      expect(PILL_SRC).toMatch(/this\.destroyRef\.onDestroy\(\(\)\s*=>\s*this\.voice\.stop\(\)\)/);
+      // visibilitychange listener stops dictation and is removed on destroy.
+      expect(PILL_SRC).toContain("'visibilitychange'");
+      expect(PILL_SRC).toMatch(/document\.visibilityState\s*===\s*'hidden'/);
+    });
+
+    it('an effect ends dictation when the AI controller starts thinking (no double-listening)', () => {
+      // The pill registers an effect that stops dictation once the
+      // assistant transitions into the thinking phase. This prevents the
+      // recorder from picking up audio while the response is streaming.
+      expect(PILL_SRC).toMatch(
+        /effect\(\(\)\s*=>\s*\{[\s\S]*?this\.controller\(\)\.thinking\(\)[\s\S]*?this\.voice\.listening\(\)[\s\S]*?this\.voice\.stop\(\)/,
+      );
+    });
+
+    it('mic icon swaps to "stop" while listening so the affordance is unambiguous', () => {
+      expect(PILL_SRC).toContain("voice.listening() ? 'stop' : 'mic'");
+    });
+
+    it('CSS uses --mic-level to drive the listening pulsing-ring shadow', () => {
+      // The shadow ring pulses with the live RMS level via a CSS variable
+      // updated outside Angular's zone (no change detection per frame).
+      expect(STYLES_SRC).toContain('.ai-floating-prompt-icon-button.is-listening::after');
+      expect(STYLES_SRC).toMatch(/var\(--mic-level,\s*0\)/);
+      // Listening uses the destructive (error) color; connecting uses primary.
+      expect(STYLES_SRC).toMatch(/\.ai-floating-prompt-icon-button\.is-listening[\s\S]*?color:\s*var\(--error\)/);
+      expect(STYLES_SRC).toMatch(/\.ai-floating-prompt-icon-button\.is-connecting[\s\S]*?color:\s*var\(--primary\)/);
+      // Connecting state has its own breathing keyframe.
+      expect(STYLES_SRC).toContain('@keyframes ai-mic-connecting');
+    });
+
+    it('AiPanelController no longer exposes the simulateListening() placeholder', () => {
+      // Orphaned after the real Deepgram path landed; static guard prevents
+      // accidental resurrection.
+      expect(CONTROLLER_SRC).not.toMatch(/simulateListening\s*\(/);
     });
   });
 });

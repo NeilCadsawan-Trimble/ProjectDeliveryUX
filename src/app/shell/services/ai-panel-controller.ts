@@ -554,20 +554,6 @@ export class AiPanelController {
     this.saveConversation();
   }
 
-  /**
-   * Placeholder for voice input. Drops a "Listening…" assistant message into
-   * the conversation so the floating-prompt review card expands to show it.
-   * Real speech-to-text wiring (Web Speech API or service-side STT) is not
-   * implemented yet.
-   */
-  simulateListening(): void {
-    this.messages.update(msgs => [
-      ...msgs,
-      { id: ++this.messageCounter, role: 'assistant', text: 'Listening…' },
-    ]);
-    this.saveConversation();
-  }
-
   destroy(): void {
     this.streamSub?.unsubscribe();
     this.streamSub = null;

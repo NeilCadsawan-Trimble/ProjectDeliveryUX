@@ -3,8 +3,8 @@
 **Project**: Trimble Project Delivery Dashboard
 **Stack**: Angular 20 + Modus Web Components + Tailwind CSS v4
 **Started**: March 3, 2026
-**Last Updated**: April 29, 2026
-**Total Commits**: 212+
+**Last Updated**: May 5, 2026
+**Total Commits**: 213+
 
 ---
 
@@ -41,10 +41,11 @@
 | 26    | Layout Persistence and Pamela Seed Round-Trip         | Done        | 7/7   |
 | 27    | AI Floating Prompt -- Modus Pattern Alignment         | Done        | 5/5   |
 | 28    | Non-Modal AI Panel + Floating Prompt Coexistence      | Done        | 6/6   |
-| 29    | Remaining Work                                        | Not Started | 0/8   |
+| 29    | Voice Input via Deepgram (real-time STT + level meter)| Done        | 11/11 |
+| 30    | Remaining Work                                        | Not Started | 0/8   |
 
 
-**Completed**: 212/220 items (96%)
+**Completed**: 223/231 items (97%)
 
 ---
 
@@ -845,7 +846,70 @@ Made the Trimble Assistant slide-out drawer non-modal so the floating prompt and
 
 ---
 
-## Phase 29: Remaining Work
+## Phase 29: Voice Input via Deepgram (May 5)
+
+Real-time speech-to-text on the AI floating prompt mic button. Streams microphone audio to Deepgram Nova-3 over a WebSocket, transcribes with construction-domain keyterm vocabulary, and writes interim + final transcripts directly into the composer textarea. Includes a CSS-variable-driven pulsing ring on the mic button that scales with live audio RMS.
+
+### Backend (Vercel Edge Function + dev-proxy parity)
+
+- `api/deepgram-token.ts` Edge Function mints short-lived (~30s) ephemeral access tokens via `POST https://api.deepgram.com/v1/auth/grant`; never leaks the master `DEEPGRAM_API_KEY` to the browser.
+- `dev-proxy.mjs` mirrors the same endpoint at `http://localhost:3001/api/deepgram-token` for `npm start` parity. Both implementations enforce GET-only, return 500 if the env var is missing, 502 (without echoing the key) on Deepgram errors, and `Cache-Control: no-store`.
+- `.env.example` documents `DEEPGRAM_API_KEY` placement; gitignored `.env` holds the real key.
+- **Member-role API key requirement**: Deepgram's `auth/grant` endpoint requires the master key to have at least the `Member` role. Read-only or project-scoped keys silently 403 with "Insufficient permissions" -- which surfaces as "the mic does nothing" in the UI. Documented in skill section 45 with a 1-line curl smoke test.
+
+### Browser pipeline (`VoiceInputService`)
+
+- New `src/app/services/voice-input.service.ts` owns the entire client-side flow: token fetch, `getUserMedia`, `MediaRecorder` (250ms opus chunks), Deepgram WebSocket via `@deepgram/sdk`, transcript merging (committed + interim), and full resource cleanup.
+- WebSocket auth uses the SDK's browser handshake (`Sec-WebSocket-Protocol: bearer, <jwt>`) -- raw `new WebSocket(url)` cannot set custom headers and the protocol-array form isn't documented on Deepgram's public site.
+- `AudioContext + AnalyserNode` runs a 60fps `requestAnimationFrame` RMS loop **outside** Angular's zone, writing directly to `--mic-level` CSS variable on `documentElement`. No template binds to the level signal, so we skip 60 change-detection passes per second.
+- Five resource types (MediaStream, MediaRecorder, AudioContext, WebSocket, rAF callback) all release through one idempotent `cleanup()` path.
+- v5 SDK gotcha: `interim_results`, `smart_format`, `punctuate` ConnectArgs are typed as `'true' | 'false'` strings -- `tsc --noEmit` skips the check, but `ng build` refuses to compile if you pass actual booleans. Static test enforces the string form.
+
+### Stop hooks (six entry points)
+
+Voice capture must stop on every conceivable end-of-conversation signal: explicit Send (button click + Enter key), Escape, `controller.thinking()` becoming true, `visibilitychange: hidden`, `DestroyRef.onDestroy`, and the existing mic-button toggle. All six route through the same `cleanup()` to prevent stale sessions surviving navigation or background tabs.
+
+### Construction-domain vocabulary (Tier 2 keyterm prompting)
+
+- New `src/app/data/voice-vocabulary.ts` exports a `VOICE_GLOSSARY` with five buckets (acronyms, processes, trades, equipment, Trimble products) -- ~120 hand-curated terms.
+- `buildVoiceKeyterms(dataStore)` merges the static glossary with `dataStore.projects().map(p => p.name)` and `PERSONAS.map(p => p.name)`, de-duplicated, so proper nouns transcribe correctly without manual upkeep.
+- 150-entry ceiling enforced by static test (keeps the WebSocket URL under sensible caps).
+
+### UI states
+
+Mic button has four visible states bound to `voice` signals on the composer pill component:
+- **Idle**: plain mic icon, foreground-60 colour
+- **Connecting**: `is-connecting` class, primary colour, 0.8s breathing keyframe
+- **Listening**: `is-listening` class, error colour, icon swaps to `stop`, `::after` shadow ring scales by `--mic-level` (0..1 RMS)
+- **Disabled** (browser unsupported): `is-disabled` class, `tabindex=-1`, `aria-disabled=true`
+- **Error**: tooltip swaps to a state-specific hint via `micTooltip` computed (denied / network / token-failed)
+
+### Cleanup of placeholder
+
+- Removed `simulateListening()` placeholder method from `ai-panel-controller.ts` (orphaned after this work).
+
+### Tests
+
+- `tests/static/deepgram-token-endpoint.spec.ts` (NEW) -- 16 tests: Edge Function structure, dev-proxy parity, env-var docs, master-key non-leak, CORS, error shapes, no-store cache header
+- `tests/static/voice-vocabulary.spec.ts` (NEW) -- 24 tests: glossary shape, high-value terms (RFI, submittal, Trimble Connect, ...), URL safety, dedup, size cap, service wiring (`keyterm: buildVoiceKeyterms(...)`, model `nova-3`, string booleans)
+- `tests/static/ai-floating-prompt.spec.ts > Voice input wiring (Deepgram)` (NEW block) -- 13 assertions: imports, signal bindings, tooltip states, transcript piping into `controller.inputText`, mic icon swap, every stop hook, placeholder removal
+
+### Skill updates
+
+- Added section 45 to `dashboard-layout-lessons` SKILL.md covering the architecture, Member-role trap, dual-implementation rule (Edge Function + dev-proxy), SDK browser auth subprotocol, NgZone discipline, idempotent cleanup, keyterm vocabulary layering, the v5 string-boolean gotcha, and the don't-break contract table.
+- Extended the skill's frontmatter description to include the voice-input pipeline keywords.
+- Added a Quick Reference row pointing at all source and test files.
+
+### Test results
+
+- `npm run lint:all` -- pass
+- `npm run test:static` -- pass (1415 tests, 19 files; +53 new assertions)
+- `npm run type-check` -- pass
+- `npx ng build` -- clean (one pre-existing budget warning slightly worse due to `@deepgram/sdk` ~200KB SDK addition; accept the tradeoff for browser auth handshake handling)
+
+---
+
+## Phase 30: Remaining Work
 
 Features and improvements not yet started.
 
@@ -944,6 +1008,7 @@ Features and improvements not yet started.
 | Apr 9--10 | [Layout seed fixes](b1397210-081e-4c0b-a8b0-fb54c1a16492)             | Subnav layout gap fix, layout seed system 4-bug fix (frozen config, compactAll, stale keys, header lock), skill section 36                                                                |
 | Apr 12    | [Pamela Chen persona](current)                                        | Senior Estimator persona, Open Estimates widget, home/financials layout seeds                                                                                                              |
 | Apr 13    | [Independent layout seeds](fe9bcb72-dbe7-42b8-9b30-0983a749b0b3)      | Eliminated all shared default seeds, 20 independent per-persona seed files, 288 layout-seed tests, canvas-grid-alignment rewrite, SKILL section 37 rewrite                                |
+| May 5     | [Voice input via Deepgram](71f5c973-71cd-430a-85fc-b3e0b3283d8a)      | Deepgram Nova-3 STT on mic button, ephemeral-token Edge Function + dev-proxy parity, construction keyterm vocabulary, level-meter pulsing ring, six stop hooks, 53 new static tests, SKILL section 45 |
 
 
 ---
@@ -990,6 +1055,9 @@ Features and improvements not yet started.
 | `src/app/pages/project-dashboard/components/collapsible-subnav.component.ts`  | Collapsible side subnav for canvas/desktop                                               |
 | `src/app/services/weather.service.ts`                                         | Live weather data fetching with TTL cache and concurrent fetch guard                     |
 | `api/weather.ts`                                                              | Vercel Edge Function proxy for OpenWeatherMap API                                        |
+| `src/app/services/voice-input.service.ts`                                     | Deepgram STT pipeline (token fetch, getUserMedia, MediaRecorder, WebSocket, level meter) |
+| `src/app/data/voice-vocabulary.ts`                                            | Construction glossary + buildVoiceKeyterms(dataStore) helper for Tier 2 keyterm prompting |
+| `api/deepgram-token.ts`                                                       | Vercel Edge Function -- mints short-lived Deepgram ephemeral access tokens               |
 | `src/app/pages/profile-page/profile-page.component.ts`                        | Per-persona "My Profile" page (mirrors Trimble profile layout)                           |
 | `src/app/services/auth.service.ts`                                            | Trimble ID authentication (OAuth 2.0 PKCE, token management, dynamic redirect URIs)      |
 | `src/app/pages/auth-callback/auth-callback.component.ts`                      | OAuth callback handler with NgZone.run() for Zone.js re-entry                            |

@@ -42,6 +42,8 @@ import {
 } from '../../data/dashboard-data.formatters';
 import { getAgent, type AgentDataState } from '../../data/widget-agents';
 import type { Milestone, TeamMember, Risk } from '../../data/project-data';
+import { AiPageContextService } from '../../shell/services/ai-page-context.service';
+import { AiService, type AiContext } from '../../services/ai.service';
 import { TILE_IDS, TILE_VISUAL_ORDER, buildProjectsLayoutConfig } from './projects-page-layout.config';
 import { PROJECTS_FRANK_LAYOUT } from '../../data/layout-seeds/projects-frank.layout';
 import { PROJECTS_BERT_LAYOUT } from '../../data/layout-seeds/projects-bert.layout';
@@ -116,6 +118,8 @@ const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline
 export class ProjectsPageComponent extends DashboardPageBase implements AfterViewInit {
   private readonly router = inject(Router);
   private readonly store = inject(DataStoreService);
+  private readonly aiService = inject(AiService);
+  private readonly aiPageContext = inject(AiPageContextService);
   private get pp(): string { return `/${this.personaService.activePersonaSlug()}`; }
 
   constructor() {
@@ -126,6 +130,111 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
         untracked(() => this._scrollTimelineTo25Pct());
       }
     });
+
+    this.aiPageContext.register({
+      contextProvider: () => this.buildPageAiContext(),
+      localResponder: () => (q: string) => this.respondToProjectsQuery(q),
+      contextKey: () => this.aiContextKey(),
+    });
+    this.destroyRef.onDestroy(() => this.aiPageContext.clear());
+  }
+
+  /**
+   * Build the AiContext sent to the assistant. When a project tile is selected
+   * we build a project-focused context using the projectDefault agent against a
+   * project-scoped AgentDataState. Otherwise we fall back to the portfolio-wide
+   * projectsDefault agent. Without this registration the controller falls
+   * through to `getAgent('proj1', 'projects')` which has no entry in the agent
+   * map and lands on `projectsDefault.buildContext()` -- a generic dump of all
+   * projects -- so the AI never knows which tile is selected.
+   */
+  private buildPageAiContext(): AiContext {
+    const widgetId = this.widgetFocusService.selectedWidgetId();
+    const project = widgetId ? this.projectWidgetMap()[widgetId] : undefined;
+    if (project) {
+      const state = this.buildSelectedProjectAgentState(project);
+      const agent = getAgent('projectDefault', 'projects');
+      return this.aiService.buildContext('projects', {
+        projectId: project.id,
+        projectName: project.name,
+        projectData: agent.buildContext(state),
+        agentPrompt: agent.systemPrompt,
+      });
+    }
+    const agent = getAgent(null, 'projects');
+    const state = this.buildPortfolioAgentState();
+    return this.aiService.buildContext('projects', {
+      projectData: agent.buildContext(state),
+      agentPrompt: agent.systemPrompt,
+    });
+  }
+
+  private respondToProjectsQuery(q: string): string {
+    const widgetId = this.widgetFocusService.selectedWidgetId();
+    const project = widgetId ? this.projectWidgetMap()[widgetId] : undefined;
+    if (project) {
+      const state = this.buildSelectedProjectAgentState(project);
+      return getAgent('projectDefault', 'projects').localRespond(q, state);
+    }
+    const state = this.buildPortfolioAgentState();
+    return getAgent(null, 'projects').localRespond(q, state);
+  }
+
+  private aiContextKey(): string {
+    const widgetId = this.widgetFocusService.selectedWidgetId();
+    return widgetId ? `projects:${widgetId}` : 'projects:portfolio';
+  }
+
+  private buildSelectedProjectAgentState(project: Project): AgentDataState {
+    const detail = this.store.projectDetailData()[project.id];
+    const projectName = project.name;
+    const milestones = detail?.milestones ?? [];
+    const tasks = detail?.tasks ?? [];
+    const projectWeather = this.store.getProjectWeather(project.id);
+    return {
+      projects: this.store.projects(),
+      projectName,
+      projectStatus: project.status,
+      budgetUsed: project.budgetUsed,
+      budgetTotal: project.budgetTotal,
+      budgetPct: project.budgetPct,
+      budgetHealthy: project.budgetPct < 95,
+      milestones,
+      completedMilestones: milestones.filter(m => m.status === 'completed').length,
+      tasks,
+      openTaskCount: tasks.filter(t => !t.status.toLowerCase().includes('complete')).length,
+      risks: detail?.risks ?? [],
+      team: detail?.team ?? [],
+      rfis: this.store.rfis().filter(r => r.project === projectName),
+      submittals: this.store.submittals().filter(s => s.project === projectName),
+      changeOrders: this.store.changeOrders().filter(c => c.projectId === project.id),
+      dailyReports: this.store.dailyReports().filter(d => d.projectId === project.id),
+      inspections: this.store.inspections().filter(i => i.projectId === project.id),
+      punchListItems: this.store.punchListItems().filter(p => p.projectId === project.id),
+      projectAttentionItems: this.store.projectAttentionItems().filter(a => a.projectId === project.id),
+      weatherForecast: projectWeather?.forecast ?? [],
+      currentPage: 'projects',
+      personaSlug: this.personaService.activePersonaSlug(),
+    };
+  }
+
+  private buildPortfolioAgentState(): AgentDataState {
+    return {
+      projects: this.store.projects(),
+      estimates: this.store.estimates(),
+      activities: this.store.activities(),
+      attentionItems: this.store.attentionItems(),
+      rfis: this.store.rfis(),
+      submittals: this.store.submittals(),
+      changeOrders: this.store.changeOrders(),
+      inspections: this.store.inspections(),
+      projectAttentionItems: this.store.projectAttentionItems(),
+      projectRevenue: this.store.projectRevenue(),
+      allWeatherData: this.store.weatherData(),
+      allJobCosts: this.store.projectJobCosts(),
+      currentPage: 'projects',
+      personaSlug: this.personaService.activePersonaSlug(),
+    };
   }
 
   private _scrollTimelineTo25Pct(): void {
