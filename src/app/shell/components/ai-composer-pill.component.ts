@@ -1,17 +1,28 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   HostListener,
+  afterNextRender,
   computed,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
 import { ModusLogoComponent } from '../../components/modus-logo.component';
 import { AiPanelController } from '../services/ai-panel-controller';
 import { WidgetFocusService } from '../services/widget-focus.service';
+
+/**
+ * Module-level one-shot guard for app-load auto-focus. The first non-embedded
+ * composer pill to mount in the app session focuses its textarea once, then
+ * sets this flag so subsequent default-phase remounts (e.g. after closing the
+ * review card) do not steal focus from whatever the user is doing.
+ */
+let _initialFocusApplied = false;
 
 interface SourcesMenuAction {
   readonly id: string;
@@ -176,6 +187,7 @@ type SourceKind = 'file' | 'doc' | 'link' | 'connect';
       </div>
 
       <textarea
+        #composerInput
         class="ai-floating-prompt-textarea flex-1 min-w-0"
         rows="1"
         [value]="controller().inputText()"
@@ -245,6 +257,22 @@ export class AiComposerPillComponent {
 
   readonly sourcesOpen = signal(false);
   readonly toolsOpen = signal(false);
+
+  private readonly composerInputRef = viewChild<ElementRef<HTMLTextAreaElement>>('composerInput');
+
+  constructor() {
+    // Auto-focus the composer textarea on initial app load so the user can
+    // start typing immediately. Guarded by a module-level flag and the
+    // `embedded` input so this fires exactly once for the main floating
+    // prompt and never steals focus from the embedded card/drawer pills.
+    afterNextRender(() => {
+      if (this.embedded() || _initialFocusApplied) return;
+      const el = this.composerInputRef()?.nativeElement;
+      if (!el) return;
+      el.focus();
+      _initialFocusApplied = true;
+    });
+  }
 
   /**
    * Local placeholder list of attached sources. Mirrors the React reference's
