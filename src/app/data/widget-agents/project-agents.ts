@@ -813,8 +813,38 @@ export const dailyReportDetail: WidgetAgent = {
     { id: 'correct-crew', label: 'Submit crew count correction', execute: () => 'Submitted crew count correction for review.' },
     { id: 'escalate-safety', label: 'Escalate safety note', execute: () => 'Escalated safety note to safety manager.' },
   ],
-  buildContext(s) { return dailyReportsAgent.buildContext(s); },
-  localRespond(q, s) { return dailyReportsAgent.localRespond(q, s); },
+  buildContext(s) {
+    const r = s.detailDailyReport;
+    if (!r) return dailyReportsAgent.buildContext(s);
+    return [
+      `Daily report ${r.id} (${r.project})`,
+      `  Date: ${r.date}`,
+      `  Author: ${r.author}`,
+      `  Crew: ${r.crewCount}`,
+      `  Hours worked: ${r.hoursWorked}`,
+      `  Weather: ${r.weather}`,
+      `  Safety incidents: ${r.safetyIncidents}`,
+      `  Work performed: ${r.workPerformed}`,
+      `  Issues: ${r.issues || 'None'}`,
+    ].join('\n');
+  },
+  localRespond(q, s) {
+    const r = s.detailDailyReport;
+    if (!r) return dailyReportsAgent.localRespond(q, s);
+    if (kw(q, 'safety', 'incident', 'accident')) {
+      return r.safetyIncidents > 0
+        ? `${r.safetyIncidents} safety incident(s) logged on ${r.date} at ${r.project}.`
+        : `No safety incidents on ${r.date} at ${r.project}.`;
+    }
+    if (kw(q, 'crew', 'hour', 'manpower')) return `Crew of ${r.crewCount} logged ${r.hoursWorked} hours on ${r.date}.`;
+    if (kw(q, 'weather', 'rain', 'condition')) return `Weather on ${r.date}: ${r.weather}.`;
+    if (kw(q, 'issue', 'problem', 'delay')) return r.issues ? `Issues: ${r.issues}` : 'No issues reported in this daily report.';
+    if (kw(q, 'work', 'performed', 'summary', 'summarize', 'about')) {
+      return `${r.date} at ${r.project}: ${r.workPerformed} (${r.crewCount} crew, ${r.hoursWorked}h, weather: ${r.weather}, incidents: ${r.safetyIncidents}).`;
+    }
+    if (kw(q, 'who', 'author', 'filed')) return `Filed by ${r.author} on ${r.date}.`;
+    return dailyReportsAgent.localRespond(q, s);
+  },
 };
 
 export const inspectionDetail: WidgetAgent = {
@@ -829,8 +859,31 @@ export const inspectionDetail: WidgetAgent = {
     { id: 'upload-evidence', label: 'Upload corrective evidence', execute: () => 'Uploaded corrective action photos.' },
     { id: 'notify-subs', label: 'Notify responsible sub', execute: () => 'Notified responsible subcontractor.' },
   ],
-  buildContext(s) { return inspectionsAgent.buildContext(s); },
-  localRespond(q, s) { return inspectionsAgent.localRespond(q, s); },
+  buildContext(s) {
+    const i = s.detailInspection;
+    if (!i) return inspectionsAgent.buildContext(s);
+    return [
+      `Inspection ${i.id} (${i.project})`,
+      `  Type: ${i.type}`,
+      `  Date: ${i.date}`,
+      `  Inspector: ${i.inspector}`,
+      `  Result: ${i.result}`,
+      `  Notes: ${i.notes || 'None'}`,
+      `  Follow-up: ${i.followUp || 'None'}`,
+    ].join('\n');
+  },
+  localRespond(q, s) {
+    const i = s.detailInspection;
+    if (!i) return inspectionsAgent.localRespond(q, s);
+    if (kw(q, 'result', 'pass', 'fail', 'outcome')) return `Result: ${i.result}.${i.notes ? ' Notes: ' + i.notes : ''}`;
+    if (kw(q, 'follow', 'reinspect', 'next')) return i.followUp ? `Follow-up: ${i.followUp}` : 'No follow-up required.';
+    if (kw(q, 'who', 'inspector', 'inspected')) return `Inspected by ${i.inspector} on ${i.date}.`;
+    if (kw(q, 'note', 'detail')) return i.notes ? `Notes: ${i.notes}` : 'No inspector notes.';
+    if (kw(q, 'summary', 'summarize', 'about', 'what')) {
+      return `${i.type} inspection at ${i.project} on ${i.date} -- ${i.result}. ${i.notes || 'No notes.'} ${i.followUp ? 'Follow-up: ' + i.followUp : ''}`.trim();
+    }
+    return inspectionsAgent.localRespond(q, s);
+  },
 };
 
 export const punchItemDetail: WidgetAgent = {
@@ -845,8 +898,31 @@ export const punchItemDetail: WidgetAgent = {
     { id: 'reassign-trade', label: 'Reassign trade', execute: () => 'Reassigned punch item to alternate trade.' },
     { id: 'verify-field', label: 'Request field verification', execute: () => 'Requested superintendent field verification.' },
   ],
-  buildContext(s) { return inspectionsAgent.buildContext(s); },
-  localRespond(q, s) { return inspectionsAgent.localRespond(q, s); },
+  buildContext(s) {
+    const p = s.detailPunchItem;
+    if (!p) return inspectionsAgent.buildContext(s);
+    return [
+      `Punch item ${p.id} (${p.project})`,
+      `  Location: ${p.location}`,
+      `  Description: ${p.description}`,
+      `  Assignee: ${p.assignee}`,
+      `  Priority: ${p.priority}`,
+      `  Status: ${p.status}`,
+      `  Created: ${p.createdDate}`,
+    ].join('\n');
+  },
+  localRespond(q, s) {
+    const p = s.detailPunchItem;
+    if (!p) return inspectionsAgent.localRespond(q, s);
+    if (kw(q, 'status', 'state', 'progress')) return `Status: ${p.status}. Priority: ${p.priority}. Assigned to ${p.assignee}.`;
+    if (kw(q, 'who', 'assigned', 'assignee')) return `Assigned to ${p.assignee}.`;
+    if (kw(q, 'priority', 'urgent')) return `Priority: ${p.priority}. Status: ${p.status}.`;
+    if (kw(q, 'location', 'where')) return `Location: ${p.location} at ${p.project}.`;
+    if (kw(q, 'summary', 'summarize', 'about', 'what')) {
+      return `Punch item at ${p.location} (${p.project}): ${p.description}. ${p.priority} priority, ${p.status}, assigned to ${p.assignee}, created ${p.createdDate}.`;
+    }
+    return inspectionsAgent.localRespond(q, s);
+  },
 };
 
 export const changeOrderDetail: WidgetAgent = {
@@ -861,8 +937,35 @@ export const changeOrderDetail: WidgetAgent = {
     { id: 'reject-co', label: 'Send back for pricing', execute: () => 'Sent change order back for revised pricing.' },
     { id: 'link-budget', label: 'Link to budget line', execute: () => 'Linked change order to budget line item.' },
   ],
-  buildContext(s) { return changeOrdersAgent.buildContext(s); },
-  localRespond(q, s) { return changeOrdersAgent.localRespond(q, s); },
+  buildContext(s) {
+    const co = s.detailChangeOrder;
+    if (!co) return changeOrdersAgent.buildContext(s);
+    return [
+      `Change order ${co.id} (${co.project})`,
+      `  Type: ${co.coType}`,
+      `  Description: ${co.description}`,
+      `  Amount: $${co.amount.toLocaleString()}`,
+      `  Status: ${co.status}`,
+      `  Reason: ${co.reason}`,
+      `  Requested by: ${co.requestedBy} on ${co.requestDate}`,
+      ...(co.contractNumber ? [`  Contract: ${co.contractNumber}`] : []),
+      ...(co.subcontractor ? [`  Subcontractor: ${co.subcontractor}`] : []),
+      ...(co.costCode ? [`  Cost code: ${co.costCode}`] : []),
+    ].join('\n');
+  },
+  localRespond(q, s) {
+    const co = s.detailChangeOrder;
+    if (!co) return changeOrdersAgent.localRespond(q, s);
+    if (kw(q, 'amount', 'cost', 'financial', 'impact', 'price', 'value')) return `Amount: $${co.amount.toLocaleString()}.`;
+    if (kw(q, 'status', 'approval', 'approve', 'state')) return `Status: ${co.status}.`;
+    if (kw(q, 'why', 'reason', 'justif')) return `Reason: ${co.reason}.`;
+    if (kw(q, 'who', 'requested', 'asked')) return `Requested by ${co.requestedBy} on ${co.requestDate}.`;
+    if (kw(q, 'type', 'kind')) return `Type: ${co.coType}.`;
+    if (kw(q, 'summary', 'summarize', 'about', 'what')) {
+      return `${co.id} (${co.project}, ${co.coType}): ${co.description}. $${co.amount.toLocaleString()}, ${co.status}. Reason: ${co.reason}. Requested by ${co.requestedBy} on ${co.requestDate}.`;
+    }
+    return changeOrdersAgent.localRespond(q, s);
+  },
 };
 
 export const contractDetail: WidgetAgent = {
@@ -877,8 +980,82 @@ export const contractDetail: WidgetAgent = {
     { id: 'release-retainage', label: 'Process retainage release', execute: () => 'Submitted retainage release request.' },
     { id: 'link-co', label: 'Link change order to contract', execute: () => 'Linked change order to contract.' },
   ],
-  buildContext(s) { return contractsAgent.buildContext(s); },
-  localRespond(q, s) { return contractsAgent.localRespond(q, s); },
+  buildContext(s) {
+    const c = s.detailContract;
+    if (!c) return contractsAgent.buildContext(s);
+    const linkedCount = c.linkedChangeOrderIds?.length ?? 0;
+    return [
+      `Contract ${c.id}: ${c.title}`,
+      `  Project: ${c.project}`,
+      `  Type: ${c.contractType}`,
+      `  Vendor: ${c.vendor}`,
+      `  Status: ${c.status}`,
+      `  Original value: $${c.originalValue.toLocaleString()}`,
+      `  Revised value: $${c.revisedValue.toLocaleString()}`,
+      `  Change: $${(c.revisedValue - c.originalValue).toLocaleString()}`,
+      `  Term: ${c.startDate} → ${c.endDate}`,
+      `  Retainage: ${c.retainage}%`,
+      `  Linked change orders: ${linkedCount}`,
+      `  Scope: ${c.scope}`,
+    ].join('\n');
+  },
+  localRespond(q, s) {
+    const c = s.detailContract;
+    if (!c) return contractsAgent.localRespond(q, s);
+    if (kw(q, 'change order', 'co-', 'linked')) {
+      const ids = c.linkedChangeOrderIds ?? [];
+      return ids.length ? `${ids.length} linked change order(s): ${ids.join(', ')}.` : 'No change orders linked to this contract.';
+    }
+    if (kw(q, 'retainage', 'retention', 'held')) {
+      const amount = (c.revisedValue * c.retainage) / 100;
+      return `Retainage: ${c.retainage}% (≈ $${Math.round(amount).toLocaleString()} of revised value).`;
+    }
+    if (kw(q, 'value', 'change', 'original', 'revised', 'amount', 'price')) {
+      const delta = c.revisedValue - c.originalValue;
+      return `Original $${c.originalValue.toLocaleString()} → revised $${c.revisedValue.toLocaleString()} (change $${delta.toLocaleString()}).`;
+    }
+    if (kw(q, 'vendor', 'who', 'sub')) return `Vendor: ${c.vendor}.`;
+    if (kw(q, 'status', 'state')) return `Status: ${c.status}. Term: ${c.startDate} → ${c.endDate}.`;
+    if (kw(q, 'scope', 'work', 'about', 'summary', 'summarize')) {
+      return `${c.id} ${c.title} (${c.contractType}, ${c.vendor}): ${c.scope}. ${c.status}, $${c.revisedValue.toLocaleString()} revised, ${c.retainage}% retainage.`;
+    }
+    return contractsAgent.localRespond(q, s);
+  },
+};
+
+export const panoramaDetail: WidgetAgent = {
+  id: 'panoramaDetail',
+  name: 'Panorama Detail',
+  systemPrompt: 'You are a site capture specialist reviewing a specific 360° panorama. Help describe what was captured, when, and where in the project.',
+  suggestions: ['What does this panorama show?', 'When was it captured?', 'Who captured it?'],
+  insight: () => null,
+  alerts: () => null,
+  actions: () => [
+    { id: 'attach-rfi', label: 'Attach to an RFI', execute: () => 'Attached panorama to RFI draft.' },
+    { id: 'mark-progress', label: 'Mark progress milestone', execute: () => 'Tagged panorama as progress milestone.' },
+    { id: 'share-link', label: 'Share capture link', execute: () => 'Generated shareable capture link.' },
+  ],
+  buildContext(s) {
+    const p = s.detailPanorama;
+    if (!p) return `Project: ${s.projectName}\nNo panorama selected.`;
+    return [
+      `Project: ${s.projectName}`,
+      `Panorama: ${p.title}`,
+      `  ${p.subtitle}`,
+      `  Location: ${p.location}`,
+      `  Captured: ${p.captureDate}`,
+      `  Captured by: ${p.capturedBy}`,
+    ].join('\n');
+  },
+  localRespond(q, s) {
+    const p = s.detailPanorama;
+    if (!p) return 'No panorama is currently selected.';
+    if (kw(q, 'what', 'show', 'about', 'describe', 'summary', 'summarize')) return `${p.title}: ${p.subtitle} (${p.location}).`;
+    if (kw(q, 'when', 'date', 'captured')) return `Captured on ${p.captureDate}.`;
+    if (kw(q, 'who', 'captured', 'by')) return `Captured by ${p.capturedBy} on ${p.captureDate}.`;
+    if (kw(q, 'where', 'location')) return `Location: ${p.location}.`;
+    return `Viewing ${p.title} (${p.location}, ${p.captureDate}).`;
+  },
 };
 
 export const PROJECT_AGENTS: WidgetAgent[] = [
@@ -906,5 +1083,6 @@ export const PROJECT_AGENTS: WidgetAgent[] = [
   punchItemDetail,
   changeOrderDetail,
   contractDetail,
+  panoramaDetail,
 ];
 

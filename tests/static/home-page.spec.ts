@@ -130,4 +130,51 @@ describe('HomePageComponent (template regression)', () => {
       expect(SRC).toMatch(/canvasStorageKey:\s*\(\)/);
     });
   });
+
+  // The Risks & Urgent Needs widget on the home dashboard surfaces both
+  // financialsRoute (`/financials/job-costs/<slug>`) and an in-project
+  // deep link (`/project/<slug>?page=financials&subpage=...`) for each item.
+  // navigateToUrgentNeed must respect persona access:
+  //   - Bert  -- no /financials nav, must NOT route there.
+  //   - Kelly -- no /project nav, must NOT route there.
+  describe('persona-aware urgent needs navigation', () => {
+    const navMethodMatch = SRC.match(/navigateToUrgentNeed\([^)]*\)\s*:\s*void\s*\{[\s\S]*?\n  \}/);
+
+    it('navigateToUrgentNeed method exists', () => {
+      expect(navMethodMatch, 'navigateToUrgentNeed method should be present').not.toBeNull();
+    });
+
+    it('reads the active persona slug', () => {
+      const body = navMethodMatch![0];
+      expect(body).toContain('activePersonaSlug()');
+    });
+
+    it('skips financialsRoute for personas without financials access (Bert)', () => {
+      const body = navMethodMatch![0];
+      expect(body).toMatch(/['"]bert['"]/);
+      expect(body).toMatch(/hasFinancials/);
+    });
+
+    it('skips in-project navigation for personas without projects access (Kelly)', () => {
+      const body = navMethodMatch![0];
+      expect(body).toMatch(/['"]kelly['"]/);
+      expect(body).toMatch(/hasProjects/);
+    });
+
+    it('gates financialsRoute branch on hasFinancials', () => {
+      const body = navMethodMatch![0];
+      expect(body).toMatch(/item\.financialsRoute\s*&&\s*hasFinancials/);
+    });
+
+    it('gates the project-route branch on hasProjects', () => {
+      const body = navMethodMatch![0];
+      expect(body).toMatch(/if\s*\(\s*hasProjects\s*\)/);
+    });
+
+    it('normalises change-orders subpage to project nav value', () => {
+      const body = navMethodMatch![0];
+      expect(body).toContain("'change-orders'");
+      expect(body).toContain("'change-order-requests'");
+    });
+  });
 });

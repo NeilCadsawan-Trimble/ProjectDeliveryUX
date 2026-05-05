@@ -174,10 +174,10 @@ export class ProjectDashboardNavigationService {
   }
 
   navigateToUrgentNeed(item: UrgentNeedItem): void {
-    if (item.financialsRoute && (item.category === 'budget' || item.category === 'change-order')) {
-      void this.router.navigate([`${this.pp}${item.financialsRoute}`]);
-      return;
-    }
+    // Risks / urgent-needs links must stay inside the project space. The
+    // shared seed data carries a `financialsRoute` (`/financials/job-costs/<slug>`)
+    // that the home/portfolio dashboard uses; here we deliberately ignore it
+    // and route to the project's own financials sub-pages instead.
     const qp = item.queryParams;
     if (qp['view'] && qp['id']) {
       const view = qp['view'];
@@ -206,12 +206,29 @@ export class ProjectDashboardNavigationService {
         }
       }
     }
+
+    if (item.category === 'budget') {
+      this.navigateToBudgetPage();
+      return;
+    }
+    if (item.category === 'change-order') {
+      this.ctx.detailView.set(null);
+      this.ctx.subledgerCategory.set(null);
+      this.ctx.activeNavItem.set('financials');
+      this.ctx.activeFinancialsPage.set('change-order-requests');
+      this.ctx.navExpanded.set(false);
+      this.pushPageUrl();
+      return;
+    }
+
     const page = qp['page'] || 'dashboard';
     const validPages = this.ctx.sideNavItems.map(i => i.value);
     if (page !== 'dashboard' && validPages.includes(page)) {
+      this.ctx.detailView.set(null);
       this.ctx.activeNavItem.set(page);
       if (page === 'records' && qp['subpage']) this.ctx.activeRecordsPage.set(qp['subpage']);
       else if (page === 'financials' && qp['subpage']) this.ctx.activeFinancialsPage.set(qp['subpage']);
+      this.pushPageUrl();
     }
   }
 

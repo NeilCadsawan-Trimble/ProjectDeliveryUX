@@ -131,7 +131,18 @@ Consult this file before asking the user a question. If the answer is here, act 
 - **Framework override**: Must NOT be set to null (breaks Git-triggered builds).
 - **Build cache**: Must clear `.angular/cache` before build (`rm -rf .angular/cache` in `vercel.json`). Stale cache caused auth routes to be missing in production.
 - **CDN headers**: HTML responses must include `Cache-Control: no-cache, no-store, must-revalidate` to prevent stale `index.html` serving.
-- **Edge Functions**: Weather proxy at `api/weather.ts` with 15-minute edge caching.
+- **Edge Functions**: Weather proxy at `api/weather.ts` with 15-minute edge caching. Deepgram ephemeral-token mint at `api/deepgram-token.ts` (no caching, ~30s TTL tokens).
+
+### Voice Input (Deepgram)
+- **STT provider**: Deepgram Nova-3 over WebSocket streaming.
+- **Auth**: Ephemeral access tokens via `POST https://api.deepgram.com/v1/auth/grant`. Master `DEEPGRAM_API_KEY` lives only in Vercel + local `.env`; never exposed to the browser.
+- **Master key role**: Must be **Member** or higher on the Deepgram project, otherwise `auth/grant` returns `403 Forbidden: Insufficient permissions` and the mic appears to do nothing. Read-only and project-scoped keys are insufficient.
+- **Browser handshake**: Use `@deepgram/sdk` (5.1+), not raw `new WebSocket(url)`. The SDK converts `Authorization: Bearer <jwt>` into `Sec-WebSocket-Protocol: bearer, <jwt>` (browsers cannot set custom headers).
+- **SDK v5 string-boolean params**: `interim_results`, `smart_format`, `punctuate` ConnectArgs must be `'true'`/`'false'` strings. Booleans compile under `tsc` but `ng build`'s template type-check refuses them.
+- **Vocabulary tier**: Tier 2 keyterm prompting. Static glossary (~120 construction/Trimble terms) + dynamic project + persona names via `buildVoiceKeyterms(dataStore)`. Cap at ~150 entries to keep WebSocket URL length safe.
+- **Cleanup contract**: Five resources released through one idempotent path -- MediaStream tracks, MediaRecorder, AudioContext, WebSocket (CloseStream then close), rAF callback. Six stop hooks: Send (button + Enter), Escape, `controller.thinking()` effect, `visibilitychange: hidden`, `DestroyRef.onDestroy`, mic toggle.
+- **Performance**: Audio level meter rAF runs `runOutsideAngular`, writes directly to `--mic-level` CSS variable on `documentElement`. No template binds the level signal -- avoiding 60fps change detection across the app.
+- **Dual-implementation rule**: Every `/api/*` endpoint must exist BOTH in `api/<name>.ts` (Vercel Edge runtime) AND `dev-proxy.mjs` handler routed at `localhost:3001`, otherwise `npm start` 404s the endpoint. See skill section 45.
 
 ## Known Fragile Areas
 
@@ -155,6 +166,9 @@ These areas have broken multiple times. Extra care required:
 | Vercel Angular build cache | `.angular/cache` persists stale route definitions across deploys | `rm -rf .angular/cache` before `npm run build` in `vercel.json` |
 | Zone.js context loss (auth callback) | trimble-id library uses axios/CommonJS which exits Zone.js context; post-auth `navigateByUrl` silently fails | Wrap in `NgZone.run()`; add `window.location.replace` hard-redirect fallback |
 | Layout seed sharing across personas | Shared "default" seeds meant editing one persona broke others; `exportLayoutSeed()` run with wrong persona overwrote shared file (broke Frank/Bert canvas mode Apr 12-13) | Eliminated ALL shared seeds. 5 personas x 4 pages = 20 independent seed files. 288 static tests in `layout-seeds.spec.ts` enforce file existence, widget lists, no-contamination, geometry, per-persona routing, and export map. See skill section 37 |
+| Deepgram master-key role (silent 403) | Read-only / project-scoped keys silently 403 on `auth/grant`; mic appears to do nothing | Master key on Deepgram project must be **Member** or higher. 1-line curl smoke test on `/api/deepgram-token` catches it instantly. See skill section 45 |
+| Edge Function endpoints without dev-proxy parity | `npm start` 404s the endpoint; works in production only | Every `api/<name>.ts` must have a matching handler in `dev-proxy.mjs` routed at `localhost:3001`. See skill section 45 |
+| `@deepgram/sdk` v5 ConnectArgs booleans | `tsc` accepts `true`/`false`; `ng build` template type-check refuses (`Type 'boolean' is not assignable to type 'string'`) | Use `'true'`/`'false'` string literals for `interim_results`, `smart_format`, `punctuate`. Static test enforces. See skill section 45 |
 
 ## Project File Map
 
@@ -183,6 +197,10 @@ These areas have broken multiple times. Extra care required:
 | Auth callback | `src/app/pages/auth-callback/auth-callback.component.ts` |
 | Weather service | `src/app/services/weather.service.ts` |
 | Weather API proxy | `api/weather.ts` |
+| Voice input service | `src/app/services/voice-input.service.ts` |
+| Voice keyterm vocabulary | `src/app/data/voice-vocabulary.ts` |
+| Deepgram token API proxy | `api/deepgram-token.ts` |
+| Local dev API proxy | `dev-proxy.mjs` |
 | Vercel config | `vercel.json` |
 | Projects layout config | `src/app/pages/projects-page/projects-page-layout.config.ts` |
 | Projects sort utils | `src/app/pages/projects-page/projects-page-utils.ts` |
@@ -241,3 +259,4 @@ These areas have broken multiple times. Extra care required:
 | 21 (Apr 12) | *(session)* | Pamela Chen persona (Senior Estimator), Open Estimates widget, home/financials layout seeds |
 | 22 (Apr 13) | `fe9bcb72-dbe7-42b8-9b30-0983a749b0b3` | Fix canvas for Frank/Bert (default seed overwrote), then fully independent per-persona layout seeds (20 files, 288 tests), canvas-grid-alignment rewrite, SKILL section 37 rewrite |
 | 23 (Apr 17) | *(session)* | Canvas project tile navigation fix (removed blocking pointer-events rule), projHeader canvas height increase to 176px, full Modus Typography migration with regression test |
+| 24 (May 5) | `71f5c973-71cd-430a-85fc-b3e0b3283d8a` | Voice input via Deepgram (Nova-3 STT, ephemeral-token Edge Function + dev-proxy parity, construction keyterm vocabulary, level-meter pulsing ring, six stop hooks, 53 new static tests, SKILL section 45) |

@@ -33,8 +33,16 @@ If the date matches today, skip this section and proceed normally.
 
 *(May 5, 2026)*
 
+- **Voice input via Deepgram** -- shipped real-time STT on the AI floating prompt mic button. Backend: `api/deepgram-token.ts` Edge Function + `dev-proxy.mjs` `handleDeepgramToken` parity for `npm start`. Browser: new `VoiceInputService` (`src/app/services/voice-input.service.ts`) owns token fetch, `getUserMedia`, `MediaRecorder` (250ms opus chunks), Deepgram WebSocket via `@deepgram/sdk` (handles `Sec-WebSocket-Protocol: bearer, <jwt>` browser auth handshake), `AudioContext + AnalyserNode` 60fps RMS rAF loop running `runOutsideAngular` writing to `--mic-level` CSS variable, idempotent cleanup releasing all five resource types. Six stop hooks: Send (button + Enter), Escape, `controller.thinking()` effect, `visibilitychange: hidden`, `DestroyRef.onDestroy`, mic toggle. Vocabulary: `src/app/data/voice-vocabulary.ts` with ~120-term static construction glossary + `buildVoiceKeyterms(dataStore)` merging project and persona names. Member-role API key requirement documented (silent 403 trap).
+- **Skill + PROGRESS.md updated** -- added section 45 to `dashboard-layout-lessons` covering the architecture, Member-role trap, dual Edge Function/dev-proxy rule, SDK browser auth, NgZone discipline, idempotent cleanup, keyterm vocabulary, v5 string-boolean gotcha. Added Phase 29 to `PROGRESS.md` with full feature breakdown.
+- **Tests added** -- 53 new static assertions across `tests/static/deepgram-token-endpoint.spec.ts` (16), `tests/static/voice-vocabulary.spec.ts` (24), and the new `Voice input wiring (Deepgram)` block in `tests/static/ai-floating-prompt.spec.ts` (13).
+
 ## Active Context
 
 - On `dev` branch.
+- Local dev server confirmed running cleanly with the Deepgram token proxy minting tokens (HTTP 200). Ready for manual mic-button testing.
 
 ## Pending Items
+
+- User has not yet manually verified the mic button end-to-end in the browser; if any UX issues surface (e.g., transcript merging glitches, mic not releasing), revisit `VoiceInputService` and the composer pill stop hooks.
+- `@deepgram/sdk` adds ~200KB to initial bundle (Angular budget warning). Consider lazy-loading the service if the warning becomes an actual budget failure.

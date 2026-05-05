@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, the toolbar search/filter layout, the layout seed/reset/persona-switch system, the AI floating prompt pill (send/stop buttons, pill chrome, edge-glow shadow stack, Modus pattern alignment), or the non-modal coexistence contract between the floating prompt and the Trimble Assistant slide-out drawer (phase short-circuit, host-listener close, scrim removal, pointer-events split, context-aware drawer header). Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, the toolbar search/filter layout, the layout seed/reset/persona-switch system, the AI floating prompt pill (send/stop buttons, pill chrome, edge-glow shadow stack, Modus pattern alignment), the non-modal coexistence contract between the floating prompt and the Trimble Assistant slide-out drawer (phase short-circuit, host-listener close, scrim removal, pointer-events split, context-aware drawer header), or the Deepgram voice-input pipeline behind the mic button (ephemeral-token Edge Function + dev-proxy parity, browser SDK subprotocol auth, NgZone-wrapped events, level-meter rAF outside Angular's zone, idempotent cleanup, construction keyterm vocabulary, Member-role API key requirement, v5 string-boolean params). Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -2008,6 +2008,147 @@ The drawer used to be modal and the floating prompt was effectively dead while i
 
 ---
 
+## 45. Deepgram Voice Input -- Browser STT via Ephemeral Tokens
+
+The mic button on the AI floating prompt streams real-time speech to Deepgram Nova-3 over a WebSocket and writes interim + final transcripts back into `controller.inputText`. The pipeline has six contract pieces that must all stay aligned, plus three external prerequisites that have already silently failed once.
+
+### Architecture (top level)
+
+1. Browser clicks mic -> `VoiceInputService.start()` (`src/app/services/voice-input.service.ts`)
+2. Service hits `GET /api/deepgram-token` -> short-lived JWT (~30s TTL)
+3. Service calls `getUserMedia({ audio: true })` -> single `MediaStream`
+4. Stream feeds **two** consumers in parallel:
+   - `MediaRecorder` (250ms opus chunks) -> Deepgram WebSocket via SDK
+   - `AudioContext + AnalyserNode` -> RMS rAF loop -> `--mic-level` CSS variable
+5. Deepgram pushes `Results` frames -> service merges committed + interim text -> `onTranscript(text, isFinal)` -> `controller.inputText.set(...)`
+6. Stop runs through one idempotent `cleanup()` path (button click, Send, Escape, AI thinking, tab hidden, route change, `DestroyRef.onDestroy`)
+
+### The Member-role API key requirement (silent 403 trap)
+
+Deepgram's `POST /v1/auth/grant` returns `403 FORBIDDEN: Insufficient permissions` if the master API key has anything less than **Member** role. Read-only and project-scoped keys still work for direct WebSocket calls but cannot mint ephemeral tokens. The token endpoint correctly translates this to a 502 and `voice.error()` becomes `'token-failed'`, but the failure looks like "the mic does nothing" because the connecting pulse is brief and the error is only surfaced via the tooltip.
+
+When you set up Deepgram for the first time (or rotate the key), you MUST verify the role in the Deepgram console -> API Keys before debugging anywhere else. A 1-line curl smoke test catches it instantly:
+
+```bash
+curl -s -i http://localhost:3001/api/deepgram-token | head -5
+# expect HTTP/1.1 200 OK; if you see 502 with "Deepgram auth grant failed: 403", fix the key role
+```
+
+### The dual-implementation rule (Edge Function + dev-proxy)
+
+This codebase has TWO entry points for `/api/*`: `api/*.ts` runs on Vercel Edge in production, and `dev-proxy.mjs` runs on `localhost:3001` for `npm start`. Angular's `proxy.conf.json` forwards `/api/*` to port 3001 in dev. Existing patterns: `api/chat.ts` + chat handler in `dev-proxy.mjs`; `api/weather.ts` + `handleWeather`; `api/deepgram-token.ts` + `handleDeepgramToken`.
+
+When you add a new server endpoint:
+
+- Implement it in `api/<name>.ts` for production (Edge runtime, `process.env['VAR']`, CORS, error shape)
+- Implement the SAME contract in `dev-proxy.mjs` (`process.env.VAR`, `req.method` check, status codes, `Cache-Control`)
+- Wire it into the dev-proxy router (`req.url?.startsWith('/api/<name>')`)
+- Add a startup log line so the developer sees the new endpoint at boot
+- Document the env var in `.env.example` (gitignored `.env` already takes the value)
+
+If you skip the dev-proxy half, `npm start` will 404 the endpoint and the feature works in prod-only -- which is exactly the kind of asymmetry that surfaces in front of users at deploy time.
+
+### SDK browser auth: subprotocol, not headers
+
+Browsers cannot set custom WebSocket headers. The official `@deepgram/sdk` (5.1+) `CustomDeepgramClient` handles this by detecting the runtime in `getWebSocketOptions(headers)` and converting the `Authorization` header into a `Sec-WebSocket-Protocol` value:
+
+- `Authorization: Bearer <jwt>` -> `Sec-WebSocket-Protocol: bearer, <jwt>` (access tokens)
+- `Authorization: Token <api-key>` -> `Sec-WebSocket-Protocol: token, <api-key>` (master keys; never use from browser)
+
+This is why we use the SDK rather than a raw `new WebSocket(url, protocols)` -- the protocol-array semantics aren't documented on Deepgram's public site as of writing, only inside the SDK's `CustomClient.mjs`. Tradeoff: the SDK adds ~200KB to the initial bundle (currently triggers an Angular budget warning); accept this in exchange for not having to track Deepgram's auth handshake in our own code.
+
+The auto-generated `V1Client.ConnectArgs` interface still requires an `Authorization: string` field at compile time, but the wrapped `WrappedListenV1Client.connect(args)` ignores it at runtime and reads auth from the constructor's `accessToken` option. Pass empty string and a comment explaining why.
+
+### NgZone discipline (Zone.js context loss)
+
+Same pattern as the Trimble auth callback (skill section 21 / longterm-memory): WebSocket and MediaRecorder events fire OUTSIDE Angular's zone. Every signal write the UI binds to must run through `zone.run(...)` or change detection won't pick it up. Specifically: `connecting`, `listening`, `error`, and the transcript callback all need wrapping; the `level` signal does NOT (its only consumer is the CSS variable).
+
+The 60fps level-meter loop runs `runOutsideAngular(() => requestAnimationFrame(tick))` and writes `document.documentElement.style.setProperty('--mic-level', rms)` directly. Doing this inside the zone would trigger 60 change-detection passes per second across the entire app for a value that no template binds to.
+
+### The five resources owned by one cleanup path
+
+The service holds five live resources during a session:
+
+1. `MediaStream` from `getUserMedia` (must `.getTracks().forEach(t => t.stop())`)
+2. `MediaRecorder` (must `.stop()` if not `inactive`, then null `.ondataavailable`)
+3. `AudioContext` + `AnalyserNode` (`.close()` is async; fire-and-forget)
+4. Deepgram `WebSocket` connection (try `sendCloseStream({ type: 'CloseStream' })` first to flush the final transcript, then `.close()`)
+5. `requestAnimationFrame` callback (`cancelAnimationFrame(this.rafId)`)
+
+`cleanup()` MUST be idempotent because it's called from FIVE entry points: user click, Send/Enter, Escape, `controller.thinking()` effect, `visibilitychange: hidden`, `DestroyRef.onDestroy`, the WebSocket close handler, and every error branch. Forgetting any one resource causes a leak that survives indefinitely (browser keeps the mic indicator lit even after navigation).
+
+### Construction keyterm vocabulary (Tier 2)
+
+Deepgram's `keyterm` parameter biases Nova-3 toward domain terms. The vocabulary file (`src/app/data/voice-vocabulary.ts`) layers static glossary entries with live data:
+
+- **Static glossary** (~120 hand-curated terms in 5 buckets: acronyms, processes, trades, equipment, Trimble products). Edit the source to extend.
+- **Data-driven**: `buildVoiceKeyterms(dataStore)` merges `dataStore.projects().map(p => p.name)` and `PERSONAS.map(p => p.name)` so proper nouns like project codes and persona names transcribe correctly without manual upkeep.
+- **De-duplicated** via `new Set(...)` so a project named after an existing glossary entry doesn't bloat the URL.
+
+Privacy note: keyterms appear in the WebSocket URL on every dictation session and are subject to Deepgram's URL logging. Static glossary contains no PII; the data-driven layer adds first-party project/persona names the user is dictating about anyway. If a future persona must NOT reach a third-party log, exclude it from the data-driven layer (the static test enforces a 150-entry ceiling so the URL stays under any sane WebSocket cap).
+
+Tier 3 (per-agent vocabulary contributions) and Tier 4 (find-and-replace post-processing like `Burt:Bert`) are deliberately deferred until real usage data identifies consistent mistranscriptions.
+
+### v5 string-boolean gotcha (Angular template type-check)
+
+`@deepgram/sdk` v5 typed the boolean ConnectArgs fields as `'true' | 'false'` strings (so they survive URL serialisation untouched). `npx tsc` skips this check, but `ng build` (Angular's strict template compiler) catches it and refuses to compile. The first build attempt failed with:
+
+```
+TS2322: Type 'boolean' is not assignable to type 'string'.
+src/app/services/voice-input.service.ts: interim_results: true,
+```
+
+Always use `interim_results: 'true'`, `smart_format: 'true'`, `punctuate: 'true'` for SDK v5+. The static test asserts the string form so this regression cannot reland.
+
+### What it looks like (visible state)
+
+| State | Source signal | Visual |
+|-------|--------------|--------|
+| Idle | `voice.listening() === false && voice.connecting() === false` | Plain mic icon, foreground-60 colour |
+| Connecting | `voice.connecting() === true` | `is-connecting` class -> primary colour, 0.8s breathing keyframe |
+| Listening | `voice.listening() === true` | `is-listening` class -> error colour, icon swaps to `stop`, ::after shadow ring scaled by `--mic-level` (0..1 RMS) |
+| Error | `voice.error() !== null` | Tooltip swaps to a state-specific hint via `micTooltip` computed; button is otherwise idle |
+| Unsupported | `voice.supported() === false` | `is-disabled` class, `tabindex=-1`, `aria-disabled=true`, click is a no-op |
+
+The error state currently surfaces ONLY in the tooltip. If a future change makes the failure case more discoverable (red dot, toast, etc.), update this table.
+
+### Don't break:
+
+| Contract | Failure mode if broken |
+|---------|------------------------|
+| Deepgram master key has Member role or higher | Silent 403 on `auth/grant`; mic appears to do nothing |
+| `api/deepgram-token.ts` mirrored by `handleDeepgramToken` in `dev-proxy.mjs` | `npm start` 404s the endpoint; works in prod only |
+| `DEEPGRAM_API_KEY` in `.env` (gitignored) and documented in `.env.example` | New contributors hit a 500 with "DEEPGRAM_API_KEY not configured" |
+| Token endpoint never logs or echoes the master key | Master key leaks into terminal output / error responses |
+| Use `@deepgram/sdk` for browser, not raw WebSocket | Lose the `Sec-WebSocket-Protocol: bearer, <jwt>` browser auth handshake |
+| Boolean ConnectArgs as `'true'` strings, not `true` | Angular template type-check refuses to compile |
+| `cleanup()` releases all 5 resource types and is idempotent | Mic indicator stays lit after navigation; AudioContext leak |
+| Level-meter rAF runs `runOutsideAngular` and writes a CSS variable, not a signal | 60 change-detection passes per second across the entire app |
+| Stop hooks: Send (button + Enter), Escape, `controller.thinking()` effect, `visibilitychange: hidden`, `DestroyRef.onDestroy` | Recorder keeps capturing while the assistant streams a reply; stale sessions survive route changes |
+| `keyterm` array length stays under 150 entries | URL exceeds WebSocket cap on some browsers |
+
+### Why this matters
+
+Voice input is one of the highest-leverage UX upgrades on the floating prompt -- a single sentence covers what would have been three menu hunts. But the failure modes are silent: a wrong API key role looks identical to a working one until you click the mic, and a missing dev-proxy handler looks fine in production while `npm start` gives the user nothing. The static tests + the curl smoke check above are the cheapest guard against re-encountering either trap.
+
+### Files
+
+- `api/deepgram-token.ts` -- production Edge Function (token mint)
+- `dev-proxy.mjs` -- `handleDeepgramToken` for local dev parity
+- `src/app/services/voice-input.service.ts` -- the whole pipeline
+- `src/app/data/voice-vocabulary.ts` -- static glossary + data-driven helper
+- `src/app/shell/components/ai-composer-pill.component.ts` -- mic button wiring, stop hooks, tooltip computed
+- `src/styles.css` -- `.is-listening` / `.is-connecting` / `.is-disabled` rules and `--mic-level`-driven shadow
+- `.env.example` -- `DEEPGRAM_API_KEY=` placeholder
+
+### Tests
+
+- `tests/static/deepgram-token-endpoint.spec.ts` -- 16 tests: Edge Function shape, dev-proxy parity, env-var docs, no-leak guard
+- `tests/static/voice-vocabulary.spec.ts` -- 24 tests: glossary shape, regression-guard high-value terms (RFI, submittal, Trimble Connect, ...), URL safety, size cap, service wiring (`keyterm: buildVoiceKeyterms(...)`, model `nova-3`, string booleans)
+- `tests/static/ai-floating-prompt.spec.ts > Voice input wiring (Deepgram)` -- 13 assertions: imports, signal bindings, tooltip states, transcript piping, every stop hook, `simulateListening()` is gone
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -2063,3 +2204,4 @@ The drawer used to be modal and the floating prompt was effectively dead while i
 | Canvas cleanup DOM-less on mode re-entry | `dashboard-layout-engine.ts` (`cleanupCanvasOverlaps` derives headerBottom from state) | `dashboard-layout-engine.spec.ts > canvas save/load round-trip`, `e2e/layout-persistence.spec.ts` |
 | Touching != overlapping in canvas cleanup | `dashboard-layout-engine.ts` (`cleanupCanvasOverlaps`) | `dashboard-layout-engine.spec.ts > cleanupCanvasOverlaps treats touching widgets as non-overlapping` |
 | `resetToDefaults` split-test pattern | `dashboard-layout-engine.ts` | `dashboard-layout-engine.spec.ts > resetToDefaults` (one for default-application, one for compactAll) |
+| Deepgram voice input pipeline (mic button + STT) | `api/deepgram-token.ts`, `dev-proxy.mjs` (`handleDeepgramToken`), `src/app/services/voice-input.service.ts`, `src/app/data/voice-vocabulary.ts`, `src/app/shell/components/ai-composer-pill.component.ts`, `src/styles.css` | `tests/static/deepgram-token-endpoint.spec.ts` (16), `tests/static/voice-vocabulary.spec.ts` (24), `tests/static/ai-floating-prompt.spec.ts > Voice input wiring (Deepgram)` (13) |

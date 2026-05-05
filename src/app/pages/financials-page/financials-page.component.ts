@@ -36,6 +36,8 @@ import { CATEGORY_COLORS } from '../../data/dashboard-data.seed';
 import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data.formatters';
 import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
 import { FINANCIALS_WIDGETS, KELLY_FINANCIALS_WIDGETS, PAMELA_FINANCIALS_WIDGETS } from '../../data/widget-registrations';
+import { AiPageContextService } from '../../shell/services/ai-page-context.service';
+import { AiService, type AiContext } from '../../services/ai.service';
 import { ChartComponent, type ApexAxisChartSeries } from 'ng-apexcharts';
 import { HomeInvoiceQueueComponent } from '../home-page/components/home-invoice-queue.component';
 import { HomeVendorAgingComponent } from '../home-page/components/home-vendor-aging.component';
@@ -79,6 +81,81 @@ const ROUTE_TO_DETAIL: Record<string, { subPage: string; paramKey: string; type:
   'gl-entries': { subPage: 'general-ledger', paramKey: 'id', type: 'glEntry' },
   'gl-accounts': { subPage: 'general-ledger', paramKey: 'code', type: 'glAccount' },
   'cash-flow': { subPage: 'cash-management', paramKey: 'month', type: 'cashFlow' },
+};
+
+/**
+ * Routes a selected financials tile (DashboardWidgetId) to a key in ALL_AGENTS.
+ * Tiles not in this map fall through to the active sub-page agent.
+ *
+ * Covers default (Frank/Bert/Dominique), Kelly (AP-flavored), and Pamela
+ * (estimating-flavored) tile registrations from FINANCIALS_WIDGETS,
+ * KELLY_FINANCIALS_WIDGETS, and PAMELA_FINANCIALS_WIDGETS.
+ */
+const FIN_TILE_AGENT_MAP: Record<string, string> = {
+  finRevenueChart: 'revenue',
+  finOpenEstimates: 'openEstimates',
+  finBudgetByProject: 'finBudgetByProject',
+  finJobCosts: 'finBudgetByProject',
+  finChangeOrders: 'finChangeOrders',
+  finAccountsReceivable: 'financialsAR',
+  finAccountsPayable: 'financialsAP',
+  finPurchaseOrders: 'financialsPO',
+  finJobBilling: 'financialsBilling',
+  finCashManagement: 'financialsCash',
+  finGeneralLedger: 'financialsGL',
+  finPayroll: 'financialsPayroll',
+  finContracts: 'financialsContractsSub',
+  finSubcontractLedger: 'financialsSubLedger',
+  finInvoiceQueue: 'homeInvoiceQueue',
+  finPaymentSchedule: 'homePaymentSchedule',
+  finVendorAging: 'homeVendorAging',
+  finPayApps: 'homePayApps',
+  finLienWaivers: 'homeLienWaivers',
+  finRetention: 'homeRetention',
+  finApActivity: 'homeApActivity',
+  finCashOutflow: 'homeCashOutflow',
+  finApKpis: 'homeApKpis',
+};
+
+/**
+ * Routes the active financials sub-page (DEFAULT_FIN_PAGE_NAV value) to a key
+ * in ALL_AGENTS. Used when no tile is selected (or the selected tile is the
+ * page header / nav KPI strip that has no agent of its own).
+ */
+const FIN_SUBPAGE_AGENT_MAP: Record<string, string> = {
+  overview: 'financialsDefault',
+  estimates: 'openEstimates',
+  'change-orders': 'finChangeOrders',
+  'job-costs': 'finBudgetByProject',
+  'job-billing': 'financialsBilling',
+  'accounts-receivable': 'financialsAR',
+  'accounts-payable': 'financialsAP',
+  'cash-management': 'financialsCash',
+  'general-ledger': 'financialsGL',
+  'purchase-orders': 'financialsPO',
+  payroll: 'financialsPayroll',
+  contracts: 'financialsContracts',
+  'subcontract-ledger': 'financialsSubLedger',
+};
+
+/**
+ * Routes a FinDetailType (the open detail entity) to a key in ALL_AGENTS so the
+ * AI assistant can answer questions about the specific invoice/PO/CO/etc.
+ */
+const FIN_DETAIL_AGENT_MAP: Record<FinDetailType, string> = {
+  estimate: 'openEstimates',
+  changeOrder: 'finChangeOrders',
+  invoice: 'financialsAR',
+  payable: 'financialsAP',
+  purchaseOrder: 'financialsPO',
+  contract: 'financialsContracts',
+  billingEvent: 'financialsBilling',
+  payrollRecord: 'financialsPayroll',
+  payrollMonthly: 'financialsPayroll',
+  subcontractLedger: 'financialsSubLedger',
+  glEntry: 'financialsGL',
+  glAccount: 'financialsGL',
+  cashFlow: 'financialsCash',
 };
 
 // ── Area-adaptive block system ──────────────────────────────────
@@ -2942,7 +3019,20 @@ export class FinancialsPageComponent extends DashboardPageBase {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly store = inject(DataStoreService);
+  private readonly aiService = inject(AiService);
+  private readonly aiPageContext = inject(AiPageContextService);
   private get pp(): string { return `/${this.personaService.activePersonaSlug()}`; }
+
+  constructor() {
+    super();
+
+    this.aiPageContext.register({
+      contextProvider: () => this.buildPageAiContext(),
+      localResponder: () => (q: string) => this.respondToFinancialsQuery(q),
+      contextKey: () => this.aiContextKey(),
+    });
+    this.destroyRef.onDestroy(() => this.aiPageContext.clear());
+  }
 
   readonly finSubNavItems = computed(() => getPersonaNav(this.personaService.activePersonaSlug()).financialsPageSubNav);
   readonly activeSubPage = signal<string>('overview');
@@ -4385,5 +4475,112 @@ export class FinancialsPageComponent extends DashboardPageBase {
       this.navHistory.shellBackButton.set(null);
       this.navHistory.shellTitleOverride.set(null);
     });
+  }
+
+  /**
+   * Resolve which agent should answer for the current AI prompt. Detail-entity
+   * views take precedence over tile selection; tile selection takes precedence
+   * over the active sub-page. The selected widget id is ignored when it maps
+   * to a non-content tile (e.g. finTitle / finNavKpi).
+   */
+  private resolveActiveFinAgentId(): string {
+    const detailType = this.finDetailType();
+    if (detailType) return FIN_DETAIL_AGENT_MAP[detailType] ?? 'financialsDefault';
+
+    const widgetId = this.widgetFocusService.selectedWidgetId();
+    if (widgetId && FIN_TILE_AGENT_MAP[widgetId]) return FIN_TILE_AGENT_MAP[widgetId];
+
+    const sub = this.activeSubPage();
+    if (sub && FIN_SUBPAGE_AGENT_MAP[sub]) return FIN_SUBPAGE_AGENT_MAP[sub];
+
+    return 'financialsDefault';
+  }
+
+  /**
+   * Append a focused detail-entity block to the agent context when a detail
+   * record is open, so the AI sees the specific invoice/PO/CO/etc. on top of
+   * the broader sub-page context.
+   */
+  private buildDetailEntityContextSuffix(): string {
+    const meta = this.finDetailMeta();
+    if (!meta) return '';
+    const fields = meta.fields.map(f => `  ${f.label}: ${f.value}`).join('\n');
+    const status = meta.status ? `\n  Status: ${meta.status}` : '';
+    return `\n\nDetail entity in view: ${meta.title}\n  ${meta.subtitle}${status}\n${fields}`;
+  }
+
+  private buildPageAiContext(): AiContext {
+    const agentId = this.resolveActiveFinAgentId();
+    const agent = getAgent(agentId, 'financials');
+    const state = this.buildFinancialsAgentState();
+    const baseData = agent.buildContext(state);
+    const detailSuffix = this.buildDetailEntityContextSuffix();
+
+    return this.aiService.buildContext('financials', {
+      projectData: baseData + detailSuffix,
+      agentPrompt: agent.systemPrompt,
+    });
+  }
+
+  private respondToFinancialsQuery(q: string): string {
+    const agentId = this.resolveActiveFinAgentId();
+    const agent = getAgent(agentId, 'financials');
+    const state = this.buildFinancialsAgentState();
+    return agent.localRespond(q, state);
+  }
+
+  private aiContextKey(): string {
+    const detailType = this.finDetailType();
+    const detailId = this.finDetailId();
+    if (detailType && detailId) return `financials:detail:${detailType}:${detailId}`;
+    const widgetId = this.widgetFocusService.selectedWidgetId();
+    if (widgetId && FIN_TILE_AGENT_MAP[widgetId]) return `financials:widget:${widgetId}`;
+    return `financials:subpage:${this.activeSubPage()}`;
+  }
+
+  /**
+   * Build a comprehensive AgentDataState that mirrors the financial signals
+   * read by every agent in FIN_TILE_AGENT_MAP / FIN_SUBPAGE_AGENT_MAP. The
+   * extra data (AP, AR, GL, payroll, etc.) is what made the previous
+   * "kitchen-sink" buildFullDataContext fallback noisy; here we still pass
+   * them in so the focused agents that DO need them (e.g. financialsAR)
+   * receive their data, but a focused agent's own buildContext narrows the
+   * output that reaches the AI.
+   */
+  private buildFinancialsAgentState(): AgentDataState {
+    return {
+      projects: this.store.projects(),
+      estimates: this.store.estimates(),
+      activities: this.store.activities(),
+      attentionItems: this.store.attentionItems(),
+      rfis: this.store.rfis(),
+      submittals: this.store.submittals(),
+      changeOrders: this.store.changeOrders(),
+      contracts: this.store.contracts(),
+      invoices: this.store.invoices(),
+      payables: this.store.payables(),
+      purchaseOrders: this.store.purchaseOrders(),
+      payrollRecords: this.store.payrollRecords(),
+      subcontractLedger: this.store.subcontractLedger(),
+      billingSchedules: this.store.billingSchedules(),
+      billingEvents: this.store.billingEvents(),
+      cashFlowHistory: this.store.cashFlowHistory(),
+      cashPosition: this.store.cashPosition(),
+      glAccounts: this.store.glAccounts(),
+      glEntries: this.store.glEntries(),
+      projectRevenue: this.store.projectRevenue(),
+      allWeatherData: this.store.weatherData(),
+      allJobCosts: this.store.projectJobCosts(),
+      apInvoices: this.store.apInvoices(),
+      apVendors: this.store.apVendors(),
+      apPayApplications: this.store.apPayApplications(),
+      apLienWaivers: this.store.apLienWaivers(),
+      apRetention: this.store.apRetention(),
+      apActivities: this.store.apActivities(),
+      apPaymentSchedule: this.store.apPaymentSchedule(),
+      currentPage: 'financials',
+      currentSubPage: this.activeSubPage(),
+      personaSlug: this.personaService.activePersonaSlug(),
+    };
   }
 }

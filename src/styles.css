@@ -1708,6 +1708,52 @@ modus-wc-chip
   color: inherit;
 }
 
+.ai-floating-prompt-icon-button.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Voice-input "listening" state. The shadow ring's spread and opacity ride
+ * a `--mic-level` CSS variable (0..1) updated 60 times a second by the
+ * VoiceInputService rAF loop, so the ring breathes with the user's voice
+ * without any Angular change detection. Falls back to a calm steady ring
+ * when the variable is unavailable. */
+.ai-floating-prompt-icon-button.is-listening,
+.ai-floating-prompt-icon-button.is-listening > i {
+  color: var(--error) !important;
+}
+
+.ai-floating-prompt-icon-button.is-listening {
+  position: relative;
+  background: var(--ai-floating-prompt-surface-elevated);
+}
+
+.ai-floating-prompt-icon-button.is-listening::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 calc((var(--mic-level, 0) * 18px) + 4px) calc(var(--mic-level, 0) * 4px) var(--error);
+  opacity: calc(0.4 + (var(--mic-level, 0) * 0.6));
+  transition: box-shadow 60ms linear, opacity 60ms linear;
+}
+
+.ai-floating-prompt-icon-button.is-connecting,
+.ai-floating-prompt-icon-button.is-connecting > i {
+  color: var(--primary) !important;
+}
+
+.ai-floating-prompt-icon-button.is-connecting {
+  animation: ai-mic-connecting 0.8s ease-in-out infinite;
+}
+
+@keyframes ai-mic-connecting {
+  50% {
+    opacity: 0.55;
+  }
+}
+
 .ai-floating-prompt-menu-anchor {
   position: relative;
 }
@@ -2044,6 +2090,17 @@ modus-wc-chip
   line-height: 1;
   font-weight: 600;
   color: var(--ai-floating-prompt-surface-text);
+}
+
+/* Persona-aware Tools menu can run 7-10 entries; cap the scroll region so
+ * the flyout never grows past the viewport. The header (title + caption
+ * + divider) stays above this list, so the menu reads as one panel with
+ * a fixed header and a scrollable body. `overscroll-behavior: contain`
+ * prevents wheel events from bubbling into the page underneath. */
+.ai-floating-prompt-menu-list {
+  max-height: min(60vh, 22rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Tools menu start column: fixed width so icons + Connect emblem align. */

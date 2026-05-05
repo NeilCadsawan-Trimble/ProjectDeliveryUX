@@ -62,6 +62,7 @@ import {
   inspectionDetail,
   inspectionsAgent,
   milestonesAgent,
+  panoramaDetail,
   projectDefault,
   punchItemDetail,
   recordsActionItems,
@@ -167,6 +168,7 @@ const ALL_AGENTS: Record<string, WidgetAgent> = {
   punchItemDetail,
   changeOrderDetail,
   contractDetail,
+  panoramaDetail,
 };
 
 const PAGE_DEFAULT_AGENTS: Record<string, string> = {
