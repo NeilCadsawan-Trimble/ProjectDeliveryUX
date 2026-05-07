@@ -157,6 +157,22 @@ export function getSuggestions(agent: WidgetAgent, state: AgentDataState): strin
   return typeof agent.suggestions === 'function' ? agent.suggestions(state) : agent.suggestions;
 }
 
+/**
+ * System-prompt suffix appended to every WIDGET-SCOPED agent (not page-default
+ * agents). Tells the LLM to call the `route_to_general_assistant` tool when
+ * the user's request is outside the widget's domain instead of attempting to
+ * answer with stale or irrelevant context.
+ */
+export const OUT_OF_SCOPE_INSTRUCTION = [
+  'IMPORTANT: If the user\'s request is clearly outside your widget\'s scope',
+  '(different domain, different page, or an app-wide question that this widget cannot answer),',
+  'do NOT attempt to answer. Instead, call the `route_to_general_assistant` tool with',
+  '`query` set to the user\'s original message verbatim and a brief `reason`.',
+  'Examples of out-of-scope: weather questions to an RFI agent, financial summaries to a calendar agent,',
+  'navigation requests that have nothing to do with this widget\'s data.',
+  'For in-scope questions, answer normally — do NOT route routine queries.',
+].join(' ');
+
 export function kw(q: string, ...words: string[]): boolean {
   const lower = q.toLowerCase();
   return words.some(w => lower.includes(w));

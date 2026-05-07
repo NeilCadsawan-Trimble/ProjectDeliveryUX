@@ -1,4 +1,4 @@
-import { ApplicationRef, Injectable, Injector, Signal, computed, effect, inject, signal } from '@angular/core';
+import { ApplicationRef, Injectable, Injector, Signal, computed, effect, inject, signal, untracked } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
@@ -85,6 +85,15 @@ export class AiPanelController {
   readonly inputText = signal('');
   readonly thinking = signal(false);
   /**
+   * Override agent for the AI assistant. When set, this agent answers regardless
+   * of the focused widget or the page-registered context provider — used to
+   * hand off to the global home assistant when a widget agent decides the user's
+   * query is out of scope. Auto-clears when the user selects another widget or
+   * navigates to a new route.
+   */
+  private readonly _forcedAgentId = signal<string | null>(null);
+  readonly forcedAgentId = this._forcedAgentId.asReadonly();
+  /**
    * Whether the right-side Trimble Assistant slide-out panel (mounted at the
    * dashboard shell level) is currently open. Lifted onto the controller so
    * the floating prompt's "Open Trimble Assistant" toolbar button and the
@@ -130,6 +139,8 @@ export class AiPanelController {
 
   private resolveAgentKey(): string {
     const persona = this.personaService.activePersonaSlug();
+    const forced = this._forcedAgentId();
+    if (forced) return `persona:${persona}|forced:${forced}`;
     const widgetId = this.widgetFocusService.selectedWidgetId();
     if (widgetId) return `persona:${persona}|${widgetId}`;
     const pageKey = this.aiPageContext.contextKey()?.();
@@ -138,15 +149,28 @@ export class AiPanelController {
   }
 
   constructor() {
-    this.title = this.widgetFocusService.aiAssistantTitle;
-    this.subtitle = this.widgetFocusService.aiAssistantSubtitle;
+    this.title = computed(() => {
+      const forced = this._forcedAgentId();
+      if (forced) return getAgent(forced, this.getPageName()).name;
+      return this.widgetFocusService.aiAssistantTitle();
+    });
+    this.subtitle = computed(() => {
+      if (this._forcedAgentId()) return 'General Assistant';
+      return this.widgetFocusService.aiAssistantSubtitle();
+    });
 
     this.suggestions = computed(() => {
+      const forced = this._forcedAgentId();
+      const page = this.getPageName();
+      if (forced) {
+        const agent = getAgent(forced, page);
+        const state = this.buildAgentDataState();
+        return getSuggestions(agent, state);
+      }
       const focused = this.widgetFocusService.aiSuggestions();
       if (focused) return focused;
       const pageSuggestions = this.aiPageContext.suggestionsProvider()?.();
       if (pageSuggestions) return pageSuggestions;
-      const page = this.getPageName();
       const widgetId = this.widgetFocusService.selectedWidgetId();
       const agent = getAgent(widgetId, page);
       const state = this.buildAgentDataState();
@@ -154,9 +178,15 @@ export class AiPanelController {
     });
 
     this.actions = computed(() => {
+      const forced = this._forcedAgentId();
+      const page = this.getPageName();
+      if (forced) {
+        const agent = getAgent(forced, page);
+        const state = this.buildAgentDataState();
+        return agent.actions?.(state) ?? [];
+      }
       const pageActions = this.aiPageContext.actionsProvider()?.();
       if (pageActions) return pageActions;
-      const page = this.getPageName();
       const widgetId = this.widgetFocusService.selectedWidgetId();
       const agent = getAgent(widgetId, page);
       const state = this.buildAgentDataState();
@@ -205,6 +235,25 @@ export class AiPanelController {
         this.messages.set([]);
         this.messageCounter = 0;
       }
+    });
+
+    // Exit forced general-assistant mode when the user picks a widget.
+    effect(() => {
+      const id = this.widgetFocusService.selectedWidgetId();
+      if (id !== null) {
+        untracked(() => {
+          if (this._forcedAgentId() !== null) this._forcedAgentId.set(null);
+        });
+      }
+    });
+
+    // Exit forced general-assistant mode on route change. The route handle-off
+    // is typically the user's signal that they want fresh page-default context.
+    effect(() => {
+      this.currentUrl();
+      untracked(() => {
+        if (this._forcedAgentId() !== null) this._forcedAgentId.set(null);
+      });
     });
   }
 
@@ -317,7 +366,11 @@ export class AiPanelController {
     const context = this.buildContext();
     const localResponder = this.resolveLocalResponder();
 
-    const toolSchemas = this.aiToolsService.getToolSchemas();
+    // Only inject `route_to_general_assistant` when a widget agent is the active
+    // context. The general assistant must never re-route (would loop).
+    const widgetFocused =
+      this._forcedAgentId() === null && this.widgetFocusService.selectedWidgetId() !== null;
+    const toolSchemas = this.aiToolsService.getToolSchemasForContext({ widgetFocused });
     this.streamSub = this.aiService.sendMessageWithTools(text, history, toolSchemas, context, localResponder).subscribe({
       next: (event: AiStreamEvent) => {
         if (event.type === 'text' && event.text) {
@@ -374,6 +427,11 @@ export class AiPanelController {
 
   /** Resolve a `tool_call` event into either a Confirm gate, a choice prompt, or immediate execution. */
   private handleToolCall(assistantMsgId: number, toolName: string, args: Record<string, unknown>): void {
+    if (toolName === 'route_to_general_assistant') {
+      this.handleRouteToGeneralAssistant(assistantMsgId, args);
+      return;
+    }
+
     if (toolName === 'navigate_to_page') {
       const choice = this.maybeBuildNavigationChoice(args);
       if (choice) {
@@ -406,6 +464,51 @@ export class AiPanelController {
         ? { ...m, streaming: false, pendingAction: { toolName, args, description } }
         : m),
     );
+  }
+
+  /**
+   * The focused widget agent has decided the user's request is outside its
+   * scope and called `route_to_general_assistant`. Replace the in-flight
+   * assistant placeholder with a one-line note in the widget thread, switch
+   * the active context to the global home assistant, and re-issue the original
+   * user query so it streams against the new agent.
+   */
+  private handleRouteToGeneralAssistant(assistantMsgId: number, args: Record<string, unknown>): void {
+    const widgetName = this.widgetFocusService.selectedWidgetName() ?? 'this widget';
+    const generalAgentId = 'homeDefault';
+    const generalAgent = getAgent(generalAgentId, this.getPageName());
+    const originalQuery = String(args['query'] ?? '').trim();
+
+    // Widget thread: replace the streaming placeholder with the routing note,
+    // stop streaming, persist.
+    this.streamSub?.unsubscribe();
+    this.streamSub = null;
+    this.messages.update(msgs => msgs.map(m => m.id === assistantMsgId
+      ? { ...m, streaming: false, text: `Routed to ${generalAgent.name} \u2014 outside ${widgetName}'s scope.` }
+      : m));
+    this.thinking.set(false);
+    this.saveConversation();
+
+    if (!originalQuery) {
+      // Defensive: nothing to re-issue. Still switch context so the next
+      // user message lands on the general assistant.
+      this.widgetFocusService.clearSelection();
+      this._forcedAgentId.set(generalAgentId);
+      return;
+    }
+
+    // Switch context. Clearing selection runs first; the agent-key effect then
+    // saves the widget thread and loads (or creates) the forced general thread.
+    this.widgetFocusService.clearSelection();
+    this._forcedAgentId.set(generalAgentId);
+
+    // Re-issue the original query in the general thread on the next microtask
+    // so the agent-key swap effect has run and `send()` writes into the new
+    // memory bucket.
+    queueMicrotask(() => {
+      this.inputText.set(originalQuery);
+      this.send();
+    });
   }
 
   /**
@@ -562,9 +665,18 @@ export class AiPanelController {
   // ───── Default context derivation (fallback when no page registers) ─────
 
   private buildContext(): AiContext {
+    const forced = this._forcedAgentId();
+    const page = this.getPageName();
+    if (forced) {
+      const agent = getAgent(forced, page);
+      const state = this.buildAgentDataState();
+      return this.aiService.buildContext(page, {
+        projectData: agent.buildContext(state),
+        agentPrompt: agent.systemPrompt,
+      });
+    }
     const pageContext = this.aiPageContext.contextProvider()?.();
     if (pageContext) return pageContext;
-    const page = this.getPageName();
     const widgetId = this.widgetFocusService.selectedWidgetId();
     const agent = getAgent(widgetId, page);
     const state = this.buildAgentDataState();
@@ -575,10 +687,16 @@ export class AiPanelController {
   }
 
   private resolveLocalResponder(): LocalResponder | undefined {
+    const forced = this._forcedAgentId();
+    const page = this.getPageName();
+    if (forced) {
+      const agent = getAgent(forced, page);
+      const state = this.buildAgentDataState();
+      return (query: string) => agent.localRespond(query, state);
+    }
     const accessor = this.aiPageContext.localResponder();
     const pageResponder = accessor ? accessor() : undefined;
     if (pageResponder) return pageResponder;
-    const page = this.getPageName();
     const widgetId = this.widgetFocusService.selectedWidgetId();
     const agent = getAgent(widgetId, page);
     const state = this.buildAgentDataState();

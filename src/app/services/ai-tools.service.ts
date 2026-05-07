@@ -265,6 +265,21 @@ export class AiToolsService {
     }));
   }
 
+  /**
+   * Returns the tool schemas for the model, filtered to the current AI context.
+   * `route_to_general_assistant` is only included when a widget agent is focused —
+   * the global / page-default assistant must never re-route (would loop).
+   */
+  getToolSchemasForContext(opts: { widgetFocused: boolean }): object[] {
+    return this.tools
+      .filter(t => t.name !== 'route_to_general_assistant' || opts.widgetFocused)
+      .map(t => ({
+        name: t.name,
+        description: t.description,
+        input_schema: t.inputSchema,
+      }));
+  }
+
   execute(name: string, args: Record<string, unknown>): ToolResult {
     const tool = this.tools.find(t => t.name === name);
     if (!tool) return { success: false, message: `Unknown tool: ${name}` };
@@ -296,6 +311,7 @@ export class AiToolsService {
   private buildTools(): AiToolDefinition[] {
     return [
       this.navigateToPage(),
+      this.routeToGeneralAssistant(),
       this.updateProjectBudget(),
       this.updateProjectStatus(),
       this.updateProjectDueDate(),
@@ -378,6 +394,41 @@ export class AiToolsService {
     };
   }
 
+  /**
+   * Hand-off tool: a focused widget agent calls this when the user's request is
+   * outside the widget's scope. The panel controller intercepts the call before
+   * `execute()` runs — it clears widget focus, forces the home assistant, and
+   * re-issues the original query. `execute()` here is a defensive no-op.
+   */
+  private routeToGeneralAssistant(): AiToolDefinition {
+    return {
+      name: 'route_to_general_assistant',
+      description: [
+        'Use ONLY when the user\'s request is outside the scope of the currently focused widget agent',
+        '(different domain, different page, app-wide question that this widget cannot answer).',
+        'Hands off to the General Assistant which will re-run the query with global tools and full app context.',
+        'Pass the user\'s original message verbatim in `query`. Do NOT call this for in-scope questions —',
+        'answer those directly. Do NOT call this from the General Assistant itself.',
+      ].join(' '),
+      autoExecute: true,
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'The user\'s original message verbatim. The General Assistant will receive this as a fresh query.',
+          },
+          reason: {
+            type: 'string',
+            description: 'Short justification for the hand-off (e.g. "weather question, not RFI scope").',
+          },
+        },
+        required: ['query'],
+      },
+      execute: () => ({ success: true, message: 'Routed to General Assistant.' }),
+    };
+  }
+
   private resolveNavigationInternal(args: Record<string, unknown>): NavigationResolution {
     const destination = args['destination'] as string | undefined;
     if (!destination || !(NAVIGATION_DESTINATIONS as readonly string[]).includes(destination)) {
@@ -402,8 +453,19 @@ export class AiToolsService {
       if (!resourceId) {
         return { kind: 'error', message: `${destination} requires a resourceId.` };
       }
-      const url = `/${persona}/financials/${child}/${encodeURIComponent(resourceId)}`;
-      const label = this.financialsDetailLabel(destination, resourceId);
+
+      // Invoices, payables, and purchase orders carry both an internal `id`
+      // ("INV-001", "AP-001", "PO-001") and a separate human-readable number
+      // ("INV-2025-101", "AE-8801", "PO-2025-101"). Widget agents advertise
+      // records to the LLM by the human-readable number, so the model often
+      // passes that as `resourceId`. The financials detail page (`finDetailEntity`)
+      // resolves entities by `id` only, so a number-based URL silently lands on
+      // a blank detail surface. Resolve to the canonical `id` here so the URL
+      // is always one the detail page can find.
+      const canonicalId = this.resolveCanonicalFinancialId(destination, resourceId);
+      const urlId = canonicalId ?? resourceId;
+      const url = `/${persona}/financials/${child}/${encodeURIComponent(urlId)}`;
+      const label = this.financialsDetailLabel(destination, urlId);
 
       if (destination === 'financials-change-orders') {
         const co = this.store.changeOrders().find(c => c.id === resourceId);
@@ -500,8 +562,15 @@ export class AiToolsService {
     const viewType = RECORD_VIEW_TYPE[destination];
     const label = `${RECORD_DESTINATION_LABEL[destination]} ${resourceId}`;
 
-    const buildUrl = (slug: string) =>
-      `/${persona}/project/${slug}?view=${viewType}&id=${encodeURIComponent(resourceId)}`;
+    // RFIs and submittals expose both an internal `id` ("6") and a human-readable
+    // `number` ("SUB-006"). Widget agents typically advertise records to the LLM
+    // by `number`, so the model passes that as `resourceId`. The project
+    // dashboard's URL handler (`ProjectDashboardNavigationService.restoreFromUrl`)
+    // looks up records by `id` only, so a `number`-based URL silently lands on
+    // the bare project dashboard with no detail panel. Build the URL from the
+    // resolved entity's canonical `id` so the dashboard always opens the detail.
+    const buildUrl = (slug: string, canonicalId: string = resourceId) =>
+      `/${persona}/project/${slug}?view=${viewType}&id=${encodeURIComponent(canonicalId)}`;
 
     switch (destination) {
       case 'record-rfi': {
@@ -509,14 +578,14 @@ export class AiToolsService {
         if (!rfi) return { kind: 'error', message: `RFI ${resourceId} not found.` };
         const slug = this.findProjectSlugByName(rfi.project, identifierHint);
         if (!slug) return { kind: 'error', message: `Could not resolve project for RFI ${resourceId}.` };
-        return { kind: 'detail', url: buildUrl(slug), label: `${label} (${rfi.subject})`, detailView: { type: 'rfi', item: rfi } };
+        return { kind: 'detail', url: buildUrl(slug, rfi.id), label: `${label} (${rfi.subject})`, detailView: { type: 'rfi', item: rfi } };
       }
       case 'record-submittal': {
         const sub = this.store.submittals().find(s => s.id === resourceId || s.number === resourceId);
         if (!sub) return { kind: 'error', message: `Submittal ${resourceId} not found.` };
         const slug = this.findProjectSlugByName(sub.project, identifierHint);
         if (!slug) return { kind: 'error', message: `Could not resolve project for submittal ${resourceId}.` };
-        return { kind: 'detail', url: buildUrl(slug), label: `${label} (${sub.subject})`, detailView: { type: 'submittal', item: sub } };
+        return { kind: 'detail', url: buildUrl(slug, sub.id), label: `${label} (${sub.subject})`, detailView: { type: 'submittal', item: sub } };
       }
       case 'record-daily-report': {
         const report = this.store.dailyReports().find(r => r.id === resourceId);
@@ -592,6 +661,26 @@ export class AiToolsService {
     const child = FINANCIALS_DETAIL_PATH[destination] ?? destination;
     const human = child.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     return `${human} ${resourceId}`;
+  }
+
+  /**
+   * For invoices, payables, and purchase orders, the LLM may pass either the
+   * canonical `id` ("INV-001") or the public number ("INV-2025-101"). Returns
+   * the resolved entity's canonical `id` when found, or `undefined` to let the
+   * caller fall back to the raw `resourceId` (e.g. for entities whose `id`
+   * already IS the public face: estimates, change orders, contracts, etc.).
+   */
+  private resolveCanonicalFinancialId(destination: string, resourceId: string): string | undefined {
+    if (destination === 'financials-invoices') {
+      return this.store.invoices().find(i => i.id === resourceId || i.invoiceNumber === resourceId)?.id;
+    }
+    if (destination === 'financials-payables') {
+      return this.store.payables().find(p => p.id === resourceId || p.invoiceNumber === resourceId)?.id;
+    }
+    if (destination === 'financials-purchase-orders') {
+      return this.store.purchaseOrders().find(po => po.id === resourceId || po.poNumber === resourceId)?.id;
+    }
+    return undefined;
   }
 
   private projectSectionLabel(
