@@ -37,6 +37,7 @@ import {
   capitalizeStatus as getCapitalizedStatus,
 } from '../../data/dashboard-item-status';
 import { DrawingMarkupToolbarComponent, DRAWING_TOOLS } from '../../shared/detail/drawing-markup-toolbar.component';
+import { ProjectSiteModelComponent } from './components/project-site-model.component';
 import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
 import { PdfViewerComponent } from '../../shared/detail/pdf-viewer.component';
 import { PanoramaViewerComponent } from '../../shared/detail/panorama-viewer.component';
@@ -132,7 +133,7 @@ const PROJ_MIN_CONTENT_PX = 80;
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent, ProjectSiteModelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -289,6 +290,26 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
     const nav = this.activeNavItem();
     return nav !== 'dashboard';
   });
+
+  /**
+   * True when the active canvas sub-page is Models. Toggles the
+   * `.canvas-content.canvas-models-full` class so the 3D viewer can
+   * break out of the standard 1280px artboard and fill the viewport.
+   * Mirrors the existing drawing-detail full-width pattern.
+   */
+  readonly isCanvasModelsFull = computed(
+    () => this.isCanvas() && this.activeNavItem() === 'models',
+  );
+
+  /**
+   * True when the active sub-page is Models in non-canvas (desktop /
+   * tablet / mobile) mode. Used by the main-content wrapper to switch
+   * to a flex-column + h-full layout so the 3D viewer can fill the
+   * available height (instead of the wrapper hugging its content).
+   */
+  readonly isDesktopModels = computed(
+    () => !this.isCanvas() && this.activeNavItem() === 'models',
+  );
 
   readonly budgetTileIds: string[] = ['tile-budget-breakdown', 'tile-budget-profitfade', 'tile-budget-costsummary'];
 
@@ -1768,6 +1789,23 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       || this.isCanvasPanoramaDetail()
       || (this.isCanvas() && !!this.subledgerCategory());
     this.panning.disabled.set(locked);
+  });
+
+  /**
+   * Auto-lock the canvas (user-visible lock state) whenever the user enters
+   * the Models sub-page in canvas mode. The 3D model-viewer and Pannellum
+   * 360 viewer both consume pointer drags for camera control, so leaving
+   * canvas pan active produces a confusing two-handlers-fight-over-drag
+   * experience. Tracking previous nav lets users still manually unlock
+   * via the canvas controls menu without the effect immediately re-locking.
+   */
+  private _prevAutoLockNav: string | null = null;
+  private readonly _autoLockOnModelsEffect = effect(() => {
+    const nav = this.isCanvas() ? this.activeNavItem() : null;
+    if (nav === 'models' && this._prevAutoLockNav !== 'models') {
+      this.panning.locked.set(true);
+    }
+    this._prevAutoLockNav = nav;
   });
 
   readonly activeDrawingTool = signal('');

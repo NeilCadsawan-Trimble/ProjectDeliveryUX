@@ -2717,6 +2717,29 @@ modus-wc-progress.progress-primary .modus-wc-progress {
     transform: none !important;
   }
 
+  /* Models sub-page: expand canvas-content to full viewport width so the
+     3D model-viewer / Pannellum split can fill the available space. The
+     1280px artboard cap is dropped; title + subnav stay constrained via
+     .canvas-detail-constrained. The canvas pan/zoom transform is removed
+     because the viewer owns pointer drags for camera control. */
+  .canvas-content.canvas-models-full {
+    width: 100%;
+    left: 0;
+    transform: none !important;
+  }
+
+  /* Re-enable the flex chain on the inner wrapper so flex-1 children
+     (the viewer column inside @case ('models'), or the drawing/PDF
+     wrapper in detailDrawing()) can claim the remaining vertical space.
+     The base `.canvas-content > *` rule above forces
+     `display: block !important` to enforce the 1280px artboard width,
+     but full-viewport modes need an actual flex column. Higher-specificity
+     selector here wins over the base rule. */
+  .canvas-content.canvas-models-full > *,
+  .canvas-content.canvas-drawing-detail > * {
+    display: flex !important;
+  }
+
   /* Keep back-button and toolbar at the standard 1280px column. */
   .canvas-detail-constrained {
     width: 1280px;
