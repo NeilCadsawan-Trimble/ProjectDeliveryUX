@@ -231,6 +231,119 @@ describe('AiContext exposes persona, view mode, and route', () => {
   });
 });
 
+describe('record-rfi / record-submittal URL uses canonical id (not number)', () => {
+  /**
+   * Regression: RFIs and submittals expose both an internal `id` ("6") and a
+   * human-readable `number` ("SUB-006"). Widget agents advertise records to
+   * the LLM by `number`, so the model passes that as `resourceId`. The project
+   * dashboard's URL handler (ProjectDashboardNavigationService.restoreFromUrl
+   * + onPopState) looks records up by `id` only — so a `number`-based URL
+   * silently lands on the bare project dashboard with no detail panel open.
+   *
+   * The fix is to build the navigation URL from the resolved entity's `id`
+   * field, not from the raw `resourceId` argument.
+   */
+  function extractCaseBody(source: string, caseLabel: string): string {
+    const start = source.indexOf(`case '${caseLabel}':`);
+    expect(start, `${caseLabel} case should exist in resolveRecordDetail`).toBeGreaterThan(-1);
+    const open = source.indexOf('{', start);
+    let depth = 1;
+    let i = open + 1;
+    while (i < source.length && depth > 0) {
+      const ch = source[i];
+      if (ch === '{') depth++;
+      else if (ch === '}') depth--;
+      i++;
+    }
+    return source.substring(open, i);
+  }
+
+  it('record-rfi builds URL from rfi.id (the resolved entity), not the model-supplied resourceId', () => {
+    const body = extractCaseBody(TOOLS_SRC, 'record-rfi');
+    expect(body).toMatch(/buildUrl\(\s*slug\s*,\s*rfi\.id\s*\)/);
+  });
+
+  it('record-submittal builds URL from sub.id (the resolved entity), not the model-supplied resourceId', () => {
+    const body = extractCaseBody(TOOLS_SRC, 'record-submittal');
+    expect(body).toMatch(/buildUrl\(\s*slug\s*,\s*sub\.id\s*\)/);
+  });
+
+  it('buildUrl accepts a canonicalId override that defaults to resourceId', () => {
+    const fnStart = TOOLS_SRC.indexOf('private resolveRecordDetail(');
+    expect(fnStart, 'resolveRecordDetail should be defined').toBeGreaterThan(-1);
+    const slice = TOOLS_SRC.slice(fnStart, fnStart + 1500);
+    expect(slice).toMatch(/buildUrl\s*=\s*\(slug:\s*string,\s*canonicalId:\s*string\s*=\s*resourceId\)/);
+    expect(slice).toMatch(/encodeURIComponent\(canonicalId\)/);
+  });
+
+  it('ProjectDashboardNavigationService still resolves submittals by id', () => {
+    const NAV_SRC = readFileSync(
+      resolve(root, 'src/app/pages/project-dashboard/project-dashboard-navigation.service.ts'),
+      'utf-8',
+    );
+    expect(NAV_SRC).toMatch(/this\.store\.submittals\(\)\.find\(s\s*=>\s*s\.id\s*===\s*id\)/);
+    expect(NAV_SRC).toMatch(/this\.store\.rfis\(\)\.find\(r\s*=>\s*r\.id\s*===\s*id\)/);
+  });
+});
+
+describe('financials-invoices / payables / purchase-orders URL uses canonical id', () => {
+  /**
+   * Same regression class as record-rfi / record-submittal: invoices, payables,
+   * and purchase orders carry both a canonical `id` ("INV-001") and a separate
+   * public number ("INV-2025-101"). Widget agents advertise records to the LLM
+   * by the public number, so the model often passes that as `resourceId`. The
+   * financials detail page resolves entities by `id` only — a number-based URL
+   * lands on a blank detail surface.
+   *
+   * Fix: resolveCanonicalFinancialId() looks up by id-or-number and returns
+   * the canonical `id`, which the URL builder then uses.
+   */
+  it('declares resolveCanonicalFinancialId() handler', () => {
+    expect(TOOLS_SRC).toMatch(
+      /private\s+resolveCanonicalFinancialId\(destination:\s*string,\s*resourceId:\s*string\)/,
+    );
+  });
+
+  it('financials-invoices accepts id or invoiceNumber', () => {
+    const fnStart = TOOLS_SRC.indexOf('private resolveCanonicalFinancialId(');
+    const slice = TOOLS_SRC.slice(fnStart, fnStart + 1500);
+    expect(slice).toMatch(/financials-invoices/);
+    expect(slice).toMatch(/i\.id\s*===\s*resourceId\s*\|\|\s*i\.invoiceNumber\s*===\s*resourceId/);
+  });
+
+  it('financials-payables accepts id or invoiceNumber', () => {
+    const fnStart = TOOLS_SRC.indexOf('private resolveCanonicalFinancialId(');
+    const slice = TOOLS_SRC.slice(fnStart, fnStart + 1500);
+    expect(slice).toMatch(/financials-payables/);
+    expect(slice).toMatch(/p\.id\s*===\s*resourceId\s*\|\|\s*p\.invoiceNumber\s*===\s*resourceId/);
+  });
+
+  it('financials-purchase-orders accepts id or poNumber', () => {
+    const fnStart = TOOLS_SRC.indexOf('private resolveCanonicalFinancialId(');
+    const slice = TOOLS_SRC.slice(fnStart, fnStart + 1500);
+    expect(slice).toMatch(/financials-purchase-orders/);
+    expect(slice).toMatch(/po\.id\s*===\s*resourceId\s*\|\|\s*po\.poNumber\s*===\s*resourceId/);
+  });
+
+  it('FINANCIALS_DETAIL_PATH branch uses urlId (resolved canonical id) when building the URL', () => {
+    const branchStart = TOOLS_SRC.indexOf('if (destination in FINANCIALS_DETAIL_PATH)');
+    expect(branchStart).toBeGreaterThan(-1);
+    const slice = TOOLS_SRC.slice(branchStart, branchStart + 2000);
+    expect(slice).toMatch(/this\.resolveCanonicalFinancialId\(destination,\s*resourceId\)/);
+    expect(slice).toMatch(/encodeURIComponent\(urlId\)/);
+  });
+
+  it('financials detail page (finDetailEntity) still resolves invoices/payables/POs by id', () => {
+    const FIN_SRC = readFileSync(
+      resolve(root, 'src/app/pages/financials-page/financials-page.component.ts'),
+      'utf-8',
+    );
+    expect(FIN_SRC).toMatch(/this\.store\.invoices\(\)\.find\(i\s*=>\s*i\.id\s*===\s*id\)/);
+    expect(FIN_SRC).toMatch(/this\.store\.payables\(\)\.find\(p\s*=>\s*p\.id\s*===\s*id\)/);
+    expect(FIN_SRC).toMatch(/this\.store\.purchaseOrders\(\)\.find\(po\s*=>\s*po\.id\s*===\s*id\)/);
+  });
+});
+
 describe('CanvasDetailManager freestanding overlay support', () => {
   it('exposes openFreestandingDetail and freestandingIds signal', () => {
     expect(CANVAS_DETAIL_SRC).toMatch(/openFreestandingDetail\(/);
