@@ -27,6 +27,7 @@ async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: 
   selector: 'app-pdf-viewer',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ModusTypographyComponent],
+  host: { class: 'block w-full h-full min-h-0' },
   template: `
     <div class="relative w-full h-full">
       <div

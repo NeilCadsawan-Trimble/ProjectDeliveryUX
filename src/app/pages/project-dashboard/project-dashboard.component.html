@@ -206,7 +206,7 @@
     </ng-template>
 
     <ng-template #drawingToolbar>
-      <app-drawing-markup-toolbar [activeTool]="activeDrawingTool()" (toolSelect)="activeDrawingTool.set($event)" />
+      <app-drawing-markup-toolbar orientation="vertical" [activeTool]="activeDrawingTool()" (toolSelect)="activeDrawingTool.set($event)" />
     </ng-template>
 
     <ng-template #dashboardContent>
@@ -618,15 +618,15 @@
       }
       @case ('models') {
         @if (isSubpageCanvasActive()) {
-          <div class="relative overflow-visible" [style.min-height.px]="400">
-            <div class="absolute flex items-center" [style.top.px]="0" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="40">
+          <div class="flex flex-col flex-1 min-h-0 gap-4 px-4">
+            <div class="canvas-detail-constrained flex items-center" [style.height.px]="40">
               <modus-typography hierarchy="h1" size="2xl" weight="bold">Models</modus-typography>
             </div>
-            <div class="absolute" [style.top.px]="56" [style.left.px]="0" [style.width.px]="1280" [style.height.px]="56">
+            <div class="canvas-detail-constrained" [style.height.px]="56">
               <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['models'] }" />
             </div>
-            <div class="absolute" [style.top.px]="128" [style.left.px]="0">
-              <app-empty-state icon="cube" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
+            <div class="flex-1 min-h-0 min-w-0">
+              <app-project-site-model [projectId]="projectId()" [fillParent]="true" />
             </div>
           </div>
         } @else {
@@ -634,8 +634,8 @@
           <modus-typography hierarchy="h1" size="2xl" weight="bold">Models</modus-typography>
         </div>
         <ng-container [ngTemplateOutlet]="childPageSubnav" [ngTemplateOutletContext]="{ $implicit: subnavConfigs()['models'] }" />
-        <div class="flex flex-col gap-6">
-          <app-empty-state icon="cube" title="Project Models" description="View and manage 3D models, BIM files, and spatial data for this project." />
+        <div class="flex-1 min-h-0 min-w-0 -mt-2">
+          <app-project-site-model [projectId]="projectId()" [fillParent]="true" />
         </div>
         }
       }
@@ -3969,10 +3969,13 @@
           <div class="custom-side-nav-backdrop" (click)="navExpanded.set(false)"></div>
         }
 
-        <div class="canvas-content pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)]" [class.canvas-drawing-detail]="isCanvasDrawingDetail()" role="main" id="main-content" tabindex="-1"
+        <div class="canvas-content pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)]"
+          [class.canvas-drawing-detail]="isCanvasDrawingDetail()"
+          [class.canvas-models-full]="isCanvasModelsFull()"
+          role="main" id="main-content" tabindex="-1"
           [style.transform]="'translateX(-50%) translate(' + panning.panOffsetX() + 'px,' + panning.panOffsetY() + 'px) scale(' + panning.canvasZoom() + ')'">
-          <div [class]="isCanvasDrawingDetail() ? 'py-6 flex flex-col' : 'py-6'"
-            [style.height]="isCanvasDrawingDetail() ? 'calc(100vh - 80px)' : null">
+          <div [class]="(isCanvasDrawingDetail() || isCanvasModelsFull()) ? 'py-6 flex flex-col' : 'py-6'"
+            [style.height]="(isCanvasDrawingDetail() || isCanvasModelsFull()) ? 'calc(100vh - 80px - var(--ai-floating-prompt-height) - 2rem - 24px)' : null">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
         </div>
@@ -4168,7 +4171,7 @@
           id="main-content"
           tabindex="-1"
         >
-          <div [class]="detailDrawing() ? 'p-4 max-w-screen-xl mx-auto flex flex-col h-full' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
+          <div [class]="detailDrawing() ? 'p-4 max-w-screen-xl mx-auto flex flex-col h-full' : (isDesktopModels() ? 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto flex flex-col h-full' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto')">
             <ng-container [ngTemplateOutlet]="dashboardContent" />
           </div>
         </div>

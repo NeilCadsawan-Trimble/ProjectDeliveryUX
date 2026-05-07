@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
 export interface DrawingTool {
   icon: string;
@@ -24,8 +24,8 @@ export const DRAWING_TOOLS: DrawingTool[] = [
   selector: 'app-drawing-markup-toolbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="absolute bottom-3 left-0 right-0 z-10 flex justify-center pointer-events-none">
-      <div class="flex items-center gap-1 bg-card border-default rounded-lg px-3 py-1.5 shadow-toolbar pointer-events-auto">
+    <div [class]="outerClass()">
+      <div [class]="innerClass()">
         @for (tool of tools(); track tool.label) {
           <div class="w-8 h-8 rounded flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 relative"
             [class.bg-muted]="activeTool() === tool.label"
@@ -78,7 +78,27 @@ export const DRAWING_TOOLS: DrawingTool[] = [
 export class DrawingMarkupToolbarComponent {
   readonly tools = input<DrawingTool[]>(DRAWING_TOOLS);
   readonly activeTool = input<string>('Draw');
+  /**
+   * Default `horizontal` keeps the bottom-center placement used by the
+   * drawing-detail view and the home-page widget. `vertical` floats the
+   * toolbar at the right-center of the parent (positioned ancestor)
+   * with a stacked column of icons; used by the Models 3D viewer where
+   * the bottom edge is reserved for revision/capture date controls.
+   */
+  readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
   readonly toolSelect = output<string>();
+
+  readonly outerClass = computed(() =>
+    this.orientation() === 'vertical'
+      ? 'absolute inset-y-0 right-3 z-10 flex items-center justify-center pointer-events-none'
+      : 'absolute bottom-3 left-0 right-0 z-10 flex justify-center pointer-events-none',
+  );
+
+  readonly innerClass = computed(() =>
+    this.orientation() === 'vertical'
+      ? 'flex flex-col items-center gap-1 bg-card border-default rounded-lg px-1.5 py-3 shadow-toolbar pointer-events-auto'
+      : 'flex items-center gap-1 bg-card border-default rounded-lg px-3 py-1.5 shadow-toolbar pointer-events-auto',
+  );
 
   selectTool(label: string): void {
     this.toolSelect.emit(label);
