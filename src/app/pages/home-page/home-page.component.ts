@@ -91,6 +91,8 @@ import { HomeDailyReportsComponent } from './components/home-daily-reports.compo
 import { HomeTeamAllocationComponent } from './components/home-team-allocation.component';
 import { HomeContractsComponent } from './components/home-contracts.component';
 import { HomeOpenEstimatesComponent } from './components/home-open-estimates.component';
+import { ProjectSiteModelComponent } from '../project-dashboard/components/project-site-model.component';
+import { ProjectModelThumbnailComponent } from '../project-dashboard/components/project-model-thumbnail.component';
 import { PROJECT_DATA, type TeamMember, type Milestone } from '../../data/project-data';
 import type { ProjectTeamInput } from './components/home-team-allocation.component';
 import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
@@ -131,6 +133,8 @@ const HOME_MIN_CONTENT_PX = 80;
     HomeTeamAllocationComponent,
     HomeContractsComponent,
     HomeOpenEstimatesComponent,
+    ProjectSiteModelComponent,
+    ProjectModelThumbnailComponent,
     WidgetFrameComponent,
     CreateMenuDropdownComponent,
     StatusFilterPillsComponent,
@@ -418,6 +422,43 @@ const HOME_MIN_CONTENT_PX = 80;
               </div>
               <div
                 class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize"
+                (mousedown)="onCanvasDetailResizeMouseDown($event, widgetId)"
+              >
+                <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
+              </div>
+            </div>
+            }
+            @if (detail.type === '3dModel') {
+            <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full"
+              [class.border-default]="selectedWidgetId() !== widgetId"
+              [class.border-primary]="selectedWidgetId() === widgetId">
+              <div
+                class="flex items-center justify-between px-4 py-3 border-bottom-default cursor-move select-none flex-shrink-0"
+                (mousedown)="onCanvasDetailHeaderMouseDown($event, widgetId)"
+              >
+                <div class="flex items-center gap-3 min-w-0">
+                  <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">package</i>
+                  <div class="min-w-0">
+                    <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ detail.item.projectName }}</modus-typography>
+                    <modus-typography hierarchy="p" size="xs" className="text-foreground-40">3D Model &middot; rev 12 Oct 2025</modus-typography>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                    (click)="openCanvasDetailInNewTab(widgetId)" (mousedown)="$event.stopPropagation()" aria-label="Open in new tab">
+                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">launch</i>
+                  </div>
+                  <div class="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                    (click)="closeCanvasDetail(widgetId)" (mousedown)="$event.stopPropagation()" aria-label="Close detail">
+                    <i class="modus-icons text-base text-foreground-60" aria-hidden="true">close</i>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 min-h-0 relative" (mousedown)="$event.stopPropagation()">
+                <app-project-site-model [projectId]="detail.item.projectId" [fillParent]="true" />
+              </div>
+              <div
+                class="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize z-10"
                 (mousedown)="onCanvasDetailResizeMouseDown($event, widgetId)"
               >
                 <div class="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-foreground-40 rounded-br-sm"></div>
@@ -1953,6 +1994,44 @@ const HOME_MIN_CONTENT_PX = 80;
                 >
                   <app-home-open-estimates [estimates]="estimates()" (estimateClick)="navigateToEstimate($event)" />
                 </app-widget-frame>
+              } @else if (widgetId === 'home3dModel') {
+                <app-widget-frame
+                  [title]="'Project Model'"
+                  [icon]="'package'"
+                  [iconClass]="'text-foreground-60'"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? modelInsight() : null"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-5 py-4'"
+                  [titleMeta]="'Harbor View'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <div class="flex-1 flex flex-col cursor-pointer mb-5 group"
+                    role="button" tabindex="0"
+                    aria-label="Open Harbor View 3D model"
+                    (click)="openHarborModelDetail()"
+                    (keydown.enter)="openHarborModelDetail()">
+                    <div class="flex-1 mx-5 rounded-lg overflow-hidden relative bg-secondary">
+                      <app-project-model-thumbnail [projectId]="2" [altText]="'Harbor View Condominiums 3D model preview'" />
+                      <div class="absolute inset-0 flex items-center justify-center bg-foreground-20 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
+                        <div class="flex items-center gap-2 px-3 py-2 rounded-md bg-card shadow-lg">
+                          <i class="modus-icons text-base text-primary" aria-hidden="true">package</i>
+                          <modus-typography hierarchy="p" size="sm" weight="semibold">Open 3D model</modus-typography>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="px-5 pt-3 flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">Harbor View Condominiums</modus-typography>
+                        <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">rev 12 Oct 2025 &middot; residential-diorama.glb</modus-typography>
+                      </div>
+                      <i class="modus-icons text-sm text-foreground-40 flex-shrink-0 mt-0.5" aria-hidden="true">chevron_right</i>
+                    </div>
+                  </div>
+                </app-widget-frame>
               }
 
             </div>
@@ -2223,9 +2302,9 @@ export class HomePageComponent extends DashboardPageBase {
       return ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity', 'homeLearning'];
     }
     if (this.isPamela()) {
-      return ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity'];
+      return ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity', 'home3dModel'];
     }
-    return ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates'];
+    return ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates', 'home3dModel'];
   });
 
   // ── Area-adaptive visible blocks ───────────────────────────────
@@ -2865,6 +2944,7 @@ export class HomePageComponent extends DashboardPageBase {
   readonly submittalsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeSubmittals'));
   readonly drawingsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeDrawings'));
   readonly recentActivityInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeRecentActivity'));
+  readonly modelInsight = computed<string | null>(() => this.getHomeWidgetInsight('home3dModel'));
 
   readonly apKpisInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeApKpis'));
   readonly invoiceQueueInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeInvoiceQueue'));
@@ -3453,8 +3533,25 @@ export class HomePageComponent extends DashboardPageBase {
   }
 
   private openCanvasDetail(sourceWidgetId: string, detail: DetailView): void {
-    const size = detail.type === 'drawing' ? { width: 1024, height: 768 } : undefined;
+    let size: { width: number; height: number } | undefined;
+    if (detail.type === 'drawing') size = { width: 1024, height: 768 };
+    else if (detail.type === '3dModel') size = { width: 1024, height: 768 };
     this._detailMgr.openDetail(sourceWidgetId, detail, this.engine, size);
+  }
+
+  openHarborModelDetail(): void {
+    const project = this.store.projects().find(p => p.slug === 'harbor-view-condominiums');
+    if (!project) return;
+    if (this.isCanvasMode()) {
+      this.openCanvasDetail('home3dModel', {
+        type: '3dModel',
+        item: { projectId: project.id, projectSlug: project.slug, projectName: project.name },
+      });
+      return;
+    }
+    this.router.navigate([`${this.personaPrefix()}/project`, project.slug], {
+      queryParams: { page: 'models' },
+    });
   }
 
   selectDetailWidget(widgetId: string, event: MouseEvent): void {
@@ -3516,6 +3613,9 @@ export class HomePageComponent extends DashboardPageBase {
         const url = `${this.personaPrefix()}/project/${project.slug}?page=drawings&view=drawing&id=${drawing.id}`;
         window.open(url, '_blank', 'noopener');
       }
+    } else if (detail.type === '3dModel') {
+      const url = `${this.personaPrefix()}/project/${detail.item.projectSlug}?page=models`;
+      window.open(url, '_blank', 'noopener');
     }
   }
 

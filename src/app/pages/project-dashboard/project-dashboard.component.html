@@ -2878,7 +2878,7 @@
               </div>
             </div>
           }
-          @for (wId of widgets; track wId) {
+          @for (wId of displayWidgets(); track wId) {
             <div
               [class]="(canvasDetailViews()[wId] ? 'absolute'
                      : isMobile() ? 'absolute left-0 right-0 overflow-hidden'
@@ -2953,6 +2953,22 @@
                         <img [src]="$any(detail.item).thumbnail" [alt]="$any(detail.item).title" class="max-w-full max-h-[60vh] object-contain rounded" />
                       </div>
                       <modus-typography hierarchy="p" size="sm" className="text-foreground-60">{{ $any(detail.item).subtitle }}</modus-typography>
+                    </div>
+                  }
+                  @if (detail.type === '3dModel') {
+                    <div class="flex flex-col h-full -m-5">
+                      <div class="flex items-center gap-3 px-5 py-4 border-bottom-default flex-shrink-0">
+                        <div class="w-9 h-9 rounded-lg bg-primary-20 flex items-center justify-center flex-shrink-0">
+                          <i class="modus-icons text-lg text-primary" aria-hidden="true">package</i>
+                        </div>
+                        <div class="min-w-0">
+                          <modus-typography hierarchy="h2" size="lg" weight="semibold" className="truncate">{{ $any(detail.item).projectName }}</modus-typography>
+                          <modus-typography hierarchy="p" size="sm" className="text-foreground-60">3D Model &middot; rev 12 Oct 2025</modus-typography>
+                        </div>
+                      </div>
+                      <div class="flex-1 min-h-0 relative" (mousedown)="$event.stopPropagation()">
+                        <app-project-site-model [projectId]="$any(detail.item).projectId" [fillParent]="true" />
+                      </div>
                     </div>
                   }
                 </div>
@@ -3747,6 +3763,34 @@
                 (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
                 (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
                 <app-project-contracts [contracts]="projectContracts()" />
+              </app-widget-frame>
+                }
+                @case ('projectModel') {
+              <app-widget-frame icon="package" title="Project Model" titleMeta="Harbor View"
+                [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('projectModel') : null"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <div class="flex-1 flex flex-col cursor-pointer mb-5 group"
+                  role="button" tabindex="0" aria-label="Open Harbor View 3D model"
+                  (click)="openProjectModelDetail()" (keydown.enter)="openProjectModelDetail()">
+                  <div class="flex-1 mx-5 rounded-lg overflow-hidden relative bg-secondary">
+                    <app-project-model-thumbnail [projectId]="projectId()" [altText]="projectName() + ' 3D model preview'" />
+                    <div class="absolute inset-0 flex items-center justify-center bg-foreground-20 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
+                      <div class="flex items-center gap-2 px-3 py-2 rounded-md bg-card shadow-lg">
+                        <i class="modus-icons text-base text-primary" aria-hidden="true">package</i>
+                        <modus-typography hierarchy="p" size="sm" weight="semibold">Open 3D model</modus-typography>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="px-5 pt-3 flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <modus-typography hierarchy="p" size="sm" weight="semibold" className="truncate">{{ projectName() }}</modus-typography>
+                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate">rev 12 Oct 2025 &middot; residential-diorama.glb</modus-typography>
+                    </div>
+                    <i class="modus-icons text-sm text-foreground-40 flex-shrink-0 mt-0.5" aria-hidden="true">chevron_right</i>
+                  </div>
+                </div>
               </app-widget-frame>
                 }
               }

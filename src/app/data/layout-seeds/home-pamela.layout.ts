@@ -2,7 +2,7 @@ import type { LayoutSeed } from './layout-seed.types';
 
 // Exported from live canvas layout
 export const HOME_PAMELA_LAYOUT: LayoutSeed = {
-  widgets: ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity'],
+  widgets: ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity', 'home3dModel'],
   defaultColStarts: {
     homeHeader: 1,
     homeEstimatorKpis: 1,
@@ -12,6 +12,7 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeChangeOrders: 1,
     homeBudgetVariance: 7,
     homeRecentActivity: 1,
+    home3dModel: 7,
   },
   defaultColSpans: {
     homeHeader: 16,
@@ -22,6 +23,7 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeChangeOrders: 6,
     homeBudgetVariance: 10,
     homeRecentActivity: 6,
+    home3dModel: 10,
   },
   defaultTops: {
     homeHeader: 0,
@@ -32,6 +34,7 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeChangeOrders: 848,
     homeBudgetVariance: 944,
     homeRecentActivity: 1200,
+    home3dModel: 1200,
   },
   defaultHeights: {
     homeHeader: 0,
@@ -42,6 +45,7 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeChangeOrders: 336,
     homeBudgetVariance: 336,
     homeRecentActivity: 384,
+    home3dModel: 384,
   },
   canvasDefaultLefts: {
     homeHeader: 0,
@@ -52,6 +56,7 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeChangeOrders: 0,
     homeBudgetVariance: 648,
     homeRecentActivity: 0,
+    home3dModel: 648,
   },
   canvasDefaultPixelWidths: {
     homeHeader: 1280,
@@ -62,6 +67,7 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeChangeOrders: 632,
     homeBudgetVariance: 632,
     homeRecentActivity: 632,
+    home3dModel: 632,
   },
   canvasDefaultTops: {
     homeHeader: 0,
@@ -72,6 +78,7 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeChangeOrders: 1024,
     homeBudgetVariance: 1184,
     homeRecentActivity: 1472,
+    home3dModel: 2000,
   },
   canvasDefaultHeights: {
     homeHeader: 80,
@@ -82,5 +89,6 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeChangeOrders: 432,
     homeBudgetVariance: 432,
     homeRecentActivity: 464,
+    home3dModel: 432,
   },
 };

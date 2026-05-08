@@ -1058,6 +1058,79 @@ export const panoramaDetail: WidgetAgent = {
   },
 };
 
+/**
+ * Harbor View Condominiums (projectId 2) BIM coordination agent. Surfaces a
+ * "model is N days old" insight, raises a warning when the model goes stale,
+ * and exposes a small action menu so the AI panel can open the live viewer or
+ * request a fresh export from the BIM lead. Reused for both the home tile
+ * (`home3dModel`) and the project-dashboard tile (`projectModel`) via the
+ * `getAgent` registry — see `widget-agents/index.ts`.
+ */
+export const modelAgent: WidgetAgent = {
+  id: 'projectModel',
+  name: 'Project Model',
+  systemPrompt:
+    'You are a BIM coordination assistant for the Harbor View Condominiums project model. ' +
+    'Help the team interpret the latest 3D model revision, surface clashes, missing trades, ' +
+    'and connect model status to RFIs and submittals.',
+  suggestions(s) {
+    const stale = MODEL_LAST_REVISION_DAYS > 21;
+    return stale
+      ? ['When was the model last updated?', 'Are there any open clashes?', 'Show RFIs that reference the model']
+      : ['Are there any open clashes?', 'Show RFIs that reference the model', 'When was the model last updated?'];
+  },
+  insight() {
+    if (MODEL_LAST_REVISION_DAYS > 21) {
+      return `Model last updated ${MODEL_LAST_REVISION_DAYS} days ago — consider requesting a refresh`;
+    }
+    return `Model current as of ${MODEL_LAST_REVISION_LABEL}`;
+  },
+  alerts() {
+    if (MODEL_LAST_REVISION_DAYS > 30) return { level: 'warning', count: 1, label: 'stale model' };
+    return null;
+  },
+  actions: () => [
+    {
+      id: 'open-model',
+      label: 'Open 3D viewer',
+      execute: () => 'Opening Harbor View 3D model...',
+      route: '/project/harbor-view-condominiums?page=models',
+    },
+    { id: 'request-refresh', label: 'Request model refresh', execute: () => 'Requested an updated model export from the BIM lead.' },
+    { id: 'compare-revisions', label: 'Compare revisions', execute: () => 'Side-by-side revision comparison is not wired yet (demo).' },
+  ],
+  buildContext(s) {
+    const project = s.projectName ?? 'Harbor View Condominiums';
+    return [
+      `Project: ${project}`,
+      `Model file: residential-diorama.glb`,
+      `Latest revision: ${MODEL_LAST_REVISION_LABEL} (3rd revision)`,
+      `Capture dates available: 02/10/25, 20/10/25`,
+      `Days since last revision: ${MODEL_LAST_REVISION_DAYS}`,
+    ].join('\n');
+  },
+  localRespond(q) {
+    if (kw(q, 'last update', 'last updated', 'latest revision', 'when updated', 'when was')) {
+      return `The Harbor View model was last revised on **${MODEL_LAST_REVISION_LABEL}** (${MODEL_LAST_REVISION_DAYS} days ago). Two prior revisions: 15 Sep, 01 Oct.`;
+    }
+    if (kw(q, 'clash', 'collision', 'conflict')) {
+      return 'No live clash detection feed is connected. The 3D viewer supports manual measurement and markup; pair model review with RFI traffic for now.';
+    }
+    if (kw(q, 'open', 'view', 'show me')) {
+      return 'Opening the Harbor View 3D model. Use the orientation gizmo (top-right) to switch isometric views.';
+    }
+    if (kw(q, 'rfi', 'reference')) {
+      return 'No RFIs have been tagged against the model yet. New tagging support is on the roadmap.';
+    }
+    return 'I can summarize the latest Harbor View model revision, surface stale-model warnings, or open the 3D viewer. Ask about revisions, clashes, or RFIs.';
+  },
+};
+
+// Demo constants for the placeholder model insight/alert. Replace with a real
+// model-metadata feed when one is connected (see plan §"Out of scope").
+const MODEL_LAST_REVISION_LABEL = '12 Oct 2025';
+const MODEL_LAST_REVISION_DAYS = 27;
+
 export const PROJECT_AGENTS: WidgetAgent[] = [
   milestonesAgent,
   tasksAgent,
@@ -1084,5 +1157,6 @@ export const PROJECT_AGENTS: WidgetAgent[] = [
   changeOrderDetail,
   contractDetail,
   panoramaDetail,
+  modelAgent,
 ];
 

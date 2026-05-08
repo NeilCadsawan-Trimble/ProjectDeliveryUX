@@ -38,6 +38,7 @@ import {
 } from '../../data/dashboard-item-status';
 import { DrawingMarkupToolbarComponent, DRAWING_TOOLS } from '../../shared/detail/drawing-markup-toolbar.component';
 import { ProjectSiteModelComponent } from './components/project-site-model.component';
+import { ProjectModelThumbnailComponent } from './components/project-model-thumbnail.component';
 import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
 import { PdfViewerComponent } from '../../shared/detail/pdf-viewer.component';
 import { PanoramaViewerComponent } from '../../shared/detail/panorama-viewer.component';
@@ -91,7 +92,7 @@ import { ProjectFieldOpsComponent } from './components/project-field-ops.compone
 import { ProjectDailyReportsComponent } from './components/project-daily-reports.component';
 import { ProjectContractsComponent } from './components/project-contracts.component';
 
-type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather' | 'changeOrders' | 'fieldOps' | 'dailyReports' | 'contracts';
+type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather' | 'changeOrders' | 'fieldOps' | 'dailyReports' | 'contracts' | 'projectModel';
 
 const RECORDS_PAGE_DESCRIPTIONS: Record<string, string> = {
   'daily-reports': 'View and manage daily field reports including weather, workforce, equipment, and work performed.',
@@ -133,7 +134,7 @@ const PROJ_MIN_CONTENT_PX = 80;
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent, ProjectSiteModelComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent, ProjectSiteModelComponent, ProjectModelThumbnailComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -978,7 +979,18 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
   private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
 
-  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'dailyReports', 'fieldOps', 'drawing', 'weather', 'budget', 'team', 'activity', 'changeOrders', 'contracts'];
+  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'dailyReports', 'fieldOps', 'drawing', 'weather', 'budget', 'team', 'activity', 'changeOrders', 'contracts', 'projectModel'];
+  /**
+   * Widgets actually rendered for the current project. The 3D model widget is only
+   * shown for Harbor View Condominiums (projectId === 2). The geometry maps in
+   * every project-detail seed still carry `projectModel`, but `displayWidgets()`
+   * filters it out for non-Harbor projects so it never reaches the template.
+   */
+  readonly displayWidgets = computed<ProjectWidgetId[]>(() =>
+    this.projectId() === 2
+      ? this.widgets
+      : this.widgets.filter(id => id !== 'projectModel'),
+  );
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   readonly navbarSearchQuery = signal('');
@@ -2101,7 +2113,24 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
 
   private openCanvasDetail(sourceWidgetId: string, detail: DetailView): void {
-    this._detailMgr.openDetail(sourceWidgetId, detail, this.engine);
+    const size = detail.type === '3dModel' ? { width: 1024, height: 768 } : undefined;
+    this._detailMgr.openDetail(sourceWidgetId, detail, this.engine, size);
+  }
+
+  openProjectModelDetail(): void {
+    if (this.isCanvas()) {
+      const project = this.store.projects().find(p => p.id === this.projectId());
+      this.openCanvasDetail('projectModel', {
+        type: '3dModel',
+        item: {
+          projectId: this.projectId(),
+          projectSlug: project?.slug ?? 'harbor-view-condominiums',
+          projectName: this.projectName(),
+        },
+      });
+      return;
+    }
+    this.selectNavItem('models');
   }
 
   readonly STATUS_OPTIONS = STATUS_OPTIONS;

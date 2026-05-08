@@ -27,6 +27,7 @@ import {
   type SiteModelViewportTier,
 } from './project-site-model-viewport-tier';
 import { OrientationGizmoComponent, type GizmoFace } from './orientation-gizmo.component';
+import { resolveProjectModelUrl } from './project-model-assets';
 
 type StandardViewPreset = 'iso' | 'top' | 'front' | 'right' | 'left';
 
@@ -150,7 +151,7 @@ interface WindowWithPannellum extends Window {
                     >
                       <model-viewer
                         #siteModelViewer
-                        [attr.src]="demoModelUrl"
+                        [attr.src]="demoModelUrl()"
                         alt="BIM coordination demo for project models sub-page"
                         camera-controls
                         touch-action="none"
@@ -408,7 +409,7 @@ interface WindowWithPannellum extends Window {
                   >
                     <model-viewer
                       #siteModelViewer
-                      [attr.src]="demoModelUrl"
+                      [attr.src]="demoModelUrl()"
                       alt="BIM coordination demo for project models sub-page"
                       camera-controls
                       touch-action="none"
@@ -664,11 +665,13 @@ export class ProjectSiteModelComponent {
   ] as const;
 
   /**
-   * Repo-hosted demo model. Served from the static `public/models` directory
+   * Repo-hosted demo models. Served from the static `public/models` directory
    * (mounted at the site root by Angular Vite) so loading works offline /
-   * without external CDN access.
+   * without external CDN access. Per-project mapping lives in the shared
+   * {@link ./project-model-assets resolver} so the dashboard tile thumbnail
+   * and the full interactive viewer stay in lock-step.
    */
-  readonly demoModelUrl = '/models/modern-luxury-villa.glb';
+  readonly demoModelUrl = computed(() => resolveProjectModelUrl(this.projectId()));
 
   constructor() {
     this.destroyRef.onDestroy(() => {

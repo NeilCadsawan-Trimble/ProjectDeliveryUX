@@ -164,9 +164,19 @@ describe('navigate_to_page supported-record-detail set', () => {
     }
   });
 
+  /**
+   * DetailView variants that are intentionally NOT addressable as a record-* /
+   * financials-* AI navigation target. The AI can still route to the underlying
+   * page via the standard `navigate_to_page` flow (e.g. for `'3dModel'`, the
+   * Harbor View Models sub-page at `/project/harbor-view-condominiums?page=models`),
+   * but the AI does not open these as canvas-overlay record details.
+   */
+  const NON_AI_NAVIGABLE_DETAIL_TYPES = new Set<string>(['3dModel']);
+
   it('every DetailView type is reachable through some supported destination', () => {
     const reachable = new Set(Object.values(SUPPORTED_TO_TYPE));
     for (const t of detailViewTypes) {
+      if (NON_AI_NAVIGABLE_DETAIL_TYPES.has(t)) continue;
       expect(reachable, `DetailView type "${t}" must be reachable from a record-* or supported financials-* destination`).toContain(t);
     }
   });
