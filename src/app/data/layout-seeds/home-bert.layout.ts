@@ -1,7 +1,7 @@
 import type { LayoutSeed } from './layout-seed.types';
 
 export const HOME_BERT_LAYOUT: LayoutSeed = {
-  widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates'],
+  widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates', 'home3dModel'],
   defaultColStarts: {
     homeHeader: 1,
     homeKpis: 1,
@@ -21,6 +21,7 @@ export const HOME_BERT_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 1,
     homeContracts: 7,
     homeOpenEstimates: 7,
+    home3dModel: 1,
   },
   defaultColSpans: {
     homeHeader: 16,
@@ -41,6 +42,7 @@ export const HOME_BERT_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 6,
     homeContracts: 10,
     homeOpenEstimates: 10,
+    home3dModel: 6,
   },
   defaultTops: {
     homeHeader: 0,
@@ -61,6 +63,7 @@ export const HOME_BERT_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 2736,
     homeContracts: 1520,
     homeOpenEstimates: 1888,
+    home3dModel: 3200,
   },
   defaultHeights: {
     homeHeader: 0,
@@ -81,6 +84,7 @@ export const HOME_BERT_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 352,
     homeContracts: 352,
     homeOpenEstimates: 464,
+    home3dModel: 336,
   },
   canvasDefaultLefts: {
     homeHeader: 0,
@@ -101,6 +105,7 @@ export const HOME_BERT_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 1458,
     homeContracts: 0,
     homeOpenEstimates: 0,
+    home3dModel: 1053,
   },
   canvasDefaultPixelWidths: {
     homeHeader: 1280,
@@ -121,6 +126,7 @@ export const HOME_BERT_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 470,
     homeContracts: 632,
     homeOpenEstimates: 632,
+    home3dModel: 632,
   },
   canvasDefaultTops: {
     homeHeader: 0,
@@ -141,6 +147,7 @@ export const HOME_BERT_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 752,
     homeContracts: 656,
     homeOpenEstimates: 1952,
+    home3dModel: 2480,
   },
   canvasDefaultHeights: {
     homeHeader: 80,
@@ -161,5 +168,6 @@ export const HOME_BERT_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 416,
     homeContracts: 416,
     homeOpenEstimates: 464,
+    home3dModel: 432,
   },
 };

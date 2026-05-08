@@ -18,6 +18,14 @@ const SITE_MODEL_COMPONENT = resolve(
   ROOT,
   'src/app/pages/project-dashboard/components/project-site-model.component.ts',
 );
+const MODEL_ASSETS = resolve(
+  ROOT,
+  'src/app/pages/project-dashboard/components/project-model-assets.ts',
+);
+const MODEL_THUMBNAIL = resolve(
+  ROOT,
+  'src/app/pages/project-dashboard/components/project-model-thumbnail.component.ts',
+);
 const VIEWPORT_TIER = resolve(
   ROOT,
   'src/app/pages/project-dashboard/components/project-site-model-viewport-tier.ts',
@@ -106,13 +114,36 @@ describe('Project Models sub-page: 3D viewer wiring', () => {
   });
 
   it('demo asset references resolve to files committed in /public', () => {
-    const src = readFileSync(SITE_MODEL_COMPONENT, 'utf-8');
-    const modelMatch = src.match(/demoModelUrl\s*=\s*['"](\/[^'"]+\.glb)['"]/);
-    expect(modelMatch?.[1], 'demoModelUrl must point at a .glb in public/').toBeDefined();
-    const modelPath = modelMatch![1];
-    expect(existsSync(resolve(ROOT, 'public' + modelPath))).toBe(true);
+    // The 3D model URL resolver lives in a shared util so the full viewer
+    // (project-site-model.component.ts) and the dashboard tile thumbnail
+    // (project-model-thumbnail.component.ts) stay aligned. Validate the
+    // shared map here.
+    expect(existsSync(MODEL_ASSETS), 'project-model-assets.ts must exist').toBe(true);
+    const assets = readFileSync(MODEL_ASSETS, 'utf-8');
 
-    const panoMatch = src.match(/panoUrl:\s*['"](\/panoramas\/[^'"]+)['"]/);
+    const defaultMatch = assets.match(/DEFAULT_PROJECT_MODEL_URL\s*=\s*['"](\/[^'"]+\.glb)['"]/);
+    expect(defaultMatch?.[1], 'DEFAULT_PROJECT_MODEL_URL must point at a .glb in public/').toBeDefined();
+    expect(existsSync(resolve(ROOT, 'public' + defaultMatch![1]))).toBe(true);
+
+    const overrideMap = assets.match(/PROJECT_MODEL_BY_ID:\s*Record<number,\s*string>\s*=\s*\{([\s\S]*?)\};/);
+    expect(overrideMap?.[1], 'PROJECT_MODEL_BY_ID map must be defined').toBeDefined();
+    const overridePaths = [...overrideMap![1].matchAll(/['"](\/[^'"]+\.glb)['"]/g)].map(m => m[1]);
+    for (const p of overridePaths) {
+      expect(existsSync(resolve(ROOT, 'public' + p)), `per-project override ${p} must resolve to a real file`).toBe(true);
+    }
+
+    // Both consumers must import the shared resolver — no drift.
+    const siteSrc = readFileSync(SITE_MODEL_COMPONENT, 'utf-8');
+    expect(siteSrc).toMatch(/from\s+['"]\.\/project-model-assets['"]/);
+    expect(siteSrc).toContain('resolveProjectModelUrl');
+
+    expect(existsSync(MODEL_THUMBNAIL), 'project-model-thumbnail.component.ts must exist').toBe(true);
+    const thumbSrc = readFileSync(MODEL_THUMBNAIL, 'utf-8');
+    expect(thumbSrc).toMatch(/from\s+['"]\.\/project-model-assets['"]/);
+    expect(thumbSrc).toContain('resolveProjectModelUrl');
+    expect(thumbSrc).toMatch(/selector:\s*['"]app-project-model-thumbnail['"]/);
+
+    const panoMatch = siteSrc.match(/panoUrl:\s*['"](\/panoramas\/[^'"]+)['"]/);
     expect(panoMatch?.[1], 'first pano scene must point at a local file').toBeDefined();
     expect(existsSync(resolve(ROOT, 'public' + panoMatch![1]))).toBe(true);
   });

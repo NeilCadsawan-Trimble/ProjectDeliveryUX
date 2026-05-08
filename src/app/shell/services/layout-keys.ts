@@ -29,9 +29,13 @@ export type PersonaSlug = string;
  * changes shape).
  */
 const HOME_VERSIONS: Record<PersonaSlug, { desktop: string; canvas: string }> = {
-  frank: { desktop: 'v12', canvas: 'v19' },
+  // v13/v20: home3dModel widget added to PM personas (Frank/Bert/Dominique fall
+  // back to Frank's version) -- bumped to invalidate stale user caches that
+  // still hold the 18-widget layout. See harbor-view-3d-model-widget plan.
+  frank: { desktop: 'v13', canvas: 'v20' },
   kelly: { desktop: 'v14', canvas: 'v21' },
-  pamela: { desktop: 'v16', canvas: 'v23' },
+  // v17/v24: home3dModel added to Pamela's home dashboard.
+  pamela: { desktop: 'v17', canvas: 'v24' },
 };
 
 const HOME_FALLBACK = HOME_VERSIONS['frank'];
@@ -45,7 +49,10 @@ const FINANCIALS_VERSIONS: Record<PersonaSlug, { desktop: string; canvas: string
 const FINANCIALS_FALLBACK = FINANCIALS_VERSIONS['frank'];
 
 export const PROJECTS_VERSIONS = { desktop: 'v18', canvas: 'v21' };
-const PROJECT_DASHBOARD_VERSIONS = { desktop: 'v6', canvas: 'v8' };
+// v7/v9: projectModel widget added to every project-detail seed (filtered at
+// runtime to only render on Harbor View / projectId 2). Version bump
+// invalidates stale 15-widget caches across all personas. See plan.
+const PROJECT_DASHBOARD_VERSIONS = { desktop: 'v7', canvas: 'v9' };
 
 /**
  * Project IDs for which the per-project dashboard (`project-dashboard.component`)

@@ -62,6 +62,7 @@ import {
   inspectionDetail,
   inspectionsAgent,
   milestonesAgent,
+  modelAgent,
   panoramaDetail,
   projectDefault,
   punchItemDetail,
@@ -169,6 +170,8 @@ const ALL_AGENTS: Record<string, WidgetAgent> = {
   changeOrderDetail,
   contractDetail,
   panoramaDetail,
+  projectModel: modelAgent,
+  home3dModel: modelAgent,
 };
 
 const PAGE_DEFAULT_AGENTS: Record<string, string> = {

@@ -11,7 +11,8 @@ export type DetailView =
   | { type: 'punchItem'; item: PunchListItem }
   | { type: 'changeOrder'; item: ChangeOrder }
   | { type: 'contract'; item: Contract }
-  | { type: 'panorama'; item: SiteCapture };
+  | { type: 'panorama'; item: SiteCapture }
+  | { type: '3dModel'; item: { projectId: number; projectSlug: string; projectName: string } };
 
 export interface LayoutSnapshot {
   tops: Record<string, number>;

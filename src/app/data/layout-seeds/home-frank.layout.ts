@@ -2,7 +2,7 @@ import type { LayoutSeed } from './layout-seed.types';
 
 // Exported from live canvas layout
 export const HOME_FRANK_LAYOUT: LayoutSeed = {
-  widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates'],
+  widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates', 'home3dModel'],
   defaultColStarts: {
     homeHeader: 1,
     homeKpis: 1,
@@ -22,6 +22,7 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 1,
     homeContracts: 7,
     homeOpenEstimates: 7,
+    home3dModel: 1,
   },
   defaultColSpans: {
     homeHeader: 16,
@@ -42,6 +43,7 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 6,
     homeContracts: 10,
     homeOpenEstimates: 10,
+    home3dModel: 6,
   },
   defaultTops: {
     homeHeader: 0,
@@ -62,6 +64,7 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 2736,
     homeContracts: 1520,
     homeOpenEstimates: 1888,
+    home3dModel: 3200,
   },
   defaultHeights: {
     homeHeader: 0,
@@ -82,6 +85,7 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 352,
     homeContracts: 352,
     homeOpenEstimates: 464,
+    home3dModel: 336,
   },
   canvasDefaultLefts: {
     homeHeader: 0,
@@ -102,6 +106,7 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 324,
     homeContracts: 324,
     homeOpenEstimates: 972,
+    home3dModel: -243,
   },
   canvasDefaultPixelWidths: {
     homeHeader: 1280,
@@ -122,6 +127,7 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 632,
     homeContracts: 632,
     homeOpenEstimates: 389,
+    home3dModel: 632,
   },
   canvasDefaultTops: {
     homeHeader: 0,
@@ -142,6 +148,7 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 2144,
     homeContracts: 1360,
     homeOpenEstimates: 768,
+    home3dModel: 2624,
   },
   canvasDefaultHeights: {
     homeHeader: 80,
@@ -162,5 +169,6 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeTeamAllocation: 416,
     homeContracts: 352,
     homeOpenEstimates: 576,
+    home3dModel: 432,
   },
 };

@@ -65,6 +65,14 @@ export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'Which drawing sets are incomplete?',
     ],
   },
+  home3dModel: {
+    name: 'Project Model',
+    suggestions: [
+      'Open the Harbor View 3D model',
+      'Show recent changes to the Harbor View model',
+      'Are there any clashes flagged in the BIM?',
+    ],
+  },
   homeRecentActivity: {
     name: 'Recent Activity',
     suggestions: [
@@ -285,6 +293,14 @@ export const PAMELA_HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'What changed today on my estimates?',
       'Show the most recent updates',
       'Any new estimate requests?',
+    ],
+  },
+  home3dModel: {
+    name: 'Project Model',
+    suggestions: [
+      'Open the Harbor View 3D model',
+      'Show recent changes to the Harbor View model',
+      'Are there any clashes flagged in the BIM?',
     ],
   },
 };
@@ -607,6 +623,14 @@ export const PROJECT_DETAIL_WIDGETS: Record<string, WidgetRegistration> = {
       'What changed recently on this project?',
       'Show the latest updates',
       'Who has been most active?',
+    ],
+  },
+  projectModel: {
+    name: 'Project Model',
+    suggestions: [
+      'When was the model last updated?',
+      'Are there any clashes flagged in the BIM?',
+      'Show the latest model revision history',
     ],
   },
 };

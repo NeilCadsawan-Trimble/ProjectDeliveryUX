@@ -69,7 +69,8 @@ export type DashboardWidgetId =
   | 'finApActivity'
   | 'finCashOutflow'
   | 'homeLearning'
-  | 'homeEstimatorKpis';
+  | 'homeEstimatorKpis'
+  | 'home3dModel';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
