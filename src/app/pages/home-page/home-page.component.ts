@@ -944,7 +944,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     </div>
                   </div>
 
-                  <div class="flex overflow-y-auto flex-1 mb-5" #calendarScrollArea>
+                  <div class="flex overflow-y-auto flex-1" #calendarScrollArea>
                     <div class="w-12 flex-shrink-0">
                       @for (hour of calendarHours; track hour) {
                         <div class="h-[60px] flex items-start justify-end pr-2 -mt-0">
@@ -1004,7 +1004,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-4 px-5 py-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                  <div class="flex items-center gap-4 px-5 pb-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                     <div class="flex items-center gap-1.5">
                       <div class="w-2 h-2 rounded-sm bg-primary"></div>
                       <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Meeting</modus-typography>
@@ -1523,7 +1523,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     </div>
                   </div>
 
-                  <div class="flex-1 overflow-y-auto min-h-0 mb-5">
+                  <div class="flex-1 overflow-y-auto min-h-0">
                     @for (item of filteredUrgentNeeds(); track item.id) {
                       <div
                         class="flex items-start gap-3 px-5 py-3 border-bottom-default cursor-pointer hover:bg-muted transition-colors duration-150"
@@ -1562,7 +1562,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     }
                   </div>
 
-                  <div class="flex items-center justify-between px-5 py-2.5 border-top-default bg-card flex-shrink-0">
+                  <div class="flex items-center justify-between px-5 pb-2.5 border-top-default bg-card flex-shrink-0">
                     <modus-typography hierarchy="p" size="xs" className="text-foreground-40">
                       {{ filteredUrgentNeeds().length }} of {{ allUrgentNeeds().length }} items
                     </modus-typography>

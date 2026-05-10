@@ -249,7 +249,7 @@ const FIN_MIN_CHILD_PX = 80;
 
     @if (jobCostDetailProject(); as project) {
       <!-- Job Cost Detail View -->
-      <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
+      <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 pt-4 md:pt-6 pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)] max-w-screen-xl mx-auto'">
         <div class="flex items-center gap-3 mb-6">
           <div class="flex flex-col">
             <modus-typography  hierarchy="p" size="2xl" weight="bold" className="text-foreground">{{ project.projectName }}</modus-typography>
@@ -513,7 +513,7 @@ const FIN_MIN_CHILD_PX = 80;
         </div>
       </div>
     } @else if (finDetailMeta(); as meta) {
-      <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
+      <div [class]="isCanvasMode() ? 'py-4 md:py-6' : 'px-4 pt-4 md:pt-6 pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)] max-w-screen-xl mx-auto'">
         <div class="flex items-center gap-3 mb-6">
           <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-20 flex-shrink-0">
             <i class="modus-icons text-lg text-primary" aria-hidden="true">{{ meta.icon }}</i>
@@ -701,7 +701,7 @@ const FIN_MIN_CHILD_PX = 80;
 
       </div>
     } @else if (activeSubPage() === 'overview') {
-    <div [class]="isCanvasMode() ? 'py-4 md:py-6 pointer-events-none' : 'px-4 py-4 md:py-6 max-w-screen-xl mx-auto'">
+    <div [class]="isCanvasMode() ? 'py-4 md:py-6 pointer-events-none' : 'px-4 pt-4 md:pt-6 pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)] max-w-screen-xl mx-auto'">
       <!-- Widget area -->
       <div
         [class]="isCanvasMode() ? 'relative overflow-visible mb-6 pointer-events-none' : isMobile() ? 'relative mb-6' : 'relative mb-6 widget-grid-desktop'"
