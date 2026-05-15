@@ -3,7 +3,7 @@ export const config = {
 };
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-sonnet-4-20250514';
+const MODEL = 'claude-opus-4-7';
 const MAX_TOKENS = 2048;
 
 const SYSTEM_PROMPT = `You are Trimble AI, a project delivery assistant for construction and infrastructure projects. You help project managers understand status, risks, budgets, schedules, and team allocation.
