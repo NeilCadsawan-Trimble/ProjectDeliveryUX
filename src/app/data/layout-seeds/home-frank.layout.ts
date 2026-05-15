@@ -1,6 +1,6 @@
 import type { LayoutSeed } from './layout-seed.types';
 
-// Exported from live canvas layout
+// Exported from live desktop layout
 export const HOME_FRANK_LAYOUT: LayoutSeed = {
   widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates', 'home3dModel'],
   defaultColStarts: {
@@ -49,22 +49,22 @@ export const HOME_FRANK_LAYOUT: LayoutSeed = {
     homeHeader: 0,
     homeKpis: 0,
     homeUrgentNeeds: 0,
-    homeWeather: 864,
-    homeTimeOff: 2352,
+    homeWeather: 1216,
+    homeTimeOff: 2704,
     homeCalendar: 352,
     homeRfis: 2768,
     homeSubmittals: 2768,
-    homeDrawings: 1648,
+    homeDrawings: 2000,
     homeRecentActivity: 2368,
-    homeMilestones: 2000,
+    homeMilestones: 2352,
     homeBudgetVariance: 816,
-    homeChangeOrders: 1216,
+    homeChangeOrders: 1568,
     homeFieldOps: 1168,
     homeDailyReports: 304,
-    homeTeamAllocation: 2736,
+    homeTeamAllocation: 3088,
     homeContracts: 1520,
     homeOpenEstimates: 1888,
-    home3dModel: 3200,
+    home3dModel: 864,
   },
   defaultHeights: {
     homeHeader: 0,
