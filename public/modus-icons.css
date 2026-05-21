@@ -5,7 +5,7 @@
 
 @font-face {
   font-family: 'modus-icons';
-  src: url('https://cdn.jsdelivr.net/npm/@trimble-oss/modus-icons@1.19.0/dist/field-systems/fonts/modus-icons.woff2')
+  src: url('https://cdn.jsdelivr.net/npm/@trimble-oss/modus-icons@1.21.0/dist/field-systems/fonts/modus-icons.woff2')
     format('woff2');
   font-style: normal;
   font-weight: normal;
@@ -14,7 +14,7 @@
 
 @font-face {
   font-family: 'modus-icons-outlined';
-  src: url('https://cdn.jsdelivr.net/npm/@trimble-oss/modus-icons@1.19.0/dist/field-systems/fonts/modus-icons.woff2')
+  src: url('https://cdn.jsdelivr.net/npm/@trimble-oss/modus-icons@1.21.0/dist/field-systems/fonts/modus-icons.woff2')
     format('woff2');
   font-style: normal;
   font-weight: normal;
@@ -23,7 +23,7 @@
 
 @font-face {
   font-family: 'modus-icons-solid';
-  src: url('https://cdn.jsdelivr.net/npm/@trimble-oss/modus-icons@1.19.0/dist/field-systems/fonts/modus-icons.woff2')
+  src: url('https://cdn.jsdelivr.net/npm/@trimble-oss/modus-icons@1.21.0/dist/field-systems/fonts/modus-icons.woff2')
     format('woff2');
   font-style: normal;
   font-weight: normal;
