@@ -1620,6 +1620,20 @@ modus-wc-divider.modus-wc-divider-error div.modus-wc-divider {
   border-radius: 2px;
 }
 
+/* In-card variant: the action chips that follow the assistant's reply
+ * inside the response card. Same chip styling (filled circle host on the
+ * inverted pill-surface tokens) as the bottom row, but allow wrapping
+ * onto multiple lines and skip the scrollbar -- the card itself owns
+ * vertical scroll so a horizontal scrollbar inside it would be a second
+ * scroll surface. The slight top margin matches the prior `mt-1`
+ * Tailwind row to keep the visual rhythm of the message column. */
+.ai-floating-prompt-chips--inline {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  padding: 0;
+  margin-top: 0.25rem;
+}
+
 /* The chip itself is rendered as a real <modus-wc-chip> web component, so
  * Modus owns shape / radius / sizing / focus ring. We override colors to
  * match the Modus floating-prompt pattern preview, which uses solid-black
