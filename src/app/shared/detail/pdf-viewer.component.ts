@@ -299,7 +299,8 @@ export class PdfViewerComponent {
     canvas.style.height = `${cssH}px`;
 
     const ctx = canvas.getContext('2d', { alpha: false })!;
-    const task = page.render({ canvasContext: ctx, viewport });
+    const renderParams = { canvasContext: ctx, viewport, canvas } as Parameters<typeof page.render>[0];
+    const task = page.render(renderParams);
     this._activeRenderTask = task;
 
     await task.promise;
