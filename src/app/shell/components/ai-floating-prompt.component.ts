@@ -235,18 +235,19 @@ import type { AgentAction } from '../../data/widget-agents';
             }
 
             @if (!controller().thinking() && controller().actions().length > 0 && controller().messages().length > 0) {
-              <div class="flex flex-wrap gap-1.5 mt-1">
+              <div class="ai-floating-prompt-chips ai-floating-prompt-chips--inline" role="list" aria-label="Suggested actions">
                 @for (action of controller().actions(); track action.id) {
-                  <div
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted cursor-pointer hover:bg-secondary transition-colors duration-150"
-                    (click)="handleAction(action)"
-                    role="button"
-                    tabindex="0"
-                    (keydown.enter)="handleAction(action)"
+                  <modus-wc-chip
+                    size="md"
+                    variant="filled"
+                    shape="circle"
+                    customClass="ai-floating-prompt-chip-host ai-floating-prompt-chip-action"
+                    [attr.aria-label]="action.label"
+                    (chipClick)="handleAction(action)"
                   >
-                    <i class="modus-icons text-xs text-primary" aria-hidden="true">lightning</i>
-                    <modus-typography hierarchy="p" size="xs">{{ action.label }}</modus-typography>
-                  </div>
+                    <modus-wc-icon name="lightning" size="xs"></modus-wc-icon>
+                    {{ action.label }}
+                  </modus-wc-chip>
                 }
               </div>
             }
