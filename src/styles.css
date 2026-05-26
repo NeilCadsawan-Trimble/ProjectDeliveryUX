@@ -22,10 +22,18 @@
  */
 
 @theme {
-  /* 9-Color Design System */
+  /* 9-Color Design System
+   *
+   * Modus 1.5 bordered-surface migration:
+   *   --color-card now maps to --modus-wc-color-base-page (was base-100).
+   *   Containers using bg-card therefore render at page background and must
+   *   pair with border-default to read as enclosed surfaces. Nested cells
+   *   inside an already-bordered container should use bg-muted (base-200)
+   *   per Modus's child-card guidance (modus-setup.mdc §3.1, §5.1).
+   */
   --color-background: var(--modus-wc-color-base-page);
   --color-foreground: var(--modus-wc-color-base-content);
-  --color-card: var(--modus-wc-color-base-100);
+  --color-card: var(--modus-wc-color-base-page);
   --color-card-foreground: var(--modus-wc-color-base-content);
   --color-muted: var(--modus-wc-color-base-200);
   --color-muted-foreground: var(--modus-wc-color-base-content);
@@ -54,10 +62,14 @@
    * content can clear the prompt at rest. */
   --ai-floating-prompt-height: 56px;
 
-  /* Map Figma colors to Modus 9-color system */
+  /* Map Figma colors to Modus 9-color system.
+   * NOTE (Modus 1.5 bordered surfaces): --card maps to base-page, not
+   * base-100. Outer containers using bg-card must add border-default to
+   * be visible as enclosed surfaces; nested cells use bg-muted (base-200)
+   * per Modus's child-card guidance. See modus-setup.mdc §3.1, §5.1. */
   --background: var(--modus-wc-color-base-page);
   --foreground: var(--modus-wc-color-base-content);
-  --card: var(--modus-wc-color-base-100);
+  --card: var(--modus-wc-color-base-page);
   --card-foreground: var(--modus-wc-color-base-content);
   --muted: var(--modus-wc-color-base-200);
   --muted-foreground: var(--modus-wc-color-base-content);
