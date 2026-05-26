@@ -63,8 +63,12 @@ const DESIGN_SYSTEM_COLOR_SUGGESTIONS = {
   'text-gray': 'text-muted-foreground', // Muted text color
 
   // CSS Variables to Design System
+  // NOTE (Modus 1.5 bordered surfaces): --card now maps to base-page, so
+  // both bg-background and bg-card resolve to the page surface. base-100 is
+  // reserved for Modus chrome (e.g. .app-navbar) and has no semantic
+  // Tailwind class; suggest bg-muted for an elevated child surface.
   'var(--modus-wc-color-base-page)': 'bg-background',
-  'var(--modus-wc-color-base-100)': 'bg-card',
+  'var(--modus-wc-color-base-100)': 'bg-muted',
   'var(--modus-wc-color-base-200)': 'bg-muted',
   'var(--modus-wc-color-base-300)': 'bg-secondary',
   'var(--modus-wc-color-base-content)': 'text-foreground',

@@ -22,10 +22,18 @@
  */
 
 @theme {
-  /* 9-Color Design System */
+  /* 9-Color Design System
+   *
+   * Modus 1.5 bordered-surface migration:
+   *   --color-card now maps to --modus-wc-color-base-page (was base-100).
+   *   Containers using bg-card therefore render at page background and must
+   *   pair with border-default to read as enclosed surfaces. Nested cells
+   *   inside an already-bordered container should use bg-muted (base-200)
+   *   per Modus's child-card guidance (modus-setup.mdc §3.1, §5.1).
+   */
   --color-background: var(--modus-wc-color-base-page);
   --color-foreground: var(--modus-wc-color-base-content);
-  --color-card: var(--modus-wc-color-base-100);
+  --color-card: var(--modus-wc-color-base-page);
   --color-card-foreground: var(--modus-wc-color-base-content);
   --color-muted: var(--modus-wc-color-base-200);
   --color-muted-foreground: var(--modus-wc-color-base-content);
@@ -54,10 +62,14 @@
    * content can clear the prompt at rest. */
   --ai-floating-prompt-height: 56px;
 
-  /* Map Figma colors to Modus 9-color system */
+  /* Map Figma colors to Modus 9-color system.
+   * NOTE (Modus 1.5 bordered surfaces): --card maps to base-page, not
+   * base-100. Outer containers using bg-card must add border-default to
+   * be visible as enclosed surfaces; nested cells use bg-muted (base-200)
+   * per Modus's child-card guidance. See modus-setup.mdc §3.1, §5.1. */
   --background: var(--modus-wc-color-base-page);
   --foreground: var(--modus-wc-color-base-content);
-  --card: var(--modus-wc-color-base-100);
+  --card: var(--modus-wc-color-base-page);
   --card-foreground: var(--modus-wc-color-base-content);
   --muted: var(--modus-wc-color-base-200);
   --muted-foreground: var(--modus-wc-color-base-content);
@@ -1479,6 +1491,20 @@ modus-wc-divider.modus-wc-divider-error div.modus-wc-divider {
   --ai-floating-prompt-surface-text: #000;
   --ai-floating-prompt-surface-elevated: #f1f1f6;
 
+  /* Inverted vs the page: the floating bottom system (pill, response card,
+   * suggestion + action chips) reads as high-contrast against the page so
+   * it always stands out as an AI surface. Light mode uses a softened
+   * charcoal (#2a2a2a) -- one greyscale notch lighter than near-black so
+   * the bar feels distinctly inverted without the harsh edge of pure
+   * black or near-black against a white page. Dark mode keeps the
+   * off-white #f1f1f6 (the existing light-mode surface-elevated) so the
+   * inverted pill there reads as soft Modus chrome rather than pure
+   * white. The drawer overrides these tokens back to the page-tracking
+   * values so it keeps blending with the page. */
+  --ai-floating-prompt-pill-surface: #2a2a2a;
+  --ai-floating-prompt-pill-surface-text: #fff;
+  --ai-floating-prompt-pill-surface-elevated: #3a3a3a;
+
   --ai-floating-prompt-pill-shadow:
     0 0 0 1px color-mix(in srgb, var(--modus-wc-color-primary) 30%, transparent),
     0 8px 32px color-mix(in srgb, var(--modus-wc-color-primary) 12%, transparent);
@@ -1502,6 +1528,10 @@ modus-wc-divider.modus-wc-divider-error div.modus-wc-divider {
   --ai-floating-prompt-surface: #000;
   --ai-floating-prompt-surface-text: #fff;
   --ai-floating-prompt-surface-elevated: #1a1a1a;
+
+  --ai-floating-prompt-pill-surface: #f1f1f6;
+  --ai-floating-prompt-pill-surface-text: #000;
+  --ai-floating-prompt-pill-surface-elevated: #e1e1e6;
 }
 
 .ai-floating-prompt {
@@ -1530,8 +1560,8 @@ modus-wc-divider.modus-wc-divider-error div.modus-wc-divider {
   border-radius: 0.875rem;
   overflow: hidden;
   transform-origin: bottom center;
-  background: var(--ai-floating-prompt-surface);
-  color: var(--ai-floating-prompt-surface-text);
+  background: var(--ai-floating-prompt-pill-surface);
+  color: var(--ai-floating-prompt-pill-surface-text);
   border: none;
   box-shadow: var(--ai-floating-prompt-card-shadow);
   transition: box-shadow 0.2s ease;
@@ -1567,9 +1597,9 @@ modus-wc-divider.modus-wc-divider-error div.modus-wc-divider {
  * subtle elevation they have on a white card. The !important is required to
  * win against the Tailwind utilities baked into the template. */
 .ai-floating-prompt-card .ai-msg-body {
-  background: var(--ai-floating-prompt-surface-elevated) !important;
+  background: var(--ai-floating-prompt-pill-surface-elevated) !important;
   border-color: transparent !important;
-  color: var(--ai-floating-prompt-surface-text);
+  color: var(--ai-floating-prompt-pill-surface-text);
 }
 
 .ai-floating-prompt-chips {
@@ -1602,9 +1632,9 @@ modus-wc-divider.modus-wc-divider-error div.modus-wc-divider {
 }
 modus-wc-chip .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host,
 [data-theme] modus-wc-chip .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host {
-  background-color: var(--ai-floating-prompt-surface);
-  border-color: var(--ai-floating-prompt-surface);
-  color: var(--ai-floating-prompt-surface-text);
+  background-color: var(--ai-floating-prompt-pill-surface);
+  border-color: var(--ai-floating-prompt-pill-surface);
+  color: var(--ai-floating-prompt-pill-surface-text);
   box-shadow: var(--ai-floating-prompt-pill-shadow);
   transition: box-shadow 0.2s ease;
 }
@@ -1615,7 +1645,7 @@ modus-wc-chip
   modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host
   .modus-wc-chip-label {
-  color: var(--ai-floating-prompt-surface-text);
+  color: var(--ai-floating-prompt-pill-surface-text);
 }
 modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host:hover:not(
@@ -1626,9 +1656,9 @@ modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host:hover:not(
     .modus-wc-chip--active
   ):not(.modus-wc-chip--error) {
-  background-color: var(--ai-floating-prompt-surface-elevated);
-  border-color: var(--ai-floating-prompt-surface-elevated);
-  color: var(--ai-floating-prompt-surface-text);
+  background-color: var(--ai-floating-prompt-pill-surface-elevated);
+  border-color: var(--ai-floating-prompt-pill-surface-elevated);
+  color: var(--ai-floating-prompt-pill-surface-text);
 }
 modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host:active:not(
@@ -1639,9 +1669,9 @@ modus-wc-chip
   .modus-wc-chip.modus-wc-btn.ai-floating-prompt-chip-host:active:not(
     .modus-wc-chip--error
   ):not(.modus-wc-chip--active) {
-  background-color: var(--ai-floating-prompt-surface-elevated);
-  border-color: var(--ai-floating-prompt-surface-elevated);
-  color: var(--ai-floating-prompt-surface-text);
+  background-color: var(--ai-floating-prompt-pill-surface-elevated);
+  border-color: var(--ai-floating-prompt-pill-surface-elevated);
+  color: var(--ai-floating-prompt-pill-surface-text);
 }
 
 /* Mirror Modus `.ai-ux-floating-prompt-pill`: `flex items-center gap-1
@@ -1655,8 +1685,8 @@ modus-wc-chip
   width: 100%;
   padding: 0.375rem 0.5rem;
   border-radius: 9999px;
-  background: var(--ai-floating-prompt-surface) !important;
-  color: var(--ai-floating-prompt-surface-text) !important;
+  background: var(--ai-floating-prompt-pill-surface) !important;
+  color: var(--ai-floating-prompt-pill-surface-text) !important;
   border: none;
   box-shadow: var(--ai-floating-prompt-pill-shadow);
   transition: box-shadow 0.2s ease;
@@ -1664,7 +1694,7 @@ modus-wc-chip
 }
 
 /* Force surface text color on the pill chrome (icons, glyphs, helper text)
- * so it always contrasts the white/black surface, but skip the send/stop
+ * so it always contrasts the inverted pill surface, but skip the send/stop
  * button (`.ai-floating-prompt-send-btn`): that button owns its own
  * `color: var(--primary-foreground)` / `var(--error-foreground)` so the
  * inner glyph stays white on the colored circle in every theme. */
@@ -1672,7 +1702,7 @@ modus-wc-chip
 .ai-floating-prompt-bar *:not(.ai-floating-prompt-send-btn, .ai-floating-prompt-send-btn *),
 .ai-floating-prompt-bar i.modus-icons:not(.ai-floating-prompt-send-btn i),
 .ai-floating-prompt-bar .ai-floating-prompt-icon-button {
-  color: var(--ai-floating-prompt-surface-text) !important;
+  color: var(--ai-floating-prompt-pill-surface-text) !important;
 }
 
 /* Match the Modus floating prompt pattern: layered primary-tinted glow on
@@ -1690,18 +1720,18 @@ modus-wc-chip
   border-radius: 9999px;
   cursor: pointer;
   flex-shrink: 0;
-  color: var(--ai-floating-prompt-surface-text);
+  color: var(--ai-floating-prompt-pill-surface-text);
   transition: background-color 150ms;
 }
 
 .ai-floating-prompt-icon-button:hover,
 .ai-floating-prompt-icon-button:focus-visible {
-  background: var(--ai-floating-prompt-surface-elevated);
+  background: var(--ai-floating-prompt-pill-surface-elevated);
   outline: none;
 }
 
 .ai-floating-prompt-icon-button[aria-expanded="true"] {
-  background: var(--ai-floating-prompt-surface-elevated);
+  background: var(--ai-floating-prompt-pill-surface-elevated);
 }
 
 .ai-floating-prompt-icon-button > i {
@@ -1725,7 +1755,7 @@ modus-wc-chip
 
 .ai-floating-prompt-icon-button.is-listening {
   position: relative;
-  background: var(--ai-floating-prompt-surface-elevated);
+  background: var(--ai-floating-prompt-pill-surface-elevated);
 }
 
 .ai-floating-prompt-icon-button.is-listening::after {
@@ -1792,10 +1822,13 @@ modus-wc-chip
 }
 
 /* WebKit/Safari paints form-control text via `-webkit-text-fill-color`,
- * which takes precedence over `color`. Pin both per theme so typed text
- * follows the surface (black on light, white on dark) and never falls
- * back to a UA default. Light-mode rule must come *after* the base rule
- * so source order locks in alongside `!important`. */
+ * which takes precedence over `color`. Pin all three to the pill-surface
+ * text token so typed text follows the inverted pill surface in both
+ * themes (white on dark pill in light mode, black on white pill in dark
+ * mode) and never falls back to a UA default. The drawer-embedded pill
+ * remaps the pill-surface tokens back to the page-tracking ones via the
+ * `.ai-floating-prompt-drawer` carve-out, so this single rule covers
+ * standalone, card-embedded, and drawer-embedded pills. */
 .ai-floating-prompt-textarea {
   appearance: none;
   background: transparent;
@@ -1804,18 +1837,13 @@ modus-wc-chip
   box-shadow: none;
   resize: none;
   font: inherit;
-  color: #000 !important;
-  -webkit-text-fill-color: #000 !important;
-  caret-color: #000 !important;
+  color: var(--ai-floating-prompt-pill-surface-text) !important;
+  -webkit-text-fill-color: var(--ai-floating-prompt-pill-surface-text) !important;
+  caret-color: var(--ai-floating-prompt-pill-surface-text) !important;
   padding: 0.375rem 0.25rem;
   max-height: 6rem;
   overflow-y: auto;
   line-height: 1.4;
-}
-[data-theme$="-dark"] .ai-floating-prompt-textarea {
-  color: #fff !important;
-  -webkit-text-fill-color: #fff !important;
-  caret-color: #fff !important;
 }
 
 /* Suppress all per-element focus chrome on the textarea: the bar's
@@ -1830,11 +1858,12 @@ modus-wc-chip
 
 /* Modus reference renders the placeholder as a muted gray (about 55% of
  * the surface text color), distinct from the typed text which is fully
- * opaque. Mix the surface-text color with the surface so the placeholder
- * follows light/dark themes without falling back to a UA default. */
+ * opaque. Mix the pill-surface-text color with the pill-surface so the
+ * placeholder follows the inverted pill in light/dark themes without
+ * falling back to a UA default. */
 .ai-floating-prompt-textarea::placeholder {
-  color: color-mix(in srgb, var(--ai-floating-prompt-surface-text) 55%, var(--ai-floating-prompt-surface)) !important;
-  -webkit-text-fill-color: color-mix(in srgb, var(--ai-floating-prompt-surface-text) 55%, var(--ai-floating-prompt-surface)) !important;
+  color: color-mix(in srgb, var(--ai-floating-prompt-pill-surface-text) 55%, var(--ai-floating-prompt-pill-surface)) !important;
+  -webkit-text-fill-color: color-mix(in srgb, var(--ai-floating-prompt-pill-surface-text) 55%, var(--ai-floating-prompt-pill-surface)) !important;
   opacity: 1 !important;
 }
 
@@ -1968,7 +1997,7 @@ modus-wc-chip
   inset: 2.25px;
   z-index: 0;
   border-radius: 50%;
-  background: var(--ai-floating-prompt-surface);
+  background: var(--ai-floating-prompt-pill-surface);
 }
 
 @keyframes ai-floating-prompt-progress-ring-rotate {
@@ -2057,18 +2086,18 @@ modus-wc-chip
   border-radius: 0.375rem;
   cursor: pointer;
   flex-shrink: 0;
-  color: var(--ai-floating-prompt-surface-text);
+  color: var(--ai-floating-prompt-pill-surface-text);
   transition: background-color 150ms;
 }
 
 .ai-floating-prompt-toolbar-button:hover,
 .ai-floating-prompt-toolbar-button:focus-visible {
-  background: var(--ai-floating-prompt-surface-elevated);
+  background: var(--ai-floating-prompt-pill-surface-elevated);
   outline: none;
 }
 
 .ai-floating-prompt-toolbar-button[aria-pressed="true"] {
-  background: var(--ai-floating-prompt-surface-elevated);
+  background: var(--ai-floating-prompt-pill-surface-elevated);
 }
 
 .ai-floating-prompt-toolbar-button > i {
@@ -2089,7 +2118,7 @@ modus-wc-chip
   font-size: 0.6875rem;
   line-height: 1;
   font-weight: 600;
-  color: var(--ai-floating-prompt-surface-text);
+  color: var(--ai-floating-prompt-pill-surface-text);
 }
 
 /* Persona-aware Tools menu can run 7-10 entries; cap the scroll region so
@@ -2142,6 +2171,17 @@ modus-wc-chip
   pointer-events: auto;
   outline: none;
   animation: ai-floating-prompt-drawer-in 200ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* Drawer carve-out: the standalone pill, the response card, and the
+   * suggestion + action chips run on the *inverted* pill-surface tokens
+   * so they read as a high-contrast AI surface against the page. The
+   * drawer is excluded from that inversion -- remap the pill-surface
+   * tokens back to the page-tracking surface tokens here so the embedded
+   * composer pill (anchorPrefix="drawer") and the toolbar-button icons
+   * inside the drawer header keep the same look as today's drawer. */
+  --ai-floating-prompt-pill-surface: var(--ai-floating-prompt-surface);
+  --ai-floating-prompt-pill-surface-text: var(--ai-floating-prompt-surface-text);
+  --ai-floating-prompt-pill-surface-elevated: var(--ai-floating-prompt-surface-elevated);
 }
 
 @keyframes ai-floating-prompt-drawer-in {

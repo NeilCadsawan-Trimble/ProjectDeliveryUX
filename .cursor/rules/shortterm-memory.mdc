@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: May 11, 2026
+**Current window**: May 26, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -31,13 +31,14 @@ If the date matches today, skip this section and proceed normally.
 
 ## Today's Sessions
 
-*(May 11, 2026)*
+*(May 26, 2026)*
 
 ## Active Context
 
-- On `dev` branch (per session 25 context). Verify current branch on first git command.
+- On `dev` branch (carried from prior sessions). Verify with `git status` if branch matters.
 
 ## Pending Items
 
+- Modus 1.5 bordered-surface migration (Session 26, May 21) shipped to working tree but **not yet committed/pushed**. Manual smoke pass across all 6 themes on Home, Financials, Projects, project-dashboard sub-pages, Profile, Account Settings still pending user verification before any push.
 - Voice input (Deepgram, shipped May 5) still awaits user's manual end-to-end mic verification in the browser. If issues appear (transcript merging, mic not releasing), revisit `VoiceInputService` and composer pill stop hooks.
 - `@deepgram/sdk` adds ~200KB to initial bundle (Angular budget warning). Consider lazy-loading the service if the warning becomes an actual budget failure.

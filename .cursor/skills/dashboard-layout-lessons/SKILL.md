@@ -1,6 +1,6 @@
 ---
 name: dashboard-layout-lessons
-description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, the toolbar search/filter layout, the layout seed/reset/persona-switch system, the AI floating prompt pill (send/stop buttons, pill chrome, edge-glow shadow stack, Modus pattern alignment), the non-modal coexistence contract between the floating prompt and the Trimble Assistant slide-out drawer (phase short-circuit, host-listener close, scrim removal, pointer-events split, context-aware drawer header), or the Deepgram voice-input pipeline behind the mic button (ephemeral-token Edge Function + dev-proxy parity, browser SDK subprotocol auth, NgZone-wrapped events, level-meter rAF outside Angular's zone, idempotent cleanup, construction keyterm vocabulary, Member-role API key requirement, v5 string-boolean params). Covers pitfalls that have caused repeated regressions.
+description: Hard-won patterns for the dashboard layout engine, canvas-mode styling, and widget interaction. Use when modifying push-squeeze resize logic, collision resolution, canvas BFS push algorithm, canvas detail expansion, canvas navbar/sidenav CSS, widget selection/deselection, overflow behavior, tile detail template patterns, view-mode parity, area-adaptive widget content, CSS text scaling, canvas zoom, aligning page layouts with the shared DashboardPageBase, modifying the Modus navbar (including hamburger, Trimble logo, icon order, and fallback rendering), the collapsible subnav component, the toolbar search/filter layout, the layout seed/reset/persona-switch system, the AI floating prompt pill (send/stop buttons, pill chrome, edge-glow shadow stack, Modus pattern alignment), the non-modal coexistence contract between the floating prompt and the Trimble Assistant slide-out drawer (phase short-circuit, host-listener close, scrim removal, pointer-events split, context-aware drawer header), the Deepgram voice-input pipeline behind the mic button (ephemeral-token Edge Function + dev-proxy parity, browser SDK subprotocol auth, NgZone-wrapped events, level-meter rAF outside Angular's zone, idempotent cleanup, construction keyterm vocabulary, Member-role API key requirement, v5 string-boolean params), or the Modus 1.5 bordered-surface convention (--card token re-points to base-page, every bg-card surface becomes page-colored with a 1px border, nested cells use bg-muted per Modus child-card guidance). Covers pitfalls that have caused repeated regressions.
 ---
 
 # Dashboard Layout Lessons
@@ -2149,6 +2149,90 @@ Voice input is one of the highest-leverage UX upgrades on the floating prompt --
 
 ---
 
+## 46. Modus 1.5 Bordered Surfaces -- `--card` Re-Points to `base-page`
+
+**Files:** `src/styles.css` (`@theme`, `:root`), every component using `bg-card`
+
+### What changed
+
+Modus 1.5 (`@trimble-oss/moduswebcomponents@1.5.0`, commit `9ddd34a`) ships two card surface modes:
+
+```css
+/* node_modules/@trimble-oss/moduswebcomponents/collection/components/modus-wc-card/modus-wc-card.css */
+modus-wc-card .modus-wc-card:not(.modus-wc-card-bordered) {
+  background-color: var(--modus-wc-color-base-100);   /* old default: filled grey */
+}
+modus-wc-card .modus-wc-card.modus-wc-card-bordered {
+  background-color: var(--modus-wc-color-base-page);  /* new pattern: page-colored + border */
+}
+```
+
+Per Modus's own setup guide (`.cursor/rules/modus-setup.mdc` §3.1, §5.1):
+- `--modus-wc-color-base-page` → page background
+- `--modus-wc-color-base-100` → grey card fill (now reserved for Modus chrome like the navbar)
+- `--modus-wc-color-base-200` → borders, dividers, **AND child card backgrounds**
+
+### The migration
+
+This project's `bg-card` Tailwind utility re-points from `base-100` to `base-page`:
+
+```css
+/* src/styles.css */
+@theme {
+  --color-card: var(--modus-wc-color-base-page);  /* was: base-100 */
+}
+:root {
+  --card: var(--modus-wc-color-base-page);        /* was: base-100 */
+}
+```
+
+That single token change converts every dashboard widget shell, KPI card, dropdown menu, and toolbar panel to the new bordered + page-colored look automatically, because every `bg-card` usage in the project is already paired with either `border-default` (most surfaces) or `border-default + shadow` (dropdowns).
+
+### Why no template changes were needed
+
+| `bg-card` usage pattern | Result after re-point |
+|---|---|
+| `bg-card border-default ...` (single line) | Bordered + page-bg ✓ |
+| `bg-card ...` + `[class.border-default]="!selected()"` on next line (widget-frame shell) | Bordered + page-bg, primary border when selected ✓ |
+| `bg-card border-default shadow-lg` (dropdowns, popovers) | Self-contained, identical to before but page-colored ✓ |
+| Navbar action buttons (`bg-card text-foreground hover:bg-muted`) on `.app-navbar` (`base-100`) | Page-bg buttons pop against the still-grey navbar ✓ |
+| Nested cells with `gap-px bg-muted` grid-line trick (e.g. `financials-page.ts:604`) | Cells stay flat page-bg, `bg-muted` shows through gaps as grid lines ✓ |
+| Toggle thumbs, segmented active states, 360-overlay badges | Preserved against colored tracks / images / shadows ✓ |
+
+### Nested cells: use `bg-muted` per Modus child-card guidance
+
+When **new** nested cells need to contrast against a now-page-colored parent, use `bg-muted` (= `base-200`) rather than `bg-card`. Modus ships an explicit `!important` override for this exact case:
+
+```css
+/* From Modus setup docs */
+modus-wc-card modus-wc-card article {
+  background-color: var(--modus-wc-color-base-200) !important;
+}
+```
+
+In this project the equivalent is `<div class="bg-muted ...">`. Do **not** introduce new `bg-card` cells nested inside another `bg-card` container -- they will visually disappear (page-bg on page-bg).
+
+### Dark-mode contrast actually improves
+
+| Theme | page (`base-page`) | border (`base-200`) | Before contrast | After contrast |
+|---|---|---|---|---|
+| modus-modern-light | #fff | #e9eaf0 | ~3% | ~9% |
+| modus-modern-dark | #171c1e | #464b52 | ~6% | ~17% |
+| modus-classic-light | #fff | #cbcdd6 | ~12% | ~21% |
+| modus-classic-dark | #000 | #464b52 | ~16% | ~27% |
+| connect-light | #fff | #cbcdd6 | ~12% | ~21% |
+| connect-dark | #000 | #464b52 | ~16% | ~27% |
+
+In every theme, the 1px border is **more visible** after the migration because page-bg sits further from `base-200` than `base-100` did. No per-theme `--border` override is needed.
+
+### Regression-prone moments
+
+1. Anyone adding a new "card on card" pattern in templates will get an invisible inner cell. Use `bg-muted` for the inner; reserve `bg-card` for top-level surfaces.
+2. The lint hint in `scripts/check-modus-colors.js` (`'var(--modus-wc-color-base-100)': 'bg-card'`) is intentionally stale -- there's no longer a semantic Tailwind class that maps to `base-100`. Raw `base-100` usage is only valid for Modus chrome (navbar). If a developer raw-types `base-100`, the suggested replacement `bg-card` is incorrect under the new mapping; recommend `bg-muted` instead.
+3. The AI floating prompt + drawer use their own `--ai-floating-prompt-surface` (`#fff`/`#000`) and are unaffected by the `--card` re-point. Keep them on that token.
+
+---
+
 ## Quick Reference: Files and Regression Tests
 
 | Concern | Source file | Test file |
@@ -2205,3 +2289,4 @@ Voice input is one of the highest-leverage UX upgrades on the floating prompt --
 | Touching != overlapping in canvas cleanup | `dashboard-layout-engine.ts` (`cleanupCanvasOverlaps`) | `dashboard-layout-engine.spec.ts > cleanupCanvasOverlaps treats touching widgets as non-overlapping` |
 | `resetToDefaults` split-test pattern | `dashboard-layout-engine.ts` | `dashboard-layout-engine.spec.ts > resetToDefaults` (one for default-application, one for compactAll) |
 | Deepgram voice input pipeline (mic button + STT) | `api/deepgram-token.ts`, `dev-proxy.mjs` (`handleDeepgramToken`), `src/app/services/voice-input.service.ts`, `src/app/data/voice-vocabulary.ts`, `src/app/shell/components/ai-composer-pill.component.ts`, `src/styles.css` | `tests/static/deepgram-token-endpoint.spec.ts` (16), `tests/static/voice-vocabulary.spec.ts` (24), `tests/static/ai-floating-prompt.spec.ts > Voice input wiring (Deepgram)` (13) |
+| Modus 1.5 bordered surfaces (`--card` -> base-page) | `src/styles.css` (`--color-card`, `--card`), every `bg-card` consumer | (visual: smoke pass on widget shells, KPI cards, dropdowns, financials grid in all 6 themes) |
