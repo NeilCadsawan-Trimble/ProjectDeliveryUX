@@ -9,7 +9,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
@@ -34,7 +34,7 @@ import type { DashboardWidgetId, Project, Estimate, RevenueTimeRange, RevenueDat
 import { JOB_COST_CATEGORIES } from '../../data/dashboard-data.types';
 import { CATEGORY_COLORS } from '../../data/dashboard-data.seed';
 import { budgetProgressClass, estimateBadgeColor, dueDateClass, getRevenueData, getRevenueSummary, getJobCostSummary, coBadgeColor, coTypeLabel, formatCurrency as sharedFormatCurrency, getInvoiceAgingBuckets, getDSO, invoiceStatusBadge, getUpcomingBillings, billingFrequencyLabel, getPayablesSummary, payableStatusBadge, getCashRunway, getCashFlowTrend, getGLBalanceSheet, getPOSummary, poStatusBadge, getPayrollSummary, getMonthlyPayrollTotals, payrollStatusBadge, getContractSummary, getSubcontractLedgerSummary, contractStatusBadge, contractTypeLabel, contractTypeLabelShort, ledgerTypeBadge, ledgerTypeLabel, formatJobCost as sharedFormatJobCost, capitalizeFirst as sharedCapitalizeFirst } from '../../data/dashboard-data.formatters';
-import { getAgent, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
+import { getAgent, getSuggestions, type AgentAlert, type AgentDataState } from '../../data/widget-agents';
 import { FINANCIALS_WIDGETS, KELLY_FINANCIALS_WIDGETS, PAMELA_FINANCIALS_WIDGETS } from '../../data/widget-registrations';
 import { AiPageContextService } from '../../shell/services/ai-page-context.service';
 import { AiService, type AiContext } from '../../services/ai.service';
@@ -2956,6 +2956,7 @@ export class FinancialsPageComponent extends DashboardPageBase {
 
     this.aiPageContext.register({
       contextProvider: () => this.buildPageAiContext(),
+      suggestionsProvider: () => this.buildPageAiSuggestions(),
       localResponder: () => (q: string) => this.respondToFinancialsQuery(q),
       contextKey: () => this.aiContextKey(),
     });
@@ -3823,11 +3824,17 @@ export class FinancialsPageComponent extends DashboardPageBase {
     window.history.replaceState({}, '', url.toString());
   }
 
+  private readonly _queryParamMap = toSignal(this.route.queryParamMap, {
+    initialValue: this.route.snapshot.queryParamMap,
+  });
+
   private readonly _restoreSubPage = effect(() => {
-    const params = this.route.snapshot.queryParamMap;
+    const params = this._queryParamMap();
     const sp = params.get('subpage');
     if (sp && this.finSubNavItems().some(i => i.value === sp)) {
       this.activeSubPage.set(sp);
+    } else if (!sp) {
+      this.activeSubPage.set('overview');
     }
     const ef = params.get('estimateFilter');
     if (ef === 'overdue' || ef === 'awaiting' || ef === 'approved') {
@@ -4448,6 +4455,19 @@ export class FinancialsPageComponent extends DashboardPageBase {
       projectData: baseData + detailSuffix,
       agentPrompt: agent.systemPrompt,
     });
+  }
+
+  /**
+   * Suggestions must follow the same agent resolution as `buildPageAiContext`,
+   * otherwise the AI panel falls back to the controller's page-default
+   * (`financialsDefault`) and shows mixed-topic prompts on subpages or detail
+   * views — e.g. budget/revenue prompts on the change-orders subpage.
+   */
+  private buildPageAiSuggestions(): string[] {
+    const agentId = this.resolveActiveFinAgentId();
+    const agent = getAgent(agentId, 'financials');
+    const state = this.buildFinancialsAgentState();
+    return getSuggestions(agent, state);
   }
 
   private respondToFinancialsQuery(q: string): string {

@@ -40,7 +40,7 @@ import {
   weatherIcon,
   weatherIconColor,
 } from '../../data/dashboard-data.formatters';
-import { getAgent, type AgentDataState } from '../../data/widget-agents';
+import { getAgent, getSuggestions, type AgentDataState } from '../../data/widget-agents';
 import type { Milestone, TeamMember, Risk } from '../../data/project-data';
 import { AiPageContextService } from '../../shell/services/ai-page-context.service';
 import { AiService, type AiContext } from '../../services/ai.service';
@@ -133,6 +133,7 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
 
     this.aiPageContext.register({
       contextProvider: () => this.buildPageAiContext(),
+      suggestionsProvider: () => this.buildPageAiSuggestions(),
       localResponder: () => (q: string) => this.respondToProjectsQuery(q),
       contextKey: () => this.aiContextKey(),
     });
@@ -178,6 +179,25 @@ export class ProjectsPageComponent extends DashboardPageBase implements AfterVie
     }
     const state = this.buildPortfolioAgentState();
     return getAgent(null, 'projects').localRespond(q, state);
+  }
+
+  /**
+   * Suggestions must follow the same agent resolution as `buildPageAiContext`
+   * (selected project tile → `projectDefault` with project-scoped state,
+   * otherwise the portfolio `projectsDefault`). Without this the AI panel
+   * falls back to the controller's `getAgent(widgetId, 'projects')` lookup
+   * which returns the portfolio agent for both modes — so a selected project
+   * tile would still see portfolio-wide prompts instead of project-focused ones.
+   */
+  private buildPageAiSuggestions(): string[] {
+    const widgetId = this.widgetFocusService.selectedWidgetId();
+    const project = widgetId ? this.projectWidgetMap()[widgetId] : undefined;
+    if (project) {
+      const state = this.buildSelectedProjectAgentState(project);
+      return getSuggestions(getAgent('projectDefault', 'projects'), state);
+    }
+    const state = this.buildPortfolioAgentState();
+    return getSuggestions(getAgent(null, 'projects'), state);
   }
 
   private aiContextKey(): string {

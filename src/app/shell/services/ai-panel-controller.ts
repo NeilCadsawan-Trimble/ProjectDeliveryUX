@@ -604,7 +604,7 @@ export class AiPanelController {
       { id: ++this.messageCounter, role: 'user', text: action.label },
     ]);
 
-    const result = action.execute({});
+    const result = action.execute(this.buildAgentDataState());
 
     this.messages.update(msgs => [
       ...msgs,
@@ -739,9 +739,21 @@ export class AiPanelController {
       projectRevenue: this.dataStore.projectRevenue(),
       allWeatherData: this.dataStore.weatherData(),
       allJobCosts: this.dataStore.projectJobCosts(),
+      contracts: this.dataStore.contracts(),
+      learningPlan: this.dataStore.learningPlan(),
+      apInvoices: this.dataStore.apInvoices(),
+      apVendors: this.dataStore.apVendors(),
+      apPayApplications: this.dataStore.apPayApplications(),
+      apLienWaivers: this.dataStore.apLienWaivers(),
+      apRetention: this.dataStore.apRetention(),
+      apActivities: this.dataStore.apActivities(),
+      apPaymentSchedule: this.dataStore.apPaymentSchedule(),
       currentPage: page,
       personaSlug: this.personaService.activePersonaSlug(),
     };
+    const projectDetailMap = this.dataStore.projectDetailData();
+    state.milestones = Object.values(projectDetailMap).flatMap(pd => pd.milestones ?? []);
+    state.tasks = Object.values(projectDetailMap).flatMap(pd => pd.tasks ?? []);
     if (page === 'financials-job-cost-detail') {
       const suffix = this.getRouteSuffix();
       const slug = suffix.replace('/financials/job-costs/', '').split('?')[0];
