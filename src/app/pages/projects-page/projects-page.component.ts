@@ -14,7 +14,7 @@ import { Router } from '@angular/router';
 import { DataStoreService } from '../../data/data-store.service';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { ModusProgressComponent } from '../../components/modus-progress.component';
-import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
+import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
 import { ChartComponent, type ApexAxisChartSeries } from 'ng-apexcharts';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
@@ -103,7 +103,7 @@ const RIGHT_COL_BLOCKS = new Set<ContentBlock>(['schedule', 'budget', 'sparkline
 
 @Component({
   selector: 'app-projects-page',
-  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetResizeHandleComponent, WidgetLockToggleComponent, ChartComponent, CreateMenuDropdownComponent, ModusTypographyComponent],
+  imports: [ModusBadgeComponent, ModusProgressComponent, WidgetFrameComponent, WidgetLockToggleComponent, ChartComponent, CreateMenuDropdownComponent, ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:mousemove)': 'onDocumentMouseMove($event)',

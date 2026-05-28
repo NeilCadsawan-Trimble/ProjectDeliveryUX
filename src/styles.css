@@ -1232,6 +1232,39 @@ modus-wc-typography {
 [data-theme='connect-light'] modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-bold,
 [data-theme='connect-dark']  modus-wc-typography .modus-wc-typography-override.modus-wc-typography-weight-bold { font-weight: var(--modus-wc-font-weight-bold); }
 
+/*
+ * text-foreground-strong color override for modus-wc-typography.
+ *
+ * <modus-typography> passes its className input to the modus-wc-typography
+ * HOST element via Modus's `customClass` prop. The inner heading (h1-h6) /
+ * paragraph that Modus renders carries `.modus-wc-typography`, and Modus's
+ * own heading color rule (specificity 0,0,1,2: element + class + element)
+ * outranks the host-level utility class .text-foreground-strong (0,0,1,0).
+ * Result: 23 widget titles across home / financials / projects (plus the
+ * WidgetFrameComponent default) all opt into .text-foreground-strong but
+ * the inner h1-h6 still inherit Modus base-content (rgb(203,205,214) in
+ * dark themes) instead of lifting to #fff per --foreground-strong.
+ *
+ * This rule matches Modus's typography specificity (element + class + element
+ * descendant) and loads after modus-wc-styles.css, so widget chrome titles
+ * finally render at --foreground-strong: theme-aware base-content in light
+ * themes (no change) and #fff in dark themes (titles lift above Modus's
+ * off-white base-content for stronger chrome hierarchy).
+ *
+ * Scope: only typographic content inside a modus-wc-typography host that
+ * explicitly opts in via .text-foreground-strong customClass. Body copy and
+ * other typography are unaffected. See --foreground-strong in :root.
+ */
+modus-wc-typography.text-foreground-strong > h1,
+modus-wc-typography.text-foreground-strong > h2,
+modus-wc-typography.text-foreground-strong > h3,
+modus-wc-typography.text-foreground-strong > h4,
+modus-wc-typography.text-foreground-strong > h5,
+modus-wc-typography.text-foreground-strong > h6,
+modus-wc-typography.text-foreground-strong > p {
+  color: var(--foreground-strong);
+}
+
 /* We also target the internal div using ::part() or deep selectors as fallback */
 modus-wc-divider {
   display: block;

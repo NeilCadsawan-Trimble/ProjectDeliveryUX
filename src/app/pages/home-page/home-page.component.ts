@@ -23,7 +23,6 @@ import type { LayoutSeed } from '../../data/layout-seeds/layout-seed.types';
 import { CanvasDetailManager, FREESTANDING_DETAIL_PREFIX, type DetailView } from '../../shell/services/canvas-detail-manager';
 import { AiPageContextService } from '../../shell/services/ai-page-context.service';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
-import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
 import { ItemDetailViewComponent } from '../../shared/detail/item-detail-view.component';
 import {
   type StatusOption,
@@ -111,7 +110,6 @@ const HOME_MIN_CONTENT_PX = 80;
   selector: 'app-home-page',
   imports: [
     WidgetLockToggleComponent,
-    WidgetResizeHandleComponent,
     ItemDetailViewComponent,
     DrawingMarkupToolbarComponent,
     PdfViewerComponent,
@@ -520,102 +518,90 @@ const HOME_MIN_CONTENT_PX = 80;
                 </app-widget-frame>
 
               } @else if (widgetId === 'homeTimeOff') {
-                <div class="bg-card rounded-lg flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
-                  >
-                    <div class="flex items-center gap-2">
-                      @if (isTimeOffCompact() && timeOffMobileExpanded()) {
-                        <div
-                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
-                          role="button" tabindex="0" aria-label="Back to Time Off summary"
-                          (click)="$event.stopPropagation(); collapseTimeOffMobile()"
-                          (mousedown)="$event.stopPropagation()"
-                          (touchstart)="$event.stopPropagation()"
-                          (keydown.enter)="collapseTimeOffMobile()"
-                          (keydown.space)="$event.preventDefault(); collapseTimeOffMobile()"
-                        >
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
-                        </div>
-                      } @else {
-                        <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      }
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">Time Off</modus-typography>
-                      @if (criticalStaffingConflicts().length) {
-                        <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive-20">
-                          <i class="modus-icons text-2xs text-destructive" aria-hidden="true">warning</i>
-                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ criticalStaffingConflicts().length }} conflict{{ criticalStaffingConflicts().length === 1 ? '' : 's' }}</modus-typography>
-                        </div>
-                      } @else if (pendingTimeOffCount() > 0) {
-                        <div class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
-                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-warning">{{ pendingTimeOffCount() }} pending</modus-typography>
-                        </div>
-                      }
+                <app-widget-frame
+                  [title]="'Time Off'"
+                  [icon]="'calendar'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h3'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [overflowVisible]="true"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? timeOffInsight() : null"
+                  [backButtonAriaLabel]="(isTimeOffCompact() && timeOffMobileExpanded()) ? 'Back to Time Off summary' : null"
+                  (backClick)="collapseTimeOffMobile()"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  @if (criticalStaffingConflicts().length) {
+                    <div headerExtra class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive-20">
+                      <i class="modus-icons text-2xs text-destructive" aria-hidden="true">warning</i>
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ criticalStaffingConflicts().length }} conflict{{ criticalStaffingConflicts().length === 1 ? '' : 's' }}</modus-typography>
                     </div>
-                    @if (!isTimeOffCompact()) {
+                  } @else if (pendingTimeOffCount() > 0) {
+                    <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-warning-20">
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-warning">{{ pendingTimeOffCount() }} pending</modus-typography>
+                    </div>
+                  }
+
+                  @if (!isTimeOffCompact()) {
+                    <div
+                      headerTrailing
+                      class="flex items-center rounded-lg border-default overflow-hidden flex-shrink-0"
+                      role="tablist"
+                      aria-label="Time off view"
+                      (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
+                    >
                       <div
-                        class="flex items-center rounded-lg border-default overflow-hidden flex-shrink-0"
-                        role="tablist"
-                        aria-label="Time off view"
-                        (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()"
+                        class="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-colors duration-150 select-none"
+                        [class.bg-primary]="timeOffView() === 'list'"
+                        [class.text-primary-foreground]="timeOffView() === 'list'"
+                        [class.text-foreground-60]="timeOffView() !== 'list'"
+                        role="tab"
+                        tabindex="0"
+                        [attr.aria-selected]="timeOffView() === 'list'"
+                        (click)="timeOffView.set('list')"
+                        (keydown.enter)="timeOffView.set('list')"
+                        (keydown.space)="$event.preventDefault(); timeOffView.set('list')"
                       >
-                        <div
-                          class="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-colors duration-150 select-none"
-                          [class.bg-primary]="timeOffView() === 'list'"
-                          [class.text-primary-foreground]="timeOffView() === 'list'"
-                          [class.text-foreground-60]="timeOffView() !== 'list'"
-                          role="tab"
-                          tabindex="0"
-                          [attr.aria-selected]="timeOffView() === 'list'"
-                          (click)="timeOffView.set('list')"
-                          (keydown.enter)="timeOffView.set('list')"
-                          (keydown.space)="$event.preventDefault(); timeOffView.set('list')"
-                        >
-                          <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
-                          <modus-typography size="xs" weight="semibold">List</modus-typography>
-                        </div>
-                        <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
-                        <div
-                          class="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-colors duration-150 select-none"
-                          [class.bg-primary]="timeOffView() === 'staffing'"
-                          [class.text-primary-foreground]="timeOffView() === 'staffing'"
-                          [class.text-foreground-60]="timeOffView() !== 'staffing'"
-                          role="tab"
-                          tabindex="0"
-                          [attr.aria-selected]="timeOffView() === 'staffing'"
-                          (click)="timeOffView.set('staffing')"
-                          (keydown.enter)="timeOffView.set('staffing')"
-                          (keydown.space)="$event.preventDefault(); timeOffView.set('staffing')"
-                        >
-                          <i class="modus-icons text-sm" aria-hidden="true">people_group</i>
-                          <modus-typography size="xs" weight="semibold">Staffing</modus-typography>
-                        </div>
-                        <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
-                        <div
-                          class="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-colors duration-150 select-none"
-                          [class.bg-primary]="timeOffView() === 'calendar'"
-                          [class.text-primary-foreground]="timeOffView() === 'calendar'"
-                          [class.text-foreground-60]="timeOffView() !== 'calendar'"
-                          role="tab"
-                          tabindex="0"
-                          [attr.aria-selected]="timeOffView() === 'calendar'"
-                          (click)="timeOffView.set('calendar')"
-                          (keydown.enter)="timeOffView.set('calendar')"
-                          (keydown.space)="$event.preventDefault(); timeOffView.set('calendar')"
-                        >
-                          <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
-                          <modus-typography size="xs" weight="semibold">Calendar</modus-typography>
-                        </div>
+                        <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
+                        <modus-typography size="xs" weight="semibold">List</modus-typography>
                       </div>
-                    }
-                  </div>
-                  @if (showHomeBlock(widgetId, 'insight') && timeOffInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ timeOffInsight() }}</modus-typography>
+                      <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
+                      <div
+                        class="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-colors duration-150 select-none"
+                        [class.bg-primary]="timeOffView() === 'staffing'"
+                        [class.text-primary-foreground]="timeOffView() === 'staffing'"
+                        [class.text-foreground-60]="timeOffView() !== 'staffing'"
+                        role="tab"
+                        tabindex="0"
+                        [attr.aria-selected]="timeOffView() === 'staffing'"
+                        (click)="timeOffView.set('staffing')"
+                        (keydown.enter)="timeOffView.set('staffing')"
+                        (keydown.space)="$event.preventDefault(); timeOffView.set('staffing')"
+                      >
+                        <i class="modus-icons text-sm" aria-hidden="true">people_group</i>
+                        <modus-typography size="xs" weight="semibold">Staffing</modus-typography>
+                      </div>
+                      <div class="w-px h-5 bg-muted flex-shrink-0" aria-hidden="true"></div>
+                      <div
+                        class="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer transition-colors duration-150 select-none"
+                        [class.bg-primary]="timeOffView() === 'calendar'"
+                        [class.text-primary-foreground]="timeOffView() === 'calendar'"
+                        [class.text-foreground-60]="timeOffView() !== 'calendar'"
+                        role="tab"
+                        tabindex="0"
+                        [attr.aria-selected]="timeOffView() === 'calendar'"
+                        (click)="timeOffView.set('calendar')"
+                        (keydown.enter)="timeOffView.set('calendar')"
+                        (keydown.space)="$event.preventDefault(); timeOffView.set('calendar')"
+                      >
+                        <i class="modus-icons text-sm" aria-hidden="true">calendar</i>
+                        <modus-typography size="xs" weight="semibold">Calendar</modus-typography>
+                      </div>
                     </div>
                   }
 
@@ -853,7 +839,7 @@ const HOME_MIN_CONTENT_PX = 80;
                       </div>
                     }
                   }
-                </div>
+                </app-widget-frame>
                 @if (timeOffStatusOpen() !== null) {
                   <div class="fixed z-[9999] bg-card border-default rounded-lg shadow-lg min-w-[120px] py-1"
                     [style.top.px]="timeOffDropdownPos().top"
@@ -870,61 +856,54 @@ const HOME_MIN_CONTENT_PX = 80;
                     }
                   </div>
                 }
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
               }
               @else if (widgetId === 'homeCalendar') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">Calendar</modus-typography>
-                      <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</modus-typography>
+                <app-widget-frame
+                  [title]="'Calendar'"
+                  [icon]="'calendar'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h3'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? calendarInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <modus-typography headerExtra hierarchy="p" size="xs" className="text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</modus-typography>
+
+                  <div headerTrailing class="flex items-center gap-1" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                    <div
+                      class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                      role="button" tabindex="0" aria-label="Previous day"
+                      (click)="prevCalendarDay()"
+                      (keydown.enter)="prevCalendarDay()"
+                      (keydown.space)="$event.preventDefault(); prevCalendarDay()"
+                    >
+                      <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
                     </div>
-                    <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
-                      <div
-                        class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                        role="button" tabindex="0" aria-label="Previous day"
-                        (click)="prevCalendarDay()"
-                        (keydown.enter)="prevCalendarDay()"
-                        (keydown.space)="$event.preventDefault(); prevCalendarDay()"
-                      >
-                        <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_left</i>
-                      </div>
-                      <div
-                        class="px-2 py-1 text-primary cursor-pointer hover:bg-primary-20 rounded transition-colors duration-150 select-none"
-                        role="button" tabindex="0" aria-label="Go to today"
-                        (click)="resetCalendarToToday()"
-                        (keydown.enter)="resetCalendarToToday()"
-                        (keydown.space)="$event.preventDefault(); resetCalendarToToday()"
-                      ><modus-typography size="xs" weight="semibold">Today</modus-typography></div>
-                      <div
-                        class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
-                        role="button" tabindex="0" aria-label="Next day"
-                        (click)="nextCalendarDay()"
-                        (keydown.enter)="nextCalendarDay()"
-                        (keydown.space)="$event.preventDefault(); nextCalendarDay()"
-                      >
-                        <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_right</i>
-                      </div>
+                    <div
+                      class="px-2 py-1 text-primary cursor-pointer hover:bg-primary-20 rounded transition-colors duration-150 select-none"
+                      role="button" tabindex="0" aria-label="Go to today"
+                      (click)="resetCalendarToToday()"
+                      (keydown.enter)="resetCalendarToToday()"
+                      (keydown.space)="$event.preventDefault(); resetCalendarToToday()"
+                    ><modus-typography size="xs" weight="semibold">Today</modus-typography></div>
+                    <div
+                      class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150"
+                      role="button" tabindex="0" aria-label="Next day"
+                      (click)="nextCalendarDay()"
+                      (keydown.enter)="nextCalendarDay()"
+                      (keydown.space)="$event.preventDefault(); nextCalendarDay()"
+                    >
+                      <i class="modus-icons text-sm text-foreground-60" aria-hidden="true">chevron_right</i>
                     </div>
                   </div>
-                  @if (showHomeBlock(widgetId, 'insight') && calendarInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ calendarInsight() }}</modus-typography>
-                    </div>
-                  }
 
-                  <div class="flex flex-shrink-0 border-bottom-default" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                  <div headerBelow class="flex flex-shrink-0 border-top-default" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                     <div class="w-12 flex-shrink-0"></div>
                     <div class="flex-1 py-2 px-3 text-center border-right-default">
                       <modus-typography hierarchy="p" size="xs" weight="semibold" className="uppercase tracking-wide {{ calendarDay1Meta().isToday ? 'text-primary' : 'text-foreground-60' }}">
@@ -1004,7 +983,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-4 px-5 pb-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                  <div footer class="flex items-center gap-4 px-5 pb-3 border-top-default flex-shrink-0" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                     <div class="flex items-center gap-1.5">
                       <div class="w-2 h-2 rounded-sm bg-primary"></div>
                       <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Meeting</modus-typography>
@@ -1026,49 +1005,29 @@ const HOME_MIN_CONTENT_PX = 80;
                       <modus-typography hierarchy="p" size="xs" className="text-foreground-60">Focus</modus-typography>
                     </div>
                   </div>
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
+                </app-widget-frame>
               }
               @else if (widgetId === 'homeRfis') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
-                  >
-                    <div class="flex items-center gap-2">
-                      @if (isRfiCompact() && rfiMobileExpanded()) {
-                        <div
-                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
-                          role="button" tabindex="0" aria-label="Back to RFI summary"
-                          (click)="$event.stopPropagation(); collapseRfiMobile()"
-                          (mousedown)="$event.stopPropagation()"
-                          (touchstart)="$event.stopPropagation()"
-                          (keydown.enter)="collapseRfiMobile()"
-                          (keydown.space)="$event.preventDefault(); collapseRfiMobile()"
-                        >
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
-                        </div>
-                      } @else {
-                        <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      }
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">clipboard</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">RFIs</modus-typography>
-                      @if (rfiCounts().overdue > 0) {
-                        <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ rfiCounts().overdue }} overdue</modus-typography>
-                        </div>
-                      }
-                    </div>
-                  </div>
-                  @if (showHomeBlock(widgetId, 'insight') && rfisInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ rfisInsight() }}</modus-typography>
+                <app-widget-frame
+                  [title]="'RFIs'"
+                  [icon]="'clipboard'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h3'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? rfisInsight() : null"
+                  [backButtonAriaLabel]="(isRfiCompact() && rfiMobileExpanded()) ? 'Back to RFI summary' : null"
+                  (backClick)="collapseRfiMobile()"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  @if (rfiCounts().overdue > 0) {
+                    <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ rfiCounts().overdue }} overdue</modus-typography>
                     </div>
                   }
 
@@ -1146,49 +1105,29 @@ const HOME_MIN_CONTENT_PX = 80;
                       }
                     </div>
                   }
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
+                </app-widget-frame>
               }
               @else if (widgetId === 'homeSubmittals') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
-                  >
-                    <div class="flex items-center gap-2">
-                      @if (isSubmittalCompact() && submittalMobileExpanded()) {
-                        <div
-                          class="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted transition-colors duration-150 -ml-1 mr-1"
-                          role="button" tabindex="0" aria-label="Back to Submittal summary"
-                          (click)="$event.stopPropagation(); collapseSubmittalMobile()"
-                          (mousedown)="$event.stopPropagation()"
-                          (touchstart)="$event.stopPropagation()"
-                          (keydown.enter)="collapseSubmittalMobile()"
-                          (keydown.space)="$event.preventDefault(); collapseSubmittalMobile()"
-                        >
-                          <i class="modus-icons text-base text-foreground-60" aria-hidden="true">arrow_left</i>
-                        </div>
-                      } @else {
-                        <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      }
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">Submittals</modus-typography>
-                      @if (submittalCounts().overdue > 0) {
-                        <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ submittalCounts().overdue }} overdue</modus-typography>
-                        </div>
-                      }
-                    </div>
-                  </div>
-                  @if (showHomeBlock(widgetId, 'insight') && submittalsInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ submittalsInsight() }}</modus-typography>
+                <app-widget-frame
+                  [title]="'Submittals'"
+                  [icon]="'document'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h3'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? submittalsInsight() : null"
+                  [backButtonAriaLabel]="(isSubmittalCompact() && submittalMobileExpanded()) ? 'Back to Submittal summary' : null"
+                  (backClick)="collapseSubmittalMobile()"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  @if (submittalCounts().overdue > 0) {
+                    <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ submittalCounts().overdue }} overdue</modus-typography>
                     </div>
                   }
 
@@ -1260,12 +1199,7 @@ const HOME_MIN_CONTENT_PX = 80;
                       }
                     </div>
                   }
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
+                </app-widget-frame>
               }
               @else if (widgetId === 'homeDrawings') {
                 <app-widget-frame
@@ -1415,31 +1349,29 @@ const HOME_MIN_CONTENT_PX = 80;
               }
 
               @else if (widgetId === 'homeUrgentNeeds') {
-                <div class="bg-card rounded-lg overflow-visible flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-destructive" aria-hidden="true">warning</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">Urgent Needs</modus-typography>
-                      @if (urgentCriticalCount() > 0) {
-                        <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
-                          <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ urgentCriticalCount() }} critical</modus-typography>
-                        </div>
-                      }
-                    </div>
-                  </div>
-                  @if (showHomeBlock(widgetId, 'insight') && urgentNeedsInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ urgentNeedsInsight() }}</modus-typography>
+                <app-widget-frame
+                  [title]="'Urgent Needs'"
+                  [icon]="'warning'"
+                  [iconClass]="'text-destructive'"
+                  [titleHierarchy]="'h3'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [overflowVisible]="true"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? urgentNeedsInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  @if (urgentCriticalCount() > 0) {
+                    <div headerExtra class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
+                      <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ urgentCriticalCount() }} critical</modus-typography>
                     </div>
                   }
 
-                  <div class="flex flex-wrap items-center gap-2 px-4 py-2.5 border-bottom-default flex-shrink-0 overflow-visible relative z-20">
+                  <div headerBelow class="flex flex-wrap items-center gap-2 px-4 py-2.5 border-top-default flex-shrink-0 overflow-visible relative z-20">
                     <div class="flex items-center gap-1.5">
                       @for (sev of urgentSeverityOptions; track sev.key) {
                         <div
@@ -1562,7 +1494,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     }
                   </div>
 
-                  <div class="flex items-center justify-between px-5 pb-2.5 border-top-default bg-card flex-shrink-0">
+                  <div footer class="flex items-center justify-between px-5 pb-2.5 border-top-default bg-card flex-shrink-0">
                     <modus-typography hierarchy="p" size="xs" className="text-foreground-40">
                       {{ filteredUrgentNeeds().length }} of {{ allUrgentNeeds().length }} items
                     </modus-typography>
@@ -1570,12 +1502,7 @@ const HOME_MIN_CONTENT_PX = 80;
                       {{ urgentProjectSummary() }}
                     </modus-typography>
                   </div>
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
-                />
+                </app-widget-frame>
 
               } @else if (widgetId === 'homeRecentActivity') {
                 <app-widget-frame
