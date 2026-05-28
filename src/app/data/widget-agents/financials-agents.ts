@@ -369,17 +369,17 @@ export const financialsDefault: WidgetAgent = {
   actions(s) {
     if (s.personaSlug === 'kelly') {
       return [
-        { id: 'open-ap', label: 'Open AP invoices', execute: () => 'Opening Accounts Payable.', route: '/financials/accounts-payable' },
-        { id: 'open-cash', label: 'Open cash management', execute: () => 'Opening Cash Management.', route: '/financials/cash-management' },
-        { id: 'open-ar', label: 'Open accounts receivable', execute: () => 'Opening Accounts Receivable.', route: '/financials/accounts-receivable' },
+        { id: 'open-ap', label: 'Open AP invoices', execute: () => 'Opening Accounts Payable.', route: '/financials?subpage=accounts-payable' },
+        { id: 'open-cash', label: 'Open cash management', execute: () => 'Opening Cash Management.', route: '/financials?subpage=cash-management' },
+        { id: 'open-ar', label: 'Open accounts receivable', execute: () => 'Opening Accounts Receivable.', route: '/financials?subpage=accounts-receivable' },
       ];
     }
     const overBudget = (s.projects ?? []).filter(p => p.budgetPct >= 80);
     const topProject = overBudget.length ? overBudget[0] : (s.projects ?? [])[0];
     if (s.personaSlug === 'pamela') {
       const pamelaActions: AgentAction[] = [
-        { id: 'open-estimates', label: 'Open Estimates', execute: () => 'Opening Estimates.', route: '/financials/estimates' },
-        { id: 'open-change-orders', label: 'Open Change Orders', execute: () => 'Opening change orders.', route: '/financials/change-orders' },
+        { id: 'open-estimates', label: 'Open Estimates', execute: () => 'Opening Estimates.', route: '/financials?subpage=estimates' },
+        { id: 'open-change-orders', label: 'Open Change Orders', execute: () => 'Opening change orders.', route: '/financials?subpage=change-orders' },
       ];
       if (topProject) {
         pamelaActions.push({
@@ -392,8 +392,8 @@ export const financialsDefault: WidgetAgent = {
       return pamelaActions;
     }
     const base: AgentAction[] = [
-      { id: 'open-revenue', label: 'Open revenue view', execute: () => 'Opening revenue breakdown.', route: '/financials' },
-      { id: 'open-change-orders', label: 'Open change orders', execute: () => 'Opening change orders.', route: '/financials' },
+      { id: 'open-revenue', label: 'Open financials overview', execute: () => 'Opening Financials overview.', route: '/financials' },
+      { id: 'open-change-orders', label: 'Open change orders', execute: () => 'Opening change orders.', route: '/financials?subpage=change-orders' },
     ];
     if (topProject) {
       base.push({

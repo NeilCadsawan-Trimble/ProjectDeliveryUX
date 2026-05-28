@@ -13,12 +13,15 @@ import {
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
 
-const PDFJS_CDN = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38';
-
 async function loadPdfPage(url: string): Promise<{ doc: PDFDocumentProxy; page: PDFPageProxy }> {
   const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN}/build/pdf.worker.min.mjs`;
-  const doc = await pdfjsLib.getDocument({ url, cMapUrl: `${PDFJS_CDN}/cmaps/`, cMapPacked: true }).promise;
+  // PDF.js refuses to render when the loaded worker and the imported API are
+  // on different majors. Pinning a literal version here drifted after the
+  // v4 → v5 bump and silently broke every drawing detail view. Derive the URL
+  // from the library's own `version` export so it can never drift again.
+  const cdn = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `${cdn}/build/pdf.worker.min.mjs`;
+  const doc = await pdfjsLib.getDocument({ url, cMapUrl: `${cdn}/cmaps/`, cMapPacked: true }).promise;
   const page = await doc.getPage(1);
   return { doc, page };
 }

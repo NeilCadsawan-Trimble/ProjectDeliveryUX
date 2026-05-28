@@ -122,6 +122,36 @@ const FINANCIALS_DETAIL_PATH: Record<string, string> = {
   'financials-cash-flow': 'cash-flow',
 };
 
+/**
+ * Maps a financials-* destination to the `?subpage=...` value the financials
+ * page exposes when the user wants the LIST view (no specific resource id).
+ * Used when the LLM calls `navigate_to_page` without a resourceId — e.g. the
+ * "Show pending change orders" suggestion resolves to
+ * `/financials?subpage=change-orders` rather than erroring.
+ *
+ * The mapping is one-to-many in places (e.g. `financials-payroll-monthly` and
+ * `financials-payroll` both land on the `payroll` subpage; `gl-entries` /
+ * `gl-accounts` both land on `general-ledger`) because the financials page
+ * collapses related ledgers into a single subpage. Keep aligned with the
+ * `FIN_SUBPAGE_AGENT_MAP` keys in `financials-page.component.ts`.
+ */
+const FINANCIALS_LIST_SUBPAGE: Record<string, string> = {
+  'financials-job-costs': 'job-costs',
+  'financials-change-orders': 'change-orders',
+  'financials-estimates': 'estimates',
+  'financials-invoices': 'accounts-receivable',
+  'financials-payables': 'accounts-payable',
+  'financials-purchase-orders': 'purchase-orders',
+  'financials-contracts': 'contracts',
+  'financials-billing': 'job-billing',
+  'financials-payroll': 'payroll',
+  'financials-payroll-monthly': 'payroll',
+  'financials-subcontract-ledger': 'subcontract-ledger',
+  'financials-gl-entries': 'general-ledger',
+  'financials-gl-accounts': 'general-ledger',
+  'financials-cash-flow': 'cash-management',
+};
+
 /** Maps a project-section destination to its `?page=...` query value (or '' for the default tab). */
 const PROJECT_SECTION_PAGE: Record<string, string> = {
   'project-dashboard': '',
@@ -340,7 +370,10 @@ export class AiToolsService {
         'job-costs project, billing event, payroll-monthly, subcontract ledger, GL account), or a specific',
         'record inside a project (RFI, submittal, daily report, inspection, punch item, drawing, panorama).',
         'When the user names a specific entity (e.g. "the Eldorado estimate", "RFI 234", "CO-3", "invoice INV-001"),',
-        'pass that entity id as resourceId — do NOT fall back to the generic listing page. Resolves the persona-scoped URL automatically.',
+        'pass that entity id as resourceId. For list-style requests like "show pending change orders",',
+        '"open invoices", or "show me the contracts", use the matching financials-* destination',
+        'WITHOUT a resourceId — the call routes to the financials list view for that subpage.',
+        'Resolves the persona-scoped URL automatically.',
       ].join(' '),
       autoExecute: true,
       inputSchema: {
@@ -372,14 +405,17 @@ export class AiToolsService {
           resourceId: {
             type: 'string',
             description: [
-              'Resource id. REQUIRED for every financials-* detail destination and every record-* destination.',
-              'Pass the entity id exactly as it appears in context — examples: "EST-2026-065" (estimate),',
-              '"CO-3" (change order), "INV-001" (invoice), "PAY-001" (payable), "PO-2026-001" (purchase order),',
-              '"CT-001" (contract), "BILL-001" (billing event), "PR-001" (payroll), "2026-04" (cash flow / payroll month),',
-              '"GL-001" (GL entry), "1100" (GL account code), project slug or id (job costs),',
+              'Resource id for a specific entity. REQUIRED for every record-* destination.',
+              'OPTIONAL for financials-* destinations: omit to open the financials list view',
+              '(e.g. destination "financials-change-orders" with no resourceId → opens the change-orders list).',
+              'When you DO have a specific record, pass the entity id exactly as it appears in context — examples:',
+              '"EST-2026-065" (estimate), "CO-3" (change order), "INV-001" (invoice), "PAY-001" (payable),',
+              '"PO-2026-001" (purchase order), "CT-001" (contract), "BILL-001" (billing event),',
+              '"PR-001" (payroll), "2026-04" (cash flow / payroll month), "GL-001" (GL entry),',
+              '"1100" (GL account code), project slug or id (job costs),',
               '"RFI-001"/"rfi-1" (RFI), "SUB-001" (submittal), "dr-1" (daily report), etc.',
               'If the user names an entity but you only know its name (e.g. "the Eldorado estimate"),',
-              'use the id from context if available; otherwise omit and the call will surface a clear error.',
+              'use the id from context if available; for record-* destinations, omitting it surfaces a clear error.',
             ].join(' '),
           },
         },
@@ -451,6 +487,18 @@ export class AiToolsService {
       const child = FINANCIALS_DETAIL_PATH[destination];
       const resourceId = (args['resourceId'] as string | undefined)?.trim();
       if (!resourceId) {
+        // No specific entity → route to the financials list view via the
+        // `?subpage=...` query param the financials page understands. Matches
+        // user prompts like "show pending change orders" / "open invoices"
+        // that have no canonical id to anchor on.
+        const subpage = FINANCIALS_LIST_SUBPAGE[destination];
+        if (subpage) {
+          return {
+            kind: 'route',
+            url: `/${persona}/financials?subpage=${subpage}`,
+            label: this.titleCase(subpage),
+          };
+        }
         return { kind: 'error', message: `${destination} requires a resourceId.` };
       }
 

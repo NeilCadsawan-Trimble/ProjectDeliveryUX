@@ -276,9 +276,9 @@ export const homeDefault: WidgetAgent = {
   actions: (s) => {
     if (s.personaSlug === 'kelly') {
       return [
-        { id: 'open-ap', label: 'Open AP invoices', execute: () => 'Opening Accounts Payable.', route: '/financials/accounts-payable' },
-        { id: 'open-cash', label: 'Open cash management', execute: () => 'Opening Cash Management.', route: '/financials/cash-management' },
-        { id: 'open-ar', label: 'Open accounts receivable', execute: () => 'Opening Accounts Receivable.', route: '/financials/accounts-receivable' },
+        { id: 'open-ap', label: 'Open AP invoices', execute: () => 'Opening Accounts Payable.', route: '/financials?subpage=accounts-payable' },
+        { id: 'open-cash', label: 'Open cash management', execute: () => 'Opening Cash Management.', route: '/financials?subpage=cash-management' },
+        { id: 'open-ar', label: 'Open accounts receivable', execute: () => 'Opening Accounts Receivable.', route: '/financials?subpage=accounts-receivable' },
       ];
     }
     if (s.personaSlug === 'bert') {
@@ -290,7 +290,7 @@ export const homeDefault: WidgetAgent = {
     }
     if (s.personaSlug === 'pamela') {
       return [
-        { id: 'open-estimates', label: 'Open Estimates', execute: () => 'Opening Estimates.', route: '/financials/estimates' },
+        { id: 'open-estimates', label: 'Open Estimates', execute: () => 'Opening Estimates.', route: '/financials?subpage=estimates' },
         { id: 'open-projects', label: 'Open Projects', execute: () => 'Opening Projects dashboard.', route: '/projects' },
         { id: 'refresh-attention', label: 'Refresh attention feed', execute: () => 'Refreshed items needing attention.' },
       ];
@@ -560,7 +560,7 @@ export const homeApKpis: WidgetAgent = {
     const actions: AgentAction[] = [];
     if (pending.length > 0) actions.push({ id: 'batch-approve', label: 'Batch approve pending invoices', execute: () => `Approved ${pending.length} pending invoice(s) totaling ${fmtCurrency(pending.reduce((sum, i) => sum + i.amount, 0))}.` });
     actions.push({ id: 'export-ap-summary', label: 'Export AP summary', execute: () => 'Exported AP metrics summary to PDF.' });
-    actions.push({ id: 'open-ap', label: 'Open AP invoices', execute: () => 'Opening Accounts Payable.', route: '/financials/accounts-payable' });
+    actions.push({ id: 'open-ap', label: 'Open AP invoices', execute: () => 'Opening Accounts Payable.', route: '/financials?subpage=accounts-payable' });
     return actions;
   },
   buildContext(s) {
