@@ -1808,14 +1808,38 @@ modus-wc-chip
   left: 0;
   min-width: 16rem;
   max-width: 22rem;
-  background: var(--card);
-  border: 1px solid var(--border);
+  background: var(--ai-floating-prompt-pill-surface);
+  color: var(--ai-floating-prompt-pill-surface-text);
+  border: none;
   border-radius: 0.75rem;
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--ai-floating-prompt-card-shadow);
   z-index: 1600;
   padding-top: 0.25rem;
   padding-bottom: 0.5rem;
   animation: ai-floating-prompt-menu-in 140ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Menu inner-content inversion: the Sources and Tools menus are authored
+ * with page-level utility classes (text-foreground-60, border-bottom-default,
+ * hover:bg-muted) and modus-typography defaults that resolve against the page
+ * palette. Scope token re-points to this menu only so the inner chrome reads
+ * correctly on the inverted pill surface and stays in lockstep with the pill,
+ * chips, and response card. The drawer's pill-surface remap (line ~2196) pulls
+ * these tokens back to the page palette when the menu opens from the embedded
+ * drawer pill, so the drawer-embedded menu keeps its current page-tracking
+ * look automatically. */
+.ai-floating-prompt-menu .text-foreground-60,
+.ai-floating-prompt-menu i.modus-icons.text-foreground-60 {
+  color: color-mix(in srgb, var(--ai-floating-prompt-pill-surface-text) 65%, var(--ai-floating-prompt-pill-surface)) !important;
+}
+.ai-floating-prompt-menu .border-bottom-default {
+  border-bottom-color: color-mix(in srgb, var(--ai-floating-prompt-pill-surface-text) 18%, var(--ai-floating-prompt-pill-surface)) !important;
+}
+.ai-floating-prompt-menu .hover\:bg-muted:hover {
+  background-color: var(--ai-floating-prompt-pill-surface-elevated) !important;
+}
+.ai-floating-prompt-menu modus-typography {
+  color: var(--ai-floating-prompt-pill-surface-text);
 }
 
 @keyframes ai-floating-prompt-menu-in {

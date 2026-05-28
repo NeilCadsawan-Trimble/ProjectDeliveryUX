@@ -591,6 +591,60 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
         /\.ai-floating-prompt-menu-list\s*\{[\s\S]*?overflow-y:\s*auto/,
       );
     });
+
+    // ----------------------------------------------------------------
+    // Regression: the Sources + Tools flyouts are part of the floating
+    // prompt's inverted "pill-surface" chrome family (pill, response
+    // card, suggestion/action chips). PR #127's inversion sweep missed
+    // these popovers because they're conditionally rendered (@if (sources
+    // Open()) / @if (toolsOpen())) and weren't enumerated in the commit's
+    // scope list, so a default-state visual smoke pass never opened them.
+    // Pin the panel + inner-content tokens here so the next inversion
+    // sweep can't silently leave the menus on page-level chrome again.
+    // ----------------------------------------------------------------
+    it('flyout panel uses the inverted pill-surface chrome, not page-level --card/--border', () => {
+      // Match the .ai-floating-prompt-menu { ... } block specifically --
+      // the `\s*\{` anchor avoids accidentally matching the sibling
+      // .ai-floating-prompt-menu-anchor / .ai-floating-prompt-menu-list
+      // rulesets that share the class prefix.
+      const panelBlockMatch = STYLES_SRC.match(
+        /\.ai-floating-prompt-menu\s*\{[\s\S]*?\n\}/,
+      );
+      expect(panelBlockMatch, '.ai-floating-prompt-menu rule must exist').not.toBeNull();
+      const panelBlock = panelBlockMatch![0];
+
+      expect(panelBlock).toMatch(/background:\s*var\(--ai-floating-prompt-pill-surface\)/);
+      expect(panelBlock).toMatch(/color:\s*var\(--ai-floating-prompt-pill-surface-text\)/);
+      expect(panelBlock).toMatch(/box-shadow:\s*var\(--ai-floating-prompt-card-shadow\)/);
+
+      // The page-level tokens that caused the original mismatch must not
+      // resurface on this panel -- if a future edit re-introduces them
+      // here, the menu visually detaches from the pill chrome again.
+      expect(panelBlock).not.toMatch(/background:\s*var\(--card\)/);
+      expect(panelBlock).not.toMatch(/border:\s*1px\s+solid\s+var\(--border\)/);
+    });
+
+    it('flyout inner content re-points page-level utility classes to the inverted pill chrome', () => {
+      // The menu template uses utility classes that resolve against the
+      // page palette by default (text-foreground-60, border-bottom-default,
+      // hover:bg-muted) plus modus-typography which defaults to --foreground.
+      // Scoped overrides under .ai-floating-prompt-menu must remap each one
+      // to the pill-surface chrome so the inner content reads correctly on
+      // the inverted surface. Without these, the panel surface flips but
+      // the captions, dividers, and hover bands stay on the page palette.
+      expect(STYLES_SRC).toMatch(
+        /\.ai-floating-prompt-menu\s+\.text-foreground-60[\s\S]*?color:\s*color-mix\([^)]*--ai-floating-prompt-pill-surface-text/,
+      );
+      expect(STYLES_SRC).toMatch(
+        /\.ai-floating-prompt-menu\s+\.border-bottom-default[\s\S]*?border-bottom-color:\s*color-mix\([^)]*--ai-floating-prompt-pill-surface-text/,
+      );
+      expect(STYLES_SRC).toMatch(
+        /\.ai-floating-prompt-menu\s+\.hover\\:bg-muted:hover[\s\S]*?background-color:\s*var\(--ai-floating-prompt-pill-surface-elevated\)/,
+      );
+      expect(STYLES_SRC).toMatch(
+        /\.ai-floating-prompt-menu\s+modus-typography[\s\S]*?color:\s*var\(--ai-floating-prompt-pill-surface-text\)/,
+      );
+    });
   });
 
   describe('Trimble Assistant drawer (lives at the dashboard shell level)', () => {
