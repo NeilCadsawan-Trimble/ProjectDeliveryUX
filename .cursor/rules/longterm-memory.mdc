@@ -125,6 +125,10 @@ Consult this file before asking the user a question. If the answer is here, act 
 - PR #58: Live weather data (OpenWeatherMap API, Vercel Edge Function proxy, 23 regression tests)
 - PR #66: Draggable KPI widget, resize twitchiness fix, push-down only collision
 - PR #73-78: Trimble ID authentication (OAuth 2.0 PKCE), Vercel deployment fixes (cache busting, CDN headers)
+- PR #127: Modus 1.5 bump + bordered-surface migration + AI floating prompt high-contrast inversion
+- PR #129: pdfjs-dist 4.10.38 → 5.7.284 + adapt RenderParameters + render in-card AI action row as Modus chips
+- PR #115: Dependabot pdfjs-dist 5.7.284 (closed, superseded by PR #129)
+- PR #116, #117, #118, #128: Dependabot dependency bumps merged to main between PR #127 and PR #129 (jsdom 29.1.1, @angular/cli 21.2.12, @angular/common 21.2.14, all-deps group of 10 updates)
 
 ### Deployment
 - **Vercel**: Connected to GitHub repo. Auto-deploys on push.
@@ -171,6 +175,7 @@ These areas have broken multiple times. Extra care required:
 | Edge Function endpoints without dev-proxy parity | `npm start` 404s the endpoint; works in production only | Every `api/<name>.ts` must have a matching handler in `dev-proxy.mjs` routed at `localhost:3001`. See skill section 45 |
 | `@deepgram/sdk` v5 ConnectArgs booleans | `tsc` accepts `true`/`false`; `ng build` template type-check refuses (`Type 'boolean' is not assignable to type 'string'`) | Use `'true'`/`'false'` string literals for `interim_results`, `smart_format`, `punctuate`. Static test enforces. See skill section 45 |
 | Card-on-card invisibility (Modus 1.5) | After `--card` re-pointed to `base-page`, any new `bg-card` cell nested inside another `bg-card` container disappears (page-bg on page-bg with no border between them) | New nested cells must use `bg-muted` (`base-200`) per Modus child-card guidance. Reserve `bg-card` for top-level surfaces paired with `border-default`. See skill section 46 |
+| `pdfjs-dist` v5 RenderParameters | v5 makes `canvas: HTMLCanvasElement \| null` a required field on `RenderParameters` (previously inferred from `canvasContext.canvas`). Inline literal call `page.render({ canvasContext, viewport })` fails with TS2345 on v5 (Vercel) but passes on v4 (local) — easy to miss in local dev. | Pass `canvas` through, assigned via a typed local + `as Parameters<typeof page.render>[0]` cast so the call compiles on both v4 and v5. Pattern in `src/app/shared/detail/pdf-viewer.component.ts:301-303`. See PR #129 |
 
 ## Project File Map
 
@@ -263,4 +268,5 @@ These areas have broken multiple times. Extra care required:
 | 23 (Apr 17) | *(session)* | Canvas project tile navigation fix (removed blocking pointer-events rule), projHeader canvas height increase to 176px, full Modus Typography migration with regression test |
 | 24 (May 5) | `71f5c973-71cd-430a-85fc-b3e0b3283d8a` | Voice input via Deepgram (Nova-3 STT, ephemeral-token Edge Function + dev-proxy parity, construction keyterm vocabulary, level-meter pulsing ring, six stop hooks, 53 new static tests, SKILL section 45) |
 | 25 (May 8) | *(session)* | Harbor View 3D Model widget — home tile (Frank/Bert/Dominique/Pamela), project-dashboard tile (Harbor View only), per-project glb routing, 3dModel DetailView variant, modelAgent in widget-agents |
-| 26 (May 21) | *(this session)* | Modus 1.5 bordered surfaces — `--card` re-points to `base-page`, every `bg-card` widget shell becomes page-bg + 1px border, no template changes required (every consumer already paired with `border-default`), nested cells use `bg-muted` per Modus child-card guidance, dark-mode border contrast improves in all 6 themes, SKILL section 46 added, lint hint refreshed |
+| 26 (May 21) | *(session)* | Modus 1.5 bordered surfaces — `--card` re-points to `base-page`, every `bg-card` widget shell becomes page-bg + 1px border, no template changes required (every consumer already paired with `border-default`), nested cells use `bg-muted` per Modus child-card guidance, dark-mode border contrast improves in all 6 themes, SKILL section 46 added, lint hint refreshed |
+| 27 (May 26) | *(this session)* | Fix Dependabot pdfjs-dist 5.7.284 Vercel build failure (TS2345 missing `canvas` on `RenderParameters`) — bumped pdfjs-dist 4.10.38 → 5.7.284, adapted `PdfViewerComponent._renderPage` with typed local + `Parameters<typeof page.render>[0]` cast for v4/v5 dual-compat. Rebased `modus-1.5-bump` onto main (lockfile conflicts resolved by taking main's lockfile + `npm install` reconciling against resolved package.json). Created+merged PR #129, closed superseded Dependabot PR #115. Fast-forwarded `dev` to main (no commits ahead, zero divergence). Pulled in main's Dependabot bumps (#116 jsdom 29.1.1, #117 @angular/cli 21.2.12, #118 @angular/common 21.2.14, #128 all-deps group of 10 updates). Pre-existing initial-bundle budget warning (1.06 MB vs 800 kB) unchanged. |
