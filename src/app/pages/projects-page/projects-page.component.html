@@ -127,7 +127,7 @@
         >
           <div class="flex items-center gap-1.5 min-w-0">
             <i class="modus-icons text-sm text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
-            <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground">Portfolio Timeline</modus-typography>
+            <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground-strong">Portfolio Timeline</modus-typography>
           </div>
           <div class="flex items-center gap-1 flex-wrap">
             @for (cat of allCategories; track cat) {
@@ -297,7 +297,7 @@
       <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
         <div
           class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full"
-          [class.border-default]="selectedWidgetId() !== widgetId"
+          [class.border-widget-outer]="selectedWidgetId() !== widgetId"
           [class.border-primary]="selectedWidgetId() === widgetId"
         >
           <div
@@ -309,7 +309,7 @@
           >
             <div class="flex items-center gap-1.5 min-w-0">
               <i class="modus-icons text-sm text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
-              <modus-typography  hierarchy="h4" size="xs" weight="semibold" className="widget-title text-foreground truncate">{{ project.name }}</modus-typography>
+              <modus-typography  hierarchy="h4" size="xs" weight="semibold" className="widget-title text-foreground-strong truncate">{{ project.name }}</modus-typography>
             </div>
             @let badge = getActionBadge(project.id);
             <modus-badge [color]="badge.color" variant="filled" size="sm">

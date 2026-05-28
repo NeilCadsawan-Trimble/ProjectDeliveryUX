@@ -91,6 +91,13 @@
 
   /* Border and other utilities */
   --border: var(--modus-wc-color-base-200);
+  /* Widget outer ring: one step darker than --border so the bordered-surface
+   * widget shell (Modus 1.5: page-bg + 1px border) separates more clearly
+   * from the page in all 6 themes. Kept separate from --border so page
+   * chrome cards, AI surfaces, navbar/canvas shell, sidenav guide lines,
+   * drawer dividers, chart gridlines, and widget *inner* dividers all
+   * stay on the lighter base-200 ring. */
+  --border-widget: var(--modus-wc-color-base-300);
   --ring: var(--modus-wc-color-info);
   --radius: 8px;
   --radius-card: 16px;
@@ -102,6 +109,15 @@
   --foreground-60: color-mix(in srgb, var(--foreground) 60%, transparent);
   --foreground-40: color-mix(in srgb, var(--foreground) 40%, transparent);
   --foreground-20: color-mix(in srgb, var(--foreground) 20%, transparent);
+
+  /* High-contrast foreground for chrome titles (widget headers, etc.).
+   * Light themes: same as --foreground (already near-black on bg-card, no
+   * change). Dark themes: overridden to #fff below so titles lift above
+   * Modus's off-white base-content (rgb(203,205,214)) for stronger hierarchy
+   * against the bordered-surface widget shell. Scope intentionally narrow:
+   * only the WidgetFrameComponent title applies .text-foreground-strong by
+   * default; body copy continues to use --foreground. */
+  --foreground-strong: var(--foreground);
 
   /* Card opacity */
   --card-80: color-mix(in srgb, var(--card) 80%, transparent);
@@ -198,6 +214,29 @@
   --border-20: color-mix(in srgb, var(--border) 20%, transparent);
 }
 
+/* Dark-mode lift for the widget outer ring.
+ *
+ * In Modus's dark themes, the `base-300` token sits very close to `base-page`
+ * (e.g. modus-modern-dark: base-page #171c1e, base-300 #252a2e), so the
+ * default `--border-widget` mapping leaves the bordered-surface widget shell
+ * almost invisible against the dark page background. Blend `base-300` toward
+ * `base-content` so every widget's outer ring lifts one visual step across
+ * all three dark themes (modus-modern-dark, modus-classic-dark, connect-dark)
+ * without per-theme overrides. Selection state still uses `.border-primary`
+ * via WidgetFrameComponent, so this only affects the default ring. */
+[data-theme$='-dark']:root {
+  --border-widget: color-mix(
+    in srgb,
+    var(--modus-wc-color-base-300) 70%,
+    var(--modus-wc-color-base-content) 30%
+  );
+
+  /* Lift widget title text to pure white in dark themes so the chrome reads
+   * with stronger hierarchy than Modus's default base-content off-white. See
+   * --foreground-strong comment in :root. */
+  --foreground-strong: #fff;
+}
+
 @layer base {
   * {
     @apply box-border;
@@ -284,6 +323,15 @@
 /* Custom Border Utilities - Tailwind v4 Compatible */
 .border-default {
   border: 1px solid var(--border);
+}
+
+/* Widget outer ring: paired with `bg-card` on every widget shell so the
+ * Modus 1.5 bordered-surface widget separates more clearly from the page
+ * than other `border-default` surfaces (page chrome, AI chrome, navbar,
+ * drawer dividers). Selection state still uses `.border-primary`; only
+ * the default-state ring darkens. */
+.border-widget-outer {
+  border: 1px solid var(--border-widget);
 }
 
 .border-thick {
@@ -550,6 +598,10 @@
 
 /* Opacity utilities for design system colors */
 /* Text opacity utilities */
+.text-foreground-strong {
+  color: var(--foreground-strong);
+}
+
 .text-foreground-80 {
   color: var(--foreground-80);
 }
