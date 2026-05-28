@@ -194,7 +194,7 @@ const HOME_MIN_CONTENT_PX = 80;
           @if (canvasDetailViews()[widgetId]; as detail) {
             @if (detail.type === 'rfi' || detail.type === 'submittal') {
             <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-              [class.border-default]="selectedWidgetId() !== widgetId"
+              [class.border-widget-outer]="selectedWidgetId() !== widgetId"
               [class.border-primary]="selectedWidgetId() === widgetId">
               <div
                 class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
@@ -341,7 +341,7 @@ const HOME_MIN_CONTENT_PX = 80;
             }
             @if (detail.type === 'drawing') {
             <div #drawingDetailEl class="bg-card rounded-lg overflow-hidden flex flex-col h-full"
-              [class.border-default]="selectedWidgetId() !== widgetId"
+              [class.border-widget-outer]="selectedWidgetId() !== widgetId"
               [class.border-primary]="selectedWidgetId() === widgetId">
               <div
                 class="flex items-center justify-between px-4 py-3 border-bottom-default cursor-move select-none flex-shrink-0"
@@ -430,7 +430,7 @@ const HOME_MIN_CONTENT_PX = 80;
             }
             @if (detail.type === '3dModel') {
             <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full"
-              [class.border-default]="selectedWidgetId() !== widgetId"
+              [class.border-widget-outer]="selectedWidgetId() !== widgetId"
               [class.border-primary]="selectedWidgetId() === widgetId">
               <div
                 class="flex items-center justify-between px-4 py-3 border-bottom-default cursor-move select-none flex-shrink-0"
@@ -520,7 +520,7 @@ const HOME_MIN_CONTENT_PX = 80;
                 </app-widget-frame>
 
               } @else if (widgetId === 'homeTimeOff') {
-                <div class="bg-card rounded-lg flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -543,7 +543,7 @@ const HOME_MIN_CONTENT_PX = 80;
                         <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       }
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold">Time Off</modus-typography>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">Time Off</modus-typography>
                       @if (criticalStaffingConflicts().length) {
                         <div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive-20">
                           <i class="modus-icons text-2xs text-destructive" aria-hidden="true">warning</i>
@@ -877,7 +877,7 @@ const HOME_MIN_CONTENT_PX = 80;
                 />
               }
               @else if (widgetId === 'homeCalendar') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -886,7 +886,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">calendar</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold">Calendar</modus-typography>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">Calendar</modus-typography>
                       <modus-typography hierarchy="p" size="xs" className="text-foreground-40">{{ calendarDay1Meta().dateStr }} – {{ calendarDay2Meta().dateStr }}</modus-typography>
                     </div>
                     <div class="flex items-center gap-1" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
@@ -1034,7 +1034,7 @@ const HOME_MIN_CONTENT_PX = 80;
                 />
               }
               @else if (widgetId === 'homeRfis') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -1057,7 +1057,7 @@ const HOME_MIN_CONTENT_PX = 80;
                         <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       }
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">clipboard</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold">RFIs</modus-typography>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">RFIs</modus-typography>
                       @if (rfiCounts().overdue > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ rfiCounts().overdue }} overdue</modus-typography>
@@ -1154,7 +1154,7 @@ const HOME_MIN_CONTENT_PX = 80;
                 />
               }
               @else if (widgetId === 'homeSubmittals') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -1177,7 +1177,7 @@ const HOME_MIN_CONTENT_PX = 80;
                         <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       }
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">document</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold">Submittals</modus-typography>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">Submittals</modus-typography>
                       @if (submittalCounts().overdue > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ submittalCounts().overdue }} overdue</modus-typography>
@@ -1415,7 +1415,7 @@ const HOME_MIN_CONTENT_PX = 80;
               }
 
               @else if (widgetId === 'homeUrgentNeeds') {
-                <div class="bg-card rounded-lg overflow-visible flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-visible flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
@@ -1424,7 +1424,7 @@ const HOME_MIN_CONTENT_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-destructive" aria-hidden="true">warning</i>
-                      <modus-typography hierarchy="h3" size="md" weight="semibold">Urgent Needs</modus-typography>
+                      <modus-typography hierarchy="h3" size="md" weight="semibold" className="text-foreground-strong">Urgent Needs</modus-typography>
                       @if (urgentCriticalCount() > 0) {
                         <div class="flex items-center px-2 py-0.5 rounded-full bg-destructive-20">
                           <modus-typography hierarchy="p" size="xs" weight="semibold" className="text-destructive">{{ urgentCriticalCount() }} critical</modus-typography>

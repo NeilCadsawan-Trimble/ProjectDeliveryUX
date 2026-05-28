@@ -516,7 +516,7 @@
                   (mousedown)="selectTileWidget('tile-drawing-' + drawing.id)"
                 >
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-drawing-' + drawing.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-drawing-' + drawing.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-drawing-' + drawing.id">
                     <div class="flex items-start justify-between px-3 pt-3 pb-2 cursor-move select-none flex-shrink-0"
                       (mousedown)="tileCanvas.onTileMouseDown('tile-drawing-' + drawing.id, $event)">
@@ -865,7 +865,7 @@
                 >
                 @if (tileDetailViews()['tile-rfi-' + rfi.id]; as detail) {
                   <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-rfi-' + rfi.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-rfi-' + rfi.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-rfi-' + rfi.id">
                     <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-rfi-' + rfi.id)">
@@ -918,7 +918,7 @@
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-rfi-' + rfi.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-rfi-' + rfi.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-rfi-' + rfi.id">
                     <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="tileCanvas.onTileMouseDown('tile-rfi-' + rfi.id, $event)">
@@ -966,7 +966,7 @@
                 >
                 @if (tileDetailViews()['tile-sub-' + sub.id]; as detail) {
                   <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-sub-' + sub.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-sub-' + sub.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-sub-' + sub.id">
                     <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-sub-' + sub.id)">
@@ -1019,7 +1019,7 @@
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-sub-' + sub.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-sub-' + sub.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-sub-' + sub.id">
                     <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="tileCanvas.onTileMouseDown('tile-sub-' + sub.id, $event)">
@@ -1070,7 +1070,7 @@
                 >
                 @if (tileDetailViews()['tile-dr-' + dr.id]; as detail) {
                   <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-dr-' + dr.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-dr-' + dr.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-dr-' + dr.id">
                     <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-dr-' + dr.id)">
@@ -1132,7 +1132,7 @@
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-dr-' + dr.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-dr-' + dr.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-dr-' + dr.id">
                     <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="tileCanvas.onTileMouseDown('tile-dr-' + dr.id, $event)">
@@ -1184,7 +1184,7 @@
                 >
                 @if (tileDetailViews()['tile-pl-' + pl.id]; as detail) {
                   <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-pl-' + pl.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-pl-' + pl.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-pl-' + pl.id">
                     <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-pl-' + pl.id)">
@@ -1240,7 +1240,7 @@
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-pl-' + pl.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-pl-' + pl.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-pl-' + pl.id">
                     <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="tileCanvas.onTileMouseDown('tile-pl-' + pl.id, $event)">
@@ -1293,7 +1293,7 @@
                 >
                 @if (tileDetailViews()['tile-ins-' + ins.id]; as detail) {
                   <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-ins-' + ins.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-ins-' + ins.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-ins-' + ins.id">
                     <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-ins-' + ins.id)">
@@ -1345,7 +1345,7 @@
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-ins-' + ins.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-ins-' + ins.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-ins-' + ins.id">
                     <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="tileCanvas.onTileMouseDown('tile-ins-' + ins.id, $event)">
@@ -1398,7 +1398,7 @@
                 >
                 @if (tileDetailViews()['tile-ai-' + ai.id]; as detail) {
                   <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-ai-' + ai.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-ai-' + ai.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-ai-' + ai.id">
                     <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-ai-' + ai.id)">
@@ -1447,7 +1447,7 @@
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-ai-' + ai.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-ai-' + ai.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-ai-' + ai.id">
                     <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="tileCanvas.onTileMouseDown('tile-ai-' + ai.id, $event)">
@@ -1928,7 +1928,7 @@
                   >
                   @if (tileDetailViews()['tile-co-' + co.id]; as detail) {
                     <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                      [class.border-default]="selectedWidgetId() !== 'tile-co-' + co.id"
+                      [class.border-widget-outer]="selectedWidgetId() !== 'tile-co-' + co.id"
                       [class.border-primary]="selectedWidgetId() === 'tile-co-' + co.id">
                       <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                         (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-co-' + co.id)">
@@ -1986,7 +1986,7 @@
                     </div>
                   } @else {
                     <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                      [class.border-default]="selectedWidgetId() !== 'tile-co-' + co.id"
+                      [class.border-widget-outer]="selectedWidgetId() !== 'tile-co-' + co.id"
                       [class.border-primary]="selectedWidgetId() === 'tile-co-' + co.id">
                       <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                         (mousedown)="tileCanvas.onTileMouseDown('tile-co-' + co.id, $event)">
@@ -2069,7 +2069,7 @@
                     (mousedown)="selectTileWidget('tile-' + activeCoTilePrefix() + co.id); tileDetailViews()['tile-' + activeCoTilePrefix() + co.id] ? $event.stopPropagation() : null">
                   @if (tileDetailViews()['tile-' + activeCoTilePrefix() + co.id]; as detail) {
                     <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                      [class.border-default]="selectedWidgetId() !== 'tile-' + activeCoTilePrefix() + co.id"
+                      [class.border-widget-outer]="selectedWidgetId() !== 'tile-' + activeCoTilePrefix() + co.id"
                       [class.border-primary]="selectedWidgetId() === 'tile-' + activeCoTilePrefix() + co.id">
                       <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                         (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-' + activeCoTilePrefix() + co.id)">
@@ -2127,7 +2127,7 @@
                     </div>
                   } @else {
                     <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                      [class.border-default]="selectedWidgetId() !== 'tile-' + activeCoTilePrefix() + co.id"
+                      [class.border-widget-outer]="selectedWidgetId() !== 'tile-' + activeCoTilePrefix() + co.id"
                       [class.border-primary]="selectedWidgetId() === 'tile-' + activeCoTilePrefix() + co.id">
                       <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                         (mousedown)="tileCanvas.onTileMouseDown('tile-' + activeCoTilePrefix() + co.id, $event)">
@@ -2226,7 +2226,7 @@
                     [class.opacity-30]="tileMoveTargetId() === 'tile-rev-' + rev.projectId"
                     (mousedown)="selectTileWidget('tile-rev-' + rev.projectId)">
                     <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                      [class.border-default]="selectedWidgetId() !== 'tile-rev-' + rev.projectId"
+                      [class.border-widget-outer]="selectedWidgetId() !== 'tile-rev-' + rev.projectId"
                       [class.border-primary]="selectedWidgetId() === 'tile-rev-' + rev.projectId">
                       <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                         (mousedown)="tileCanvas.onTileMouseDown('tile-rev-' + rev.projectId, $event)">
@@ -2321,7 +2321,7 @@
                     [class.opacity-30]="tileMoveTargetId() === 'tile-cf-' + i"
                     (mousedown)="selectTileWidget('tile-cf-' + i)">
                     <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                      [class.border-default]="selectedWidgetId() !== 'tile-cf-' + i"
+                      [class.border-widget-outer]="selectedWidgetId() !== 'tile-cf-' + i"
                       [class.border-primary]="selectedWidgetId() === 'tile-cf-' + i">
                       <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                         (mousedown)="tileCanvas.onTileMouseDown('tile-cf-' + i, $event)">
@@ -2439,7 +2439,7 @@
                 >
                 @if (tileDetailViews()['tile-ct-' + ct.id]; as detail) {
                   <div class="bg-background rounded-lg overflow-hidden flex flex-col h-full shadow-2xl"
-                    [class.border-default]="selectedWidgetId() !== 'tile-ct-' + ct.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-ct-' + ct.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-ct-' + ct.id">
                     <div class="flex items-center justify-between px-5 py-3 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="onTileDetailHeaderMouseDown($event, 'tile-ct-' + ct.id)">
@@ -2521,7 +2521,7 @@
                   </div>
                 } @else {
                   <div class="h-full flex flex-col bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200"
-                    [class.border-default]="selectedWidgetId() !== 'tile-ct-' + ct.id"
+                    [class.border-widget-outer]="selectedWidgetId() !== 'tile-ct-' + ct.id"
                     [class.border-primary]="selectedWidgetId() === 'tile-ct-' + ct.id">
                     <div class="flex items-center justify-between px-4 py-2 bg-card border-bottom-default cursor-move select-none flex-shrink-0"
                       (mousedown)="tileCanvas.onTileMouseDown('tile-ct-' + ct.id, $event)">

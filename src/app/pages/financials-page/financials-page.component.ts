@@ -1041,7 +1041,7 @@ const FIN_MIN_CHILD_PX = 80;
 
               @if (widgetId === 'finRevenueChart') {
                 <!-- Revenue Over Time Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1050,7 +1050,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph_line</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Revenue Over Time</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Revenue Over Time</modus-typography>
                     </div>
                     <div class="flex items-center gap-2" (mousedown)="$event.stopPropagation()">
                       @for (range of timeRanges; track range) {
@@ -1113,7 +1113,7 @@ const FIN_MIN_CHILD_PX = 80;
 
               } @else if (widgetId === 'finOpenEstimates') {
                 <!-- Open Estimates Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId" #estimatesContainer>
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId" #estimatesContainer>
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1122,7 +1122,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">description</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Open Estimates</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Open Estimates</modus-typography>
                       <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ estimates().length }} estimates</modus-typography>
                     </div>
                   </div>
@@ -1212,7 +1212,7 @@ const FIN_MIN_CHILD_PX = 80;
                 />
               } @else if (widgetId === 'finBudgetByProject') {
                 <!-- Budget by Project Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <!-- Draggable header -->
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
@@ -1222,7 +1222,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payment_instant</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Budget by Project</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Budget by Project</modus-typography>
                     </div>
                   </div>
                   @if (showFinBlock(widgetId, 'insight') && budgetByProjectInsight()) {
@@ -1265,7 +1265,7 @@ const FIN_MIN_CHILD_PX = 80;
                 />
               } @else if (widgetId === 'finJobCosts') {
                 <!-- Job Costs Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1274,7 +1274,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Job Costs</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Job Costs</modus-typography>
                     </div>
                     <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ formatJobCost(jobCostSummary().grandTotal) }} total</modus-typography>
                   </div>
@@ -1341,7 +1341,7 @@ const FIN_MIN_CHILD_PX = 80;
                 />
               } @else if (widgetId === 'finChangeOrders') {
                 <!-- Change Orders Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1350,7 +1350,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">swap</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Change Orders</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Change Orders</modus-typography>
                       <modus-badge color="secondary" size="sm">{{ filteredChangeOrders().length }}</modus-badge>
                     </div>
                   </div>
@@ -1408,7 +1408,7 @@ const FIN_MIN_CHILD_PX = 80;
                 />
 
               } @else if (widgetId === 'finInvoiceQueue') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1417,7 +1417,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-warning" aria-hidden="true">invoice</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Invoice Queue</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Invoice Queue</modus-typography>
                     </div>
                   </div>
                   @if (showFinBlock(widgetId, 'insight') && kellyInvoiceQueueInsight()) {
@@ -1433,7 +1433,7 @@ const FIN_MIN_CHILD_PX = 80;
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
 
               } @else if (widgetId === 'finPaymentSchedule') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1442,7 +1442,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-destructive" aria-hidden="true">calendar</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Payment Schedule</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Payment Schedule</modus-typography>
                     </div>
                   </div>
                   @if (showFinBlock(widgetId, 'insight') && kellyPaymentScheduleInsight()) {
@@ -1458,7 +1458,7 @@ const FIN_MIN_CHILD_PX = 80;
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
 
               } @else if (widgetId === 'finVendorAging') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1467,7 +1467,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-warning" aria-hidden="true">timer</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Vendor Aging</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Vendor Aging</modus-typography>
                     </div>
                   </div>
                   @if (showFinBlock(widgetId, 'insight') && kellyVendorAgingInsight()) {
@@ -1483,7 +1483,7 @@ const FIN_MIN_CHILD_PX = 80;
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
 
               } @else if (widgetId === 'finPayApps') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1492,7 +1492,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-primary" aria-hidden="true">clipboard</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Pay Applications</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Pay Applications</modus-typography>
                     </div>
                     <div class="flex items-center gap-1 bg-muted rounded p-0.5" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
                       <div
@@ -1533,7 +1533,7 @@ const FIN_MIN_CHILD_PX = 80;
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
 
               } @else if (widgetId === 'finLienWaivers') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1542,7 +1542,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-destructive" aria-hidden="true">file</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Lien Waivers</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Lien Waivers</modus-typography>
                     </div>
                   </div>
                   @if (showFinBlock(widgetId, 'insight') && kellyLienWaiversInsight()) {
@@ -1558,7 +1558,7 @@ const FIN_MIN_CHILD_PX = 80;
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
 
               } @else if (widgetId === 'finRetention') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1567,7 +1567,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">lock</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Retention Summary</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Retention Summary</modus-typography>
                     </div>
                   </div>
                   @if (showFinBlock(widgetId, 'insight') && kellyRetentionInsight()) {
@@ -1583,7 +1583,7 @@ const FIN_MIN_CHILD_PX = 80;
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
 
               } @else if (widgetId === 'finApActivity') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1592,7 +1592,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">AP Activity</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">AP Activity</modus-typography>
                     </div>
                   </div>
                   @if (showFinBlock(widgetId, 'insight') && kellyApActivityInsight()) {
@@ -1608,7 +1608,7 @@ const FIN_MIN_CHILD_PX = 80;
                 <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
 
               } @else if (widgetId === 'finCashOutflow') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-default]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
+                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
                   <div
                     class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
                     (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
@@ -1617,7 +1617,7 @@ const FIN_MIN_CHILD_PX = 80;
                     <div class="flex items-center gap-2">
                       <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
                       <i class="modus-icons text-lg text-destructive" aria-hidden="true">arrow_down</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground" role="heading" aria-level="2">Cash Outflow</modus-typography>
+                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Cash Outflow</modus-typography>
                     </div>
                   </div>
                   @if (showFinBlock(widgetId, 'insight') && kellyCashOutflowInsight()) {
