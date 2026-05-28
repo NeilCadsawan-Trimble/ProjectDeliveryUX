@@ -16,7 +16,7 @@ import { ModusProgressComponent } from '../../components/modus-progress.componen
 import { ModusButtonComponent } from '../../components/modus-button.component';
 import { ModusBadgeComponent, type ModusBadgeColor } from '../../components/modus-badge.component';
 import { WidgetLockToggleComponent } from '../../shell/components/widget-lock-toggle.component';
-import { WidgetResizeHandleComponent } from '../../shell/components/widget-resize-handle.component';
+import { WidgetFrameComponent } from '../../shell/components/widget-frame.component';
 import { CollapsibleSubnavComponent } from '../project-dashboard/components/collapsible-subnav.component';
 import { DashboardLayoutEngine, type DashboardLayoutConfig } from '../../shell/services/dashboard-layout-engine';
 import { DashboardPageBase } from '../../shell/services/dashboard-page-base';
@@ -178,7 +178,7 @@ const FIN_MIN_CHILD_PX = 80;
 
 @Component({
   selector: 'app-financials-page',
-  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetResizeHandleComponent, CollapsibleSubnavComponent, ChartComponent, HomeInvoiceQueueComponent, HomeVendorAgingComponent, HomePayAppsComponent, HomeLienWaiversComponent, HomeRetentionComponent, HomePaymentScheduleComponent, HomeApActivityComponent, HomeApKpiCardsComponent, HomeCashOutflowComponent, EstimateAssemblyHubComponent, ModusTypographyComponent],
+  imports: [NgTemplateOutlet, ModusProgressComponent, ModusButtonComponent, ModusBadgeComponent, WidgetLockToggleComponent, WidgetFrameComponent, CollapsibleSubnavComponent, ChartComponent, HomeInvoiceQueueComponent, HomeVendorAgingComponent, HomePayAppsComponent, HomeLienWaiversComponent, HomeRetentionComponent, HomePaymentScheduleComponent, HomeApActivityComponent, HomeApKpiCardsComponent, HomeCashOutflowComponent, EstimateAssemblyHubComponent, ModusTypographyComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     'class': 'block h-full',
@@ -1041,39 +1041,36 @@ const FIN_MIN_CHILD_PX = 80;
 
               @if (widgetId === 'finRevenueChart') {
                 <!-- Revenue Over Time Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph_line</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Revenue Over Time</modus-typography>
-                    </div>
-                    <div class="flex items-center gap-2" (mousedown)="$event.stopPropagation()">
-                      @for (range of timeRanges; track range) {
-                        <div
-                          class="px-2.5 py-1 rounded cursor-pointer transition-colors duration-150 select-none"
-                          [class.bg-primary]="selectedRange() === range"
-                          [class.text-primary-foreground]="selectedRange() === range"
-                          [class.text-foreground-60]="selectedRange() !== range"
-                          [class.hover:bg-muted]="selectedRange() !== range"
-                          (click)="selectRange(range); $event.stopPropagation()"
-                          role="button" tabindex="0"
-                          [attr.aria-label]="range + ' time range'"
-                          [attr.aria-pressed]="selectedRange() === range"
-                        ><modus-typography size="xs" weight="semibold">{{ range }}</modus-typography></div>
-                      }
-                    </div>
+                <app-widget-frame
+                  [title]="'Revenue Over Time'"
+                  [icon]="'bar_graph_line'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? revenueInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
+                  <div headerTrailing class="flex items-center gap-2" (mousedown)="$event.stopPropagation()">
+                    @for (range of timeRanges; track range) {
+                      <div
+                        class="px-2.5 py-1 rounded cursor-pointer transition-colors duration-150 select-none"
+                        [class.bg-primary]="selectedRange() === range"
+                        [class.text-primary-foreground]="selectedRange() === range"
+                        [class.text-foreground-60]="selectedRange() !== range"
+                        [class.hover:bg-muted]="selectedRange() !== range"
+                        (click)="selectRange(range); $event.stopPropagation()"
+                        role="button" tabindex="0"
+                        [attr.aria-label]="range + ' time range'"
+                        [attr.aria-pressed]="selectedRange() === range"
+                      ><modus-typography size="xs" weight="semibold">{{ range }}</modus-typography></div>
+                    }
                   </div>
-                  @if (showFinBlock(widgetId, 'insight') && revenueInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ revenueInsight() }}</modus-typography>
-                    </div>
-                  }
 
                   <div class="flex-1 flex flex-col px-5 py-4 gap-3 min-h-0">
                     @if (showFinBlock(widgetId, 'kpiLine')) {
@@ -1104,34 +1101,27 @@ const FIN_MIN_CHILD_PX = 80;
                       />
                     </div>
                   </div>
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
-                />
+                </app-widget-frame>
 
               } @else if (widgetId === 'finOpenEstimates') {
                 <!-- Open Estimates Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId" #estimatesContainer>
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">description</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Open Estimates</modus-typography>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-40">{{ estimates().length }} estimates</modus-typography>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && estimatesInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ estimatesInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  #estimatesContainer
+                  [title]="'Open Estimates'"
+                  [icon]="'description'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h2'"
+                  [titleMeta]="estimates().length + ' estimates'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? estimatesInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
                   <div
                     role="row"
                     class="grid gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0"
@@ -1204,34 +1194,24 @@ const FIN_MIN_CHILD_PX = 80;
                       </div>
                     }
                   </div>
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
-                />
+                </app-widget-frame>
               } @else if (widgetId === 'finBudgetByProject') {
                 <!-- Budget by Project Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <!-- Draggable header -->
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">payment_instant</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Budget by Project</modus-typography>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && budgetByProjectInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ budgetByProjectInsight() }}</modus-typography>
-                    </div>
-                  }
-
+                <app-widget-frame
+                  [title]="'Budget by Project'"
+                  [icon]="'payment_instant'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? budgetByProjectInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
                   <div class="grid grid-cols-[2fr_1fr_1fr_2fr_1fr] gap-3 px-5 py-3 bg-muted border-bottom-default text-foreground-60 uppercase tracking-wide flex-shrink-0" role="row">
                     <modus-typography size="xs" weight="semibold" role="columnheader">Project</modus-typography>
                     <modus-typography size="xs" weight="semibold" role="columnheader">Client</modus-typography>
@@ -1257,33 +1237,25 @@ const FIN_MIN_CHILD_PX = 80;
                       </div>
                     }
                   </div>
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
-                />
+                </app-widget-frame>
               } @else if (widgetId === 'finJobCosts') {
                 <!-- Job Costs Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">bar_graph</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Job Costs</modus-typography>
-                    </div>
-                    <modus-typography  hierarchy="p" size="sm" className="text-foreground-60">{{ formatJobCost(jobCostSummary().grandTotal) }} total</modus-typography>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && jobCostsInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ jobCostsInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  [title]="'Job Costs'"
+                  [icon]="'bar_graph'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? jobCostsInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
+                  <modus-typography headerTrailing hierarchy="p" size="sm" className="text-foreground-60">{{ formatJobCost(jobCostSummary().grandTotal) }} total</modus-typography>
 
                   <div class="overflow-y-auto flex-1 mb-5">
                     @if (showFinBlock(widgetId, 'barChart')) {
@@ -1333,33 +1305,25 @@ const FIN_MIN_CHILD_PX = 80;
                       }
                     </div>
                   </div>
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
-                />
+                </app-widget-frame>
               } @else if (widgetId === 'finChangeOrders') {
                 <!-- Change Orders Widget -->
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">swap</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Change Orders</modus-typography>
-                      <modus-badge color="secondary" size="sm">{{ filteredChangeOrders().length }}</modus-badge>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && changeOrdersInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ changeOrdersInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  [title]="'Change Orders'"
+                  [icon]="'swap'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? changeOrdersInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
+                  <modus-badge headerExtra color="secondary" size="sm">{{ filteredChangeOrders().length }}</modus-badge>
 
                   <div class="flex items-center gap-1 px-5 py-3 border-bottom-default flex-shrink-0">
                     @for (tab of coTabs; track tab.value) {
@@ -1400,125 +1364,106 @@ const FIN_MIN_CHILD_PX = 80;
                       </div>
                     }
                   </div>
-                </div>
-                <widget-resize-handle
-                  [isMobile]="isMobile()"
-                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
-                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
-                />
+                </app-widget-frame>
 
               } @else if (widgetId === 'finInvoiceQueue') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-warning" aria-hidden="true">invoice</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Invoice Queue</modus-typography>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && kellyInvoiceQueueInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyInvoiceQueueInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  [title]="'Invoice Queue'"
+                  [icon]="'invoice'"
+                  [iconClass]="'text-warning'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? kellyInvoiceQueueInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
                   <div class="flex-1 min-h-0 overflow-hidden">
                     <app-home-invoice-queue [invoices]="pendingApInvoices()" />
                   </div>
-                </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+                </app-widget-frame>
 
               } @else if (widgetId === 'finPaymentSchedule') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-destructive" aria-hidden="true">calendar</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Payment Schedule</modus-typography>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && kellyPaymentScheduleInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyPaymentScheduleInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  [title]="'Payment Schedule'"
+                  [icon]="'calendar'"
+                  [iconClass]="'text-destructive'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? kellyPaymentScheduleInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
                   <div class="flex-1 min-h-0 overflow-hidden">
                     <app-home-payment-schedule [payments]="apPaymentSchedule()" />
                   </div>
-                </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+                </app-widget-frame>
 
               } @else if (widgetId === 'finVendorAging') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-warning" aria-hidden="true">timer</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Vendor Aging</modus-typography>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && kellyVendorAgingInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyVendorAgingInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  [title]="'Vendor Aging'"
+                  [icon]="'timer'"
+                  [iconClass]="'text-warning'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? kellyVendorAgingInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
                   <div class="flex-1 min-h-0 overflow-hidden">
                     <app-home-vendor-aging [vendors]="apVendors()" />
                   </div>
-                </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+                </app-widget-frame>
 
               } @else if (widgetId === 'finPayApps') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-primary" aria-hidden="true">clipboard</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Pay Applications</modus-typography>
+                <app-widget-frame
+                  [title]="'Pay Applications'"
+                  [icon]="'clipboard'"
+                  [iconClass]="'text-primary'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? kellyPayAppsInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
+                  <div headerTrailing class="flex items-center gap-1 bg-muted rounded p-0.5" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+                    <div
+                      class="flex items-center justify-center w-7 h-7 rounded cursor-pointer transition-colors duration-150"
+                      [class.bg-card]="payAppsView() === 'tile'"
+                      [class.text-foreground]="payAppsView() === 'tile'"
+                      [class.text-foreground-40]="payAppsView() !== 'tile'"
+                      (click)="payAppsView.set('tile')">
+                      <i class="modus-icons text-sm" aria-hidden="true">dashboard</i>
                     </div>
-                    <div class="flex items-center gap-1 bg-muted rounded p-0.5" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
-                      <div
-                        class="flex items-center justify-center w-7 h-7 rounded cursor-pointer transition-colors duration-150"
-                        [class.bg-card]="payAppsView() === 'tile'"
-                        [class.text-foreground]="payAppsView() === 'tile'"
-                        [class.text-foreground-40]="payAppsView() !== 'tile'"
-                        (click)="payAppsView.set('tile')">
-                        <i class="modus-icons text-sm" aria-hidden="true">dashboard</i>
-                      </div>
-                      <div
-                        class="flex items-center justify-center w-7 h-7 rounded cursor-pointer transition-colors duration-150"
-                        [class.bg-card]="payAppsView() === 'table'"
-                        [class.text-foreground]="payAppsView() === 'table'"
-                        [class.text-foreground-40]="payAppsView() !== 'table'"
-                        (click)="payAppsView.set('table')">
-                        <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
-                      </div>
+                    <div
+                      class="flex items-center justify-center w-7 h-7 rounded cursor-pointer transition-colors duration-150"
+                      [class.bg-card]="payAppsView() === 'table'"
+                      [class.text-foreground]="payAppsView() === 'table'"
+                      [class.text-foreground-40]="payAppsView() !== 'table'"
+                      (click)="payAppsView.set('table')">
+                      <i class="modus-icons text-sm" aria-hidden="true">list_bulleted</i>
                     </div>
                   </div>
-                  @if (showFinBlock(widgetId, 'insight') && kellyPayAppsInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyPayAppsInsight() }}</modus-typography>
-                    </div>
-                  }
+
                   <div class="flex-1 min-h-0 overflow-hidden">
                     <app-home-pay-apps
                       [payApps]="apPayApplications()"
@@ -1529,108 +1474,91 @@ const FIN_MIN_CHILD_PX = 80;
                       (viewAllClick)="navigateToApSubpage()"
                     />
                   </div>
-                </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+                </app-widget-frame>
 
               } @else if (widgetId === 'finLienWaivers') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-destructive" aria-hidden="true">file</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Lien Waivers</modus-typography>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && kellyLienWaiversInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyLienWaiversInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  [title]="'Lien Waivers'"
+                  [icon]="'file'"
+                  [iconClass]="'text-destructive'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? kellyLienWaiversInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
                   <div class="flex-1 min-h-0 overflow-hidden">
                     <app-home-lien-waivers [waivers]="apLienWaivers()" />
                   </div>
-                </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+                </app-widget-frame>
 
               } @else if (widgetId === 'finRetention') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">lock</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Retention Summary</modus-typography>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && kellyRetentionInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyRetentionInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  [title]="'Retention Summary'"
+                  [icon]="'lock'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? kellyRetentionInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
                   <div class="flex-1 min-h-0 overflow-hidden">
                     <app-home-retention [records]="apRetention()" />
                   </div>
-                </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+                </app-widget-frame>
 
               } @else if (widgetId === 'finApActivity') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-foreground-60" aria-hidden="true">history</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">AP Activity</modus-typography>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && kellyApActivityInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyApActivityInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  [title]="'AP Activity'"
+                  [icon]="'history'"
+                  [iconClass]="'text-foreground-60'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? kellyApActivityInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
                   <div class="flex-1 min-h-0 overflow-hidden">
                     <app-home-ap-activity [activities]="apActivities()" />
                   </div>
-                </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+                </app-widget-frame>
 
               } @else if (widgetId === 'finCashOutflow') {
-                <div class="bg-card rounded-lg overflow-hidden flex flex-col h-full" [class.border-widget-outer]="selectedWidgetId() !== widgetId" [class.border-primary]="selectedWidgetId() === widgetId">
-                  <div
-                    class="flex items-center justify-between px-5 py-4 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                    (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-                    (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-                  >
-                    <div class="flex items-center gap-2">
-                      <i class="modus-icons text-base text-foreground-40" aria-hidden="true" data-drag-handle>drag_indicator</i>
-                      <i class="modus-icons text-lg text-destructive" aria-hidden="true">arrow_down</i>
-                      <modus-typography hierarchy="h2" size="md" weight="semibold" className="text-foreground-strong" role="heading" aria-level="2">Cash Outflow</modus-typography>
-                    </div>
-                  </div>
-                  @if (showFinBlock(widgetId, 'insight') && kellyCashOutflowInsight()) {
-                    <div class="flex items-center gap-1.5 px-5 py-2 border-bottom-default">
-                      <i class="modus-icons text-xs text-primary leading-none flex-shrink-0" aria-hidden="true">lightning</i>
-                      <modus-typography  hierarchy="p" size="xs" className="text-foreground-60 truncate leading-none">{{ kellyCashOutflowInsight() }}</modus-typography>
-                    </div>
-                  }
+                <app-widget-frame
+                  [title]="'Cash Outflow'"
+                  [icon]="'arrow_down'"
+                  [iconClass]="'text-destructive'"
+                  [titleHierarchy]="'h2'"
+                  [headerPadding]="'px-5 py-4'"
+                  [insightPadding]="'px-5 py-2'"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [insight]="showFinBlock(widgetId, 'insight') ? kellyCashOutflowInsight() : null"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
+                >
                   <div class="flex-1 min-h-0 overflow-hidden">
                     <app-home-cash-outflow [payments]="apPaymentSchedule()" />
                   </div>
-                </div>
-                <widget-resize-handle [isMobile]="isMobile()" (resizeStart)="startWidgetResize(widgetId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)" />
+                </app-widget-frame>
               }
 
             </div>

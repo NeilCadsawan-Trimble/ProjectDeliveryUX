@@ -119,54 +119,57 @@
       [style.height.px]="widgetHeights()['projsTimeline']"
       [style.z-index]="widgetZIndices()['projsTimeline']"
     >
-      <div class="bg-card border-default rounded-lg overflow-hidden flex flex-col h-full">
-        <div
-          class="flex items-center justify-between px-3 py-2 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-          (mousedown)="onWidgetHeaderMouseDown('projsTimeline', $event)"
-          (touchstart)="onWidgetHeaderTouchStart('projsTimeline', $event)"
-        >
-          <div class="flex items-center gap-1.5 min-w-0">
-            <i class="modus-icons text-sm text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
-            <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground-strong">Portfolio Timeline</modus-typography>
+      <app-widget-frame
+        [title]="'Portfolio Timeline'"
+        [icon]="null"
+        [titleHierarchy]="'p'"
+        [titleSize]="'xs'"
+        [headerPadding]="'px-3 py-2'"
+        [dragHandleSize]="'sm'"
+        [resizable]="true"
+        [selected]="false"
+        (headerMouseDown)="onWidgetHeaderMouseDown('projsTimeline', $event)"
+        (headerTouchStart)="onWidgetHeaderTouchStart('projsTimeline', $event)"
+        (resizeStart)="startWidgetResize('projsTimeline', 'both', $event)"
+        (resizeTouchStart)="startWidgetResizeTouch('projsTimeline', 'both', $event)"
+      >
+        <div headerTrailing class="flex items-center gap-1 flex-wrap">
+          @for (cat of allCategories; track cat) {
+            <div
+              class="flex items-center gap-1 px-1 md:px-2 py-0.5 rounded-full cursor-pointer transition-opacity select-none"
+              [class]="categoryMeta[cat].bgClass"
+              [class.opacity-40]="!isCategoryActive(cat)"
+              (click)="toggleCategory(cat); $event.stopPropagation()"
+              [attr.aria-label]="categoryMeta[cat].label"
+              [attr.title]="categoryMeta[cat].label"
+            >
+              <div class="w-2 h-2 md:w-1.5 md:h-1.5 rounded-full" [class]="categoryMeta[cat].colorClass"></div>
+              <modus-typography size="xs" className="text-2xs text-foreground hidden md:inline">{{ categoryMeta[cat].label }}</modus-typography>
+            </div>
+          }
+          <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer text-foreground-60 hover:bg-muted transition-colors ml-1" (click)="shiftTimeline(-1); $event.stopPropagation()">
+            <i class="modus-icons text-xs" aria-hidden="true">chevron_left</i>
           </div>
-          <div class="flex items-center gap-1 flex-wrap">
-            @for (cat of allCategories; track cat) {
-              <div
-                class="flex items-center gap-1 px-1 md:px-2 py-0.5 rounded-full cursor-pointer transition-opacity select-none"
-                [class]="categoryMeta[cat].bgClass"
-                [class.opacity-40]="!isCategoryActive(cat)"
-                (click)="toggleCategory(cat); $event.stopPropagation()"
-                [attr.aria-label]="categoryMeta[cat].label"
-                [attr.title]="categoryMeta[cat].label"
-              >
-                <div class="w-2 h-2 md:w-1.5 md:h-1.5 rounded-full" [class]="categoryMeta[cat].colorClass"></div>
-                <modus-typography size="xs" className="text-2xs text-foreground hidden md:inline">{{ categoryMeta[cat].label }}</modus-typography>
-              </div>
-            }
-            <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer text-foreground-60 hover:bg-muted transition-colors ml-1" (click)="shiftTimeline(-1); $event.stopPropagation()">
-              <i class="modus-icons text-xs" aria-hidden="true">chevron_left</i>
-            </div>
-            <modus-typography
-              size="xs" weight="semibold"
-              className="text-2xs px-1.5 py-0.5 rounded text-primary cursor-pointer hover:bg-primary-20 transition-colors"
-              (click)="scrollTimelineToToday(); $event.stopPropagation()"
-            >Today</modus-typography>
-            <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer text-foreground-60 hover:bg-muted transition-colors" (click)="shiftTimeline(1); $event.stopPropagation()">
-              <i class="modus-icons text-xs" aria-hidden="true">chevron_right</i>
-            </div>
-            <div class="w-px h-4 bg-foreground-20 mx-1"></div>
-            <div class="flex items-center gap-1 flex-1 md:flex-none" (click)="$event.stopPropagation()">
-              <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">zoom_out</i>
-              <input type="range" min="8" max="80" step="2"
-                class="tile-zoom-slider flex-1 md:flex-none"
-                [value]="timelineDayPx()"
-                (input)="setTimelineZoom(+$any($event.target).value)"
-                (change)="resetTimelineZoomAnchor()"
-                (pointerdown)="resetTimelineZoomAnchor()"
-                aria-label="Timeline zoom"
-              />
-              <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">zoom_in</i>
-            </div>
+          <modus-typography
+            size="xs" weight="semibold"
+            className="text-2xs px-1.5 py-0.5 rounded text-primary cursor-pointer hover:bg-primary-20 transition-colors"
+            (click)="scrollTimelineToToday(); $event.stopPropagation()"
+          >Today</modus-typography>
+          <div class="flex items-center justify-center w-6 h-6 rounded cursor-pointer text-foreground-60 hover:bg-muted transition-colors" (click)="shiftTimeline(1); $event.stopPropagation()">
+            <i class="modus-icons text-xs" aria-hidden="true">chevron_right</i>
+          </div>
+          <div class="w-px h-4 bg-foreground-20 mx-1"></div>
+          <div class="flex items-center gap-1 flex-1 md:flex-none" (click)="$event.stopPropagation()">
+            <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">zoom_out</i>
+            <input type="range" min="8" max="80" step="2"
+              class="tile-zoom-slider flex-1 md:flex-none"
+              [value]="timelineDayPx()"
+              (input)="setTimelineZoom(+$any($event.target).value)"
+              (change)="resetTimelineZoomAnchor()"
+              (pointerdown)="resetTimelineZoomAnchor()"
+              aria-label="Timeline zoom"
+            />
+            <i class="modus-icons text-xs text-foreground-40" aria-hidden="true">zoom_in</i>
           </div>
         </div>
 
@@ -265,12 +268,7 @@
             </div>
           </div>
         </div>
-
-        <widget-resize-handle
-          (resizeStart)="startWidgetResize('projsTimeline', 'both', $event)"
-          (resizeTouchStart)="startWidgetResizeTouch('projsTimeline', 'both', $event)"
-        />
-      </div>
+      </app-widget-frame>
     </div>
     }
 
@@ -295,27 +293,27 @@
       [style.z-index]="widgetZIndices()[widgetId]"
     >
       <div class="relative h-full" [class.opacity-30]="moveTargetId() === widgetId">
-        <div
-          class="relative bg-card rounded-lg overflow-hidden flex flex-col h-full"
-          [class.border-widget-outer]="selectedWidgetId() !== widgetId"
-          [class.border-primary]="selectedWidgetId() === widgetId"
+        <app-widget-frame
+          [title]="project.name"
+          [icon]="null"
+          [titleHierarchy]="'h4'"
+          [titleSize]="'xs'"
+          [titleClassName]="'widget-title text-foreground-strong truncate'"
+          [headerPadding]="'px-3 py-2'"
+          [dragHandleSize]="'sm'"
+          [selected]="selectedWidgetId() === widgetId"
+          [isMobile]="isMobile()"
+          [class.widget-text-md]="widgetTextTier(widgetId) === 'widget-text-md'"
+          [class.widget-text-lg]="widgetTextTier(widgetId) === 'widget-text-lg'"
+          (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event)"
+          (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event)"
+          (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
+          (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
         >
-          <div
-            class="flex items-center justify-between px-3 py-2 border-bottom-default cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-            [class.widget-text-md]="widgetTextTier(widgetId) === 'widget-text-md'"
-            [class.widget-text-lg]="widgetTextTier(widgetId) === 'widget-text-lg'"
-            (mousedown)="onWidgetHeaderMouseDown(widgetId, $event)"
-            (touchstart)="onWidgetHeaderTouchStart(widgetId, $event)"
-          >
-            <div class="flex items-center gap-1.5 min-w-0">
-              <i class="modus-icons text-sm text-foreground-40 flex-shrink-0" aria-hidden="true" data-drag-handle>drag_indicator</i>
-              <modus-typography  hierarchy="h4" size="xs" weight="semibold" className="widget-title text-foreground-strong truncate">{{ project.name }}</modus-typography>
-            </div>
-            @let badge = getActionBadge(project.id);
-            <modus-badge [color]="badge.color" variant="filled" size="sm">
-              {{ badge.label }}
-            </modus-badge>
-          </div>
+          @let badge = getActionBadge(project.id);
+          <modus-badge headerTrailing [color]="badge.color" variant="filled" size="sm">
+            {{ badge.label }}
+          </modus-badge>
 
           <div
             class="flex-1 min-h-0 overflow-hidden"
@@ -947,17 +945,11 @@
             </div>
             }
           </div>
-          <widget-lock-toggle
-            [locked]="widgetLocked()[widgetId]"
-            (toggle)="toggleWidgetLock(widgetId)"
-          />
-          <widget-resize-handle
-            [isMobile]="isMobile()"
-            (resizeStart)="startWidgetResize(widgetId, 'both', $event)"
-            (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event)"
-          />
-        </div>
-
+        </app-widget-frame>
+        <widget-lock-toggle
+          [locked]="widgetLocked()[widgetId]"
+          (toggle)="toggleWidgetLock(widgetId)"
+        />
       </div>
     </div>
 

@@ -20,6 +20,10 @@ const DASHBOARD_PAGE_BASE = readFileSync(
   resolve(__dir, '../../src/app/shell/services/dashboard-page-base.ts'),
   'utf-8',
 );
+const WIDGET_FRAME_SRC = readFileSync(
+  resolve(__dir, '../../src/app/shell/components/widget-frame.component.ts'),
+  'utf-8',
+);
 
 describe('HomePageComponent (template regression)', () => {
   describe('desktop padding', () => {
@@ -33,12 +37,14 @@ describe('HomePageComponent (template regression)', () => {
   });
 
   describe('resize handles', () => {
-    it('has widget-resize-handle components', () => {
-      expect(SRC).toContain('<widget-resize-handle');
+    it('uses WidgetFrameComponent which contains widget-resize-handle', () => {
+      expect(SRC).toContain('<app-widget-frame');
+      expect(WIDGET_FRAME_SRC).toContain('<widget-resize-handle');
     });
 
     it('does not have left position resize handles', () => {
       expect(SRC).not.toContain('position="left"');
+      expect(WIDGET_FRAME_SRC).not.toContain('position="left"');
     });
   });
 
