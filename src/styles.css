@@ -2351,6 +2351,58 @@ modus-wc-chip
   background: var(--ai-floating-prompt-surface);
 }
 
+/* ----------------------------------------------------------------------
+ * Trimble Assistant drawer -- DOCKED variant.
+ *
+ * In standard desktop/tablet mode the panel renders as an in-flow flex
+ * column to the right of `#main-content` instead of as a fixed overlay
+ * (see dashboard-shell.component.ts canDock()). The modifier classes
+ * below override the floating-mode defaults; floating mode is still the
+ * default and is used in canvas mode (>= 1920px) and as a mobile
+ * fallback (< 768px, where the open toolbar button is also hidden).
+ * -------------------------------------------------------------------- */
+.ai-floating-prompt-drawer-portal--dock {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  display: flex;
+  pointer-events: auto;
+  flex: 0 0 auto;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.ai-floating-prompt-drawer--docked {
+  max-width: 100%;
+  height: 100%;
+  box-shadow: none;
+  border-left: 1px solid var(--border);
+  animation: none;
+}
+
+/* Left-edge drag handle for the docked panel. Sits flush against the
+ * border, widens its hit area on hover, and shows a subtle primary glow
+ * while the user is actively resizing. Keyboard users get the same
+ * behaviour via ArrowLeft/Right (and Home/End to jump to the bounds). */
+.ai-floating-prompt-drawer-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 2;
+  background: transparent;
+  transition: background-color 120ms ease;
+}
+
+.ai-floating-prompt-drawer-resize-handle:hover,
+.ai-floating-prompt-drawer-resize-handle:focus-visible,
+.ai-floating-prompt-drawer-resize-handle.is-resizing {
+  background: color-mix(in srgb, var(--primary) 30%, transparent);
+  outline: none;
+}
+
 @media (max-width: 640px) {
   .ai-floating-prompt {
     bottom: 0.75rem;

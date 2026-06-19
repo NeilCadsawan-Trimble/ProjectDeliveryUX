@@ -2006,6 +2006,33 @@ Both surfaces read and write the same controller signals: `messages()`, `thinkin
 
 The drawer used to be modal and the floating prompt was effectively dead while it was open -- the user could not pivot back to a quick prompt without first dismissing the drawer, and they could not interact with widgets at all. Recovering that dual-track flow without losing conversation continuity required all five contract pieces above. If any one regresses (scrim re-added, `phase` rule removed, host listeners deleted, pointer-events flipped, or H3 hardcoded again), the experience reverts to the modal-blocking pattern even if the visuals look right.
 
+### Jun 19 2026 update -- Dock variant in standard desktop mode
+
+The drawer now renders in two modes:
+
+| Mode | Where | How it's rendered |
+|---|---|---|
+| `'dock'` | Standard non-canvas, non-mobile (768 <= viewport < 1920) | In-flow flex column to the right of `#main-content`, with a left-edge drag handle for user-resizable width (320-720 px, persisted to `localStorage`). |
+| `'float'` | Canvas mode (viewport >= 1920) and mobile fallback (< 768) | Original fixed-portal overlay (unchanged from the contract above). |
+
+Key rules layered on top of the original contract:
+
+1. **Dock visibility is conditional.** The shell renders `<ai-assistant-panel mode="dock" />` only when `canDock() && ai.drawerOpen()`. Both signals matter: `canDock()` flips on viewport breakpoint changes, and the panel disappears when the drawer closes. A separate `<ai-assistant-panel mode="float" />` lives in the `!canDock()` branch so desktop users resizing down with the drawer open still see it.
+2. **Floating prompt hides when the drawer is open.** The host computed (`ai-floating-prompt-host.component.ts`) returns `false` when `ai.drawerOpen()` is true. Together with rule 1, this means the floating prompt and the drawer never co-render -- the user picks one surface at a time.
+3. **Mobile cannot open the drawer.** The floating prompt's "Open Trimble Assistant" toolbar button is wrapped in `@if (!isMobile())`, and `AiPanelController.openDrawer()` / `toggleDrawer()` no-op when `window.innerWidth < 768`. Belt-and-braces: even if a future caller invokes `openDrawer()` from somewhere else, mobile users never see a 28rem column squeeze their content to zero.
+4. **Widgets reflow on dock toggle.** The shell has an `effect()` watching both `ai.drawerOpen()` and `canDock()`. On either flip it schedules a double rAF then `window.dispatchEvent(new Event('resize'))`. `DashboardLayoutEngine` listens to `window:resize` (line 490) and reads `grid.clientWidth` from there, so this synthetic event is the only thing that makes widgets re-compact against the narrower `#main-content`. The resize handle in `AiAssistantPanelComponent` dispatches the same synthetic event at mouse-up and on every keyboard step. Forgetting this nudge leaves widgets overflowing the right edge of the now-narrower column.
+5. **Pointer-events contract still holds -- in float mode.** Rule (4) of the base contract above only applies to floating renders. The dock variant overrides the portal class with `.ai-floating-prompt-drawer-portal--dock { position: relative; pointer-events: auto; }` because there is no overlay to fall through. The base `.ai-floating-prompt-drawer-portal { position: fixed; pointer-events: none; }` rule is untouched and still describes float mode correctly (regression tests at lines 720-731 of `ai-floating-prompt.spec.ts` continue to pass).
+
+### Dock-mode regression tests (new in `tests/static/ai-floating-prompt.spec.ts`)
+
+19 new assertions cover: `mode` input shape, removal of the global panel mount, canvas-branch float, standard-branch dock + fallback float, `canDock()` formula, the reflow `dispatchEvent('resize')`, dock CSS modifiers (portal `position: relative; pointer-events: auto`; drawer `box-shadow: none; border-left`), the mobile toolbar gate, the controller's `isMobileViewport()` guards on both `openDrawer()` and `toggleDrawer()`, and the resize handle (aria-orientation/value{min,max,now}, clamp bounds, localStorage persistence, ArrowLeft/Right/Home/End keyboard, resize-end synthetic event, hover/focus/is-resizing styles).
+
+### Don't
+
+- Don't re-add a global `<ai-assistant-panel />` mount above the canvas/standard branches; it forces fixed positioning regardless of mode and the dock variant becomes a phantom column.
+- Don't drop the `min-w-0` class from `#main-content`. Without it, intrinsic min-width of the router-outlet's content prevents the flex item from shrinking when the dock claims width.
+- Don't shrink the dock width below ~320 px. The composer pill, suggestion chips, and message bubbles hit a horizontal threshold below that and start wrapping badly.
+
 ---
 
 ## 45. Deepgram Voice Input -- Browser STT via Ephemeral Tokens

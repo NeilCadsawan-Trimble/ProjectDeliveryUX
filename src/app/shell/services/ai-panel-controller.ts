@@ -296,15 +296,33 @@ export class AiPanelController {
   }
 
   toggleDrawer(): void {
-    this.drawerOpen.update(v => !v);
+    if (this.drawerOpen()) {
+      this.drawerOpen.set(false);
+      return;
+    }
+    if (this.isMobileViewport()) return;
+    this.drawerOpen.set(true);
   }
 
   openDrawer(): void {
+    if (this.isMobileViewport()) return;
     this.drawerOpen.set(true);
   }
 
   closeDrawer(): void {
     this.drawerOpen.set(false);
+  }
+
+  /**
+   * Belt-and-braces: the Trimble Assistant drawer is desktop + tablet
+   * only. The floating prompt already hides its "Open Trimble Assistant"
+   * toolbar button below 768px, but guarding the controller too means
+   * anything else (AI tools, future call sites, debugger nudges) cannot
+   * leave the user with an off-screen / zero-width drawer.
+   */
+  private isMobileViewport(): boolean {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
   }
 
   /**

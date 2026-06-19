@@ -2,13 +2,21 @@ import {
   ChangeDetectionStrategy,
   Component,
   HostListener,
+  effect,
   inject,
+  input,
+  signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { ModusTypographyComponent } from '../../components/modus-typography.component';
 import { AiPanelController } from '../services/ai-panel-controller';
 import { AiComposerPillComponent } from './ai-composer-pill.component';
+
+const DOCK_WIDTH_STORAGE_KEY = 'trimble-assistant-dock-width-px';
+const DOCK_WIDTH_MIN_PX = 320;
+const DOCK_WIDTH_MAX_PX = 720;
+const DOCK_WIDTH_DEFAULT_PX = 448;
 
 /**
  * Trimble Assistant slide-out side panel.
@@ -26,14 +34,36 @@ import { AiComposerPillComponent } from './ai-composer-pill.component';
   imports: [ModusTypographyComponent, AiComposerPillComponent],
   template: `
     @if (controller.drawerOpen()) {
-      <div class="ai-floating-prompt-drawer-portal" aria-hidden="false">
+      <div
+        class="ai-floating-prompt-drawer-portal"
+        [class.ai-floating-prompt-drawer-portal--dock]="mode() === 'dock'"
+        [style.width.px]="mode() === 'dock' ? dockWidthPx() : null"
+        aria-hidden="false"
+      >
         <div
           class="ai-floating-prompt-drawer"
+          [class.ai-floating-prompt-drawer--docked]="mode() === 'dock'"
+          [style.width.px]="mode() === 'dock' ? dockWidthPx() : null"
           role="dialog"
           aria-modal="false"
           aria-label="Trimble Assistant"
           tabindex="-1"
         >
+          @if (mode() === 'dock') {
+            <div
+              class="ai-floating-prompt-drawer-resize-handle"
+              [class.is-resizing]="resizing()"
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize Trimble Assistant"
+              [attr.aria-valuemin]="dockWidthMin"
+              [attr.aria-valuemax]="dockWidthMax"
+              [attr.aria-valuenow]="dockWidthPx()"
+              tabindex="0"
+              (mousedown)="onResizeMouseDown($event)"
+              (keydown)="onResizeKeydown($event)"
+            ></div>
+          }
           <div class="ai-floating-prompt-drawer-header">
             <div class="flex items-center gap-2 min-w-0">
               <div class="w-7 h-7 rounded-full bg-primary-20 flex items-center justify-center flex-shrink-0">
@@ -121,8 +151,116 @@ export class AiAssistantPanelComponent {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
 
+  /**
+   * Render mode. `'dock'` lays the panel out as an in-flow flex column
+   * (used in standard non-canvas, non-mobile shells); `'float'` keeps the
+   * historical fixed-portal overlay used in canvas mode and as the mobile
+   * fallback. Defaults to `'float'` so existing call sites that omit the
+   * input keep their previous behavior.
+   */
+  readonly mode = input<'dock' | 'float'>('float');
+
+  /** Exposed constants so the resize handle can populate aria-value{min,max}. */
+  readonly dockWidthMin = DOCK_WIDTH_MIN_PX;
+  readonly dockWidthMax = DOCK_WIDTH_MAX_PX;
+
+  /**
+   * Width of the docked panel in pixels. Persisted to localStorage so the
+   * user's preferred width survives reloads and route changes. Only used
+   * when `mode() === 'dock'`; floating mode keeps the CSS-declared
+   * `min(28rem, 100vw)` width.
+   */
+  readonly dockWidthPx = signal<number>(this.readDockWidthFromStorage());
+
+  /** True while the user is actively dragging the left-edge resize handle. */
+  readonly resizing = signal(false);
+
+  private resizeStartX = 0;
+  private resizeStartWidth = 0;
+
+  private readonly _persistDockWidth = effect(() => {
+    const px = this.dockWidthPx();
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(DOCK_WIDTH_STORAGE_KEY, String(px));
+    } catch {
+      // ignore quota / private-mode errors -- width still works in-session
+    }
+  });
+
   closeDrawer(): void {
     this.controller.closeDrawer();
+  }
+
+  private readDockWidthFromStorage(): number {
+    if (typeof window === 'undefined') return DOCK_WIDTH_DEFAULT_PX;
+    try {
+      const raw = window.localStorage.getItem(DOCK_WIDTH_STORAGE_KEY);
+      if (!raw) return DOCK_WIDTH_DEFAULT_PX;
+      const n = Number.parseInt(raw, 10);
+      if (!Number.isFinite(n)) return DOCK_WIDTH_DEFAULT_PX;
+      return this.clampDockWidth(n);
+    } catch {
+      return DOCK_WIDTH_DEFAULT_PX;
+    }
+  }
+
+  private clampDockWidth(px: number): number {
+    return Math.max(DOCK_WIDTH_MIN_PX, Math.min(DOCK_WIDTH_MAX_PX, Math.round(px)));
+  }
+
+  onResizeMouseDown(event: MouseEvent): void {
+    if (this.mode() !== 'dock') return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.resizeStartX = event.clientX;
+    this.resizeStartWidth = this.dockWidthPx();
+    this.resizing.set(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    const onMove = (e: MouseEvent) => {
+      // Dragging the LEFT edge to the left grows the panel; to the right
+      // shrinks it. So the delta is start - current.
+      const delta = this.resizeStartX - e.clientX;
+      this.dockWidthPx.set(this.clampDockWidth(this.resizeStartWidth + delta));
+    };
+    const onUp = () => {
+      this.resizing.set(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      // Notify the layout engine that the main column geometry changed so
+      // widgets re-flow against the new container width.
+      window.dispatchEvent(new Event('resize'));
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+
+  onResizeKeydown(event: KeyboardEvent): void {
+    if (this.mode() !== 'dock') return;
+    const step = event.shiftKey ? 32 : 8;
+    let next: number | null = null;
+    switch (event.key) {
+      case 'ArrowLeft':
+        next = this.dockWidthPx() + step;
+        break;
+      case 'ArrowRight':
+        next = this.dockWidthPx() - step;
+        break;
+      case 'Home':
+        next = DOCK_WIDTH_MAX_PX;
+        break;
+      case 'End':
+        next = DOCK_WIDTH_MIN_PX;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.dockWidthPx.set(this.clampDockWidth(next));
+    window.dispatchEvent(new Event('resize'));
   }
 
   onMessageClick(event: MouseEvent): void {

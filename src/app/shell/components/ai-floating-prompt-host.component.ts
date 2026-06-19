@@ -61,6 +61,16 @@ export class AiFloatingPromptHostComponent {
    * Hide on routes that render without the dashboard shell (auth/login,
    * auth callback, persona select). The prompt wouldn't have a meaningful
    * page context on those screens and would clutter the auth UX.
+   *
+   * Also hide while the Trimble Assistant slide-out drawer is open
+   * (`ai.drawerOpen()`). This is a deliberate reversal of the original
+   * "non-modal coexistence" design (skill section 44): the drawer is now
+   * the sole AI surface while it's visible, and the floating prompt
+   * reappears the instant the drawer closes. The prompt's internal
+   * 5-piece contract (phase short-circuit, host-listener close, scrim
+   * removal, pointer-events split, dynamic H3) is intentionally left in
+   * place so transition states stay safe and the existing regression
+   * tests in `tests/static/ai-floating-prompt.spec.ts` continue to pass.
    */
   readonly visible = computed(() => {
     const url = this.currentUrl();
@@ -68,6 +78,7 @@ export class AiFloatingPromptHostComponent {
     if (url.startsWith('/auth/')) return false;
     if (url.startsWith('/select')) return false;
     if (url === '/') return false;
+    if (this.ai.drawerOpen()) return false;
     return true;
   });
 }
