@@ -93,9 +93,10 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
     </svg>
     <div class="skip-nav" tabindex="0" role="link" (click)="focusMain()" (keydown.enter)="focusMain()">Skip to main content</div>
 
-    <ai-assistant-panel />
-
     @if (isCanvas()) {
+      <!-- Canvas mode keeps the floating overlay: the canvas content is a -->
+      <!-- panned + zoomed coordinate space and cannot give up a column. -->
+      <ai-assistant-panel mode="float" />
       <div class="canvas-host bg-background text-foreground canvas-mode select-none" #canvasHost (mousedown)="panning.onPanMouseDown($event)">
 
         <div class="canvas-navbar">
@@ -622,10 +623,20 @@ export type AiResponseFn = (input: string) => string | Promise<string>;
         }
 
         <div class="flex flex-1 overflow-hidden">
-          <div class="flex-1 overflow-auto bg-background md:pl-14 pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)]" role="main" id="main-content" tabindex="-1">
+          <div class="flex-1 overflow-auto bg-background md:pl-14 pb-[calc(var(--ai-floating-prompt-height)+2rem+24px)] min-w-0" role="main" id="main-content" tabindex="-1">
             <router-outlet />
           </div>
+          @if (canDock() && ai.drawerOpen()) {
+            <ai-assistant-panel mode="dock" />
+          }
         </div>
+        @if (!canDock()) {
+          <!-- Mobile-only fallback: a desktop user resizing down with the -->
+          <!-- drawer open still sees it as a floating overlay (never docks -->
+          <!-- to 0px on mobile). Mobile users cannot open it in the first -->
+          <!-- place (toolbar button is hidden + controller no-ops). -->
+          <ai-assistant-panel mode="float" />
+        }
 
       </div>
     }
@@ -766,6 +777,36 @@ export class DashboardShellComponent implements AfterViewInit {
 
   /** Shared singleton AI panel controller (root-provided). */
   readonly ai = inject(AiPanelController);
+
+  /**
+   * The Trimble Assistant drawer docks (in-flow flex column) only in
+   * standard desktop / tablet mode. Canvas mode (>= 1920px) keeps it
+   * floating because the canvas is a panned + zoomed coordinate space
+   * and cannot give up a column. Mobile (< 768px) hides the drawer
+   * entirely (toolbar button is suppressed and the controller no-ops),
+   * so the only render path on mobile is the no-op floating fallback.
+   */
+  readonly canDock = computed(() => !this.isCanvas() && !this.isMobile());
+
+  /**
+   * When the drawer docks/un-docks, the `#main-content` flex child's
+   * width changes without the window resizing. The shared
+   * `DashboardLayoutEngine` only listens to `window.resize`
+   * (dashboard-layout-engine.ts line 490), so dispatch a synthetic
+   * resize after the dock animation/layout settles. Double rAF lets the
+   * new flex geometry land before the engine reads `grid.clientWidth`.
+   */
+  private readonly _drawerReflowEffect = effect(() => {
+    // Read both signals so the effect fires whenever either flips.
+    this.ai.drawerOpen();
+    this.canDock();
+    if (typeof window === 'undefined') return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+    });
+  });
 
   readonly isDark = computed(() => this.themeService.mode() === 'dark');
 

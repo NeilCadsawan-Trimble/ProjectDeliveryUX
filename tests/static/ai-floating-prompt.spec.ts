@@ -832,4 +832,139 @@ describe('Modus AI Floating Prompt (shell wiring)', () => {
       expect(CONTROLLER_SRC).not.toMatch(/simulateListening\s*\(/);
     });
   });
+
+  describe('Drawer docking (Jun 19 2026): in-flow column instead of fixed overlay', () => {
+    it('panel exposes a typed mode input that defaults to float', () => {
+      // Backward-compatible default keeps existing call sites floating; the
+      // shell flips it to "dock" only inside the standard-mode body row.
+      expect(PANEL_SRC).toMatch(/mode\s*=\s*input<\s*['"]dock['"]\s*\|\s*['"]float['"]\s*>\(\s*['"]float['"]\s*\)/);
+    });
+
+    it('shell no longer mounts the panel globally above the canvas/standard branches', () => {
+      // Previously sat as a single sibling of <skip-nav>, which forced it
+      // to render fixed-position regardless of mode. It now lives inside
+      // whichever branch is active so the dock variant can be in-flow.
+      expect(SHELL_SRC).not.toMatch(/<\/svg>[\s\S]*?<div class="skip-nav"[\s\S]*?<\/div>\s*<ai-assistant-panel\s*\/>\s*@if/);
+    });
+
+    it('canvas branch keeps a floating-mode panel (canvas content is panned + zoomed)', () => {
+      expect(SHELL_SRC).toMatch(/<ai-assistant-panel mode="float"\s*\/>[\s\S]*?canvas-host/);
+    });
+
+    it('standard branch renders the dock-mode panel inside the body flex row next to #main-content', () => {
+      // canDock() gates this branch so canvas (>= 1920px) and mobile (< 768px)
+      // never try to dock; the floating fallback below handles those.
+      expect(SHELL_SRC).toMatch(
+        /id="main-content"[\s\S]*?<\/div>\s*@if\s*\(\s*canDock\(\)\s*&&\s*ai\.drawerOpen\(\)\s*\)\s*\{\s*<ai-assistant-panel mode="dock"\s*\/>/,
+      );
+    });
+
+    it('standard branch keeps a floating-mode fallback for when canDock() is false', () => {
+      // Desktop-with-drawer-open resizing down to mobile must not orphan
+      // the panel; the !canDock() branch renders the historical overlay.
+      expect(SHELL_SRC).toMatch(/@if\s*\(\s*!canDock\(\)\s*\)\s*\{[\s\S]*?<ai-assistant-panel mode="float"\s*\/>/);
+    });
+
+    it('shell computes canDock() = !isCanvas() && !isMobile()', () => {
+      expect(SHELL_SRC).toMatch(
+        /canDock\s*=\s*computed\(\s*\(\s*\)\s*=>\s*!this\.isCanvas\(\)\s*&&\s*!this\.isMobile\(\)\s*\)/,
+      );
+    });
+
+    it('shell dispatches a synthetic resize when drawerOpen / canDock change so widgets reflow', () => {
+      // DashboardLayoutEngine only listens to window:resize; the dock
+      // narrows #main-content without changing window width, so the
+      // engine needs an explicit nudge.
+      expect(SHELL_SRC).toMatch(/this\.ai\.drawerOpen\(\)[\s\S]{0,400}window\.dispatchEvent\(new Event\('resize'\)\)/);
+    });
+
+    it('styles.css declares the dock portal modifier with in-flow positioning', () => {
+      expect(STYLES_SRC).toMatch(
+        /\.ai-floating-prompt-drawer-portal--dock\s*\{[\s\S]*?position:\s*relative[\s\S]*?pointer-events:\s*auto/,
+      );
+    });
+
+    it('styles.css declares the docked drawer modifier with no shadow + left border', () => {
+      // Drops the -16px outer shadow that suggested floating, keeps the
+      // surface variable, and adds a divider line between #main-content
+      // and the docked column.
+      expect(STYLES_SRC).toMatch(
+        /\.ai-floating-prompt-drawer--docked\s*\{[\s\S]*?box-shadow:\s*none[\s\S]*?border-left:\s*1px solid var\(--border\)/,
+      );
+    });
+
+    it('floating prompt hides the "Open Trimble Assistant" toolbar button on mobile', () => {
+      // Drawer is desktop + tablet only; the controller also no-ops
+      // openDrawer / toggleDrawer below 768px (belt-and-braces).
+      expect(PROMPT_SRC).toMatch(
+        /@if\s*\(\s*!isMobile\(\)\s*\)\s*\{[\s\S]*?aria-label="Open Trimble Assistant"/,
+      );
+    });
+
+    it('floating prompt exposes an isMobile signal driven by window width', () => {
+      expect(PROMPT_SRC).toMatch(/isMobile\s*=\s*signal\([^)]*window\.innerWidth\s*<\s*768/);
+    });
+
+    it('AiPanelController openDrawer / toggleDrawer no-op on mobile viewports', () => {
+      expect(CONTROLLER_SRC).toMatch(/isMobileViewport\(\)\s*:\s*boolean[\s\S]*?window\.innerWidth\s*<\s*768/);
+      expect(CONTROLLER_SRC).toMatch(/openDrawer\(\)[\s\S]*?if\s*\(\s*this\.isMobileViewport\(\)\s*\)\s*return/);
+      expect(CONTROLLER_SRC).toMatch(/toggleDrawer\(\)[\s\S]*?if\s*\(\s*this\.isMobileViewport\(\)\s*\)\s*return/);
+    });
+  });
+
+  describe('Drawer resizable handle: user can drag the left edge', () => {
+    it('panel template renders the resize handle only in dock mode', () => {
+      expect(PANEL_SRC).toMatch(
+        /@if\s*\(\s*mode\(\)\s*===\s*['"]dock['"]\s*\)\s*\{[\s\S]*?ai-floating-prompt-drawer-resize-handle/,
+      );
+    });
+
+    it('resize handle declares aria-orientation, aria-value{min,max,now}, and role="separator"', () => {
+      expect(PANEL_SRC).toContain('role="separator"');
+      expect(PANEL_SRC).toContain('aria-orientation="vertical"');
+      expect(PANEL_SRC).toMatch(/\[attr\.aria-valuemin\]="dockWidthMin"/);
+      expect(PANEL_SRC).toMatch(/\[attr\.aria-valuemax\]="dockWidthMax"/);
+      expect(PANEL_SRC).toMatch(/\[attr\.aria-valuenow\]="dockWidthPx\(\)"/);
+    });
+
+    it('dockWidthPx clamps to [DOCK_WIDTH_MIN_PX, DOCK_WIDTH_MAX_PX]', () => {
+      expect(PANEL_SRC).toMatch(/DOCK_WIDTH_MIN_PX\s*=\s*320/);
+      expect(PANEL_SRC).toMatch(/DOCK_WIDTH_MAX_PX\s*=\s*720/);
+      expect(PANEL_SRC).toMatch(
+        /clampDockWidth\([^)]*\)\s*:\s*number\s*\{[\s\S]*?Math\.max\(\s*DOCK_WIDTH_MIN_PX/,
+      );
+    });
+
+    it('dockWidthPx persists to localStorage so the user width survives reloads', () => {
+      expect(PANEL_SRC).toContain("'trimble-assistant-dock-width-px'");
+      expect(PANEL_SRC).toMatch(/window\.localStorage\.setItem\(\s*DOCK_WIDTH_STORAGE_KEY/);
+      expect(PANEL_SRC).toMatch(/window\.localStorage\.getItem\(\s*DOCK_WIDTH_STORAGE_KEY/);
+    });
+
+    it('keyboard resize: ArrowLeft grows, ArrowRight shrinks, Home/End jump to bounds', () => {
+      expect(PANEL_SRC).toMatch(/case\s*['"]ArrowLeft['"][\s\S]*?dockWidthPx\(\)\s*\+\s*step/);
+      expect(PANEL_SRC).toMatch(/case\s*['"]ArrowRight['"][\s\S]*?dockWidthPx\(\)\s*-\s*step/);
+      expect(PANEL_SRC).toMatch(/case\s*['"]Home['"][\s\S]*?DOCK_WIDTH_MAX_PX/);
+      expect(PANEL_SRC).toMatch(/case\s*['"]End['"][\s\S]*?DOCK_WIDTH_MIN_PX/);
+    });
+
+    it('resize ends dispatch a synthetic resize event so the layout engine reflows widgets', () => {
+      // Mirrors the drawerOpen/canDock effect in dashboard-shell so the
+      // engine always sees the new #main-content geometry.
+      expect(PANEL_SRC).toMatch(
+        /onResizeMouseDown\([\s\S]*?window\.dispatchEvent\(new Event\('resize'\)\)/,
+      );
+      expect(PANEL_SRC).toMatch(
+        /onResizeKeydown\([\s\S]*?window\.dispatchEvent\(new Event\('resize'\)\)/,
+      );
+    });
+
+    it('styles.css declares the resize handle with col-resize cursor + hover/focus glow', () => {
+      expect(STYLES_SRC).toMatch(
+        /\.ai-floating-prompt-drawer-resize-handle\s*\{[\s\S]*?cursor:\s*col-resize/,
+      );
+      expect(STYLES_SRC).toContain('.ai-floating-prompt-drawer-resize-handle:hover');
+      expect(STYLES_SRC).toContain('.ai-floating-prompt-drawer-resize-handle.is-resizing');
+    });
+  });
 });

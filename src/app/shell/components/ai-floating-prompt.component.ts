@@ -104,18 +104,20 @@ import type { AgentAction } from '../../data/widget-agents';
               >
                 <i class="modus-icons text-base text-foreground-60" aria-hidden="true">thumbs_down</i>
               </div>
-              <div
-                class="ai-floating-prompt-toolbar-button"
-                role="button"
-                tabindex="0"
-                aria-label="Open Trimble Assistant"
-                title="Open Trimble Assistant"
-                [attr.aria-pressed]="controller().drawerOpen()"
-                (click)="toggleDrawer()"
-                (keydown.enter)="toggleDrawer()"
-              >
-                <i class="modus-icons text-base text-foreground-60" aria-hidden="true">toggle_right_panel</i>
-              </div>
+              @if (!isMobile()) {
+                <div
+                  class="ai-floating-prompt-toolbar-button"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Open Trimble Assistant"
+                  title="Open Trimble Assistant"
+                  [attr.aria-pressed]="controller().drawerOpen()"
+                  (click)="toggleDrawer()"
+                  (keydown.enter)="toggleDrawer()"
+                >
+                  <i class="modus-icons text-base text-foreground-60" aria-hidden="true">toggle_right_panel</i>
+                </div>
+              }
               @if (controller().messages().length > 0) {
                 <div
                   class="ai-floating-prompt-toolbar-button"
@@ -407,6 +409,25 @@ export class AiFloatingPromptComponent {
   readonly controller = input.required<AiPanelController>();
   /** Optional placeholder override; otherwise the controller's universal placeholder is used. */
   readonly placeholder = input<string | undefined>(undefined);
+
+  /**
+   * Track mobile viewport so the "Open Trimble Assistant" toolbar button
+   * can be hidden when the drawer is unavailable (the drawer is desktop +
+   * tablet only -- on mobile it cannot dock into the layout and the
+   * controller no-ops {@link AiPanelController.openDrawer} below 768px).
+   */
+  readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  private readonly _mobileResizeHandler = (() => {
+    if (typeof window === 'undefined') return null;
+    const handler = () => this.isMobile.set(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return handler;
+  })();
+  private readonly _destroyMobileResize = inject(DestroyRef).onDestroy(() => {
+    if (typeof window !== 'undefined' && this._mobileResizeHandler) {
+      window.removeEventListener('resize', this._mobileResizeHandler);
+    }
+  });
 
   /**
    * Modus pattern split: show `MAX_PRIMARY_CHIPS` suggestions inline plus a

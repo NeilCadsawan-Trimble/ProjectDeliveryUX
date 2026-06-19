@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: May 28, 2026
+**Current window**: June 19, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -31,17 +31,19 @@ If the date matches today, skip this section and proceed normally.
 
 ## Today's Sessions
 
-*(May 28, 2026)*
+*(June 19, 2026)*
 
-- **Widget title contrast (dark mode)**: User requested widget titles render pure white in dark themes (browser-preview change from `rgb(203,205,214)` → `rgba(255,255,255,1)`). Implemented design-system-compliant approach: added `--foreground-strong` CSS variable in `:root` (defaults to `var(--foreground)`, so light themes unchanged) with dark-mode override `--foreground-strong: #fff` in `[data-theme$='-dark']:root`. Added `.text-foreground-strong` utility class. Set as default `titleClassName` in `widget-frame.component.ts` (covers ~36 widget-frame consumers). Followed up with surgical updates to 20 inline-header widget titles: 5 in `home-page.component.ts` (homeTimeOff, homeCalendar, homeRfis, homeSubmittals, homeUrgentNeeds), 13 in `financials-page.component.ts` (uniform `role="heading" aria-level="2"` signature, single replace_all), 2 in `projects-page.component.html` (Portfolio Timeline + per-project cards). `lint:colors` + `type-check` pass. Did NOT run full lint:all / static / ng build sweep.
-- **Inline widget header tech debt documented**: User asked why widgets don't share structure. Investigated: `widget-frame.component.ts` was added Apr 7 2026 (PR `9558a40`); the 20 inline widgets predate it. Most could trivially migrate (financials and projects-page are uniform); structural blockers prevent a full migration today: `homeCalendar` needs `headerBelow` + `footer` slots; `homeRfis` / `homeSubmittals` swap drag handle for a back-arrow in compact-mobile-expanded mode (drag handle is hardcoded in widget-frame). User chose "track only, don't refactor" — added a `Widget header drift` row to Known Fragile Areas in `longterm-memory.mdc` and a doc comment at the top of `widget-frame.component.ts` listing every inline holdout file + the structural blockers.
+- *(none yet)*
 
 ## Active Context
 
-- On `dev` branch, fast-forwarded to `main` HEAD `a0f327e` on May 26 (local + remote in sync).
-- Dependency baseline as of last session: pdfjs-dist 5.7.284, @angular/cli 21.2.12, @angular/common 21.2.14, jsdom 29.1.1, plus the May 26 all-dependencies group bump (PR #128).
+- 17-day quiet period — no local commits since May 28 PR #133 (`a9e4364`). `dev` HEAD is still `a9e4364`. Remote state not verified this session (sandbox blocked `git fetch`).
+- Dependency baseline unchanged from June 2: pdfjs-dist 5.7.284, @angular/cli 21.2.12, @angular/common 21.2.14, jsdom 29.1.1, @deepgram/sdk 5.1.x.
+- Initial-bundle budget warning still 1.06 MB vs 800 kB cap (unchanged, not failing).
 
 ## Pending Items
 
 - Voice input (Deepgram, shipped May 5) still awaits user's manual end-to-end mic verification in the browser. If issues appear (transcript merging, mic not releasing), revisit `VoiceInputService` and composer pill stop hooks.
-- `@deepgram/sdk` adds ~200KB to initial bundle (Angular budget warning, ~1.06 MB vs 800 kB budget as of PR #129). Consider lazy-loading the service if the warning becomes an actual budget failure.
+- `@deepgram/sdk` adds ~200KB to initial bundle. Consider lazy-loading the service if the 1.06 MB warning becomes an actual budget failure.
+- Manual smoke for PR #133 still outstanding: click any drawing from Home Recent Drawings + project Drawings page (grid + list + canvas) → confirm PDF viewer renders; click "Show pending change orders" prompt → confirm it lands on `?subpage=change-orders` with change-order-specific suggestions in the AI panel.
+- After 17 days of no work, may want to run `git fetch` + check for upstream Dependabot PRs before any new feature work.
