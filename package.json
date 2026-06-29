@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "ng": "ng",
-    "start": "concurrently --names proxy,ng --prefix-colors blue,green \"node dev-proxy.mjs\" \"ng serve\"",
+    "start": "concurrently --names proxy,ng --prefix-colors blue,green npm:start:proxy npm:start:ng",
+    "start:proxy": "node dev-proxy.mjs",
+    "start:ng": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -20,7 +22,7 @@
     "lint:semantic-html": "node scripts/check-semantic-html.js",
     "lint:all": "node scripts/run-all-checks.js",
     "dev:api": "vercel dev --listen 3001",
-    "prepare": "husky || true"
+    "prepare": "node scripts/prepare.mjs"
   },
   "prettier": {
     "printWidth": 100,
