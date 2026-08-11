@@ -187,7 +187,7 @@
                   {{ row.project.ownerInitials }}
                 </modus-typography>
                 <div class="min-w-0">
-                  <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground line-clamp-2">{{ row.project.name }}</modus-typography>
+                  <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-primary line-clamp-2 hover:underline" role="link" [attr.aria-label]="'View ' + row.project.name + ' project'">{{ row.project.name }}</modus-typography>
                   <modus-typography className="text-2xs text-foreground-60 truncate">{{ row.project.status }}</modus-typography>
                 </div>
               </div>
@@ -298,7 +298,10 @@
           [icon]="null"
           [titleHierarchy]="'h4'"
           [titleSize]="'xs'"
-          [titleClassName]="'widget-title text-foreground-strong truncate'"
+          [titleClassName]="'widget-title truncate'"
+          [titleClickable]="true"
+          [titleAriaLabel]="'View ' + project.name + ' project'"
+          (titleClick)="navigateToProject(project)"
           [headerPadding]="'px-3 py-2'"
           [dragHandleSize]="'sm'"
           [selected]="selectedWidgetId() === widgetId"
@@ -1039,7 +1042,7 @@
               {{ row.project.ownerInitials }}
             </modus-typography>
             <div class="min-w-0">
-              <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-foreground line-clamp-2">{{ row.project.name }}</modus-typography>
+              <modus-typography  hierarchy="p" size="xs" weight="semibold" className="text-primary line-clamp-2 hover:underline" role="link" [attr.aria-label]="'View ' + row.project.name + ' project'">{{ row.project.name }}</modus-typography>
               <modus-typography className="text-2xs text-foreground-60 truncate">{{ row.project.status }}</modus-typography>
             </div>
           </div>
