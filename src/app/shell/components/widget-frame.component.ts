@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import {
   ModusTypographyComponent,
   type TypographyHierarchy,
@@ -106,7 +106,15 @@ import { WidgetResizeHandleComponent } from './widget-resize-handle.component';
                 [hierarchy]="titleHierarchy()"
                 [size]="titleSize()"
                 [weight]="titleWeight()"
-                [className]="titleClassName()"
+                [className]="resolvedTitleClassName()"
+                [attr.role]="titleClickable() ? 'link' : null"
+                [attr.tabindex]="titleClickable() ? 0 : null"
+                [attr.aria-label]="titleClickable() ? (titleAriaLabel() ?? title()) : null"
+                (click)="titleClickable() && onTitleClick($event)"
+                (mousedown)="titleClickable() && onTitlePointerDown($event)"
+                (touchstart)="titleClickable() && onTitlePointerDown($event)"
+                (keydown.enter)="titleClickable() && onTitleClick($event)"
+                (keydown.space)="titleClickable() && onTitleKeydownSpace($event)"
                 >{{ title() }}</modus-typography
               >
               @if (titleMeta(); as meta) {
@@ -150,6 +158,9 @@ export class WidgetFrameComponent {
   readonly titleSize = input<TypographySize>('md');
   readonly titleWeight = input<TypographyWeight>('semibold');
   readonly titleClassName = input<string>('text-foreground-strong');
+  /** When true, title renders as a navigable link and suppresses drag-start on pointer down. */
+  readonly titleClickable = input<boolean>(false);
+  readonly titleAriaLabel = input<string | undefined>(undefined);
   readonly headerPadding = input<string>('px-6 py-4');
   readonly insightPadding = input<string>('px-6 py-2');
   readonly dragHandleSize = input<'sm' | 'md'>('md');
@@ -169,4 +180,24 @@ export class WidgetFrameComponent {
   readonly resizeStart = output<MouseEvent>();
   readonly resizeTouchStart = output<TouchEvent>();
   readonly backClick = output<void>();
+  readonly titleClick = output<MouseEvent>();
+
+  readonly resolvedTitleClassName = computed(() => {
+    const base = this.titleClassName();
+    return this.titleClickable() ? `${base} text-primary cursor-pointer hover:underline` : base;
+  });
+
+  onTitleClick(event: Event): void {
+    event.stopPropagation();
+    this.titleClick.emit(event as MouseEvent);
+  }
+
+  onTitlePointerDown(event: MouseEvent | TouchEvent): void {
+    event.stopPropagation();
+  }
+
+  onTitleKeydownSpace(event: Event): void {
+    event.preventDefault();
+    this.onTitleClick(event);
+  }
 }
