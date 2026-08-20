@@ -1,7 +1,7 @@
 import type { LayoutSeed } from './layout-seed.types';
 
 export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
-  widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates', 'home3dModel'],
+  widgets: ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates', 'home3dModel', 'homeEmail', 'homeChat'],
   defaultColStarts: {
     homeHeader: 1,
     homeKpis: 1,
@@ -22,6 +22,8 @@ export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
     homeContracts: 7,
     homeOpenEstimates: 7,
     home3dModel: 1,
+    homeEmail: 1,
+    homeChat: 11,
   },
   defaultColSpans: {
     homeHeader: 16,
@@ -43,6 +45,8 @@ export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
     homeContracts: 10,
     homeOpenEstimates: 10,
     home3dModel: 6,
+    homeEmail: 10,
+    homeChat: 6,
   },
   defaultTops: {
     homeHeader: 0,
@@ -64,6 +68,8 @@ export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
     homeContracts: 1520,
     homeOpenEstimates: 1888,
     home3dModel: 3200,
+    homeEmail: 3568,
+    homeChat: 3568,
   },
   defaultHeights: {
     homeHeader: 0,
@@ -85,6 +91,8 @@ export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
     homeContracts: 352,
     homeOpenEstimates: 464,
     home3dModel: 336,
+    homeEmail: 448,
+    homeChat: 448,
   },
   canvasDefaultLefts: {
     homeHeader: 0,
@@ -106,6 +114,8 @@ export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
     homeContracts: 0,
     homeOpenEstimates: 0,
     home3dModel: 1053,
+    homeEmail: 0,
+    homeChat: 729,
   },
   canvasDefaultPixelWidths: {
     homeHeader: 1280,
@@ -127,6 +137,8 @@ export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
     homeContracts: 632,
     homeOpenEstimates: 632,
     home3dModel: 632,
+    homeEmail: 713,
+    homeChat: 551,
   },
   canvasDefaultTops: {
     homeHeader: 0,
@@ -148,6 +160,8 @@ export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
     homeContracts: 656,
     homeOpenEstimates: 1952,
     home3dModel: 2480,
+    homeEmail: 2944,
+    homeChat: 2944,
   },
   canvasDefaultHeights: {
     homeHeader: 80,
@@ -169,5 +183,7 @@ export const HOME_DOMINIQUE_LAYOUT: LayoutSeed = {
     homeContracts: 416,
     homeOpenEstimates: 464,
     home3dModel: 432,
+    homeEmail: 448,
+    homeChat: 448,
   },
 };

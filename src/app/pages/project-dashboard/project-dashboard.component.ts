@@ -91,8 +91,10 @@ import { ProjectChangeOrdersComponent } from './components/project-change-orders
 import { ProjectFieldOpsComponent } from './components/project-field-ops.component';
 import { ProjectDailyReportsComponent } from './components/project-daily-reports.component';
 import { ProjectContractsComponent } from './components/project-contracts.component';
+import { EmailInboxComponent } from '../../shared/widgets/email-inbox.component';
+import { TeamChatComponent } from '../../shared/widgets/team-chat.component';
 
-type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather' | 'changeOrders' | 'fieldOps' | 'dailyReports' | 'contracts' | 'projectModel';
+type ProjectWidgetId = 'projHeader' | 'milestones' | 'tasks' | 'risks' | 'drawing' | 'budget' | 'team' | 'activity' | 'rfis' | 'submittals' | 'weather' | 'changeOrders' | 'fieldOps' | 'dailyReports' | 'contracts' | 'projectModel' | 'email' | 'chat';
 
 const RECORDS_PAGE_DESCRIPTIONS: Record<string, string> = {
   'daily-reports': 'View and manage daily field reports including weather, workforce, equipment, and work performed.',
@@ -134,7 +136,7 @@ const PROJ_MIN_CONTENT_PX = 80;
 
 @Component({
   selector: 'app-project-dashboard',
-  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent, ProjectSiteModelComponent, ProjectModelThumbnailComponent],
+  imports: [NgTemplateOutlet, TitleCasePipe, CurrencyPipe, ModusBadgeComponent, ModusProgressComponent, ModusTextInputComponent, ModusTypographyComponent, WidgetLockToggleComponent, EmptyStateComponent, CollapsibleSubnavComponent, ItemDetailViewComponent, DrawingMarkupToolbarComponent, WidgetFrameComponent, PdfViewerComponent, PanoramaViewerComponent, WidgetResizeHandleComponent, RecordsSubpagesComponent, FinancialsSubpagesComponent, RecordDetailViewsComponent, CanvasTileShellComponent, UserMenuComponent, TrimbleLogoComponent, ChartComponent, ProjectChangeOrdersComponent, ProjectFieldOpsComponent, ProjectDailyReportsComponent, ProjectContractsComponent, ProjectSiteModelComponent, ProjectModelThumbnailComponent, EmailInboxComponent, TeamChatComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block',
@@ -979,7 +981,7 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
   }
   private readonly canvasHostRef = viewChild<ElementRef>('canvasHost');
 
-  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'dailyReports', 'fieldOps', 'drawing', 'weather', 'budget', 'team', 'activity', 'changeOrders', 'contracts', 'projectModel'];
+  readonly widgets: ProjectWidgetId[] = ['milestones', 'tasks', 'risks', 'rfis', 'submittals', 'dailyReports', 'fieldOps', 'drawing', 'weather', 'budget', 'team', 'activity', 'changeOrders', 'contracts', 'projectModel', 'email', 'chat'];
   /**
    * Widgets actually rendered for the current project. The 3D model widget is only
    * shown for Harbor View Condominiums (projectId === 2). The geometry maps in
@@ -991,6 +993,38 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       ? this.widgets
       : this.widgets.filter(id => id !== 'projectModel'),
   );
+
+  readonly chatMessages = this.store.chatMessages;
+
+  readonly projectEmails = computed(() => {
+    const id = this.projectId();
+    return this.store.emails().filter(e => e.projectId === id || e.projectId === null);
+  });
+
+  readonly projectUnreadEmailCount = computed(() => this.projectEmails().filter(e => e.unread).length);
+
+  readonly projectChatChannelId = computed(() => {
+    if (this.personaService.activePersonaSlug() === 'kelly') return 'internal';
+    return this.store.findProjectById(this.projectId())?.slug ?? 'internal';
+  });
+
+  readonly visibleChatChannels = computed(() => {
+    const id = this.projectChatChannelId();
+    return this.store.chatChannels().filter(c => c.id === id);
+  });
+
+  onEmailOpen(id: number): void {
+    this.store.markEmailRead(id);
+  }
+
+  onChatSend(event: { channelId: string; body: string }): void {
+    const persona = this.personaService.activePersona();
+    this.store.sendChatMessage(event.channelId, event.body, {
+      name: persona.name,
+      initials: persona.initials,
+      slug: persona.slug,
+    });
+  }
   readonly selectedWidgetId = this.widgetFocusService.selectedWidgetId;
 
   readonly navbarSearchQuery = signal('');
@@ -2898,6 +2932,9 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       detailPanorama: this.detailPanorama() ?? undefined,
       projectTimeOff: getProjectTimeOff(projId, this.store.timeOffRequests()),
       staffingConflicts: buildStaffingConflicts(projId, this.store.timeOffRequests()),
+      emails: this.store.emails().filter(e => e.projectId === projId || e.projectId === null),
+      chatChannels: this.visibleChatChannels(),
+      chatMessages: this.store.chatMessages().filter(m => m.channelId === this.projectChatChannelId()),
       currentPage: 'project-dashboard',
       currentSubPage: this.activeNavItem(),
       personaSlug: this.personaService.activePersonaSlug(),

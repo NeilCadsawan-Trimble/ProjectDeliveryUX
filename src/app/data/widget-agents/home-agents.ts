@@ -1572,6 +1572,119 @@ export const homeLearningAgent: WidgetAgent = {
   },
 };
 
+export const emailAgent: WidgetAgent = {
+  id: 'homeEmail',
+  name: 'Email',
+  systemPrompt: 'You are an inbox assistant for a construction company. You summarize and prioritize work email, flag overdue replies, and help the user decide what to answer first. Stay inside the seeded inbox — do not invent messages.',
+  suggestions(s) {
+    const mail = s.emails ?? [];
+    const unread = mail.filter(e => e.unread).length;
+    const urgent = mail.filter(e => e.unread && e.priority === 'urgent').length;
+    if (urgent) return [`${urgent} unread urgent`, 'Show unread messages', 'Summarize my inbox'];
+    if (unread) return [`${unread} unread messages`, 'Show unread urgent messages', 'Summarize my inbox'];
+    return ['Summarize my inbox', 'What emails need my attention?', 'Show unread messages'];
+  },
+  insight(s) {
+    const mail = s.emails ?? [];
+    const unread = mail.filter(e => e.unread).length;
+    const urgent = mail.filter(e => e.unread && e.priority === 'urgent').length;
+    if (!mail.length) return null;
+    if (urgent) return `${unread} unread, ${urgent} urgent`;
+    if (unread) return `${unread} unread message${unread === 1 ? '' : 's'}`;
+    return `${mail.length} messages in inbox`;
+  },
+  alerts(s) {
+    const urgent = (s.emails ?? []).filter(e => e.unread && e.priority === 'urgent').length;
+    if (urgent) return { level: 'critical' as const, count: urgent, label: 'urgent emails' };
+    const unread = (s.emails ?? []).filter(e => e.unread).length;
+    return unread ? { level: 'warning' as const, count: unread, label: 'unread' } : null;
+  },
+  actions: () => [
+    { id: 'summarize-unread', label: 'Summarize unread', execute: (st) => {
+      const unread = (st.emails ?? []).filter(e => e.unread);
+      return unread.length
+        ? `Unread (${unread.length}): ${unread.map(e => `${e.fromName} — ${e.subject}`).join('; ')}`
+        : 'No unread email.';
+    }},
+  ],
+  buildContext(s) {
+    const mail = s.emails ?? [];
+    if (!mail.length) return 'Inbox is empty.';
+    const lines = mail.map(e => `  [${e.unread ? 'unread' : 'read'}][${e.priority}] ${e.fromName}: ${e.subject}${e.projectName ? ` (${e.projectName})` : ''}`);
+    return `Inbox (${mail.length}):\n${lines.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const mail = s.emails ?? [];
+    if (kw(q, 'urgent', 'priority')) {
+      const urgent = mail.filter(e => e.priority === 'urgent');
+      return urgent.length ? `Urgent email: ${urgent.map(e => `${e.fromName} — ${e.subject}`).join('; ')}` : 'No urgent email.';
+    }
+    if (kw(q, 'unread', 'inbox', 'attention', 'need')) {
+      const unread = mail.filter(e => e.unread);
+      return unread.length ? `${unread.length} unread: ${unread.map(e => `${e.fromName} — ${e.subject}`).join('; ')}` : 'Inbox is caught up. No unread messages.';
+    }
+    return `Inbox has ${mail.length} messages, ${mail.filter(e => e.unread).length} unread.`;
+  },
+};
+
+export const chatAgent: WidgetAgent = {
+  id: 'homeChat',
+  name: 'Team Chat',
+  systemPrompt: 'You are a team-chat assistant for a construction company. You summarize Internal Work and per-project channels, including messages from external owners, inspectors, and vendors. Do not invent chats.',
+  suggestions(s) {
+    const msgs = s.chatMessages ?? [];
+    const recent = msgs.filter(m => Date.now() - new Date(m.sentAt).getTime() < 24 * 60 * 60 * 1000).length;
+    return recent
+      ? [`${recent} messages in the last day`, 'What is the latest in Internal Work?', 'Any messages from the owner or inspector?']
+      : ['What is the latest in Internal Work?', 'Summarize unread channels', 'Any project chat updates?'];
+  },
+  insight(s) {
+    const msgs = s.chatMessages ?? [];
+    const slug = s.personaSlug;
+    const recent = msgs.filter(m => m.authorSlug !== slug && Date.now() - new Date(m.sentAt).getTime() < 24 * 60 * 60 * 1000);
+    if (!recent.length) return null;
+    const channels = new Set(recent.map(m => m.channelId));
+    if (channels.size === 1) {
+      const ch = (s.chatChannels ?? []).find(c => c.id === [...channels][0]);
+      return `${recent.length} new in ${ch?.name ?? 'chat'}`;
+    }
+    return `${recent.length} new across ${channels.size} channels`;
+  },
+  alerts(s) {
+    const slug = s.personaSlug;
+    const recent = (s.chatMessages ?? []).filter(m => m.authorSlug !== slug && Date.now() - new Date(m.sentAt).getTime() < 24 * 60 * 60 * 1000);
+    return recent.length ? { level: 'info' as const, count: recent.length, label: 'new messages' } : null;
+  },
+  actions: () => [
+    { id: 'summarize-chat', label: 'Summarize recent chat', execute: (st) => {
+      const recent = (st.chatMessages ?? []).slice(-8);
+      return recent.length
+        ? recent.map(m => `${m.authorName}: ${m.body}`).join('\n')
+        : 'No chat messages.';
+    }},
+  ],
+  buildContext(s) {
+    const channels = s.chatChannels ?? [];
+    const msgs = s.chatMessages ?? [];
+    const chLines = channels.map(c => `  ${c.name} (${c.id})`);
+    const recent = msgs.slice(-20).map(m => `  #${m.channelId} ${m.authorName}${m.isExternal ? ' [external]' : ''}: ${m.body}`);
+    return `Channels:\n${chLines.join('\n')}\n\nRecent messages:\n${recent.join('\n')}`;
+  },
+  localRespond(q, s) {
+    const msgs = s.chatMessages ?? [];
+    if (kw(q, 'internal', 'check run', 'pto')) {
+      const internal = msgs.filter(m => m.channelId === 'internal').slice(-5);
+      return internal.length ? `Internal Work: ${internal.map(m => `${m.authorName}: ${m.body}`).join(' | ')}` : 'No Internal Work messages.';
+    }
+    if (kw(q, 'external', 'owner', 'inspector', 'vendor')) {
+      const ext = msgs.filter(m => m.isExternal).slice(-8);
+      return ext.length ? `External: ${ext.map(m => `${m.authorName}: ${m.body}`).join(' | ')}` : 'No external chat messages.';
+    }
+    const recent = msgs.slice(-5);
+    return recent.length ? `Latest: ${recent.map(m => `${m.authorName}: ${m.body}`).join(' | ')}` : 'No chat messages.';
+  },
+};
+
 export const HOME_AGENTS: WidgetAgent[] = [
   homeTimeOff,
   homeCalendar,
@@ -1587,5 +1700,7 @@ export const HOME_AGENTS: WidgetAgent[] = [
   homeDailyReportsAgent,
   homeTeamAllocationAgent,
   homeContractsAgent,
+  emailAgent,
+  chatAgent,
 ];
 

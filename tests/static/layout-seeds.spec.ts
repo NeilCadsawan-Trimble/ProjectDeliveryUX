@@ -37,18 +37,19 @@ const PM_HOME_WIDGETS = [
   'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity',
   'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps',
   'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates',
-  'home3dModel',
+  'home3dModel', 'homeEmail', 'homeChat',
 ];
 
 const KELLY_HOME_WIDGETS = [
   'homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule',
   'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity', 'homeLearning',
+  'homeEmail', 'homeChat',
 ];
 
 const PAMELA_HOME_WIDGETS = [
   'homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates',
   'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity',
-  'home3dModel',
+  'home3dModel', 'homeEmail', 'homeChat',
 ];
 
 const STANDARD_FINANCIALS_WIDGETS = [
@@ -72,7 +73,7 @@ const PROJECTS_WIDGETS = [
 const PROJECT_DETAIL_WIDGETS = [
   'projHeader', 'risks', 'milestones', 'tasks', 'rfis', 'submittals',
   'dailyReports', 'fieldOps', 'drawing', 'weather', 'budget', 'team',
-  'activity', 'changeOrders', 'contracts', 'projectModel',
+  'activity', 'changeOrders', 'contracts', 'projectModel', 'email', 'chat',
 ];
 
 const KELLY_ONLY_WIDGETS = ['homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeVendorAging', 'homeLienWaivers', 'homeRetention', 'homeApActivity', 'homeCashOutflow', 'homeLearning', 'homePayApps'];
@@ -147,7 +148,7 @@ describe('Home seed widget lists', () => {
   for (const p of ['frank', 'bert', 'dominique'] as const) {
     describe(`HOME_${p.toUpperCase()}_LAYOUT`, () => {
       const widgets = extractWidgetArray(readSeed(`home-${p}.layout.ts`));
-      it('contains the expected 19 PM widgets', () => { expect(widgets).toEqual(PM_HOME_WIDGETS); });
+      it('contains the expected 21 PM widgets', () => { expect(widgets).toEqual(PM_HOME_WIDGETS); });
       it('has >= 15 widgets', () => { expect(widgets.length).toBeGreaterThanOrEqual(15); });
       it('no Kelly-only widgets', () => { for (const w of KELLY_ONLY_WIDGETS) expect(widgets).not.toContain(w); });
       it('no Pamela-only widgets', () => { for (const w of PAMELA_ONLY_WIDGETS) expect(widgets).not.toContain(w); });

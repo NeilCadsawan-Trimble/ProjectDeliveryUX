@@ -52,6 +52,9 @@ import type {
   TimeOffRequest,
   TimeOffStatus,
   WeatherForecast,
+  WorkEmail,
+  ChatChannel,
+  ChatMessage,
 } from './dashboard-data.types';
 import { JOB_COST_CATEGORIES } from './dashboard-data.types';
 import {
@@ -60,7 +63,6 @@ import {
   BILLING_EVENTS,
   BILLING_SCHEDULES,
   BUDGET_HISTORY_BY_PROJECT,
-  CALENDAR_APPOINTMENTS,
   CASH_FLOW_HISTORY,
   CASH_POSITION,
   CHANGE_ORDERS,
@@ -89,9 +91,11 @@ import {
   WEATHER_FORECAST,
 } from './dashboard-data.seed';
 import { PROJECT_DATA, type BudgetBreakdown, type ProjectDashboardData } from './project-data';
+import { calendarForPersona } from './calendar-data.seed';
+import { emailsForPersona } from './email-data.seed';
+import { CHAT_CHANNELS, CHAT_MESSAGES_SEED } from './chat-data.seed';
 import {
   AP_ACTIVITIES_SEED,
-  AP_CALENDAR_APPOINTMENTS_SEED,
   AP_INVOICES_SEED,
   AP_LIEN_WAIVERS_SEED,
   AP_PAY_APPLICATIONS_SEED,
@@ -150,6 +154,7 @@ interface PersonaSnapshot {
   weatherForecast: WeatherForecast[];
   projectAttentionItems: ProjectAttentionItem[];
   attentionItems: AttentionItem[];
+  emails: WorkEmail[];
 }
 
 function createFreshSnapshot(personaSlug?: string): PersonaSnapshot {
@@ -178,7 +183,7 @@ function createFreshSnapshot(personaSlug?: string): PersonaSnapshot {
     inspections: [...INSPECTIONS],
     punchListItems: [...PUNCH_LIST_ITEMS],
     activities: [...ACTIVITIES],
-    calendarAppointments: personaSlug === 'kelly' ? [...AP_CALENDAR_APPOINTMENTS_SEED] : [...CALENDAR_APPOINTMENTS],
+    calendarAppointments: [...calendarForPersona(personaSlug)],
     projectCalendarEvents: [...PROJECT_CALENDAR_EVENTS],
     dailyReports: [...DAILY_REPORTS],
     projectRevenue: [...PROJECT_REVENUE],
@@ -187,6 +192,7 @@ function createFreshSnapshot(personaSlug?: string): PersonaSnapshot {
     weatherForecast: [...WEATHER_FORECAST],
     projectAttentionItems: [...PROJECT_ATTENTION_ITEMS],
     attentionItems: [...ATTENTION_ITEMS],
+    emails: emailsForPersona(personaSlug),
   };
 }
 
@@ -231,7 +237,7 @@ export class DataStoreService {
   readonly inspections = signal<Inspection[]>([...INSPECTIONS]);
   readonly punchListItems = signal<PunchListItem[]>([...PUNCH_LIST_ITEMS]);
   readonly activities = signal<ActivityItem[]>([...ACTIVITIES]);
-  readonly calendarAppointments = signal<CalendarAppointment[]>([...CALENDAR_APPOINTMENTS]);
+  readonly calendarAppointments = signal<CalendarAppointment[]>([...calendarForPersona('frank')]);
   readonly projectCalendarEvents = signal<ProjectCalendarEvent[]>([...PROJECT_CALENDAR_EVENTS]);
   readonly dailyReports = signal<DailyReport[]>([...DAILY_REPORTS]);
   readonly projectRevenue = signal<ProjectRevenue[]>([...PROJECT_REVENUE]);
@@ -240,6 +246,12 @@ export class DataStoreService {
   readonly weatherForecast = signal<WeatherForecast[]>([...WEATHER_FORECAST]);
   readonly projectAttentionItems = signal<ProjectAttentionItem[]>([...PROJECT_ATTENTION_ITEMS]);
   readonly attentionItems = signal<AttentionItem[]>([...ATTENTION_ITEMS]);
+  readonly emails = signal<WorkEmail[]>(emailsForPersona('frank'));
+
+  // Team chat is shared across personas (not snapshotted) so a send as Frank is visible as Bert.
+  readonly chatChannels = signal<ChatChannel[]>([...CHAT_CHANNELS]);
+  readonly chatMessages = signal<ChatMessage[]>([...CHAT_MESSAGES_SEED]);
+  private nextChatMessageId = CHAT_MESSAGES_SEED.reduce((max, m) => Math.max(max, m.id), 0) + 1;
 
   // AP Clerk (Kelly) data -- not persona-snapshotted since only Kelly uses these
   readonly apInvoices = signal<ApInvoice[]>([...AP_INVOICES_SEED]);
@@ -298,6 +310,7 @@ export class DataStoreService {
       weatherForecast: this.weatherForecast(),
       projectAttentionItems: this.projectAttentionItems(),
       attentionItems: this.attentionItems(),
+      emails: this.emails(),
     };
   }
 
@@ -335,6 +348,7 @@ export class DataStoreService {
     this.weatherForecast.set(s.weatherForecast);
     this.projectAttentionItems.set(s.projectAttentionItems);
     this.attentionItems.set(s.attentionItems);
+    this.emails.set(s.emails);
   }
 
   readonly projectJobCosts = computed<ProjectJobCost[]>(() => {
@@ -684,5 +698,33 @@ export class DataStoreService {
       };
     });
     if (!_remote) this.sync.broadcast('updateBudgetBreakdownItem', [projectId, label, newAmount]);
+  }
+
+  markEmailRead(id: number, _remote = false): void {
+    this.emails.update(list =>
+      list.map(e => e.id === id && e.unread ? { ...e, unread: false } : e)
+    );
+    if (!_remote) this.sync.broadcast('markEmailRead', [id]);
+  }
+
+  sendChatMessage(
+    channelId: string,
+    body: string,
+    author: { name: string; initials: string; slug: string },
+    _remote = false,
+  ): void {
+    const trimmed = body.trim();
+    if (!trimmed) return;
+    const message: ChatMessage = {
+      id: this.nextChatMessageId++,
+      channelId,
+      authorName: author.name,
+      authorInitials: author.initials,
+      authorSlug: author.slug,
+      body: trimmed,
+      sentAt: new Date().toISOString(),
+    };
+    this.chatMessages.update(list => [...list, message]);
+    if (!_remote) this.sync.broadcast('sendChatMessage', [channelId, body, author]);
   }
 }

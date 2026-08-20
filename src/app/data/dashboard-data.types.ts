@@ -70,7 +70,9 @@ export type DashboardWidgetId =
   | 'finCashOutflow'
   | 'homeLearning'
   | 'homeEstimatorKpis'
-  | 'home3dModel';
+  | 'home3dModel'
+  | 'homeEmail'
+  | 'homeChat';
 export type GridPage = 'home' | 'projects' | 'financials';
 export type RfiStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
 export type SubmittalStatus = 'open' | 'overdue' | 'upcoming' | 'closed';
@@ -779,4 +781,38 @@ export interface EstimateAssemblyHub {
   subtitle: string;
   kpis: AssemblyKpi[];
   sections: AssemblySection[];
+}
+
+export type EmailPriority = 'urgent' | 'high' | 'normal';
+
+export interface WorkEmail {
+  id: number;
+  fromName: string;
+  fromEmail: string;
+  fromInitials: string;
+  subject: string;
+  preview: string;
+  body: string;
+  sentAt: string;
+  unread: boolean;
+  priority: EmailPriority;
+  projectId: number | null;
+  projectName?: string;
+}
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  projectId: number | null;
+}
+
+export interface ChatMessage {
+  id: number;
+  channelId: string;
+  authorName: string;
+  authorInitials: string;
+  authorSlug?: string;
+  body: string;
+  sentAt: string;
+  isExternal?: boolean;
 }

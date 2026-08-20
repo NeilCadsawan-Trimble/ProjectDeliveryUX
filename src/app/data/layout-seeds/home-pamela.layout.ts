@@ -2,7 +2,7 @@ import type { LayoutSeed } from './layout-seed.types';
 
 // Exported from live canvas layout
 export const HOME_PAMELA_LAYOUT: LayoutSeed = {
-  widgets: ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity', 'home3dModel'],
+  widgets: ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity', 'home3dModel', 'homeEmail', 'homeChat'],
   defaultColStarts: {
     homeHeader: 1,
     homeEstimatorKpis: 1,
@@ -13,6 +13,8 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeBudgetVariance: 7,
     homeRecentActivity: 1,
     home3dModel: 7,
+    homeEmail: 1,
+    homeChat: 11,
   },
   defaultColSpans: {
     homeHeader: 16,
@@ -24,6 +26,8 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeBudgetVariance: 10,
     homeRecentActivity: 6,
     home3dModel: 10,
+    homeEmail: 10,
+    homeChat: 6,
   },
   defaultTops: {
     homeHeader: 0,
@@ -35,6 +39,8 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeBudgetVariance: 944,
     homeRecentActivity: 1200,
     home3dModel: 1200,
+    homeEmail: 1600,
+    homeChat: 1600,
   },
   defaultHeights: {
     homeHeader: 0,
@@ -46,6 +52,8 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeBudgetVariance: 336,
     homeRecentActivity: 384,
     home3dModel: 384,
+    homeEmail: 448,
+    homeChat: 448,
   },
   canvasDefaultLefts: {
     homeHeader: 0,
@@ -57,6 +65,8 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeBudgetVariance: 648,
     homeRecentActivity: 0,
     home3dModel: 648,
+    homeEmail: 0,
+    homeChat: 648,
   },
   canvasDefaultPixelWidths: {
     homeHeader: 1280,
@@ -68,6 +78,8 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeBudgetVariance: 632,
     homeRecentActivity: 632,
     home3dModel: 632,
+    homeEmail: 632,
+    homeChat: 632,
   },
   canvasDefaultTops: {
     homeHeader: 0,
@@ -79,6 +91,8 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeBudgetVariance: 1184,
     homeRecentActivity: 1472,
     home3dModel: 2000,
+    homeEmail: 2448,
+    homeChat: 2448,
   },
   canvasDefaultHeights: {
     homeHeader: 80,
@@ -90,5 +104,7 @@ export const HOME_PAMELA_LAYOUT: LayoutSeed = {
     homeBudgetVariance: 432,
     homeRecentActivity: 464,
     home3dModel: 432,
+    homeEmail: 448,
+    homeChat: 448,
   },
 };

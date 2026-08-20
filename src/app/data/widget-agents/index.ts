@@ -24,6 +24,8 @@ import {
   homeApActivity,
   homeCashOutflow,
   homeLearningAgent,
+  emailAgent,
+  chatAgent,
 } from './home-agents';
 import {
   budgetAgent,
@@ -172,6 +174,10 @@ const ALL_AGENTS: Record<string, WidgetAgent> = {
   panoramaDetail,
   projectModel: modelAgent,
   home3dModel: modelAgent,
+  homeEmail: emailAgent,
+  email: emailAgent,
+  homeChat: chatAgent,
+  chat: chatAgent,
 };
 
 const PAGE_DEFAULT_AGENTS: Record<string, string> = {

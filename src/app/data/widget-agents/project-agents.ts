@@ -2,7 +2,7 @@ import { buildUrgentNeeds } from '../dashboard-data';
 import type { AgentAction, WidgetAgent } from './shared';
 import { getSuggestions, kw } from './shared';
 import { budgetAgent, changeOrdersAgent, contractsAgent, weatherAgent } from './financials-agents';
-import { homeRfis, homeSubmittals } from './home-agents';
+import { chatAgent, emailAgent, homeRfis, homeSubmittals } from './home-agents';
 
 export const milestonesAgent: WidgetAgent = {
   id: 'milestones',
@@ -1158,5 +1158,7 @@ export const PROJECT_AGENTS: WidgetAgent[] = [
   contractDetail,
   panoramaDetail,
   modelAgent,
+  emailAgent,
+  chatAgent,
 ];
 
