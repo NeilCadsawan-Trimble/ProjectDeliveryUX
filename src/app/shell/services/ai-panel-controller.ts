@@ -768,6 +768,9 @@ export class AiPanelController {
       apPaymentSchedule: this.dataStore.apPaymentSchedule(),
       currentPage: page,
       personaSlug: this.personaService.activePersonaSlug(),
+      emails: this.dataStore.emails(),
+      chatChannels: this.dataStore.chatChannels(),
+      chatMessages: this.dataStore.chatMessages(),
     };
     const projectDetailMap = this.dataStore.projectDetailData();
     state.milestones = Object.values(projectDetailMap).flatMap(pd => pd.milestones ?? []);

@@ -3793,6 +3793,29 @@
                 </div>
               </app-widget-frame>
                 }
+                @case ('email') {
+              <app-widget-frame icon="email" title="Email" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('email') : null"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <modus-typography headerExtra hierarchy="p" size="xs" className="text-foreground-40">{{ projectUnreadEmailCount() }} unread</modus-typography>
+                <app-email-inbox [emails]="projectEmails()" (emailOpen)="onEmailOpen($event)" />
+              </app-widget-frame>
+                }
+                @case ('chat') {
+              <app-widget-frame icon="chat" title="Team Chat" [selected]="selectedWidgetId() === wId" [isMobile]="isMobile()"
+                [insight]="showProjectBlock(wId, 'insight') ? getWidgetInsight('chat') : null"
+                (headerMouseDown)="onWidgetHeaderMouseDown(wId, $event)" (headerTouchStart)="onWidgetHeaderTouchStart(wId, $event)"
+                (resizeStart)="startWidgetResize(wId, 'both', $event)" (resizeTouchStart)="startWidgetResizeTouch(wId, 'both', $event)">
+                <app-team-chat
+                  [channels]="visibleChatChannels()"
+                  [messages]="chatMessages()"
+                  [currentSlug]="personaService.activePersonaSlug()"
+                  [defaultChannelId]="projectChatChannelId()"
+                  (sendMessage)="onChatSend($event)"
+                />
+              </app-widget-frame>
+                }
               }
 
               </div>

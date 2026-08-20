@@ -90,6 +90,8 @@ import { HomeDailyReportsComponent } from './components/home-daily-reports.compo
 import { HomeTeamAllocationComponent } from './components/home-team-allocation.component';
 import { HomeContractsComponent } from './components/home-contracts.component';
 import { HomeOpenEstimatesComponent } from './components/home-open-estimates.component';
+import { EmailInboxComponent } from '../../shared/widgets/email-inbox.component';
+import { TeamChatComponent } from '../../shared/widgets/team-chat.component';
 import { ProjectSiteModelComponent } from '../project-dashboard/components/project-site-model.component';
 import { ProjectModelThumbnailComponent } from '../project-dashboard/components/project-model-thumbnail.component';
 import { PROJECT_DATA, type TeamMember, type Milestone } from '../../data/project-data';
@@ -131,6 +133,8 @@ const HOME_MIN_CONTENT_PX = 80;
     HomeTeamAllocationComponent,
     HomeContractsComponent,
     HomeOpenEstimatesComponent,
+    EmailInboxComponent,
+    TeamChatComponent,
     ProjectSiteModelComponent,
     ProjectModelThumbnailComponent,
     WidgetFrameComponent,
@@ -1959,6 +1963,46 @@ const HOME_MIN_CONTENT_PX = 80;
                     </div>
                   </div>
                 </app-widget-frame>
+              } @else if (widgetId === 'homeEmail') {
+                <app-widget-frame
+                  [title]="'Email'"
+                  [icon]="'email'"
+                  [iconClass]="'text-primary'"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? emailInsight() : null"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleSize]="'lg'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <modus-typography headerExtra hierarchy="p" size="xs" className="text-foreground-40">{{ unreadEmailCount() }} unread</modus-typography>
+                  <app-email-inbox [emails]="emails()" (emailOpen)="onEmailOpen($event)" />
+                </app-widget-frame>
+              } @else if (widgetId === 'homeChat') {
+                <app-widget-frame
+                  [title]="'Team Chat'"
+                  [icon]="'chat'"
+                  [iconClass]="'text-primary'"
+                  [insight]="showHomeBlock(widgetId, 'insight') ? chatInsight() : null"
+                  [selected]="selectedWidgetId() === widgetId"
+                  [isMobile]="isMobile()"
+                  [headerPadding]="'px-6 py-4'"
+                  [titleSize]="'lg'"
+                  (headerMouseDown)="onWidgetHeaderMouseDown(widgetId, $event, 'home')"
+                  (headerTouchStart)="onWidgetHeaderTouchStart(widgetId, $event, 'home')"
+                  (resizeStart)="startWidgetResize(widgetId, 'both', $event, 'home')"
+                  (resizeTouchStart)="startWidgetResizeTouch(widgetId, 'both', $event, 'home')"
+                >
+                  <app-team-chat
+                    [channels]="visibleChatChannels()"
+                    [messages]="chatMessages()"
+                    [currentSlug]="personaService.activePersonaSlug()"
+                    (sendMessage)="onChatSend($event)"
+                  />
+                </app-widget-frame>
               }
 
             </div>
@@ -2030,6 +2074,8 @@ export class HomePageComponent extends DashboardPageBase {
   readonly today = formatLongToday();
 
   readonly timeOffRequests = this.store.timeOffRequests;
+  readonly emails = this.store.emails;
+  readonly chatMessages = this.store.chatMessages;
   readonly activities = this.store.activities;
   readonly rfis = this.store.rfis;
   readonly submittals = this.store.submittals;
@@ -2226,12 +2272,12 @@ export class HomePageComponent extends DashboardPageBase {
 
   readonly homeWidgets = computed<DashboardWidgetId[]>(() => {
     if (this.isKelly()) {
-      return ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity', 'homeLearning'];
+      return ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity', 'homeLearning', 'homeEmail', 'homeChat'];
     }
     if (this.isPamela()) {
-      return ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity', 'home3dModel'];
+      return ['homeHeader', 'homeEstimatorKpis', 'homeOpenEstimates', 'homeCalendar', 'homeRfis', 'homeChangeOrders', 'homeBudgetVariance', 'homeRecentActivity', 'home3dModel', 'homeEmail', 'homeChat'];
     }
-    return ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates', 'home3dModel'];
+    return ['homeHeader', 'homeKpis', 'homeUrgentNeeds', 'homeWeather', 'homeTimeOff', 'homeCalendar', 'homeRfis', 'homeSubmittals', 'homeDrawings', 'homeRecentActivity', 'homeMilestones', 'homeBudgetVariance', 'homeChangeOrders', 'homeFieldOps', 'homeDailyReports', 'homeTeamAllocation', 'homeContracts', 'homeOpenEstimates', 'home3dModel', 'homeEmail', 'homeChat'];
   });
 
   // ── Area-adaptive visible blocks ───────────────────────────────
@@ -2809,6 +2855,29 @@ export class HomePageComponent extends DashboardPageBase {
     if (projectSlug) this.navigateToProject(projectSlug);
   }
 
+  readonly unreadEmailCount = computed(() => this.emails().filter(e => e.unread).length);
+
+  readonly visibleChatChannels = computed(() => {
+    const channels = this.store.chatChannels();
+    if (this.personaService.activePersonaSlug() === 'kelly') {
+      return channels.filter(c => c.id === 'internal');
+    }
+    return channels;
+  });
+
+  onEmailOpen(id: number): void {
+    this.store.markEmailRead(id);
+  }
+
+  onChatSend(event: { channelId: string; body: string }): void {
+    const persona = this.personaService.activePersona();
+    this.store.sendChatMessage(event.channelId, event.body, {
+      name: persona.name,
+      initials: persona.initials,
+      slug: persona.slug,
+    });
+  }
+
   readonly pendingTimeOffCount = computed(() =>
     this.timeOffRequests().filter((r) => r.status === 'Pending').length
   );
@@ -2853,7 +2922,11 @@ export class HomePageComponent extends DashboardPageBase {
       punchListItems: this.store.punchListItems(),
       milestones: this.crossProjectMilestones(),
       team: this.flatTeamMembers(),
+      emails: this.store.emails(),
+      chatChannels: this.store.chatChannels(),
+      chatMessages: this.store.chatMessages(),
       currentPage: 'home',
+      personaSlug: this.personaService.activePersonaSlug(),
     };
   }
 
@@ -2892,6 +2965,8 @@ export class HomePageComponent extends DashboardPageBase {
   readonly teamAllocationInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeTeamAllocation'));
   readonly contractsInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeContracts'));
   readonly openEstimatesInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeOpenEstimates'));
+  readonly emailInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeEmail'));
+  readonly chatInsight = computed<string | null>(() => this.getHomeWidgetInsight('homeChat'));
 
   readonly staffingByProject = computed(() => {
     const conflicts = this.allStaffingConflicts();

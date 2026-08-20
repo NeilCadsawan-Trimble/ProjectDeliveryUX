@@ -11,7 +11,7 @@ const COURSES: LearningCourse[] = [
     durationMinutes: 480,
     completedMinutes: 480,
     status: 'completed',
-    completedDate: 'Jan 18, 2026',
+    completedDate: 'Jun 18, 2026',
     url: `${BASE_URL}/financial-accounting-fundamentals`,
   },
   {
@@ -22,7 +22,7 @@ const COURSES: LearningCourse[] = [
     durationMinutes: 600,
     completedMinutes: 600,
     status: 'completed',
-    completedDate: 'Feb 12, 2026',
+    completedDate: 'Jul 12, 2026',
     url: `${BASE_URL}/cost-accounting-construction`,
   },
   {
@@ -33,7 +33,7 @@ const COURSES: LearningCourse[] = [
     durationMinutes: 360,
     completedMinutes: 360,
     status: 'completed',
-    completedDate: 'Mar 5, 2026',
+    completedDate: 'Aug 5, 2026',
     url: `${BASE_URL}/internal-controls-compliance`,
   },
   {
@@ -44,7 +44,7 @@ const COURSES: LearningCourse[] = [
     durationMinutes: 540,
     completedMinutes: 540,
     status: 'completed',
-    completedDate: 'Mar 28, 2026',
+    completedDate: 'Aug 18, 2026',
     url: `${BASE_URL}/gaap-construction-entities`,
   },
   {

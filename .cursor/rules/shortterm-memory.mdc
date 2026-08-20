@@ -5,7 +5,7 @@ alwaysApply: true
 
 # STALENESS CHECK — DO THIS FIRST
 
-**Current window**: June 29, 2026
+**Current window**: August 20, 2026
 
 **TODAY'S DATE**: Compare the "Current window" above against today's date (from the system prompt).
 
@@ -31,20 +31,23 @@ If the date matches today, skip this section and proceed normally.
 
 ## Today's Sessions
 
-*(June 29, 2026)*
+*(August 20, 2026)*
 
-- **Real root cause of Cursor npm task detection error found**: The Jun 26 "embedded escaped quotes" fix did NOT silence the error — `tasks.workspaceId-…` log showed it firing on every startup since at least May 26 (10/10 sessions). Diagnosed with a one-off `scripts/probe-npm-parse.mjs` that replicated Cursor's NPM extension parse path (`jsonc-parser.parseTree` + `visit` with the same visitor shape as the bundled `npmMain.js` module 3649 `readScripts`). Probe result: file structurally clean (0 parse errors, 0 visit errors, all 20 script keys recognized), only flagged item was `prepare: "husky \|\| true"` — bare shell `\|\|` inside a script value. Cross-referenced the bundled extension (`/Applications/Cursor.app/.../npm/dist/npmMain.js`) to confirm `readScripts` swallows jsonc errors via empty `onError(){}`, so the throw must come from a downstream script-value tokenizer that chokes on shell operators. Cross-workspace log check showed only this workspace ID hits it, ruling out a global Cursor bug. **Fix**: extracted `prepare` to `scripts/prepare.mjs` (runs `spawnSync('husky')`, always exits 0 to preserve the `\|\| true` "best effort" semantic), changed `package.json` to `"prepare": "node scripts/prepare.mjs"`. Re-ran probe: zero flagged scripts. Verified `npm run prepare` still runs husky end-to-end (exit 0) and missing-husky path still exits 0 (ENOENT swallowed). Deleted the diagnostic probe per plan. Corrected the long-term Known Fragile Areas row (Jun 26 row had the wrong theory — replaced with the actual root cause). The Jun 26 `concurrently npm:<script>` shorthand is fine on its own and stays. Both Jun 26 + Jun 29 changes ship in one commit.
+- Exploring static seed data inventory for all date-bearing types (calendar, RFIs, COs, invoices, AP, drawings, etc.) ahead of a bulk date refresh.
+- Implementing dated-seed refresh: `SEED_AS_OF` = Aug 20, 2026; persona calendars; project dues; RFIs/COs/schedules/financials through Dec 2026.
+- **Completed seed refresh (Aug–Dec 2026):** `SEED_AS_OF` helpers; distinct calendars for Frank/Bert/Kelly/Dominique/Pamela; Transit Hub due Dec 18 (status Overdue, recovery copy); Metro Bridge due Nov 20; Gantt/RFI/CO/financials/payroll through Dec. `npm run lint:all` + `npx ng build` green. Pre-existing 1.06 MB bundle budget warning unchanged. Static tests and layout seeds not edited.
+- **Completed email + chat widgets:** Role-specific inboxes and shared team chat on every home and project dashboard. `npm run lint:all`, `npx ng build`, `npm run test:static` (1671), and layout-seed-clearance (41) green. Pre-existing 1.06 MB bundle budget warning unchanged.
 
 ## Active Context
 
-- `dev` and `main` both at `ffe5034` (PR #139 merged Jun 19). Local working tree has uncommitted `package.json` (start-script + prepare-script) + new `scripts/prepare.mjs`, ready to commit.
-- Dependency baseline unchanged: pdfjs-dist 5.7.284, @angular/cli 21.2.12, @angular/common 21.2.14, jsdom 29.1.1, @deepgram/sdk 5.3.0.
-- Initial-bundle budget warning at 1.06 MB vs 800 kB cap (unchanged, not failing).
+- Jun 29 npm-task-detection fix (`scripts/prepare.mjs` + `package.json` prepare/start script changes) may still be uncommitted locally — verify before push.
+- Dependency baseline from Jun 29: pdfjs-dist 5.7.284, @angular/cli 21.2.12, @angular/common 21.2.14, jsdom 29.1.1, @deepgram/sdk 5.3.0.
+- Initial-bundle budget warning at 1.06 MB vs 800 kB cap (unchanged).
 
 ## Pending Items
 
-- **User action**: reload Cursor window (Cmd+Shift+P → "Developer: Reload Window") and confirm the `tasks.workspaceId-…` output channel is silent on next startup. If the error persists, fall back to clearing workspace storage for this workspace ID (`cf6dbcd1a9bb474cb1ed03da89c90527`) under `~/Library/Application Support/Cursor/User/workspaceStorage`.
-- Today's `package.json` + `scripts/prepare.mjs` fix is uncommitted, plus the still-uncommitted Jun 26 `start` shorthand fix. Push when user is ready (single commit + likely a quick PR to main).
-- Voice input (Deepgram, shipped May 5) still awaits user's manual end-to-end mic verification in the browser. If issues appear (transcript merging, mic not releasing), revisit `VoiceInputService` and composer pill stop hooks.
-- `@deepgram/sdk` adds ~200KB to initial bundle. Consider lazy-loading the service if the 1.06 MB warning becomes an actual budget failure.
-- Manual smoke for the docked Trimble Assistant panel (PR #139): open drawer at 768 ≤ width < 1920 → main column narrows, drawer flush right with resizable handle; drag left edge → width updates 320-720 px live; reload → width persists; resize down < 768 → drawer hidden; resize up ≥ 1920 → floating overlay returns.
+- Confirm Cursor Tasks output channel is silent after the prepare.mjs fix (user reload).
+- Voice input (Deepgram) still awaits manual browser mic verification.
+- Consider lazy-loading `@deepgram/sdk` if bundle budget becomes a hard failure.
+- Manual smoke for docked Trimble Assistant panel (PR #139).
+- Manual smoke for email/chat widgets: each persona home (expand, send, Kelly one channel); one project dashboard (project-filtered mail, default project channel); Dominique via `/dominique/...`.

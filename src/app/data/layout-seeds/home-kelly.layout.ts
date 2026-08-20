@@ -2,7 +2,7 @@ import type { LayoutSeed } from './layout-seed.types';
 
 // Exported from live canvas layout
 export const HOME_KELLY_LAYOUT: LayoutSeed = {
-  widgets: ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity', 'homeLearning'],
+  widgets: ['homeHeader', 'homeApKpis', 'homeInvoiceQueue', 'homePaymentSchedule', 'homeCalendar', 'homeVendorAging', 'homeRetention', 'homeApActivity', 'homeLearning', 'homeEmail', 'homeChat'],
   defaultColStarts: {
     homeHeader: 1,
     homeApKpis: 1,
@@ -13,6 +13,8 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
     homeRetention: 7,
     homeApActivity: 1,
     homeLearning: 1,
+    homeEmail: 1,
+    homeChat: 11,
   },
   defaultColSpans: {
     homeHeader: 16,
@@ -24,6 +26,8 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
     homeRetention: 10,
     homeApActivity: 6,
     homeLearning: 6,
+    homeEmail: 10,
+    homeChat: 6,
   },
   defaultTops: {
     homeHeader: 0,
@@ -35,6 +39,8 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
     homeRetention: 816,
     homeApActivity: 1424,
     homeLearning: 400,
+    homeEmail: 1664,
+    homeChat: 1664,
   },
   defaultHeights: {
     homeHeader: 0,
@@ -46,6 +52,8 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
     homeRetention: 320,
     homeApActivity: 272,
     homeLearning: 464,
+    homeEmail: 448,
+    homeChat: 448,
   },
   canvasDefaultLefts: {
     homeHeader: 0,
@@ -57,6 +65,8 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
     homeRetention: 972,
     homeApActivity: -162,
     homeLearning: -162,
+    homeEmail: -162,
+    homeChat: 567,
   },
   canvasDefaultPixelWidths: {
     homeHeader: 1280,
@@ -68,6 +78,8 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
     homeRetention: 470,
     homeApActivity: 389,
     homeLearning: 389,
+    homeEmail: 713,
+    homeChat: 470,
   },
   canvasDefaultTops: {
     homeHeader: 0,
@@ -79,6 +91,8 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
     homeRetention: 592,
     homeApActivity: 1008,
     homeLearning: 528,
+    homeEmail: 1392,
+    homeChat: 1392,
   },
   canvasDefaultHeights: {
     homeHeader: 80,
@@ -90,5 +104,7 @@ export const HOME_KELLY_LAYOUT: LayoutSeed = {
     homeRetention: 448,
     homeApActivity: 272,
     homeLearning: 464,
+    homeEmail: 448,
+    homeChat: 448,
   },
 };

@@ -83,8 +83,8 @@ export function buildStaffingConflicts(projectId?: number, timeOff?: TimeOffRequ
   }
 
   const conflicts: StaffingConflict[] = [];
-  const weekStart = new Date(year, 2, 2); // Mar 2
-  const weekEnd = new Date(year, 3, 27); // Apr 27
+  const weekStart = new Date(year, 7, 17); // Aug 17
+  const weekEnd = new Date(year, 11, 18); // Dec 18
 
   for (const [projId, requests] of byProject.entries()) {
     const proj = PROJECTS.find(p => p.id === projId);
@@ -355,8 +355,8 @@ function buildSubledger(projectId: number, category: JobCostCategory, totalAmoun
   const rawWeights = Array.from({ length: txCount }, (_, i) => 0.3 + rng(i + 100) * 1.4);
   const wSum = rawWeights.reduce((a, b) => a + b, 0);
 
-  const startDate = new Date(2025, 2 + Math.floor(rng(200) * 3), 1 + Math.floor(rng(201) * 15));
-  const endDate = new Date(2026, 1 + Math.floor(rng(202) * 2), 1 + Math.floor(rng(203) * 25));
+  const startDate = new Date(2025, 9 + Math.floor(rng(200) * 3), 1 + Math.floor(rng(201) * 15));
+  const endDate = new Date(2026, 6 + Math.floor(rng(202) * 2), 1 + Math.floor(rng(203) * 25));
   const span = endDate.getTime() - startDate.getTime();
 
   const txs: SubledgerTransaction[] = [];

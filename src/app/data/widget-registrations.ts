@@ -145,6 +145,22 @@ export const HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'Which estimates need approval?',
     ],
   },
+  homeEmail: {
+    name: 'Email',
+    suggestions: [
+      'What emails need my attention?',
+      'Show unread urgent messages',
+      'Summarize my inbox',
+    ],
+  },
+  homeChat: {
+    name: 'Team Chat',
+    suggestions: [
+      'What is the latest in Internal Work?',
+      'Any new project chat messages?',
+      'Summarize unread channels',
+    ],
+  },
 };
 
 export const KELLY_HOME_WIDGETS: Record<string, WidgetRegistration> = {
@@ -236,6 +252,22 @@ export const KELLY_HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'How many hours have I logged so far?',
     ],
   },
+  homeEmail: {
+    name: 'Email',
+    suggestions: [
+      'Which invoices in my inbox need a reply?',
+      'Show unread vendor emails',
+      'Summarize my inbox',
+    ],
+  },
+  homeChat: {
+    name: 'Team Chat',
+    suggestions: [
+      'What is the latest in Internal Work?',
+      'Any messages about the check run?',
+      'Summarize unread chat',
+    ],
+  },
 };
 
 export const PAMELA_HOME_WIDGETS: Record<string, WidgetRegistration> = {
@@ -301,6 +333,22 @@ export const PAMELA_HOME_WIDGETS: Record<string, WidgetRegistration> = {
       'Open the Harbor View 3D model',
       'Show recent changes to the Harbor View model',
       'Are there any clashes flagged in the BIM?',
+    ],
+  },
+  homeEmail: {
+    name: 'Email',
+    suggestions: [
+      'What emails need my attention?',
+      'Show unread urgent messages',
+      'Summarize my inbox',
+    ],
+  },
+  homeChat: {
+    name: 'Team Chat',
+    suggestions: [
+      'What is the latest in Internal Work?',
+      'Any new project chat messages?',
+      'Summarize unread channels',
     ],
   },
 };
@@ -631,6 +679,22 @@ export const PROJECT_DETAIL_WIDGETS: Record<string, WidgetRegistration> = {
       'When was the model last updated?',
       'Are there any clashes flagged in the BIM?',
       'Show the latest model revision history',
+    ],
+  },
+  email: {
+    name: 'Email',
+    suggestions: [
+      'What project emails need a reply?',
+      'Show unread messages for this job',
+      'Summarize this project inbox',
+    ],
+  },
+  chat: {
+    name: 'Team Chat',
+    suggestions: [
+      'What is the latest in this project chat?',
+      'Any messages from the owner or inspector?',
+      'Summarize unread project chat',
     ],
   },
 };

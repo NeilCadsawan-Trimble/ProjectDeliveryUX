@@ -29,6 +29,9 @@ import type {
   TimeOffRequest,
   ProjectWeather,
   WeatherForecast,
+  WorkEmail,
+  ChatChannel,
+  ChatMessage,
 } from '../dashboard-data';
 import type { Milestone, TeamMember, Task, Risk, ActivityEntry, Drawing, BudgetBreakdown } from '../project-data';
 import type { DrawingTile, SiteCapture } from '../drawings-data';
@@ -126,6 +129,9 @@ export interface AgentDataState {
   currentSubPage?: string;
 
   personaSlug?: string;
+  emails?: WorkEmail[];
+  chatChannels?: ChatChannel[];
+  chatMessages?: ChatMessage[];
 }
 
 export interface AgentAlert {
