@@ -1003,17 +1003,14 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
 
   readonly projectUnreadEmailCount = computed(() => this.projectEmails().filter(e => e.unread).length);
 
-  readonly visibleChatChannels = computed(() => {
-    const channels = this.store.chatChannels();
-    if (this.personaService.activePersonaSlug() === 'kelly') {
-      return channels.filter(c => c.id === 'internal');
-    }
-    return channels;
-  });
-
   readonly projectChatChannelId = computed(() => {
     if (this.personaService.activePersonaSlug() === 'kelly') return 'internal';
     return this.store.findProjectById(this.projectId())?.slug ?? 'internal';
+  });
+
+  readonly visibleChatChannels = computed(() => {
+    const id = this.projectChatChannelId();
+    return this.store.chatChannels().filter(c => c.id === id);
   });
 
   onEmailOpen(id: number): void {
@@ -2936,11 +2933,8 @@ export class ProjectDashboardComponent extends DashboardPageBase implements OnIn
       projectTimeOff: getProjectTimeOff(projId, this.store.timeOffRequests()),
       staffingConflicts: buildStaffingConflicts(projId, this.store.timeOffRequests()),
       emails: this.store.emails().filter(e => e.projectId === projId || e.projectId === null),
-      chatChannels: this.store.chatChannels(),
-      chatMessages: this.store.chatMessages().filter(m => {
-        const slug = this.store.findProjectById(projId)?.slug;
-        return m.channelId === 'internal' || m.channelId === slug;
-      }),
+      chatChannels: this.visibleChatChannels(),
+      chatMessages: this.store.chatMessages().filter(m => m.channelId === this.projectChatChannelId()),
       currentPage: 'project-dashboard',
       currentSubPage: this.activeNavItem(),
       personaSlug: this.personaService.activePersonaSlug(),

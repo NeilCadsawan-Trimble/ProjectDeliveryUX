@@ -37,6 +37,7 @@ If the date matches today, skip this section and proceed normally.
 - Implementing dated-seed refresh: `SEED_AS_OF` = Aug 20, 2026; persona calendars; project dues; RFIs/COs/schedules/financials through Dec 2026.
 - **Completed seed refresh (Aug–Dec 2026):** `SEED_AS_OF` helpers; distinct calendars for Frank/Bert/Kelly/Dominique/Pamela; Transit Hub due Dec 18 (status Overdue, recovery copy); Metro Bridge due Nov 20; Gantt/RFI/CO/financials/payroll through Dec. `npm run lint:all` + `npx ng build` green. Pre-existing 1.06 MB bundle budget warning unchanged. Static tests and layout seeds not edited.
 - **Completed email + chat widgets:** Role-specific inboxes and shared team chat on every home and project dashboard. `npm run lint:all`, `npx ng build`, `npm run test:static` (1671), and layout-seed-clearance (41) green. Pre-existing 1.06 MB bundle budget warning unchanged.
+- Project landing Team Chat now shows only that project's channel (Kelly still Internal Work). Home picker unchanged.
 
 ## Active Context
 
